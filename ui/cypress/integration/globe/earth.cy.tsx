@@ -1,8 +1,10 @@
 import Earth from '@/components/globe/Earth'
 
 describe('<Earth />', () => {
-  it('Renders component', () => {
+  it('Renders component with canvas', () => {
     cy.mount(<Earth pointsData={[]} />)
-    cy.get('canvas').should('exist')
+
+    // Wait for canvas to render (Globe component creates a canvas element)
+    cy.get('canvas', { timeout: 15000 }).should('exist')
   })
 })

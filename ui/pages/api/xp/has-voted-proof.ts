@@ -57,7 +57,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!user || !ethersUtils.isAddress(user))
       return res.status(400).json({ error: 'Invalid user address' })
 
-    if (!addressBelongsToPrivyUser(accessToken as string, user))
+    if (!(await addressBelongsToPrivyUser(accessToken as string, user)))
       return res.status(400).json({ error: 'User not found' })
 
     const SNAPSHOT_SPACE = process.env.SNAPSHOT_SPACE || 'tomoondao.eth'

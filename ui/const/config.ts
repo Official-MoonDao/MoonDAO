@@ -23,6 +23,8 @@ interface DeploymentConfig {
   MissionCreator: string
   UniswapV4Router: string
   MissionTable: string
+  CitizenTable: string
+  CitizenNFT: string
 }
 
 type Index = { [key: string]: string }
@@ -105,20 +107,16 @@ export const VMOONEY_ADDRESSES: Index = {
   'base-sepolia-testnet': baseSepoliaConfig.vMOONEYToken,
 }
 
-export const CITIZEN_NFT_ADDRESSES: Index = {
-  ethereum: '',
-  polygon: '0xE8013d1B68FA9faF5C78DE4823f7F076A854407A',
-}
-
+// TODO: This should really be named CITIZEN_NFT_ADDRESSES but we're keeping it for backwards compatibility
 export const CITIZEN_ADDRESSES: Index = {
-  arbitrum: '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002',
-  sepolia: '0x48A0E8B6A86a05aeA3C544B7A9916F6FaFb88d8a',
+  arbitrum: arbitrumConfig.CitizenNFT,
+  sepolia: sepoliaConfig.CitizenNFT,
   'arbitrum-sepolia': '0x853d6B4BA61115810330c7837FDD24D61CBab855',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x0Eb1dF01b34cEDAFB3148f07D013793b557470d1',
-  sepolia: '0xbddE39D8b7098c9Dfb86b1fA91f7746f3Ff4dAcC',
+  arbitrum: arbitrumConfig.CitizenTable,
+  sepolia: sepoliaConfig.CitizenTable,
   'arbitrum-sepolia': '0xfF3F124D91D6eD6A47e1066473a78AaEde4c2fbe',
 }
 
@@ -130,25 +128,73 @@ export const CITIZEN_TABLE_NAMES: Index = {
 
 export const PROJECT_ADDRESSES: Index = {
   arbitrum: '0xCb31829B312923C7502766ef4f36948A7A64cD6A',
-  sepolia: '0x19124F594c3BbCb82078b157e526B278C8E9EfFc',
+  sepolia: '0xAf8A64BfeD40fF4129e624650B0C48F9036C0FE4',
   'arbitrum-sepolia': '0xDC35Dc4F7610678B0389157522734b79ea464101',
 }
 
 export const PROJECT_CREATOR_ADDRESSES: Index = {
   arbitrum: '0x2486149B23447c37932471eA6dF091267ebca953',
-  sepolia: '0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D',
+  sepolia: '0x421041750f6fe6Fb00968CC63d5ab7BfFDD35e96',
   'arbitrum-sepolia': '0xde26EcE3C1Ec58057348e3a7B28359c8cDfae56A',
+}
+
+export const SENATORS_ADDRESSES: Index = {
+  arbitrum: '0x0c4Fa101F5726AC76C76Fa6a622809C6F84d36a7',
+  sepolia: '0x3aEd5a0F378A2a20c8d46F30e259A7D9DbC8D304',
+}
+
+// List of senators with their addresses and display names
+export interface Senator {
+  address: string
+  name: string
+}
+
+export const SENATORS_LIST: { [key: string]: Senator[] } = {
+  arbitrum: [
+    { address: '0xf2Befa4B9489c1ef75E069D16A6F829F71B4B988', name: 'Frank' },
+    { address: '0x8687AB2FF3188F961828FC2131b6150Ee97Bedce', name: 'Kara' },
+    { address: '0xB87b8c495d3DAE468d4351621b69d2eC10E656FE', name: 'Alex' },
+    { address: '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201', name: 'EngiBob' },
+    { address: '0x529Bd2351476ba114f9D60E71A020A9F0b99f047', name: 'Anastasia' },
+    { address: '0xe2d3aC725E6FFE2b28a9ED83bedAaf6672f2C801', name: 'Eiman' },
+    { address: '0x8A7fD7F4B1A77A606DFdD229c194B1F22De868Ff', name: 'Daniel' },
+    { address: '0x86c779b3741e83A36A2a236780d436E4EC673Af4', name: 'Titan' },
+    { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Jade' },
+  ],
+  sepolia: [
+    { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Test Senator 1' },
+    { address: '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6', name: 'Test Senator 2' },
+    { address: '0x679d87D8640e66778c3419D164998E720D7495f6', name: 'Test Senator 3' },
+    { address: '0xAF6f2A7643A97b849bD9cf6d3f57e142c5BbB0DA', name: 'Test Senator 4' },
+  ],
+}
+
+export const NON_PROJECT_PROPOSAL_ADDRESSES: Index = {
+  arbitrum: '0xdf4F4a5f3F1143036be4f42a546F399B7cA93EBC',
+  sepolia: '0x3804D425a95Ea86cE8B5E260a4f092934C2117b5',
+}
+export const NON_PROJECT_PROPOSAL_TABLE_NAMES: Index = {
+  arbitrum: 'NonProjectProposal_42161_154',
+  sepolia: 'NonProjectProposal_11155111_2037',
+}
+export const PROPOSALS_ADDRESSES: Index = {
+  arbitrum: '0x1ffD3dcabB3E3CA431B02cdec81675FDD30ac357',
+  sepolia: '0x469fb064084E2543033Eb5D76Ca579CA9BEce050',
+}
+export const PROPOSALS_TABLE_NAMES: Index = {
+  arbitrum: 'Proposals_42161_155',
+  sepolia: 'Proposals_11155111_2045',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x83755AF34867a3513ddCE921E9cAd28f0828CDdB',
-  sepolia: '0x17729AFF287d9873F5610c029A5Db814e428e97a',
+  sepolia: '0x784674bEa87F6A6D68970487a48E329F6fDc019E',
   'arbitrum-sepolia': '0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E',
 }
 
 export const PROJECT_TABLE_NAMES: Index = {
   arbitrum: 'PROJECT_42161_122',
-  sepolia: 'PROJECT_11155111_1888',
+  sepolia: 'PROJECT_11155111_2033',
   'arbitrum-sepolia': 'PROJECT_421614_1060',
 }
 
@@ -211,7 +257,7 @@ export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0x614a00807b1e589E17b5dD2F805906e529Ae686e',
+  arbitrum: '0xC27f44B81057242140DB1a4eE4ADf02b1E193C87',
   sepolia: '0x80620708C104633Ca9Ae6cbCb0768F66d9b13E25',
   'arbitrum-sepolia': '0x18A0f907575b0387CcFEaa40e694FF1E83Fe5F18',
 }
@@ -544,8 +590,6 @@ export const EB_TEAM_ID = '0'
 export const PROJECT_SYSTEM_CONFIG = {
   // Q1 2026 deadline - second Thursday of the quarter
   submissionDeadline: 'January 15, 2026',
-  // Maximum budget per project is 1/5 (20%) of quarterly budget
-  maxBudgetPercentage: 0.2,
   // Approval timeline details
   senateReviewDays: 1, // Senate reviews the day after submission
   editingDeadline: 'January 22, 2026', // 48 hours before third Thursday
@@ -557,5 +601,21 @@ export const PROJECT_SYSTEM_CONFIG = {
   // Total quarterly budget is displayed dynamically on the page
 }
 
+// Voting Phase Flags
+// Set IS_SENATE_VOTE to true during Senate Vote phase - shows proposals with "Temperature Check" status
+// Set IS_MEMBER_VOTE to true during Member Vote phase - shows proposals with "Voting" status (passed Senate vote)
+// Only one should be true at a time, or both false when no voting is active
+export const IS_SENATE_VOTE = false
+export const IS_MEMBER_VOTE = true
+
 // Quarterly budget in ETH
-export const NEXT_ETH_BUDGET = 7.83
+export const NEXT_QUARTER_BUDGET_ETH = 11.6
+export const ETH_BUDGET = NEXT_QUARTER_BUDGET_ETH
+export const COMMUNITY_CIRCLE_BUDGET_FRACTION = 0.1
+export const AVAILABLE_FOR_FUNDING_FRACTION = 0.75
+export const MAX_BUDGET_FRACTION = 0.2
+export const NEXT_QUARTER_PROJECTS_BUDGET_ETH =
+  NEXT_QUARTER_BUDGET_ETH * (1 - COMMUNITY_CIRCLE_BUDGET_FRACTION)
+export const NEXT_QUARTER_FUNDING_ETH =
+  NEXT_QUARTER_PROJECTS_BUDGET_ETH * AVAILABLE_FOR_FUNDING_FRACTION
+export const MAX_BUDGET_ETH = NEXT_QUARTER_PROJECTS_BUDGET_ETH * MAX_BUDGET_FRACTION

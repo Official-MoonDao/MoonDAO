@@ -1,9 +1,4 @@
-import {
-  useQueryParams,
-  withDefault,
-  NumberParam,
-  createEnumParam,
-} from 'next-query-params'
+import { useQueryParams, withDefault, NumberParam, createEnumParam } from 'next-query-params'
 import Link from 'next/link'
 import { useCallback, useMemo } from 'react'
 import { formatNumberUSStyle } from '@/lib/nance'
@@ -12,11 +7,7 @@ import { DistributionVote } from '@/lib/tableland/types'
 import { useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
 import { classNames } from '@/lib/utils/tailwind'
-import Votes, {
-  VoteItem,
-  VoteItemHeader,
-  VoteItemDetails,
-} from '../layout/Votes'
+import Votes, { VoteItem, VoteItemHeader, VoteItemDetails } from '../layout/Votes'
 import { MultiVotingProgressBar } from '../layout/VotingProgressBar'
 import { AddressLink } from '../nance/AddressLink'
 
@@ -42,9 +33,7 @@ export default function DistributionVotes({
   const { walletVPs: _vps } = useTotalVPs(addresses)
 
   const addressToQuadraticVotingPower = useMemo(() => {
-    return Object.fromEntries(
-      addresses.map((address, index) => [address, _vps[index]])
-    )
+    return Object.fromEntries(addresses.map((address, index) => [address, _vps[index]]))
   }, [addresses, _vps])
 
   const formatVoteDistribution = useCallback(
@@ -68,10 +57,7 @@ export default function DistributionVotes({
   })
 
   const totalParticipants = votes.length
-  const totalVoteWeight = votes.reduce(
-    (sum, vote) => sum + getTotalVoteWeight(vote.vote),
-    0
-  )
+  const totalVoteWeight = votes.reduce((sum, vote) => sum + getTotalVoteWeight(vote.vote), 0)
 
   let sortedVotes = [...votes]
   if (query.sortBy === 'name') {
@@ -93,9 +79,7 @@ export default function DistributionVotes({
   // Filter votes if a specific choice is selected
   let filteredVotes = sortedVotes
   if (query.filterBy && query.filterBy !== '') {
-    filteredVotes = sortedVotes.filter((vote) =>
-      Object.keys(vote.vote).includes(query.filterBy)
-    )
+    filteredVotes = sortedVotes.filter((vote) => Object.keys(vote.vote).includes(query.filterBy))
   }
 
   // Generate color palette for finalists
@@ -117,10 +101,7 @@ export default function DistributionVotes({
       'bg-violet-500',
     ]
 
-    return Array.from(
-      { length: count },
-      (_, index) => baseColors[index % baseColors.length]
-    )
+    return Array.from({ length: count }, (_, index) => baseColors[index % baseColors.length])
   }
 
   const summarySection = (
@@ -135,23 +116,15 @@ export default function DistributionVotes({
       {finalists && finalists.length > 0 && votes && votes.length > 0 && (
         <div className="p-3 text-sm text-gray-500">
           {(() => {
-            const votingPowersReady = Object.values(
-              addressToQuadraticVotingPower
-            ).some((vp) => vp !== undefined)
+            const votingPowersReady = Object.values(addressToQuadraticVotingPower).some(
+              (vp) => vp !== undefined
+            )
 
             if (!votingPowersReady) {
-              return (
-                <div className="text-gray-400 text-sm">
-                  Loading distribution...
-                </div>
-              )
+              return <div className="text-gray-400 text-sm">Loading distribution...</div>
             }
 
-            const quadraticResults = runQuadraticVoting(
-              votes,
-              addressToQuadraticVotingPower,
-              100
-            )
+            const quadraticResults = runQuadraticVoting(votes, addressToQuadraticVotingPower, 100)
 
             const distributions = Object.entries(quadraticResults)
               .map(([finalistId, percentage]) => {
@@ -174,11 +147,7 @@ export default function DistributionVotes({
             }))
 
             if (segments.length === 0) {
-              return (
-                <div className="text-gray-400 text-sm">
-                  No voting results available
-                </div>
-              )
+              return <div className="text-gray-400 text-sm">No voting results available</div>
             }
 
             return <MultiVotingProgressBar segments={segments} height="h-4" />
@@ -188,47 +157,13 @@ export default function DistributionVotes({
     </>
   )
 
-  const controlsSection = (
-    <>
-      {/* Sorting Controls */}
-      <div className="flex gap-4 mt-2 text-xs">
-        <span className="text-gray-500">Sort by:</span>
-        <button
-          className={classNames(
-            'cursor-pointer',
-            query.sortBy === 'time'
-              ? 'text-blue-500 underline'
-              : 'text-gray-400 hover:text-gray-600'
-          )}
-          onClick={() => setQuery({ sortBy: 'time' })}
-        >
-          Time
-        </button>
-        <button
-          className={classNames(
-            'cursor-pointer',
-            query.sortBy === 'name'
-              ? 'text-blue-500 underline'
-              : 'text-gray-400 hover:text-gray-600'
-          )}
-          onClick={() => setQuery({ sortBy: 'name' })}
-        >
-          Citizen Name
-        </button>
-      </div>
-    </>
-  )
-
   const voteItems = filteredVotes.map((vote, index) => (
     <VoteItem key={`${vote.address}-${index}`}>
       <VoteItemHeader
         leftContent={
           vote.citizenName && vote.citizenId ? (
             <Link
-              href={`/citizen/${generatePrettyLinkWithId(
-                vote.citizenName,
-                vote.citizenId
-              )}`}
+              href={`/citizen/${generatePrettyLinkWithId(vote.citizenName, vote.citizenId)}`}
               className="break-all hover:underline"
             >
               {vote.citizenName}
@@ -255,7 +190,6 @@ export default function DistributionVotes({
     <Votes
       title={title}
       summarySection={summarySection}
-      controlsSection={controlsSection}
       voteItems={voteItems}
       footerSection={footerSection}
       showContainer={true}

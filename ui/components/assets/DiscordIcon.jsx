@@ -1,6 +1,6 @@
 const DiscordIcon = () => (
   <svg
-    className="h-6 w-6"
+    className="h-5 w-5"
     viewBox="0 -28.5 256 256"
     xmlns="http://www.w3.org/2000/svg"
     preserveAspectRatio="xMidYMid"

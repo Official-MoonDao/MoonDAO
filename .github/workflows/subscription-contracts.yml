@@ -11,7 +11,7 @@ on:
       - subscription-contracts/**
 
 env:
-  FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: default
 
 jobs:
   check:

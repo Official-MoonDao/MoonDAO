@@ -1,14 +1,20 @@
+import confetti from 'canvas-confetti'
 import DistributionTableABI from 'const/abis/DistributionTable.json'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
+import ProposalsABI from 'const/abis/Proposals.json'
 import {
   DEFAULT_CHAIN_V5,
   DISTRIBUTION_TABLE_ADDRESSES,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
+  PROPOSALS_ADDRESSES,
   ARBITRUM_ASSETS_URL,
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
+  ETH_BUDGET,
+  IS_SENATE_VOTE,
+  IS_MEMBER_VOTE,
 } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import _ from 'lodash'
@@ -23,10 +29,16 @@ import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
+import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
-import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
+import {
+  getRelativeQuarter,
+  isRewardsCycle,
+  isApprovalActive,
+  getSubmissionQuarter,
+} from '@/lib/utils/dates'
 import { getBudget, getPayouts, computeRewardPercentages } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -34,6 +46,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
+import Tooltip from '@/components/layout/Tooltip'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import PastProjects from '@/components/project/PastProjects'
 import ProjectCard from '@/components/project/ProjectCard'
@@ -47,40 +60,62 @@ export type Distribution = {
 }
 
 export type ProjectRewardsProps = {
+  proposals: Project[]
   currentProjects: Project[]
   pastProjects: Project[]
   distributions: Distribution[]
+  proposalAllocations?: Distribution[]
   refreshRewards: () => void
 }
 
 // Helper function to format large numbers for mobile display
 export function ProjectRewards({
+  proposals,
   currentProjects,
   pastProjects,
   distributions,
+  proposalAllocations,
   refreshRewards,
 }: ProjectRewardsProps) {
   const router = useRouter()
 
   const chain = DEFAULT_CHAIN_V5
+  const { isMobile } = useWindowSize()
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
   const userAddress = account?.address
 
-  const [active, setActive] = useState(false)
-  const { quarter, year } = getRelativeQuarter(active ? -1 : 0)
+  const [rewardVotingActive, setRewardVotingActive] = useState(false)
+  const [approvalVotingActive, setApprovalVotingActive] = useState(false)
+  const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
+  const { quarter: submissionQuarter, year: submissionYear } = getSubmissionQuarter()
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
+  const [originalDistribution, setOriginalDistribution] = useState<{ [key: string]: number }>({})
+  
+  // Separate state for proposal allocations
+  const [proposalEdit, setProposalEdit] = useState(false)
+  const [proposalDistribution, setProposalDistribution] = useState<{ [key: string]: number }>({})
+  const [originalProposalDistribution, setOriginalProposalDistribution] = useState<{ [key: string]: number }>({})
+
+  //Check if its the approval cycle
+  useEffect(() => {
+    setApprovalVotingActive(isApprovalActive(new Date()))
+    const interval = setInterval(() => {
+      setApprovalVotingActive(isApprovalActive(new Date()))
+    }, 30000)
+    return () => clearInterval(interval)
+  })
 
   //Check if its the rewards cycle
   useEffect(() => {
-    setActive(isRewardsCycle(new Date()))
+    setRewardVotingActive(isRewardsCycle(new Date()))
     const interval = setInterval(() => {
-      setActive(isRewardsCycle(new Date()))
+      setRewardVotingActive(isRewardsCycle(new Date()))
     }, 30000)
     return () => clearInterval(interval)
-  }, [currentProjects, distributions])
+  })
 
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
@@ -92,6 +127,7 @@ export function ProjectRewards({
           d.address.toLowerCase() === userAddress.toLowerCase()
         ) {
           setDistribution(d.distribution)
+          setOriginalDistribution(d.distribution)
           setEdit(true)
           break
         }
@@ -99,9 +135,49 @@ export function ProjectRewards({
     }
   }, [userAddress, distributions, quarter, year])
 
+  // Check if the user already has a proposal allocation for the current quarter
+  useEffect(() => {
+    if (proposalAllocations && userAddress) {
+      for (const d of proposalAllocations) {
+        if (
+          d.year === year &&
+          d.quarter === quarter &&
+          d.address.toLowerCase() === userAddress.toLowerCase()
+        ) {
+          setProposalDistribution(d.distribution)
+          setOriginalProposalDistribution(d.distribution)
+          setProposalEdit(true)
+          break
+        }
+      }
+    }
+  }, [userAddress, proposalAllocations, quarter, year])
+  const tallyVotes = async () => {
+    const res = await fetch(`/api/proposals/vote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // Important: Specify the content type
+      },
+      body: JSON.stringify({
+        quarter: submissionQuarter,
+        year: submissionYear,
+      }),
+    })
+    const resJson = await res.json()
+    console.log('res', resJson)
+  }
+
   const handleDistributionChange = (projectId: string, value: number) => {
     const newValue = Math.min(100, Math.max(0, +value))
     setDistribution((prev) => ({
+      ...prev,
+      [projectId]: newValue,
+    }))
+  }
+
+  const handleProposalDistributionChange = (projectId: string, value: number) => {
+    const newValue = Math.min(100, Math.max(0, +value))
+    setProposalDistribution((prev) => ({
       ...prev,
       [projectId]: newValue,
     }))
@@ -117,6 +193,11 @@ export function ProjectRewards({
     address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
     chain: chain,
     abi: DistributionTableABI as any,
+  })
+  const proposalContract = useContract({
+    address: PROPOSALS_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: ProposalsABI.abi as any,
   })
   const hatsContract = useContract({
     address: HATS_ADDRESS,
@@ -200,6 +281,7 @@ export function ProjectRewards({
       .filter((token: any) => token.usd > 1)
       .concat([{ symbol: 'stETH', balance: stakedEth }])
   }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
+  const totalAllocated = _.sum(Object.values(distribution))
 
   // The quarterly ETH budget is the value of all non-mooney tokens in the treasury
   // converted to ETH on the first day of the quarter. This function calculates in
@@ -211,9 +293,8 @@ export function ProjectRewards({
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
   // 2025q4
-  const ethBudget = 14.15
 
-  const usdBudget = ethBudget * ethPrice
+  const usdBudget = ETH_BUDGET * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
 
   const {
@@ -227,7 +308,7 @@ export function ProjectRewards({
     projectIdToEstimatedPercentage,
     eligibleProjects,
     communityCircle,
-    ethBudget,
+    ETH_BUDGET,
     mooneyBudget
   )
 
@@ -272,10 +353,16 @@ export function ProjectRewards({
     }
   }, [mooneyBudget])
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (contract: any) => {
     const totalPercentage = Object.values(distribution).reduce((sum, value) => sum + value, 0)
     if (totalPercentage !== 100) {
       toast.error('Total distribution must equal 100%.', {
+        style: toastStyle,
+      })
+      return
+    }
+    if (edit && _.isEqual(distribution, originalDistribution)) {
+      toast.error('No changes detected. Please modify your distribution before resubmitting.', {
         style: toastStyle,
       })
       return
@@ -285,7 +372,7 @@ export function ProjectRewards({
       let receipt
       if (edit) {
         const transaction = prepareContractCall({
-          contract: distributionTableContract,
+          contract: contract,
           method: 'updateTableCol' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
@@ -295,7 +382,7 @@ export function ProjectRewards({
         })
       } else {
         const transaction = prepareContractCall({
-          contract: distributionTableContract,
+          contract: contract,
           method: 'insertIntoTable' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
@@ -304,7 +391,19 @@ export function ProjectRewards({
           account,
         })
       }
-      if (receipt) setTimeout(() => router.push('/projects/thank-you'), 5000)
+      if (receipt) {
+        toast.success('Distribution submitted successfully!', {
+          style: toastStyle,
+        })
+        confetti({
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.6 },
+          shapes: ['circle', 'star'],
+          colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+        })
+        setTimeout(() => router.push('/projects/thank-you'), 3000)
+      }
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -312,7 +411,65 @@ export function ProjectRewards({
       })
     }
   }
-  console.log('active', active)
+
+  const handleProposalSubmit = async (contract: any) => {
+    const totalPercentage = Object.values(proposalDistribution).reduce((sum, value) => sum + value, 0)
+    if (totalPercentage !== 100) {
+      toast.error('Total distribution must equal 100%.', {
+        style: toastStyle,
+      })
+      return
+    }
+    if (proposalEdit && _.isEqual(proposalDistribution, originalProposalDistribution)) {
+      toast.error('No changes detected. Please modify your distribution before resubmitting.', {
+        style: toastStyle,
+      })
+      return
+    }
+    try {
+      if (!account) throw new Error('No account found')
+      let receipt
+      if (proposalEdit) {
+        const transaction = prepareContractCall({
+          contract: contract,
+          method: 'updateTableCol' as string,
+          params: [quarter, year, JSON.stringify(proposalDistribution)],
+        })
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      } else {
+        const transaction = prepareContractCall({
+          contract: contract,
+          method: 'insertIntoTable' as string,
+          params: [quarter, year, JSON.stringify(proposalDistribution)],
+        })
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      }
+      if (receipt) {
+        toast.success('Distribution submitted successfully!', {
+          style: toastStyle,
+        })
+        confetti({
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.6 },
+          shapes: ['circle', 'star'],
+          colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+        })
+        setTimeout(() => router.push('/projects/thank-you'), 3000)
+      }
+    } catch (error) {
+      console.error('Error submitting distribution:', error)
+      toast.error('Error submitting distribution. Please try again.', {
+        style: toastStyle,
+      })
+    }
+  }
   return (
     <section id="projects-container" className="overflow-hidden">
       <Head
@@ -321,22 +478,26 @@ export function ProjectRewards({
       />
       <Container>
         <ContentLayout
-          header={'Project Rewards'}
-          description={
-            'View active projects and allocate retroactive rewards to completed projects and their contributors based on impact and results.'
-          }
-          headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"
           popOverEffect={false}
           isProfile
+          branded={false}
         >
-          <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
+          <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6 px-0 sm:px-3 md:px-0 max-w-[1200px]">
             {/* Condensed Top Section - Rewards + Create Button */}
-            <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <h1 className="font-GoodTimes text-white/80 text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
+            <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
+                <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
+                {process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && (
+                  <button
+                    onClick={tallyVotes}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
+                  >
+                    Close voting.
+                  </button>
+                )}
                 <button
                   className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
                   onClick={() => router.push('/proposals')}
@@ -349,17 +510,18 @@ export function ProjectRewards({
                   />
                   <span className="leading-none">Create Project</span>
                 </button>
+                {/*FIXME run on cron */}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-4 px-1 sm:px-0">
+                <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                   <RewardAsset
                     name="ETH"
-                    value={ethBudget.toFixed(4)}
+                    value={ETH_BUDGET.toFixed(4)}
                     usdValue={usdBudget.toFixed(2)}
                   />
                 </div>
-                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+                <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                   <RewardAsset
                     name="MOONEY"
                     value={Number(mooneyBudget.toPrecision(3)).toLocaleString()}
@@ -370,16 +532,111 @@ export function ProjectRewards({
               </div>
             </div>
 
-            <div id="projects-container" className="p-6">
-              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
-                Vote on Project Allocations
+            <div
+              id="projects-container"
+              className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-6 border-y sm:border border-white/10"
+            >
+              <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
+                {IS_SENATE_VOTE ? (
+                  <>
+                    Project Proposals
+                    <span className="ml-2 text-sm font-normal text-orange-400">(Senate Vote)</span>
+                  </>
+                ) : (
+                  <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
+                    Project Proposals
+                    {IS_MEMBER_VOTE && (
+                      <span className="ml-2 text-sm font-normal text-emerald-400">(Member Vote)</span>
+                    )}
+                  </Tooltip>
+                )}
               </h1>
-              <p className="mb-4">
-                Distribute 100% of your voting power between eligible projects. Give a higher
-                percent to the projects with a bigger impact, and click Submit Distribution.
-              </p>
+              {!IS_SENATE_VOTE && (
+                <p className="mb-4">
+                  {IS_MEMBER_VOTE
+                    ? 'Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'
+                    : 'Distribute 100% of your voting power between eligible projects. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'}
+                </p>
+              )}
+              <div className="flex flex-col gap-1.5 sm:gap-6">
+                {proposals && proposals.length > 0 ? (
+                  proposals
+                    .filter((project: any) => {
+                      // Senate Vote: show ALL pending proposals (keep them visible until vote is closed)
+                      if (IS_SENATE_VOTE) {
+                        return true
+                      }
+                      // Member Vote: show proposals in "Voting" status (passed Senate vote)
+                      if (IS_MEMBER_VOTE) {
+                        return project.tempCheckApproved
+                      }
+                      // Default: show all proposals that passed temp check (existing behavior)
+                      return project.tempCheckApproved
+                    })
+                    .map((project: any, i) => (
+                      <div
+                        key={`project-card-${i}`}
+                        className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 overflow-hidden mx-0"
+                      >
+                        <ProjectCard
+                          key={`project-card-${i}`}
+                          project={project}
+                          projectContract={projectContract}
+                          hatsContract={hatsContract}
+                          distribute={approvalVotingActive}
+                          distribution={userHasVotingPower ? proposalDistribution : undefined}
+                          handleDistributionChange={
+                            userHasVotingPower ? handleProposalDistributionChange : undefined
+                          }
+                          userHasVotingPower={userHasVotingPower}
+                          isVotingPeriod={approvalVotingActive}
+                          active={false}
+                        />
+                      </div>
+                    ))
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <p>There are no active Project Proposals.</p>
+                  </div>
+                )}
+                {approvalVotingActive && !IS_SENATE_VOTE && proposals && proposals.length > 0 && (
+                  <div className="mt-6 w-full flex flex-col items-end gap-2">
+                    <div className="text-white/80 font-RobotoMono text-sm">
+                      Allocated: {_.sum(Object.values(proposalDistribution))}% &nbsp;&nbsp;Voting Power:{' '}
+                      {Math.round(userVotingPower) || 0}
+                    </div>
+                    {userHasVotingPower ? (
+                      <span className="flex flex-col md:flex-row md:items-center gap-2">
+                        <PrivyWeb3Button
+                          action={() => handleProposalSubmit(proposalContract)}
+                          requiredChain={chain}
+                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                          label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
+                        />
+                      </span>
+                    ) : (
+                      <span>
+                        <PrivyWeb3Button
+                          v5
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          label="Get Voting Power"
+                          action={() => router.push('/lock')}
+                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                        />
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
-              <div className="flex flex-col gap-6">
+            <div
+              id="projects-container"
+              className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-6 border-y sm:border border-white/10"
+            >
+              <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">Active Projects</h1>
+
+              <div className="flex flex-col gap-1.5 sm:gap-6">
                 {currentProjects && currentProjects.length > 0 ? (
                   currentProjects
                     .filter((project: any, i) => {
@@ -391,13 +648,18 @@ export function ProjectRewards({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
-                        distribute={active && project.eligible}
+                        distribute={
+                          rewardVotingActive &&
+                          project.eligible &&
+                          (project!.finalReportLink || project!.finalReportIPFS)
+                        }
                         distribution={userHasVotingPower ? distribution : undefined}
                         handleDistributionChange={
                           userHasVotingPower ? handleDistributionChange : undefined
                         }
                         userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={active}
+                        isVotingPeriod={rewardVotingActive}
+                        active={true}
                       />
                     ))
                 ) : (
@@ -406,12 +668,12 @@ export function ProjectRewards({
                   </div>
                 )}
 
-                {active && eligibleProjects && eligibleProjects.length > 0 && (
+                {rewardVotingActive && eligibleProjects && eligibleProjects.length > 0 && (
                   <div className="mt-6 w-full flex justify-end">
                     {userHasVotingPower ? (
                       <span className="flex flex-col md:flex-row md:items-center gap-2">
                         <PrivyWeb3Button
-                          action={handleSubmit}
+                          action={() => handleSubmit(distributionTableContract)}
                           requiredChain={chain}
                           className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
                           label={edit ? 'Edit Distribution' : 'Submit Distribution'}
@@ -443,18 +705,18 @@ export function ProjectRewards({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
-                        distribute={active && project.eligible}
+                        distribute={project.eligible}
                         distribution={userHasVotingPower ? distribution : undefined}
                         handleDistributionChange={
                           userHasVotingPower ? handleDistributionChange : undefined
                         }
                         userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={active}
+                        isVotingPeriod={rewardVotingActive}
                       />
                     ))}
               </div>
             </div>
-            <div className="bg-black/20 rounded-xl border border-white/10 overflow-hidden">
+            <div className="bg-black/20 rounded-none sm:rounded-xl border-y sm:border border-white/10 overflow-hidden">
               <PastProjects projects={pastProjects} />
             </div>
           </div>

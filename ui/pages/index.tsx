@@ -1,6 +1,7 @@
 import { DEFAULT_CHAIN_V5, JBV5_CONTROLLER_ADDRESS, MISSION_TABLE_ADDRESSES, FEATURED_MISSION } from 'const/config'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useContext, useEffect } from 'react'

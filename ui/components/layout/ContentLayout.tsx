@@ -93,9 +93,9 @@ const ContentLayout: React.FC<ContentProps> = ({
                                     ${
                                       isCompact
                                         ? isProfile
-                                          ? 'px-5'
-                                          : 'px-5'
-                                        : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5 px-5'
+                                          ? 'px-0 sm:px-5'
+                                          : 'px-2 sm:px-5'
+                                        : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5 px-2 sm:px-5'
                                     } 
                                     ${
                                       children

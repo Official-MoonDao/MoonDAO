@@ -1,82 +1,125 @@
 import { Dialog, RadioGroup, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/solid'
+import NonProjectProposalABI from 'const/abis/NonProjectProposal.json'
+import { DEFAULT_CHAIN_V5, NON_PROJECT_PROPOSAL_ADDRESSES } from 'const/config'
 import { useState, Fragment, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatNumberUSStyle } from '@/lib/nance'
-import useVote from '@/lib/nance/useVote'
-import {
-  SnapshotGraphqlProposalVotingInfo,
-  useVotingPower,
-} from '@/lib/snapshot'
+import { Project } from '@/lib/project/useProjectData'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { classNames } from '@/lib/utils/tailwind'
 
 interface VotingProps {
   modalIsOpen: boolean
   closeModal: () => void
   address: string | undefined
-  spaceId: string
   spaceHideAbstain: boolean
-  proposal: SnapshotGraphqlProposalVotingInfo
-  refetch: (option?: any) => void
+  project: Project
+  votes: any[]
+  totalVMOONEY: any
 }
 
-const SUPPORTED_VOTING_TYPES = [
-  'single-choice',
-  'basic',
-  'weighted',
-  'quadratic',
-  'ranked-choice',
-]
+const SUPPORTED_VOTING_TYPES = ['single-choice', 'basic', 'weighted', 'quadratic', 'ranked-choice']
 
 export default function VotingModal({
   modalIsOpen,
   closeModal,
   address,
-  spaceId,
   spaceHideAbstain,
-  proposal,
-  refetch,
+  project,
+  votes,
+  totalVMOONEY,
 }: VotingProps) {
   // state
   const [choice, setChoice] = useState()
   const [reason, setReason] = useState('')
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+  const account = useActiveAccount()
+  const userAddress = account?.address
+  const proposalTableContract = useContract({
+    address: NON_PROJECT_PROPOSAL_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: NonProjectProposalABI.abi as any,
+  })
+  const [edit, setEdit] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  useEffect(() => {
+    if (votes && userAddress) {
+      for (const v of votes) {
+        if (v.address.toLowerCase() === userAddress.toLowerCase()) {
+          setChoice(v.vote)
+          setEdit(true)
+          break
+        }
+      }
+    }
+  }, [userAddress, votes])
+
+  const choices = ['Yes', 'No', 'Abstain'] // could make this dynamic in the future
   // external
-  const { data: _vp } = useVotingPower(address, spaceId, proposal?.id || '')
-  const vp = _vp?.vp || 0
+  const vp = Math.sqrt(totalVMOONEY) || 0
 
-  const { trigger } = useVote(
-    spaceId,
-    proposal?.id,
-    proposal?.type,
-    choice as any,
-    reason,
-    proposal.privacy
-  )
-
-  // shorthand functions
-  const submitVote = () => {
-    toast
-      .promise(trigger(), {
-        loading: 'Voting...',
-        success: <b>Vote submitted!</b>,
-        error: (e) => (
-          <b>Error: {e.message || e.error_description || JSON.stringify(e)}</b>
-        ),
+  const handleSubmit = async () => {
+    if (!choice) {
+      return
+    }
+    const totalPercentage = Object.values(choice as Record<string, number>).reduce(
+      (sum, value) => sum + (value as number),
+      0
+    )
+    if (totalPercentage !== 100) {
+      toast.error('Total distribution must equal 100%.', {
+        style: toastStyle,
       })
-      .then(closeModal)
-      .then(refetch)
+      return
+    }
+    try {
+      if (!account) throw new Error('No account found')
+      setSubmitting(true)
+      let receipt
+      if (edit) {
+        const transaction = prepareContractCall({
+          contract: proposalTableContract,
+          method: 'updateTableCol' as string,
+          params: [project.MDP, JSON.stringify(choice)],
+        })
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+        toast.success('Vote updated!')
+      } else {
+        const transaction = prepareContractCall({
+          contract: proposalTableContract,
+          method: 'insertIntoTable' as string,
+          params: [project.MDP, JSON.stringify(choice)],
+        })
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+        toast.success('Vote submitted!')
+      }
+      setSubmitting(false)
+    } catch (error) {
+      console.error('Error submitting distribution:', error)
+      toast.error('Error submitting distribution. Please try again.', {
+        style: toastStyle,
+      })
+      setSubmitting(false)
+    }
   }
 
-  if (proposal === undefined) {
-    return <div className="hidden">Proposal not selected</div>
+  let proposalType
+  if (true) {
+    proposalType = 'quadratic'
   }
-
-  const hideAbstain = spaceHideAbstain && proposal.type === 'basic'
-  const totalScore = hideAbstain
-    ? proposal.scores_total - (proposal?.scores[2] ?? 0)
-    : proposal.scores_total
-  const symbol = 'VP' // VP stands for Voting Power
 
   const renderVoteButton = () => {
     let canVote = false
@@ -84,13 +127,17 @@ export default function VotingModal({
 
     if (address == '') {
       label = 'Wallet not connected'
-    } else if (!SUPPORTED_VOTING_TYPES.includes(proposal.type)) {
+    } else if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
       label = 'Not supported'
     } else if (choice === undefined) {
       label = 'You need to select a choice'
     } else if (vp > 0) {
-      label = 'Submit vote'
-      canVote = true
+      if (submitting) {
+        label = 'Submitting...'
+      } else {
+        label = 'Submit vote'
+        canVote = true
+      }
     } else {
       label = 'Close'
     }
@@ -99,7 +146,7 @@ export default function VotingModal({
       <button
         type="button"
         disabled={!canVote}
-        onClick={canVote ? submitVote : closeModal}
+        onClick={canVote ? handleSubmit : closeModal}
         className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
       >
         {label}
@@ -109,12 +156,7 @@ export default function VotingModal({
 
   return (
     <Transition.Root show={modalIsOpen} as={Fragment}>
-      <Dialog
-        as="div"
-        className="relative z-50"
-        open={modalIsOpen}
-        onClose={closeModal}
-      >
+      <Dialog as="div" className="relative z-50" open={modalIsOpen} onClose={closeModal}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -159,33 +201,26 @@ export default function VotingModal({
                           </div>
                         </div>
                         <div>
-                          <h2 className="text-lg font-bold text-white">
-                            Vote on Proposal
-                          </h2>
+                          <h2 className="text-lg font-bold text-white">Vote on Proposal</h2>
                           <p className="text-gray-300 text-xs">
                             Cast your vote and make your voice heard
                           </p>
                         </div>
                       </div>
 
-                      {/* Proposal Title */}
+                      {/* Proposal Name */}
                       <div className="bg-black/20 rounded-lg p-3 mb-4 border border-white/5">
-                        <h3 className="text-base font-semibold text-white">
-                          {proposal.title}
-                        </h3>
+                        <h3 className="text-base font-semibold text-white">{project.name}</h3>
                       </div>
 
                       {/* Proposal Stats */}
-                      <section
-                        aria-labelledby="information-heading"
-                        className="mb-4"
-                      >
+                      <section aria-labelledby="information-heading" className="mb-4">
                         <h3 id="information-heading" className="sr-only">
                           Proposal information
                         </h3>
 
                         <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+                          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 text-center">
                             <div>
                               <p className="text-gray-300 text-xs font-medium uppercase tracking-wide whitespace-nowrap">
                                 Your Voting Power
@@ -200,28 +235,14 @@ export default function VotingModal({
                                 <span className="hidden sm:inline">Total Votes</span>
                                 <span className="sm:hidden">Votes</span>
                               </p>
-                              <p className="text-lg font-bold text-white">
-                                {proposal.votes}
-                              </p>
-                            </div>
-
-                            <div className="hidden sm:block">
-                              <p className="text-gray-300 text-xs font-medium uppercase tracking-wide whitespace-nowrap">
-                                Total Voting Power
-                              </p>
-                              <p className="text-lg font-bold text-white">
-                                {formatNumberUSStyle(totalScore, true)}
-                              </p>
+                              <p className="text-lg font-bold text-white">{votes.length}</p>
                             </div>
                           </div>
                         </div>
                       </section>
 
                       {/* Voting Section */}
-                      <section
-                        aria-labelledby="options-heading"
-                        className="space-y-4"
-                      >
+                      <section aria-labelledby="options-heading" className="space-y-4">
                         <h3 id="options-heading" className="sr-only">
                           Voting options
                         </h3>
@@ -232,59 +253,29 @@ export default function VotingModal({
                             <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide mb-3">
                               Select Your Choice
                             </h4>
-                            {(proposal.type == 'single-choice' ||
-                              proposal.type == 'basic') && (
+                            {(proposalType == 'single-choice' || proposalType == 'basic') && (
                               <BasicChoiceSelector
                                 value={choice}
                                 setValue={setChoice}
-                                choices={proposal.choices}
+                                choices={choices}
                               />
                             )}
-                            {proposal.type == 'weighted' ||
-                              (proposal.type == 'quadratic' && (
+                            {proposalType == 'weighted' ||
+                              (proposalType == 'quadratic' && (
                                 <WeightedChoiceSelector
                                   value={choice}
                                   setValue={setChoice}
-                                  choices={proposal.choices}
+                                  choices={choices}
                                 />
                               ))}
-                            {proposal.type == 'ranked-choice' && (
+                            {proposalType == 'ranked-choice' && (
                               <RankedChoiceSelector
                                 value={choice || []}
                                 setValue={setChoice}
-                                choices={proposal.choices}
+                                choices={choices}
                               />
                             )}
                           </div>
-
-                          {/* Votes under shutter mode won't have reason */}
-                          {proposal.privacy !== 'shutter' && (
-                            <div>
-                              <label
-                                htmlFor="comment"
-                                className="block text-gray-300 font-medium text-xs uppercase tracking-wide mb-2"
-                              >
-                                Reason (Optional)
-                              </label>
-                              <div>
-                                <textarea
-                                  rows={2}
-                                  maxLength={140}
-                                  name="reason"
-                                  id="reason"
-                                  placeholder="Share your reasoning for this vote..."
-                                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none"
-                                  value={reason}
-                                  onChange={(e) => setReason(e.target.value)}
-                                />
-                                <div className="mt-1 text-right">
-                                  <span className="text-xs text-gray-400">
-                                    {reason.length}/140 characters
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
 
                           {/* Vote button */}
                           <div className="pt-2">{renderVoteButton()}</div>
@@ -330,10 +321,7 @@ function BasicChoiceSelector({ value, setValue, choices }: SelectorProps) {
             {({ active, checked }) => (
               <>
                 <div className="flex items-center justify-center">
-                  <RadioGroup.Label
-                    as="p"
-                    className="text-sm font-medium text-white"
-                  >
+                  <RadioGroup.Label as="p" className="text-sm font-medium text-white">
                     {choice}
                   </RadioGroup.Label>
                 </div>
@@ -390,18 +378,13 @@ function WeightedChoiceSelector({
               placeholder="0"
               min={0}
               step={1}
+              defaultValue={value ? value[index + 1] : 0}
               {...register((index + 1).toString(), {
                 shouldUnregister: true,
                 valueAsNumber: true,
               })}
             />
-            <span className="w-16 text-right text-gray-300 text-sm">
-              {isNaN(getValues((index + 1).toString())) || totalUnits == 0
-                ? '0%'
-                : `${Math.round(
-                    (getValues((index + 1).toString()) / totalUnits) * 100
-                  )}%`}
-            </span>
+            <span className="w-16 text-right text-gray-300 text-sm">%</span>
           </div>
         </div>
       ))}
@@ -451,9 +434,7 @@ function RankedChoiceSelector({
               <div className="flex items-center space-x-3">
                 {isSelected && (
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">
-                      {orderNumber}
-                    </span>
+                    <span className="text-white text-sm font-bold">{orderNumber}</span>
                   </div>
                 )}
                 <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
@@ -466,10 +447,7 @@ function RankedChoiceSelector({
                   type="button"
                   className="p-1 hover:bg-red-500/20 rounded-full transition-colors duration-200 group"
                 >
-                  <XMarkIcon
-                    className="h-5 w-5 text-red-400"
-                    aria-hidden="true"
-                  />
+                  <XMarkIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
                 </button>
               )}
             </div>

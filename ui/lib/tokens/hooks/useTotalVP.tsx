@@ -19,10 +19,7 @@ export function useTotalVP(address: string) {
             vp
           }
         }`
-        const { vp } = (await request(
-          `https://hub.snapshot.org/graphql`,
-          query
-        )) as any
+        const { vp } = (await request(`https://hub.snapshot.org/graphql`, query)) as any
         return vp.vp
       } else {
         const vMooneyContract = getContract({
@@ -36,7 +33,7 @@ export function useTotalVP(address: string) {
           method: 'balanceOf' as any,
           params: [address],
         })
-        return Number(vMooneyBalance.toString()) / 1e18
+        return Math.sqrt(Number(vMooneyBalance.toString()) / 1e18)
       }
     }
   )
@@ -48,16 +45,13 @@ export function useTotalVP(address: string) {
   }
 }
 
-const fetcher = (query: string) =>
-  request(`https://hub.snapshot.org/graphql`, query)
+const fetcher = (query: string) => request(`https://hub.snapshot.org/graphql`, query)
 
 export function useTotalVPs(addresses: string[]) {
   const shouldFetch = addresses && addresses.length > 0
 
   const { data, error } = useSWR(
-    shouldFetch
-      ? `vps-${addresses.join(',')}-${process.env.NEXT_PUBLIC_CHAIN}`
-      : null,
+    shouldFetch ? `vps-${addresses.join(',')}-${process.env.NEXT_PUBLIC_CHAIN}` : null,
     async () => {
       const queries = addresses.map(
         (address) => gql`

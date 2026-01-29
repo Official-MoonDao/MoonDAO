@@ -223,8 +223,8 @@ export function PrivyWeb3Button({
           noGradient={noGradient}
         >
           {isLoading ? (
-            <div className="w-full">
-              <LoadingSpinner />
+            <div className="w-full flex justify-center items-center">
+              <LoadingSpinner width="w-5" height="h-5" />
             </div>
           ) : (
             'Switch Network'
@@ -263,8 +263,8 @@ export function PrivyWeb3Button({
           noGradient={noGradient}
         >
           {isLoading ? (
-            <div className="w-full">
-              <LoadingSpinner />
+            <div className="w-full flex justify-center items-center">
+              <LoadingSpinner width="w-5" height="h-5" />
             </div>
           ) : (
             label

@@ -1,22 +1,17 @@
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
-import { ProposalsPacket } from '@nance/nance-sdk'
 import { formatDistanceStrict } from 'date-fns'
+import useProposalJSON from '@/lib/nance/useProposalJSON'
+import { useProposalStatus } from '@/lib/nance/useProposalStatus'
 import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import ProposalInfo from './ProposalInfo'
 
 type ProposalProps = {
-  proposal: any
-  packet: ProposalsPacket
-  votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
-  compact?: boolean
+  project: any
 }
 
-export default function Proposal({
-  proposal,
-  packet,
-  votingInfo,
-  compact = false,
-}: ProposalProps) {
+export default function Proposal({ project }: ProposalProps) {
+  const proposalStatus = useProposalStatus(project) || project?.status
+  const proposalJSON = useProposalJSON(project) || project?.proposalJSON
   return (
     <div
       id="proposal-card"
@@ -26,26 +21,22 @@ export default function Proposal({
         <ProposalInfo
           showTitle={true}
           showStatus={false}
-          proposalPacket={{
-            ...proposal,
-            proposalInfo: packet.proposalInfo,
-          }}
-          votingInfo={votingInfo}
-          compact={compact}
+          proposalJSON={proposalJSON}
+          proposalStatus={proposalStatus}
+          project={project}
+          compact={true}
         />
       </div>
       <div className="flex justify-between items-center mt-4">
         <div className="flex flex-col items-start">
-          <p className="mt-1 text-xs leading-5 text-gray-400 font-RobotoMono">
-            <span className="sr-only">Last edited</span>
-            <time dateTime={proposal.lastEditedTime}>
-              {formatDistanceStrict(
-                new Date(proposal.lastEditedTime || proposal.createdTime),
-                new Date(),
-                { addSuffix: true }
-              )}
-            </time>
-          </p>
+          <div className="flex items-center gap-x-1.5">
+            <div className="flex-none rounded-full bg-emerald-500/20 p-1">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <p className="text-sm leading-6 text-white font-RobotoMono font-medium">
+              {proposalStatus}
+            </p>
+          </div>
         </div>
         <ChevronRightIcon
           className="h-5 w-5 flex-none text-gray-400"

@@ -7,10 +7,12 @@ import {
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
+import { PROJECT_PENDING } from '@/lib/nance/types'
 import { getAccessToken } from '@privy-io/react-auth'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
+  PROJECT_TABLE_NAMES,
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
@@ -33,7 +35,6 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { useVotesOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
@@ -48,7 +49,7 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import { getAttribute } from '@/lib/utils/nft'
-import { DiscordIcon, TwitterIcon } from '@/components/assets'
+import { DiscordIcon, TwitterIcon, InstagramIcon, LinkedinIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
 import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
@@ -74,7 +75,7 @@ import HatsABI from '../../const/abis/Hats.json'
 import JobsABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
-export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
+export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any) {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
@@ -153,9 +154,6 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
     address: HATS_ADDRESS,
     abi: HatsABI as any,
   })
-
-  //Nance
-  const { proposals, packet, votingInfoMap } = useNewestProposals(100)
 
   // Marketplace Listings
   const [newListings, setNewListings] = useState<TeamListingType[]>([])
@@ -301,16 +299,16 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                       )}
                     </div>
                   </div>
-                  <div
-                    id="interactions-container"
-                    className="flex flex-col sm:flex-row items-start gap-4"
-                  >
+                    <div
+                      id="interactions-container"
+                      className="flex flex-col sm:flex-row flex-wrap items-stretch gap-4"
+                    >
                     {(discordLink && !discordLink.includes('/users/undefined')) ||
-                    (socials && (socials.twitter || socials.website)) ? (
-                      <div
-                        id="socials-container"
-                        className="flex items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12"
-                      >
+                    (socials && (socials.twitter || socials.website || socials.instagram || socials.linkedin)) ? (
+                        <div
+                          id="socials-container"
+                          className="flex flex-wrap items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 min-h-[52px]"
+                        >
                         {discordLink && !discordLink.includes('/users/undefined') && (
                           <Link
                             className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
@@ -331,6 +329,26 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                             <TwitterIcon />
                           </Link>
                         )}
+                        {socials.instagram && (
+                          <Link
+                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
+                            href={socials.instagram}
+                            target="_blank"
+                            passHref
+                          >
+                            <InstagramIcon />
+                          </Link>
+                        )}
+                        {socials.linkedin && (
+                          <Link
+                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
+                            href={socials.linkedin}
+                            target="_blank"
+                            passHref
+                          >
+                            <LinkedinIcon />
+                          </Link>
+                        )}
                         {socials.website && (
                           <Link
                             className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
@@ -345,7 +363,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     ) : null}
 
                     {citizen || isGuest ? (
-                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center">
+                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 flex items-center h-[52px]">
                         <Address address={isGuest ? address : nft.owner} />
                       </div>
                     ) : (
@@ -353,7 +371,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     )}
 
                     {location !== '' && citizen && (
-                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2">
+                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 flex items-center gap-2 h-[52px]">
                         <MapPinIcon
                           width={20}
                           height={20}
@@ -480,8 +498,8 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
               <></>
             )}
             {isOwner && (
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <OpenVotes proposals={proposals} packet={packet} votingInfoMap={votingInfoMap} />
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+                <OpenVotes proposals={proposals} />
               </div>
             )}
             {hats && hats?.length > 0 && (
@@ -537,7 +555,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     </SlidingCardMenu>
                   </div>
                 </div>
-                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
                   <LatestJobs teamContract={teamContract} jobTableContract={jobTableContract} />
                 </div>
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
@@ -767,11 +785,15 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       hats = []
     }
 
+    const proposalsStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE active = ${PROJECT_PENDING}`
+    const proposals = await queryTable(chain, proposalsStatement)
+
     return {
       props: {
         nft,
         tokenId,
         hats,
+        proposals,
       },
     }
   }
@@ -781,6 +803,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       nft,
       tokenId,
       hats: [],
+      proposals: [],
     },
   }
 }

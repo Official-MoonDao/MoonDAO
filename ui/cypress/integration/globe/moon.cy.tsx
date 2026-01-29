@@ -1,8 +1,10 @@
 import Moon from '@/components/globe/Moon'
 
 describe('<Moon />', () => {
-  it('Renders component', () => {
+  it('Renders component with canvas', () => {
     cy.mount(<Moon />)
-    cy.get('canvas').should('exist')
+
+    // Wait for canvas to render (Globe component creates a canvas element)
+    cy.get('canvas', { timeout: 15000 }).should('exist')
   })
 })

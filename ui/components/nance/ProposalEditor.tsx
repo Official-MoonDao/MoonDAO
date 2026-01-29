@@ -1,30 +1,27 @@
 import { Field, Label, Switch } from '@headlessui/react'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
+import { ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { useProposal, useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
 import {
   Action,
-  Proposal,
-  ProposalStatus,
   RequestBudget,
   actionsToYaml,
   getActionsFromBody,
   trimActionsFromBody,
 } from '@nance/nance-sdk'
-import { add, differenceInDays, getUnixTime } from 'date-fns'
-import { StringParam, useQueryParams } from 'next-query-params'
+import { Project } from '@/lib/project/useProjectData'
+import { getUnixTime } from 'date-fns'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
-import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
+import { FormProvider, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
 import { useActiveAccount } from 'thirdweb/react'
-import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { TEMPLATE, uuidGen } from '@/lib/nance'
+import { TEMPLATE } from '@/lib/nance'
 import useAccount from '@/lib/nance/useAccountAddress'
-import { useSignProposal } from '@/lib/nance/useSignProposal'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
@@ -35,6 +32,7 @@ import EditorMarkdownUpload from './EditorMarkdownUpload'
 import ProposalSubmissionCTA from './ProposalSubmissionCTA'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
 
+// FIXME what is this for?
 const DRAFTS_ENABLED = false
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
@@ -57,10 +55,7 @@ const NanceEditor = dynamic(
 )
 
 const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
-  budget: [
-    { token: '', amount: '', justification: 'dev cost' },
-    { token: '', amount: '', justification: 'flex' },
-  ],
+  budget: [{ token: 'ETH', amount: '', justification: 'dev cost' }],
 }
 
 export type ProposalCache = {
@@ -69,7 +64,7 @@ export type ProposalCache = {
   timestamp: number
 }
 
-export default function ProposalEditor() {
+export default function ProposalEditor({ project }: { project: Project }) {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
@@ -77,251 +72,126 @@ export default function ProposalEditor() {
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
+  const [nonProjectProposal, setNonProjectProposal] = useState<boolean>(false)
   const [proposalTitle, setProposalTitle] = useState<string | undefined>()
+  const [proposalBody, setProposalBody] = useState<string | undefined>()
   const [proposalStatus, setProposalStatus] = useState<ProposalStatus>('Discussion')
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false)
   const [showSubmissionCTA, setShowSubmissionCTA] = useState<boolean>(false)
   const [submittedProposalId, setSubmittedProposalId] = useState<string | undefined>()
 
-  const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
-  const spaceInfo = spaceInfoData?.data
-  const { nextEvents, currentEvent } = spaceInfo || {}
-  let nextSnapshotVote = nextEvents?.find((event) => event.title === 'Snapshot Vote')
-  const nextProposalId = spaceInfo?.nextProposalId
-  if (currentEvent?.title === 'Temperature Check') {
-    const days = differenceInDays(
-      new Date(nextEvents?.slice(-1)[0]?.start || ''),
-      new Date(currentEvent.start)
-    )
-    nextSnapshotVote = {
-      title: 'Snapshot Vote',
-      start: add(new Date(nextSnapshotVote?.start || ''), {
-        days,
-      }).toISOString(),
-      end: add(new Date(nextSnapshotVote?.end || ''), { days }).toISOString(),
+  useEffect(() => {
+    async function getProposalJSON() {
+      const proposalResponse = await fetch(project.proposalIPFS)
+      const proposal = await proposalResponse.json()
+      const proposalLines = proposal.body.split('\n')
+      const proposalTitle = proposalLines[0].slice(1).trim()
+      const proposalBody = proposalLines.slice(1).join('\n')
+      setProposalBody(proposalBody)
+      setProposalTitle(proposalTitle)
+      setMarkdown?.(proposalBody)
+      if (proposal.budget) {
+        reset(proposal.budget)
+      }
     }
-  }
-
-  const [{ proposalId }] = useQueryParams({ proposalId: StringParam })
-  const shouldFetch = !!proposalId
-  const { data } = useProposal({ space: NANCE_SPACE_NAME, uuid: proposalId! }, shouldFetch)
-  const loadedProposal = data?.data
+    if (project?.proposalIPFS) getProposalJSON()
+  }, [project?.proposalIPFS])
 
   const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(
-    `NanceProposalCacheV1-${loadedProposal?.uuid.substring(0, 5) || 'new'}`
+    `NanceProposalCacheV1-${project?.id || 'new'}`
   )
 
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
   })
-  const { handleSubmit, reset, getValues, watch } = methods
+  const { reset, getValues, watch } = methods
 
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
     setMarkdown?.(trimActionsFromBody(b))
     const actions = getActionsFromBody(b)
     if (!actions) return
-    console.debug('loaded action:', actions)
     setAttachBudget(true)
     reset(actions[0].payload as RequestBudget)
   }
 
-  useEffect(() => {
-    if (loadedProposal) {
-      restoreFromTitleAndBody(loadedProposal.title, loadedProposal.body)
-    }
-  }, [loadedProposal])
-
-  const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
-    console.log('onSubmit called', {
-      formData,
-      proposalStatus,
-      attachBudget,
-      proposalTitle,
-      bodyLength: getMarkdown()?.length || 0,
-    })
-
-    let proposal = buildProposal(proposalStatus)
-
-    if (attachBudget) {
-      const uuid = uuidGen()
-      const action: Action = {
-        type: 'Request Budget',
-        payload: formData,
-        uuid,
-        chainId: 1,
-      }
-      const body = `${proposal.body}\n\n${actionsToYaml([action])}`
-      proposal = {
-        ...proposal,
-        body,
-      }
-    }
-
-    console.debug('RequestBudget.submit', {
-      formData,
-      proposalStatus,
-      proposal,
-    })
-    signAndSendProposal(proposal)
-  }
-
   const { wallet } = useAccount()
-  const { signProposalAsync } = useSignProposal(wallet)
-  const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
   const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
 
-  const buildProposal = (status: ProposalStatus) => {
-    return {
-      title: proposalTitle,
-      body: getMarkdown(),
-      status,
-      voteSetup: {
-        type: 'quadratic',
-        choices: ['Yes', 'No', 'Abstain'],
-      },
-    } as Proposal
-  }
-
-  async function signAndSendProposal(proposal: Proposal) {
-    console.log('signAndSendProposal: Starting proposal submission', {
-      title: proposal.title,
-      bodyLength: proposal.body?.length || 0,
-      address,
-      nextSnapshotVote: !!nextSnapshotVote,
-      loadedProposalId: loadedProposal?.proposalId,
-      nextProposalId,
-    })
-
-    if (!proposal.title) {
-      console.error('signAndSendProposal: No title provided')
+  async function submitProposal(e: any) {
+    let body = getMarkdown()
+    e.preventDefault()
+    setSigningStatus('loading')
+    if (!proposalTitle) {
+      console.error('submitProposal: No title provided')
       toast.error('Please enter a title for the proposal.', {
         style: toastStyle,
       })
+      setSigningStatus('error')
       return
     }
+    const header = `# ${proposalTitle}\n\n`
+    const fileName = `${proposalTitle.replace(/\s+/g, '-')}.md`
 
-    if (!proposal.body || proposal.body.trim().length === 0) {
-      console.error('signAndSendProposal: No content provided')
-      toast.error('Please write some content for the proposal.', {
-        style: toastStyle,
-      })
-      return
-    }
-
-    if (!address) {
-      console.error('signAndSendProposal: No wallet address')
-      toast.error('Please connect your wallet to submit a proposal.', {
-        style: toastStyle,
-      })
-      return
-    }
-
-    if (!nextSnapshotVote) {
-      console.error('signAndSendProposal: No next snapshot vote available', {
-        spaceInfo,
-        nextEvents,
-      })
-      toast.error('Unable to schedule proposal vote. Please try again later.', {
-        style: toastStyle,
-      })
-      return
-    }
-
-    setSigningStatus('loading')
-    const t = toast.loading('Sign proposal...', {
-      style: toastStyle,
+    const fileContents = JSON.stringify({
+      body: header + body,
+      budget: getValues()['budget'],
+      authorAddress: address,
+      nonProjectProposal: nonProjectProposal
     })
-    const proposalId = loadedProposal?.proposalId || nextProposalId
-    const preTitle = `${proposalIdPrefix}${proposalId}: `
-
-    console.log('signAndSendProposal: About to sign proposal', {
-      proposalId,
-      preTitle,
-      nextSnapshotVote,
+    const file = new File([fileContents], fileName, {
+      type: 'application/json',
     })
-
-    signProposalAsync(proposal, preTitle, nextSnapshotVote)
-      .then((res) => {
-        console.log('signAndSendProposal: Signature received', {
-          hasSignature: !!res.signature,
-          hasMessage: !!res.message,
-          address: res.address,
-        })
-        const { signature, message, address } = res
-        trigger({
-          proposal,
-          envelope: {
-            type: 'SnapshotSubmitProposal',
-            address,
-            signature,
-            message,
-          },
-        })
-          .then(async (res) => {
-            console.log('signAndSendProposal: Upload response', res)
-            if (res.success) {
-              setSigningStatus('success')
-              clearProposalCache()
-              toast.dismiss(t)
-              toast.success('Proposal submitted successfully!', {
-                style: toastStyle,
-              })
-              // Show CTA instead of immediate redirect
-              setSubmittedProposalId(proposalId?.toString())
-              setShowSubmissionCTA(true)
-
-              // Send Discord notification
-              try {
-                const { getAccessToken } = await import('@privy-io/react-auth')
-                const accessToken = await getAccessToken()
-
-                const notificationResponse = await fetch(
-                  '/api/proposal/new-proposal-notification',
-                  {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      proposalId: res.data.uuid,
-                      accessToken: accessToken,
-                      selectedWallet: selectedWallet,
-                    }),
-                  }
-                )
-
-                const notificationData = await notificationResponse.json()
-                if (notificationData?.message) {
-                  console.log('Notification result:', notificationData.message)
-                }
-              } catch (notificationError: any) {
-                console.error('Failed to send notification:', notificationError)
-                // Don't block the user experience if notification fails
-              }
-            } else {
-              console.error('signAndSendProposal: Upload failed', res)
-              setSigningStatus('error')
-              toast.dismiss(t)
-              toast.error(`Error saving proposal: ${res.error || 'Unknown error'}`, {
-                style: toastStyle,
-              })
-            }
-          })
-          .catch((error) => {
-            console.error('signAndSendProposal: Upload error', error)
-            setSigningStatus('error')
-            toast.dismiss(t)
-            toast.error(`[API] Error submitting proposal:\n${error.message || error}`, {
-              style: toastStyle,
-            })
-          })
+    const { url: proposalIPFS } = await pinBlobOrFile(file)
+    const res = await fetch(`/api/proposals/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // Important: Specify the content type
+      },
+      body: JSON.stringify({
+        address: address,
+        proposalTitle: proposalTitle,
+        proposalIPFS: proposalIPFS,
+        proposalId: project?.MDP || 0,
+        body: body,
+        budget: getValues()['budget'],
+      }),
+    })
+    if (!res.ok) {
+      const { error } = await res.json() // Or response.json()
+      toast.error(error, {
+        style: toastStyle,
       })
-      .catch((error) => {
-        console.error('signAndSendProposal: Signing error', error)
-        setSigningStatus('idle')
-        toast.dismiss(t)
-        toast.error(`[Wallet] Error signing proposal:\n${error.message || error}`, {
-          style: toastStyle,
+      console.error(error)
+      setSigningStatus('error')
+    } else {
+      const response = await res.json()
+      setSubmittedProposalId(response.proposalId)
+      setSigningStatus('success')
+      setShowSubmissionCTA(true)
+      try {
+        const { getAccessToken } = await import('@privy-io/react-auth')
+        const accessToken = await getAccessToken()
+
+        const notificationResponse = await fetch('/api/proposal/new-proposal-notification', {
+          method: 'POST',
+          body: JSON.stringify({
+            proposalId: response.proposalId,
+            accessToken: accessToken,
+            selectedWallet: selectedWallet,
+          }),
         })
-      })
+
+        const notificationData = await notificationResponse.json()
+        if (notificationData?.message) {
+          console.log('Notification result:', notificationData.message)
+        }
+      } catch (notificationError: any) {
+        console.error('Failed to send notification:', notificationError)
+        // Don't block the user experience if notification fails
+      }
+      return response.url
+    }
   }
 
   const saveProposalBodyCache = function () {
@@ -355,7 +225,7 @@ export default function ProposalEditor() {
     <>
       <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
         <div className="px-2 w-full md:max-w-[1200px]">
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={submitProposal}>
             <div className="">
               <ProposalLocalCache
                 proposalCache={proposalCache}
@@ -376,7 +246,7 @@ export default function ProposalEditor() {
                     setProposalTitle(s)
                     console.debug('setProposalTitle', s)
                     const cache = proposalCache || {
-                      body: loadedProposal?.body || TEMPLATE,
+                      body: proposalBody || TEMPLATE,
                     }
                     setProposalCache({
                       ...cache,
@@ -392,7 +262,7 @@ export default function ProposalEditor() {
             </div>
             <div className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50% relative">
               <NanceEditor
-                initialValue={loadedProposal?.body || TEMPLATE}
+                initialValue={proposalBody || TEMPLATE}
                 fileUploadExternal={async (val) => {
                   try {
                     setIsUploadingImage(true)
@@ -424,8 +294,8 @@ export default function ProposalEditor() {
               )}
             </div>
 
-            <div className="p-5 rounded-b-[20px] rounded-t-[0px] ">
-              <Field as="div" className="\ flex items-center mt-5">
+            <div className="p-5 rounded-b-[20px] rounded-t-[0px] flex flex-row">
+              <Field as="div" className="\ flex items-center mt-5 pr-4">
                 <Switch
                   checked={attachBudget}
                   onChange={(checked) => {
@@ -451,12 +321,37 @@ export default function ProposalEditor() {
                   <span className="font-medium text-gray-900 dark:text-white">Attach Budget</span>{' '}
                 </Label>
               </Field>
+              <Field as="div" className="\ flex items-center mt-5">
+                <Switch
+                  checked={nonProjectProposal}
+                  onChange={(checked) => {
+                    setNonProjectProposal(checked)
+                  }}
+                  className={classNames(
+                    nonProjectProposal ? 'bg-indigo-600' : 'bg-gray-200',
+                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={classNames(
+                      nonProjectProposal ? 'translate-x-5' : 'translate-x-0',
+                      'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
+                    )}
+                  />
+                </Switch>
+                <Label as="span" className="ml-3 text-sm">
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Non Project Proposal
+                  </span>{' '}
+                </Label>
+              </Field>
             </div>
 
             {attachBudget && (
               <FormProvider {...methods}>
                 <div className="my-10 p-5 rounded-[20px] bg-dark-cool">
-                  <RequestBudgetActionForm disableRequiredFields={proposalStatus === 'Draft'} />
+                  <RequestBudgetActionForm disableRequiredFields={false} />
                 </div>
               </FormProvider>
             )}
@@ -464,35 +359,6 @@ export default function ProposalEditor() {
             <div className="mt-6 flex flex-col gap-4">
               {/* Submit buttons */}
               <div className="flex justify-end space-x-4">
-                {/*  DRAFT */}
-                {DRAFTS_ENABLED && (
-                  <button
-                    type="submit"
-                    className={classNames(
-                      buttonsDisabled && 'tooltip',
-                      'text-sm px-6 py-3 bg-black/30 hover:bg-black/40 border border-white/20 hover:border-white/30 text-white/80 hover:text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl'
-                    )}
-                    onClick={() => {
-                      console.log('Save Draft button clicked', {
-                        buttonsDisabled,
-                        address: !!address,
-                        signingStatus,
-                        isUploadingImage,
-                      })
-                      setProposalStatus('Draft')
-                    }}
-                    disabled={buttonsDisabled}
-                    data-tip={
-                      signingStatus === 'loading'
-                        ? 'Signing...'
-                        : isUploadingImage
-                        ? 'Uploading image...'
-                        : 'You need to connect wallet first.'
-                    }
-                  >
-                    {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
-                  </button>
-                )}
                 {/* SUBMIT */}
                 <button
                   type="submit"
@@ -500,30 +366,17 @@ export default function ProposalEditor() {
                     buttonsDisabled && 'tooltip',
                     'px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0'
                   )}
-                  onClick={() => {
-                    console.log('Submit button clicked', {
-                      buttonsDisabled,
-                      address: !!address,
-                      signingStatus,
-                      isUploadingImage,
-                      loadedProposalStatus: loadedProposal?.status,
-                    })
-                    const status =
-                      loadedProposal?.status === 'Temperature Check'
-                        ? 'Temperature Check'
-                        : 'Discussion'
-                    setProposalStatus(status || 'Discussion')
-                  }}
+                  onClick={() => {}}
                   disabled={buttonsDisabled}
                   data-tip={
                     signingStatus === 'loading'
-                      ? 'Signing...'
+                      ? 'Submitting...'
                       : isUploadingImage
                       ? 'Uploading image...'
                       : 'You need to connect wallet first.'
                   }
                 >
-                  {signingStatus === 'loading' ? 'Signing...' : 'Submit'}
+                  {signingStatus === 'loading' ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </div>
@@ -539,7 +392,7 @@ export default function ProposalEditor() {
             setShowSubmissionCTA(false)
             // Redirect to proposal page after closing CTA
             if (submittedProposalId) {
-              router.push(`/proposal/${submittedProposalId}`)
+              router.push(`/project/${submittedProposalId}`)
             }
           }}
         />

@@ -37,7 +37,7 @@ const DEFAULT_BUTTONS: ActionButton[] = [
   },
   {
     label: 'View Proposals',
-    href: '/vote',
+    href: '/projects',
     gradientFrom: 'from-green-500',
     gradientTo: 'to-teal-600',
     hoverFrom: 'hover:from-green-600',

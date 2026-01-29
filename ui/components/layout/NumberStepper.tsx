@@ -1,5 +1,5 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 
 type NumberStepperProps = {
   number: number
@@ -19,6 +19,8 @@ export default function NumberStepper({
   isDisabled,
 }: NumberStepperProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [displayValue, setDisplayValue] = useState<string>(String(number))
+  const [isFocused, setIsFocused] = useState(false)
 
   function increase() {
     if (max && number + step > max) {
@@ -26,6 +28,7 @@ export default function NumberStepper({
     }
     const newValue = number + step
     setNumber(newValue)
+    setDisplayValue(String(newValue))
     inputRef.current?.focus()
   }
 
@@ -35,36 +38,64 @@ export default function NumberStepper({
     }
     const newValue = number - step
     setNumber(newValue)
+    setDisplayValue(String(newValue))
     inputRef.current?.focus()
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const value = Number(e.target.value)
-    setNumber(value)
+    const rawValue = e.target.value
+    setDisplayValue(rawValue)
+    const value = Number(rawValue)
+    if (!isNaN(value)) {
+      setNumber(value)
+    }
   }
+
+  function handleFocus() {
+    setIsFocused(true)
+    // Clear display if value is 0 so user can type directly
+    if (number === 0) {
+      setDisplayValue('')
+    }
+  }
+
+  function handleBlur() {
+    setIsFocused(false)
+    // Restore to actual number value on blur
+    if (displayValue === '' || isNaN(Number(displayValue))) {
+      setDisplayValue(String(number))
+    } else {
+      setDisplayValue(String(number))
+    }
+  }
+
+  // Sync displayValue when number prop changes externally (e.g., from arrow buttons)
+  const currentDisplayValue = isFocused ? displayValue : String(number)
 
   return (
     <div
-      className={`flex items-center justify-between w-[100px] h-[35px] gradient-2 rounded-full ${
+      className={`flex items-center justify-between min-w-[100px] w-[100px] h-[40px] sm:h-[35px] gradient-2 rounded-full flex-shrink-0 ${
         isDisabled && 'opacity-50'
       }`}
     >
       <input
         ref={inputRef}
         id="number-stepper"
-        className="w-[55%] h-full bg-[#00000080] text-white text-center rounded-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-[55%] h-full bg-[#00000080] text-white text-center rounded-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-base sm:text-sm"
         type="number"
-        value={number}
+        value={currentDisplayValue}
         onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         step={0}
         disabled={isDisabled}
       />
       <span>%</span>
       <div className="w-[45%] flex flex-col justify-center items-center">
-        <button onClick={increase}>
+        <button onClick={increase} className="p-1 touch-manipulation">
           <ChevronUpIcon className="w-4 h-4" strokeWidth={2.5} stroke="black" />
         </button>
-        <button onClick={decrease}>
+        <button onClick={decrease} className="p-1 touch-manipulation">
           <ChevronDownIcon
             className="w-4 h-4"
             strokeWidth={2.5}

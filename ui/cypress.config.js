@@ -307,6 +307,7 @@ module.exports = defineConfig({
         delete webpackConfig.optimization.splitChunks
 
         webpackConfig.optimization.runtimeChunk = false
+        webpackConfig.devServer.port = 3001
 
         if (webpackConfig.output) {
           delete webpackConfig.output.chunkFilename

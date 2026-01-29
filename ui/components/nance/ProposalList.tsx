@@ -1,11 +1,7 @@
-import {
-  DocumentMagnifyingGlassIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline'
+import { DocumentMagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { BLOCKED_PROPOSALS } from 'const/whitelist'
 import { ChevronRightIcon } from '@heroicons/react/24/solid'
-import { useProposals } from '@nance/nance-hooks'
-import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
-import { formatDistanceStrict } from 'date-fns'
+import { Project } from '@/lib/project/useProjectData'
 import {
   BooleanParam,
   NumberParam,
@@ -16,14 +12,10 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
-import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
-import {
-  SnapshotGraphqlProposalVotingInfo,
-  useVotingInfoOfProposals,
-} from '@/lib/snapshot'
+import { SnapshotGraphqlProposalVotingInfo, useVotingInfoOfProposals } from '@/lib/snapshot'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Proposal from './Proposal'
-import ProposalInfo, { ProposalInfoSkeleton } from './ProposalInfo'
+import { ProposalInfoSkeleton } from './ProposalInfo'
 
 function NoResults() {
   return (
@@ -34,9 +26,7 @@ function NoResults() {
       <h3 className="mt-2 text-sm font-semibold text-gray-900">
         No proposals satisified your requirement.
       </h3>
-      <p className="mt-1 text-sm text-gray-500">
-        Try to search with different keyword.
-      </p>
+      <p className="mt-1 text-sm text-gray-500">Try to search with different keyword.</p>
       <div className="mt-6">
         <Link
           href="#"
@@ -90,10 +80,12 @@ export default function ProposalList({
   noPagination = false,
   compact = false,
   proposalLimit = 1000,
+  projects = [],
 }: {
   noPagination?: boolean
   compact?: boolean
   proposalLimit?: number
+  projects?: any[]
 }) {
   const router = useRouter()
   const [query, setQuery] = useQueryParams({
@@ -127,63 +119,9 @@ export default function ProposalList({
     [setQuery]
   )
 
-  const { data: proposalData, isLoading: proposalsLoading } = useProposals(
-    { space: NANCE_SPACE_NAME, cycle, keyword, limit: proposalLimit }, // Get all proposals for pagination
-    router.isReady
-  )
-
-  let proposalsPacket: ProposalsPacket | undefined
-  if (proposalData?.data) {
-    const allProposals = proposalData.data.proposals.map((p: any) => {
-      return {
-        ...p,
-        actions:
-          p.actions && p.actions.length > 0
-            ? p.actions
-            : getActionsFromBody(p.body) || [],
-      }
-    })
-
-    // Calculate total pages and current page logic
-    const totalProposals = allProposals.length
-    const currentPageIdx = noPagination ? 1 : pageIdx
-    const calculatedMaxPage = noPagination
-      ? 1
-      : Math.ceil(totalProposals / itemsPerPage)
-
-    if (calculatedMaxPage !== maxPage) {
-      setMaxPage(calculatedMaxPage)
-    }
-
-    // Get proposals for current page
-    const startIndex = (currentPageIdx - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    const currentPageProposals = allProposals.slice(startIndex, endIndex)
-
-    proposalsPacket = {
-      proposalInfo: proposalData.data.proposalInfo,
-      proposals: currentPageProposals,
-      hasMore: noPagination ? false : pageIdx < calculatedMaxPage,
-    }
-  }
-
-  const proposals = proposalsPacket?.proposals || []
-
-  const snapshotIds = proposals
-    .map((p) => p.voteURL)
-    .filter((v) => v !== undefined) as string[]
-  const { data: votingInfos } = useVotingInfoOfProposals(snapshotIds)
-  const votingInfoMap: { [key: string]: SnapshotGraphqlProposalVotingInfo } = {}
-  votingInfos?.forEach((info) => (votingInfoMap[info.id] = info))
-
-  if (!router.isReady || proposalsLoading) {
-    return <ProposalListSkeleton />
-  }
-
-  if (!proposalsPacket || proposals.length === 0) {
+  if (projects.length === 0) {
     return <NoResults />
   } else {
-    const packet = proposalsPacket
     return (
       <>
         <div className="rounded-bl-20px overflow-hidden md:pt-5">
@@ -200,17 +138,12 @@ export default function ProposalList({
                   compact ? 'grid-cols-1' : 'lg:grid-cols-2'
                 }`}
               >
-                {proposals.map((proposal) => (
+                {projects.slice(0, itemsPerPage).map((project) => (
                   <div
-                    key={proposal.uuid}
+                    key={project.id}
                     className={`h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]`}
                   >
-                    <Proposal
-                      proposal={proposal}
-                      packet={packet}
-                      votingInfo={votingInfoMap[proposal.voteURL || '']}
-                      compact={compact}
-                    />
+                    <Proposal project={project} />
                   </div>
                 ))}
               </div>

@@ -45,14 +45,11 @@ export default function RewardsThankYou({
   const userDistribution = useMemo(() => {
     if (!distributions || !address) return undefined
     return distributions.find(
-      (distribution: any) =>
-        distribution?.address.toLowerCase() === address.toLowerCase()
+      (distribution: any) => distribution?.address.toLowerCase() === address.toLowerCase()
     )
   }, [distributions, address])
 
-  const descriptionSection = (
-    <p>You've successfully submitted your project allocations!</p>
-  )
+  const descriptionSection = <p>You've successfully submitted your project allocations!</p>
 
   return (
     <section id="jobs-container" className="overflow-hidden">
@@ -119,9 +116,7 @@ export async function getStaticProps() {
 
     const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter} AND eligible != 0`
     const projects = await queryTable(chain, projectStatement)
-    const filteredProjects = projects.filter(
-      (project: any) => !BLOCKED_PROJECTS.has(project?.id)
-    )
+    const filteredProjects = projects.filter((project: any) => !BLOCKED_PROJECTS.has(project?.id))
 
     const distributionTableContract = getContract({
       client: serverClient,
@@ -143,6 +138,7 @@ export async function getStaticProps() {
       revalidate: 60,
     }
   } catch (error) {
+    console.error(error)
     return {
       props: {
         distributionTableName: '',

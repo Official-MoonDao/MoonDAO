@@ -1,4 +1,12 @@
-import { ARBITRUM_ASSETS_URL, POLYGON_ASSETS_URL, BASE_ASSETS_URL, PROJECT_SYSTEM_CONFIG } from 'const/config'
+import {
+  ARBITRUM_ASSETS_URL,
+  POLYGON_ASSETS_URL,
+  MAX_BUDGET_ETH,
+  BASE_ASSETS_URL,
+  PROJECT_SYSTEM_CONFIG,
+  NEXT_QUARTER_FUNDING_ETH,
+  NEXT_QUARTER_BUDGET_ETH,
+} from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
@@ -15,6 +23,7 @@ import StandardButton from '../components/layout/StandardButton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import DashboardActiveProjects from '@/components/project/DashboardActiveProjects'
 import ProjectCard from '@/components/project/ProjectCard'
+import { PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
 
 // Project System Explainer Card Component
 const ProjectExplainerCard = ({
@@ -77,7 +86,7 @@ const ProjectsOverview: React.FC<{
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
 
   // Use hardcoded value like in RetroactiveRewards for current quarter
-  const ethBudget = 7.83
+  const ethBudget = NEXT_QUARTER_BUDGET_ETH
   const usdBudget = ethBudget * ethPrice
 
   // Calculate MOONEY USD value
@@ -289,7 +298,7 @@ const ProjectsOverview: React.FC<{
                     <h4 className="text-xl font-bold text-white mb-3">ETH Rewards</h4>
                     <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-3 mb-3 border border-orange-400/20">
                       <div className="text-2xl font-bold text-orange-400">
-                        {ethBudget.toFixed(2)} ETH{' '}
+                        {ETH_BUDGET.toFixed(2)} ETH{' '}
                         <span className="text-lg text-orange-300">
                           ($
                           {usdBudget.toLocaleString(undefined, {
@@ -383,36 +392,64 @@ const ProjectsOverview: React.FC<{
                   {/* Deadline */}
                   <div className="bg-gradient-to-br from-red-900/20 to-orange-900/20 rounded-xl p-6 border border-red-500/20 text-center">
                     <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-orange-500 rounded-lg flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
                       </svg>
                     </div>
                     <h4 className="text-lg font-bold text-white mb-2">Submission Deadline</h4>
-                    <p className="text-xl font-bold text-orange-400">{PROJECT_SYSTEM_CONFIG.submissionDeadline}</p>
+                    <p className="text-xl font-bold text-orange-400">
+                      {PROJECT_SYSTEM_CONFIG.submissionDeadline}
+                    </p>
                     <p className="text-xs text-orange-300 mt-1">2nd Thursday of Quarter</p>
                   </div>
 
                   {/* Maximum Budget */}
                   <div className="bg-gradient-to-br from-yellow-900/20 to-amber-900/20 rounded-xl p-6 border border-yellow-500/20 text-center">
                     <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-lg flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                        />
                       </svg>
                     </div>
                     <h4 className="text-lg font-bold text-white mb-2">Max Budget/Project</h4>
-                    <p className="text-xl font-bold text-yellow-400">
-                      2.08 ETH
-                    </p>
-                    <p className="text-sm text-yellow-300 mt-1">
-                      (20% of quarterly budget)
-                    </p>
+                    <p className="text-xl font-bold text-yellow-400">{MAX_BUDGET_ETH} ETH</p>
+                    <p className="text-sm text-yellow-300 mt-1">(20% of quarterly budget)</p>
                   </div>
 
                   {/* Approval Timeline */}
                   <div className="bg-gradient-to-br from-green-900/20 to-teal-900/20 rounded-xl p-6 border border-green-500/20 text-center">
                     <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-teal-500 rounded-lg flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                     <h4 className="text-lg font-bold text-white mb-2">Voting Date</h4>
@@ -426,15 +463,21 @@ const ProjectsOverview: React.FC<{
                 {/* Total Budget Available */}
                 <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-6 border border-purple-500/30 mb-8">
                   <div className="text-center">
-                    <p className="text-sm text-purple-300 mb-2">Total Quarterly Retroactive Rewards</p>
+                    <p className="text-sm text-purple-300 mb-2">
+                      Total Quarterly Retroactive Rewards
+                    </p>
                     <p className="text-3xl md:text-4xl font-bold text-white">
-                      11.6 ETH{' '}
+                      {NEXT_QUARTER_BUDGET_ETH} ETH{' '}
                       <span className="text-xl text-purple-300">
-                        (~$37,000)
+                        (~${NEXT_QUARTER_BUDGET_ETH * ethPrice.toFixed(2)})
                       </span>
                     </p>
                     <p className="text-xs text-purple-400 mt-2">
-                      Plus {mooneyBudget > 0 ? Number(mooneyBudget.toPrecision(3)).toLocaleString() : '...'} vMOONEY
+                      Plus{' '}
+                      {mooneyBudget > 0
+                        ? Number(mooneyBudget.toPrecision(3)).toLocaleString()
+                        : '...'}{' '}
+                      vMOONEY
                     </p>
                     <p className="text-xs text-purple-400 mt-1">
                       5% of liquid non-MOONEY assets minus approved project budgets
@@ -445,7 +488,7 @@ const ProjectsOverview: React.FC<{
                 {/* Submission Steps */}
                 <div className="space-y-4 mb-8">
                   <h4 className="text-xl font-bold text-white text-center mb-6">How to Submit</h4>
-                  
+
                   <div className="grid md:grid-cols-2 gap-4">
                     {/* Step 1 */}
                     <div className="flex gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
@@ -457,7 +500,8 @@ const ProjectsOverview: React.FC<{
                       <div>
                         <h5 className="font-bold text-white mb-1">Post in Ideation Channel</h5>
                         <p className="text-sm text-gray-300">
-                          Share your problem and proposed solution in Discord's ideation channel. Get feedback and coordinate with others informally.
+                          Share your problem and proposed solution in Discord's ideation channel.
+                          Get feedback and coordinate with others informally.
                         </p>
                       </div>
                     </div>
@@ -472,7 +516,8 @@ const ProjectsOverview: React.FC<{
                       <div>
                         <h5 className="font-bold text-white mb-1">Review Documentation</h5>
                         <p className="text-sm text-gray-300">
-                          Read our comprehensive project system guide to understand requirements, evaluation criteria, and best practices.
+                          Read our comprehensive project system guide to understand requirements,
+                          evaluation criteria, and best practices.
                         </p>
                       </div>
                     </div>
@@ -487,7 +532,8 @@ const ProjectsOverview: React.FC<{
                       <div>
                         <h5 className="font-bold text-white mb-1">Submit Full Proposal</h5>
                         <p className="text-sm text-gray-300">
-                          Fill out the Project Proposal Template and submit by the 2nd Thursday of the Quarter. Budget must be ≤20% of quarterly rewards.
+                          Fill out the Project Proposal Template and submit by the 2nd Thursday of
+                          the Quarter. Budget must be ≤20% of quarterly rewards.
                         </p>
                       </div>
                     </div>
@@ -502,7 +548,8 @@ const ProjectsOverview: React.FC<{
                       <div>
                         <h5 className="font-bold text-white mb-1">Present & Vote</h5>
                         <p className="text-sm text-gray-300">
-                          Present at the Townhall meeting. Members vote to allocate funding. Top 50% of proposals get funded (budget permitting).
+                          Present at the Townhall meeting. Members vote to allocate funding. Top 50%
+                          of proposals get funded (budget permitting).
                         </p>
                       </div>
                     </div>
@@ -618,11 +665,11 @@ export const getServerSideProps: GetServerSideProps = async () => {
       for (let i = 0; i < projects.length; i++) {
         if (projects[i]) {
           const project = projects[i] as any
-          // Use the 'active' field to determine current vs past projects
-          if (project.active) {
-            currentProjects.push(project)
-          } else {
-            pastProjects.push(project)
+          const activeStatus = projects[i].active
+          if (activeStatus == PROJECT_ACTIVE) {
+            currentProjects.push(projects[i])
+          } else if (activeStatus == PROJECT_ENDED) {
+            pastProjects.push(projects[i])
           }
         }
       }

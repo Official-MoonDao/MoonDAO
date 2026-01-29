@@ -1,4 +1,6 @@
 import ArrowDown from './ArrowDown'
+import InstagramIcon from './InstagramIcon'
+import LinkedinIcon from './LinkedinIcon'
 import ArrowSide from './ArrowSide'
 import ArrowLeft from "./ArrowLeft"
 import ArrowUp from './ArrowUp'
@@ -18,6 +20,8 @@ import SearchIcon from './SearchIcon'
 import { SolarConfetti } from './SolarConfetti'
 import TreasuryAndMobileLogo from './TreasuryAndMobileLogo'
 import TwitterIcon from './TwitterIcon'
+import YoutubeIcon from './YoutubeIcon'
+import CoinMarketCapIcon from './CoinMarketCapIcon'
 
 export {
   LogoBlack,
@@ -26,6 +30,8 @@ export {
   LogoSidebarLight,
   DiscordIcon,
   TwitterIcon,
+  InstagramIcon,
+  LinkedinIcon,
   Menu,
   MenuClose,
   SearchIcon,
@@ -40,4 +46,6 @@ export {
   LogoSmall,
   SolarConfetti,
   GithubIcon,
+  YoutubeIcon,
+  CoinMarketCapIcon,
 }

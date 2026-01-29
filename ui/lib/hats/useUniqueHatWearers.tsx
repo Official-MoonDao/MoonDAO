@@ -12,8 +12,8 @@ export default function useUniqueHatWearers(hats: any) {
   useEffect(() => {
     async function hatsToUniqueWearers() {
       const uniqueWearers: Wearer[] = []
-      if (!hats || hats.length === 0) return uniqueWearers
-      hats?.forEach((hat: any) => {
+      if (!hats || !Array.isArray(hats) || hats.length === 0) return uniqueWearers
+      hats.forEach((hat: any) => {
         hat.wearers.forEach((w: any) => {
           const existingWearer = uniqueWearers.find((u) => u.address === w.id)
           if (existingWearer) {
@@ -29,7 +29,7 @@ export default function useUniqueHatWearers(hats: any) {
       setUniqueWearers(uniqueWearers)
     }
 
-    if (hats) {
+    if (hats && Array.isArray(hats)) {
       hatsToUniqueWearers()
     }
   }, [hats])
