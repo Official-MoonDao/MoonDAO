@@ -67,7 +67,7 @@ export default function ProposalsPage({ project }: { project: Project }) {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
+            <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw] mt-8">
               <div className="mb-8 w-full bg-black/20 rounded-xl p-6 border border-white/10">
                 <div
                   id="instructions-container"
@@ -108,7 +108,7 @@ export default function ProposalsPage({ project }: { project: Project }) {
                   </div>
                 </div>
                 <div className="bg-black/20 rounded-xl p-6 border border-white/10">
-                  <p className="text-gray-300 leading-relaxed">
+                  <p className="text-gray-300 leading-relaxed mb-4">
                     To submit a proposal, you must use our{' '}
                     <Link
                       href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing"
@@ -119,7 +119,7 @@ export default function ProposalsPage({ project }: { project: Project }) {
                       Google Doc template
                     </Link>
                     . Make a copy of the template, fill it out, and ensure it&apos;s shared with &quot;Anyone with the link can view&quot;. Then use the{' '}
-                    <span className="text-blue-400 font-medium">&quot;Import from Google Docs&quot;</span> button below to import your proposal. For more details, please refer to{' '}
+                    <span className="text-gray-300 font-medium">&quot;Import from Google Docs&quot;</span> button below to import your proposal. For more details, please refer to{' '}
                     <Link
                       href="/project-system-docs"
                       className="text-blue-400 hover:text-blue-300 underline transition-colors"
@@ -128,6 +128,21 @@ export default function ProposalsPage({ project }: { project: Project }) {
                     </Link>
                     .
                   </p>
+                  <Link
+                    href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                      <path d="M14 2v6h6"/>
+                      <path d="M16 13H8"/>
+                      <path d="M16 17H8"/>
+                      <path d="M10 9H8"/>
+                    </svg>
+                    Open Proposal Template
+                  </Link>
                 </div>
               </div>
               <ProposalEditor project={project} />
