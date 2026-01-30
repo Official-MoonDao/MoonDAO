@@ -490,14 +490,12 @@ export function ProjectRewards({
             <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
                 <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
-                {process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && (
-                  <button
-                    onClick={tallyVotes}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
-                  >
-                    Close voting.
-                  </button>
-                )}
+                <button
+                  onClick={tallyVotes}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
+                >
+                  Close voting.
+                </button>
                 <button
                   className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
                   onClick={() => router.push('/proposals')}

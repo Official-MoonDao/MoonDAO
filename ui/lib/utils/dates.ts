@@ -145,7 +145,7 @@ export function getSubmissionQuarter() {
   return new Date() <= firstThursdayAfterTwentyOneDays ? thisQuarter : nextQuarter
 }
 
-function getThirdThursdayOfQuarterTimestamp(quarter, year) {
+export function getThirdThursdayOfQuarterTimestamp(quarter: number, year: number) {
   const startMonth = (quarter - 1) * 3
   const date = new Date(year, startMonth, 1)
   const THURSDAY = 4
