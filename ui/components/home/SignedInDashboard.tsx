@@ -409,7 +409,6 @@ export default function SignedInDashboard({
             </div>
 
             {/* Quick Actions */}
-            {(walletVP ?? 0) >= 1 && (
             <div className="flex items-center flex-1">
               <div className="flex flex-wrap justify-center lg:justify-start gap-2 sm:gap-3 w-full lg:w-auto">
                 <StandardButton
@@ -468,7 +467,6 @@ export default function SignedInDashboard({
                 </StandardButton>
               </div>
             </div>
-            )}
           </div>
         </div>
 
