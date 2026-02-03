@@ -15,208 +15,133 @@ const generateHTML = (proposalId: string, proposalTitle: string) => {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <style type="text/css">
-      body, table, td, a {
-        -webkit-text-size-adjust: 100%;
-        -ms-text-size-adjust: 100%;
-      }
-      table {
-        border-collapse: collapse !important;
-      }
-      body {
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
-      }
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 40px 20px;
-      }
-      .header {
-        text-align: center;
-        margin-bottom: 30px;
-      }
-      .header h1 {
-        color: #1a1a2e;
-        font-size: 28px;
-        margin: 0 0 10px 0;
-      }
-      .header p {
-        color: #666;
-        font-size: 16px;
-        margin: 0;
-      }
-      .success-icon {
-        width: 60px;
-        height: 60px;
-        background: linear-gradient(135deg, #22c55e, #3b82f6);
-        border-radius: 50%;
-        margin: 0 auto 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .content-box {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 24px;
-        border: 1px solid #e2e8f0;
-      }
-      .content-box h2 {
-        color: #1a1a2e;
-        font-size: 18px;
-        margin: 0 0 16px 0;
-      }
-      .proposal-link {
-        display: inline-block;
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-        color: white !important;
-        padding: 12px 24px;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 600;
-        margin: 10px 0;
-      }
-      .step {
-        display: flex;
-        margin-bottom: 16px;
-      }
-      .step-number {
-        width: 28px;
-        height: 28px;
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 14px;
-        margin-right: 12px;
-        flex-shrink: 0;
-      }
-      .step-content h3 {
-        color: #1a1a2e;
-        font-size: 16px;
-        margin: 0 0 4px 0;
-      }
-      .step-content p {
-        color: #666;
-        font-size: 14px;
-        margin: 0;
-        line-height: 1.5;
-      }
-      .step-content a {
-        color: #3b82f6;
-        text-decoration: underline;
-      }
-      .tips-box {
-        background: #fef3c7;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 24px;
-        border: 1px solid #fcd34d;
-      }
-      .tips-box h3 {
-        color: #92400e;
-        font-size: 16px;
-        margin: 0 0 12px 0;
-      }
-      .tips-box ul {
-        margin: 0;
-        padding-left: 20px;
-        color: #78350f;
-      }
-      .tips-box li {
-        margin-bottom: 8px;
-        font-size: 14px;
-        line-height: 1.4;
-      }
-      .footer {
-        text-align: center;
-        color: #666;
-        font-size: 12px;
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid #e2e8f0;
-      }
-      .footer a {
-        color: #3b82f6;
-        text-decoration: none;
-      }
-    </style>
   </head>
-  <body style="margin: 0; padding: 0; background: #ffffff;">
-    <div class="container">
-      <div class="header">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <img src="https://moondao.com/assets/MoonDAO-Logo-White.svg" alt="MoonDAO" style="height: 50px; background: #1a1a2e; padding: 10px 20px; border-radius: 8px;" />
-        </div>
-        <h1>🚀 Proposal Submitted Successfully!</h1>
-        <p>Your proposal "<strong>${proposalTitle}</strong>" is now live.</p>
-      </div>
+  <body style="margin: 0; padding: 0; background: #ffffff; font-family: Arial, Helvetica, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;">
+      <tr>
+        <td align="center" style="padding: 40px 20px;">
+          <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px;">
+            
+            <!-- Header -->
+            <tr>
+              <td align="center" style="padding-bottom: 30px;">
+                <h1 style="color: #1a1a2e; font-size: 28px; margin: 0 0 10px 0;">🚀 Proposal Submitted Successfully!</h1>
+                <p style="color: #666; font-size: 16px; margin: 0;">Your proposal "<strong>${proposalTitle}</strong>" is now live.</p>
+              </td>
+            </tr>
 
-      <div class="content-box">
-        <h2>Your Proposal (MDP-${proposalId})</h2>
-        <p style="color: #666; margin-bottom: 16px;">
-          Your proposal has been successfully submitted to MoonDAO and is now available for community review and discussion.
-        </p>
-        <div style="text-align: center;">
-          <a href="${proposalUrl}" class="proposal-link">View Your Proposal</a>
-        </div>
-      </div>
+            <!-- Proposal Link Box -->
+            <tr>
+              <td style="background: #f8fafc; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #e2e8f0;">
+                <h2 style="color: #1a1a2e; font-size: 18px; margin: 0 0 16px 0;">Your Proposal (MDP-${proposalId})</h2>
+                <p style="color: #666; margin-bottom: 16px; font-size: 14px; line-height: 1.5;">
+                  Your proposal has been successfully submitted to MoonDAO and is now available for community review and discussion.
+                </p>
+                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td align="center">
+                      <a href="${proposalUrl}" style="display: inline-block; background: #3b82f6; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Your Proposal</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
 
-      <div class="content-box">
-        <h2>📋 Next Steps</h2>
-        
-        <div class="step">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h3>Attend the Next Town Hall</h3>
-            <p>Present your proposal to the community and answer questions during our weekly town hall meetings. This is crucial for building support.</p>
-            <p style="margin-top: 8px;"><a href="${townHallCalendar}">View Town Hall Schedule →</a></p>
-          </div>
-        </div>
+            <tr><td style="height: 24px;"></td></tr>
 
-        <div class="step">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h3>Engage in Discord</h3>
-            <p>Share your proposal in the #ideation channel to gather feedback and build consensus before the voting period.</p>
-            <p style="margin-top: 8px;"><a href="${ideationChannel}">Join the Discussion →</a></p>
-          </div>
-        </div>
+            <!-- Next Steps Box -->
+            <tr>
+              <td style="background: #f8fafc; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
+                <h2 style="color: #1a1a2e; font-size: 18px; margin: 0 0 20px 0;">📋 Next Steps</h2>
+                
+                <!-- Step 1 -->
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                  <tr>
+                    <td width="36" valign="top">
+                      <table cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td style="width: 28px; height: 28px; background: #3b82f6; color: #ffffff; border-radius: 14px; text-align: center; font-weight: bold; font-size: 14px; line-height: 28px;">1</td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td valign="top" style="padding-left: 12px;">
+                      <h3 style="color: #1a1a2e; font-size: 16px; margin: 0 0 4px 0;">Attend the Next Town Hall</h3>
+                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Present your proposal to the community and answer questions during our weekly town hall meetings. This is crucial for building support.</p>
+                      <p style="margin-top: 8px; margin-bottom: 0;"><a href="${townHallCalendar}" style="color: #3b82f6; text-decoration: underline;">View Town Hall Schedule →</a></p>
+                    </td>
+                  </tr>
+                </table>
 
-        <div class="step">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h3>Prepare for Voting</h3>
-            <p>Once your proposal moves to the voting phase, ensure you have support from the community to pass the governance vote.</p>
-          </div>
-        </div>
-      </div>
+                <!-- Step 2 -->
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                  <tr>
+                    <td width="36" valign="top">
+                      <table cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td style="width: 28px; height: 28px; background: #3b82f6; color: #ffffff; border-radius: 14px; text-align: center; font-weight: bold; font-size: 14px; line-height: 28px;">2</td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td valign="top" style="padding-left: 12px;">
+                      <h3 style="color: #1a1a2e; font-size: 16px; margin: 0 0 4px 0;">Engage in Discord</h3>
+                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Share your proposal in the #ideation channel to gather feedback and build consensus before the voting period.</p>
+                      <p style="margin-top: 8px; margin-bottom: 0;"><a href="${ideationChannel}" style="color: #3b82f6; text-decoration: underline;">Join the Discussion →</a></p>
+                    </td>
+                  </tr>
+                </table>
 
-      <div class="tips-box">
-        <h3>💡 Pro Tips for Success</h3>
-        <ul>
-          <li>Be prepared to present your proposal concisely (3-5 minutes) during town hall</li>
-          <li>Engage with community feedback and be open to iterations</li>
-          <li>Build support by networking with other community members</li>
-          <li>Address questions and concerns promptly in Discord</li>
-        </ul>
-      </div>
+                <!-- Step 3 -->
+                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td width="36" valign="top">
+                      <table cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td style="width: 28px; height: 28px; background: #3b82f6; color: #ffffff; border-radius: 14px; text-align: center; font-weight: bold; font-size: 14px; line-height: 28px;">3</td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td valign="top" style="padding-left: 12px;">
+                      <h3 style="color: #1a1a2e; font-size: 16px; margin: 0 0 4px 0;">Prepare for Voting</h3>
+                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Once your proposal moves to the voting phase, ensure you have support from the community to pass the governance vote.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
 
-      <div class="footer">
-        <p>
-          This email was sent because you submitted a proposal on MoonDAO.<br />
-          <a href="https://moondao.com">moondao.com</a> · <a href="https://discord.gg/moondao">Discord</a> · <a href="https://twitter.com/OfficialMoonDAO">Twitter</a>
-        </p>
-      </div>
-    </div>
+            <tr><td style="height: 24px;"></td></tr>
+
+            <!-- Tips Box -->
+            <tr>
+              <td style="background: #fef3c7; border-radius: 12px; padding: 20px; border: 1px solid #fcd34d;">
+                <h3 style="color: #92400e; font-size: 16px; margin: 0 0 12px 0;">💡 Pro Tips for Success</h3>
+                <ul style="margin: 0; padding-left: 20px; color: #78350f;">
+                  <li style="margin-bottom: 8px; font-size: 14px; line-height: 1.4;">Be prepared to present your proposal concisely (3-5 minutes) during town hall</li>
+                  <li style="margin-bottom: 8px; font-size: 14px; line-height: 1.4;">Engage with community feedback and be open to iterations</li>
+                  <li style="margin-bottom: 8px; font-size: 14px; line-height: 1.4;">Build support by networking with other community members</li>
+                  <li style="margin-bottom: 0; font-size: 14px; line-height: 1.4;">Address questions and concerns promptly in Discord</li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr><td style="height: 30px;"></td></tr>
+
+            <!-- Footer -->
+            <tr>
+              <td align="center" style="padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                <p style="color: #666; font-size: 12px; margin: 0;">
+                  This email was sent because you submitted a proposal on MoonDAO.<br />
+                  <a href="https://moondao.com" style="color: #3b82f6; text-decoration: none;">moondao.com</a> · 
+                  <a href="https://discord.gg/moondao" style="color: #3b82f6; text-decoration: none;">Discord</a> · 
+                  <a href="https://twitter.com/OfficialMoonDAO" style="color: #3b82f6; text-decoration: none;">Twitter</a>
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>`
 }
