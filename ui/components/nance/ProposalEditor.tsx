@@ -57,6 +57,8 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false)
   const [showSubmissionCTA, setShowSubmissionCTA] = useState<boolean>(false)
   const [submittedProposalId, setSubmittedProposalId] = useState<string | undefined>()
+  const [submitterEmail, setSubmitterEmail] = useState<string>('')
+  const [emailError, setEmailError] = useState<string | undefined>()
 
   useEffect(() => {
     async function getProposalJSON() {
@@ -148,10 +150,25 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const { wallet } = useAccount()
   const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
 
+  // Email validation helper
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
   async function submitProposal(e: any) {
     let body = proposalBody || ''
     e.preventDefault()
     setSigningStatus('loading')
+    setEmailError(undefined)
+
+    // Validate email if provided
+    if (submitterEmail && !validateEmail(submitterEmail)) {
+      setEmailError('Please enter a valid email address')
+      setSigningStatus('error')
+      return
+    }
+
     if (!proposalTitle) {
       console.error('submitProposal: No title provided')
       toast.error('Please enter a title for the proposal.', {
@@ -172,7 +189,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
     const file = new File([fileContents], fileName, {
       type: 'application/json',
     })
-    const { url: proposalIPFS } = await pinBlobOrFile(file)
+    const { url: proposalIPFS } = await pinBlobOrFile(file, '/api/ipfs/pin')
     const res = await fetch(`/api/proposals/submit`, {
       method: 'POST',
       headers: {
@@ -220,6 +237,35 @@ export default function ProposalEditor({ project }: { project: Project }) {
         console.error('Failed to send notification:', notificationError)
         // Don't block the user experience if notification fails
       }
+
+      // Send confirmation email if email was provided
+      if (submitterEmail) {
+        try {
+          const emailResponse = await fetch('/api/proposals/send-confirmation-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: submitterEmail,
+              proposalId: response.proposalId,
+              proposalTitle: proposalTitle,
+            }),
+          })
+
+          if (emailResponse.ok) {
+            toast.success('Confirmation email sent!', {
+              style: toastStyle,
+            })
+          } else {
+            console.error('Failed to send confirmation email')
+          }
+        } catch (emailError: any) {
+          console.error('Failed to send confirmation email:', emailError)
+          // Don't block the user experience if email fails
+        }
+      }
+
       return response.url
     }
   }
@@ -304,6 +350,33 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 }}
               />
             </div>
+
+            {/* Email Input (Optional) */}
+            <div className={`mb-4 ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Email Address <span className="text-gray-500">(optional)</span>
+              </label>
+              <input
+                type="email"
+                value={submitterEmail}
+                onChange={(e) => {
+                  setSubmitterEmail(e.target.value)
+                  setEmailError(undefined)
+                }}
+                placeholder="you@example.com"
+                className={`w-full px-4 py-3 bg-black/20 border ${
+                  emailError ? 'border-red-500' : 'border-white/10'
+                } rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
+                disabled={isUploadingImage || signingStatus === 'loading'}
+              />
+              {emailError && (
+                <p className="mt-2 text-sm text-red-400">{emailError}</p>
+              )}
+              <p className="mt-2 text-xs text-gray-500">
+                Receive a confirmation email with your proposal link and next steps.
+              </p>
+            </div>
+
             {/* Proposal Preview */}
             <div className="rounded-xl border border-white/10 bg-dark-cool overflow-hidden">
               <div className="px-4 py-3 border-b border-white/10 bg-black/20">
