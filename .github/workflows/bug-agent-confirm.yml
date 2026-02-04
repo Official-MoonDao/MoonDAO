@@ -1,0 +1,90 @@
+name: Bug Agent - Handle Confirmation
+
+on:
+  issues:
+    types: [labeled]
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  process-confirmation:
+    name: Generate Fix for Confirmed Bug
+    runs-on: ubuntu-latest
+    
+    # Only run when the 'agent-confirmed' label is added
+    if: github.event.label.name == 'agent-confirmed'
+    
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: ui/yarn.lock
+      
+      - name: Install UI dependencies
+        working-directory: ui
+        run: yarn install --frozen-lockfile
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: agent/pyproject.toml
+      
+      - name: Install agent dependencies
+        run: pip install -e ./agent
+      
+      - name: Download previous agent state
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: bug-agent.yml
+          name: agent-state
+          path: agent/results/
+        continue-on-error: true
+      
+      - name: Generate and apply fix
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REPO_PATH: ${{ github.workspace }}
+          RESULTS_PATH: ${{ github.workspace }}/agent/results
+        run: |
+          python -m src.orchestrator handle-confirmation ${{ github.event.issue.number }}
+        working-directory: agent
+      
+      - name: Run tests to verify fix
+        working-directory: ui
+        run: |
+          # Install Playwright
+          npx playwright install --with-deps chromium
+          
+          # Run smoke tests
+          npx playwright test playwright/tests/regression/smoke.spec.ts || true
+      
+      - name: Comment on issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.issue.number }},
+              body: '❌ Automated fix generation failed. Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.'
+            })
