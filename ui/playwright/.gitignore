@@ -1,0 +1,12 @@
+# Playwright test results (generated at runtime)
+results/
+reports/
+
+# Test screenshots and videos
+*.png
+*.webm
+*.zip
+
+# But keep the test files
+!tests/
+!fixtures/
