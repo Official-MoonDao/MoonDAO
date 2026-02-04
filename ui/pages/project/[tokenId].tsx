@@ -18,7 +18,7 @@ import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
@@ -58,6 +58,7 @@ import TeamTreasury from '@/components/subscription/TeamTreasury'
 type ProjectProfileProps = {
   tokenId: string
   project: Project
+  safeAddress: string
   safeOwners: string[]
   proposalJSON: any
   votes: any[]
@@ -68,6 +69,7 @@ type ProjectProfileProps = {
 export default function ProjectProfile({
   tokenId,
   project,
+  safeAddress,
   safeOwners,
   proposalJSON,
   votes,
@@ -97,20 +99,7 @@ export default function ProjectProfile({
     chain: selectedChain,
   })
 
-  const [owner, setOwner] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
-
-  useEffect(() => {
-    async function getOwner() {
-      const owner: any = await readContract({
-        contract: projectContract,
-        method: 'ownerOf' as string,
-        params: [tokenId],
-      })
-      setOwner(owner)
-    }
-    if (projectContract) getOwner()
-  }, [tokenId, projectContract])
 
   const {
     adminHatId,
@@ -123,7 +112,7 @@ export default function ProjectProfile({
     isLoading: isLoadingProjectData,
   } = useProjectData(projectContract, hatsContract, project)
 
-  const safeData = useSafe(owner)
+  const safeData = useSafe(safeAddress)
   const isSigner = safeOwners.includes(address || '')
   //Hats
   const hats = useSubHats(selectedChain, adminHatId, true)
@@ -285,7 +274,7 @@ export default function ProjectProfile({
                     teamContract={projectContract}
                     teamId={tokenId}
                     selectedChain={selectedChain}
-                    multisigAddress={owner}
+                    multisigAddress={safeAddress}
                     adminHatId={adminHatId}
                     managerHatId={managerHatId}
                   />
@@ -309,7 +298,7 @@ export default function ProjectProfile({
             <TeamTreasury
               isSigner={isSigner}
               safeData={safeData}
-              multisigAddress={owner}
+              multisigAddress={safeAddress}
               safeOwners={safeOwners}
             />
           </SectionCard>
@@ -446,6 +435,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       props: {
         project,
         tokenId,
+        safeAddress,
         safeOwners,
         votes,
         proposalStatus,
