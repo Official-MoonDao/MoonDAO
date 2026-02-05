@@ -16,6 +16,7 @@ import { FormProvider, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
 import { useActiveAccount } from 'thirdweb/react'
+import { usePrivy } from '@privy-io/react-auth'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useAccount from '@/lib/nance/useAccountAddress'
@@ -47,6 +48,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const account = useActiveAccount()
   const address = account?.address
   const { selectedWallet } = useContext(PrivyWalletContext)
+  const { login, authenticated } = usePrivy()
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
@@ -447,23 +449,33 @@ export default function ProposalEditor({ project }: { project: Project }) {
               </Field>
               
               {/* Submit Button */}
-              <button
-                type="submit"
-                className={classNames(
-                  buttonsDisabled && 'tooltip',
-                  'px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0'
-                )}
-                disabled={buttonsDisabled}
-                data-tip={
-                  signingStatus === 'loading'
-                    ? 'Submitting...'
-                    : isUploadingImage
-                    ? 'Uploading image...'
-                    : 'You need to connect wallet first.'
-                }
-              >
-                {signingStatus === 'loading' ? 'Submitting...' : 'Submit Proposal'}
-              </button>
+              {authenticated ? (
+                <button
+                  type="submit"
+                  className={classNames(
+                    (signingStatus === 'loading' || isUploadingImage) && 'tooltip',
+                    'px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0'
+                  )}
+                  disabled={buttonsDisabled}
+                  data-tip={
+                    signingStatus === 'loading'
+                      ? 'Submitting...'
+                      : isUploadingImage
+                      ? 'Uploading image...'
+                      : undefined
+                  }
+                >
+                  {signingStatus === 'loading' ? 'Submitting...' : 'Submit Proposal'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                  onClick={() => login()}
+                >
+                  Sign In to Submit
+                </button>
+              )}
             </div>
 
             {attachBudget && (
