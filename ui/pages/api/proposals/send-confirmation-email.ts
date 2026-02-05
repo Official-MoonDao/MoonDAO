@@ -49,6 +49,18 @@ const generateHTML = (proposalId: string, proposalTitle: string) => {
 
             <tr><td style="height: 24px;"></td></tr>
 
+            <!-- Governance Cycle Notice -->
+            <tr>
+              <td style="background: #dbeafe; border-radius: 12px; padding: 20px; border: 1px solid #93c5fd; margin-bottom: 24px;">
+                <h3 style="color: #1e40af; font-size: 16px; margin: 0 0 8px 0;">📅 Q2 2026 Governance Cycle</h3>
+                <p style="color: #1e3a8a; font-size: 14px; margin: 0; line-height: 1.5;">
+                  Your proposal has been submitted for the <strong>Q2 2026</strong> governance cycle. The submission deadline for this cycle is <strong>April 16, 2026</strong>. Voting will begin shortly after the deadline closes.
+                </p>
+              </td>
+            </tr>
+
+            <tr><td style="height: 24px;"></td></tr>
+
             <!-- Next Steps Box -->
             <tr>
               <td style="background: #f8fafc; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
@@ -65,9 +77,9 @@ const generateHTML = (proposalId: string, proposalTitle: string) => {
                       </table>
                     </td>
                     <td valign="top" style="padding-left: 12px;">
-                      <h3 style="color: #1a1a2e; font-size: 16px; margin: 0 0 4px 0;">Attend the Next Town Hall</h3>
-                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Present your proposal to the community and answer questions during our weekly town hall meetings. This is crucial for building support.</p>
-                      <p style="margin-top: 8px; margin-bottom: 0;"><a href="${townHallCalendar}" style="color: #3b82f6; text-decoration: underline;">View Town Hall Schedule →</a></p>
+                      <h3 style="color: #1a1a2e; font-size: 16px; margin: 0 0 4px 0;">Engage in Discord</h3>
+                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Share your proposal in the #ideation channel to gather feedback and build consensus before the voting period begins.</p>
+                      <p style="margin-top: 8px; margin-bottom: 0;"><a href="${ideationChannel}" style="color: #3b82f6; text-decoration: underline;">Join the Discussion →</a></p>
                     </td>
                   </tr>
                 </table>
@@ -83,9 +95,9 @@ const generateHTML = (proposalId: string, proposalTitle: string) => {
                       </table>
                     </td>
                     <td valign="top" style="padding-left: 12px;">
-                      <h3 style="color: #1a1a2e; font-size: 16px; margin: 0 0 4px 0;">Engage in Discord</h3>
-                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Share your proposal in the #ideation channel to gather feedback and build consensus before the voting period.</p>
-                      <p style="margin-top: 8px; margin-bottom: 0;"><a href="${ideationChannel}" style="color: #3b82f6; text-decoration: underline;">Join the Discussion →</a></p>
+                      <h3 style="color: #1a1a2e; font-size: 16px; margin: 0 0 4px 0;">Attend Town Halls</h3>
+                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Present your proposal to the community during town hall meetings. This is a great opportunity to build support and answer questions.</p>
+                      <p style="margin-top: 8px; margin-bottom: 0;"><a href="${townHallCalendar}" style="color: #3b82f6; text-decoration: underline;">View Town Hall Schedule →</a></p>
                     </td>
                   </tr>
                 </table>
@@ -102,7 +114,7 @@ const generateHTML = (proposalId: string, proposalTitle: string) => {
                     </td>
                     <td valign="top" style="padding-left: 12px;">
                       <h3 style="color: #1a1a2e; font-size: 16px; margin: 0 0 4px 0;">Prepare for Voting</h3>
-                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Once your proposal moves to the voting phase, ensure you have support from the community to pass the governance vote.</p>
+                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Once the Q2 submission deadline passes, voting will begin. Ensure you have community support to pass the governance vote.</p>
                     </td>
                   </tr>
                 </table>
