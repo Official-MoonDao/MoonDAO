@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import Job, { Job as JobType } from '../jobs/Job'
@@ -15,6 +15,9 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
   const router = useRouter()
   const [latestJobs, setLatestJobs] = useState<JobType[]>([])
   const [tableName, setTableName] = useState<string | null>(null)
+  
+  // Memoize 'now' to prevent unnecessary re-renders and effect re-runs
+  const now = useMemo(() => Math.floor(Date.now() / 1000), [])
 
   // Get table name from contract
   useEffect(() => {
@@ -34,8 +37,7 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
     getTableName()
   }, [jobTableContract])
 
-  // Build statement with current timestamp
-  const now = Math.floor(Date.now() / 1000)
+  // Build statement with memoized timestamp
   const statement = tableName
     ? `SELECT * FROM ${tableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
     : null
@@ -49,22 +51,22 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
     async function processJobs() {
       if (!jobs || !teamContract) return
 
-      const validJobs = await Promise.all(
-        jobs
-          .map(async (job: JobType) => {
-            try {
-              const teamExpiration = await readContract({
-                contract: teamContract,
-                method: 'expiresAt' as string,
-                params: [job.teamId],
-              })
-              return +teamExpiration.toString() > now ? job : null
-            } catch {
-              return null
-            }
-          })
-          .filter((job: any) => job !== null)
+      const resolvedJobs = await Promise.all(
+        jobs.map(async (job: JobType) => {
+          try {
+            const teamExpiration = await readContract({
+              contract: teamContract,
+              method: 'expiresAt' as string,
+              params: [job.teamId],
+            })
+            return +teamExpiration.toString() > now ? job : null
+          } catch {
+            return null
+          }
+        })
       )
+
+      const validJobs = resolvedJobs.filter((job): job is JobType => job !== null)
 
       setLatestJobs(validJobs)
     }
