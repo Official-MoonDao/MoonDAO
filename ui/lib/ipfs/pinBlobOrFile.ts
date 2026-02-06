@@ -6,12 +6,12 @@ interface PinResponse {
   url: string
 }
 
-export async function pinBlobOrFile(blob: Blob | File, pinUrl: string): Promise<PinResponse> {
+export async function pinBlobOrFile(blob: Blob | File, pinUrl: string = '/api/ipfs/pin'): Promise<PinResponse> {
   try {
     const imageFormData = new FormData()
     imageFormData.append('file', blob)
 
-    const pin = await fetch(pinUrl || '/api/ipfs/pin', {
+    const pin = await fetch(pinUrl, {
       method: 'POST',
       credentials: 'include',
       body: imageFormData,
