@@ -71,10 +71,9 @@ contract Proposals is ERC721Holder, Ownable {
                 tempCheckApprovalCount[mdp]--;
             }
         }
-        tallyVotes(mdp);
     }
 
-    function tallyVotes(uint256 mdp) public {
+    function tallyVotes(uint256 mdp) public onlyOwner {
         if (tempCheckVoteCount[mdp] >= getQuorum()){
             // Check if at least 2/3 of the senators voted in favor of the proposal
             if (tempCheckApprovalCount[mdp] * 3 >= tempCheckVoteCount[mdp] * 2){
