@@ -152,6 +152,35 @@ export function ProjectRewards({
       }
     }
   }, [userAddress, proposalAllocations, quarter, year])
+
+  // Build project id -> author address for member vote (exclude own proposal from allocation)
+  const [projectIdToAuthorAddress, setProjectIdToAuthorAddress] = useState<Record<string, string>>(
+    {}
+  )
+  useEffect(() => {
+    if (!proposals?.length) return
+    let cancelled = false
+    const map: Record<string, string> = {}
+    const fetchAll = async () => {
+      for (const project of proposals) {
+        if (!project.proposalIPFS) continue
+        try {
+          const res = await fetch(project.proposalIPFS)
+          const json = await res.json()
+          if (json.authorAddress) map[String(project.id)] = json.authorAddress
+        } catch {
+          // ignore fetch errors
+        }
+        if (cancelled) return
+      }
+      if (!cancelled) setProjectIdToAuthorAddress(map)
+    }
+    fetchAll()
+    return () => {
+      cancelled = true
+    }
+  }, [proposals])
+
   const tallyVotes = async () => {
     const res = await fetch(`/api/proposals/vote`, {
       method: 'POST',
@@ -426,6 +455,33 @@ export function ProjectRewards({
       })
       return
     }
+    // Exclude projects where the user is the author (they cannot vote on their own proposal)
+    const userAddr = userAddress?.toLowerCase()
+    const distributionToSubmit: Record<string, number> = {}
+    for (const [projectId, value] of Object.entries(proposalDistribution)) {
+      const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
+      if (author && author === userAddr) continue
+      distributionToSubmit[projectId] = value
+    }
+    // Normalize to 100% if we removed any author projects
+    const sum = _.sum(Object.values(distributionToSubmit))
+    if (sum <= 0) {
+      toast.error('Allocate to at least one project you did not author.', {
+        style: toastStyle,
+      })
+      return
+    }
+    const normalizedDistribution: Record<string, number> = {}
+    for (const [projectId, value] of Object.entries(distributionToSubmit)) {
+      normalizedDistribution[projectId] = Math.round((value / sum) * 1000) / 10
+    }
+    // Ensure rounding doesn't leave us off 100
+    const normalizedSum = _.sum(Object.values(normalizedDistribution))
+    if (normalizedSum !== 100 && Object.keys(normalizedDistribution).length > 0) {
+      const firstId = Object.keys(normalizedDistribution)[0]
+      normalizedDistribution[firstId] =
+        Math.round((normalizedDistribution[firstId] + (100 - normalizedSum)) * 10) / 10
+    }
     try {
       if (!account) throw new Error('No account found')
       let receipt
@@ -433,7 +489,7 @@ export function ProjectRewards({
         const transaction = prepareContractCall({
           contract: contract,
           method: 'updateTableCol' as string,
-          params: [quarter, year, JSON.stringify(proposalDistribution)],
+          params: [quarter, year, JSON.stringify(normalizedDistribution)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
@@ -443,7 +499,7 @@ export function ProjectRewards({
         const transaction = prepareContractCall({
           contract: contract,
           method: 'insertIntoTable' as string,
-          params: [quarter, year, JSON.stringify(proposalDistribution)],
+          params: [quarter, year, JSON.stringify(normalizedDistribution)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,

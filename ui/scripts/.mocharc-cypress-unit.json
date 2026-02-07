@@ -1,0 +1,9 @@
+{
+  "require": [
+    "tsconfig-paths/register",
+    "ts-node/register",
+    "scripts/mocha-cypress-setup.cjs"
+  ],
+  "extensions": ["ts", "tsx"],
+  "spec": ["cypress/integration/unit/voting.cy.tsx"]
+}

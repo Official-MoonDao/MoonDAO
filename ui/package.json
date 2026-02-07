@@ -17,6 +17,8 @@
     "cy:run-ct": "cypress run --component",
     "cy:run-ct:fast": "bash scripts/test-parallel.sh 4",
     "cy:run-ct:warp": "bash scripts/test-parallel.sh 8",
+    "test:voting-author-restriction": "ts-node -r tsconfig-paths/register scripts/test-voting-author-restriction.ts",
+    "test:cypress-unit": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-cypress-unit.json",
     "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts"
   },
   "dependencies": {
@@ -143,11 +145,13 @@
     "cypress": "12.17.3",
     "cypress-file-upload": "^5.0.8",
     "cypress-split": "^1.24.2",
+    "chai": "^4.5.0",
     "dotenv": "^17.2.2",
     "eslint": "8.4.1",
     "eslint-config-next": "13.4.10",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-cypress": "^2.13.3",
+    "mocha": "^10.8.2",
     "postcss": "^8.4.5",
     "prettier": "^2.5.1",
     "react-error-boundary": "^5.0.0",
