@@ -1,6 +1,25 @@
 // Inside your Next.js API route
 import { NextApiRequest, NextApiResponse } from 'next'
 
+const ALLOWED_HOSTNAMES = ['r2.comfy.icu']
+
+function isAllowedUrl(input: string): boolean {
+  let parsed: URL
+  try {
+    parsed = new URL(input)
+  } catch {
+    return false
+  }
+
+  // Only allow HTTPS
+  if (parsed.protocol !== 'https:') {
+    return false
+  }
+
+  // Check against the allowlist of trusted hostnames
+  return ALLOWED_HOSTNAMES.includes(parsed.hostname)
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -8,6 +27,11 @@ export default async function handler(
   if (req.method === 'POST') {
     try {
       const { url } = req.body
+
+      if (typeof url !== 'string' || !isAllowedUrl(url)) {
+        return res.status(400).json('Invalid or disallowed URL')
+      }
+
       const response = await fetch(url)
       if (!response.ok) {
         console.error(`Server responded with status: ${response.status}`)
