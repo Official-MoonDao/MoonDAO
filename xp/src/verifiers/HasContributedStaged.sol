@@ -118,11 +118,11 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         override(IXPVerifier, StagedXPVerifier)
         returns (bytes32)
     {
-        (uint256 contributions, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 contributions,, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // Use your original claimId format for backwards compatibility
-        bytes32 contextHash = keccak256(abi.encode(contributions, amount, validAfterTs, validBefore));
+        // FIX: Only include oracle-verified fields in claimId to prevent replay via amount malleability
+        bytes32 contextHash = keccak256(abi.encode(contributions, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 

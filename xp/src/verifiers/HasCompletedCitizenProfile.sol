@@ -35,10 +35,10 @@ contract HasCompletedCitizenProfile is XPOracleVerifier {
     }
 
     function claimId(address user, bytes calldata context) external view returns (bytes32) {
-        (uint256 profileCompleteness, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 profileCompleteness,, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
-        // Keep amount in the claimId for backwards compatibility even if ignored
-        bytes32 contextHash = keccak256(abi.encode(profileCompleteness, amount, validAfterTs, validBefore));
+        // FIX: Only include oracle-verified fields in claimId to prevent replay via amount malleability
+        bytes32 contextHash = keccak256(abi.encode(profileCompleteness, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 

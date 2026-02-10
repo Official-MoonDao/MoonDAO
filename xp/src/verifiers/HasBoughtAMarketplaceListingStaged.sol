@@ -116,11 +116,11 @@ contract HasBoughtAMarketplaceListingStaged is XPOracleVerifier, StagedXPVerifie
         override(IXPVerifier, StagedXPVerifier)
         returns (bytes32)
     {
-        (uint256 purchases, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 purchases,, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // Use your original claimId format for backwards compatibility
-        bytes32 contextHash = keccak256(abi.encode(purchases, amount, validAfterTs, validBefore));
+        // FIX: Only include oracle-verified fields in claimId to prevent replay via amount malleability
+        bytes32 contextHash = keccak256(abi.encode(purchases, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 
