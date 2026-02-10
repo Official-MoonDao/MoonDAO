@@ -5,6 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {TablelandDeployments} from "@evm-tableland/contracts/utils/TablelandDeployments.sol";
 import {SQLHelpers} from "@evm-tableland/contracts/utils/SQLHelpers.sol";
 import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {NFTURITemplateGenerator} from "./NFTURITemplateGenerator.sol";
 
 contract MoonDAOCitizenTable is ERC721Holder, Ownable {
@@ -75,7 +76,7 @@ contract MoonDAOCitizenTable is ERC721Holder, Ownable {
         );
     }
 
-    // Let anyone insert into the table
+    // Only Citizen contract or Owner can insert into the table
     function insertIntoTable(uint256 id, string memory name, string memory description, string memory image, string memory location, string memory discord, string memory twitter, string memory instagram, string memory linkedin, string memory website, string memory _view, string memory formId, address owner) external onlyOperators {
         string memory setters = string.concat(
             string.concat(
@@ -120,6 +121,12 @@ contract MoonDAOCitizenTable is ERC721Holder, Ownable {
     }
 
     function updateTableDynamic(uint256 id, string[] memory columns, string[] memory values) external {
+        require(
+            msg.sender == owner() ||
+            msg.sender == _citizenAddress ||
+            IERC721(_citizenAddress).ownerOf(id) == msg.sender,
+            "Only Admin, Citizen contract, or Citizen owner can update"
+        );
         require(columns.length == values.length, "Columns and values length mismatch");
 
         // Manually create key-value pairs for setters
@@ -144,6 +151,12 @@ contract MoonDAOCitizenTable is ERC721Holder, Ownable {
 
     // Delete a row from the table by ID 
     function deleteFromTable(uint256 id) external {
+        require(
+            msg.sender == owner() ||
+            msg.sender == _citizenAddress ||
+            IERC721(_citizenAddress).ownerOf(id) == msg.sender,
+            "Only Admin, Citizen contract, or Citizen owner can delete"
+        );
         // Specify filters for which row to delete
         string memory filters = string.concat(
             "id=",
