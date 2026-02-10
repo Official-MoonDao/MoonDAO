@@ -382,6 +382,17 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         // Record verifier claim
         _recordVerifierClaim(user, conditionId);
 
+        // If the verifier is a staged verifier, update the user's stage progression
+        // This prevents re-claiming the same stage with a different claimId
+        try IStagedXPVerifier(address(verifier)).getUserHighestStage(user) returns (uint256 currentStage) {
+            // currentStage equals the stageIndex that isEligible() just validated,
+            // because isEligible() requires userHighestClaimedStage[user] == stageIndex.
+            // The actual stageIndex is currentStage (since it hasn't been incremented yet).
+            IStagedXPVerifier(address(verifier)).updateUserStage(user, currentStage);
+        } catch {
+            // Not a staged verifier — no stage update needed
+        }
+
         // Grant XP to the target user
         _grantXP(user, xpAmount);
 
