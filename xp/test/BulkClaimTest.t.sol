@@ -118,7 +118,7 @@ contract BulkClaimTest is Test {
         (bool eligible, uint256 totalXP, uint256 highestStage) = votingVerifier.isBulkEligible(user, context);
         assertTrue(eligible);
 
-        assertEq(totalXP, 185); // 5 + 10 + 20 + 50 + 100 = 185
+        assertEq(totalXP, 385); // 10 + 25 + 50 + 100 + 200 = 385
         assertEq(highestStage, 4); // Index of last stage
 
         // Perform bulk claim
@@ -126,7 +126,7 @@ contract BulkClaimTest is Test {
         xpManager.claimBulkXP(VERIFIER_ID, context);
 
         // Verify results
-        assertEq(xpManager.getTotalXP(user), 185);
+        assertEq(xpManager.getTotalXP(user), 385);
         assertEq(votingVerifier.getUserHighestStage(user), 5); // Next stage they can claim (have claimed 0-4)
 
         // Verify cannot claim again (no more stages available)
@@ -160,7 +160,7 @@ contract BulkClaimTest is Test {
         // Check bulk eligibility
         (bool eligible, uint256 totalXP, uint256 highestStage) = votingVerifier.isBulkEligible(user, context);
         assertTrue(eligible);
-        assertEq(totalXP, 35); // 5 + 10 + 20 = 35 (first 3 stages)
+        assertEq(totalXP, 85); // 10 + 25 + 50 = 85 (first 3 stages)
         assertEq(highestStage, 2); // Index of third stage
 
         // Perform bulk claim
@@ -168,7 +168,7 @@ contract BulkClaimTest is Test {
         xpManager.claimBulkXP(VERIFIER_ID, context);
 
         // Verify results
-        assertEq(xpManager.getTotalXP(user), 35);
+        assertEq(xpManager.getTotalXP(user), 85);
         assertEq(votingVerifier.getUserHighestStage(user), 3); // Next stage they can claim (have claimed 0-2)
     }
 
@@ -194,7 +194,7 @@ contract BulkClaimTest is Test {
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context1);
 
-        assertEq(xpManager.getTotalXP(user), 35);
+        assertEq(xpManager.getTotalXP(user), 85);
         assertEq(votingVerifier.getUserHighestStage(user), 3);
 
         // Second claim with 10,000 voting power (should claim remaining stages)
@@ -221,14 +221,14 @@ contract BulkClaimTest is Test {
         // Check eligibility for remaining stages
         (bool eligible, uint256 totalXP, uint256 highestStage) = votingVerifier.isBulkEligible(user, context2);
         assertTrue(eligible);
-        assertEq(totalXP, 150); // 50 + 100 = 150 (stages 3 and 4)
+        assertEq(totalXP, 300); // 100 + 200 = 300 (stages 3 and 4)
         assertEq(highestStage, 4);
 
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context2);
 
         // Verify final state
-        assertEq(xpManager.getTotalXP(user), 185); // 35 + 150
+        assertEq(xpManager.getTotalXP(user), 385); // 85 + 300
         assertEq(votingVerifier.getUserHighestStage(user), 5);
     }
 
@@ -256,7 +256,7 @@ contract BulkClaimTest is Test {
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context);
 
-        assertEq(xpManager.getTotalXP(user), 5);
+        assertEq(xpManager.getTotalXP(user), 10);
         assertEq(votingVerifier.getUserHighestStage(user), 1);
 
         // Reset user stage back to 0 so they can theoretically claim stage 0 again
