@@ -918,6 +918,20 @@ body {
   min-height: 600px !important;
 }
 
+/* Mobile-specific adjustments for Typeform on smaller screens */
+@media (max-width: 768px) {
+  .typeform-widget-container iframe {
+    min-height: 500px !important;
+  }
+}
+
+/* Extra small mobile devices (e.g., Android phones) */
+@media (max-width: 480px) {
+  .typeform-widget-container iframe {
+    min-height: 400px !important;
+  }
+}
+
 /* Scroll indicator animation */
 @keyframes bounce-gentle {
   0%,

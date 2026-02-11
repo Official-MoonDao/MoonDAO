@@ -36,16 +36,15 @@ export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
           </button>
         </div>
         <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl md:rounded-2xl border border-slate-600/30 overflow-hidden relative">
-          <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
+          <div className="min-h-[400px] md:min-h-[500px] max-h-[65vh] typeform-widget-container">
             <Widget
-              className="w-full"
+              className="w-full h-full"
               id={
                 type === 'citizen'
                   ? (process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_APP_FORM_ID as string)
                   : (process.env.NEXT_PUBLIC_TYPEFORM_TEAM_APP_FORM_ID as string)
               }
               onSubmit={submitTypeform}
-              height={500}
             />
           </div>
           <div className="absolute bottom-4 right-4 bg-blue-600/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none opacity-75">
