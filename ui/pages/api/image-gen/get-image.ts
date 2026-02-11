@@ -16,6 +16,11 @@ function isAllowedUrl(input: string): boolean {
     return false
   }
 
+  // Reject explicit ports to prevent port-scanning (only allow default 443)
+  if (parsed.port !== '') {
+    return false
+  }
+
   // Check against the allowlist of trusted hostnames
   return ALLOWED_HOSTNAMES.includes(parsed.hostname)
 }
@@ -26,13 +31,17 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
+      if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json('Invalid request body')
+      }
+
       const { url } = req.body
 
       if (typeof url !== 'string' || !isAllowedUrl(url)) {
         return res.status(400).json('Invalid or disallowed URL')
       }
 
-      const response = await fetch(url)
+      const response = await fetch(url, { redirect: 'error' })
       if (!response.ok) {
         console.error(`Server responded with status: ${response.status}`)
         return res
