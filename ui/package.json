@@ -17,7 +17,15 @@
     "cy:run-ct": "cypress run --component",
     "cy:run-ct:fast": "bash scripts/test-parallel.sh 4",
     "cy:run-ct:warp": "bash scripts/test-parallel.sh 8",
-    "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts"
+    "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts",
+    "pw:install": "playwright install --with-deps",
+    "pw:test": "playwright test",
+    "pw:test:ui": "playwright test --ui",
+    "pw:test:headed": "playwright test --headed",
+    "pw:test:debug": "playwright test --debug",
+    "pw:test:exploratory": "playwright test --project=exploratory",
+    "pw:test:smoke": "playwright test playwright/tests/regression/smoke.spec.ts",
+    "pw:report": "playwright show-report playwright/reports/html"
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.3.3",
@@ -120,6 +128,7 @@
     "wagmi": "^2.14.13"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@bygdle/javascript-lp-solver": "^0.4.26",
     "@cypress/webpack-preprocessor": "^6.0.2",
     "@next/bundle-analyzer": "^16.0.10",
