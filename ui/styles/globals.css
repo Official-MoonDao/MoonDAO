@@ -932,14 +932,16 @@ body {
 /* Mobile-specific adjustments for Typeform on smaller screens */
 @media (max-width: 768px) {
   .typeform-widget-container iframe {
-    min-height: 500px !important;
+    /* Typeform requires minimum 600px height to render properly */
+    min-height: 600px !important;
   }
 }
 
 /* Extra small mobile devices (e.g., Android phones) */
 @media (max-width: 480px) {
   .typeform-widget-container iframe {
-    min-height: 400px !important;
+    /* Maintain 600px minimum even on small devices for Typeform compatibility */
+    min-height: 600px !important;
   }
 }
 
