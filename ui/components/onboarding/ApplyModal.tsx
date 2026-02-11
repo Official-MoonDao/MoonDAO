@@ -35,8 +35,8 @@ export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
             <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </button>
         </div>
-        <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl md:rounded-2xl border border-slate-600/30 overflow-x-auto overflow-y-hidden relative">
-          <div className="min-h-[600px] md:min-h-[600px] max-h-[70vh] min-w-[360px] typeform-widget-container">
+        <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl md:rounded-2xl border border-slate-600/30 overflow-x-auto overflow-y-hidden relative" role="region" aria-label="Typeform application">
+          <div className="min-h-[600px] max-h-[70vh] min-w-[360px] typeform-widget-container">
             <Widget
               className="w-full h-full"
               id={
