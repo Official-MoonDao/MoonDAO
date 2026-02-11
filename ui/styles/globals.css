@@ -894,6 +894,7 @@ body {
   touch-action: auto;
   -webkit-user-select: text;
   -webkit-touch-callout: default;
+  z-index: 1;
 }
 
 .typeform-widget-container::-webkit-scrollbar {
@@ -922,6 +923,8 @@ body {
   min-height: 600px !important;
   pointer-events: auto !important;
   touch-action: auto !important;
+  z-index: 2 !important;
+  position: relative !important;
 }
 
 /* Mobile-specific adjustments for Typeform on smaller screens */

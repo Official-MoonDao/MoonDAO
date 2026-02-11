@@ -47,7 +47,7 @@ export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
               onSubmit={submitTypeform}
             />
           </div>
-          <div className="absolute bottom-4 right-4 bg-blue-600/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none opacity-75">
+          <div className="absolute bottom-4 right-4 bg-blue-600/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none opacity-75 hidden sm:block">
             ↕️ Scroll for more
           </div>
         </div>
