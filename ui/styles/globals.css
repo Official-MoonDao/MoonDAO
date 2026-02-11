@@ -923,7 +923,9 @@ body {
   min-height: 600px !important;
   pointer-events: auto !important;
   touch-action: auto !important;
+  /* z-index stacking to ensure iframe is above container and scroll indicators */
   z-index: 2 !important;
+  /* position: relative required for z-index to take effect on iframe elements */
   position: relative !important;
 }
 
