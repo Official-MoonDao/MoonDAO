@@ -890,6 +890,10 @@ body {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #475569 #1e293b;
+  pointer-events: auto;
+  touch-action: auto;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
 }
 
 .typeform-widget-container::-webkit-scrollbar {
@@ -916,6 +920,8 @@ body {
   width: 100% !important;
   height: 100% !important;
   min-height: 600px !important;
+  pointer-events: auto !important;
+  touch-action: auto !important;
 }
 
 /* Mobile-specific adjustments for Typeform on smaller screens */
