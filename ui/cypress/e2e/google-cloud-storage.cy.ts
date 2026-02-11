@@ -35,8 +35,8 @@ describe('Google Cloud Storage API', () => {
       })
     })
 
-    // Note: Authenticated upload tests would require setting up Privy auth
-    // and passing valid session cookies, which is beyond the scope of this security fix.
+    // Note: Authenticated upload tests would require setting up a valid next-auth session
+    // (which is based on Privy authentication), which is beyond the scope of this security fix.
     // The critical security requirement is that unauthenticated requests are rejected.
   })
 
@@ -79,8 +79,8 @@ describe('Google Cloud Storage API', () => {
       })
     })
 
-    // Note: Authenticated delete tests would require setting up Privy auth
-    // and passing valid session cookies, which is beyond the scope of this security fix.
+    // Note: Authenticated delete tests would require setting up a valid next-auth session
+    // (which is based on Privy authentication), which is beyond the scope of this security fix.
     // The critical security requirement is that unauthenticated requests are rejected.
   })
 })
