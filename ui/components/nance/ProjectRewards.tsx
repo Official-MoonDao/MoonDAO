@@ -22,7 +22,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
@@ -98,6 +98,9 @@ export function ProjectRewards({
   const [proposalEdit, setProposalEdit] = useState(false)
   const [proposalDistribution, setProposalDistribution] = useState<{ [key: string]: number }>({})
   const [originalProposalDistribution, setOriginalProposalDistribution] = useState<{ [key: string]: number }>({})
+
+  // Proposals contract owner (only they can close voting)
+  const [proposalsContractOwner, setProposalsContractOwner] = useState<string | null>(null)
 
   //Check if its the approval cycle
   useEffect(() => {
@@ -199,6 +202,27 @@ export function ProjectRewards({
     chain: chain,
     abi: ProposalsABI.abi as any,
   })
+
+  // Fetch Proposals contract owner so we only show "Close voting" to the owner
+  useEffect(() => {
+    if (!proposalContract) return
+    readContract({
+      contract: proposalContract,
+      method: 'owner' as string,
+      params: [],
+    })
+      .then((result: unknown) => {
+        const owner = typeof result === 'string' ? result : Array.isArray(result) ? result[0] : null
+        setProposalsContractOwner(owner != null ? String(owner).toLowerCase() : null)
+      })
+      .catch(() => setProposalsContractOwner(null))
+  }, [proposalContract])
+
+  const isProposalsContractOwner =
+    !!userAddress &&
+    !!proposalsContractOwner &&
+    userAddress.toLowerCase() === proposalsContractOwner
+
   const hatsContract = useContract({
     address: HATS_ADDRESS,
     chain: chain,
@@ -490,12 +514,14 @@ export function ProjectRewards({
             <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
                 <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
-                <button
-                  onClick={tallyVotes}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
-                >
-                  Close voting.
-                </button>
+                {IS_SENATE_VOTE && isProposalsContractOwner && (
+                  <button
+                    onClick={tallyVotes}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
+                  >
+                    Close voting.
+                  </button>
+                )}
                 <button
                   className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
                   onClick={() => router.push('/proposals')}
@@ -530,103 +556,105 @@ export function ProjectRewards({
               </div>
             </div>
 
-            <div
-              id="projects-container"
-              className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-6 border-y sm:border border-white/10"
-            >
-              <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
-                {IS_SENATE_VOTE ? (
-                  <>
-                    Project Proposals
-                    <span className="ml-2 text-sm font-normal text-orange-400">(Senate Vote)</span>
-                  </>
-                ) : (
-                  <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
-                    Project Proposals
-                    {IS_MEMBER_VOTE && (
-                      <span className="ml-2 text-sm font-normal text-emerald-400">(Member Vote)</span>
-                    )}
-                  </Tooltip>
+            {(IS_SENATE_VOTE || IS_MEMBER_VOTE) && (
+              <div
+                id="projects-container"
+                className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-6 border-y sm:border border-white/10"
+              >
+                <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
+                  {IS_SENATE_VOTE ? (
+                    <>
+                      Project Proposals
+                      <span className="ml-2 text-sm font-normal text-orange-400">(Senate Vote)</span>
+                    </>
+                  ) : (
+                    <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
+                      Project Proposals
+                      {IS_MEMBER_VOTE && (
+                        <span className="ml-2 text-sm font-normal text-emerald-400">(Member Vote)</span>
+                      )}
+                    </Tooltip>
+                  )}
+                </h1>
+                {!IS_SENATE_VOTE && (
+                  <p className="mb-4">
+                    {IS_MEMBER_VOTE
+                      ? 'Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'
+                      : 'Distribute 100% of your voting power between eligible projects. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'}
+                  </p>
                 )}
-              </h1>
-              {!IS_SENATE_VOTE && (
-                <p className="mb-4">
-                  {IS_MEMBER_VOTE
-                    ? 'Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'
-                    : 'Distribute 100% of your voting power between eligible projects. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'}
-                </p>
-              )}
-              <div className="flex flex-col gap-1.5 sm:gap-6">
-                {proposals && proposals.length > 0 ? (
-                  proposals
-                    .filter((project: any) => {
-                      // Senate Vote: show ALL pending proposals (keep them visible until vote is closed)
-                      if (IS_SENATE_VOTE) {
-                        return true
-                      }
-                      // Member Vote: show proposals in "Voting" status (passed Senate vote)
-                      if (IS_MEMBER_VOTE) {
+                <div className="flex flex-col gap-1.5 sm:gap-6">
+                  {proposals && proposals.length > 0 ? (
+                    proposals
+                      .filter((project: any) => {
+                        // Senate Vote: show ALL pending proposals (keep them visible until vote is closed)
+                        if (IS_SENATE_VOTE) {
+                          return true
+                        }
+                        // Member Vote: show proposals in "Voting" status (passed Senate vote)
+                        if (IS_MEMBER_VOTE) {
+                          return project.tempCheckApproved
+                        }
+                        // Default: show all proposals that passed temp check (existing behavior)
                         return project.tempCheckApproved
-                      }
-                      // Default: show all proposals that passed temp check (existing behavior)
-                      return project.tempCheckApproved
-                    })
-                    .map((project: any, i) => (
-                      <div
-                        key={`project-card-${i}`}
-                        className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 overflow-hidden mx-0"
-                      >
-                        <ProjectCard
+                      })
+                      .map((project: any, i) => (
+                        <div
                           key={`project-card-${i}`}
-                          project={project}
-                          projectContract={projectContract}
-                          hatsContract={hatsContract}
-                          distribute={approvalVotingActive}
-                          distribution={userHasVotingPower ? proposalDistribution : undefined}
-                          handleDistributionChange={
-                            userHasVotingPower ? handleProposalDistributionChange : undefined
-                          }
-                          userHasVotingPower={userHasVotingPower}
-                          isVotingPeriod={approvalVotingActive}
-                          active={false}
-                        />
-                      </div>
-                    ))
-                ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    <p>There are no active Project Proposals.</p>
-                  </div>
-                )}
-                {approvalVotingActive && !IS_SENATE_VOTE && proposals && proposals.length > 0 && (
-                  <div className="mt-6 w-full flex flex-col items-end gap-2">
-                    <div className="text-white/80 font-RobotoMono text-sm">
-                      Allocated: {_.sum(Object.values(proposalDistribution))}% &nbsp;&nbsp;Voting Power:{' '}
-                      {Math.round(userVotingPower) || 0}
+                          className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 overflow-hidden mx-0"
+                        >
+                          <ProjectCard
+                            key={`project-card-${i}`}
+                            project={project}
+                            projectContract={projectContract}
+                            hatsContract={hatsContract}
+                            distribute={approvalVotingActive}
+                            distribution={userHasVotingPower ? proposalDistribution : undefined}
+                            handleDistributionChange={
+                              userHasVotingPower ? handleProposalDistributionChange : undefined
+                            }
+                            userHasVotingPower={userHasVotingPower}
+                            isVotingPeriod={approvalVotingActive}
+                            active={false}
+                          />
+                        </div>
+                      ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <p>There are no active Project Proposals.</p>
                     </div>
-                    {userHasVotingPower ? (
-                      <span className="flex flex-col md:flex-row md:items-center gap-2">
-                        <PrivyWeb3Button
-                          action={() => handleProposalSubmit(proposalContract)}
-                          requiredChain={chain}
-                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                          label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
-                        />
-                      </span>
-                    ) : (
-                      <span>
-                        <PrivyWeb3Button
-                          v5
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          label="Get Voting Power"
-                          action={() => router.push('/lock')}
-                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                        />
-                      </span>
-                    )}
-                  </div>
-                )}
+                  )}
+                  {approvalVotingActive && !IS_SENATE_VOTE && proposals && proposals.length > 0 && (
+                    <div className="mt-6 w-full flex flex-col items-end gap-2">
+                      <div className="text-white/80 font-RobotoMono text-sm">
+                        Allocated: {_.sum(Object.values(proposalDistribution))}% &nbsp;&nbsp;Voting Power:{' '}
+                        {Math.round(userVotingPower) || 0}
+                      </div>
+                      {userHasVotingPower ? (
+                        <span className="flex flex-col md:flex-row md:items-center gap-2">
+                          <PrivyWeb3Button
+                            action={() => handleProposalSubmit(proposalContract)}
+                            requiredChain={chain}
+                            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                            label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
+                          />
+                        </span>
+                      ) : (
+                        <span>
+                          <PrivyWeb3Button
+                            v5
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            label="Get Voting Power"
+                            action={() => router.push('/lock')}
+                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                          />
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <div
               id="projects-container"
