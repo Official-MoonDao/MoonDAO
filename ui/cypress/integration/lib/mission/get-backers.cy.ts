@@ -2,35 +2,29 @@ import { getBackers } from '@/lib/mission/index'
 
 describe('getBackers', () => {
   beforeEach(() => {
-    // Intercept all POST requests to any GraphQL endpoint
-    cy.intercept('POST', '**/*', (req) => {
+    // Intercept GraphQL requests more specifically
+    cy.intercept('POST', '**/graphql*', (req) => {
       // Check if this is a GraphQL request with the backers query
-      if (req.body && typeof req.body === 'object') {
-        const body = req.body
-        if (typeof body.query === 'string' && body.query.includes('backers')) {
-          req.reply({
-            statusCode: 200,
-            body: {
-              data: {
-                backers: [
-                  {
-                    id: '1',
-                    backer: '0x1234567890123456789012345678901234567890',
-                    projectId: '1',
-                    totalAmountContributed: '1000000000000000000',
-                    numberOfPayments: 1,
-                    firstContributionTimestamp: '1000000',
-                    lastContributionTimestamp: '1000000',
-                  },
-                ],
-              },
+      if (req.body && typeof req.body === 'object' && req.body.query && req.body.query.includes('backers')) {
+        req.reply({
+          statusCode: 200,
+          body: {
+            data: {
+              backers: [
+                {
+                  id: '1',
+                  backer: '0x1234567890123456789012345678901234567890',
+                  projectId: '1',
+                  totalAmountContributed: '1000000000000000000',
+                  numberOfPayments: 1,
+                  firstContributionTimestamp: '1000000',
+                  lastContributionTimestamp: '1000000',
+                },
+              ],
             },
-          })
-          return
-        }
+          },
+        })
       }
-      // For non-backers queries, continue without interception
-      req.continue()
     }).as('subgraphQuery')
   })
 
@@ -52,7 +46,7 @@ describe('getBackers', () => {
 
   it('handles batch fetching for large datasets', () => {
     // Mock large dataset
-    cy.intercept('POST', '**/*', (req) => {
+    cy.intercept('POST', '**/graphql*', (req) => {
       if (req.body && typeof req.body === 'object' && req.body.query && req.body.query.includes('backers')) {
         const skip = req.body.variables?.skip || 0
         const batch = Array.from({ length: 1000 }, (_, i) => ({
@@ -68,9 +62,7 @@ describe('getBackers', () => {
           statusCode: 200,
           body: { data: { backers: batch } } 
         })
-        return
       }
-      req.continue()
     }).as('largeDataset')
 
     const backers = getBackers(1, 1).then((data: any) => {

@@ -1,8 +1,9 @@
 import React from 'react'
 
-// Instead of testing the actual Globe rendering (which requires WebGL),
-// we'll test that the Earth component can be imported and mounted
-// The actual Globe functionality is better tested in E2E tests
+// WebGL-based components like Earth (using react-globe.gl) cannot be reliably
+// tested in Cypress component tests due to headless browser limitations.
+// This test verifies the module structure is correct. Full rendering should
+// be tested in E2E tests with real browsers that support WebGL.
 describe('<Earth />', () => {
   it('Earth module can be imported', () => {
     // Dynamic import to test module loading
