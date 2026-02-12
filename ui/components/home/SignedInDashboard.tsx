@@ -940,6 +940,7 @@ export default function SignedInDashboard({
                 </StandardButton>
               </div>
 
+              <div className="flex flex-col gap-4">
               {proposals.slice(0, 6).map((project: any, index: number) => (
                 <div key={index}>
                   <ProjectCard
@@ -952,6 +953,7 @@ export default function SignedInDashboard({
                   />
                 </div>
               ))}
+              </div>
             </div>
           </div>
 
