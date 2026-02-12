@@ -941,18 +941,7 @@ export default function SignedInDashboard({
               </div>
 
               <div className="flex flex-col gap-4">
-              {proposals.slice(0, 6).map((project: any, index: number) => (
-                <div key={index}>
-                  <ProjectCard
-                    project={project}
-                    projectContract={projectContract}
-                    hatsContract={hatsContract}
-                    userHasVotingPower={!!walletVP}
-                    isVotingPeriod={false}
-                    distribute={false}
-                  />
-                </div>
-              ))}
+                <ProposalList noPagination compact proposalLimit={2} />
               </div>
             </div>
           </div>
