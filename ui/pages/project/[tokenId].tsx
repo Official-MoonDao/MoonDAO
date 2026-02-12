@@ -50,6 +50,7 @@ import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalInfo from '@/components/nance/ProposalInfo'
 import ProposalVotes from '@/components/nance/ProposalVotes'
 import VotingResults from '@/components/nance/VotingResults'
+import ProposalEditSection from '@/components/nance/ProposalEditSection'
 import TempCheck from '@/components/project/TempCheck'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
@@ -246,6 +247,11 @@ export default function ProjectProfile({
               <div className="prose prose-invert max-w-none">
                 <MarkdownWithTOC body={proposalJSON.body || ''} />
               </div>
+              <ProposalEditSection
+                proposalJSON={proposalJSON}
+                projectName={project.name}
+                mdp={project.MDP}
+              />
             </div>
           </SectionCard>
 
