@@ -2,9 +2,13 @@ import { getBackers } from '@/lib/mission/index'
 
 describe('getBackers', () => {
   beforeEach(() => {
-    cy.intercept('POST', '**/graphql**', (req) => {
-      if (req.body && req.body.query && req.body.query.includes('backers')) {
+    // Intercept GraphQL requests to the subgraph endpoint specifically
+    // The subgraph URL contains '/query/' in the path
+    cy.intercept('POST', '**/query/**', (req) => {
+      // Check if this is a GraphQL request with the backers query
+      if (req.body && typeof req.body === 'object' && req.body.query && req.body.query.includes('backers')) {
         req.reply({
+          statusCode: 200,
           body: {
             data: {
               backers: [
@@ -43,8 +47,8 @@ describe('getBackers', () => {
 
   it('handles batch fetching for large datasets', () => {
     // Mock large dataset
-    cy.intercept('POST', '**/graphql**', (req) => {
-      if (req.body && req.body.query && req.body.query.includes('backers')) {
+    cy.intercept('POST', '**/query/**', (req) => {
+      if (req.body && typeof req.body === 'object' && req.body.query && req.body.query.includes('backers')) {
         const skip = req.body.variables?.skip || 0
         const batch = Array.from({ length: 1000 }, (_, i) => ({
           id: `${skip + i}`,
@@ -55,7 +59,10 @@ describe('getBackers', () => {
           firstContributionTimestamp: '1000000',
           lastContributionTimestamp: '1000000',
         }))
-        req.reply({ body: { data: { backers: batch } } })
+        req.reply({ 
+          statusCode: 200,
+          body: { data: { backers: batch } } 
+        })
       }
     }).as('largeDataset')
 
