@@ -20,7 +20,11 @@ import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
-import { runQuadraticVoting, getApprovedProjects } from '@/lib/utils/rewards'
+import {
+  runQuadraticVoting,
+  runIterativeNormalization,
+  getApprovedProjects,
+} from '@/lib/utils/rewards'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 
 // Configuration constants
@@ -266,7 +270,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     )
   )
   const voteOpenTimestamp: number = Math.floor(
-    getThirdThursdayOfQuarterTimestamp(quarter, year) / 1000
+    Number(getThirdThursdayOfQuarterTimestamp(quarter, year)) / 1000
   )
   const voteCloseTimestamp: number = voteOpenTimestamp + 60 * 60 * 24 * 5 // 5 days after vote opens
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
@@ -280,8 +284,51 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   const addressToQuadraticVotingPower: { [address: string]: number } = Object.fromEntries(
     voteAddresses.map((address, index) => [address.toLowerCase(), Math.sqrt(vMOONEYs[index])])
   )
+
+  // Build project id -> author address so we exclude author's vote on their own proposal
+  const projectIdToAuthorAddress: Record<string, string> = {}
+  await Promise.all(
+    passedProjects.map(async (project: any) => {
+      if (!project.proposalIPFS) return
+      try {
+        const res = await fetch(project.proposalIPFS)
+        const json = await res.json()
+        if (json.authorAddress) projectIdToAuthorAddress[String(project.id)] = json.authorAddress
+      } catch {
+        // ignore
+      }
+    })
+  )
+
+  // Strip each voter's allocation to their own proposal (author cannot vote on own)
+  type VoteRow = DistributionVote & { distribution?: string | Record<string, number>; quarter?: number; year?: number }
+  const votesWithAuthorOwnExcluded: VoteRow[] = votes.map((v) => {
+    const row = v as VoteRow
+    const voterAddr = row.address?.toLowerCase()
+    const raw = row.distribution
+    const distribution: Record<string, number> = {}
+    for (const [projectId, value] of Object.entries(
+      typeof raw === 'string' ? JSON.parse(raw) : raw || {}
+    )) {
+      const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
+      if (author && author === voterAddr) continue
+      distribution[projectId] = Number(value)
+    }
+    return { ...row, distribution }
+  })
+
+  // Recalculate allocations using iterative normalization (fill author's project with column average, normalize rows to 100%)
+  const [normalizedDistributions] = runIterativeNormalization(
+    votesWithAuthorOwnExcluded,
+    passedProjects
+  )
+
   const SUM_TO_ONE_HUNDRED = 100
-  const outcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+  const outcome = runQuadraticVoting(
+    normalizedDistributions,
+    addressToQuadraticVotingPower,
+    SUM_TO_ONE_HUNDRED
+  )
   if (req.method === 'GET') {
     res.status(200).json({
       outcome,
@@ -294,7 +341,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     outcome,
     projectIdToApproved,
     ethBudgets,
-    votes,
+    normalizedDistributions,
     addressToQuadraticVotingPower,
     voteAddresses,
     NEXT_QUARTER_BUDGET_ETH
