@@ -12,7 +12,11 @@ export default function ProjectBanner() {
   // Hide banner if user is on project-related pages
   const isOnProjectPage = PROJECT_PAGES.includes(router.pathname)
 
-  if (!isVisible || isOnProjectPage || process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true') {
+  // Hide banner if submission deadline has passed
+  const submissionDeadline = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)
+  const isDeadlinePassed = new Date() > submissionDeadline
+
+  if (!isVisible || isOnProjectPage || isDeadlinePassed || process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true') {
     return null
   }
 
