@@ -89,7 +89,9 @@ export async function getBackers(projectId: any, missionId?: any) {
     `
     const subgraphRes = await subgraphClient.query(query, {}).toPromise()
     if (subgraphRes.error) {
-      throw new Error(subgraphRes.error.message)
+      // Log the actual error for easier debugging
+      console.error('Subgraph query failed:', subgraphRes.error)
+      throw new Error(`Subgraph query error: ${subgraphRes.error.message}`)
     }
     return subgraphRes.data?.backers || []
   }
