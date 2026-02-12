@@ -7,7 +7,7 @@ import React from 'react'
 describe('<Earth />', () => {
   it('Earth module can be imported', () => {
     // Dynamic import to test module loading
-    cy.wrap(import('@/components/globe/Earth')).should((module: any) => {
+    cy.wrap(import('@/components/globe/Earth')).should((module: { default: React.ComponentType<any> }) => {
       expect(module).to.have.property('default')
       // Check that it's a valid React component (can be an object or function)
       expect(module.default).to.exist

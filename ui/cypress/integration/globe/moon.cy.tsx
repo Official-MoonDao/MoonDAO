@@ -7,7 +7,7 @@ import React from 'react'
 describe('<Moon />', () => {
   it('Moon module can be imported', () => {
     // Dynamic import to test module loading
-    cy.wrap(import('@/components/globe/Moon')).should((module: any) => {
+    cy.wrap(import('@/components/globe/Moon')).should((module: { default: React.ComponentType<any> }) => {
       expect(module).to.have.property('default')
       // Check that it's a valid React component (can be an object or function)
       expect(module.default).to.exist
