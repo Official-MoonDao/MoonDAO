@@ -1,9 +1,12 @@
 import { PROJECT_SYSTEM_CONFIG, NEXT_QUARTER_FUNDING_ETH, MAX_BUDGET_ETH } from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 
 const PROJECT_PAGES = ['/projects-overview', '/projects', '/proposals', '/submit']
+
+// Check if deadline has passed (computed once on module load)
+const SUBMISSION_DEADLINE = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)
 
 export default function ProjectBanner() {
   const router = useRouter()
@@ -13,10 +16,7 @@ export default function ProjectBanner() {
   const isOnProjectPage = PROJECT_PAGES.includes(router.pathname)
 
   // Hide banner if submission deadline has passed
-  const isDeadlinePassed = useMemo(() => {
-    const submissionDeadline = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)
-    return new Date() > submissionDeadline
-  }, [])
+  const isDeadlinePassed = new Date() > SUBMISSION_DEADLINE
 
   if (!isVisible || isOnProjectPage || isDeadlinePassed || process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true') {
     return null
