@@ -5,6 +5,9 @@ import { useState } from 'react'
 
 const PROJECT_PAGES = ['/projects-overview', '/projects', '/proposals', '/submit']
 
+// Check if deadline has passed (computed once on module load)
+const SUBMISSION_DEADLINE = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)
+
 export default function ProjectBanner() {
   const router = useRouter()
   const [isVisible, setIsVisible] = useState(true)
@@ -12,7 +15,10 @@ export default function ProjectBanner() {
   // Hide banner if user is on project-related pages
   const isOnProjectPage = PROJECT_PAGES.includes(router.pathname)
 
-  if (!isVisible || isOnProjectPage || process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true') {
+  // Hide banner if submission deadline has passed
+  const isDeadlinePassed = new Date() > SUBMISSION_DEADLINE
+
+  if (!isVisible || isOnProjectPage || isDeadlinePassed || process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true') {
     return null
   }
 
