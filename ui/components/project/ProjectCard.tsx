@@ -3,8 +3,7 @@ import { trimActionsFromBody } from '@nance/nance-sdk'
 import { usePrivy } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ProposalsABI from 'const/abis/Proposals.json'
-import SenatorsABI from 'const/abis/Senators.json'
-import { DEFAULT_CHAIN_V5, PROPOSALS_ADDRESSES, SENATORS_ADDRESSES, IS_SENATE_VOTE } from 'const/config'
+import { DEFAULT_CHAIN_V5, PROPOSALS_ADDRESSES, IS_SENATE_VOTE } from 'const/config'
 import Link from 'next/link'
 import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction, readContract } from 'thirdweb'
@@ -141,49 +140,8 @@ type ProjectCardProps = {
   active?: boolean
 }
 
-// Hook to check if the current user is a Senator
-const useIsSenator = () => {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
-  const account = useActiveAccount()
-  const { authenticated } = usePrivy()
-  const [isSenator, setIsSenator] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  
-  const senatorsContract = useContract({
-    address: SENATORS_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: SenatorsABI.abi as any,
-  })
-  
-  useEffect(() => {
-    async function checkSenator() {
-      // Only check senator status if user is authenticated via Privy
-      if (!authenticated || !account?.address || !senatorsContract) {
-        setIsSenator(false)
-        setIsLoading(false)
-        return
-      }
-      
-      try {
-        const result = await readContract({
-          contract: senatorsContract,
-          method: 'isSenator' as string,
-          params: [account.address],
-        })
-        setIsSenator(Boolean(result))
-      } catch (error) {
-        console.error('Error checking senator status:', error)
-        setIsSenator(false)
-      }
-      setIsLoading(false)
-    }
-    
-    checkSenator()
-  }, [authenticated, account?.address, senatorsContract])
-  
-  return { isSenator, isLoading }
-}
+import { useIsSenator } from '@/lib/thirdweb/hooks/useIsSenator'
+
 
 // Senators Status Display component - shows which senators have voted
 const SenatorsStatus = memo(({ senatorVotes, isLoading }: { senatorVotes: any[]; isLoading: boolean }) => {

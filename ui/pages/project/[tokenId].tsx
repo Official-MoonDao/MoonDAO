@@ -221,8 +221,8 @@ export default function ProjectProfile({
             iconSrc="/assets/icon-star.svg"
             action={
               <div className="flex gap-2 items-center">
-                {(project.active == PROJECT_PENDING &&
-                  proposalStatus === 'Temperature Check') || true && (
+                {project.active == PROJECT_PENDING &&
+                  proposalStatus === 'Temperature Check' && (
                   <div className="flex items-center gap-2">
                     <TempCheck mdp={project.MDP} />
                   </div>

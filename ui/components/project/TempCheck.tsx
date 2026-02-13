@@ -7,6 +7,7 @@ import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import useProposalData from '@/lib/project/useProposalData'
 import { PROPOSALS_ADDRESSES } from 'const/config'
+import { useIsSenator } from '@/lib/thirdweb/hooks/useIsSenator'
 
 type TempCheckProps = {
   mdp: number
@@ -16,6 +17,7 @@ export default function TempCheck({ mdp }: TempCheckProps) {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
+  const { isSenator, isLoading: isSenatorLoading } = useIsSenator()
   const proposalContract = useContract({
     address: PROPOSALS_ADDRESSES[chainSlug],
     chain: chain,
@@ -39,6 +41,8 @@ export default function TempCheck({ mdp }: TempCheckProps) {
       refetch()
     }
   }
+
+  if (!isSenator) return null
 
   return (
     <div className="flex items-center gap-2">
