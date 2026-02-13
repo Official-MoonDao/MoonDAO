@@ -182,15 +182,23 @@ export default function ProjectProfile({
         header={project.name}
         headerSize="max(20px, 3vw)"
         description={
-          <ProposalInfo
-            proposalJSON={proposalJSON}
-            proposalStatus={proposalStatus}
-            project={project}
-            linkDisabled
-            showTitle={false}
-            showStatus={true}
-          />
-          //'prop'
+          <div>
+            <ProposalInfo
+              proposalJSON={proposalJSON}
+              proposalStatus={proposalStatus}
+              project={project}
+              linkDisabled
+              showTitle={false}
+              showStatus={true}
+            />
+            <div className="mt-3">
+              <ProposalEditSection
+                proposalJSON={proposalJSON}
+                projectName={project.name}
+                mdp={project.MDP}
+              />
+            </div>
+          </div>
         }
         mainPadding
         mode="compact"
@@ -244,11 +252,6 @@ export default function ProjectProfile({
             }
           >
             <div className="mt-10 mb-10">
-              <ProposalEditSection
-                proposalJSON={proposalJSON}
-                projectName={project.name}
-                mdp={project.MDP}
-              />
               <div className="prose prose-invert max-w-none">
                 <MarkdownWithTOC body={proposalJSON.body || ''} />
               </div>
