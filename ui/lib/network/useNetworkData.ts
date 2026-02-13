@@ -30,6 +30,10 @@ import {
 } from './utils'
 
 const PAGE_SIZE = 10
+// Upper bound for fetching all items when client-side pagination is needed
+// (e.g., after filtering expired items). Suitable for the current dataset
+// size (teams/citizens are typically in the low hundreds).
+const FETCH_ALL_LIMIT = 9999
 
 export function useTableNames() {
   const { selectedChain } = useContext(ChainContextV5)
@@ -228,10 +232,13 @@ export function useCitizens(options: UseNetworkDataOptions = {}): NetworkDataRes
 }
 
 export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataResult<NetworkNFT> {
+  const { page = 1, pageSize = PAGE_SIZE } = options
   const { selectedChain } = useContext(ChainContextV5)
   const chain = selectedChain || DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
-  const teamsResult = useTeams(options)
+  // Fetch all teams without SQL pagination — we paginate after validation
+  // to ensure consistent page sizes (expired teams are filtered client-side)
+  const teamsResult = useTeams({ ...options, page: 1, pageSize: FETCH_ALL_LIMIT })
   // Show data optimistically while validation happens
   const [validTeams, setValidTeams] = useState<NetworkNFT[]>(teamsResult.data || [])
   const [isValidating, setIsValidating] = useState(false)
@@ -343,22 +350,36 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
     validateTeams()
   }, [dataKey, chain, chainSlug, teamsResult.data])
 
+  // Paginate after validation to ensure consistent page sizes
+  const paginatedTeams = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return validTeams.slice(start, start + pageSize)
+  }, [validTeams, page, pageSize])
+
+  const validMaxPage = useMemo(
+    () => calculateMaxPage(validTeams.length, pageSize),
+    [validTeams.length, pageSize]
+  )
+
   return {
-    data: validTeams,
+    data: paginatedTeams,
     isLoading: teamsResult.isLoading,
     error: validationError || teamsResult.error,
-    totalCount: teamsResult.totalCount,
-    maxPage: teamsResult.maxPage,
+    totalCount: validTeams.length,
+    maxPage: validMaxPage,
   }
 }
 
 export function useValidCitizens(
   options: UseNetworkDataOptions = {}
 ): NetworkDataResult<NetworkNFT> {
+  const { page = 1, pageSize = PAGE_SIZE } = options
   const { selectedChain } = useContext(ChainContextV5)
   const chain = selectedChain || DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
-  const citizensResult = useCitizens(options)
+  // Fetch all citizens without SQL pagination — we paginate after validation
+  // to ensure consistent page sizes (expired citizens are filtered client-side)
+  const citizensResult = useCitizens({ ...options, page: 1, pageSize: FETCH_ALL_LIMIT })
   // Show data optimistically while validation happens
   const [validCitizens, setValidCitizens] = useState<NetworkNFT[]>(citizensResult.data || [])
   const [isValidating, setIsValidating] = useState(false)
@@ -472,11 +493,22 @@ export function useValidCitizens(
     validateCitizens()
   }, [dataKey, chain, chainSlug, citizensResult.data])
 
+  // Paginate after validation to ensure consistent page sizes
+  const paginatedCitizens = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return validCitizens.slice(start, start + pageSize)
+  }, [validCitizens, page, pageSize])
+
+  const validMaxPage = useMemo(
+    () => calculateMaxPage(validCitizens.length, pageSize),
+    [validCitizens.length, pageSize]
+  )
+
   return {
-    data: validCitizens,
+    data: paginatedCitizens,
     isLoading: citizensResult.isLoading,
     error: validationError || citizensResult.error,
-    totalCount: citizensResult.totalCount,
-    maxPage: citizensResult.maxPage,
+    totalCount: validCitizens.length,
+    maxPage: validMaxPage,
   }
 }
