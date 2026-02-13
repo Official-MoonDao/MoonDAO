@@ -412,7 +412,7 @@ const ProjectCardContent = memo(
         className={`p-3 sm:p-6 pb-3 sm:pb-4 flex flex-col gap-2 sm:gap-3 relative w-full transition-all duration-300 bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl ${
           isExpanded 
             ? 'h-auto' 
-            : 'h-auto min-h-[240px] hover:scale-[1.02]'
+            : 'h-auto min-h-[180px] hover:scale-[1.02]'
         } ${onToggleExpand ? 'cursor-pointer' : ''}`}
       >
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
