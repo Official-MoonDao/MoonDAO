@@ -6,6 +6,7 @@ import {
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
+import { GetServerSideProps } from 'next'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { getContract, readContract } from 'thirdweb'
@@ -25,14 +26,17 @@ import { Distribution } from '@/components/nance/ProjectRewards'
 export default function RewardsThankYou({
   distributionTableName,
   projects,
+  quarter,
+  year,
 }: {
   distributionTableName: string
   projects: any
+  quarter: number
+  year: number
 }) {
   const account = useActiveAccount()
   const address = account?.address
 
-  const { quarter, year } = getRelativeQuarter(-1)
   const statement = address
     ? `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
     : null
@@ -49,7 +53,7 @@ export default function RewardsThankYou({
     )
   }, [distributions, address])
 
-  const descriptionSection = <p>You've successfully submitted your project allocations!</p>
+  const descriptionSection = <p>{`You've successfully submitted your Q${quarter} ${year} project allocations!`}</p>
 
   return (
     <section id="jobs-container" className="overflow-hidden">
@@ -95,10 +99,18 @@ export default function RewardsThankYou({
   )
 }
 
-export async function getStaticProps() {
+const MIN_VALID_YEAR = 2020
+
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   try {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
+
+    const queryQuarter = query.quarter ? Number(query.quarter) : undefined
+    const queryYear = query.year ? Number(query.year) : undefined
+    const { quarter: fallbackQuarter, year: fallbackYear } = getRelativeQuarter(-1)
+    const quarter = queryQuarter && queryQuarter >= 1 && queryQuarter <= 4 ? queryQuarter : fallbackQuarter
+    const year = queryYear && queryYear >= MIN_VALID_YEAR ? queryYear : fallbackYear
 
     const projectTableContract = getContract({
       client: serverClient,
@@ -111,8 +123,6 @@ export async function getStaticProps() {
       contract: projectTableContract,
       method: 'getTableName',
     })
-
-    const { quarter, year } = getRelativeQuarter(-1)
 
     const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter} AND eligible != 0`
     const projects = await queryTable(chain, projectStatement)
@@ -134,17 +144,20 @@ export async function getStaticProps() {
       props: {
         distributionTableName,
         projects: filteredProjects,
+        quarter,
+        year,
       },
-      revalidate: 60,
     }
   } catch (error) {
     console.error(error)
+    const { quarter, year } = getRelativeQuarter(-1)
     return {
       props: {
         distributionTableName: '',
         projects: [],
+        quarter,
+        year,
       },
-      revalidate: 60,
     }
   }
 }
