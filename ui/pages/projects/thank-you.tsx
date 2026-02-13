@@ -35,10 +35,18 @@ export default function RewardsThankYou({
   const address = account?.address
 
   const { quarter: fallbackQuarter, year: fallbackYear } = getRelativeQuarter(-1)
-  const queryQuarter = router.query.quarter ? Number(router.query.quarter) : undefined
-  const queryYear = router.query.year ? Number(router.query.year) : undefined
-  const quarter = queryQuarter && queryQuarter >= 1 && queryQuarter <= 4 ? queryQuarter : fallbackQuarter
-  const year = queryYear && queryYear >= 2020 ? queryYear : fallbackYear
+
+  const { quarter, year } = useMemo(() => {
+    if (!router.isReady) return { quarter: fallbackQuarter, year: fallbackYear }
+    const rawQuarter = Array.isArray(router.query.quarter) ? router.query.quarter[0] : router.query.quarter
+    const rawYear = Array.isArray(router.query.year) ? router.query.year[0] : router.query.year
+    const parsedQuarter = rawQuarter ? Number(rawQuarter) : undefined
+    const parsedYear = rawYear ? Number(rawYear) : undefined
+    return {
+      quarter: parsedQuarter && parsedQuarter >= 1 && parsedQuarter <= 4 ? parsedQuarter : fallbackQuarter,
+      year: parsedYear && parsedYear >= 2020 ? parsedYear : fallbackYear,
+    }
+  }, [router.isReady, router.query.quarter, router.query.year, fallbackQuarter, fallbackYear])
 
   const statement = address
     ? `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
