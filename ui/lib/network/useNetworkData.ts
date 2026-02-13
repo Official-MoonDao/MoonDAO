@@ -30,6 +30,10 @@ import {
 } from './utils'
 
 const PAGE_SIZE = 10
+// Upper bound for fetching all items when client-side pagination is needed
+// (e.g., after filtering expired items). Suitable for the current dataset
+// size (teams/citizens are typically in the low hundreds).
+const FETCH_ALL_LIMIT = 9999
 
 export function useTableNames() {
   const { selectedChain } = useContext(ChainContextV5)
@@ -234,7 +238,7 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
   const chainSlug = getChainSlug(chain)
   // Fetch all teams without SQL pagination — we paginate after validation
   // to ensure consistent page sizes (expired teams are filtered client-side)
-  const teamsResult = useTeams({ ...options, page: 1, pageSize: 9999 })
+  const teamsResult = useTeams({ ...options, page: 1, pageSize: FETCH_ALL_LIMIT })
   // Show data optimistically while validation happens
   const [validTeams, setValidTeams] = useState<NetworkNFT[]>(teamsResult.data || [])
   const [isValidating, setIsValidating] = useState(false)
@@ -375,7 +379,7 @@ export function useValidCitizens(
   const chainSlug = getChainSlug(chain)
   // Fetch all citizens without SQL pagination — we paginate after validation
   // to ensure consistent page sizes (expired citizens are filtered client-side)
-  const citizensResult = useCitizens({ ...options, page: 1, pageSize: 9999 })
+  const citizensResult = useCitizens({ ...options, page: 1, pageSize: FETCH_ALL_LIMIT })
   // Show data optimistically while validation happens
   const [validCitizens, setValidCitizens] = useState<NetworkNFT[]>(citizensResult.data || [])
   const [isValidating, setIsValidating] = useState(false)
