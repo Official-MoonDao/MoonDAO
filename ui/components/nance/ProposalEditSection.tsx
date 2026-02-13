@@ -94,7 +94,7 @@ export default function ProposalEditSection({
       toast.success('Proposal updated successfully! Refreshing...', {
         style: toastStyle,
       })
-      setTimeout(() => router.reload(), 1500)
+      setTimeout(() => router.reload(), 4000)
     } catch (error: any) {
       console.error('Error updating proposal:', error)
       toast.error(error.message || 'Failed to update proposal', {

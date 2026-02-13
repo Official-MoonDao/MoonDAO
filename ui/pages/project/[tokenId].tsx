@@ -244,14 +244,14 @@ export default function ProjectProfile({
             }
           >
             <div className="mt-10 mb-10">
-              <div className="prose prose-invert max-w-none">
-                <MarkdownWithTOC body={proposalJSON.body || ''} />
-              </div>
               <ProposalEditSection
                 proposalJSON={proposalJSON}
                 projectName={project.name}
                 mdp={project.MDP}
               />
+              <div className="prose prose-invert max-w-none">
+                <MarkdownWithTOC body={proposalJSON.body || ''} />
+              </div>
             </div>
           </SectionCard>
 
