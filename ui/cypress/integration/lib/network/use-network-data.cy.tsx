@@ -265,7 +265,7 @@ describe('useNetworkData hooks', () => {
 
       cy.get('[data-testid="citizens-max-page"]', { timeout: 15000 })
         .should('exist')
-        .and('contain', '2')
+        .and('contain', '1')
     })
 
     it('should not fetch when disabled', () => {

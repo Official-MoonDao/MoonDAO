@@ -140,7 +140,7 @@
     "@types/three": "^0.156.0",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.0",
-    "cypress": "12.17.3",
+    "cypress": "^12.17.3",
     "cypress-file-upload": "^5.0.8",
     "cypress-split": "^1.24.2",
     "dotenv": "^17.2.2",
