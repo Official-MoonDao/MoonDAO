@@ -54,8 +54,7 @@ export default function AnalyticsChainSelector({
       <div
         id="network-selector-dropdown-button"
         className="flex items-center gap-2 p-3 bg-black/20 hover:bg-black/40 rounded-lg border border-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group"
-        onClick={(e) => {
-          if (e.detail === 0) return e.preventDefault()
+        onClick={() => {
           setDropdown((prev) => !prev)
         }}
       >
