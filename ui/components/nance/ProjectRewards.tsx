@@ -402,7 +402,7 @@ export function ProjectRewards({
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
-        setTimeout(() => router.push('/thank-you'), 3000)
+        setTimeout(() => router.push(`/projects/thank-you?quarter=${quarter}&year=${year}`), 3000)
       }
     } catch (error) {
       console.error('Error submitting distribution:', error)
@@ -461,7 +461,7 @@ export function ProjectRewards({
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
-        setTimeout(() => router.push('/thank-you'), 3000)
+        setTimeout(() => router.push(`/projects/thank-you?quarter=${quarter}&year=${year}`), 3000)
       }
     } catch (error) {
       console.error('Error submitting distribution:', error)
