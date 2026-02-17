@@ -64,6 +64,7 @@ export function Steps({
               </span>
             </button>
             {i < steps.length - 1 && (
+              /* Offset up by label height to center line with step circles */
               <div className="flex-1 mx-3 mt-[-1.25rem]">
                 <div className="h-0.5 w-full rounded-full bg-white/10">
                   <div
