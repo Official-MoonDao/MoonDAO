@@ -77,6 +77,7 @@ export default function NumberStepper({
       className={`flex items-center justify-between min-w-[100px] w-[100px] h-[40px] sm:h-[35px] gradient-2 rounded-full flex-shrink-0 ${
         isDisabled && 'opacity-50'
       }`}
+      onClick={(e) => e.stopPropagation()}
     >
       <input
         ref={inputRef}
