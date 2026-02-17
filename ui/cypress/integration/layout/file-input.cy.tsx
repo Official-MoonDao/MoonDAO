@@ -8,8 +8,8 @@ describe('<FileInput />', () => {
     cy.mount(<FileInput {...props} />)
   })
 
-  it('Should display "No file chosen" initially', () => {
-    cy.get('#file-chosen').should('contain.text', 'No file chosen')
+  it('Should display upload prompt initially', () => {
+    cy.contains('Click to upload a photo').should('exist')
   })
 
   it('Should update file name when a file is selected', () => {
@@ -24,8 +24,8 @@ describe('<FileInput />', () => {
       mimeType: 'image/png',
     })
 
-    // Check if the file name is updated
-    cy.get('#file-chosen').should('contain.text', fileName.slice(0, 20))
+    // Check if the file name is displayed
+    cy.contains(fileName.slice(0, 20)).should('exist')
 
     // Check if setFile is called with the correct file
     cy.wrap(props.setFile).should('have.been.calledWith', file)

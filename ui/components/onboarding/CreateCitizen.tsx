@@ -976,11 +976,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         }
         description=""
       >
-        <div className="flex flex-row w-full">
-          <div className="px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1000px]">
-            <div className="flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
+        <div className="flex flex-row w-full justify-center">
+          <div className="w-full lg:max-w-[800px] flex flex-col">
+            <div className="flex items-center justify-between mb-8 px-4 md:px-0">
               <Steps
-                className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
+                className="flex-1 max-w-[500px]"
                 steps={['Design', 'Profile', 'Checkout']}
                 currStep={stage}
                 lastStep={lastStage}
@@ -988,11 +988,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
               />
               <button
                 onClick={() => setSelectedTier(null)}
-                className="hover:scale-110 transition-transform"
+                className="ml-4 p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200"
               >
-                <XMarkIcon width={50} height={50} className="text-white" />
+                <XMarkIcon width={20} height={20} className="text-white/60" />
               </button>
             </div>
+
+            <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 md:p-10">
 
             {/* Typeform form */}
             {stage === 0 && (
@@ -1001,10 +1003,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 title="Design"
                 description={
                   <>
-                    <b>Create your unique and personalized AI passport photo.</b> The uploaded photo{' '}
-                    <u>MUST</u> contain a face, but it can be a photo of yourself or an avatar that
-                    represents you well. Image generation may take up to a minute, so please
-                    continue to the next step to fill out your profile.
+                    Upload a photo to create your personalized AI passport image. The photo must
+                    contain a face — it can be a photo of yourself or an avatar. Image generation
+                    may take up to a minute.
                   </>
                 }
               >
@@ -1017,6 +1018,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   stage={stage}
                   generateInBG
                   onGenerationStateChange={setIsImageGenerating}
+                  nextLabel="Continue to Profile"
                 />
                 {process.env.NEXT_PUBLIC_ENV === 'dev' && (
                   <button
@@ -1049,10 +1051,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             {/* Upload & Create Image */}
             {stage === 1 && (
               <StageContainer
-                title="Citizen Profile"
-                description="Please complete your citizen profile."
+                title="Profile"
+                description="Complete your citizen profile to continue."
               >
-                <div className="w-full max-w-[900px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
+                <div className="w-full max-w-[600px] bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
                   <Widget
                     className="w-full"
                     id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string}
@@ -1065,17 +1067,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
             {stage === 2 && (
               <StageContainer
-                title="Mint Citizen"
-                description="Please review your onchain profile before finalizing your registration"
+                title="Review & Checkout"
+                description="Review your profile information and finalize your registration."
               >
-                {/* <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-                  {`Make sure all your information is displayed correcly.`}
-                </p>
-                <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-                  {`Welcome to the future of off-world coordination with MoonDAO.`}
-                </p> */}
-                <div className="flex flex-col items-center">
-                  <div className="relative w-[600px] h-[600px] rounded-2xl border border-slate-600/30 bg-slate-900/40 overflow-hidden">
+                <div className="flex flex-col items-center w-full max-w-[600px]">
+                  <div className="relative w-full aspect-square max-w-[320px] rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
                     <Image
                       src={
                         citizenImage
@@ -1085,88 +1081,69 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                           : '/assets/MoonDAO-Loading-Animation.svg'
                       }
                       alt="citizen-image"
-                      width={600}
-                      height={600}
-                      className="rounded-2xl"
+                      fill
+                      className="rounded-2xl object-cover"
                     />
                     {isImageGenerating && !citizenImage && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                         <Image
                           src="/assets/MoonDAO-Loading-Animation.svg"
                           alt="generating"
-                          width={160}
-                          height={160}
-                          className="w-40 h-40 opacity-90"
+                          width={120}
+                          height={120}
+                          className="w-28 h-28 opacity-90"
                         />
                       </div>
                     )}
                     {!citizenImage && !inputImage && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50 rounded-2xl">
-                        <p className="text-white text-center px-4">
-                          Please complete the previous steps to generate your citizen image
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/[0.03] rounded-2xl">
+                        <p className="text-white/40 text-center text-sm px-4">
+                          Complete the previous steps to generate your image
                         </p>
                       </div>
                     )}
                   </div>
-                  {citizenImage && (
-                    <div className="mt-4 text-center">
-                      <p className="text-slate-300">Your personalized citizen passport photo</p>
-                      <button
-                        onClick={() => setStage(0)}
-                        className="mt-2 text-sky-400 hover:text-sky-300 text-sm underline transition-colors"
-                      >
-                        Edit Image
-                      </button>
-                    </div>
+                  {(citizenImage || inputImage) && (
+                    <button
+                      onClick={() => setStage(0)}
+                      className="mt-3 text-indigo-400 hover:text-indigo-300 text-xs transition-colors"
+                    >
+                      Change Image
+                    </button>
                   )}
-                  {!citizenImage && inputImage && (
-                    <div className="mt-4 text-center">
-                      <p className="text-slate-300 opacity-75">
-                        {isImageGenerating
-                          ? 'Image generation in progress...'
-                          : 'Using uploaded image'}
-                      </p>
-                      <button
-                        onClick={() => setStage(0)}
-                        className="mt-2 text-sky-400 hover:text-sky-300 text-sm underline transition-colors"
-                      >
-                        Edit Image
-                      </button>
-                    </div>
+                  {!citizenImage && inputImage && isImageGenerating && (
+                    <p className="mt-2 text-white/40 text-xs">
+                      AI image generation in progress...
+                    </p>
                   )}
                 </div>
 
-                <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
+                <div className="w-full max-w-[600px] mt-8">
                   <DataOverview
                     data={citizenData}
                     title="Citizen Overview"
                     excludeKeys={['newsletterSub', 'formResponseId']}
                   />
                 </div>
-                <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
-                  <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                    <h2 className="font-GoodTimes text-xl mb-6 text-white">
-                      Important Information
-                    </h2>
-                    <div className="flex flex-col rounded-[20px] bg-slate-800/50 border border-slate-600/30 p-5 pb-10 md:p-5">
-                      <h3 className="font-GoodTimes text-lg mb-3 text-white">Citizenship</h3>
-                      <p className="text-slate-300 leading-relaxed">
-                        Citizenship lasts for one year and can be renewed at any time. Any wallet
-                        funds are self-custodied and are not dependent on registration.
-                      </p>
-                    </div>
-                    <p className="mt-6 text-center text-slate-300 font-medium">
-                      Welcome to the future of on-chain, off-world coordination with MoonDAO!
+
+                <div className="w-full max-w-[600px] mt-6">
+                  <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+                    <p className="text-white/60 text-sm leading-relaxed">
+                      Citizenship lasts for one year and can be renewed at any time. Wallet
+                      funds are self-custodied and are not dependent on registration.
                     </p>
                   </div>
                 </div>
-                <TermsCheckbox
-                  checked={agreedToCondition}
-                  onChange={(newValue) => {
-                    setAgreedToCondition(newValue)
-                  }}
-                />
-                <div className="mt-6">
+
+                <div className="w-full max-w-[600px]">
+                  <TermsCheckbox
+                    checked={agreedToCondition}
+                    onChange={(newValue) => {
+                      setAgreedToCondition(newValue)
+                    }}
+                  />
+                </div>
+                <div className="mt-6 w-full max-w-[600px]">
                   <NetworkSelector chains={chains} />
                 </div>
                 <PrivyWeb3Button
@@ -1179,23 +1156,23 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       ? 'Estimating Gas...'
                       : 'Become a Citizen'
                   }
-                  className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="mt-6 w-full max-w-[600px] px-8 py-3 gradient-2 hover:scale-[1.02] transition-transform rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   isDisabled={!agreedToCondition || isLoadingMint || isLoadingGasEstimate}
                   action={callMint}
                 />
                 {isLoadingMint && (
-                  <div className="mt-4 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl">
-                    <p className="text-slate-300 text-center">
+                  <div className="mt-4 w-full max-w-[600px] p-4 bg-white/[0.03] border border-white/10 rounded-2xl text-center">
+                    <p className="text-white/70 text-sm">
                       Creating your citizen profile on the blockchain...
                     </p>
-                    <p className="text-slate-400 text-sm text-center mt-2">
-                      This process can take up to a minute. Please wait while the transaction is
-                      processed.
+                    <p className="text-white/40 text-xs mt-2">
+                      This may take up to a minute. Please wait.
                     </p>
                   </div>
                 )}
               </StageContainer>
             )}
+            </div>
           </div>
         </div>
         {/* Dev Buttons */}

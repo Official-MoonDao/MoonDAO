@@ -33,11 +33,11 @@ export default function FileInput({
 }: FileInputProps) {
   //get file name
   const [fileName, setFileName] = useState(
-    uri ? uri : file?.name || 'No file chosen'
+    uri ? uri : file?.name || ''
   )
   return (
-    <div id={id} className="relative flex flex-col gap-2 max-w-[250px]">
-      <div className="flex flex-row items-center gap-2">
+    <div id={id} className="w-full max-w-[600px]">
+      <div className="flex flex-row items-center gap-2 mb-2">
         {label && <p className={`text-sm font-GoodTimes`}>{label}</p>}
         {tooltip && <Tooltip text={tooltip}>?</Tooltip>}
       </div>
@@ -46,7 +46,7 @@ export default function FileInput({
         accept={accept}
         onChange={async (e: any) => {
           const file = e.target.files[0]
-          const chosenFileName = file?.name.slice(0, 20) || 'No file chosen'
+          const chosenFileName = file?.name.slice(0, 20) || ''
           if (noBlankImages && (await isImageBlank(file))) {
             return toast.error('Please ensure your image is not blank.')
           }
@@ -65,28 +65,24 @@ export default function FileInput({
       />
       <label
         htmlFor="file-upload"
-        className="cursor-pointer gradient-2 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded inline-flex items-center"
+        className="group cursor-pointer flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-white/20 hover:border-indigo-400/50 bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 py-8 px-6"
       >
-        <svg
-          className="w-4 h-4 mr-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12 4v16m8-8H4"
-          ></path>
-        </svg>
-        <span>Choose File</span>
+        <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mb-3 group-hover:bg-indigo-500/20 transition-colors duration-300">
+          <svg className="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+          </svg>
+        </div>
+        {fileName ? (
+          <p className="text-white/80 text-sm font-medium">{fileName}</p>
+        ) : (
+          <>
+            <p className="text-white/80 text-sm font-medium">Click to upload a photo</p>
+            <p className="text-white/40 text-xs mt-1">
+              {acceptText || 'PNG, JPEG, WEBP, GIF, or SVG'}
+            </p>
+          </>
+        )}
       </label>
-      <span id="file-chosen" className=" text-gray-600 break-words">
-        {fileName}
-      </span>
-      {acceptText && <p className="text-xs text-gray-500">{acceptText}</p>}
     </div>
   )
 }
