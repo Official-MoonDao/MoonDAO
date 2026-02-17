@@ -1054,7 +1054,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 title="Profile"
                 description="Complete your citizen profile to continue."
               >
-                <div className="w-full max-w-[600px] bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
+                <div className="w-full max-w-[900px] bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
                   <Widget
                     className="w-full"
                     id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string}
