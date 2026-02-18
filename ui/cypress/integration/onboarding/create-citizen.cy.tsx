@@ -25,13 +25,13 @@ describe('<CreateCitizen />', () => {
 
   it('Should complete citizen onboarding flow', () => {
     //DESIGN
-    cy.contains('Create your unique and personalized AI passport photo.').should('exist')
+    cy.contains('Upload a photo to create your personalized AI passport image.').should('exist')
 
     // Simulate image upload
     cy.get('input[type="file"]').attachFile('images/Original.png')
 
     // Click generate to start image generation
-    cy.contains('Generate Image').click()
+    cy.contains('Generate AI Image').click()
 
     // Click Next to advance to the typeform stage (only available in dev mode)
     cy.get('body').then(($body) => {
@@ -59,7 +59,7 @@ describe('<CreateCitizen />', () => {
       } else {
         // If buttons don't exist (not in dev mode), verify component still renders
         cy.get('input[type="file"]').should('exist')
-        cy.contains('Create your unique and personalized AI passport photo.').should('exist')
+        cy.contains('Upload a photo to create your personalized AI passport image.').should('exist')
       }
     })
   })

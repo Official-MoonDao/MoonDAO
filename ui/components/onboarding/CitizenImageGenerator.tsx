@@ -16,7 +16,8 @@ export function ImageGenerator({
   setInputImage,
   nextStage,
   generateInBG,
-  onGenerationStateChange, // Add this prop
+  onGenerationStateChange,
+  nextLabel = 'Next',
 }: any) {
   const [originalInputImage, setOriginalInputImage] = useState<File | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -420,36 +421,40 @@ export function ImageGenerator({
   const cropOffsetY = displayedImageSize.offsetY
 
   return (
-    <div className="animate-fadeIn flex flex-col" key={forceRerender}>
-      <div className="flex items-start flex-col mt-5">
+    <div className="animate-fadeIn flex flex-col items-center w-full" key={forceRerender}>
+      <div className="w-full max-w-[600px]">
         <FileInput
           file={inputImage}
           setFile={setInputImage}
           noBlankImages
           accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
-          acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
         />
       </div>
 
-      <div className="mt-4">
-        <h3 className="text-lg font-semibold mb-2 text-white">
-          {inputImage ? 'Crop your image' : 'Preview'}
-        </h3>
-        <p className="text-sm text-white/60 mb-4">
-          {inputImage
-            ? 'Drag the crop area to move it, or drag the handles to resize'
-            : 'Upload an image to get started'}
-        </p>
+      <div className="mt-6 w-full max-w-[600px]">
+        {inputImage && (
+          <p className="text-xs text-white/40 mb-3 text-center">
+            Drag the crop area to reposition, or drag the handles to resize
+          </p>
+        )}
       </div>
 
       <div
         id="citizenPic"
         ref={containerRef}
-        className="relative w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left flex select-none"
+        className="relative w-full max-w-[600px] aspect-square rounded-2xl bg-white/[0.03] border border-white/10 overflow-hidden flex select-none"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
+        {!inputImage && !currImage && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white/30">
+            <svg className="w-16 h-16 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            </svg>
+            <p className="text-sm">Your image preview will appear here</p>
+          </div>
+        )}
         {currImage && !inputImage && (
           <IPFSRenderer src={currImage} className="" width={600} height={600} alt="Citizen Image" />
         )}
@@ -616,15 +621,15 @@ export function ImageGenerator({
       {showError && generateError && <p className="mt-2 ml-2 opacity-[50%]">{generateError}</p>}
 
       {inputImage && !image && !generating ? (
-        <div className="flex gap-2 mt-6">
+        <div className="flex gap-3 mt-6 w-full max-w-[600px] justify-center">
           <button
-            className="px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
+            className="px-6 py-2.5 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-sm text-white"
             onClick={handleGenerateImage}
           >
-            Generate Image
+            Generate AI Image
           </button>
           <button
-            className="px-8 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-6 py-2.5 bg-white/5 border border-white/20 hover:bg-white/10 rounded-xl text-white text-sm font-medium transition-colors"
             onClick={handleUseCroppedImage}
           >
             Use Cropped Image
@@ -635,10 +640,10 @@ export function ImageGenerator({
       )}
 
       {inputImage && (image || generating) && (
-        <div className="flex gap-2 mt-6">
+        <div className="flex gap-3 mt-6 w-full max-w-[600px] justify-center">
           {!generating && (
             <button
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-6 py-2.5 bg-white/5 border border-white/20 hover:bg-white/10 rounded-xl text-white text-sm font-medium transition-colors"
               onClick={() => {
                 // Restore original image and reset to cropping mode
                 if (originalInputImage) {
@@ -664,7 +669,7 @@ export function ImageGenerator({
             </button>
           )}
           <button
-            className="px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
+            className="px-6 py-2.5 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-sm text-white"
             onClick={() => {
               setIsGenerating(true)
               setImage(null)
@@ -684,10 +689,10 @@ export function ImageGenerator({
 
       {(currImage && !inputImage) || image || (generateInBG && inputImage) ? (
         <button
-          className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
+          className="mt-6 px-8 py-2.5 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-sm text-white"
           onClick={submitImage}
         >
-          Next
+          {nextLabel}
         </button>
       ) : (
         <></>
