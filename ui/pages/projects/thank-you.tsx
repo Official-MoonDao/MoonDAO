@@ -7,6 +7,7 @@ import {
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -29,10 +30,24 @@ export default function RewardsThankYou({
   distributionTableName: string
   projects: any
 }) {
+  const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
 
-  const { quarter, year } = getRelativeQuarter(-1)
+  const { quarter: fallbackQuarter, year: fallbackYear } = getRelativeQuarter(-1)
+
+  const { quarter, year } = useMemo(() => {
+    if (!router.isReady) return { quarter: fallbackQuarter, year: fallbackYear }
+    const rawQuarter = Array.isArray(router.query.quarter) ? router.query.quarter[0] : router.query.quarter
+    const rawYear = Array.isArray(router.query.year) ? router.query.year[0] : router.query.year
+    const parsedQuarter = rawQuarter ? Number(rawQuarter) : undefined
+    const parsedYear = rawYear ? Number(rawYear) : undefined
+    return {
+      quarter: parsedQuarter && parsedQuarter >= 1 && parsedQuarter <= 4 ? parsedQuarter : fallbackQuarter,
+      year: parsedYear && parsedYear >= 2020 ? parsedYear : fallbackYear,
+    }
+  }, [router.isReady, router.query.quarter, router.query.year, fallbackQuarter, fallbackYear])
+
   const statement = address
     ? `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
     : null
@@ -49,7 +64,7 @@ export default function RewardsThankYou({
     )
   }, [distributions, address])
 
-  const descriptionSection = <p>You've successfully submitted your project allocations!</p>
+  const descriptionSection = <p>{`You've successfully submitted your Q${quarter} ${year} project allocations!`}</p>
 
   return (
     <section id="jobs-container" className="overflow-hidden">
