@@ -1,4 +1,8 @@
-import { runIterativeNormalization, getApprovedProjects } from '../../../lib/utils/rewards'
+import {
+  runIterativeNormalization,
+  runQuadraticVoting,
+  getApprovedProjects,
+} from '../../../lib/utils/rewards'
 
 describe('voting', () => {
   it('should normalize distributions correctly', () => {
@@ -212,5 +216,121 @@ describe('voting', () => {
     expect(projectIdToApproved[7]).to.be.false
     expect(projectIdToApproved[8]).to.be.false
     expect(projectIdToApproved[9]).to.be.false
+  })
+
+  // --- Proposal author voting restriction (member vote) ---
+
+  it('iterative normalization: author has no allocation to own project (missing key) - fills from column average and rows sum to 100', () => {
+    // Voter A is author of project 1 - they have no key for project 1 (only 2 and 3). Others have full distributions.
+    const projects = [
+      { id: '1', name: 'Project 1' },
+      { id: '2', name: 'Project 2' },
+      { id: '3', name: 'Project 3' },
+    ]
+    const distributionsWithAuthorExcluded = [
+      { address: '0xauthor', year: 2025, quarter: 1, distribution: { '2': 50, '3': 50 } }, // author of project 1 - no key for '1'
+      { address: '0xvoterb', year: 2025, quarter: 1, distribution: { '1': 33, '2': 33, '3': 34 } },
+      { address: '0xvoterc', year: 2025, quarter: 1, distribution: { '1': 30, '2': 40, '3': 30 } },
+    ]
+    const [normalizedDistributions, votesMatrix] = runIterativeNormalization(
+      distributionsWithAuthorExcluded,
+      projects
+    )
+    // Each row must sum to 100
+    votesMatrix.forEach((row, i) => {
+      const sum = row.reduce((s, v) => s + v, 0)
+      expect(sum).to.be.closeTo(100, 0.01)
+    })
+    // Author (index 0) should have project 1 filled from column average (33 and 30 -> ~31.5), not from their own vote
+    expect(votesMatrix[0][0]).to.be.a('number')
+    expect(votesMatrix[0][0]).to.not.equal(NaN)
+    expect(votesMatrix[0][0]).to.be.closeTo(31.5, 15) // column average from others
+    // Normalized distributions should have all project keys
+    normalizedDistributions.forEach((d) => {
+      expect(Object.keys(d.distribution)).to.have.length(3)
+      const sum = (Object.values(d.distribution) as number[]).reduce((s, v) => s + v, 0)
+      expect(sum).to.be.closeTo(100, 0.01)
+    })
+  })
+
+  it('proposal vote pipeline: strip author self-vote then normalize then quadratic - author cannot boost own project', () => {
+    // Project 1 is authored by 0xAuthor. 0xAuthor voted 100% to their own project. Others voted 0% project 1, 50% each to 2 and 3.
+    const projects = [
+      { id: '1', name: 'P1' },
+      { id: '2', name: 'P2' },
+      { id: '3', name: 'P3' },
+    ]
+    const projectIdToAuthorAddress: Record<string, string> = { '1': '0xauthor' }
+    const votes = [
+      { address: '0xauthor', year: 2025, quarter: 1, distribution: { '1': 100, '2': 0, '3': 0 } },
+      { address: '0xvoterb', year: 2025, quarter: 1, distribution: { '1': 0, '2': 50, '3': 50 } },
+      { address: '0xvoterc', year: 2025, quarter: 1, distribution: { '1': 0, '2': 50, '3': 50 } },
+    ]
+    // Strip author's allocation to their own project (mirror vote API logic)
+    const votesWithAuthorOwnExcluded = votes.map((v) => {
+      const voterAddr = v.address?.toLowerCase()
+      const distribution: Record<string, number> = {}
+      for (const [projectId, value] of Object.entries(v.distribution)) {
+        const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
+        if (author && author === voterAddr) continue
+        distribution[projectId] = Number(value)
+      }
+      return { ...v, distribution }
+    })
+    const [normalizedDistributions] = runIterativeNormalization(votesWithAuthorOwnExcluded, projects)
+    const addressToQuadraticVotingPower: Record<string, number> = {
+      '0xauthor': 10,
+      '0xvoterb': 10,
+      '0xvoterc': 10,
+    }
+    const outcome = runQuadraticVoting(normalizedDistributions, addressToQuadraticVotingPower, 100)
+    // Project 1 should not get 100% from the author - after strip + normalize, author's share for P1 is filled from column average (0), so P1 outcome should be 0 or near 0
+    expect(outcome['1']).to.be.closeTo(0, 1)
+    // Projects 2 and 3 should share the rest
+    expect(outcome['2']).to.be.above(0)
+    expect(outcome['3']).to.be.above(0)
+    const total = outcome['1'] + outcome['2'] + outcome['3']
+    expect(total).to.be.closeTo(100, 1)
+  })
+
+  it('proposal vote pipeline: multiple authors each excluded from own project only', () => {
+    // Voter A is author of project 1, Voter B is author of project 2. Each has 100% on their own project in raw vote.
+    const projects = [
+      { id: '1', name: 'P1' },
+      { id: '2', name: 'P2' },
+      { id: '3', name: 'P3' },
+    ]
+    const projectIdToAuthorAddress: Record<string, string> = {
+      '1': '0xauthora',
+      '2': '0xauthorb',
+    }
+    const votes = [
+      { address: '0xauthora', year: 2025, quarter: 1, distribution: { '1': 100, '2': 0, '3': 0 } },
+      { address: '0xauthorb', year: 2025, quarter: 1, distribution: { '1': 0, '2': 100, '3': 0 } },
+      { address: '0xvoterc', year: 2025, quarter: 1, distribution: { '1': 33, '2': 33, '3': 34 } },
+    ]
+    const votesWithAuthorOwnExcluded = votes.map((v) => {
+      const voterAddr = v.address?.toLowerCase()
+      const distribution: Record<string, number> = {}
+      for (const [projectId, value] of Object.entries(v.distribution)) {
+        const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
+        if (author && author === voterAddr) continue
+        distribution[projectId] = Number(value)
+      }
+      return { ...v, distribution }
+    })
+    const [normalizedDistributions] = runIterativeNormalization(votesWithAuthorOwnExcluded, projects)
+    const addressToQuadraticVotingPower: Record<string, number> = {
+      '0xauthora': 10,
+      '0xauthorb': 10,
+      '0xvoterc': 10,
+    }
+    const outcome = runQuadraticVoting(normalizedDistributions, addressToQuadraticVotingPower, 100)
+    // After strip: A has only {2:0, 3:0}, B has only {1:0, 3:0}, C has full. Normalization fills missing with column averages. No single project should dominate from self-vote.
+    expect(outcome['1']).to.be.above(0)
+    expect(outcome['2']).to.be.above(0)
+    expect(outcome['3']).to.be.above(0)
+    const total = outcome['1'] + outcome['2'] + outcome['3']
+    expect(total).to.be.closeTo(100, 1)
   })
 })

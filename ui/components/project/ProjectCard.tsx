@@ -321,6 +321,11 @@ const ProjectCardContent = memo(
   }: any) => {
     const proposalJSON = useProposalJSON(project)
     const account = useActiveAccount()
+    const isProposalAuthor = Boolean(
+      proposalJSON?.authorAddress &&
+        account?.address &&
+        proposalJSON.authorAddress.toLowerCase() === account.address.toLowerCase()
+    )
     const description =
       project && project.MDP < 13 ? project.description : project?.description || ''
 
@@ -440,7 +445,11 @@ const ProjectCardContent = memo(
             </div>
           )}
           {!IS_SENATE_VOTE && distribute &&
-            (userContributed ? (
+            (isProposalAuthor ? (
+              <div className="flex flex-col items-start sm:items-end flex-shrink-0">
+                <p className="text-gray-400 text-sm">Author</p>
+              </div>
+            ) : userContributed ? (
               <div className="flex flex-col items-start sm:items-end flex-shrink-0">
                 <p className="text-gray-400">
                   {isMembershipDataLoading ? 'Checking...' : 'Contributed'}
