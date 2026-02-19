@@ -200,6 +200,11 @@ module.exports = withBundleAnalyzer(
             permanent: true,
           },
           {
+            source: '/zero-g',
+            destination: '/zero-gravity',
+            permanent: true,
+          },
+          {
             source: '/zero-g-sweepstakes',
             destination: '/zero-gravity',
             permanent: true,
@@ -365,11 +370,6 @@ module.exports = withBundleAnalyzer(
             source: '/overview',
             destination: 'https://luma.com/1vvxgrcz',
             permanent: false,
-          },
-          {
-            source: '/zero-g',
-            destination: '/zero-gravity',
-            permanent: true,
           },
           // Citizen specific referral redirects
           {
