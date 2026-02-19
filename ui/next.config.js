@@ -361,6 +361,16 @@ module.exports = withBundleAnalyzer(
             destination: '/mission/3',
             permanent: false,
           },
+          {
+            source: '/frank',
+            destination: 'https://luma.com/1vvxgrcz',
+            permanent: false,
+          },
+                    {
+            source: '/overview',
+            destination: 'https://luma.com/1vvxgrcz',
+            permanent: false,
+          },
           // Citizen specific referral redirects
           {
             source: '/anthrofuturism',
