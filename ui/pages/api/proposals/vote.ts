@@ -149,11 +149,25 @@ async function logVotingResults(
 
 // Tally votes for projects and set approved projects to active
 async function POST(req: NextApiRequest, res: NextApiResponse) {
-  const { quarter, year } = getCurrentQuarter()
+  // Use quarter/year from request body if provided, otherwise fall back to current quarter
+  const currentQuarter = getCurrentQuarter()
+  const quarter = req.body?.quarter || currentQuarter.quarter
+  const year = req.body?.year || currentQuarter.year
+  
+  console.log(`[vote tally] Starting tally for Q${quarter} ${year}`)
   
   const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE quarter = ${quarter} AND year = ${year}`
   const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
   const voteAddresses = votes.map((pv) => pv.address)
+
+  console.log(`[vote tally] Found ${votes.length} votes from ${voteAddresses.length} addresses`)
+
+  if (votes.length === 0) {
+    return res.status(400).json({
+      error: 'No votes found for this quarter.',
+    })
+  }
+
   const proposalContract = getContract({
     client: serverClient,
     address: PROPOSALS_ADDRESSES[chainSlug],
@@ -220,11 +234,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
 
   // Process projects sequentially to avoid rate limiting
   for (const project of projects) {
-    // if (project.active === PROJECT_ACTIVE) {
-    //   return res.status(400).json({
-    //     error: 'Project has already passed.',
-    //   })
-    // }
     if (project.MDP === undefined || project.MDP === null) {
       console.log('Skipping project with no MDP:', project.id, project.name)
       continue
@@ -250,26 +259,45 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
+  console.log(`[vote tally] ${passedProjects.length} projects passed temp check out of ${projects.length} total`)
+
+  if (passedProjects.length === 0) {
+    return res.status(400).json({
+      error: 'No projects passed temp check.',
+    })
+  }
+
   const ethBudgets = Object.fromEntries(
     await Promise.all(
       passedProjects.map(async (project: any) => {
-        const proposalResponse = await fetch(project.proposalIPFS)
-        const proposal = await proposalResponse.json()
-        let budget = 0
-        if (proposal.budget) {
-          proposal.budget.forEach((item: any) => {
-            budget += item.token === 'ETH' ? Number(item.amount) : 0
-          })
+        try {
+          const proposalResponse = await fetch(project.proposalIPFS)
+          const proposal = await proposalResponse.json()
+          let budget = 0
+          if (proposal.budget) {
+            proposal.budget.forEach((item: any) => {
+              budget += item.token === 'ETH' ? Number(item.amount) : 0
+            })
+          }
+          return [project.id, budget]
+        } catch (error) {
+          console.error(`[vote tally] Failed to fetch budget for project ${project.id}:`, error)
+          return [project.id, 0]
         }
-        return [project.id, budget]
       })
     )
   )
+
+  console.log('[vote tally] ETH budgets:', ethBudgets)
+
   const voteOpenTimestamp: number = Math.floor(
     getThirdThursdayOfQuarterTimestamp(quarter, year) / 1000
   )
   const voteCloseTimestamp: number = voteOpenTimestamp + 60 * 60 * 24 * 5 // 5 days after vote opens
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
+
+  console.log(`[vote tally] Vote open: ${new Date(voteOpenTimestamp * 1000).toISOString()}, close: ${new Date(voteCloseTimestamp * 1000).toISOString()}, now: ${new Date(currentTimestamp * 1000).toISOString()}`)
+
   // Don't require voting period for testnet
   if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet' && currentTimestamp <= voteCloseTimestamp) {
     return res.status(400).json({
@@ -277,17 +305,54 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   }
   const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
+
+  console.log(`[vote tally] vMOONEY balances fetched: ${vMOONEYs.length} values for ${voteAddresses.length} addresses`)
+
+  // Safety check: ensure vMOONEY balances were fetched correctly
+  if (vMOONEYs.length === 0) {
+    return res.status(500).json({
+      error: 'Failed to fetch vMOONEY balances. Cannot proceed with tally.',
+    })
+  }
+
   const addressToQuadraticVotingPower: { [address: string]: number } = Object.fromEntries(
-    voteAddresses.map((address, index) => [address.toLowerCase(), Math.sqrt(vMOONEYs[index])])
+    voteAddresses.map((address, index) => {
+      const vMOONEY = vMOONEYs[index] || 0
+      const power = isNaN(vMOONEY) ? 0 : Math.sqrt(vMOONEY)
+      return [address.toLowerCase(), power]
+    })
   )
+
+  const totalVotingPower = Object.values(addressToQuadraticVotingPower).reduce((sum, v) => sum + v, 0)
+  console.log(`[vote tally] Total quadratic voting power: ${totalVotingPower}`)
+
+  if (totalVotingPower === 0) {
+    return res.status(500).json({
+      error: 'Total voting power is 0. All voters may have 0 vMOONEY. Cannot proceed with tally.',
+      vMOONEYs,
+      voteAddresses,
+    })
+  }
+
   const SUM_TO_ONE_HUNDRED = 100
   const outcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+
+  console.log('[vote tally] Vote outcome:', outcome)
+
+  if (Object.keys(outcome).length === 0) {
+    return res.status(500).json({
+      error: 'Vote outcome is empty. Something went wrong with the quadratic voting calculation.',
+    })
+  }
+
   if (req.method === 'GET') {
-    res.status(200).json({
+    return res.status(200).json({
       outcome,
     })
   }
   const projectIdToApproved = getApprovedProjects(passedProjects, outcome, ethBudgets, NEXT_QUARTER_BUDGET_ETH)
+
+  console.log('[vote tally] Approval results:', projectIdToApproved)
 
   await logVotingResults(
     passedProjects,
@@ -300,7 +365,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     NEXT_QUARTER_BUDGET_ETH
   )
 
-  // TODO: Uncomment to enable table updates
   const account = await createHSMWallet()
   for (const projectId in projectIdToApproved) {
     const approved = projectIdToApproved[projectId]
@@ -313,11 +377,13 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       transaction,
       account,
     })
+    console.log(`[vote tally] Updated project ${projectId}: active=${approved ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED} (tx: ${receipt.transactionHash})`)
   }
   
-  res.status(200).json({
+  return res.status(200).json({
     url: 'https://moondao.com/projects',
     outcome: outcome,
+    approved: projectIdToApproved,
   })
 }
 export default withMiddleware(POST, rateLimit)

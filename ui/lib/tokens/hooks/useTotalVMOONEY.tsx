@@ -118,7 +118,10 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
             chainId
           )
 
-          return balances.map((balance) => parseInt(balance) / 1e18)
+          return balances.map((balance) => {
+            const parsed = parseInt(balance)
+            return isNaN(parsed) ? 0 : parsed / 1e18
+          })
         } catch (error) {
           console.error(`Failed to fetch vMOONEY balances for chain ${chainId}:`, error)
           return []
@@ -129,7 +132,8 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
     // Sum across chains
     const totals = results.reduce((accumulator, value) => {
       value.forEach((v: any, i: number) => {
-        accumulator[i] = (accumulator[i] || 0) + (value[i] as number)
+        const numValue = isNaN(value[i] as number) ? 0 : (value[i] as number)
+        accumulator[i] = (accumulator[i] || 0) + numValue
       })
       return accumulator
     }, [] as number[])
