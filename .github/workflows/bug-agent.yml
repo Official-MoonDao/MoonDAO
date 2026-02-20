@@ -1,0 +1,173 @@
+name: Bug Detection Agent
+
+on:
+  # Run every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+  
+  # Manual trigger with options
+  workflow_dispatch:
+    inputs:
+      full_scan:
+        description: 'Run full scan (ignore last scan state)'
+        required: false
+        type: boolean
+        default: false
+      browsers:
+        description: 'Browsers to test'
+        required: false
+        type: choice
+        options:
+          - all
+          - chromium
+          - firefox
+          - webkit
+        default: all
+
+env:
+  NEXT_PUBLIC_CHAIN: sepolia
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  scan-and-test:
+    name: Scan Repository & Run Tests
+    runs-on: ubuntu-latest
+    # Use larger runner for Docker operations if available
+    # runs-on: ubuntu-latest-16-cores
+    
+    outputs:
+      has_failures: ${{ steps.test.outputs.has_failures }}
+      failures_count: ${{ steps.test.outputs.failures_count }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for scanning
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: ui/yarn.lock
+      
+      - name: Install UI dependencies
+        working-directory: ui
+        run: yarn install --frozen-lockfile
+      
+      - name: Install Playwright browsers
+        working-directory: ui
+        run: npx playwright install --with-deps chromium firefox webkit
+      
+      - name: Build Next.js app
+        working-directory: ui
+        run: yarn build
+        env:
+          NEXT_PUBLIC_CHAIN: sepolia
+      
+      - name: Start Next.js server
+        working-directory: ui
+        run: |
+          yarn start &
+          npx wait-on http://localhost:3000 --timeout 60000
+        env:
+          PORT: 3000
+      
+      - name: Run Playwright tests
+        id: test
+        working-directory: ui
+        run: |
+          set +e
+          npx playwright test --reporter=json,html 2>&1 | tee playwright-output.log
+          exit_code=$?
+          
+          # Parse results
+          if [ -f playwright/reports/results.json ]; then
+            failures=$(jq '.stats.unexpected // 0' playwright/reports/results.json)
+            echo "failures_count=$failures" >> $GITHUB_OUTPUT
+            
+            if [ "$failures" -gt 0 ]; then
+              echo "has_failures=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_failures=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "has_failures=false" >> $GITHUB_OUTPUT
+            echo "failures_count=0" >> $GITHUB_OUTPUT
+          fi
+          
+          exit 0  # Don't fail the job, let agent analyze
+        env:
+          BASE_URL: http://localhost:3000
+          CI: true
+      
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            ui/playwright/results/
+            ui/playwright/reports/
+          retention-days: 7
+      
+      - name: Upload screenshots
+        if: steps.test.outputs.has_failures == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-screenshots
+          path: ui/playwright/results/**/*.png
+          retention-days: 7
+
+  analyze-and-report:
+    name: Analyze Failures & Create Reports
+    runs-on: ubuntu-latest
+    needs: scan-and-test
+    if: needs.scan-and-test.outputs.has_failures == 'true'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: agent/pyproject.toml
+      
+      - name: Install agent dependencies
+        run: pip install -e ./agent
+      
+      - name: Download test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-results
+          path: agent/results/
+      
+      - name: Download screenshots
+        uses: actions/download-artifact@v4
+        with:
+          name: failure-screenshots
+          path: agent/results/screenshots/
+        continue-on-error: true
+      
+      - name: Run bug analysis
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REPO_PATH: ${{ github.workspace }}
+          RESULTS_PATH: ${{ github.workspace }}/agent/results
+        run: |
+          python -m src.orchestrator run-cycle
+        working-directory: agent
+      
+      - name: Upload agent state
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-state
+          path: agent/results/agent_state.json
+          retention-days: 30
