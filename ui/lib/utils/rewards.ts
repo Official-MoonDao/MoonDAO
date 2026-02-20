@@ -175,32 +175,40 @@ export function runQuadraticVoting(
   budgetPercentMinusCommunityFund = 90
 ) {
   const projectIdToEstimatedPercentage: { [key: string]: number } = {}
-  const projectIdToListOfPercentage: { [key: string]: number[] } = {}
-  const allAddresses = distributions.map((d) => d.address)
+  // Track both the percentage and the address that cast each vote
+  const projectIdToVotes: { [key: string]: { percentage: number; address: string }[] } = {}
   for (const d of distributions) {
     let { address, year, quarter, distribution: dist } = d
     if (!dist) {
       dist = d.vote
     }
     for (const [key, value] of Object.entries(dist)) {
-      if (!projectIdToListOfPercentage[key]) {
-        projectIdToListOfPercentage[key] = []
+      if (!projectIdToVotes[key]) {
+        projectIdToVotes[key] = []
       }
-      projectIdToListOfPercentage[key].push(Number(value))
+      projectIdToVotes[key].push({ percentage: Number(value), address: address })
     }
   }
-  const votingPowerSum = _.sum(Object.values(addressToQuadraticVotingPower))
+  const votingPowerSum = _.sum(
+    Object.values(addressToQuadraticVotingPower).filter((v: any) => !isNaN(v))
+  )
   if (votingPowerSum > 0) {
-    for (const [projectId, percentages] of Object.entries(projectIdToListOfPercentage)) {
+    for (const [projectId, votes] of Object.entries(projectIdToVotes)) {
       projectIdToEstimatedPercentage[projectId] =
-        _.sum(percentages.map((p, i) => p * addressToQuadraticVotingPower[allAddresses[i]])) /
-        votingPowerSum
+        _.sum(
+          votes.map((v) => {
+            const power = addressToQuadraticVotingPower[v.address] || 0
+            return v.percentage * (isNaN(power) ? 0 : power)
+          })
+        ) / votingPowerSum
     }
     // normalize projectIdToEstimatedPercentage
     const sum = _.sum(Object.values(projectIdToEstimatedPercentage))
-    for (const [projectId, percentage] of Object.entries(projectIdToEstimatedPercentage)) {
-      projectIdToEstimatedPercentage[projectId] =
-        (percentage / sum) * budgetPercentMinusCommunityFund
+    if (sum > 0) {
+      for (const [projectId, percentage] of Object.entries(projectIdToEstimatedPercentage)) {
+        projectIdToEstimatedPercentage[projectId] =
+          (percentage / sum) * budgetPercentMinusCommunityFund
+      }
     }
   }
   return projectIdToEstimatedPercentage
@@ -491,7 +499,12 @@ export function getApprovedProjects(
 ): { [key: string]: boolean } {
   const sortedOutcome = Object.keys(outcome)
     .map((projectId: string) => {
-      return { projectId: projectId, percent: outcome[projectId], budget: ethBudgets[projectId] }
+      const budget = ethBudgets[projectId]
+      return {
+        projectId: projectId,
+        percent: outcome[projectId] || 0,
+        budget: isNaN(budget) || budget === undefined || budget === null ? 0 : budget,
+      }
     })
     .sort((a, b) => {
       return b.percent - a.percent

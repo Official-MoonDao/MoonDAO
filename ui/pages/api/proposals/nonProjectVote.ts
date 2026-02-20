@@ -80,12 +80,16 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   }
   const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
   const addressToQuadraticVotingPower = Object.fromEntries(
-    voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+    voteAddresses.map((address, index) => {
+      const vMOONEY = vMOONEYs[index] || 0
+      const power = isNaN(vMOONEY) ? 0 : Math.sqrt(vMOONEY)
+      return [address, power]
+    })
   )
   const SUM_TO_ONE_HUNDRED = 100
   const outcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
   if (req.method === 'GET') {
-    res.status(200).json({
+    return res.status(200).json({
       outcome,
     })
   }
