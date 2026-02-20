@@ -144,43 +144,39 @@ export function ExpandedFooter({
   ])
 
   // Navigation link groups - matching topnav organization exactly
-  const networkLinks = [
-    { text: 'Join Network', href: '/join' },
-    { text: 'Explore Network', href: '/network' },
-    { text: 'Become a Citizen', href: '/join' },
+  const citizenshipLinks = [
+    { text: 'Become a Citizen', href: '/citizen' },
     { text: 'Create a Team', href: '/team' },
-    { text: 'Submit Contribution', href: '/contributions' },
+    { text: 'Explore Citizens', href: '/network' },
     { text: 'Jobs', href: '/jobs' },
+    { text: 'Marketplace', href: '/marketplace' },
   ]
 
-  const governLinks = [
+  const mooneyLinks = [
+    { text: 'Get $MOONEY', href: '/get-mooney' },
+    { text: 'Lock $MOONEY', href: '/lock' },
+    { text: 'Bridge $MOONEY', href: '/bridge' },
+    { text: 'Token Overview', href: '/mooney' },
     { text: 'Governance Overview', href: '/governance' },
-    { text: 'Proposals', href: '/projects' },
-    { text: 'Constitution', href: '/constitution' },
-  ]
-
-  const tokenLinks = [
-    { text: 'Buy', href: '/mooney' },
-    { text: 'Lock', href: '/lock' },
   ]
 
   const projectLinks = [
-    { text: 'Projects Overview', href: '/projects-overview' },
-    { text: 'Projects', href: '/projects' },
     { text: 'Propose Project', href: '/proposals' },
+    { text: 'Projects', href: '/projects' },
+    { text: 'Submit Contribution', href: '/contributions' },
+    { text: 'Projects Overview', href: '/projects-overview' },
   ]
 
   const learnLinks = [
     { text: 'News', href: '/news' },
+    { text: 'Town Hall', href: '/townhall' },
     { text: 'About', href: '/about' },
-    { text: 'Treasury', href: '/treasury' },
+    { text: 'Events', href: '/events' },
     { text: 'Resources', href: '/resources' },
-    { text: 'FAQ', href: '/faq' },
+    { text: 'Constitution', href: '/constitution' },
   ]
 
-  const marketplaceLinks = [{ text: 'Shop', href: '/marketplace' }]
-
-  const supportLinks = [{ text: 'Submit Ticket', href: 'https://discord.gg/moondao' }]
+  const launchpadLinks = [{ text: 'Launchpad', href: '/launch' }]
 
   return (
     <>
@@ -228,39 +224,33 @@ export function ExpandedFooter({
             )}
 
             <div
-              className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 order-1 lg:order-2 ${
+              className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 order-1 lg:order-2 ${
                 hasCallToAction && isFullwidth ? 'lg:col-span-4' : 'lg:col-span-6'
               }`}
             >
-              {/* Column 1: NETWORK */}
+              {/* Column 1: CITIZENSHIP */}
               <div>
-                <LinkList title="NETWORK" links={networkLinks} />
+                <LinkList title="CITIZENSHIP" links={citizenshipLinks} />
               </div>
 
-              {/* Column 2: GOVERN */}
+              {/* Column 2: $MOONEY */}
               <div>
-                <LinkList title="GOVERN" links={governLinks} />
+                <LinkList title="$MOONEY" links={mooneyLinks} />
               </div>
 
-              {/* Column 3: $MOONEY */}
-              <div>
-                <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
-              </div>
-
-              {/* Column 4: PROJECTS */}
+              {/* Column 3: PROJECTS */}
               <div>
                 <LinkList title="PROJECTS" links={projectLinks} />
               </div>
 
-              {/* Column 5: LEARN */}
+              {/* Column 4: LEARN */}
               <div>
                 <LinkList title="LEARN" links={learnLinks} />
               </div>
 
-              {/* Column 6: MARKETPLACE & SUPPORT */}
-              <div className="grid grid-rows-2 gap-8">
-                <LinkList title="MARKETPLACE" links={marketplaceLinks} />
-                <LinkList title="SUPPORT" links={supportLinks} />
+              {/* Column 5: LAUNCHPAD */}
+              <div>
+                <LinkList title="LAUNCHPAD" links={launchpadLinks} />
               </div>
             </div>
           </div>
