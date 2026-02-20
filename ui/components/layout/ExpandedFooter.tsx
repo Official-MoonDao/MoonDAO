@@ -90,6 +90,41 @@ function LinkList({ title, links }: LinkListProps) {
   )
 }
 
+// Navigation link groups - matching topnav organization exactly
+const citizenshipLinks: LinkItem[] = [
+  { text: 'Become a Citizen', href: '/citizen' },
+  { text: 'Create a Team', href: '/team' },
+  { text: 'Explore Citizens', href: '/network' },
+  { text: 'Jobs', href: '/jobs' },
+  { text: 'Marketplace', href: '/marketplace' },
+]
+
+const mooneyLinks: LinkItem[] = [
+  { text: 'Get $MOONEY', href: '/get-mooney' },
+  { text: 'Lock $MOONEY', href: '/lock' },
+  { text: 'Bridge $MOONEY', href: '/bridge' },
+  { text: 'Token Overview', href: '/mooney' },
+  { text: 'Governance Overview', href: '/governance' },
+]
+
+const projectLinks: LinkItem[] = [
+  { text: 'Propose Project', href: '/proposals' },
+  { text: 'Projects', href: '/projects' },
+  { text: 'Submit Contribution', href: '/contributions' },
+  { text: 'Projects Overview', href: '/projects-overview' },
+]
+
+const learnLinks: LinkItem[] = [
+  { text: 'News', href: '/news' },
+  { text: 'Town Hall', href: '/townhall' },
+  { text: 'About', href: '/about' },
+  { text: 'Events', href: '/events' },
+  { text: 'Resources', href: '/resources' },
+  { text: 'Constitution', href: '/constitution' },
+]
+
+const launchpadLinks: LinkItem[] = [{ text: 'Launchpad', href: '/launch' }]
+
 type ExpandedFooterProps = {
   callToActionImage?: string
   callToActionBody?: string
@@ -142,41 +177,6 @@ export function ExpandedFooter({
     callToActionButtonLink,
     hasCallToAction,
   ])
-
-  // Navigation link groups - matching topnav organization exactly
-  const citizenshipLinks = [
-    { text: 'Become a Citizen', href: '/citizen' },
-    { text: 'Create a Team', href: '/team' },
-    { text: 'Explore Citizens', href: '/network' },
-    { text: 'Jobs', href: '/jobs' },
-    { text: 'Marketplace', href: '/marketplace' },
-  ]
-
-  const mooneyLinks = [
-    { text: 'Get $MOONEY', href: '/get-mooney' },
-    { text: 'Lock $MOONEY', href: '/lock' },
-    { text: 'Bridge $MOONEY', href: '/bridge' },
-    { text: 'Token Overview', href: '/mooney' },
-    { text: 'Governance Overview', href: '/governance' },
-  ]
-
-  const projectLinks = [
-    { text: 'Propose Project', href: '/proposals' },
-    { text: 'Projects', href: '/projects' },
-    { text: 'Submit Contribution', href: '/contributions' },
-    { text: 'Projects Overview', href: '/projects-overview' },
-  ]
-
-  const learnLinks = [
-    { text: 'News', href: '/news' },
-    { text: 'Town Hall', href: '/townhall' },
-    { text: 'About', href: '/about' },
-    { text: 'Events', href: '/events' },
-    { text: 'Resources', href: '/resources' },
-    { text: 'Constitution', href: '/constitution' },
-  ]
-
-  const launchpadLinks = [{ text: 'Launchpad', href: '/launch' }]
 
   return (
     <>
