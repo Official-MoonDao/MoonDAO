@@ -158,26 +158,47 @@ export function ProjectRewards({
     {}
   )
   useEffect(() => {
-    if (!proposals?.length) return
-    let cancelled = false
-    const map: Record<string, string> = {}
-    const fetchAll = async () => {
-      for (const project of proposals) {
-        if (!project.proposalIPFS) continue
-        try {
-          const res = await fetch(project.proposalIPFS)
-          const json = await res.json()
-          if (json.authorAddress) map[String(project.id)] = json.authorAddress
-        } catch {
-          // ignore fetch errors
-        }
-        if (cancelled) return
-      }
-      if (!cancelled) setProjectIdToAuthorAddress(map)
+    if (!proposals?.length) {
+      setProjectIdToAuthorAddress({})
+      return
     }
+
+    const controller = new AbortController()
+    const { signal } = controller
+
+    const fetchAll = async () => {
+      const results = await Promise.allSettled(
+        proposals.map(async (project) => {
+          if (!project.proposalIPFS) return null
+          try {
+            const res = await fetch(project.proposalIPFS, { signal })
+            const json = await res.json()
+            if (!json.authorAddress) return null
+            return [String(project.id), json.authorAddress] as const
+          } catch {
+            // ignore fetch errors (including aborts)
+            return null
+          }
+        })
+      )
+
+      const map: Record<string, string> = {}
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          const [id, authorAddress] = result.value
+          map[id] = authorAddress
+        }
+      }
+
+      if (!signal.aborted) {
+        setProjectIdToAuthorAddress(map)
+      }
+    }
+
     fetchAll()
+
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [proposals])
 
