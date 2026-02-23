@@ -287,19 +287,44 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
 
   // Build project id -> author address so we exclude author's vote on their own proposal
   const projectIdToAuthorAddress: Record<string, string> = {}
+  const missingAuthorProjectIds: string[] = []
   await Promise.all(
     passedProjects.map(async (project: any) => {
-      if (!project.proposalIPFS) return
+      if (!project.proposalIPFS) {
+        // If there's no proposal IPFS, we cannot determine the author for this project.
+        missingAuthorProjectIds.push(String(project.id))
+        console.error(
+          `Missing proposalIPFS for project ${project.id}; cannot resolve authorAddress.`
+        )
+        return
+      }
       try {
         const res = await fetch(project.proposalIPFS)
         const json = await res.json()
-        if (json.authorAddress) projectIdToAuthorAddress[String(project.id)] = json.authorAddress
-      } catch {
-        // ignore
+        if (json && typeof json.authorAddress === 'string' && json.authorAddress.length > 0) {
+          projectIdToAuthorAddress[String(project.id)] = json.authorAddress
+        } else {
+          missingAuthorProjectIds.push(String(project.id))
+          console.error(
+            `authorAddress missing or invalid in proposal JSON for project ${project.id} (${project.proposalIPFS}).`
+          )
+        }
+      } catch (error) {
+        missingAuthorProjectIds.push(String(project.id))
+        console.error(
+          `Failed to fetch/parse proposal JSON for project ${project.id} (${project.proposalIPFS}):`,
+          error
+        )
       }
     })
   )
 
+  if (missingAuthorProjectIds.length > 0) {
+    return res.status(500).json({
+      error: 'Failed to resolve author data for one or more projects; aborting vote close to prevent invalid self-allocations.',
+      missingAuthorProjectIds,
+    })
+  }
   // Strip each voter's allocation to their own proposal (author cannot vote on own)
   type VoteRow = DistributionVote & { distribution?: string | Record<string, number>; quarter?: number; year?: number }
   const votesWithAuthorOwnExcluded: VoteRow[] = votes.map((v) => {
