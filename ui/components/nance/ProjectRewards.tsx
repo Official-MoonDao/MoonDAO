@@ -20,7 +20,7 @@ import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import _ from 'lodash'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -101,6 +101,7 @@ export function ProjectRewards({
 
   // Proposals contract owner (only they can close voting)
   const [proposalsContractOwner, setProposalsContractOwner] = useState<string | null>(null)
+  const [proposalsOwnerStatus, setProposalsOwnerStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
   //Check if its the approval cycle
   useEffect(() => {
@@ -204,19 +205,27 @@ export function ProjectRewards({
   })
 
   // Fetch Proposals contract owner so we only show "Close voting" to the owner
-  useEffect(() => {
+  const fetchProposalsOwner = useCallback(async () => {
     if (!proposalContract) return
-    readContract({
-      contract: proposalContract,
-      method: 'owner' as string,
-      params: [],
-    })
-      .then((result: unknown) => {
-        const owner = typeof result === 'string' ? result : Array.isArray(result) ? result[0] : null
-        setProposalsContractOwner(owner != null ? String(owner).toLowerCase() : null)
+    setProposalsOwnerStatus('loading')
+    try {
+      const result = await readContract({
+        contract: proposalContract,
+        method: 'owner' as string,
+        params: [],
       })
-      .catch(() => setProposalsContractOwner(null))
+      const owner = typeof result === 'string' ? result : Array.isArray(result) ? result[0] : null
+      setProposalsContractOwner(owner != null ? String(owner).toLowerCase() : null)
+      setProposalsOwnerStatus('success')
+    } catch {
+      setProposalsContractOwner(null)
+      setProposalsOwnerStatus('error')
+    }
   }, [proposalContract])
+
+  useEffect(() => {
+    fetchProposalsOwner()
+  }, [fetchProposalsOwner])
 
   const isProposalsContractOwner =
     !!userAddress &&
@@ -514,6 +523,18 @@ export function ProjectRewards({
             <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
                 <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
+                {IS_SENATE_VOTE && proposalsOwnerStatus === 'error' && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-amber-500 text-sm">Unable to check permissions</span>
+                    <button
+                      onClick={fetchProposalsOwner}
+                      disabled={proposalsOwnerStatus === 'loading'}
+                      className="px-4 py-2 bg-amber-600/80 hover:bg-amber-600 disabled:opacity-50 text-white font-RobotoMono rounded-lg transition-all duration-200 text-sm"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
                 {IS_SENATE_VOTE && isProposalsContractOwner && (
                   <button
                     onClick={tallyVotes}
