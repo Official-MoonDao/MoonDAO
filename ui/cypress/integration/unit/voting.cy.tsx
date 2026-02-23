@@ -243,7 +243,7 @@ describe('voting', () => {
     })
     // Author (index 0) should have project 1 filled from column average (33 and 30 -> ~31.5), not from their own vote
     expect(votesMatrix[0][0]).to.be.a('number')
-    expect(votesMatrix[0][0]).to.not.equal(NaN)
+    expect(votesMatrix[0][0]).to.not.be.NaN
     expect(votesMatrix[0][0]).to.be.closeTo(31.5, 15) // column average from others
     // Normalized distributions should have all project keys
     normalizedDistributions.forEach((d) => {
