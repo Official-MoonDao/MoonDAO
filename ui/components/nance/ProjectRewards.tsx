@@ -20,7 +20,7 @@ import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import _ from 'lodash'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -102,6 +102,7 @@ export function ProjectRewards({
   // Proposals contract owner (only they can close voting)
   const [proposalsContractOwner, setProposalsContractOwner] = useState<string | null>(null)
   const [proposalsOwnerStatus, setProposalsOwnerStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [proposalsOwnerRetryCount, setProposalsOwnerRetryCount] = useState(0)
 
   //Check if its the approval cycle
   useEffect(() => {
@@ -205,27 +206,33 @@ export function ProjectRewards({
   })
 
   // Fetch Proposals contract owner so we only show "Close voting" to the owner
-  const fetchProposalsOwner = useCallback(async () => {
-    if (!proposalContract) return
-    setProposalsOwnerStatus('loading')
-    try {
-      const result = await readContract({
-        contract: proposalContract,
-        method: 'owner' as string,
-        params: [],
-      })
-      const owner = typeof result === 'string' ? result : Array.isArray(result) ? result[0] : null
-      setProposalsContractOwner(owner != null ? String(owner).toLowerCase() : null)
-      setProposalsOwnerStatus('success')
-    } catch {
-      setProposalsContractOwner(null)
-      setProposalsOwnerStatus('error')
-    }
-  }, [proposalContract])
-
   useEffect(() => {
-    fetchProposalsOwner()
-  }, [fetchProposalsOwner])
+    if (!proposalContract) return
+
+    let isCancelled = false
+    setProposalsOwnerStatus('loading')
+
+    readContract({
+      contract: proposalContract,
+      method: 'owner' as string,
+      params: [],
+    })
+      .then((result: unknown) => {
+        if (isCancelled) return
+        const owner = typeof result === 'string' ? result : Array.isArray(result) ? result[0] : null
+        setProposalsContractOwner(owner != null ? String(owner).toLowerCase() : null)
+        setProposalsOwnerStatus('success')
+      })
+      .catch(() => {
+        if (isCancelled) return
+        setProposalsContractOwner(null)
+        setProposalsOwnerStatus('error')
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [proposalContract, proposalsOwnerRetryCount])
 
   const isProposalsContractOwner =
     !!userAddress &&
@@ -527,7 +534,7 @@ export function ProjectRewards({
                   <div className="flex items-center gap-2">
                     <span className="text-amber-500 text-sm">Unable to check permissions</span>
                     <button
-                      onClick={fetchProposalsOwner}
+                      onClick={() => setProposalsOwnerRetryCount((c) => c + 1)}
                       disabled={proposalsOwnerStatus === 'loading'}
                       className="px-4 py-2 bg-amber-600/80 hover:bg-amber-600 disabled:opacity-50 text-white font-RobotoMono rounded-lg transition-all duration-200 text-sm"
                     >
