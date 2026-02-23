@@ -63,11 +63,8 @@ import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { networkCard } from '@/lib/layout/styles'
-import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
-import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import WalletInfoCard from '@/components/home/WalletInfoCard'
-import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
@@ -77,7 +74,6 @@ import { SendModal } from '@/components/privy/PrivyConnectWallet'
 import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
 import ProjectCard from '@/components/project/ProjectCard'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
-import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
@@ -112,7 +108,6 @@ export default function SignedInDashboard({
   newestJobs,
   citizenSubgraphData,
   aumData,
-  revenueData,
   filteredTeams,
   projects,
   missions,
@@ -150,11 +145,6 @@ export default function SignedInDashboard({
   // Send modal state
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
 
-  // Modal state for charts
-  const [chartModalOpen, setChartModalOpen] = useState(false)
-  const [chartModalComponent, setChartModalComponent] = useState<React.ReactNode>(null)
-  const [chartModalTitle, setChartModalTitle] = useState('')
-
   // Newsletter modal state
   const [newsletterModalOpen, setNewsletterModalOpen] = useState(false)
 
@@ -184,50 +174,6 @@ export default function SignedInDashboard({
 
     fetchNewsletters()
   }, [])
-
-  // Chart modal handlers
-  const openCitizensChart = () => {
-    setChartModalComponent(
-      <CitizensChart
-        transfers={citizenSubgraphData.transfers}
-        isLoading={false}
-        height={400}
-        compact={false}
-        createdAt={citizenSubgraphData.createdAt}
-        defaultRange={365}
-      />
-    )
-    setChartModalTitle('CITIZENS')
-    setChartModalOpen(true)
-  }
-
-  const openAUMChart = () => {
-    setChartModalComponent(
-      <AUMChart
-        data={aumData?.aumHistory || []}
-        compact={false}
-        height={400}
-        isLoading={false}
-        defaultRange={365}
-      />
-    )
-    setChartModalTitle('ASSETS UNDER MANAGEMENT')
-    setChartModalOpen(true)
-  }
-
-  const openRevenueChart = () => {
-    setChartModalComponent(
-      <RevenueChart
-        data={revenueData?.revenueHistory || []}
-        compact={false}
-        height={400}
-        isLoading={false}
-        defaultRange={365}
-      />
-    )
-    setChartModalTitle('ANNUAL REVENUE')
-    setChartModalOpen(true)
-  }
 
   const account = useActiveAccount()
   const address = account?.address
@@ -713,84 +659,53 @@ export default function SignedInDashboard({
               <WeeklyRewardPool />
             </div>
 
-            {/* Key Metrics Card */}
+            {/* New Citizens */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
-              <h3 className="font-semibold text-white mb-8 text-lg">DAO Metrics</h3>
-              <div className="space-y-8 h-full">
-                {citizenSubgraphData?.transfers && citizenSubgraphData?.transfers.length > 0 && (
-                  <div
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                    onClick={openCitizensChart}
-                    title="Click to view full chart"
-                  >
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-gray-300 font-medium">Citizens</span>
-                      <span className="text-white font-bold text-2xl">
-                        {citizenSubgraphData?.transfers?.length || '2,341'}
-                      </span>
-                    </div>
-                    <div className="h-20">
-                      <CitizensChart
-                        transfers={citizenSubgraphData.transfers}
-                        isLoading={false}
-                        height={80}
-                        compact={true}
-                        createdAt={citizenSubgraphData.createdAt}
-                      />
-                    </div>
-                  </div>
-                )}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">New Citizens</h3>
+                <StandardButton
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  link="/network?tab=citizens"
+                >
+                  See all
+                </StandardButton>
+              </div>
 
-                {aumData && aumData.aumHistory.length > 0 && (
-                  <div
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                    onClick={openAUMChart}
-                    title="Click to view full chart"
-                  >
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-gray-300 font-medium">AUM</span>
-                      <span className="text-white font-bold text-2xl">
-                        ${Math.round(aumData.aum).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="h-20">
-                      <AUMChart compact={true} height={80} data={aumData.aumHistory} />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-2">
+                {newestCitizens && newestCitizens.length > 0 ? (
+                  newestCitizens.slice(0, 8).map((citizen: any) => (
+                    <Link
+                      key={citizen.id}
+                      href={`/citizen/${
+                        citizen.name && citizen.id
+                          ? generatePrettyLinkWithId(citizen.name, citizen.id)
+                          : citizen.id || 'anonymous'
+                      }`}
+                      className="flex items-center gap-2 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
+                    >
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {citizen.image ? (
+                          <IPFSRenderer
+                            src={citizen.image}
+                            alt={citizen.name}
+                            className="w-full h-full object-cover"
+                            width={40}
+                            height={40}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                            {citizen.name?.[0] || 'C'}
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="text-white font-medium text-xs truncate">
+                        {citizen.name || 'Anonymous'}
+                      </h4>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm col-span-2 py-4 text-center">Loading...</div>
                 )}
-
-                {revenueData && revenueData.revenueHistory.length > 0 && (
-                  <div
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                    onClick={openRevenueChart}
-                    title="Click to view full chart"
-                  >
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-gray-300 font-medium">Annual Revenue</span>
-                      <span className="text-white font-bold text-2xl">
-                        ${Math.round(revenueData.currentRevenue).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="h-20">
-                      <RevenueChart
-                        data={revenueData.revenueHistory}
-                        compact={true}
-                        height={80}
-                        isLoading={false}
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Link to Treasury Page */}
-                <div className="pt-4">
-                  <Link
-                    href="/treasury"
-                    className="block w-full text-center py-3 px-4 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 hover:text-blue-200 rounded-lg transition-all duration-200 font-medium"
-                  >
-                    View Full Treasury Analytics →
-                  </Link>
-                </div>
               </div>
             </div>
           </div>
@@ -1354,59 +1269,8 @@ export default function SignedInDashboard({
           </div>
         </div>
 
-        {/* Citizens and Teams - Horizontal Scrollable Section Above Map */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* New Citizens - Horizontal */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white text-lg">New Citizens</h3>
-              <StandardButton
-                className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                link="/network?tab=citizens"
-              >
-                See all
-              </StandardButton>
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-              {newestCitizens && newestCitizens.length > 0 ? (
-                newestCitizens.slice(0, 8).map((citizen: any) => (
-                  <Link
-                    key={citizen.id}
-                    href={`/citizen/${
-                      citizen.name && citizen.id
-                        ? generatePrettyLinkWithId(citizen.name, citizen.id)
-                        : citizen.id || 'anonymous'
-                    }`}
-                    className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
-                  >
-                    <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
-                      {citizen.image ? (
-                        <IPFSRenderer
-                          src={citizen.image}
-                          alt={citizen.name}
-                          className="w-full h-full object-cover"
-                          width={100}
-                          height={100}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                          {citizen.name?.[0] || 'C'}
-                        </div>
-                      )}
-                    </div>
-                    <h4 className="text-white font-medium text-xs truncate text-center">
-                      {citizen.name || 'Anonymous'}
-                    </h4>
-                  </Link>
-                ))
-              ) : (
-                <div className="text-gray-400 text-sm text-center py-4 w-full">Loading...</div>
-              )}
-            </div>
-          </div>
-
-          {/* Featured Teams - Horizontal */}
+        {/* Featured Teams - Full Width */}
+        <div className="mb-6">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
@@ -1544,14 +1408,6 @@ export default function SignedInDashboard({
           </div>
         </div>
       </div>
-
-      {/* Chart Modal */}
-      <ChartModal
-        isOpen={chartModalOpen}
-        setIsOpen={setChartModalOpen}
-        chartComponent={chartModalComponent}
-        chartTitle={chartModalTitle}
-      />
 
       {/* Newsletter Modal */}
       {newsletterModalOpen && <NewsletterSubModal setEnabled={setNewsletterModalOpen} />}
