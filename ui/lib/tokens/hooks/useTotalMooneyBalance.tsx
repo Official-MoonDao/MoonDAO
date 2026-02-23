@@ -1,5 +1,6 @@
-//Get total mooney balance for an address on L1 and L2
-import { useEffect, useState } from 'react'
+// Get total MOONEY balance for an address across all chains (ethereum, polygon, arbitrum, base)
+// Uses SWR for consistent cached data across all components
+import useSWR from 'swr'
 import { getContract, readContract } from 'thirdweb'
 import { arbitrum, base, ethereum, polygon } from '@/lib/rpc/chains'
 import client from '@/lib/thirdweb/client'
@@ -34,51 +35,49 @@ const baseMooneyContract = getContract({
   abi: ERC20 as any,
 })
 
+async function fetchTotalMooneyBalance(address: string): Promise<number> {
+  const results = await Promise.allSettled([
+    readContract({
+      contract: ethMooneyContract,
+      method: 'balanceOf',
+      params: [address],
+    }),
+    readContract({
+      contract: polygonMooneyContract,
+      method: 'balanceOf',
+      params: [address],
+    }),
+    readContract({
+      contract: arbMooneyContract,
+      method: 'balanceOf',
+      params: [address],
+    }),
+    readContract({
+      contract: baseMooneyContract,
+      method: 'balanceOf',
+      params: [address],
+    }),
+  ])
+
+  const [ethMooney, polygonMooney, arbMooney, baseMooney] = results.map(
+    (result) => (result.status === 'fulfilled' ? result.value : 0)
+  )
+
+  return (
+    (Number(ethMooney) +
+      Number(polygonMooney) +
+      Number(arbMooney) +
+      Number(baseMooney)) /
+    10 ** 18
+  )
+}
+
 export function useTotalMooneyBalance(address: string | undefined) {
-  const [totalMooneyBalance, setTotalMooneyBalance] = useState<number>(0)
+  const { data = 0 } = useSWR(
+    address ? `mooney-balance-${address.toLowerCase()}` : null,
+    () => fetchTotalMooneyBalance(address!),
+    { revalidateOnFocus: false, dedupingInterval: 10000 }
+  )
 
-  useEffect(() => {
-    async function checkForBalance() {
-      const results = await Promise.allSettled([
-        readContract({
-          contract: ethMooneyContract,
-          method: 'balanceOf',
-          params: [address],
-        }),
-        readContract({
-          contract: polygonMooneyContract,
-          method: 'balanceOf',
-          params: [address],
-        }),
-        readContract({
-          contract: arbMooneyContract,
-          method: 'balanceOf',
-          params: [address],
-        }),
-        readContract({
-          contract: baseMooneyContract,
-          method: 'balanceOf',
-          params: [address],
-        }),
-      ])
-
-      const [ethMooney, polygonMooney, arbMooney, baseMooney] = results.map(
-        (result) => (result.status === 'fulfilled' ? result.value : 0)
-      )
-
-      setTotalMooneyBalance(
-        (Number(ethMooney) +
-          Number(polygonMooney) +
-          Number(arbMooney) +
-          Number(baseMooney)) /
-          10 ** 18
-      )
-    }
-
-    if (address) {
-      checkForBalance()
-    }
-  }, [address])
-
-  return totalMooneyBalance
+  return data
 }

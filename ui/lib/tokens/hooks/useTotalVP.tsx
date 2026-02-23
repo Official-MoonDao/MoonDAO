@@ -1,5 +1,4 @@
 import useSWR from 'swr'
-import { useTotalLockedMooney } from './useTotalLockedMooney'
 import { useTotalVMOONEY } from './useTotalVMOONEY'
 
 /**
@@ -12,15 +11,11 @@ import { useTotalVMOONEY } from './useTotalVMOONEY'
  * - ui/pages/project/[tokenId].tsx
  */
 export function useTotalVP(address: string) {
-  const { breakdown, isLoading: isLoadingLocked } = useTotalLockedMooney(
+  const { totalVMOONEY, isLoading: isLoadingVMOONEY } = useTotalVMOONEY(
     address || undefined
   )
-  const { totalVMOONEY, isLoading: isLoadingVMOONEY } = useTotalVMOONEY(
-    address || undefined,
-    breakdown
-  )
 
-  const isLoading = isLoadingLocked || isLoadingVMOONEY
+  const isLoading = isLoadingVMOONEY
   const walletVP =
     !isLoading && totalVMOONEY !== undefined
       ? Math.sqrt(totalVMOONEY || 0)

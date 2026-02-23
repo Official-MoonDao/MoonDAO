@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { NavLink } from './NavLink'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useRef } from 'react'
 import useTranslation from 'next-translate/useTranslation'
@@ -94,13 +94,16 @@ const TopNavBar = ({
       <div className="max-w-full mx-auto px-2 lg:px-4 xl:px-6">
         <div className="flex items-center justify-between h-16 lg:h-18 min-w-0">
           {/* Logo - responsive sizing */}
-          <Link href="/" className="flex-shrink-0 ml-2 md:ml-4 mr-4 lg:mr-6 xl:mr-8">
+          <NavLink
+            href="/"
+            className="flex-shrink-0 ml-2 md:ml-4 mr-4 lg:mr-6 xl:mr-8 cursor-pointer"
+          >
             <div className="flex items-center">
               <div className="w-24 md:w-28 lg:w-32 xl:w-36 hover:scale-105 transition-transform duration-200">
                 <LogoSidebar />
               </div>
             </div>
-          </Link>
+          </NavLink>
 
           {/* Navigation Links - Show on large screens and up (1024px+) */}
           <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-1 justify-center max-w-[1024px] mx-auto">
@@ -119,58 +122,56 @@ const TopNavBar = ({
                   onMouseLeave={() => item.children && handleDropdownLeave()}
                 >
                   {item.children ? (
-                    // For items with children, check if they also have an href
-                    item.href ? (
-                      // If they have both children and href, make it a clickable link with dropdown on hover
-                      <Link
-                        href={item.href}
-                        className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg ${
-                          isActive
-                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
-                            : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    // Single click: show dropdown. Double click: navigate to parent link.
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        if (e.detail === 2 && item.href) {
+                          window.location.href = item.href
+                        } else {
+                          handleDropdownEnter(item.name)
+                        }
+                      }}
+                      title={item.href ? 'Single click: open menu. Double click: go to page.' : 'Click to open menu'}
+                      className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg w-full text-left cursor-pointer
+                        border hover:scale-[1.02] active:scale-[0.98]
+                        ${isActive
+                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-white/30'
+                          : 'text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20 border-transparent'
                         }`}
-                      >
-                        <item.icon className="w-4 h-4 mr-2" />
-                        {t(item.name)}
-                        <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform duration-200 ${openDropdown === item.name ? 'rotate-180' : ''}`} />
-                      </Link>
-                    ) : (
-                      // If they only have children (no href), keep as button
-                      <button
-                        className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg ${
-                          isActive
-                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
-                            : 'text-gray-300 hover:text-white hover:bg-white/10'
-                        }`}
-                      >
-                        <item.icon className="w-4 h-4 mr-2" />
-                        {t(item.name)}
-                        <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform duration-200 ${openDropdown === item.name ? 'rotate-180' : ''}`} />
-                      </button>
-                    )
+                    >
+                      <item.icon className="w-4 h-4 mr-2" />
+                      {t(item.name)}
+                      <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform duration-200 ${openDropdown === item.name ? 'rotate-180' : ''}`} />
+                    </button>
                   ) : (
-                    <Link
+                    <NavLink
                       href={item.href}
-                      className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg ${
+                      className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg cursor-pointer border border-transparent hover:scale-[1.02] active:scale-[0.98] hover:border-white/20 ${
                         isActive
-                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
+                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-white/30'
                           : 'text-gray-300 hover:text-white hover:bg-white/10'
                       }`}
                     >
                       <item.icon className="w-4 h-4 mr-2" />
                       {t(item.name)}
-                    </Link>
+                    </NavLink>
                   )}
 
                   {/* Dropdown Menu */}
                   {item.children && openDropdown === item.name && (
-                    <div 
-                      className="absolute top-full left-0 w-full z-50"
-                      onMouseEnter={() => handleDropdownEnter(item.name)}
-                      onMouseLeave={handleDropdownLeave}
-                    >
-                      {/* Invisible bridge to prevent dropdown from closing when moving mouse */}
-                      <div className="h-2 w-full"></div>
+                    <>
+                      {/* Invisible bridge - covers path from trigger to dropdown so mouse doesn't leave and close menu */}
+                      <div
+                        className="absolute top-full left-0 right-0 w-full -mt-1 h-48 z-40"
+                        onMouseEnter={() => handleDropdownEnter(item.name)}
+                        aria-hidden="true"
+                      />
+                      <div 
+                        className="absolute top-full left-0 w-full z-50 pt-2 -mt-2"
+                        onMouseEnter={() => handleDropdownEnter(item.name)}
+                        onMouseLeave={handleDropdownLeave}
+                      >
                       <div className="w-56 bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 rounded-xl">
                       {item.children.map((child: any, j: number) => {
                         if (!child.href) {
@@ -184,21 +185,22 @@ const TopNavBar = ({
                         const isChildActive = router.pathname === child.href
 
                         return (
-                          <Link
+                          <NavLink
                             key={j}
                             href={child.href}
-                            className={`block px-4 py-2 text-sm transition-all duration-200 mx-2 rounded-lg ${
+                            className={`block w-full text-left px-4 py-2 text-sm transition-all duration-200 mx-2 rounded-lg ${
                               isChildActive
                                 ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
                                 : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
                             }`}
                           >
                             {child.name}
-                          </Link>
+                          </NavLink>
                         )
                       })}
                       </div>
                     </div>
+                    </>
                   )}
                 </div>
               )

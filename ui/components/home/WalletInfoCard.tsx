@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import Image from 'next/image'
-import Link from 'next/link'
+import { NavLink } from '@/components/layout/NavLink'
 import { useState, useContext } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
@@ -223,12 +223,12 @@ export default function WalletInfoCard({
               </span>
             )}
           </div>
-          <Link
+          <NavLink
             href="/get-mooney"
             className="block w-full text-center py-1.5 px-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-300 text-xs font-medium transition-all"
           >
             Get $MOONEY
-          </Link>
+          </NavLink>
         </div>
 
         {/* Locked MOONEY */}
@@ -251,12 +251,12 @@ export default function WalletInfoCard({
               </span>
             )}
           </div>
-          <Link
+          <NavLink
             href="/lock"
             className="block w-full text-center py-1.5 px-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-medium transition-all"
           >
             Lock $MOONEY
-          </Link>
+          </NavLink>
         </div>
 
         {/* Voting Power */}

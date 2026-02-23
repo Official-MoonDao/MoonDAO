@@ -1,92 +1,55 @@
 import VMOONEY_ABI from 'const/abis/VotingEscrow.json'
 import { VMOONEY_ADDRESSES } from 'const/config'
-import { useEffect, useState } from 'react'
+import useSWR from 'swr'
 import { readContract } from 'thirdweb'
 import { arbitrum, ethereum, polygon, base } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { votingEscrowContracts } from '../votingEscrowContracts'
 import { LockedBreakdown } from './useTotalLockedMooney'
 
+async function fetchTotalVMOONEYForAddress(address: string): Promise<number> {
+  const chains = Object.keys(votingEscrowContracts) as string[]
+  if (chains.length === 0) return 0
+
+  const results = await Promise.allSettled(
+    chains.map(async (chain) => {
+      const contract = votingEscrowContracts[chain]
+      if (!contract) return 0
+
+      const balance = await readContract({
+        contract,
+        method: 'balanceOf' as any,
+        params: [address],
+      })
+
+      return Number(balance?.toString() || 0) / 10 ** 18
+    })
+  )
+
+  return results.reduce((sum, result) => {
+    if (result.status === 'fulfilled') {
+      return sum + result.value
+    }
+    return sum
+  }, 0)
+}
+
+/**
+ * Fetches total vMOONEY balance across ALL chains - identical to fetchTotalVMOONEYs
+ * used for project voting. Uses SWR for consistent cached data across components.
+ */
 export function useTotalVMOONEY(
   address: string | undefined,
-  breakdown: LockedBreakdown[]
+  _breakdown?: LockedBreakdown[] // No longer used - fetches from all chains like project voting
 ): {
   totalVMOONEY: number
   isLoading: boolean
 } {
-  const [totalVMOONEY, setTotalVMOONEY] = useState<number>(0)
-  const [isLoading, setIsLoading] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!address || !breakdown || breakdown.length === 0) {
-      setTotalVMOONEY(0)
-      setIsLoading(false)
-      return
-    }
-
-    async function fetchTotalVMOONEY() {
-      setIsLoading(true)
-
-      try {
-        const chainsWithLocks = breakdown.filter((item) => item.amount > 0)
-
-        if (chainsWithLocks.length === 0) {
-          if (!cancelled) {
-            setTotalVMOONEY(0)
-            setIsLoading(false)
-          }
-          return
-        }
-
-        const results = await Promise.allSettled(
-          chainsWithLocks.map(async ({ chain }) => {
-            const contract = votingEscrowContracts[chain]
-            if (!contract) return 0
-
-            const balance = await readContract({
-              contract,
-              method: 'balanceOf' as any,
-              params: [address],
-            })
-
-            return Number(balance?.toString() || 0) / 10 ** 18
-          })
-        )
-
-        if (cancelled) {
-          return
-        }
-
-        const total = results.reduce((sum, result) => {
-          if (result.status === 'fulfilled') {
-            return sum + result.value
-          }
-          return sum
-        }, 0)
-
-        if (!cancelled) {
-          setTotalVMOONEY(total)
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error('Failed to fetch vMOONEY balances:', error)
-          setTotalVMOONEY(0)
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchTotalVMOONEY()
-
-    return () => {
-      cancelled = true
-    }
-  }, [address, breakdown])
+  const { data: totalVMOONEY = 0, isLoading } = useSWR(
+    address ? `vmooney-total-${address.toLowerCase()}` : null,
+    () => fetchTotalVMOONEYForAddress(address!),
+    { revalidateOnFocus: false, dedupingInterval: 10000 }
+  )
 
   return {
     totalVMOONEY,
