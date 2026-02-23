@@ -7,12 +7,12 @@ import {
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState, useContext } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { useENS } from '@/lib/utils/hooks/useENS'
-import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import {
@@ -88,13 +88,7 @@ export default function WalletInfoCard({
   const [copied, setCopied] = useState(false)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
-  const { nativeBalance, walletChain } = useNativeBalance()
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false)
-
-  // Use the wallet's actual chain for native token display, fall back to selectedChain
-  const nativeTokenChain = walletChain || selectedChain
-  const nativeTokenSlug = getChainSlug(nativeTokenChain)
-  const nativeTokenSymbol = nativeTokenChain?.nativeCurrency?.symbol || 'ETH'
 
   const availableChains = [
     arbitrum,
@@ -117,8 +111,6 @@ export default function WalletInfoCard({
       toast.error('Failed to copy address')
     }
   }
-
-  const totalMooney = (unlockedMooney || 0) + (lockedMooney || 0)
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -210,32 +202,9 @@ export default function WalletInfoCard({
 
       {/* Balances */}
       <div className="space-y-3 mb-4">
-        {/* Native Token Balance */}
+        {/* $MOONEY Balance */}
         <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Image
-                src={`/icons/networks/${
-                  nativeTokenSlug === 'polygon' ? 'polygon' : 'ethereum'
-                }.svg`}
-                alt={nativeTokenSymbol}
-                width={20}
-                height={20}
-                className="rounded-full"
-              />
-              <span className="text-sm text-gray-400">
-                {nativeTokenSymbol}
-              </span>
-            </div>
-            <span className="text-white font-semibold">
-              {formatToken(nativeBalance, 4)}
-            </span>
-          </div>
-        </div>
-
-        {/* MOONEY Balance */}
-        <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Image
                 src="/coins/MOONEY.png"
@@ -244,7 +213,7 @@ export default function WalletInfoCard({
                 height={20}
                 className="rounded-full"
               />
-              <span className="text-sm text-gray-400">Available</span>
+              <span className="text-sm text-gray-400">$MOONEY</span>
             </div>
             {isUnlockedLoading ? (
               <LoadingSpinner width="w-4" height="h-4" />
@@ -254,11 +223,17 @@ export default function WalletInfoCard({
               </span>
             )}
           </div>
+          <Link
+            href="/get-mooney"
+            className="block w-full text-center py-1.5 px-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-300 text-xs font-medium transition-all"
+          >
+            Get $MOONEY
+          </Link>
         </div>
 
         {/* Locked MOONEY */}
         <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Image
                 src="/assets/vmooney-shield.svg"
@@ -276,22 +251,12 @@ export default function WalletInfoCard({
               </span>
             )}
           </div>
-        </div>
-
-        {/* Total Balance */}
-        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg p-3 border border-blue-500/20">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-blue-300 font-medium">
-              Total MOONEY
-            </span>
-            {isUnlockedLoading || isLockedLoading ? (
-              <LoadingSpinner width="w-4" height="h-4" />
-            ) : (
-              <span className="text-white font-bold">
-                {formatToken(totalMooney)}
-              </span>
-            )}
-          </div>
+          <Link
+            href="/lock"
+            className="block w-full text-center py-1.5 px-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-medium transition-all"
+          >
+            Lock $MOONEY
+          </Link>
         </div>
 
         {/* Voting Power */}
