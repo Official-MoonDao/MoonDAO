@@ -1,0 +1,80 @@
+# Docker Compose configuration for bug detection agent
+# Provides containerized testing environment with app and Playwright
+
+version: '3.8'
+
+services:
+  # Next.js application under test
+  app:
+    build:
+      context: ../ui
+      dockerfile: Dockerfile.test
+    container_name: moondao-app-test
+    environment:
+      - NEXT_PUBLIC_CHAIN=${NEXT_PUBLIC_CHAIN:-sepolia}
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # Playwright test runner
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.40.0-focal
+    container_name: moondao-playwright
+    depends_on:
+      app:
+        condition: service_healthy
+    working_dir: /tests
+    volumes:
+      - ../ui/playwright:/tests/playwright
+      - ../ui/playwright.config.ts:/tests/playwright.config.ts
+      - ./results:/tests/playwright/results
+      - ./reports:/tests/playwright/reports
+    environment:
+      - BASE_URL=http://app:3000
+      - CI=true
+    networks:
+      - test-network
+    command: >
+      bash -c "
+        cd /tests && 
+        npx playwright install --with-deps &&
+        npx playwright test --reporter=json,html
+      "
+
+  # Agent orchestrator
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moondao-agent
+    depends_on:
+      - app
+    volumes:
+      - ./results:/app/results
+      - ./reports:/app/reports
+      - ../.git:/repo/.git:ro
+      - ../ui:/repo/ui:ro
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-Official-MoonDao/MoonDAO}
+      - BASE_URL=http://app:3000
+    networks:
+      - test-network
+    command: ["python", "-m", "src.orchestrator", "run-cycle"]
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  results:
+  reports:
