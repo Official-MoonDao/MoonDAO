@@ -910,6 +910,7 @@ export default function CreateMission({
                         maxLength={32}
                         disabled={!missionData.token.tradeable}
                         variant="dark"
+                        formatNumbers={false}
                         tooltip="The name for your mission token (e.g.: Ethereum, Bitcoin)."
                       />
                     </div>
@@ -931,6 +932,7 @@ export default function CreateMission({
                         maxLength={8}
                         disabled={!missionData.token.tradeable}
                         variant="dark"
+                        formatNumbers={false}
                         tooltip="The symbol for your mission token (e.g.: ETH, BTC)."
                       />
                     </div>
