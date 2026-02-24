@@ -1,8 +1,7 @@
-import { LockClosedIcon, ScaleIcon, UsersIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
+import { InformationCircleIcon, LockClosedIcon, ScaleIcon, UsersIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import { BigNumber, ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
@@ -18,7 +17,6 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import viemChains from '@/lib/viem/viemChains'
-import Balance from '../components/Balance'
 import Container from '../components/layout/Container'
 import Head from '../components/layout/Head'
 import { LockData } from '../components/lock/LockData'
@@ -151,6 +149,22 @@ export default function Lock() {
     }
   }, [hasLock, VMOONEYLock, selectedChain, address])
 
+  // Sync lockTime when invalid (e.g. before lock end when extending)
+  useEffect(() => {
+    if (hasLock && VMOONEYLock && lockTime?.formatted) {
+      const lockEnd = bigNumberToDate(BigNumber.from(VMOONEYLock[1]))
+      const minExtendDate = new Date(lockEnd.getTime())
+      minExtendDate.setDate(minExtendDate.getDate() + 1)
+      if (Date.parse(lockTime.formatted) < minExtendDate.getTime()) {
+        setLockTime({
+          value: ethers.BigNumber.from(minExtendDate.getTime()),
+          formatted: dateToReadable(minExtendDate),
+          orig: lockTime.orig,
+        })
+      }
+    }
+  }, [hasLock, VMOONEYLock, lockTime?.formatted])
+
   //Lock time min/max
   useEffect(() => {
     if (hasLock && VMOONEYLock) {
@@ -201,23 +215,22 @@ export default function Lock() {
           {/* Lock MOONEY Section */}
           <section className="py-12 px-6 w-full min-h-screen">
             <div className="max-w-4xl mx-auto w-full">
-              <div className="text-center mb-8">
+              <div className="mb-8 max-w-xl mx-auto text-left">
                 <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
                   Lock MOONEY
                 </h1>
-                <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-                  Lock your MOONEY tokens to receive vMOONEY and gain voting power in MoonDAO
-                  governance.
+                <p className="text-lg text-gray-300">
+                  Lock MOONEY to receive vMOONEY and gain voting power in MoonDAO governance.
                 </p>
               </div>
 
               {/* vMOONEY Withdraw Section */}
-              <div className="mb-8">
+              <div className="mb-8 max-w-xl mx-auto">
                 <RetroactiveRewards />
               </div>
 
               {/* Lock Data Display */}
-              <div className="mb-8">
+              <div className="mb-8 max-w-xl mx-auto">
                 <LockData
                   hasLock={hasLock}
                   VMOONEYBalance={VMOONEYBalance}
@@ -225,23 +238,6 @@ export default function Lock() {
                   VMOONEYLock={VMOONEYLock}
                   VMOONEYLockLoading={VMOONEYLockLoading}
                 />
-              </div>
-
-              {/* Network Selection */}
-              <div className="mb-8">
-                <div className="max-w-xl mx-auto">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-2">Network Selection</h3>
-                      <p className="text-gray-300 text-sm">
-                        Select a network to lock your MOONEY tokens
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <NetworkSelector compact />
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Main Lock Interface - Preserve existing complex logic */}
@@ -252,31 +248,13 @@ export default function Lock() {
                       <div>
                         {/* Compact Header */}
                         <div className="p-5 border-b border-white/10 bg-black/20">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
                               <h2 className="text-xl font-bold text-white">Lock MOONEY</h2>
                               <p className="text-gray-400 text-xs mt-0.5">Earn voting power</p>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <p className="text-gray-400 text-xs">Available</p>
-                                <div className="text-white text-lg font-RobotoMono font-semibold flex items-center gap-2">
-                                  <div className="text-white">
-                                    <Balance
-                                      balance={MOONEYBalance?.toString() / 1e18}
-                                      loading={MOONEYBalanceLoading}
-                                      decimals={2}
-                                    />
-                                  </div>
-                                  <Image
-                                    src="/coins/MOONEY.png"
-                                    width={20}
-                                    height={20}
-                                    alt="MOONEY"
-                                    className="rounded-full"
-                                  />
-                                </div>
-                              </div>
+                            <div className="flex-shrink-0">
+                              <NetworkSelector compact />
                             </div>
                           </div>
                         </div>
@@ -367,8 +345,34 @@ export default function Lock() {
                                   formatNumbers={true}
                                   maxWidth="max-w-none"
                                 />
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-gray-400 text-sm">MOONEY</span>
+                                  {MOONEYBalanceLoading ? (
+                                    <span className="text-gray-500 text-xs animate-pulse">...</span>
+                                  ) : (
+                                    <span className="text-gray-500 text-xs">
+                                      Available:{' '}
+                                      <span className="text-gray-400 font-RobotoMono">
+                                        {(hasLock && VMOONEYLock
+                                          ? parseFloat(
+                                              ethers.utils.formatEther(
+                                                BigNumber.from(VMOONEYLock[0]).add(
+                                                  MOONEYBalance || 0
+                                                )
+                                              )
+                                            )
+                                          : parseFloat(
+                                              ethers.utils.formatEther(
+                                                MOONEYBalance?.toString() || '0'
+                                              )
+                                            )
+                                        ).toLocaleString('en-US', {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        })}
+                                      </span>
+                                    </span>
+                                  )}
                                   <button
                                     className="text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded text-xs"
                                     disabled={
@@ -382,7 +386,7 @@ export default function Lock() {
                                               BigNumber.from(VMOONEYLock[0]).add(MOONEYBalance || 0)
                                             )
                                           : ethers.utils.formatEther(
-                                              MOONEYBalance?.value.toString() || '0'
+                                              MOONEYBalance?.toString() || '0'
                                             )
                                       )
                                       setWantsToIncrease(true)
@@ -410,128 +414,77 @@ export default function Lock() {
                           <div className="space-y-3">
                             <label className="text-gray-300 text-sm font-medium">Lock Until</label>
 
-                            {/* Lock Duration Buttons */}
-                            <div className="grid grid-cols-4 gap-2">
-                              {[
-                                { label: '6M', days: 182 },
-                                { label: '1Y', days: 365 },
-                                { label: '2Y', days: 730 },
-                                { label: '4Y', days: 1460 }, // 4 years minus 1 day to stay under limit
-                              ].map(({ label, days }) => {
-                                const targetDate = dateOut(new Date(), { days })
-                                const isSelected =
-                                  lockTime?.formatted === dateToReadable(targetDate)
-                                // Check if the target date is beyond the current lock end time
-                                const canSelectThisDate =
-                                  !hasLock ||
-                                  (VMOONEYLock &&
-                                    +targetDate >
-                                      BigNumber.from(VMOONEYLock[1]).mul(1000).toNumber())
+                            {(() => {
+                              const now = new Date()
+                              const lockEndDate = hasLock && VMOONEYLock
+                                ? bigNumberToDate(BigNumber.from(VMOONEYLock[1]))
+                                : null
+                              const effectiveMinDays = lockEndDate
+                                ? Math.ceil((lockEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                                : 7
+                              const maxDays = 1460
+                              const currentDays = lockTime?.formatted
+                                ? Math.round((Date.parse(lockTime.formatted) - now.getTime()) / (1000 * 60 * 60 * 24))
+                                : effectiveMinDays
+                              const clampedDays = Math.max(effectiveMinDays, Math.min(maxDays, currentDays))
+                              const minDate = (() => {
+                                const d = new Date(now.getTime())
+                                d.setDate(d.getDate() + 7)
+                                return d
+                              })()
 
-                                return (
-                                  <button
-                                    key={label}
-                                    className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                                      isSelected
-                                        ? 'bg-blue-500 text-white border border-blue-400'
-                                        : canSelectThisDate
-                                        ? 'bg-black/30 text-gray-300 border border-white/10 hover:border-blue-400/50 hover:bg-blue-500/10'
-                                        : 'bg-gray-700/30 text-gray-500 border border-gray-600/30 cursor-not-allowed'
-                                    }`}
-                                    disabled={
-                                      ((!MOONEYBalance || +MOONEYBalance.toString() === 0) &&
-                                        !hasLock) ||
-                                      !canSelectThisDate
-                                    }
-                                    onClick={() => {
-                                      setLockTime({
-                                        value: ethers.BigNumber.from(+targetDate),
-                                        formatted: dateToReadable(targetDate),
-                                      })
-                                      setWantsToIncrease(true)
-                                    }}
-                                  >
-                                    {label}
-                                  </button>
-                                )
-                              })}
-                            </div>
+                              const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                                const rawDays = parseInt(e.target.value, 10)
+                                const days = Math.max(effectiveMinDays, Math.min(maxDays, rawDays))
+                                const targetDate = new Date(now.getTime())
+                                targetDate.setDate(targetDate.getDate() + days)
+                                setLockTime({
+                                  ...lockTime,
+                                  value: ethers.BigNumber.from(targetDate.getTime()),
+                                  formatted: dateToReadable(targetDate),
+                                })
+                                setWantsToIncrease(true)
+                              }
 
-                            {/* Date Input */}
-                            <div className="bg-black/30 rounded-xl p-3 border border-white/10 focus-within:border-blue-400/50 transition-colors">
-                              <input
-                                type="date"
-                                className="w-full bg-transparent text-white text-lg font-RobotoMono focus:outline-none"
-                                value={lockTime?.formatted}
-                                min={
-                                  hasLock && VMOONEYLock
-                                    ? dateToReadable(
-                                        dateOut(bigNumberToDate(BigNumber.from(VMOONEYLock[1])), {
-                                          days: 1,
-                                        })
-                                      )
-                                    : dateToReadable(dateOut(new Date(), { days: 7 }))
-                                }
-                                max={minMaxLockTime.max}
-                                disabled={
-                                  (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
-                                }
-                                onChange={(e: any) => {
-                                  const inputValue = e.target.value
-
-                                  // Update state immediately without validation during typing
-                                  setLockTime({
-                                    ...lockTime,
-                                    formatted: inputValue ? inputValue : lockTime.orig?.formatted,
-                                    value: inputValue
-                                      ? ethers.BigNumber.from(Date.parse(inputValue))
-                                      : lockTime.orig?.value,
-                                  })
-                                  setWantsToIncrease(!!inputValue)
-                                }}
-                                onBlur={(e: any) => {
-                                  const inputValue = e.target.value
-
-                                  // Only validate when user finishes editing (loses focus)
-                                  if (inputValue && inputValue.length === 10) {
-                                    const selectedDate = new Date(inputValue)
-                                    const minDate = dateOut(new Date(), {
-                                      days: 7,
-                                    })
-                                    const maxDate = dateOut(new Date(), {
-                                      days: 1460,
-                                    }) // 4 years minus 1 day
-
-                                    if (selectedDate < minDate) {
-                                      toast.error(
-                                        'Lock period must be at least 7 days in the future'
-                                      )
-                                      // Reset to minimum valid date
-                                      const validDate = dateToReadable(minDate)
-                                      setLockTime({
-                                        ...lockTime,
-                                        formatted: validDate,
-                                        value: ethers.BigNumber.from(Date.parse(validDate)),
-                                      })
-                                    } else if (selectedDate > maxDate) {
-                                      toast.error(
-                                        'Lock period cannot exceed 4 years. Date has been adjusted to the maximum allowed.'
-                                      )
-                                      // Auto-correct to maximum valid date
-                                      const validDate = dateToReadable(maxDate)
-                                      setLockTime({
-                                        ...lockTime,
-                                        formatted: validDate,
-                                        value: ethers.BigNumber.from(Date.parse(validDate)),
-                                      })
-                                    }
-                                  }
-                                }}
-                              />
-                            </div>
-                            <p className="text-gray-400 text-xs">
-                              Minimum lock period: 7 days • Maximum: 4 years
-                            </p>
+                              return (
+                                <>
+                                  <div className="bg-black/30 rounded-xl p-4 border border-white/10 focus-within:border-blue-400/50 transition-colors">
+                                    <input
+                                      type="range"
+                                      min={7}
+                                      max={maxDays}
+                                      step={1}
+                                      value={clampedDays}
+                                      disabled={
+                                        (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
+                                      }
+                                      onChange={handleSliderChange}
+                                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    />
+                                    <div className="flex justify-between items-center mt-2 gap-2">
+                                      <span className="text-gray-500 text-xs flex-shrink-0">
+                                        7 days
+                                      </span>
+                                      <span className="text-white text-lg font-RobotoMono font-semibold text-center truncate min-w-0">
+                                        {lockTime?.formatted || dateToReadable(minDate)}
+                                      </span>
+                                      <span className="text-gray-500 text-xs flex-shrink-0">
+                                        4 years
+                                      </span>
+                                    </div>
+                                    {hasLock && (
+                                      <p className="text-blue-400/80 text-xs mt-2 flex items-center gap-1.5">
+                                        <InformationCircleIcon className="h-4 w-4 flex-shrink-0" aria-hidden />
+                                        You can only extend your lock—sliding left is disabled to prevent shortening your lock duration.
+                                      </p>
+                                    )}
+                                  </div>
+                                  <p className="text-gray-400 text-xs mt-1">
+                                    Minimum lock period: 7 days • Maximum: 4 years
+                                  </p>
+                                </>
+                              )
+                            })()}
                           </div>
 
                           {/* Voting Power Preview */}
