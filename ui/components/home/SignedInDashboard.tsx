@@ -354,65 +354,6 @@ export default function SignedInDashboard({
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex items-center flex-1">
-              <div className="flex flex-wrap justify-center lg:justify-start gap-2 sm:gap-3 w-full lg:w-auto">
-                <StandardButton
-                  backgroundColor="bg-gradient-to-r from-blue-500 to-purple-500"
-                  hoverColor="hover:from-blue-600 hover:to-purple-600"
-                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
-                  link="/get-mooney"
-                >
-                  <BanknotesIcon className="w-4 h-4" />
-                  Get Mooney
-                </StandardButton>
-                <StandardButton
-                  backgroundColor="bg-gradient-to-r from-purple-500 to-pink-500"
-                  hoverColor="hover:from-purple-600 hover:to-pink-600"
-                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
-                  link="/proposals"
-                >
-                  <NewspaperIcon className="w-4 h-4" />
-                  Propose
-                </StandardButton>
-                <StandardButton
-                  backgroundColor="bg-gradient-to-r from-pink-500 to-red-500"
-                  hoverColor="hover:from-pink-600 hover:to-red-600"
-                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
-                  link="/vote"
-                >
-                  <CheckBadgeIcon className="w-4 h-4" />
-                  Vote
-                </StandardButton>
-                <StandardButton
-                  backgroundColor="bg-gradient-to-r from-red-500 to-orange-500"
-                  hoverColor="hover:from-red-600 hover:to-orange-600"
-                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
-                  link="/launchpad"
-                >
-                  <RocketLaunchIcon className="w-4 h-4" />
-                  Launch
-                </StandardButton>
-                <StandardButton
-                  backgroundColor="bg-gradient-to-r from-orange-500 to-green-500"
-                  hoverColor="hover:from-orange-600 hover:to-green-600"
-                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
-                  link="/network"
-                >
-                  <UserGroupIcon className="w-4 h-4" />
-                  Teams
-                </StandardButton>
-                <StandardButton
-                  backgroundColor="bg-gradient-to-r from-green-500 to-teal-500"
-                  hoverColor="hover:from-green-600 hover:to-teal-600"
-                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
-                  link="/marketplace"
-                >
-                  <ShoppingBagIcon className="w-4 h-4" />
-                  Shop
-                </StandardButton>
-              </div>
-            </div>
           </div>
         </div>
 

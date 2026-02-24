@@ -241,7 +241,7 @@ export default function WalletInfoCard({
                 width={20}
                 height={20}
               />
-              <span className="text-sm text-gray-400">Locked</span>
+              <span className="text-sm text-gray-400">$vMOONEY (Locked)</span>
             </div>
             {isLockedLoading ? (
               <LoadingSpinner width="w-4" height="h-4" />
