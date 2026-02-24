@@ -70,11 +70,18 @@ async function fetchLockedBalances(address: string): Promise<LockedState> {
  * Fetches locked MOONEY from voting escrow across all chains.
  * Uses SWR for consistent cached data across components.
  */
+const SWR_CONFIG = {
+  revalidateOnFocus: true,
+  dedupingInterval: 10000,
+  errorRetryCount: 3,
+  revalidateOnReconnect: true,
+}
+
 export function useTotalLockedMooney(address: string | undefined) {
   const { data, isLoading } = useSWR(
     address ? `locked-mooney-${address.toLowerCase()}` : null,
     () => fetchLockedBalances(address!),
-    { revalidateOnFocus: false, dedupingInterval: 10000 }
+    SWR_CONFIG
   )
 
   return {

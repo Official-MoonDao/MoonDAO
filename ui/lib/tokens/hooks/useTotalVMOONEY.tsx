@@ -38,6 +38,13 @@ async function fetchTotalVMOONEYForAddress(address: string): Promise<number> {
  * Fetches total vMOONEY balance across ALL chains - identical to fetchTotalVMOONEYs
  * used for project voting. Uses SWR for consistent cached data across components.
  */
+const SWR_CONFIG = {
+  revalidateOnFocus: true,
+  dedupingInterval: 10000,
+  errorRetryCount: 3,
+  revalidateOnReconnect: true,
+}
+
 export function useTotalVMOONEY(
   address: string | undefined,
   _breakdown?: LockedBreakdown[] // No longer used - fetches from all chains like project voting
@@ -48,7 +55,7 @@ export function useTotalVMOONEY(
   const { data: totalVMOONEY = 0, isLoading } = useSWR(
     address ? `vmooney-total-${address.toLowerCase()}` : null,
     () => fetchTotalVMOONEYForAddress(address!),
-    { revalidateOnFocus: false, dedupingInterval: 10000 }
+    SWR_CONFIG
   )
 
   return {

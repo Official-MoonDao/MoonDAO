@@ -92,7 +92,7 @@ export default function Quests({}: QuestsProps) {
   const displayedQuests = xpVerifiers
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-6">
+    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h3 className="font-semibold text-white text-lg flex items-center gap-2">
@@ -133,8 +133,8 @@ export default function Quests({}: QuestsProps) {
         </div> */}
       </div>
 
-      <div className="w-full mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="w-full mt-3 sm:mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {displayedQuests.map((verifier: any) => (
             <Quest
               key={`verifier-${verifier.verifierId}-${verifier.verifierAddress}`}

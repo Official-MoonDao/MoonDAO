@@ -620,7 +620,7 @@ export default function Quest({
 
   const getButtonClasses = () => {
     const baseClasses =
-      'px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95'
+      'w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center'
     if (variant === 'weekly') {
       return `${baseClasses} bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 hover:from-purple-700 hover:via-purple-600 hover:to-purple-700 text-white`
     }
@@ -630,7 +630,7 @@ export default function Quest({
   // Base classes for different error button types
   const getBaseErrorButtonClasses = useCallback((type: string) => {
     const baseClasses =
-      'bg-gradient-to-r text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95'
+      'w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center'
 
     switch (type) {
       case 'github_link':
@@ -782,20 +782,21 @@ export default function Quest({
 
   return (
     <div
-      className={`w-full px-4 py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
+      className={`w-full px-3 py-3 sm:px-4 sm:py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
     >
-      <div className="flex flex-col items-center gap-3 w-full relative z-10">
-        <div className="flex items-center justify-between gap-3 w-full h-[55px]">
-          <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 w-full relative z-10 min-w-0">
+        {/* Header: stack on mobile, row on larger screens */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 w-full min-w-0">
+          <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
             {/* Icon Section */}
             <div
               className={`p-2.5 rounded-xl flex-shrink-0 transition-all duration-500 ${getIconClasses()} h-10 w-10`}
             >
               <QuestIcon className="w-5 h-5 group-hover:rotate-12 transition-transform duration-500" />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <h3
-                className={`font-semibold text-base transition-all duration-300 ${
+                className={`font-semibold text-sm sm:text-base transition-all duration-300 break-words ${
                   isCheckingClaimed || isPollingClaim
                     ? 'text-white'
                     : isCompleted
@@ -809,18 +810,16 @@ export default function Quest({
               </h3>
               {isCompleted ? (
                 <CheckBadgeIcon className="w-5 h-5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-              ) : (
-                <></>
-              )}
+              ) : null}
             </div>
           </div>
 
-          {/* MOONEY amount - upper right */}
+          {/* MOONEY amount - full width on mobile, auto on larger */}
           {quest.verifier.type === 'staged' &&
             stagedProgress &&
             !isLoadingStagedProgress && (
-              <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <span className="text-green-300 text-sm font-medium bg-gradient-to-r from-green-500/30 to-emerald-500/30 px-2.5 py-1 rounded-full border border-green-400/30 shadow-lg shadow-green-500/20 backdrop-blur-sm">
+              <div className="flex items-center sm:items-end sm:justify-end flex-shrink-0">
+                <span className="text-green-300 text-xs sm:text-sm font-medium bg-gradient-to-r from-green-500/30 to-emerald-500/30 px-2.5 py-1 rounded-full border border-green-400/30 shadow-lg shadow-green-500/20 backdrop-blur-sm whitespace-nowrap">
                   +
                   {stagedProgress.nextStageXP ??
                     Number(
@@ -846,93 +845,132 @@ export default function Quest({
                     Loading progress...
                   </div>
                 ) : stagedProgress ? (
-                  <div className="flex items-start justify-between gap-4 w-full min-w-0">
-                    {/* Referral link for referral quest */}
-                    {quest.action &&
-                      quest.actionText?.includes('Copy Referral Link') &&
-                      citizen?.owner && (
-                        <div className="text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm shadow-lg shadow-green-500/20 w-full min-w-0">
-                          <p className="text-gray-400/90 text-xs mb-0.5">
-                            Your referral link
-                          </p>
-                          <p
-                            className="text-white font-mono text-xs break-all select-all"
-                            title={referralUrl}
-                          >
-                            {referralUrl}
-                          </p>
-                        </div>
-                      )}
-
-                    {/* Progress bar + fraction + Action Buttons - hide progress for referral */}
-                    <div className="flex flex-col gap-2 flex-shrink-0 items-end w-full sm:w-auto">
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        {quest.verifier.type === 'staged' &&
-                          stagedProgress &&
-                          !isLoadingStagedProgress &&
-                          !quest.actionText?.includes('Copy Referral Link') && (
-                            <div className="flex-1 min-w-0 flex flex-col gap-1">
-                              <div className="min-w-[80px] h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 rounded-full transition-all duration-500"
-                                  style={{
-                                    width: `${Math.min(
-                                      100,
-                                      Math.max(
-                                        0,
-                                        (Number(userMetric) /
-                                          Math.max(
-                                            1,
-                                            Number(
-                                              getNextUnclamedThreshold(
-                                                stagedProgress
-                                              )
-                                            )
-                                          )) *
-                                          100
-                                      )
-                                    )}%`,
-                                  }}
-                                />
-                              </div>
-                              <p className="text-gray-400 text-xs">
-                                {quest.verifier.metricFormatting
-                                  ? quest.verifier.metricFormatting(userMetric)
-                                  : userMetric >= 1000
-                                  ? userMetric.toLocaleString()
-                                  : userMetric}
-                                /
-                                {quest.verifier.metricFormatting
-                                  ? quest.verifier.metricFormatting(
-                                      Number(getNextUnclamedThreshold(stagedProgress))
-                                    )
-                                  : Number(
-                                      getNextUnclamedThreshold(stagedProgress)
-                                    ) >= 1000
-                                  ? Number(
-                                      getNextUnclamedThreshold(stagedProgress)
-                                    ).toLocaleString()
-                                  : Number(
-                                      getNextUnclamedThreshold(stagedProgress)
-                                    )}{' '}
-                                (
-                                {Math.min(
-                                  100,
-                                  Math.round(
-                                    (Number(userMetric) /
-                                      Math.max(
-                                        1,
-                                        Number(
-                                          getNextUnclamedThreshold(stagedProgress)
-                                        )
-                                      )) *
-                                      100
-                                  )
-                                )}
-                                %)
-                              </p>
-                            </div>
+                  <div className="flex flex-col gap-4 w-full min-w-0">
+                    {/* Referral quest: link + buttons in one column */}
+                    {quest.actionText?.includes('Copy Referral Link') && (
+                      <div className="flex flex-col gap-3 w-full min-w-0">
+                        {quest.action && citizen?.owner && (
+                          <div className="text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm shadow-lg shadow-green-500/20 w-full min-w-0">
+                            <p className="text-gray-400/90 text-xs mb-0.5">
+                              Your referral link
+                            </p>
+                            <p
+                              className="text-white font-mono text-[10px] sm:text-xs break-all select-all"
+                              title={referralUrl}
+                            >
+                              {referralUrl}
+                            </p>
+                          </div>
+                        )}
+                        {/* Referral quest buttons - Copy Link + Claim (if eligible) + Record Referral */}
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+                          {!isCompleted &&
+                            !needsGitHubLink &&
+                            stagedProgress?.totalClaimableXP !== 0 && (
+                              <PrivyWeb3Button
+                                label={`Claim +${stagedProgress.totalClaimableXP} $MOONEY`}
+                                action={async () => {
+                                  await claimQuest()
+                                }}
+                                isDisabled={
+                                  isLoadingClaim ||
+                                  (quest.verifier.type === 'staged' &&
+                                    stagedProgress?.totalClaimableXP === 0)
+                                }
+                                requiredChain={DEFAULT_CHAIN_V5}
+                                className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/20 text-green-300 font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+                                noPadding
+                                noGradient
+                              />
+                            )}
+                          {getErrorButton(error || '')}
+                          {!isCompleted && quest.action && citizen?.owner && (
+                            <button
+                              onClick={quest.action}
+                              className={`${getButtonClasses()} gap-1.5`}
+                            >
+                              <ClipboardDocumentIcon className="w-4 h-4 flex-shrink-0" />
+                              Copy Link
+                            </button>
                           )}
+                          {!isCompleted && ModalButton && <ModalButton />}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Non-referral: progress bar + action buttons */}
+                    {!quest.actionText?.includes('Copy Referral Link') && (
+                    <div className="flex flex-col gap-3 w-full min-w-0">
+                      {/* Progress bar - full width, stacked above buttons on all screens */}
+                      {quest.verifier.type === 'staged' &&
+                        stagedProgress &&
+                        !isLoadingStagedProgress &&
+                        !quest.actionText?.includes('Copy Referral Link') && (
+                          <div className="w-full min-w-0 flex flex-col gap-1.5">
+                            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden shadow-inner">
+                              <div
+                                className="h-full min-w-[4px] bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 rounded-full transition-all duration-500 ease-out shadow-sm"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.max(
+                                      0,
+                                      (Number(userMetric) /
+                                        Math.max(
+                                          1,
+                                          Number(
+                                            getNextUnclamedThreshold(
+                                              stagedProgress
+                                            )
+                                          )
+                                        )) *
+                                        100
+                                    )
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                            <p className="text-gray-400 text-xs font-medium min-w-0">
+                              {quest.verifier.metricFormatting
+                                ? quest.verifier.metricFormatting(userMetric)
+                                : userMetric >= 1000
+                                ? userMetric.toLocaleString()
+                                : userMetric}
+                              /
+                              {quest.verifier.metricFormatting
+                                ? quest.verifier.metricFormatting(
+                                    Number(getNextUnclamedThreshold(stagedProgress))
+                                  )
+                                : Number(
+                                    getNextUnclamedThreshold(stagedProgress)
+                                  ) >= 1000
+                                ? Number(
+                                    getNextUnclamedThreshold(stagedProgress)
+                                  ).toLocaleString()
+                                : Number(
+                                    getNextUnclamedThreshold(stagedProgress)
+                                  )}{' '}
+                              (
+                              {Math.min(
+                                100,
+                                Math.round(
+                                  (Number(userMetric) /
+                                    Math.max(
+                                      1,
+                                      Number(
+                                        getNextUnclamedThreshold(stagedProgress)
+                                      )
+                                    )) *
+                                    100
+                                )
+                              )}
+                              %)
+                            </p>
+                          </div>
+                        )}
+
+                      {/* Action buttons - stack on mobile, wrap on larger screens */}
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
                         {!isCompleted &&
                           !needsGitHubLink &&
                           stagedProgress?.totalClaimableXP !== 0 && (
@@ -947,30 +985,14 @@ export default function Quest({
                                   stagedProgress?.totalClaimableXP === 0)
                               }
                               requiredChain={DEFAULT_CHAIN_V5}
-                              className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-400/20 text-green-300 font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 flex-shrink-0"
+                              className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/20 text-green-300 font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
                               noPadding
                               noGradient
                             />
                           )}
 
-                        {getErrorButton(error || '') && (
-                          <div className="flex justify-center">
-                            {getErrorButton(error || '')}
-                          </div>
-                        )}
+                        {getErrorButton(error || '')}
 
-                        {!isCompleted &&
-                          quest.action &&
-                          quest.actionText?.includes('Copy Referral Link') &&
-                          citizen?.owner && (
-                            <StandardButton
-                              className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center gap-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                              onClick={quest.action}
-                            >
-                              <ClipboardDocumentIcon className="w-4 h-4" />
-                              Copy Link
-                            </StandardButton>
-                          )}
                         {!isCompleted &&
                           quest.link &&
                           quest.linkText &&
@@ -1008,9 +1030,10 @@ export default function Quest({
                               {quest.actionText}
                             </button>
                           )}
+                        {!isCompleted && ModalButton && <ModalButton />}
                       </div>
-                      {!isCompleted && ModalButton && <ModalButton />}
                     </div>
+                    )}
                   </div>
                 ) : (
                   <span className="text-gray-400 text-sm">
@@ -1020,8 +1043,8 @@ export default function Quest({
               </div>
             ) : (
               // Single quest XP display with buttons
-              <div className="flex items-center justify-between gap-4 w-full">
-                <span className="text-green-300 text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm flex items-center justify-center">
+              <div className="flex flex-col gap-3 w-full min-w-0">
+                <span className="text-green-300 text-xs sm:text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 w-fit self-start">
                   +
                   {isLoadingXpAmount ? (
                     <div className="inline-flex items-center gap-1">
@@ -1033,72 +1056,62 @@ export default function Quest({
                   MOONEY
                 </span>
 
-                {/* Action Buttons - Right side */}
-                <div className="flex items-center flex-row gap-2 flex-nowrap">
+                {/* Action Buttons - stack on mobile, wrap on larger */}
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full sm:w-auto">
                   {!isCompleted && !needsGitHubLink && (
-                    <div className="inline-block">
-                      <PrivyWeb3Button
-                        label={`Claim +${xpAmount} $MOONEY`}
-                        action={async () => {
-                          await claimQuest()
-                        }}
-                        isDisabled={isLoadingClaim}
-                        requiredChain={DEFAULT_CHAIN_V5}
-                            className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-400/20 text-green-300 font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
-                        noPadding
-                        noGradient
-                      />
-                    </div>
+                    <PrivyWeb3Button
+                      label={`Claim +${xpAmount} $MOONEY`}
+                      action={async () => {
+                        await claimQuest()
+                      }}
+                      isDisabled={isLoadingClaim}
+                      requiredChain={DEFAULT_CHAIN_V5}
+                      className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/20 text-green-300 font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+                      noPadding
+                      noGradient
+                    />
                   )}
 
-                  <div className="inline-block">
-                    {getErrorButton(error || '')}
-                  </div>
+                  {getErrorButton(error || '')}
 
-                  <div className="flex flex-col gap-2">
-                    {!isCompleted &&
-                      quest.link &&
-                      quest.linkText &&
-                      !needsGitHubLink && (
-                        <div className="inline-block">
-                          <StandardButton
-                            className={getButtonClasses()}
-                            link={
-                              quest.link === 'citizenProfile'
-                                ? `/citizen/${generatePrettyLinkWithId(
-                                    citizen.metadata.name,
-                                    citizen.id
-                                  )}`
-                                : quest.link
-                            }
-                            target={
-                              quest.link.startsWith('/') ||
-                              quest.link === 'citizenProfile'
-                                ? '_self'
-                                : '_blank'
-                            }
-                          >
-                            {quest.linkText}
-                          </StandardButton>
-                        </div>
-                      )}
+                  {!isCompleted &&
+                    quest.link &&
+                    quest.linkText &&
+                    !needsGitHubLink && (
+                      <StandardButton
+                        className={getButtonClasses()}
+                        link={
+                          quest.link === 'citizenProfile'
+                            ? `/citizen/${generatePrettyLinkWithId(
+                                citizen.metadata.name,
+                                citizen.id
+                              )}`
+                            : quest.link
+                        }
+                        target={
+                          quest.link.startsWith('/') ||
+                          quest.link === 'citizenProfile'
+                            ? '_self'
+                            : '_blank'
+                        }
+                      >
+                        {quest.linkText}
+                      </StandardButton>
+                    )}
 
-                    {!isCompleted &&
-                      quest.action &&
-                      quest.actionText &&
-                      !needsGitHubLink && (
-                        <div className="inline-block">
-                          <button
-                            onClick={quest.action}
-                            className={getButtonClasses()}
-                          >
-                            {quest.actionText}
-                          </button>
-                        </div>
-                      )}
+                  {!isCompleted &&
+                    quest.action &&
+                    quest.actionText &&
+                    !needsGitHubLink && (
+                      <button
+                        onClick={quest.action}
+                        className={getButtonClasses()}
+                      >
+                        {quest.actionText}
+                      </button>
+                    )}
 
-                    {!isCompleted && ModalButton && <ModalButton />}
-                  </div>
+                  {!isCompleted && ModalButton && <ModalButton />}
                 </div>
               </div>
             )}

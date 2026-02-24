@@ -50,7 +50,6 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
-import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -181,9 +180,7 @@ export default function SignedInDashboard({
   const { nativeBalance } = useNativeBalance()
   const { tokens: walletTokens } = useWalletTokens(address, chainSlug)
 
-  const { data: voteCount, isValidating: isLoadingVoteCount } = useVoteCountOfAddress(address)
-
-  const MOONEYBalance = useTotalMooneyBalance(address)
+  const { balance: MOONEYBalance, isLoading: isLoadingMOONEY } = useTotalMooneyBalance(address)
   const {
     totalLockedMooney: lockedMooneyAmount,
     nextUnlockDate: lockedMooneyUnlockDate,
@@ -597,11 +594,11 @@ export default function SignedInDashboard({
             {/* Wallet Info Card */}
             {address && (
               <WalletInfoCard
-                unlockedMooney={MOONEYBalance || 0}
-                lockedMooney={lockedMooneyAmount || 0}
+                unlockedMooney={MOONEYBalance ?? 0}
+                lockedMooney={lockedMooneyAmount ?? 0}
                 votingPower={walletVP}
-                totalVMOONEY={totalVMOONEY}
-                isUnlockedLoading={false}
+                totalVMOONEY={totalVMOONEY ?? 0}
+                isUnlockedLoading={isLoadingMOONEY}
                 isLockedLoading={isLoadingLockedMooney}
                 isVotingPowerLoading={!!isLoadingVP}
                 isVMOONEYLoading={isLoadingVMOONEY}
@@ -900,7 +897,7 @@ export default function SignedInDashboard({
         )}
 
         {/* Quests Section */}
-        <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
+        <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 md:p-6 mt-6 sm:mt-8 mb-6 sm:mb-8">
           <div className="flex flex-col gap-4">
             <div>
               <h3 className="text-2xl font-bold text-white flex items-center gap-2">

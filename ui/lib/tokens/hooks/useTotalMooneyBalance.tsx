@@ -73,7 +73,7 @@ async function fetchTotalMooneyBalance(address: string): Promise<number> {
 }
 
 const SWR_CONFIG = {
-  revalidateOnFocus: false,
+  revalidateOnFocus: true,
   dedupingInterval: 10000,
   errorRetryCount: 3,
   revalidateOnReconnect: true,
