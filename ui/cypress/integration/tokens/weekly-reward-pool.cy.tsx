@@ -86,11 +86,10 @@ describe('<WeeklyRewardPool />', () => {
     )
 
     cy.contains('Weekly Reward Pool').should('exist')
-    cy.contains('Total Pool').should('exist')
     cy.contains('Your Reward').should('exist')
   })
 
-  it('Shows loading state for fees', () => {
+  it('Shows loading/calculating state when fetching data', () => {
     cy.intercept('POST', '**/rpc**', {
       delay: 1000,
       statusCode: 200,
@@ -107,44 +106,24 @@ describe('<WeeklyRewardPool />', () => {
       </TestnetProviders>
     )
 
-    cy.contains('Loading...').should('exist')
+    // Either "Loading..." or "Calculating..." or "Lock MOONEY to earn" depending on vMOONEY state
+    cy.contains(/Loading\.\.\.|Calculating\.\.\.|Lock MOONEY to earn/).should('exist')
   })
 
-  it('Should display total pool with formatted amount', () => {
-    // Mock fees available
-    cy.intercept('POST', '**/rpc**', (req) => {
-      const body = req.body
-      if (body.method === 'eth_getBalance') {
-        req.reply({
-          statusCode: 200,
-          body: {
-            jsonrpc: '2.0',
-            id: body.id,
-            result: '0x2386f26fc10000',
-          },
-        })
-      } else {
-        req.reply({
-          statusCode: 200,
-          body: {
-            jsonrpc: '2.0',
-            id: body.id,
-            result: '0x0',
-          },
-        })
-      }
-    }).as('rpcCall')
-
+  it('Should display Your Reward section', () => {
     cy.mount(
       <TestnetProviders>
         <WeeklyRewardPool />
       </TestnetProviders>
     )
 
-    cy.contains('Total Pool').should('exist')
+    cy.contains('Your Reward').should('exist')
+    // Should show either amount, calculating, or lock prompt
     cy.get('body').then(($body) => {
       const hasAmount = $body.text().match(/\d+\.\d+/)
-      expect(hasAmount !== null || $body.find(':contains("Loading...")').length > 0).to.be.true
+      const hasCalculating = $body.text().includes('Calculating')
+      const hasLockPrompt = $body.text().includes('Lock MOONEY')
+      expect(hasAmount || hasCalculating || hasLockPrompt).to.be.true
     })
   })
 
@@ -164,10 +143,10 @@ describe('<WeeklyRewardPool />', () => {
     )
 
     cy.contains('Weekly Reward Pool').should('exist')
-    cy.contains('Total Pool').should('exist')
+    cy.contains('Your Reward').should('exist')
   })
 
-  it('Shows "Need vMOONEY" when user has no vMOONEY', () => {
+  it('Shows "Lock MOONEY to earn" when user has no vMOONEY', () => {
     // Mock useTotalVP to return 0 balance
     cy.stub(TotalVPHook, 'useTotalVP').returns({
       walletVP: 0,
@@ -182,7 +161,7 @@ describe('<WeeklyRewardPool />', () => {
     )
 
     cy.contains('Weekly Reward Pool').should('exist')
-    cy.contains('Need vMOONEY').should('exist')
+    cy.contains('Lock MOONEY to earn').should('exist')
     cy.contains('Lock MOONEY first').should('exist')
   })
 
@@ -274,51 +253,31 @@ describe('<WeeklyRewardPool />', () => {
       cy.get('button').should('exist')
     })
 
-    it('Should show participant count when fees are available', () => {
-      // Mock user with vMOONEY
+  })
+
+  describe('UI States', () => {
+    it('Should display Your Reward when user has vMOONEY', () => {
       cy.stub(TotalVPHook, 'useTotalVP').returns({
         walletVP: 100,
         isLoading: false,
         isError: false,
       })
 
-      // Mock fetch for eth_getBalance (feesAvailable)
-      cy.window().then((win) => {
-        cy.stub(win, 'fetch').callsFake((url: string | Request | URL, options?: RequestInit) => {
-          if (options?.method === 'POST' && typeof options.body === 'string') {
-            const body = JSON.parse(options.body)
-            if (body.method === 'eth_getBalance') {
-              return Promise.resolve({
-                json: () =>
-                  Promise.resolve({
-                    result: '0x2386f26fc10000', // 0.01 ETH - feesAvailable > 0
-                  }),
-              } as Response)
-            }
-          }
-          return Promise.reject(new Error('Unexpected fetch call'))
-        })
-      })
-
-      // Mock contract calls for getCheckedInCount
       let ethCallCount = 0
       cy.intercept('POST', '**/rpc**', (req) => {
         const body = req.body
         if (body.method === 'eth_call') {
           ethCallCount++
-          // getCheckedInCount is the 3rd call in the sequence (weekStart, lastCheckIn, getCheckedInCount)
-          if (ethCallCount === 3) {
-            // Return 5 participants
+          if (ethCallCount <= 2) {
             req.reply({
               statusCode: 200,
               body: {
                 jsonrpc: '2.0',
                 id: body.id,
-                result: '0x' + BigInt(5).toString(16),
+                result: '0x' + BigInt(500000000000000000).toString(16),
               },
             })
           } else {
-            // Other contract calls
             req.reply({
               statusCode: 200,
               body: {
@@ -346,54 +305,12 @@ describe('<WeeklyRewardPool />', () => {
         </TestnetProviders>
       )
 
-      cy.contains('Weekly Reward Pool').should('exist')
-      // Stats bar should appear when feesAvailable > 0 and checkedInCount > 0
-      // Wait for async data to load, then verify stats bar and participants text
-      cy.contains(/participants?/i, { timeout: 10000 }).should('exist')
-      // Verify stats bar container exists
-      cy.get('[class*="bg-white/5"]').should('exist')
-    })
-  })
-
-  describe('UI States', () => {
-    it('Should display total pool amount when available', () => {
-      // Mock fees available
-      cy.intercept('POST', '**/rpc**', (req) => {
-        const body = req.body
-        if (body.method === 'eth_getBalance') {
-          req.reply({
-            statusCode: 200,
-            body: {
-              jsonrpc: '2.0',
-              id: body.id,
-              result: '0x2386f26fc10000',
-            },
-          })
-        } else {
-          req.reply({
-            statusCode: 200,
-            body: {
-              jsonrpc: '2.0',
-              id: body.id,
-              result: '0x0',
-            },
-          })
-        }
-      })
-
-      cy.mount(
-        <TestnetProviders>
-          <WeeklyRewardPool />
-        </TestnetProviders>
-      )
-
-      cy.contains('Total Pool').should('exist')
-      // Should show balance when feesAvailable is loaded
+      cy.contains('Your Reward').should('exist')
+      // Should show amount or calculating
       cy.get('body').then(($body) => {
-        // Either shows loading or shows the amount
-        const hasLoading = $body.find(':contains("Loading...")').length > 0
-        const hasAmount = $body.find('[class*="text-white font-bold text-2xl"]').length > 0
-        expect(hasLoading || hasAmount).to.be.true
+        const hasCalculating = $body.text().includes('Calculating')
+        const hasAmount = $body.text().match(/\d+\.\d+/)
+        expect(hasCalculating || hasAmount).to.be.true
       })
     })
 
@@ -457,11 +374,11 @@ describe('<WeeklyRewardPool />', () => {
       cy.get('body', { timeout: 10000 }).should(($body) => {
         const bodyText = $body.text()
         const hasCalculating = bodyText.includes('Calculating...')
-        const hasAmount = $body.find('[class*="text-white font-bold text-2xl"]').length > 0
-        const hasNeedVMOONEY = bodyText.includes('Need vMOONEY')
+        const hasAmount = $body.text().match(/\d+\.\d+/) !== null
+        const hasLockPrompt = bodyText.includes('Lock MOONEY to earn')
 
-        // Should show one of: calculating, amount, or need vMOONEY (if balance check fails)
-        expect(hasCalculating || hasAmount || hasNeedVMOONEY).to.be.true
+        // Should show one of: calculating, amount, or lock prompt (if no vMOONEY)
+        expect(hasCalculating || hasAmount || hasLockPrompt).to.be.true
       })
 
       // Verify "Your Reward" section is visible
@@ -533,7 +450,7 @@ describe('<WeeklyRewardPool />', () => {
         if (hasLockLink) {
           cy.get('a[href="/lock"]').should('be.visible').should('contain', 'Get vMOONEY')
         } else {
-          cy.contains('Need vMOONEY').should('exist')
+          cy.contains('Lock MOONEY to earn').should('exist')
         }
       })
     })

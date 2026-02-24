@@ -6,7 +6,6 @@ import {
   ShoppingBagIcon,
   NewspaperIcon,
   GlobeAmericasIcon,
-  PencilIcon,
   BriefcaseIcon,
   TrophyIcon,
   CalendarDaysIcon,
@@ -140,7 +139,7 @@ export default function SignedInDashboard({
   const router = useRouter()
   const { fundWallet } = useFundWallet()
 
-  const { citizen, isLoading: isLoadingCitizen } = useContext(CitizenContext)
+  const { citizen } = useContext(CitizenContext)
 
   // Send modal state
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
@@ -295,306 +294,84 @@ export default function SignedInDashboard({
   return (
     <Container>
       <div className="max-w-7xl mx-auto px-4 py-4">
-        {/* Compact All-in-One Header */}
-        <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-4 sm:p-6 mb-6 overflow-hidden">
-          <div className="absolute inset-0 bg-black/20 rounded-2xl"></div>
-
-          <div className="relative z-10 flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
-            {/* Left Side - Profile & Title */}
-            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-              {/* Profile Picture */}
-              <div className="relative flex-shrink-0">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative">
-                  {citizen?.metadata?.image ? (
-                    <IPFSRenderer
-                      src={citizen.metadata.image}
-                      alt={citizen.metadata.name}
-                      className="w-full h-full object-cover"
-                      width={100}
-                      height={100}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                      <span className="text-white font-bold text-base sm:text-lg">
-                        {citizen?.metadata?.name?.[0] || address?.[2] || 'M'}
-                      </span>
-                    </div>
-                  )}
-                  {/* Online status indicator */}
-                  <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                </div>
-
-                {/* Edit Profile Button */}
-                {citizen && (
-                  <button
-                    className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors shadow-lg border-2 border-white"
-                    onClick={() => setCitizenMetadataModalEnabled(true)}
-                    title="Edit Profile"
-                  >
-                    <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                  </button>
-                )}
-              </div>
-
-              {/* Title */}
-              <div className="min-w-0">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg leading-tight">
-                  {isLoadingCitizen ? (
-                    <span className="flex items-center gap-2">
-                      Welcome...
-                      <LoadingSpinner width="w-4" height="h-4" />
-                    </span>
-                  ) : citizen ? (
-                    `Welcome, ${citizen.metadata.name}`
-                  ) : (
-                    'Welcome to MoonDAO'
-                  )}
-                </h1>
-                <p className="text-white/70 text-sm mt-1">What would you like to do today?</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Launchpad Feature - Featured Mission */}
-        {FEATURED_MISSION && (
-          <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8 mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <RocketLaunchIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
-                  <span className="leading-tight">Featured Mission</span>
-                </h3>
-                <p className="text-blue-200 text-sm sm:text-base leading-tight">
-                  Support MoonDAO's latest space mission
-                </p>
-              </div>
-              <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
-                link="/launchpad"
-              >
-                View Launchpad
-              </StandardButton>
-            </div>
-
-            <div className="bg-black/20 rounded-xl p-6 border border-blue-500/20">
-              {featuredMission ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full items-stretch">
-                  {/* Left Column - Mission Image */}
-                  <div className="flex justify-center lg:justify-start h-full">
-                    <div className="relative w-full max-w-sm h-full">
-                      <div className="relative rounded-2xl overflow-hidden shadow-xl h-full min-h-[300px]">
-                        {featuredMission.metadata?.logoUri ? (
-                          <IPFSRenderer
-                            src={featuredMission.metadata.logoUri}
-                            alt={featuredMission.metadata.name || 'Mission'}
-                            className="w-full h-full object-cover"
-                            width={400}
-                            height={400}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 flex items-center justify-center">
-                            <RocketLaunchIcon className="w-16 h-16 text-blue-400/60" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-
-                        {/* Mission Status Badge */}
-                        <div className="absolute top-3 right-3">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                              featuredMission.projectId && featuredMission.projectId > 0
-                                ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                                : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                            }`}
-                          >
-                            {featuredMission.projectId && featuredMission.projectId > 0
-                              ? 'Active'
-                              : 'Completed'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column - Mission Info */}
-                  <div className="space-y-4">
-                    {/* Mission Title */}
-                    <div>
-                      <h4 className="font-bold text-white text-xl lg:text-2xl mb-2 leading-tight">
-                        {featuredMission.metadata.name}
-                      </h4>
-                      {featuredMission.metadata.tagline && (
-                        <p className="text-blue-200/80 text-sm mb-3">
-                          {featuredMission.metadata.tagline}
-                        </p>
-                      )}
-                    </div>
-                    {/* Mission Description */}
-                    <div>
-                      <p className="text-blue-200 text-sm leading-relaxed">
-                        {(() => {
-                          // Strip HTML tags from description
-                          const description =
-                            featuredMission.metadata.description ||
-                            "Support MoonDAO's mission to democratize space exploration"
-                          const strippedDescription = description.replace(/<[^>]*>/g, '').trim()
-                          return strippedDescription.length > 200
-                            ? `${strippedDescription.substring(0, 200)}...`
-                            : strippedDescription
-                        })()}
-                      </p>
-                    </div>{' '}
-                    {/* Mission Stats - Exact same as launchpad */}
-                    {featuredMission.projectId && featuredMission.projectId > 0 ? (
-                      <div className="space-y-4">
-                        {/* Progress Bar */}
-                        {featuredMissionFundingGoal && featuredMissionFundingGoal > 0 && (
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-blue-200 text-xs font-medium">
-                                Funding Progress
-                              </span>
-                              <span className="text-white font-bold text-sm">
-                                {Math.round(
-                                  (Number(featuredMissionSubgraphData?.volume || 0) /
-                                    featuredMissionFundingGoal) *
-                                    100
-                                )}
-                                %
-                              </span>
-                            </div>
-                            <div className="w-full bg-blue-900/30 rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-1000"
-                                style={{
-                                  width: `${Math.min(
-                                    100,
-                                    Math.round(
-                                      (Number(featuredMissionSubgraphData?.volume || 0) /
-                                        featuredMissionFundingGoal) *
-                                        100
-                                    )
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 gap-3">
-                          {/* Raised - shown first like on launch page */}
-                          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
-                            <div className="flex items-center gap-2 mb-2">
-                              <BanknotesIcon className="w-4 h-4 text-blue-400" />
-                              <span className="text-blue-200 text-xs font-medium">Raised</span>
-                            </div>
-                            <p className="text-white font-bold text-sm">
-                              {featuredMissionFundingGoal ? (
-                                truncateTokenValue(
-                                  Number(featuredMissionSubgraphData?.volume || 0) / 1e18,
-                                  'ETH'
-                                )
-                              ) : (
-                                <LoadingSpinner width="w-4" height="h-4" />
-                              )}{' '}
-                              ETH
-                            </p>
-                          </div>
-
-                          {/* Goal - shown second like on launch page */}
-                          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
-                            <div className="flex items-center gap-2 mb-2">
-                              <TrophyIcon className="w-4 h-4 text-blue-400" />
-                              <span className="text-blue-200 text-xs font-medium">Goal</span>
-                            </div>
-                            <p className="text-white font-bold text-sm">
-                              {featuredMissionFundingGoal
-                                ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
-                                : '0'}{' '}
-                              ETH
-                            </p>
-                          </div>
-
-                          {/* Backers */}
-                          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
-                            <div className="flex items-center gap-2 mb-2">
-                              <UserGroupIcon className="w-4 h-4 text-blue-400" />
-                              <span className="text-blue-200 text-xs font-medium">Backers</span>
-                            </div>
-                            <p className="text-white font-bold text-sm">
-                              {featuredMissionBackers?.length || 0}
-                            </p>
-                          </div>
-
-                          {/* Time */}
-                          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
-                            <div className="flex items-center gap-2 mb-2">
-                              <TrophyIcon className="w-4 h-4 text-blue-400" />
-                              <span className="text-blue-200 text-xs font-medium">Time</span>
-                            </div>
-                            <p className="text-white font-bold text-sm">
-                              {(() => {
-                                if (!featuredMissionDeadline)
-                                  return (
-                                    <span className="flex items-left gap-2">
-                                      <LoadingSpinner width="w-4" height="h-4" />
-                                    </span>
-                                  )
-
-                                const now = Date.now()
-                                if (featuredMissionDeadline <= now) return 'Expired'
-
-                                const daysLeft = Math.floor(
-                                  (featuredMissionDeadline - now) / (1000 * 60 * 60 * 24)
-                                )
-                                return daysLeft > 0 ? `${daysLeft}d left` : 'Less than 1d left'
-                              })()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-500/10 text-center">
-                        <p className="text-blue-200 text-sm mb-2">Mission in Planning</p>
-                        <p className="text-white font-medium text-xs">
-                          This mission is being prepared for launch
-                        </p>
-                      </div>
-                    )}
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-2">
-                      <StandardButton
-                        className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] hover:from-[#7A4A8C] hover:to-[#6B57B7] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all w-full"
-                        link={`/mission/${featuredMission.id}`}
-                      >
-                        Contribute
-                      </StandardButton>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 mx-auto mb-4">
-                    <RocketLaunchIcon className="w-8 h-8" />
-                  </div>
-                  <h4 className="font-bold text-white text-xl mb-2">Missions Loading</h4>
-                  <p className="text-blue-200 text-sm mb-4">
-                    We're preparing exciting new missions for space exploration.
-                  </p>
-                  <div className="text-blue-300 text-xs">Stay tuned for mission updates!</div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
           <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-2 lg:order-1">
+            {/* Your Profile */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">Your Profile</h3>
+                {citizen && (
+                  <StandardButton
+                    className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                    link={
+                      citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                        ? `/citizen/${generatePrettyLinkWithId(
+                            citizen.metadata.name,
+                            citizen.metadata?.id ?? citizen.id
+                          )}`
+                        : '/join'
+                    }
+                  >
+                    View profile
+                  </StandardButton>
+                )}
+              </div>
+              {citizen ? (
+                <Link
+                  href={
+                    citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                      ? `/citizen/${generatePrettyLinkWithId(
+                          citizen.metadata.name,
+                          citizen.metadata?.id ?? citizen.id
+                        )}`
+                      : '/join'
+                  }
+                  className="flex items-center gap-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-3"
+                >
+                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                    {citizen?.metadata?.image ? (
+                      <IPFSRenderer
+                        src={citizen.metadata.image}
+                        alt={citizen.metadata.name}
+                        className="w-full h-full object-cover"
+                        width={48}
+                        height={48}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">
+                          {citizen?.metadata?.name?.[0] || address?.[2] || 'M'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white font-medium truncate">
+                      {citizen?.metadata?.name || 'Anonymous'}
+                    </p>
+                    <p className="text-white/60 text-sm truncate">Edit profile & settings</p>
+                  </div>
+                  <ArrowUpRightIcon className="w-4 h-4 text-white/40 flex-shrink-0" />
+                </Link>
+              ) : (
+                <Link
+                  href="/join"
+                  className="flex items-center gap-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-3 border border-dashed border-white/20"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+                    <UserGroupIcon className="w-6 h-6 text-white/40" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white font-medium">Become a citizen</p>
+                    <p className="text-white/60 text-sm">Create your profile to join the network</p>
+                  </div>
+                  <ArrowUpRightIcon className="w-4 h-4 text-white/40 flex-shrink-0" />
+                </Link>
+              )}
+            </div>
+
             {/* Weekly Reward Pool - Enhanced UI */}
             <div className="order-2">
               <WeeklyRewardPool />
@@ -612,40 +389,53 @@ export default function SignedInDashboard({
                 </StandardButton>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-2">
                 {newestCitizens && newestCitizens.length > 0 ? (
-                  newestCitizens.slice(0, 8).map((citizen: any) => (
-                    <Link
-                      key={citizen.id}
-                      href={`/citizen/${
-                        citizen.name && citizen.id
-                          ? generatePrettyLinkWithId(citizen.name, citizen.id)
-                          : citizen.id || 'anonymous'
-                      }`}
-                      className="flex items-center gap-2 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
-                    >
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                        {citizen.image ? (
-                          <IPFSRenderer
-                            src={citizen.image}
-                            alt={citizen.name}
-                            className="w-full h-full object-cover"
-                            width={40}
-                            height={40}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                            {citizen.name?.[0] || 'C'}
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="text-white font-medium text-xs truncate">
-                        {citizen.name || 'Anonymous'}
-                      </h4>
-                    </Link>
-                  ))
+                  newestCitizens.slice(0, 8).map((citizen: any) => {
+                    const bio = (citizen.description || citizen.metadata?.description || '')
+                      .replace(/<[^>]*>/g, '')
+                      .trim()
+                    const bioPreview = bio ? (bio.length > 80 ? `${bio.slice(0, 80)}…` : bio) : null
+                    return (
+                      <Link
+                        key={citizen.id}
+                        href={`/citizen/${
+                          citizen.name && citizen.id
+                            ? generatePrettyLinkWithId(citizen.name, citizen.id)
+                            : citizen.id || 'anonymous'
+                        }`}
+                        className="flex items-start gap-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2.5"
+                      >
+                        <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {citizen.image || citizen.metadata?.image ? (
+                            <IPFSRenderer
+                              src={citizen.image || citizen.metadata?.image}
+                              alt={citizen.name}
+                              className="w-full h-full object-cover"
+                              width={56}
+                              height={56}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-base">
+                              {citizen.name?.[0] || 'C'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-white font-medium text-sm truncate">
+                            {citizen.name || 'Anonymous'}
+                          </h4>
+                          {bioPreview && (
+                            <p className="text-white/50 text-xs leading-snug mt-0.5 line-clamp-2">
+                              {bioPreview}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    )
+                  })
                 ) : (
-                  <div className="text-gray-400 text-sm col-span-2 py-4 text-center">Loading...</div>
+                  <div className="text-gray-400 text-sm py-4 text-center">Loading...</div>
                 )}
               </div>
             </div>
@@ -822,51 +612,53 @@ export default function SignedInDashboard({
             {/* Retroactive Rewards Section - Moved from left sidebar */}
             {address && <ClaimRewardsSection />}
 
-            {/* Open Jobs */}
+            {/* Featured Teams */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">Open Jobs</h3>
+                <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
                 <StandardButton
                   className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                  link="/jobs"
+                  link="/network?tab=teams"
                 >
                   See all
                 </StandardButton>
               </div>
 
-              <div className="space-y-3 h-full overflow-y-auto">
-                {newestJobs && newestJobs.length > 0 ? (
-                  <Link href={newestJobs[0]?.contactInfo || '/jobs'} className="block">
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                          <BriefcaseIcon className="w-5 h-5" />
-                        </div>
+              <div className="flex flex-col gap-2">
+                {filteredTeams && filteredTeams.length > 0 ? (
+                  filteredTeams.slice(0, 8).map((team: any, index: number) => (
+                    <Link
+                      key={team.id || index}
+                      href={`/team/${generatePrettyLink(team.name)}`}
+                      className="flex items-center gap-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
+                    >
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {team.image ? (
+                          <IPFSRenderer
+                            src={team.image}
+                            alt={team.name}
+                            className="w-full h-full object-cover"
+                            width={40}
+                            height={40}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                            {team.name?.[0] || 'T'}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">
-                          {newestJobs[0]?.title}
-                        </h4>
-                        <p className="text-gray-400 text-xs">
-                          {newestJobs.length > 1
-                            ? `+${newestJobs.length - 1} more positions`
-                            : 'Click to apply'}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
+                      <h4 className="text-white font-medium text-sm truncate">
+                        {team.name || 'Team'}
+                      </h4>
+                    </Link>
+                  ))
                 ) : (
-                  <Link href="/jobs" className="block">
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
-                        <BriefcaseIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">No open positions</h4>
-                        <p className="text-gray-400 text-xs">Check back soon for opportunities</p>
-                      </div>
+                  <div className="flex items-center gap-3 p-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                      M
                     </div>
-                  </Link>
+                    <h4 className="text-white font-medium text-sm">Mission Control</h4>
+                  </div>
                 )}
               </div>
             </div>
@@ -1210,56 +1002,52 @@ export default function SignedInDashboard({
           </div>
         </div>
 
-        {/* Featured Teams - Full Width */}
+        {/* Open Jobs - Full Width */}
         <div className="mb-6">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
+              <h3 className="font-semibold text-white text-lg">Open Jobs</h3>
               <StandardButton
                 className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                link="/network?tab=teams"
+                link="/jobs"
               >
                 See all
               </StandardButton>
             </div>
 
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-              {filteredTeams && filteredTeams.length > 0 ? (
-                filteredTeams.slice(0, 8).map((team: any, index: number) => (
-                  <Link
-                    key={team.id || index}
-                    href={`/team/${generatePrettyLink(team.name)}`}
-                    className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
-                  >
-                    <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
-                      {team.image ? (
-                        <IPFSRenderer
-                          src={team.image}
-                          alt={team.name}
-                          className="w-full h-full object-cover"
-                          width={100}
-                          height={100}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                          {team.name?.[0] || 'T'}
-                        </div>
-                      )}
+            <div className="space-y-3">
+              {newestJobs && newestJobs.length > 0 ? (
+                <Link href={newestJobs[0]?.contactInfo || '/jobs'} className="block">
+                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                        <BriefcaseIcon className="w-5 h-5" />
+                      </div>
                     </div>
-                    <h4 className="text-white font-medium text-xs truncate text-center">
-                      {team.name || 'Team'}
-                    </h4>
-                  </Link>
-                ))
-              ) : (
-                <div className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white mx-auto mb-2">
-                    M
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-white font-medium text-sm truncate">
+                        {newestJobs[0]?.title}
+                      </h4>
+                      <p className="text-gray-400 text-xs">
+                        {newestJobs.length > 1
+                          ? `+${newestJobs.length - 1} more positions`
+                          : 'Click to apply'}
+                      </p>
+                    </div>
                   </div>
-                  <h4 className="text-white font-medium text-xs truncate text-center">
-                    Mission Control
-                  </h4>
-                </div>
+                </Link>
+              ) : (
+                <Link href="/jobs" className="block">
+                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
+                      <BriefcaseIcon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium text-sm">No open positions</h4>
+                      <p className="text-gray-400 text-xs">Check back soon for opportunities</p>
+                    </div>
+                  </div>
+                </Link>
               )}
             </div>
           </div>

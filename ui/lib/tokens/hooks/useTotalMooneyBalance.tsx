@@ -72,12 +72,22 @@ async function fetchTotalMooneyBalance(address: string): Promise<number> {
   )
 }
 
+const SWR_CONFIG = {
+  revalidateOnFocus: false,
+  dedupingInterval: 10000,
+  errorRetryCount: 3,
+  revalidateOnReconnect: true,
+}
+
 export function useTotalMooneyBalance(address: string | undefined) {
-  const { data = 0 } = useSWR(
+  const { data, isLoading } = useSWR(
     address ? `mooney-balance-${address.toLowerCase()}` : null,
     () => fetchTotalMooneyBalance(address!),
-    { revalidateOnFocus: false, dedupingInterval: 10000 }
+    SWR_CONFIG
   )
 
-  return data
+  return {
+    balance: data ?? 0,
+    isLoading,
+  }
 }

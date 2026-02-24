@@ -8,8 +8,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    // ConvertKit API configuration
-    const CONVERTKIT_API_KEY = process.env.CONVERT_KIT_V4_API_KEY
+    // ConvertKit API configuration (match townhall/convertkit.ts)
+    const CONVERTKIT_API_KEY =
+      process.env.CONVERT_KIT_V4_API_KEY || process.env.CONVERT_KIT_API_KEY
 
     if (!CONVERTKIT_API_KEY) {
       console.log('ConvertKit API key not found')
@@ -19,14 +20,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    // Try multiple ConvertKit endpoints to find the most recent newsletters
+    // Kit API V4: official endpoint is api.kit.com (api.convertkit.com may still work for legacy)
     let allBroadcasts: any[] = []
-
-    const endpoints = [`https://api.kit.com/v4/broadcasts`]
+    const endpoints = [
+      'https://api.kit.com/v4/broadcasts',
+      'https://api.convertkit.com/v4/broadcasts',
+    ]
 
     for (const endpoint of endpoints) {
       try {
-        const response = await fetch(endpoint, {
+        const url = `${endpoint}?per_page=50`
+        const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -34,30 +38,26 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           },
         })
 
-        if (response.ok) {
-          const data = await response.json()
-
-          if (data.broadcasts && Array.isArray(data.broadcasts) && data.broadcasts.length > 0) {
-            // Log the dates of the newsletters we found
-            const dates = data.broadcasts.slice(0, 3).map((b: any) => ({
-              subject: b.subject,
-              published_at: b.published_at,
-              created_at: b.created_at,
-              public: b.public,
-            }))
-
-            // Merge broadcasts, avoiding duplicates
-            for (const broadcast of data.broadcasts) {
-              if (!allBroadcasts.find((b) => b.id === broadcast.id)) {
-                allBroadcasts.push(broadcast)
-              }
+        const body = await response.json().catch(() => ({}))
+        if (response.ok && body.broadcasts && Array.isArray(body.broadcasts)) {
+          if (body.broadcasts.length > 0) {
+            console.log(`[newsletters] Fetched ${body.broadcasts.length} broadcasts from ${endpoint}`)
+          }
+          for (const broadcast of body.broadcasts) {
+            if (!allBroadcasts.find((b) => b.id === broadcast.id)) {
+              allBroadcasts.push(broadcast)
             }
           }
+          break // Success, no need to try other endpoints
         } else {
-          console.log(`Endpoint failed: ${response.status} ${response.statusText}`)
+          const errMsg = body?.errors?.[0] || body?.message || body?.error || ''
+          console.warn(`[newsletters] ${endpoint} failed: ${response.status}`, errMsg)
+          if (response.status === 401) {
+            console.warn('[newsletters] API key may be invalid - check CONVERT_KIT_V4_API_KEY')
+          }
         }
-      } catch (error) {
-        console.log(`Endpoint error:`, error)
+      } catch (err) {
+        console.warn(`[newsletters] ${endpoint} error:`, err)
       }
     }
 
@@ -88,7 +88,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     // Transform ConvertKit data to our format
     const newsletters =
-      publishedBroadcasts.slice(0, 10).map((broadcast: any) => {
+      publishedBroadcasts.slice(0, 50).map((broadcast: any) => {
         // Function to convert newsletter title to URL slug
         const titleToSlug = (title: string): string => {
           return title
@@ -152,20 +152,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         }
       }) || []
 
-    // Filter to only include public newsletters from the last 2 years
+    // Filter to newsletters from the last 2 years (include all published, not just "public")
     const twoYearsAgo = new Date()
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
 
     const recentNewsletters = newsletters.filter((newsletter: any) => {
-      // Only include public newsletters with valid published dates
-      if (!newsletter.isPublic || !newsletter.publishedAt) {
+      // Require valid published date
+      if (!newsletter.publishedAt) {
         return false
       }
 
       const publishedDate = new Date(newsletter.publishedAt)
-      const isRecent = publishedDate >= twoYearsAgo
-
-      return isRecent
+      return publishedDate >= twoYearsAgo
     })
 
     // Sort by published date (newest first)

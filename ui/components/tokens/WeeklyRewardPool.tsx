@@ -1,4 +1,4 @@
-import { GiftIcon, TrophyIcon } from '@heroicons/react/24/outline'
+import { GiftIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ERC20ABI from 'const/abis/ERC20.json'
@@ -396,97 +396,34 @@ export default function WeeklyRewardPool() {
           <h3 className="text-lg font-bold">Weekly Reward Pool</h3>
         </div>
 
-        {/* Pool Stats Cards */}
-        <div className="space-y-4 mb-5">
-          {/* Total Pool Card */}
-          <div className="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl p-4 hover:bg-white/12 transition-all duration-300">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" />
-                </svg>
-              </div>
-              <span className="text-white/70 font-medium text-sm">Total Pool</span>
+        {/* Your Reward - simplified */}
+        <div className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-5 border border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <GiftIcon className="w-5 h-5 text-white" />
             </div>
-            {feesAvailable !== null ? (
-              <div>
-                <div className="text-white font-bold text-2xl mb-1">
-                  {formatBalance(feesAvailable, 4)}
-                </div>
-                <div className="text-blue-300 text-sm">
-                  ~${formatUSD(feesAvailable, currentEthPrice)} USD
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <LoadingSpinner width="w-4" height="h-4" />
-                <span className="text-white/70 text-sm">Loading...</span>
-              </div>
-            )}
-          </div>
-
-          {/* User Reward Card */}
-          <div className="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl p-4 hover:bg-white/12 transition-all duration-300">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-                <GiftIcon className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-white/70 font-medium text-sm">Your Reward</span>
-            </div>
-            {address && VMOONEYBalance && VMOONEYBalance > 0 ? (
-              estimatedFees !== null ? (
-                <div>
-                  <div className="text-white font-bold text-2xl mb-1">
-                    {formatBalance(estimatedFees, 6)}
-                  </div>
-                  <div className="text-purple-300 text-sm">
-                    ~${formatUSD(estimatedFees, currentEthPrice)} USD
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <LoadingSpinner width="w-4" height="h-4" />
-                  <span className="text-white/70 text-sm">Calculating...</span>
-                </div>
-              )
-            ) : (
-              <div>
-                <div className="text-orange-300 text-lg font-bold mb-1">Need vMOONEY</div>
-                <div className="text-white/60 text-sm">Lock MOONEY first</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Stats Bar */}
-        {feesAvailable !== null && Number(feesAvailable) > 0 && (
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 mb-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TrophyIcon className="w-4 h-4 text-yellow-400" />
-                <span className="text-white/80 text-sm">
-                  {checkedInCount !== null
-                    ? checkedInCount > 0
-                      ? `${checkedInCount} participants this week`
-                      : 'Be the first to participate!'
-                    : 'Loading participants...'}
-                </span>
-              </div>
-              {checkedInCount !== null && checkedInCount > 0 && (
-                <div className="flex items-center gap-1">
-                  {[...Array(Math.min(5, checkedInCount))].map((_, i) => (
-                    <div key={i} className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
-                  ))}
-                  {checkedInCount > 5 && (
-                    <span className="text-xs text-yellow-400 ml-1 font-medium">
-                      +{checkedInCount - 5}
+            <div>
+              <span className="text-white/60 text-sm block">Your Reward</span>
+              {address && VMOONEYBalance && VMOONEYBalance > 0 ? (
+                estimatedFees !== null ? (
+                  <span className="text-white font-bold text-xl">
+                    {formatBalance(estimatedFees, 6)} ETH
+                    <span className="text-purple-300 text-sm font-normal ml-1">
+                      (~${formatUSD(estimatedFees, currentEthPrice)})
                     </span>
-                  )}
-                </div>
+                  </span>
+                ) : (
+                  <span className="text-white/60 text-sm">Calculating...</span>
+                )
+              ) : (
+                <span className="text-orange-300 font-medium">Lock MOONEY to earn</span>
               )}
             </div>
           </div>
-        )}
+          {address && VMOONEYBalance && VMOONEYBalance > 0 && estimatedFees === null && (
+            <LoadingSpinner width="w-4" height="h-4" />
+          )}
+        </div>
 
         {/* Action Button */}
         <div className="space-y-4">
