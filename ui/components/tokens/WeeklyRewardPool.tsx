@@ -406,12 +406,14 @@ export default function WeeklyRewardPool() {
               <span className="text-white/60 text-sm block">Your Reward</span>
               {address && VMOONEYBalance && VMOONEYBalance > 0 ? (
                 estimatedFees !== null ? (
-                  <span className="text-white font-bold text-xl">
-                    {formatBalance(estimatedFees, 6)} ETH
-                    <span className="text-purple-300 text-sm font-normal ml-1">
-                      (~${formatUSD(estimatedFees, currentEthPrice)})
+                  <div>
+                    <span className="text-white font-bold text-lg">
+                      {formatBalance(estimatedFees, 4)} ETH
                     </span>
-                  </span>
+                    <span className="text-purple-300 text-xs block mt-0.5">
+                      ~${formatUSD(estimatedFees, currentEthPrice)}
+                    </span>
+                  </div>
                 ) : (
                   <span className="text-white/60 text-sm">Calculating...</span>
                 )

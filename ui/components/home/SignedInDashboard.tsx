@@ -81,6 +81,55 @@ import DashboardQuests from './DashboardQuests'
 import DashboardTeams from './DashboardTeams'
 import LazyEarth from '@/components/globe/LazyEarth'
 
+// Parse citizen location from Tableland (can be JSON or plain string)
+function getCitizenLocation(citizen: any): string | null {
+  const loc = citizen?.location ?? citizen?.metadata?.attributes?.find((a: any) => a.trait_type === 'location')?.value
+  if (!loc || typeof loc !== 'string') return null
+  const trimmed = loc.trim()
+  if (!trimmed || trimmed.startsWith('[object')) return null
+  try {
+    if (trimmed.startsWith('{')) {
+      const parsed = JSON.parse(trimmed)
+      return parsed?.name || null
+    }
+    return trimmed
+  } catch {
+    return trimmed
+  }
+}
+
+// Get citizen metadata for card (location, or fallback to twitter/discord handle)
+function getCitizenMetadata(citizen: any): string | null {
+  const location = getCitizenLocation(citizen)
+  if (location) return location
+  const twitter = citizen?.twitter ?? citizen?.metadata?.attributes?.find((a: any) => a.trait_type === 'twitter')?.value
+  if (twitter) {
+    const handle = twitter.includes('twitter.com/') ? '@' + twitter.split('twitter.com/').pop()?.split(/[?/]/)[0] : twitter
+    return handle?.length > 25 ? handle.slice(0, 22) + '…' : handle
+  }
+  const discord = citizen?.discord ?? citizen?.metadata?.attributes?.find((a: any) => a.trait_type === 'discord')?.value
+  if (discord) return discord.length > 25 ? discord.slice(0, 22) + '…' : discord
+  return null
+}
+
+// Get team metadata for card (description preview, communications, or website)
+function getTeamMetadata(team: any): string | null {
+  const desc = (team?.description ?? team?.metadata?.description ?? '').replace(/<[^>]*>/g, '').trim()
+  if (desc) return desc.length > 60 ? desc.slice(0, 57) + '…' : desc
+  const comms = team?.communications ?? team?.metadata?.attributes?.find((a: any) => a.trait_type === 'communications')?.value
+  if (comms) return comms.length > 40 ? comms.slice(0, 37) + '…' : comms
+  const website = team?.website ?? team?.metadata?.attributes?.find((a: any) => a.trait_type === 'website')?.value
+  if (website) {
+    try {
+      const url = new URL(website.startsWith('http') ? website : `https://${website}`)
+      return url.hostname.replace(/^www\./, '')
+    } catch {
+      return website.length > 30 ? website.slice(0, 27) + '…' : website
+    }
+  }
+  return null
+}
+
 // Function to count unique countries from location data
 function countUniqueCountries(locations: any[]): number {
   if (!locations || locations.length === 0) return 25
@@ -375,24 +424,25 @@ export default function SignedInDashboard({
             </div>
 
             {/* New Citizens */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">New Citizens</h3>
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-grow flex flex-col min-h-[320px] order-5">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-white text-xl">New Citizens</h3>
                 <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all py-1 px-2"
                   link="/network?tab=citizens"
                 >
                   See all
                 </StandardButton>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1 flex-1 min-h-0">
                 {newestCitizens && newestCitizens.length > 0 ? (
                   newestCitizens.slice(0, 8).map((citizen: any) => {
+                    const metadata = getCitizenMetadata(citizen)
                     const bio = (citizen.description || citizen.metadata?.description || '')
                       .replace(/<[^>]*>/g, '')
                       .trim()
-                    const bioPreview = bio ? (bio.length > 80 ? `${bio.slice(0, 80)}…` : bio) : null
+                    const bioPreview = bio ? (bio.length > 60 ? `${bio.slice(0, 60)}…` : bio) : null
                     return (
                       <Link
                         key={citizen.id}
@@ -401,30 +451,30 @@ export default function SignedInDashboard({
                             ? generatePrettyLinkWithId(citizen.name, citizen.id)
                             : citizen.id || 'anonymous'
                         }`}
-                        className="flex items-start gap-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2.5"
+                        className="flex items-start gap-3 hover:bg-white/5 rounded-lg transition-all cursor-pointer p-2"
                       >
-                        <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
                           {citizen.image || citizen.metadata?.image ? (
                             <IPFSRenderer
                               src={citizen.image || citizen.metadata?.image}
                               alt={citizen.name}
                               className="w-full h-full object-cover"
-                              width={56}
-                              height={56}
+                              width={64}
+                              height={64}
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-base">
+                            <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
                               {citizen.name?.[0] || 'C'}
                             </div>
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-white font-medium text-sm truncate">
+                          <h4 className="text-white font-medium text-base truncate">
                             {citizen.name || 'Anonymous'}
                           </h4>
-                          {bioPreview && (
-                            <p className="text-white/50 text-xs leading-snug mt-0.5 line-clamp-2">
-                              {bioPreview}
+                          {(metadata || bioPreview) && (
+                            <p className="text-white/50 text-sm leading-snug mt-0.5 line-clamp-2">
+                              {[metadata, bioPreview].filter(Boolean).join(' · ')}
                             </p>
                           )}
                         </div>
@@ -590,7 +640,7 @@ export default function SignedInDashboard({
           </div>
 
           {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3 min-w-0">
             {/* Wallet Info Card */}
             {address && (
               <WalletInfoCard
@@ -610,51 +660,61 @@ export default function SignedInDashboard({
             {address && <ClaimRewardsSection />}
 
             {/* Featured Teams */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-grow flex flex-col min-h-[320px]">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-white text-xl">Featured Teams</h3>
                 <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all py-1 px-2"
                   link="/network?tab=teams"
                 >
                   See all
                 </StandardButton>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1 flex-1 min-h-0">
                 {filteredTeams && filteredTeams.length > 0 ? (
-                  filteredTeams.slice(0, 8).map((team: any, index: number) => (
-                    <Link
-                      key={team.id || index}
-                      href={`/team/${generatePrettyLink(team.name)}`}
-                      className="flex items-center gap-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
-                    >
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                        {team.image ? (
-                          <IPFSRenderer
-                            src={team.image}
-                            alt={team.name}
-                            className="w-full h-full object-cover"
-                            width={40}
-                            height={40}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                            {team.name?.[0] || 'T'}
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="text-white font-medium text-sm truncate">
-                        {team.name || 'Team'}
-                      </h4>
-                    </Link>
-                  ))
+                  filteredTeams.slice(0, 8).map((team: any, index: number) => {
+                    const metadata = getTeamMetadata(team)
+                    return (
+                      <Link
+                        key={team.id || index}
+                        href={`/team/${generatePrettyLink(team.name)}`}
+                        className="flex items-start gap-3 hover:bg-white/5 rounded-lg transition-all cursor-pointer p-2"
+                      >
+                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {team.image ? (
+                            <IPFSRenderer
+                              src={team.image}
+                              alt={team.name}
+                              className="w-full h-full object-cover"
+                              width={64}
+                              height={64}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                              {team.name?.[0] || 'T'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-white font-medium text-base truncate">
+                            {team.name || 'Team'}
+                          </h4>
+                          {metadata && (
+                            <p className="text-white/50 text-sm leading-snug mt-0.5 line-clamp-2">
+                              {metadata}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    )
+                  })
                 ) : (
                   <div className="flex items-center gap-3 p-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
                       M
                     </div>
-                    <h4 className="text-white font-medium text-sm">Mission Control</h4>
+                    <h4 className="text-white font-medium text-base">Mission Control</h4>
                   </div>
                 )}
               </div>

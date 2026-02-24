@@ -6,6 +6,8 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useUniswapV4 } from '../../lib/uniswap/hooks/useUniswapV4'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import GasIcon from '../assets/GasIcon'
 import Input from '../layout/Input'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -23,38 +25,96 @@ export default function NativeToMooney({ selectedChain }: any) {
   const [output, setOutput] = useState<string>('0')
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false)
   const [estimatedGasUsedUSD, setEstimatedGasUsedUSD] = useState<any>(0)
+  const [priceImpact, setPriceImpact] = useState<number | null>(null)
   const [hasValidRoute, setHasValidRoute] = useState(false)
 
   const mooneyAddress = MOONEY_ADDRESSES[chainSlug]
-  const { quote, swap } = useUniswapV4(
+  const { quote, swap, estimateGas } = useUniswapV4(
     mooneyAddress,
     18,
     TICK_SPACING,
     FEE_HOOK_ADDRESSES[chainSlug]
   )
+  const { effectiveGasPrice } = useGasPrice(selectedChain)
+  const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   useEffect(() => {
     const numAmount = parseFloat(amount) || 0
     if (numAmount > 0 && mooneyAddress) {
       setIsGeneratingRoute(true)
       quote(amount)
-        .then((quotedAmount) => {
+        .then(async (quotedAmount) => {
           setOutput(quotedAmount)
-          setHasValidRoute(parseFloat(quotedAmount) > 0)
-          setEstimatedGasUsedUSD('2.50')
+          const validRoute = parseFloat(quotedAmount) > 0
+          setHasValidRoute(validRoute)
+
+          if (validRoute) {
+            try {
+              const spotQuoteAmount = await quote('0.0001')
+              const spotOutput = parseFloat(spotQuoteAmount) || 0
+              const actualOutput = parseFloat(quotedAmount) || 0
+              const numAmount = parseFloat(amount) || 0
+              if (spotOutput > 0 && numAmount > 0) {
+                const spotPrice = spotOutput / 0.0001
+                const expectedOutput = numAmount * spotPrice
+                if (expectedOutput > 0) {
+                  const impact = (1 - actualOutput / expectedOutput) * 100
+                  setPriceImpact(Math.max(0, impact))
+                } else {
+                  setPriceImpact(null)
+                }
+              } else {
+                setPriceImpact(null)
+              }
+            } catch {
+              setPriceImpact(null)
+            }
+          } else {
+            setPriceImpact(null)
+          }
+
+          if (validRoute && effectiveGasPrice && ethPrice) {
+            setEstimatedGasUsedUSD('...')
+            try {
+              const minOut = (parseFloat(quotedAmount) * 0.95).toString()
+              let gasEstimate: bigint
+              try {
+                gasEstimate = await estimateGas(amount, minOut)
+              } catch (estErr) {
+                console.warn('Gas API estimate failed, using fallback:', estErr)
+                gasEstimate = BigInt(200000)
+              }
+              const gasWithBuffer = (gasEstimate * BigInt(120)) / BigInt(100)
+              const gasCostWei = gasWithBuffer * effectiveGasPrice
+              const gasCostEth = Number(gasCostWei) / 1e18
+              const gasCostUsd = gasCostEth * ethPrice
+              setEstimatedGasUsedUSD(gasCostUsd.toFixed(2))
+            } catch (err) {
+              console.error('Gas estimation error:', err)
+              setEstimatedGasUsedUSD('—')
+            }
+          } else if (validRoute && (!effectiveGasPrice || !ethPrice)) {
+            setEstimatedGasUsedUSD('...')
+          } else {
+            setEstimatedGasUsedUSD('0.00')
+          }
           setIsGeneratingRoute(false)
         })
         .catch((error) => {
           console.error('Quote error:', error)
           setOutput('0')
           setHasValidRoute(false)
+          setEstimatedGasUsedUSD('0.00')
+          setPriceImpact(null)
           setIsGeneratingRoute(false)
         })
     } else {
       setOutput('0')
       setHasValidRoute(false)
+      setEstimatedGasUsedUSD('0.00')
+      setPriceImpact(null)
     }
-  }, [amount, mooneyAddress, quote])
+  }, [amount, mooneyAddress, quote, estimateGas, effectiveGasPrice, ethPrice])
 
   return (
     <div className="w-full mt-3 sm:mt-4">
@@ -102,12 +162,13 @@ export default function NativeToMooney({ selectedChain }: any) {
                   <NetworkSelector compact />
                 </div>
               </div>
-              <div className="flex items-center justify-between gap-2 sm:gap-3 mt-2 sm:mt-3">
-                <div className="flex-1 min-w-0">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:gap-x-4 mt-2 sm:mt-3 min-h-[32px]">
+                <div className="min-w-0 flex items-center overflow-hidden">
                   <Input
                     type="text"
                     placeholder="0.0"
-                    className="text-white bg-transparent text-xl sm:text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none w-full border-0 p-0"
+                    className="text-white bg-transparent text-xl sm:text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none w-full min-w-0 border-0 !p-0 min-h-[28px] tabular-nums"
+                    bare
                     value={amount}
                     max={nativeBalance ? parseFloat(nativeBalance) : undefined}
                     onChange={(e) => {
@@ -127,19 +188,21 @@ export default function NativeToMooney({ selectedChain }: any) {
                     maxWidth="max-w-none"
                   />
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <div className="flex items-center gap-2 sm:gap-3 justify-end shrink-0 w-[160px] sm:w-[200px]">
                   {address && (
-                    <p className="text-gray-400 text-xs whitespace-nowrap">
-                      Balance: {Number(nativeBalance).toFixed(4)} {CHAIN_TOKEN_NAMES[chainSlug] ?? 'ETH'}
-                    </p>
+                    <>
+                      <p className="text-gray-400 text-xs whitespace-nowrap">
+                        Balance: {Number(nativeBalance).toFixed(4)} {CHAIN_TOKEN_NAMES[chainSlug] ?? 'ETH'}
+                      </p>
+                      <button
+                        className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-lg border border-blue-400/20 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-400/10"
+                        onClick={() => setAmount(nativeBalance ?? '0')}
+                        disabled={!nativeBalance || parseFloat(nativeBalance) === 0}
+                      >
+                        MAX
+                      </button>
+                    </>
                   )}
-                  <button
-                    className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-lg border border-blue-400/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-400/10"
-                    onClick={() => setAmount(nativeBalance ?? '0')}
-                    disabled={!nativeBalance || parseFloat(nativeBalance) === 0}
-                  >
-                    MAX
-                  </button>
                 </div>
               </div>
             </div>
@@ -168,17 +231,17 @@ export default function NativeToMooney({ selectedChain }: any) {
                 </div>
                 <div className="flex-shrink-0 min-w-[80px] sm:min-w-[140px]" aria-hidden="true" />
               </div>
-              <div className="flex items-center justify-between gap-2 sm:gap-3 mt-2 sm:mt-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-xl sm:text-2xl font-RobotoMono">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:gap-x-4 mt-2 sm:mt-3 min-h-[32px]">
+                <div className="min-w-0 flex items-center">
+                  <p className="text-white text-xl sm:text-2xl font-RobotoMono tabular-nums">
                     {isGeneratingRoute ? (
-                      <span className="text-gray-400 text-base sm:text-lg">Calculating...</span>
+                      <span className="text-gray-400 text-xl sm:text-2xl">Calculating...</span>
                     ) : (
-                      parseFloat(output).toLocaleString() || '0.0'
+                      (parseFloat(output) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 18 }) || '0.0'
                     )}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 min-w-[120px] sm:min-w-[140px]" />
+                <div className="w-[160px] sm:w-[200px] shrink-0" aria-hidden="true" />
               </div>
             </div>
           </div>
@@ -202,8 +265,20 @@ export default function NativeToMooney({ selectedChain }: any) {
 
                 <div className="bg-black/20 rounded-lg p-2.5 sm:p-3 border border-white/5 hover:bg-black/30 transition-colors duration-200 min-h-[44px] sm:min-h-[48px] flex items-center justify-between">
                   <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Impact</p>
-                  <p className="text-sm font-medium text-green-400">
-                    {hasValidRoute ? '<0.1%' : '0%'}
+                  <p
+                    className={`text-sm font-medium ${
+                      priceImpact !== null && priceImpact > 5
+                        ? 'text-orange-400'
+                        : priceImpact !== null && priceImpact > 1
+                        ? 'text-yellow-400'
+                        : 'text-green-400'
+                    }`}
+                  >
+                    {priceImpact !== null
+                      ? `${priceImpact < 0.01 ? '<0.01' : priceImpact.toFixed(2)}%`
+                      : hasValidRoute
+                      ? '...'
+                      : '0%'}
                   </p>
                 </div>
               </div>
