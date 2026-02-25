@@ -7,12 +7,12 @@ import {
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import Image from 'next/image'
+import { NavLink } from '@/components/layout/NavLink'
 import { useState, useContext } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { useENS } from '@/lib/utils/hooks/useENS'
-import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import {
@@ -88,13 +88,7 @@ export default function WalletInfoCard({
   const [copied, setCopied] = useState(false)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
-  const { nativeBalance, walletChain } = useNativeBalance()
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false)
-
-  // Use the wallet's actual chain for native token display, fall back to selectedChain
-  const nativeTokenChain = walletChain || selectedChain
-  const nativeTokenSlug = getChainSlug(nativeTokenChain)
-  const nativeTokenSymbol = nativeTokenChain?.nativeCurrency?.symbol || 'ETH'
 
   const availableChains = [
     arbitrum,
@@ -118,10 +112,8 @@ export default function WalletInfoCard({
     }
   }
 
-  const totalMooney = (unlockedMooney || 0) + (lockedMooney || 0)
-
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 min-w-0 overflow-hidden">
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
           <WalletIcon className="w-5 h-5 text-white" />
@@ -209,95 +201,69 @@ export default function WalletInfoCard({
       </div>
 
       {/* Balances */}
-      <div className="space-y-3 mb-4">
-        {/* Native Token Balance */}
-        <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Image
-                src={`/icons/networks/${
-                  nativeTokenSlug === 'polygon' ? 'polygon' : 'ethereum'
-                }.svg`}
-                alt={nativeTokenSymbol}
-                width={20}
-                height={20}
-                className="rounded-full"
-              />
-              <span className="text-sm text-gray-400">
-                {nativeTokenSymbol}
-              </span>
-            </div>
-            <span className="text-white font-semibold">
-              {formatToken(nativeBalance, 4)}
-            </span>
-          </div>
-        </div>
-
-        {/* MOONEY Balance */}
-        <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+      <div className="space-y-3 mb-4 min-w-0">
+        {/* $MOONEY Balance */}
+        <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-2 min-w-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Image
                 src="/coins/MOONEY.png"
                 alt="MOONEY"
                 width={20}
                 height={20}
-                className="rounded-full"
+                className="rounded-full flex-shrink-0"
               />
-              <span className="text-sm text-gray-400">Available</span>
+              <span className="text-sm text-gray-400">$MOONEY</span>
             </div>
             {isUnlockedLoading ? (
-              <LoadingSpinner width="w-4" height="h-4" />
+              <LoadingSpinner width="w-4" height="h-4" className="flex-shrink-0" />
             ) : (
-              <span className="text-white font-semibold">
+              <span className="text-white font-semibold text-right min-w-0 break-all">
                 {formatToken(unlockedMooney)}
               </span>
             )}
           </div>
+          <NavLink
+            href="/get-mooney"
+            className="block w-full text-center py-1.5 px-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-300 text-xs font-medium transition-all"
+          >
+            Get $MOONEY
+          </NavLink>
         </div>
 
         {/* Locked MOONEY */}
-        <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-2 min-w-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Image
                 src="/assets/vmooney-shield.svg"
                 alt="Locked"
                 width={20}
                 height={20}
+                className="flex-shrink-0"
               />
-              <span className="text-sm text-gray-400">Locked</span>
+              <span className="text-sm text-gray-400">$vMOONEY (Locked)</span>
             </div>
             {isLockedLoading ? (
-              <LoadingSpinner width="w-4" height="h-4" />
+              <LoadingSpinner width="w-4" height="h-4" className="flex-shrink-0" />
             ) : (
-              <span className="text-white font-semibold">
+              <span className="text-white font-semibold text-right min-w-0 break-all">
                 {formatToken(lockedMooney)}
               </span>
             )}
           </div>
-        </div>
-
-        {/* Total Balance */}
-        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg p-3 border border-blue-500/20">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-blue-300 font-medium">
-              Total MOONEY
-            </span>
-            {isUnlockedLoading || isLockedLoading ? (
-              <LoadingSpinner width="w-4" height="h-4" />
-            ) : (
-              <span className="text-white font-bold">
-                {formatToken(totalMooney)}
-              </span>
-            )}
-          </div>
+          <NavLink
+            href="/lock"
+            className="block w-full text-center py-1.5 px-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-medium transition-all"
+          >
+            Lock $MOONEY
+          </NavLink>
         </div>
 
         {/* Voting Power */}
-        <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 rounded-lg p-3 border border-yellow-500/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 rounded-lg p-3 border border-yellow-500/20 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 min-w-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-yellow-400">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
               </svg>
@@ -306,9 +272,9 @@ export default function WalletInfoCard({
               </span>
             </div>
             {isVotingPowerLoading ? (
-              <LoadingSpinner width="w-4" height="h-4" />
+              <LoadingSpinner width="w-4" height="h-4" className="flex-shrink-0" />
             ) : (
-              <span className="text-white font-bold">
+              <span className="text-white font-bold text-right min-w-0 break-all">
                 {formatVotingPower(votingPower)}
               </span>
             )}

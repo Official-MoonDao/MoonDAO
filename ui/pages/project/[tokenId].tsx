@@ -351,10 +351,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
     const statement = `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`
 
-  const projects = (await queryTable(chain, statement)).filter(
-    (p: Project) => !BLOCKED_PROJECTS.has(Number(p.id))
-  )
-  const project = projects[0]
+    const projects = (await queryTable(chain, statement)).filter(
+      (p: Project) => !BLOCKED_PROJECTS.has(Number(p.id))
+    )
+    const project = projects[0]
 
     if (!project) {
       return {
@@ -379,7 +379,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       params: [mdp],
     })
     const proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
-    
+
     let proposalJSON: any = {}
     try {
       const proposalResponse = await fetch(project.proposalIPFS)
@@ -399,7 +399,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
       const voteAddresses = votes.map((v) => v.address)
       const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
-      
+
       // Only fetch vMOONEY if there are votes
       if (voteAddresses.length > 0) {
         const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)

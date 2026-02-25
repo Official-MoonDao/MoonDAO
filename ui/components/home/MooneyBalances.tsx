@@ -119,7 +119,7 @@ export default function MooneyBalances({
             <span className="font-medium whitespace-nowrap min-w-[4rem]">{formattedLocked}</span>
           )}
           <span className="text-white/60 group-hover:underline font-semibold whitespace-nowrap">
-            Locked
+            $vMOONEY (Locked)
           </span>
         </Link>
 

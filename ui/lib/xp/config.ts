@@ -33,7 +33,7 @@ export const XP_VERIFIERS = [
     title: 'Citizen Referrals',
     description: 'Refer your friends to the Space Acceleration Network.',
     icon: UserGroupIcon,
-    actionText: 'Copy Referral Link',
+    actionText: '📋 Copy Referral Link',
     modalButton: CitizenReferral,
   },
   {

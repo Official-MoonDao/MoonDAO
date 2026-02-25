@@ -1,6 +1,8 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
+import { useWallets } from '@privy-io/react-auth'
 import Image from 'next/image'
 import { useContext, useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import {
   arbitrum,
   base,
@@ -11,6 +13,8 @@ import {
   polygon,
   sepolia,
 } from '@/lib/rpc/chains'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
@@ -79,12 +83,32 @@ export default function NetworkSelector({
   align = 'right',
 }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const { wallets } = useWallets()
   const [dropdown, setDropdown] = useState(false)
   const triggerRef = useRef<HTMLDivElement>(null)
 
-  function selectChain(chain: any) {
+  async function selectChain(chain: any) {
     setSelectedChain(chain)
     setDropdown(false)
+
+    // Switch the wallet to the selected network when connected
+    const wallet = wallets?.[selectedWallet]
+    if (wallet && typeof wallet.switchChain === 'function') {
+      try {
+        await wallet.switchChain(chain.id)
+      } catch (err: any) {
+        // Fallback: try addNetworkToWallet for external wallets that may need the chain added first
+        if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
+          const success = await addNetworkToWallet(chain)
+          if (success) {
+            await wallet.switchChain(chain.id)
+          }
+        } else if (err?.code !== 4001) {
+          toast.error('Failed to switch network. Please try again.')
+        }
+      }
+    }
   }
 
   function handleClickOutside({ target }: any) {

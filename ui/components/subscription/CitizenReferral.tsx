@@ -266,7 +266,7 @@ export default function CitizenReferral({
   return (
     <>
       <StandardButton
-        className={`'px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center gap-1' ${className}`}
+        className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center gap-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white ${className}`}
         onClick={() => setIsModalOpen(true)}
       >
         <UserPlusIcon className="w-4 h-4" />

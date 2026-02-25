@@ -4,7 +4,7 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
 
-const cspHeader = `
+const cspHeaderBase = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com https://pay.google.com https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
@@ -19,6 +19,11 @@ const cspHeader = `
     upgrade-insecure-requests;
     worker-src 'self' blob:;
 `
+// Omit upgrade-insecure-requests in dev - it can break client-side navigation on localhost
+const cspHeader =
+  process.env.NODE_ENV === 'development'
+    ? cspHeaderBase.replace(/\s*upgrade-insecure-requests;\s*/, ' ')
+    : cspHeaderBase
 
 module.exports = withBundleAnalyzer(
   withTM(

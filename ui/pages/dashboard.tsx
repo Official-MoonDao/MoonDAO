@@ -22,7 +22,6 @@ import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
-import { getHistoricalRevenue } from '@/lib/treasury/revenue'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import { LoadingSpinner } from '../components/layout/LoadingSpinner'
@@ -45,7 +44,6 @@ export default function Dashboard({
   newestJobs,
   citizenSubgraphData,
   aumData,
-  revenueData,
   mooneyPrice,
   filteredTeams,
   allProjects,
@@ -91,7 +89,6 @@ export default function Dashboard({
         newestJobs={newestJobs}
         citizenSubgraphData={citizenSubgraphData}
         aumData={aumData}
-        revenueData={revenueData}
         mooneyPrice={mooneyPrice}
         filteredTeams={filteredTeams}
         projects={allProjects}
@@ -114,14 +111,6 @@ export async function getStaticProps() {
   const MissionTableABI = (await import('const/abis/MissionTable.json')).default
 
   let transferData: any = { citizenTransfers: [], teamTransfers: [] }
-  let revenueData: any = {
-    revenueHistory: [],
-    currentRevenue: 0,
-    citizenRevenue: 0,
-    teamRevenue: 0,
-    defiRevenue: 0,
-    stakingRevenue: 0,
-  }
   let citizenSubgraphData: any = { transfers: [], createdAt: Date.now() }
   let aumData = null
   let newestCitizens: any = []
@@ -319,26 +308,6 @@ export async function getStaticProps() {
       : { citizenTransfers: [], teamTransfers: [] }
   aumData = aumResult.status === 'fulfilled' ? aumResult.value : null
 
-  const defiDataForRevenue = aumData?.defiData || {
-    balance: 0,
-    firstPoolCreationTimestamp: 0,
-    protocols: [],
-  }
-
-  try {
-    revenueData = await getHistoricalRevenue(defiDataForRevenue, 365)
-  } catch (error) {
-    console.error('Error getting historical revenue:', error)
-    revenueData = {
-      revenueHistory: [],
-      currentRevenue: 0,
-      citizenRevenue: 0,
-      teamRevenue: 0,
-      defiRevenue: 0,
-      stakingRevenue: 0,
-    }
-  }
-
   if (transferResult.status === 'fulfilled') {
     citizenSubgraphData = {
       transfers: transferData.citizenTransfers.map((transfer: any) => ({
@@ -444,7 +413,6 @@ export async function getStaticProps() {
       newestJobs,
       citizenSubgraphData,
       aumData,
-      revenueData,
       mooneyPrice,
       filteredTeams,
       allProjects,

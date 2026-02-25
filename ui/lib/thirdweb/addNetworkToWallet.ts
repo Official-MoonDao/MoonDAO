@@ -2,6 +2,7 @@ import toast from 'react-hot-toast'
 import {
   arbitrum,
   base,
+  baseSepolia,
   ethereum,
   sepolia,
   arbitrumSepolia,
@@ -47,6 +48,17 @@ const CHAIN_CONFIGS: ChainConfigMap = {
     },
     rpcUrls: ['https://mainnet.base.org'],
     blockExplorerUrls: ['https://basescan.org'],
+  },
+  [baseSepolia.id]: {
+    chainId: `0x${baseSepolia.id.toString(16)}`,
+    chainName: 'Base Sepolia',
+    nativeCurrency: {
+      name: 'ETH',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+    rpcUrls: ['https://sepolia.base.org'],
+    blockExplorerUrls: ['https://sepolia.basescan.org'],
   },
   [ethereum.id]: {
     chainId: `0x${ethereum.id.toString(16)}`,

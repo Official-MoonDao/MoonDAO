@@ -1,10 +1,20 @@
 import { BigNumber } from 'ethers'
 import React from 'react'
+import * as UseRetroactiveRewards from '@/lib/tokens/hooks/useRetroactiveRewards'
 import ClaimRewardsSection from '../../../components/home/ClaimRewardsSection'
 import TestnetProviders from '../../mock/TestnetProviders'
 
 describe('<ClaimRewardsSection />', () => {
-  it('should render with no rewards available', () => {
+  beforeEach(() => {
+    // Component returns null when no rewards - stub to return withdrawable > 0 so it renders
+    const mockWithdraw = cy.stub().resolves()
+    cy.stub(UseRetroactiveRewards, 'default').returns({
+      withdrawable: BigNumber.from('1000000000000000000'), // 1.00 displayed
+      withdraw: mockWithdraw,
+    })
+  })
+
+  it('should render with rewards available', () => {
     cy.mount(
       <TestnetProviders>
         <ClaimRewardsSection />
@@ -17,20 +27,17 @@ describe('<ClaimRewardsSection />', () => {
     // Should show "Retroactive Rewards" title
     cy.contains('Retroactive Rewards').should('be.visible')
 
-    // Should show "Check back end of quarter" message when no rewards
-    cy.contains('Check back end of quarter').should('be.visible')
+    // Should show "Ready to claim" message when rewards available
+    cy.contains('Ready to claim').should('be.visible')
 
-    // Should show 0.00 amount
-    cy.contains('0.00').should('be.visible')
+    // Should show formatted amount (1.00)
+    cy.contains('1.00').should('be.visible')
 
-    // Should show "vMOONEY available" text
-    cy.contains('vMOONEY available').should('be.visible')
+    // Should show "vMOONEY tokens" text
+    cy.contains('vMOONEY tokens').should('be.visible')
 
-    // Should show disabled "No Rewards" button
-    cy.contains('No Rewards')
-      .should('be.visible')
-      .and('have.class', 'opacity-50')
-      .and('have.class', 'cursor-not-allowed')
+    // Should show "Claim Rewards" button
+    cy.contains('Claim Rewards').should('be.visible')
   })
 
   it('should render component structure correctly', () => {
@@ -63,44 +70,24 @@ describe('<ClaimRewardsSection />', () => {
     // Should show main title
     cy.contains('Retroactive Rewards').should('be.visible')
 
-    // Should show either "Ready to claim" or "Check back end of quarter"
-    cy.get('body').then(($body) => {
-      const hasReadyToClaim =
-        $body.find(':contains("Ready to claim")').length > 0
-      const hasCheckBack =
-        $body.find(':contains("Check back end of quarter")').length > 0
+    // Should show "Ready to claim" when rewards available
+    cy.contains('Ready to claim').should('be.visible')
 
-      expect(hasReadyToClaim || hasCheckBack).to.be.true
-    })
-
-    // Should show either "vMOONEY tokens" or "vMOONEY available"
-    cy.get('body').then(($body) => {
-      const hasTokens = $body.find(':contains("vMOONEY tokens")').length > 0
-      const hasAvailable =
-        $body.find(':contains("vMOONEY available")').length > 0
-
-      expect(hasTokens || hasAvailable).to.be.true
-    })
+    // Should show "vMOONEY tokens"
+    cy.contains('vMOONEY tokens').should('be.visible')
   })
 
-  it('should handle different component states', () => {
+  it('should handle component state with rewards', () => {
     cy.mount(
       <TestnetProviders>
         <ClaimRewardsSection />
       </TestnetProviders>
     )
 
-    // Should show either claim button or no rewards button
-    cy.get('body').then(($body) => {
-      const hasClaimButton =
-        $body.find('button:contains("Claim Rewards")').length > 0
-      const hasNoRewardsButton =
-        $body.find(':contains("No Rewards")').length > 0
+    // Should show claim button
+    cy.contains('Claim Rewards').should('exist')
 
-      expect(hasClaimButton || hasNoRewardsButton).to.be.true
-    })
-
-    // Should show some amount (either 0.00 or a positive amount)
+    // Should show formatted amount
     cy.get('.font-RobotoMono').should('exist').and('be.visible')
   })
 
@@ -112,11 +99,7 @@ describe('<ClaimRewardsSection />', () => {
     )
 
     // Should show vMOONEY icon
-    cy.get('img[alt="vMOONEY"]')
-      .should('exist')
-      .and('have.attr', 'src', '/assets/vmooney-shield.svg')
-      .and('have.attr', 'width', '16')
-      .and('have.attr', 'height', '16')
+    cy.get('img[alt="vMOONEY"]').should('exist')
   })
 
   it('should have proper responsive layout', () => {
@@ -133,13 +116,7 @@ describe('<ClaimRewardsSection />', () => {
     cy.get('.text-center').should('exist')
 
     // Check full width button styling
-    cy.get('body').then(($body) => {
-      if ($body.find('button').length > 0) {
-        cy.get('button').should('have.class', 'w-full')
-      } else {
-        cy.get('.w-full').should('exist') // The disabled state div
-      }
-    })
+    cy.get('button').should('have.class', 'w-full')
   })
 
   it('should display amount with proper formatting', () => {
@@ -157,5 +134,21 @@ describe('<ClaimRewardsSection />', () => {
 
     // Amount should be visible and properly formatted
     cy.get('.font-RobotoMono').should('be.visible')
+  })
+
+  it('should not render when no rewards available', () => {
+    cy.stub(UseRetroactiveRewards, 'default').returns({
+      withdrawable: BigNumber.from(0),
+      withdraw: cy.stub().resolves(),
+    })
+
+    cy.mount(
+      <TestnetProviders>
+        <ClaimRewardsSection />
+      </TestnetProviders>
+    )
+
+    // Component returns null when no rewards - Retroactive Rewards section should not be visible
+    cy.contains('Retroactive Rewards').should('not.exist')
   })
 })

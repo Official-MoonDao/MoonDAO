@@ -1,5 +1,5 @@
 import { getL2Network, EthBridger, Erc20Bridger } from '@arbitrum/sdk'
-import { ArrowDownIcon, ChevronUpDownIcon } from '@heroicons/react/24/outline'
+import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import ERC20ABI from 'const/abis/ERC20.json'
 import { ethers } from 'ethers'
@@ -15,9 +15,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import { MOONEY_ADDRESSES } from '../../const/config'
-import Frame from '../layout/Frame'
 import Input from '../layout/Input'
-import Tab from '../layout/Tab'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function ArbitrumBridge() {
@@ -29,7 +27,7 @@ export default function ArbitrumBridge() {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [amount, setAmount] = useState<any>(0)
-  const [inputToken, setInputToken] = useState('eth')
+  const [inputToken, setInputToken] = useState('mooney')
   const bridgeType = 'deposit'
   const [nativeBalance, setNativeBalance] = useState<any>(0)
   const [ethMooneyBalance, setEthMooneyBalance] = useState<any>()
@@ -160,13 +158,25 @@ export default function ArbitrumBridge() {
     }, 100)
   }
 
-  function TokenSymbol() {
+  function TokenSymbol({ className }: { className?: string }) {
     return (
       <>
         {inputToken === 'eth' ? (
-          <Image src={`/icons/networks/ethereum.svg`} width={15} height={15} alt="" />
+          <Image
+            src={`/icons/networks/ethereum.svg`}
+            width={20}
+            height={20}
+            alt=""
+            className={className}
+          />
         ) : (
-          <Image src={`/Original.png`} width={20} height={20} alt="" />
+          <Image
+            src={`/Original.png`}
+            width={20}
+            height={20}
+            alt=""
+            className={className}
+          />
         )}
       </>
     )
@@ -255,137 +265,140 @@ export default function ArbitrumBridge() {
   }, [setSelectedChain])
 
   return (
-    <div className="w-full max-w-2xl">
-      <div className="mb-4">
-        <p className="text-gray-400 text-sm">
-          This bridge transfers your ETH and MOONEY tokens from Ethereum mainnet to Arbitrum.
-          Arbitrum offers faster transactions and lower fees while maintaining full security.
-        </p>
-      </div>
-
-      <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
-        {/* Header */}
-        <div className="p-5 border-b border-white/10 bg-black/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white">Bridge Assets</h2>
-              <p className="text-gray-400 text-xs mt-0.5">Transfer from Ethereum to Arbitrum</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Bridge Interface */}
-        <div className="p-5 space-y-5">
-          {/* You Pay Section */}
-          <div className="space-y-3">
-            <label className="text-gray-300 text-sm font-medium">You Pay</label>
-            <div className="bg-black/30 rounded-xl p-4 border border-white/10 focus-within:border-blue-400/50 transition-colors">
-              <div className="flex items-center justify-between mb-3">
-                <Input
-                  type="text"
-                  placeholder="0.0"
-                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 border-0 p-0 mr-4"
-                  value={amount}
-                  max={balance ? Number(balance) : undefined}
-                  onChange={(e) => {
-                    let value = e.target.value
-                    // Remove commas and non-numeric characters except decimal point
-                    value = value.replace(/[^0-9.]/g, '')
-
-                    // Prevent multiple decimal points
-                    const parts = value.split('.')
-                    if (parts.length > 2) {
-                      value = parts[0] + '.' + parts.slice(1).join('')
-                    }
-
-                    // Prevent negative values
-                    if (parseFloat(value) < 0) {
-                      value = '0'
-                    }
-
-                    // Enforce max value (available balance)
-                    if (balance && parseFloat(value) > balance) {
-                      value = String(balance)
-                    }
-
-                    // Remove leading zero if user types a number after it
-                    if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
-                      value = value.substring(1)
-                    }
-                    setAmount(value)
-                  }}
-                  formatNumbers={true}
-                  maxWidth="max-w-none"
-                />
-
-                {/* Token Selector */}
+    <div className="w-full mt-3 sm:mt-4">
+      <div className="text-sm font-RobotoMono rounded-xl sm:rounded-2xl animate-fadeIn p-3 sm:p-4 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white">
+        {/* Bridge Interface - Consistent with get-mooney */}
+        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
+          <div className="grid grid-cols-1 gap-2 sm:gap-3">
+            {/* You Pay */}
+            <div className="bg-black/20 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 min-h-[88px] sm:min-h-[96px] flex flex-col justify-between focus-within:border-blue-400/50">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden p-0.5">
+                    <TokenSymbol className="object-contain w-5 h-5 sm:w-5 sm:h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">
+                      You Pay
+                    </p>
+                    <p className="font-medium text-white text-base truncate">
+                      {inputToken === 'eth' ? 'ETH' : 'MOONEY'}
+                    </p>
+                  </div>
+                </div>
                 <button
-                  className="flex items-center gap-2 bg-black/50 hover:bg-black/70 transition-colors px-3 py-2 rounded-xl border border-white/10"
+                  className="flex items-center gap-2 bg-black/50 hover:bg-black/70 transition-colors px-3 py-2 rounded-lg sm:rounded-xl border border-white/10 flex-shrink-0"
                   onClick={() => {
                     setInputToken(inputToken === 'eth' ? 'mooney' : 'eth')
                   }}
                 >
-                  <TokenSymbol />
-                  <span className="text-white font-medium">{inputToken.toUpperCase()}</span>
-                  <ChevronUpDownIcon width={16} height={16} className="text-gray-400" />
+                  <TokenSymbol className="object-contain w-4 h-4" />
+                  <span className="text-white font-medium text-sm">{inputToken.toUpperCase()}</span>
+                  <ChevronUpDownIcon width={14} height={14} className="text-gray-400" />
                 </button>
               </div>
-
-              {address && (
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">
-                    Balance: {Number(balance).toFixed(5)}
-                  </span>
-                  <button
-                    className="text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded text-xs"
-                    onClick={() => setAmount(balance)}
-                  >
-                    MAX
-                  </button>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:gap-x-4 mt-2 sm:mt-3 min-h-[32px]">
+                <div className="min-w-0 flex items-center overflow-hidden">
+                  <Input
+                    type="text"
+                    placeholder="0.0"
+                    className="text-white bg-transparent text-xl sm:text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none w-full min-w-0 border-0 !p-0 min-h-[28px] tabular-nums"
+                    bare
+                    value={amount}
+                    max={balance ? Number(balance) : undefined}
+                    onChange={(e) => {
+                      let value = e.target.value
+                      value = value.replace(/[^0-9.]/g, '')
+                      const parts = value.split('.')
+                      if (parts.length > 2) {
+                        value = parts[0] + '.' + parts.slice(1).join('')
+                      }
+                      if (parseFloat(value) < 0) value = '0'
+                      if (balance && parseFloat(value) > balance) {
+                        value = String(balance)
+                      }
+                      if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
+                        value = value.substring(1)
+                      }
+                      setAmount(value)
+                    }}
+                    formatNumbers={true}
+                    maxWidth="max-w-none"
+                  />
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Arrow Divider */}
-          <div className="flex justify-center">
-            <div className="p-3 bg-black/50 rounded-full border border-white/10">
-              <ArrowDownIcon width={20} height={20} className="text-gray-400" />
-            </div>
-          </div>
-
-          {/* You Receive Section */}
-          <div className="space-y-3">
-            <label className="text-gray-300 text-sm font-medium">You Receive</label>
-            <div className="bg-black/30 rounded-xl p-4 border border-white/10">
-              <div className="flex items-center justify-between">
-                <span className="text-white text-2xl font-RobotoMono">{amount || '0.0'}</span>
-
-                <div className="flex items-center gap-2 bg-black/50 px-3 py-2 rounded-xl border border-white/10">
-                  <Image src="/icons/networks/arbitrum.svg" width={20} height={20} alt="Arbitrum" />
-                  <TokenSymbol />
-                  <span className="text-white font-medium">{inputToken.toUpperCase()}</span>
+                <div className="flex items-center gap-2 sm:gap-3 justify-end shrink-0 w-[160px] sm:w-[200px]">
+                  {address && (
+                    <>
+                      <p className="text-gray-400 text-xs whitespace-nowrap">
+                        Balance: {Number(balance).toFixed(5)}
+                      </p>
+                      <button
+                        className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-lg border border-blue-400/20 flex-shrink-0"
+                        onClick={() => setAmount(balance)}
+                      >
+                        MAX
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Info Box */}
-          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl p-3 border border-amber-400/20">
-            <p className="text-amber-200 text-xs">
-              Bridging can take up to 15 minutes after the transaction has been confirmed.
-            </p>
+            {/* You Receive */}
+            <div className="bg-black/20 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 min-h-[88px] sm:min-h-[96px] flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden p-0.5">
+                    <Image
+                      src="/icons/networks/arbitrum.svg"
+                      width={20}
+                      height={20}
+                      alt="Arbitrum"
+                      className="object-contain w-5 h-5 sm:w-5 sm:h-5"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">
+                      You Receive
+                    </p>
+                    <p className="font-medium text-white text-base truncate">
+                      {inputToken === 'eth' ? 'ETH' : 'MOONEY'} on Arbitrum
+                    </p>
+                  </div>
+                </div>
+                <div className="flex-shrink-0 min-w-[80px] sm:min-w-[140px]" aria-hidden="true" />
+              </div>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:gap-x-4 mt-2 sm:mt-3 min-h-[32px]">
+                <div className="min-w-0 flex items-center">
+                  <p className="text-white text-xl sm:text-2xl font-RobotoMono tabular-nums">
+                    {amount
+                      ? amount.endsWith('.')
+                        ? (parseFloat(amount) || 0).toLocaleString('en-US', { maximumFractionDigits: 18 }) + '.'
+                        : (parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 18 })
+                      : '0.0'}
+                  </p>
+                </div>
+                <div className="w-[160px] sm:w-[200px] shrink-0" aria-hidden="true" />
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Info Box */}
+        <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg sm:rounded-xl p-2.5 sm:p-3 border border-amber-400/20 mb-3 sm:mb-4">
+          <p className="text-amber-200 text-xs">
+            Bridging can take up to 15 minutes after the transaction has been confirmed.
+          </p>
+        </div>
+
         {/* Action Button */}
-        <div className="p-5 border-t border-white/10 bg-black/10">
+        <div className="w-full">
           {isEOA ? (
             <PrivyWeb3Button
               v5
               skipNetworkCheck={skipNetworkCheck}
               requiredChain={ethereum}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 sm:py-4 px-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
               label="Bridge to Arbitrum"
               isDisabled={!isEOA}
               action={async () => {
@@ -406,7 +419,7 @@ export default function ArbitrumBridge() {
               }}
             />
           ) : (
-            <div className="text-center w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg opacity-50 cursor-not-allowed hover:scale-100 isabled:from-gray-500 to-gray-600">
+            <div className="text-center w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 sm:py-4 px-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 shadow-lg opacity-50 cursor-not-allowed disabled:from-gray-500 disabled:to-gray-600">
               {' '}
               Multi-sig not supported{' '}
             </div>
