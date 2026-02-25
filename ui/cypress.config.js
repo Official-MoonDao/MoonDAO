@@ -6,6 +6,11 @@ const fs = require('fs')
 const axios = require('axios')
 const cypressSplit = require('cypress-split')
 
+// Set NEXT_PUBLIC_TEST_ENV=true BEFORE loading .env.local so that it takes
+// priority.  Next.js reads NEXT_PUBLIC_* from process.env when building its
+// DefinePlugin entries, so this must be in place before the dev-server starts.
+process.env.NEXT_PUBLIC_TEST_ENV = 'true'
+
 dotenv.config({ path: path.resolve(__dirname, '.env.local') })
 
 module.exports = defineConfig({
