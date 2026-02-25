@@ -1089,21 +1089,21 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
 
                     <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide pr-1">
                       {/* Native Token Balance - Always show first */}
-                      <div className="bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer group">
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/10 transition-all duration-200 cursor-default">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
                               <NativeTokenIcon />
                             </div>
                             <div>
-                              <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                              <p className="font-medium text-white">
                                 {selectedNativeToken[chainSlug]}
                               </p>
                               <p className="text-gray-400 text-xs">Native Token</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                            <p className="font-semibold text-white">
                               {Number(nativeBalance).toFixed(4)}
                             </p>
                             <p className="text-gray-400 text-xs">
@@ -1134,22 +1134,22 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                       {walletTokens.map((token: any, index: number) => (
                         <div
                           key={`${token.contractAddress}-${index}`}
-                          className="bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer group"
+                          className="bg-white/5 rounded-lg p-3 border border-white/10 transition-all duration-200 cursor-default"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200 flex items-center justify-center">
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
                                 {getTokenIcon(token.symbol, token.contractAddress)}
                               </div>
                               <div>
-                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                <p className="font-medium text-white">
                                   {token.symbol}
                                 </p>
                                 <p className="text-gray-400 text-xs">{token.name}</p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                              <p className="font-semibold text-white">
                                 {token.formattedBalance < 0.01
                                   ? token.formattedBalance.toExponential(2)
                                   : token.formattedBalance.toLocaleString(undefined, {

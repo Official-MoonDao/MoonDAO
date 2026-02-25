@@ -178,8 +178,8 @@ export const NON_PROJECT_PROPOSAL_TABLE_NAMES: Index = {
   sepolia: 'NonProjectProposal_11155111_2037',
 }
 export const PROPOSALS_ADDRESSES: Index = {
-  arbitrum: '0x1ffD3dcabB3E3CA431B02cdec81675FDD30ac357',
-  sepolia: '0x469fb064084E2543033Eb5D76Ca579CA9BEce050',
+  arbitrum: '0xaA928a1189b9320D23754f1D36B6C67d676fd6FE',
+  sepolia: '0xffeFE5820dC013fF416217059250961A5dB40973',
 }
 export const PROPOSALS_TABLE_NAMES: Index = {
   arbitrum: 'Proposals_42161_155',

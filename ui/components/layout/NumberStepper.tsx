@@ -1,4 +1,4 @@
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
+import { MinusIcon, PlusIcon } from '@heroicons/react/24/solid'
 import { useRef, useState } from 'react'
 
 type NumberStepperProps = {
@@ -44,9 +44,15 @@ export default function NumberStepper({
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const rawValue = e.target.value
-    setDisplayValue(rawValue)
+    // Allow empty string while typing
+    if (rawValue === '') {
+      setDisplayValue('')
+      return
+    }
     const value = Number(rawValue)
     if (!isNaN(value)) {
+      // Normalize to remove leading zeros (e.g. "020" → "20")
+      setDisplayValue(String(value))
       setNumber(value)
     }
   }
@@ -72,37 +78,64 @@ export default function NumberStepper({
   // Sync displayValue when number prop changes externally (e.g., from arrow buttons)
   const currentDisplayValue = isFocused ? displayValue : String(number)
 
+  const atMin = min !== undefined && number <= min
+  const atMax = max !== undefined && number >= max
+
   return (
     <div
-      className={`flex items-center justify-between min-w-[100px] w-[100px] h-[40px] sm:h-[35px] gradient-2 rounded-full flex-shrink-0 ${
-        isDisabled && 'opacity-50'
+      className={`flex items-center gap-1.5 flex-shrink-0 ${
+        isDisabled ? 'opacity-40 pointer-events-none' : ''
       }`}
+      onClick={(e) => e.stopPropagation()}
     >
-      <input
-        ref={inputRef}
-        id="number-stepper"
-        className="w-[55%] h-full bg-[#00000080] text-white text-center rounded-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-base sm:text-sm"
-        type="number"
-        value={currentDisplayValue}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        step={0}
-        disabled={isDisabled}
-      />
-      <span>%</span>
-      <div className="w-[45%] flex flex-col justify-center items-center">
-        <button onClick={increase} className="p-1 touch-manipulation">
-          <ChevronUpIcon className="w-4 h-4" strokeWidth={2.5} stroke="black" />
-        </button>
-        <button onClick={decrease} className="p-1 touch-manipulation">
-          <ChevronDownIcon
-            className="w-4 h-4"
-            strokeWidth={2.5}
-            stroke="black"
-          />
-        </button>
+      {/* Decrease button */}
+      <button
+        onClick={decrease}
+        disabled={atMin}
+        className={`w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-all duration-150 touch-manipulation ${
+          atMin
+            ? 'bg-white/5 text-white/20 cursor-not-allowed'
+            : 'bg-white/10 hover:bg-white/20 active:bg-white/25 active:scale-95 text-white/70 hover:text-white'
+        }`}
+      >
+        <MinusIcon className="w-3.5 h-3.5" strokeWidth={2} />
+      </button>
+
+      {/* Input + % label */}
+      <div className="relative flex items-center">
+        <input
+          ref={inputRef}
+          id="number-stepper"
+          className={`w-[56px] sm:w-[50px] h-8 sm:h-7 bg-white/[0.07] text-white text-center rounded-lg border transition-all duration-150 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-sm font-medium tabular-nums tracking-tight pr-5 ${
+            isFocused
+              ? 'border-blue-500/60 bg-white/10 ring-1 ring-blue-500/20'
+              : 'border-white/10 hover:border-white/20'
+          }`}
+          type="number"
+          value={currentDisplayValue}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          step={0}
+          disabled={isDisabled}
+        />
+        <span className="absolute right-2 text-white/40 text-xs font-medium pointer-events-none">
+          %
+        </span>
       </div>
+
+      {/* Increase button */}
+      <button
+        onClick={increase}
+        disabled={atMax}
+        className={`w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-all duration-150 touch-manipulation ${
+          atMax
+            ? 'bg-white/5 text-white/20 cursor-not-allowed'
+            : 'bg-white/10 hover:bg-white/20 active:bg-white/25 active:scale-95 text-white/70 hover:text-white'
+        }`}
+      >
+        <PlusIcon className="w-3.5 h-3.5" strokeWidth={2} />
+      </button>
     </div>
   )
 }

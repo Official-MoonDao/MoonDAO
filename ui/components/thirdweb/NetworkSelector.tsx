@@ -155,8 +155,7 @@ export default function NetworkSelector({
         ref={triggerRef}
         id="network-selector-dropdown-button"
         className="flex items-center gap-3 p-3 bg-black/20 rounded-2xl border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer"
-        onClick={(e) => {
-          if (e.detail === 0) return e.preventDefault()
+        onClick={() => {
           setDropdown((prev) => !prev)
         }}
       >

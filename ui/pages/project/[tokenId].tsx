@@ -50,6 +50,7 @@ import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalInfo from '@/components/nance/ProposalInfo'
 import ProposalVotes from '@/components/nance/ProposalVotes'
 import VotingResults from '@/components/nance/VotingResults'
+import ProposalEditSection from '@/components/nance/ProposalEditSection'
 import TempCheck from '@/components/project/TempCheck'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
@@ -181,15 +182,23 @@ export default function ProjectProfile({
         header={project.name}
         headerSize="max(20px, 3vw)"
         description={
-          <ProposalInfo
-            proposalJSON={proposalJSON}
-            proposalStatus={proposalStatus}
-            project={project}
-            linkDisabled
-            showTitle={false}
-            showStatus={true}
-          />
-          //'prop'
+          <div>
+            <ProposalInfo
+              proposalJSON={proposalJSON}
+              proposalStatus={proposalStatus}
+              project={project}
+              linkDisabled
+              showTitle={false}
+              showStatus={true}
+            />
+            <div className="mt-3">
+              <ProposalEditSection
+                proposalJSON={proposalJSON}
+                projectName={project.name}
+                mdp={project.MDP}
+              />
+            </div>
+          </div>
         }
         mainPadding
         mode="compact"
@@ -221,8 +230,8 @@ export default function ProjectProfile({
             iconSrc="/assets/icon-star.svg"
             action={
               <div className="flex gap-2 items-center">
-                {(project.active == PROJECT_PENDING &&
-                  proposalStatus === 'Temperature Check') || true && (
+                {project.active == PROJECT_PENDING &&
+                  proposalStatus === 'Temperature Check' && (
                   <div className="flex items-center gap-2">
                     <TempCheck mdp={project.MDP} />
                   </div>
@@ -343,7 +352,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     const statement = `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`
 
   const projects = (await queryTable(chain, statement)).filter(
-    (p: any) => !BLOCKED_PROJECTS.has(Number(p.id))
+    (p: Project) => !BLOCKED_PROJECTS.has(Number(p.id))
   )
   const project = projects[0]
 

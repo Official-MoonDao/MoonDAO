@@ -1,5 +1,7 @@
 import { Storage } from '@google-cloud/storage'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { authMiddleware } from 'middleware/authMiddleware'
+import withMiddleware from 'middleware/withMiddleware'
 
 // Add error handling for credentials parsing
 let credentials: any
@@ -58,7 +60,7 @@ function extractFilenameFromUrl(url: string): string | null {
   }
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -114,3 +116,5 @@ export default async function handler(
     })
   }
 }
+
+export default withMiddleware(handler, authMiddleware)
