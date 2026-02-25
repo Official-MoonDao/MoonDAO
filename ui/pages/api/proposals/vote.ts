@@ -288,37 +288,52 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   // Build project id -> author address so we exclude author's vote on their own proposal
   const projectIdToAuthorAddress: Record<string, string> = {}
   const missingAuthorProjectIds: string[] = []
-  await Promise.all(
-    passedProjects.map(async (project: any) => {
-      if (!project.proposalIPFS) {
-        // If there's no proposal IPFS, we cannot determine the author for this project.
+
+  // Helper to resolve the author address for a single project.
+  const processProject = async (project: any) => {
+    if (!project.proposalIPFS) {
+      // If there's no proposal IPFS, we cannot determine the author for this project.
+      missingAuthorProjectIds.push(String(project.id))
+      console.error(
+        `Missing proposalIPFS for project ${project.id}; cannot resolve authorAddress.`
+      )
+      return
+    }
+
+    try {
+      const res = await fetch(project.proposalIPFS)
+      if (!res.ok) {
         missingAuthorProjectIds.push(String(project.id))
         console.error(
-          `Missing proposalIPFS for project ${project.id}; cannot resolve authorAddress.`
+          `Non-OK response (${res.status}) when fetching proposal JSON for project ${project.id} (${project.proposalIPFS}).`
         )
         return
       }
-      try {
-        const res = await fetch(project.proposalIPFS)
-        const json = await res.json()
-        if (json && typeof json.authorAddress === 'string' && json.authorAddress.length > 0) {
-          projectIdToAuthorAddress[String(project.id)] = json.authorAddress
-        } else {
-          missingAuthorProjectIds.push(String(project.id))
-          console.error(
-            `authorAddress missing or invalid in proposal JSON for project ${project.id} (${project.proposalIPFS}).`
-          )
-        }
-      } catch (error) {
+      const json = await res.json()
+      if (json && typeof json.authorAddress === 'string' && json.authorAddress.length > 0) {
+        projectIdToAuthorAddress[String(project.id)] = json.authorAddress
+      } else {
         missingAuthorProjectIds.push(String(project.id))
         console.error(
-          `Failed to fetch/parse proposal JSON for project ${project.id} (${project.proposalIPFS}):`,
-          error
+          `authorAddress missing or invalid in proposal JSON for project ${project.id} (${project.proposalIPFS}).`
         )
       }
-    })
-  )
+    } catch (error) {
+      missingAuthorProjectIds.push(String(project.id))
+      console.error(
+        `Failed to fetch/parse proposal JSON for project ${project.id} (${project.proposalIPFS}):`,
+        error
+      )
+    }
+  }
 
+  // Process projects in small batches to avoid unbounded concurrent IPFS requests.
+  const AUTHOR_FETCH_BATCH_SIZE = 5
+  for (let i = 0; i < passedProjects.length; i += AUTHOR_FETCH_BATCH_SIZE) {
+    const batch = passedProjects.slice(i, i + AUTHOR_FETCH_BATCH_SIZE)
+    // Run each batch in parallel, but batches sequentially to limit peak concurrency.
+    await Promise.all(batch.map((project: any) => processProject(project)))
+  }
   if (missingAuthorProjectIds.length > 0) {
     console.warn(
       'Proceeding with vote close; missing author data for one or more projects.',
