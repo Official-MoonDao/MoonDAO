@@ -180,7 +180,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   })
   
   try {
-    const tableId = await readContract({
+    await readContract({
       contract: proposalContract,
       method: 'getTableId' as string,
       params: [],
@@ -343,15 +343,15 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
-      const res = await fetch(project.proposalIPFS)
-      if (!res.ok) {
+      const fetchRes = await fetch(project.proposalIPFS)
+      if (!fetchRes.ok) {
         missingAuthorProjectIds.push(String(project.id))
         console.error(
-          `Non-OK response (${res.status}) when fetching proposal JSON for project ${project.id} (${project.proposalIPFS}).`
+          `Non-OK response (${fetchRes.status}) when fetching proposal JSON for project ${project.id} (${project.proposalIPFS}).`
         )
         return
       }
-      const json = await res.json()
+      const json = await fetchRes.json()
       if (json && typeof json.authorAddress === 'string' && json.authorAddress.length > 0) {
         projectIdToAuthorAddress[String(project.id)] = json.authorAddress
       } else {
@@ -429,9 +429,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       voteAddresses,
     })
   }
-
-  const SUM_TO_ONE_HUNDRED = 100
-  const outcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
 
   console.log('[vote tally] Vote outcome:', outcome)
 
