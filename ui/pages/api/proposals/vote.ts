@@ -20,7 +20,11 @@ import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
-import { runQuadraticVoting, getApprovedProjects } from '@/lib/utils/rewards'
+import {
+  runQuadraticVoting,
+  runIterativeNormalization,
+  getApprovedProjects,
+} from '@/lib/utils/rewards'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 
 // Configuration constants
@@ -176,7 +180,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   })
   
   try {
-    const tableId = await readContract({
+    await readContract({
       contract: proposalContract,
       method: 'getTableId' as string,
       params: [],
@@ -291,7 +295,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   console.log('[vote tally] ETH budgets:', ethBudgets)
 
   const voteOpenTimestamp: number = Math.floor(
-    getThirdThursdayOfQuarterTimestamp(quarter, year) / 1000
+    Number(getThirdThursdayOfQuarterTimestamp(quarter, year)) / 1000
   )
   const voteCloseTimestamp: number = voteOpenTimestamp + 60 * 60 * 24 * 5 // 5 days after vote opens
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
@@ -323,6 +327,98 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   )
 
+  // Build project id -> author address so we exclude author's vote on their own proposal
+  const projectIdToAuthorAddress: Record<string, string> = {}
+  const missingAuthorProjectIds: string[] = []
+
+  // Helper to resolve the author address for a single project.
+  const processProject = async (project: any) => {
+    if (!project.proposalIPFS) {
+      // If there's no proposal IPFS, we cannot determine the author for this project.
+      missingAuthorProjectIds.push(String(project.id))
+      console.error(
+        `Missing proposalIPFS for project ${project.id}; cannot resolve authorAddress.`
+      )
+      return
+    }
+
+    try {
+      const fetchRes = await fetch(project.proposalIPFS)
+      if (!fetchRes.ok) {
+        missingAuthorProjectIds.push(String(project.id))
+        console.error(
+          `Non-OK response (${fetchRes.status}) when fetching proposal JSON for project ${project.id} (${project.proposalIPFS}).`
+        )
+        return
+      }
+      const json = await fetchRes.json()
+      if (json && typeof json.authorAddress === 'string' && json.authorAddress.length > 0) {
+        projectIdToAuthorAddress[String(project.id)] = json.authorAddress
+      } else {
+        missingAuthorProjectIds.push(String(project.id))
+        console.error(
+          `authorAddress missing or invalid in proposal JSON for project ${project.id} (${project.proposalIPFS}).`
+        )
+      }
+    } catch (error) {
+      missingAuthorProjectIds.push(String(project.id))
+      console.error(
+        `Failed to fetch/parse proposal JSON for project ${project.id} (${project.proposalIPFS}):`,
+        error
+      )
+    }
+  }
+
+  // Process projects in small batches to avoid unbounded concurrent IPFS requests.
+  const AUTHOR_FETCH_BATCH_SIZE = 5
+  for (let i = 0; i < passedProjects.length; i += AUTHOR_FETCH_BATCH_SIZE) {
+    const batch = passedProjects.slice(i, i + AUTHOR_FETCH_BATCH_SIZE)
+    // Run each batch in parallel, but batches sequentially to limit peak concurrency.
+    await Promise.all(batch.map((project: any) => processProject(project)))
+  }
+  if (missingAuthorProjectIds.length > 0) {
+    console.warn(
+      'Proceeding with vote close; missing author data for one or more projects.',
+      { missingAuthorProjectIds }
+    )
+  }
+  // Strip each voter's allocation to their own proposal (author cannot vote on own)
+  type VoteRow = DistributionVote & { distribution?: string | Record<string, number>; quarter?: number; year?: number }
+  const votesWithAuthorOwnExcluded: VoteRow[] = votes.map((v) => {
+    const row = v as VoteRow
+    const voterAddr = row.address?.toLowerCase()
+    const raw = row.distribution
+    const distribution: Record<string, number> = {}
+    let parsedDistribution: Record<string, number> = {}
+    if (typeof raw === 'string') {
+      try {
+        parsedDistribution = JSON.parse(raw)
+      } catch {
+        parsedDistribution = {}
+      }
+    } else if (raw && typeof raw === 'object') {
+      parsedDistribution = raw as Record<string, number>
+    }
+    for (const [projectId, value] of Object.entries(parsedDistribution)) {
+      const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
+      if (author && author === voterAddr) continue
+      distribution[projectId] = Number(value)
+    }
+    return { ...row, distribution }
+  })
+
+  // Recalculate allocations using iterative normalization (fill author's project with column average, normalize rows to 100%)
+  const [normalizedDistributions] = runIterativeNormalization(
+    votesWithAuthorOwnExcluded,
+    passedProjects
+  )
+
+  const SUM_TO_ONE_HUNDRED = 100
+  const outcome = runQuadraticVoting(
+    normalizedDistributions,
+    addressToQuadraticVotingPower,
+    SUM_TO_ONE_HUNDRED
+  )
   const totalVotingPower = Object.values(addressToQuadraticVotingPower).reduce((sum, v) => sum + v, 0)
   console.log(`[vote tally] Total quadratic voting power: ${totalVotingPower}`)
 
@@ -333,9 +429,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       voteAddresses,
     })
   }
-
-  const SUM_TO_ONE_HUNDRED = 100
-  const outcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
 
   console.log('[vote tally] Vote outcome:', outcome)
 
@@ -359,7 +452,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     outcome,
     projectIdToApproved,
     ethBudgets,
-    votes,
+    normalizedDistributions,
     addressToQuadraticVotingPower,
     voteAddresses,
     NEXT_QUARTER_BUDGET_ETH
