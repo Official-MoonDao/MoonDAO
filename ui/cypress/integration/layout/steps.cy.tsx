@@ -13,7 +13,9 @@ describe('<Steps />', () => {
       />
     )
     cy.get('#test-steps').should('exist')
-    cy.get('li').should('have.length', 3)
-    cy.get('button').should('have.class', 'step')
+    cy.contains('Step 1').should('exist')
+    cy.contains('Step 2').should('exist')
+    cy.contains('Step 3').should('exist')
+    cy.get('#test-steps button').should('have.length', 3)
   })
 })

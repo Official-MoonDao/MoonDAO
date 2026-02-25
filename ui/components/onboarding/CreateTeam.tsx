@@ -397,10 +397,10 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           description=""
         >
           <div className="flex flex-row w-full justify-center">
-            <div className="px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 flex flex-col w-full max-w-[800px]">
-              <div className="flex p-2 pb-0 flex-row w-full justify-between items-start">
+            <div className="w-full lg:max-w-[800px] flex flex-col">
+              <div className="flex items-center justify-between mb-8 px-4 md:px-0">
                 <Steps
-                  className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
+                  className="flex-1 max-w-[500px]"
                   steps={['Design', 'Profile', 'Checkout']}
                   currStep={stage}
                   lastStep={lastStage}
@@ -408,11 +408,13 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                 />
                 <button
                   onClick={() => setSelectedTier(null)}
-                  className="hover:scale-110 transition-transform"
+                  className="ml-4 p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200"
                 >
-                  <XMarkIcon width={50} height={50} className="text-white" />
+                  <XMarkIcon width={20} height={20} className="text-white/60" />
                 </button>
               </div>
+
+              <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 md:p-10">
 
               {/* Typeform form */}
               {stage === 0 && (
@@ -526,6 +528,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   )}
                 </StageContainer>
               )}
+              </div>
             </div>
           </div>
           {/* Dev Buttons */}
