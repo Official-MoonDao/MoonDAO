@@ -332,9 +332,17 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     const voterAddr = row.address?.toLowerCase()
     const raw = row.distribution
     const distribution: Record<string, number> = {}
-    for (const [projectId, value] of Object.entries(
-      typeof raw === 'string' ? JSON.parse(raw) : raw || {}
-    )) {
+    let parsedDistribution: Record<string, number> = {}
+    if (typeof raw === 'string') {
+      try {
+        parsedDistribution = JSON.parse(raw)
+      } catch {
+        parsedDistribution = {}
+      }
+    } else if (raw && typeof raw === 'object') {
+      parsedDistribution = raw as Record<string, number>
+    }
+    for (const [projectId, value] of Object.entries(parsedDistribution)) {
       const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
       if (author && author === voterAddr) continue
       distribution[projectId] = Number(value)
