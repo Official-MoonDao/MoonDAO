@@ -5,8 +5,9 @@ import {
   PROPOSALS_ADDRESSES,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
+import { gql, GraphQLClient } from 'graphql-request'
 import { GetStaticProps } from 'next'
-import Link from 'next/link'
+import { useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import {
   PROJECT_PENDING,
@@ -25,21 +26,38 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import WebsiteHead from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import PaginationButtons from '@/components/layout/PaginationButtons'
 import StandardButton from '@/components/layout/StandardButton'
 import ProposalList from '@/components/nance/ProposalList'
+import SnapshotProposalCard, {
+  SnapshotProposal,
+} from '@/components/nance/SnapshotProposalCard'
 
 type GovernanceProposalsPageProps = {
   pendingProposals: Project[]
   passedProposals: Project[]
   failedProposals: Project[]
+  snapshotProposals: SnapshotProposal[]
 }
 
 export default function GovernanceProposalsPage({
   pendingProposals,
   passedProposals,
   failedProposals,
+  snapshotProposals,
 }: GovernanceProposalsPageProps) {
   useChainDefault()
+
+  const SNAPSHOT_PER_PAGE = 8
+  const [snapshotPage, setSnapshotPage] = useState(1)
+  const snapshotMaxPage = Math.max(
+    1,
+    Math.ceil(snapshotProposals.length / SNAPSHOT_PER_PAGE)
+  )
+  const pagedSnapshots = snapshotProposals.slice(
+    (snapshotPage - 1) * SNAPSHOT_PER_PAGE,
+    snapshotPage * SNAPSHOT_PER_PAGE
+  )
 
   const title = 'Governance Proposals'
   const description =
@@ -116,10 +134,45 @@ export default function GovernanceProposalsPage({
                 </div>
               )}
 
+              {/* Historical Snapshot Proposals */}
+              {snapshotProposals.length > 0 && (
+                <div>
+                  <h2 className="text-2xl font-GoodTimes text-white mb-2">
+                    Historical Snapshot Votes
+                  </h2>
+                  <p className="text-gray-400 text-sm mb-6">
+                    All past governance votes from MoonDAO&apos;s Snapshot space (tomoondao.eth).
+                  </p>
+                  <div className="p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-stretch">
+                      {pagedSnapshots.map((proposal) => (
+                        <div
+                          key={proposal.id}
+                          className="h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]"
+                        >
+                          <SnapshotProposalCard proposal={proposal} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {snapshotMaxPage > 1 && (
+                    <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
+                      <PaginationButtons
+                        handlePageChange={setSnapshotPage}
+                        maxPage={snapshotMaxPage}
+                        pageIdx={snapshotPage}
+                        label="Page"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Empty State */}
               {pendingProposals.length === 0 &&
                 passedProposals.length === 0 &&
-                failedProposals.length === 0 && (
+                failedProposals.length === 0 &&
+                snapshotProposals.length === 0 && (
                   <div className="text-center py-16">
                     <p className="text-gray-400 text-lg mb-6">
                       No governance proposals have been submitted yet.
@@ -229,6 +282,7 @@ export const getStaticProps: GetStaticProps = async () => {
         pendingProposals: pendingProposals.reverse(),
         passedProposals: passedProposals.reverse(),
         failedProposals: failedProposals.reverse(),
+        snapshotProposals: await fetchAllSnapshotProposals(),
       },
       revalidate: 60,
     }
@@ -239,8 +293,68 @@ export const getStaticProps: GetStaticProps = async () => {
         pendingProposals: [],
         passedProposals: [],
         failedProposals: [],
+        snapshotProposals: [],
       },
       revalidate: 60,
     }
   }
+}
+
+// Fetch all proposals from Snapshot's tomoondao.eth space, paginating through results
+async function fetchAllSnapshotProposals(): Promise<SnapshotProposal[]> {
+  const snapshotEndpoint = 'https://hub.snapshot.org/graphql'
+  const snapshotClient = new GraphQLClient(snapshotEndpoint, {
+    headers: {
+      'x-api-key': process.env.NEXT_PUBLIC_SNAPSHOT_API_KEY || '',
+    },
+  })
+
+  const query = gql`
+    query AllProposals($skip: Int!) {
+      proposals(
+        first: 1000
+        skip: $skip
+        where: { space_in: ["tomoondao.eth"] }
+        orderBy: "created"
+        orderDirection: desc
+      ) {
+        id
+        title
+        state
+        choices
+        scores
+        scores_total
+        votes
+        quorum
+        start
+        end
+        author
+      }
+    }
+  `
+
+  let allProposals: SnapshotProposal[] = []
+  let skip = 0
+  let hasMore = true
+
+  while (hasMore) {
+    try {
+      const data = await snapshotClient.request<{
+        proposals: SnapshotProposal[]
+      }>(query, { skip })
+
+      allProposals = [...allProposals, ...data.proposals]
+
+      if (data.proposals.length < 1000) {
+        hasMore = false
+      } else {
+        skip += 1000
+      }
+    } catch (error) {
+      console.error('Error fetching Snapshot proposals:', error)
+      hasMore = false
+    }
+  }
+
+  return allProposals
 }
