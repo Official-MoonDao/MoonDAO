@@ -48,6 +48,7 @@ export default function useNavigation(citizen: any) {
           { name: 'Bridge $MOONEY', href: '/bridge' },
           { name: 'Token Overview', href: '/mooney' },
           { name: 'Governance Overview', href: '/governance' },
+          { name: 'Governance Proposals', href: '/governance-proposals' },
         ],
       },
       {
