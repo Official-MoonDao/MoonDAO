@@ -10,6 +10,7 @@ import { truncateTokenValue } from '@/lib/utils/numbers'
 import Card from '../layout/Card'
 import StandardButton from '../layout/StandardButton'
 import { Mission } from './MissionCard'
+import MissionDescription from './MissionDescription'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
 import MissionStat from './MissionStat'
 
@@ -98,11 +99,9 @@ export default function MissionWideCard({
         title={mission?.metadata?.name}
         subheader={mission?.metadata?.tagline}
         paragraph={
-          <div
-            className="prose prose-invert max-w-none px-[32px] md:px-0"
-            dangerouslySetInnerHTML={{
-              __html: mission?.metadata?.description || '',
-            }}
+          <MissionDescription
+            description={mission?.metadata?.description || ''}
+            className="px-[32px] md:px-0"
           />
         }
         image={

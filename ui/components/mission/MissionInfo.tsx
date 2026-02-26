@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import MissionActivityList from './MissionActivityList'
+import MissionDescription from './MissionDescription'
 import MissionPayRedeem from './MissionPayRedeem'
 import MissionSocialLinks from './MissionSocialLinks'
 import MissionTimelineChart from './MissionTimelineChart'
@@ -222,11 +223,9 @@ export default function MissionInfo({
                       />
                     </div>
                   )}
-                <div
-                  className="mt-4 prose prose-invert w-full max-w-none"
-                  dangerouslySetInnerHTML={{
-                    __html: mission?.metadata?.description || '',
-                  }}
+                <MissionDescription
+                  description={mission?.metadata?.description || ''}
+                  className="mt-4 w-full"
                 />
               </div>
             </div>

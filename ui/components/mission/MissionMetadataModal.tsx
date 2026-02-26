@@ -3,7 +3,6 @@ import JBV5ControllerABI from 'const/abis/JBV5Controller.json'
 import TeamABI from 'const/abis/Team.json'
 import { DEFAULT_CHAIN_V5, IPFS_GATEWAY, TEAM_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
-import { marked } from 'marked'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -148,7 +147,6 @@ export default function MissionMetadataModal({
 
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [descriptionHtml, setDescriptionHtml] = useState('')
 
   const chainSlug = getChainSlug(selectedChain)
   const teamContract = useContract({
@@ -255,7 +253,7 @@ export default function MissionMetadataModal({
         [
           JSON.stringify({
             name: missionData.name,
-            description: descriptionHtml,
+            description: missionData.description,
             tagline: missionData.tagline,
             infoUri: missionData.infoUri,
             socialLink: missionData.socialLink,
@@ -556,8 +554,6 @@ export default function MissionMetadataModal({
                     toast.error('Please enter a mission description')
                     return
                   }
-                  const html = await marked(missionData.description, { breaks: true })
-                  setDescriptionHtml(html)
                   setStage(3)
                 }}
                 disabled={isUploadingImage}

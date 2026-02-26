@@ -11,7 +11,6 @@ import { DEFAULT_CHAIN_V5, IPFS_GATEWAY, MISSION_TABLE_ADDRESSES } from 'const/c
 import { LAUNCHPAD_WHITELISTED_CITIZENS } from 'const/missions'
 import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
-import { marked } from 'marked'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -251,7 +250,6 @@ export default function CreateMission({
     }
   }, [selectedTeamNFT])
 
-  const [descriptionHtml, setDescriptionHtml] = useState('')
   const [signingTx, setSigningTx] = useState(false)
   const [createdMission, setCreatedMission] = useState(false)
   const [fundingGoalIsLoading, setFundingGoalIsLoading] = useState(false)
@@ -311,7 +309,7 @@ export default function CreateMission({
         [
           JSON.stringify({
             name: missionData.name,
-            description: descriptionHtml,
+            description: missionData.description,
             tagline: missionData.tagline,
             infoUri: missionData.infoUri,
             socialLink: missionData.socialLink,
@@ -952,8 +950,6 @@ export default function CreateMission({
                         style: toastStyle,
                       })
                     }
-                    const html = await marked(missionData.description, { breaks: true })
-                    setDescriptionHtml(html)
                     return true
                   }}
                 >
@@ -1049,7 +1045,7 @@ export default function CreateMission({
                           metadata: {
                             name: missionData.name,
                             tagline: missionData.tagline,
-                            description: descriptionHtml,
+                            description: missionData.description,
                             logoUri: missionData.logoUri,
                             youtubeLink: missionData.youtubeLink,
                           },
