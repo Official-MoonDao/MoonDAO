@@ -251,6 +251,7 @@ export default function CreateMission({
     }
   }, [selectedTeamNFT])
 
+  const [descriptionHtml, setDescriptionHtml] = useState('')
   const [signingTx, setSigningTx] = useState(false)
   const [createdMission, setCreatedMission] = useState(false)
   const [fundingGoalIsLoading, setFundingGoalIsLoading] = useState(false)
@@ -310,7 +311,7 @@ export default function CreateMission({
         [
           JSON.stringify({
             name: missionData.name,
-            description: missionData.description,
+            description: descriptionHtml,
             tagline: missionData.tagline,
             infoUri: missionData.infoUri,
             socialLink: missionData.socialLink,
@@ -951,8 +952,8 @@ export default function CreateMission({
                         style: toastStyle,
                       })
                     }
-                    const html = await marked(missionData.description)
-                    setMissionData({ ...missionData, description: html })
+                    const html = await marked(missionData.description, { breaks: true })
+                    setDescriptionHtml(html)
                     return true
                   }}
                 >
@@ -1048,7 +1049,7 @@ export default function CreateMission({
                           metadata: {
                             name: missionData.name,
                             tagline: missionData.tagline,
-                            description: missionData.description,
+                            description: descriptionHtml,
                             logoUri: missionData.logoUri,
                             youtubeLink: missionData.youtubeLink,
                           },

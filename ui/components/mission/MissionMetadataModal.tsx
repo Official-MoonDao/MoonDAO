@@ -148,6 +148,7 @@ export default function MissionMetadataModal({
 
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [descriptionHtml, setDescriptionHtml] = useState('')
 
   const chainSlug = getChainSlug(selectedChain)
   const teamContract = useContract({
@@ -254,7 +255,7 @@ export default function MissionMetadataModal({
         [
           JSON.stringify({
             name: missionData.name,
-            description: missionData.description,
+            description: descriptionHtml,
             tagline: missionData.tagline,
             infoUri: missionData.infoUri,
             socialLink: missionData.socialLink,
@@ -555,8 +556,8 @@ export default function MissionMetadataModal({
                     toast.error('Please enter a mission description')
                     return
                   }
-                  const html = await marked(missionData.description)
-                  setMissionData({ ...missionData, description: html })
+                  const html = await marked(missionData.description, { breaks: true })
+                  setDescriptionHtml(html)
                   setStage(3)
                 }}
                 disabled={isUploadingImage}
