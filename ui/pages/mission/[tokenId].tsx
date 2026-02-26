@@ -9,6 +9,7 @@ import { fetchTokenMetadata } from '@/lib/mission/fetchTokenServerData'
 import queryTable from '@/lib/tableland/queryTable'
 import { fetchTeamNFTAndHats } from '@/lib/team/fetchTeamServerData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import Head from '@/components/layout/Head'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionProfile from '@/components/mission/MissionProfile'
 
@@ -52,22 +53,29 @@ export default function MissionProfilePage({
   const selectedChain = DEFAULT_CHAIN_V5
 
   return (
-    <JuiceProviders projectId={mission?.projectId} selectedChain={selectedChain}>
-      <MissionProfile
-        mission={mission}
-        _stage={_stage}
-        _deadline={_deadline}
-        _refundPeriod={_refundPeriod}
-        _primaryTerminalAddress={_primaryTerminalAddress}
-        _token={_token}
-        _teamNFT={_teamNFT}
-        _teamHats={_teamHats}
-        _fundingGoal={_fundingGoal}
-        _ruleset={_ruleset}
-        _backers={_backers}
-        _citizens={_citizens}
+    <>
+      <Head
+        title={mission?.metadata?.name}
+        image={mission?.metadata?.logoUri}
+        description={mission?.metadata?.tagline}
       />
-    </JuiceProviders>
+      <JuiceProviders projectId={mission?.projectId} selectedChain={selectedChain}>
+        <MissionProfile
+          mission={mission}
+          _stage={_stage}
+          _deadline={_deadline}
+          _refundPeriod={_refundPeriod}
+          _primaryTerminalAddress={_primaryTerminalAddress}
+          _token={_token}
+          _teamNFT={_teamNFT}
+          _teamHats={_teamHats}
+          _fundingGoal={_fundingGoal}
+          _ruleset={_ruleset}
+          _backers={_backers}
+          _citizens={_citizens}
+        />
+      </JuiceProviders>
+    </>
   )
 }
 
