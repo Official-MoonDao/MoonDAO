@@ -1,12 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import { rateLimit } from 'middleware/rateLimit'
+import withMiddleware from 'middleware/withMiddleware'
 
 /**
  * GET /api/voting-power?addresses=0x1,0x2,0x3
  * Returns voting power for each address using the same calculation as project votes:
  * sqrt(total vMOONEY balance across all chains)
  */
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -34,3 +36,5 @@ export default async function handler(
     return res.status(500).json({ error: 'Failed to fetch voting power' })
   }
 }
+
+export default withMiddleware(handler, rateLimit)
