@@ -3,7 +3,6 @@ import {
   FolderIcon,
   HomeIcon,
   PlusIcon,
-  RocketLaunchIcon,
   UserGroupIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
@@ -24,7 +23,7 @@ export default function useNavigation(citizen: any) {
         icon: IconOrg,
         children: [
           { name: 'Become a Citizen', href: '/citizen' },
-          { name: 'Explore Orgs', href: '/network?tab=orgs' },
+          { name: 'Submit a Contribution', href: '/contributions' },
           { name: 'Explore Citizens', href: '/network' },
         ],
       },
@@ -33,6 +32,12 @@ export default function useNavigation(citizen: any) {
         href: '/network?tab=orgs',
         icon: UserGroupIcon,
         dynamicChildren: 'Orgs' as const,
+      },
+      {
+        name: 'Projects',
+        icon: WrenchScrewdriverIcon,
+        href: '/projects',
+        dynamicChildren: 'Projects' as const,
       },
       {
         name: '$MOONEY',
@@ -50,12 +55,6 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: 'Projects',
-        icon: WrenchScrewdriverIcon,
-        href: '/projects',
-        dynamicChildren: 'Projects' as const,
-      },
-      {
         name: 'Learn',
         icon: FolderIcon,
         href: '/info',
@@ -67,11 +66,6 @@ export default function useNavigation(citizen: any) {
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
         ],
-      },
-      {
-        name: 'Launchpad',
-        icon: RocketLaunchIcon,
-        href: '/launch',
       },
     ]
   }, [citizen])

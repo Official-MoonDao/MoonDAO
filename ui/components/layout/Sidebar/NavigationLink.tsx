@@ -75,7 +75,12 @@ const Dropdown = ({
   hasDynamicProjects,
 }: any) => {
   const isOrgsActive =
-    hasDynamicOrgs && (router.pathname.startsWith('/org') || router.pathname === '/join')
+    hasDynamicOrgs &&
+    (router.pathname.startsWith('/org') ||
+      router.pathname === '/join' ||
+      router.pathname === '/launch' ||
+      router.pathname === '/jobs' ||
+      router.pathname === '/marketplace')
   const isProjectsActive =
     hasDynamicProjects &&
     (router.pathname.startsWith('/project') ||

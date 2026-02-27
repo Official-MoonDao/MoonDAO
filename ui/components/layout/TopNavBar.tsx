@@ -112,7 +112,12 @@ const TopNavBar = ({
               const isActive =
                 router.pathname === item.href ||
                 item.children?.some((child: any) => router.pathname === child.href) ||
-                (item.dynamicChildren === 'Orgs' && router.pathname.startsWith('/org')) ||
+                (item.dynamicChildren === 'Orgs' &&
+                  (router.pathname.startsWith('/org') ||
+                    router.pathname === '/join' ||
+                    router.pathname === '/launch' ||
+                    router.pathname === '/jobs' ||
+                    router.pathname === '/marketplace')) ||
                 (item.dynamicChildren === 'Projects' &&
                   (router.pathname.startsWith('/project') ||
                     router.pathname === '/projects' ||

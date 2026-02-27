@@ -49,6 +49,11 @@ export function OrgsNavDropdown({ variant, onNavigate }: OrgsNavDropdownProps) {
         </Link>
       )}
       {wrapMobile(
+        <Link href="/network?tab=orgs" className={baseLinkClass} onClick={onNavigate}>
+          Explore Orgs
+        </Link>
+      )}
+      {wrapMobile(
         <Link href="/jobs" className={baseLinkClass} onClick={onNavigate}>
           Jobs
         </Link>
@@ -58,20 +63,23 @@ export function OrgsNavDropdown({ variant, onNavigate }: OrgsNavDropdownProps) {
           Marketplace
         </Link>
       )}
-      {isLoading ? (
-        wrapMobile(
-          <div className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-gray-400 text-sm`}>
-            Loading your orgs...
-          </div>
-        )
-      ) : orgs && orgs.length > 0 ? (
-        <>
-          {isDesktop && (
-            <div className="px-4 py-2 text-xs text-gray-400 font-medium uppercase tracking-wider mx-2">
-              Your Orgs
+      {wrapMobile(
+        <Link href="/launch" className={baseLinkClass} onClick={onNavigate}>
+          Raise Funds (Launchpad)
+        </Link>
+      )}
+      <div className={isDesktop ? 'pt-2' : ''}>
+        <div className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-xs text-gray-400 font-medium uppercase tracking-wider`}>
+          Your Orgs
+        </div>
+        {isLoading ? (
+          wrapMobile(
+            <div className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-gray-400 text-sm`}>
+              Loading your orgs...
             </div>
-          )}
-          {orgs.map((org: any) =>
+          )
+        ) : orgs && orgs.length > 0 ? (
+          orgs.map((org: any) =>
             wrapMobile(
               <OrgNavItem
                 key={org.teamId}
@@ -82,9 +90,15 @@ export function OrgsNavDropdown({ variant, onNavigate }: OrgsNavDropdownProps) {
                 onNavigate={onNavigate}
               />
             )
-          )}
-        </>
-      ) : null}
+          )
+        ) : (
+          wrapMobile(
+            <Link href="/join" className={baseLinkClass} onClick={onNavigate}>
+              No orgs yet — create one
+            </Link>
+          )
+        )}
+      </div>
     </>
   )
 }

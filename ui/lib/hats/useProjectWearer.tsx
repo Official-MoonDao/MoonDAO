@@ -129,6 +129,7 @@ export function useProjectWearer(
     if (projectContract && selectedChain) {
       getWearerProjectHats()
     } else {
+      setWornProjectHats([])
       setIsLoading(false)
     }
   }, [projectContract, selectedChain, address])

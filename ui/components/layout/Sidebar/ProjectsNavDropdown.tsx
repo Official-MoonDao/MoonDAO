@@ -57,7 +57,7 @@ export function ProjectsNavDropdown({
       )}
       {wrapMobile(
         <Link href="/projects" className={baseLinkClass} onClick={onNavigate}>
-          All Projects
+          Explore Projects
         </Link>
       )}
       {wrapMobile(
@@ -70,22 +70,20 @@ export function ProjectsNavDropdown({
           Projects Overview
         </Link>
       )}
-      {isLoading ? (
-        wrapMobile(
-          <div
-            className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-gray-400 text-sm`}
-          >
-            Loading your projects...
-          </div>
-        )
-      ) : projects && projects.length > 0 ? (
-        <>
-          {isDesktop && (
-            <div className="px-4 py-2 text-xs text-gray-400 font-medium uppercase tracking-wider mx-2">
-              Your Projects
+      <div className={isDesktop ? 'pt-2' : ''}>
+        <div className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-xs text-gray-400 font-medium uppercase tracking-wider`}>
+          Your Projects
+        </div>
+        {isLoading ? (
+          wrapMobile(
+            <div
+              className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-gray-400 text-sm`}
+            >
+              Loading your projects...
             </div>
-          )}
-          {projects.map((proj: any) =>
+          )
+        ) : projects && projects.length > 0 ? (
+          projects.map((proj: any) =>
             wrapMobile(
               <ProjectNavItem
                 key={proj.projectId}
@@ -96,9 +94,15 @@ export function ProjectsNavDropdown({
                 onNavigate={onNavigate}
               />
             )
-          )}
-        </>
-      ) : null}
+          )
+        ) : (
+          wrapMobile(
+            <Link href="/proposals" className={baseLinkClass} onClick={onNavigate}>
+              No projects yet — propose one
+            </Link>
+          )
+        )}
+      </div>
     </>
   )
 }
