@@ -78,7 +78,6 @@ export default function Quest({
   const [isLoadingStagedProgress, setIsLoadingStagedProgress] = useState(false)
   const [userMetric, setUserMetric] = useState(0)
 
-  const [referralUrl, setReferralUrl] = useState('')
   const [hasClaimed, setHasClaimed] = useState(false)
   const [isLoadingClaim, setIsLoadingClaim] = useState(false)
   const [isCheckingClaimed, setIsCheckingClaimed] = useState(true)
@@ -274,19 +273,6 @@ export default function Quest({
     fetchUserMetric,
     retryWithBackoff,
   ])
-
-  // Set referral URL on client when citizen is available
-  useEffect(() => {
-    if (
-      citizen?.owner &&
-      typeof window !== 'undefined' &&
-      quest.actionText?.includes('Copy Referral Link')
-    ) {
-      setReferralUrl(
-        `${window.location.origin}/citizen/?referredBy=${citizen.owner}`
-      )
-    }
-  }, [citizen?.owner, quest.actionText])
 
   // Define pollForClaimConfirmation after fetchStagedProgress
   const pollForClaimConfirmation = useCallback(async () => {
@@ -846,23 +832,52 @@ export default function Quest({
                   </div>
                 ) : stagedProgress ? (
                   <div className="flex flex-col gap-4 w-full min-w-0">
-                    {/* Referral quest: link + buttons in one column */}
+                    {/* Referral quest: progress bar + link + buttons (same layout as other quests) */}
                     {quest.actionText?.includes('Copy Referral Link') && (
-                      <div className="flex flex-col gap-3 w-full min-w-0">
-                        {quest.action && citizen?.owner && (
-                          <div className="text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm shadow-lg shadow-green-500/20 w-full min-w-0">
-                            <p className="text-gray-400/90 text-xs mb-0.5">
-                              Your referral link
-                            </p>
-                            <p
-                              className="text-white font-mono text-[10px] sm:text-xs break-all select-all"
-                              title={referralUrl}
-                            >
-                              {referralUrl}
+                      <div className="flex flex-col gap-4 w-full min-w-0">
+                        {/* Progress bar - matches other staged quests */}
+                        {stagedProgress && (
+                          <div className="w-full min-w-0 flex flex-col gap-1.5">
+                            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden shadow-inner">
+                              <div
+                                className="h-full min-w-[4px] bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 rounded-full transition-all duration-500 ease-out shadow-sm"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.max(
+                                      0,
+                                      (Number(userMetric) /
+                                        Math.max(
+                                          1,
+                                          Number(getNextUnclamedThreshold(stagedProgress))
+                                        )) *
+                                        100
+                                    )
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                            <p className="text-gray-400 text-xs font-medium min-w-0">
+                              {userMetric} / {getNextUnclamedThreshold(stagedProgress)} referrals
                             </p>
                           </div>
                         )}
-                        {/* Referral quest buttons - Copy Link + Claim (if eligible) + Record Referral */}
+                        {/* Copy Referral Link + Record Referral - same line, matching quest button style */}
+                        <div className="flex flex-row gap-2">
+                          {quest.action && citizen?.owner && (
+                            <button
+                              onClick={quest.action}
+                              className={`${getButtonClasses()} flex-1 min-w-0 gap-2`}
+                            >
+                              <ClipboardDocumentIcon className="w-4 h-4 flex-shrink-0" />
+                              Copy Referral Link
+                            </button>
+                          )}
+                          {!isCompleted && ModalButton && (
+                            <ModalButton className={`${getButtonClasses()} flex-1 min-w-0 gap-2`} />
+                          )}
+                        </div>
+                        {/* Claim button + error */}
                         <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
                           {!isCompleted &&
                             !needsGitHubLink &&
@@ -884,16 +899,6 @@ export default function Quest({
                               />
                             )}
                           {getErrorButton(error || '')}
-                          {!isCompleted && quest.action && citizen?.owner && (
-                            <button
-                              onClick={quest.action}
-                              className={`${getButtonClasses()} gap-1.5`}
-                            >
-                              <ClipboardDocumentIcon className="w-4 h-4 flex-shrink-0" />
-                              Copy Link
-                            </button>
-                          )}
-                          {!isCompleted && ModalButton && <ModalButton />}
                         </div>
                       </div>
                     )}

@@ -203,18 +203,28 @@ export default function SignedInDashboard({
   const [clientNewsletters, setClientNewsletters] = useState<any[]>([])
   const [newslettersLoading, setNewslettersLoading] = useState(false)
 
-  // Fetch newsletters on client-side to get real ConvertKit data
+  // Fetch newsletters on client-side
   useEffect(() => {
-    const fetchNewsletters = async () => {
+    const fetchNewsletters = async (retries = 2) => {
       setNewslettersLoading(true)
       try {
-        const response = await fetch('/api/newsletters')
-        if (response.ok) {
-          const data = await response.json()
-          setClientNewsletters(data.newsletters || [])
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          const response = await fetch('/api/newsletters', {
+            cache: 'no-store',
+            headers: { Accept: 'application/json' },
+          })
+          const data = await response.json().catch(() => ({}))
+          const newsletters = data?.newsletters
+          if (Array.isArray(newsletters)) {
+            setClientNewsletters(newsletters)
+            return
+          }
+          if (attempt < retries) {
+            await new Promise((r) => setTimeout(r, 500 * (attempt + 1)))
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch newsletters:', error)
+        console.warn('Newsletter fetch failed:', error)
       } finally {
         setNewslettersLoading(false)
       }
@@ -1047,18 +1057,18 @@ export default function SignedInDashboard({
           {shouldShowTeamsSection(teamHats, isLoadingTeams) && (
             <div
               data-testid="dashboard-your-teams-section"
-              className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8"
+              className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-5"
             >
-              <div className="mb-6">
+              <div className="mb-3">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                    <UserGroupIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <h3 className="text-base sm:text-lg font-bold text-white mb-1 flex items-center gap-2">
+                    <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                     <span className="leading-tight">Your Teams</span>
                   </h3>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <DashboardTeams
                   selectedChain={selectedChain}
                   hatsContract={hatsContract}

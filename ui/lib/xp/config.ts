@@ -35,6 +35,7 @@ export const XP_VERIFIERS = [
     icon: UserGroupIcon,
     actionText: '📋 Copy Referral Link',
     modalButton: CitizenReferral,
+    metricFormatting: (n: number) => `${n} referral${n === 1 ? '' : 's'}`,
   },
   {
     verifierId: 0,
