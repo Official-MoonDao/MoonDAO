@@ -160,6 +160,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
+  const [isSubmittingTypeform, setIsSubmittingTypeform] = useState(false)
 
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
@@ -769,15 +770,30 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     async (formResponse: any) => {
       const { formId, responseId } = formResponse
 
-      const cleanedData = await handleTypeformSubmission({
-        formId,
-        responseId,
-        formatter: formatCitizenShortFormData,
-      })
+      setIsSubmittingTypeform(true)
+      try {
+        const cleanedData = await handleTypeformSubmission({
+          formId,
+          responseId,
+          formatter: formatCitizenShortFormData,
+        })
 
-      await subscribeToNetworkSignup(cleanedData.email)
-      setCitizenData(cleanedData as any)
-      setStage(2)
+        // Subscribe to ConvertKit in background - don't block the flow
+        subscribeToNetworkSignup(cleanedData.email).catch((err) => {
+          console.warn('ConvertKit signup failed (non-blocking):', err)
+        })
+
+        setCitizenData(cleanedData as any)
+        setStage(2)
+      } catch (error: any) {
+        console.error('Typeform submission error:', error)
+        toast.error(
+          error?.message || 'Failed to process your profile. Please try again or contact support.',
+          { duration: 8000 }
+        )
+      } finally {
+        setIsSubmittingTypeform(false)
+      }
     },
     [subscribeToNetworkSignup]
   )
@@ -1053,6 +1069,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 description="Please complete your citizen profile."
               >
                 <div className="w-full max-w-[900px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
+                  {isSubmittingTypeform && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl">
+                      <div className="flex flex-col items-center gap-4">
+                        <Image
+                          src="/assets/MoonDAO-Loading-Animation.svg"
+                          alt="Processing"
+                          width={80}
+                          height={80}
+                          className="animate-pulse"
+                        />
+                        <p className="text-white font-medium">
+                          Processing your profile...
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <Widget
                     className="w-full"
                     id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string}
