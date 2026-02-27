@@ -179,7 +179,7 @@ const MissionProfileHeader = React.memo(
                     by
                   </span>
                   <Link
-                    href={`/team/${generatePrettyLink(
+                    href={`/org/${generatePrettyLink(
                       teamNFT?.metadata?.name
                     )}`}
                     className="font-GoodTimes text-white hover:text-purple-300 underline transition-colors duration-200"

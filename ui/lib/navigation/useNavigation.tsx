@@ -3,7 +3,7 @@ import {
   FolderIcon,
   HomeIcon,
   PlusIcon,
-  RocketLaunchIcon,
+  UserGroupIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
@@ -23,17 +23,21 @@ export default function useNavigation(citizen: any) {
         icon: IconOrg,
         children: [
           { name: 'Become a Citizen', href: '/citizen' },
-          { name: 'Create a Team', href: '/team' },
+          { name: 'Submit a Contribution', href: '/contributions' },
           { name: 'Explore Citizens', href: '/network' },
-          {
-            name: 'Jobs',
-            href: '/jobs',
-          },
-          {
-            name: 'Marketplace',
-            href: '/marketplace',
-          },
         ],
+      },
+      {
+        name: 'Orgs',
+        href: '/network?tab=orgs',
+        icon: UserGroupIcon,
+        dynamicChildren: 'Orgs' as const,
+      },
+      {
+        name: 'Projects',
+        icon: WrenchScrewdriverIcon,
+        href: '/projects',
+        dynamicChildren: 'Projects' as const,
       },
       {
         name: '$MOONEY',
@@ -51,26 +55,6 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: 'Projects',
-        icon: WrenchScrewdriverIcon,
-        href: '/projects',
-        children: [
-          {
-            name: 'Propose Project',
-            href: '/proposals',
-          },
-          {
-            name: 'Projects',
-            href: '/projects',
-          },
-          {
-            name: 'Submit Contribution',
-            href: '/contributions',
-          },
-          { name: 'Projects Overview', href: '/projects-overview' },
-        ],
-      },
-      {
         name: 'Learn',
         icon: FolderIcon,
         href: '/info',
@@ -82,11 +66,6 @@ export default function useNavigation(citizen: any) {
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
         ],
-      },
-      {
-        name: 'Launchpad',
-        icon: RocketLaunchIcon,
-        href: '/launch',
       },
     ]
   }, [citizen])

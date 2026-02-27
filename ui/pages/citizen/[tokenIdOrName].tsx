@@ -504,7 +504,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
             )}
             {hats && hats?.length > 0 && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
+                <h2 className="font-GoodTimes text-2xl text-white mb-6">Orgs</h2>
                 <div className="space-y-4">
                   {hats?.map((hat: any) => (
                     <div

@@ -130,10 +130,10 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       setTimeout(async () => {
         await sendDiscordMessage(
           'networkNotifications',
-          `## [**${teamName}**](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) has created a team in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
+          `## [**${teamName}**](${DEPLOYED_ORIGIN}/org/${teamPrettyLink}?_timestamp=123456789) has created an org in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
         )
 
-        router.push(`/team/${teamPrettyLink}`)
+        router.push(`/org/${teamPrettyLink}`)
         setIsLoadingMint(false)
       }, 10000)
     },
@@ -432,8 +432,8 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
               {/* Upload & Create Image */}
               {stage === 1 && (
                 <StageContainer
-                  title="Team Profile"
-                  description="Please complete your team profile by filling out the form below."
+                  title="Org Profile"
+                  description="Please complete your org profile by filling out the form below."
                 >
                   <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
                     <Widget
@@ -449,11 +449,11 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
               {stage === 2 && (
                 <StageContainer
                   title="Review & Mint"
-                  description="Please review your team information before finalizing your registration on the blockchain."
+                  description="Please review your org information before finalizing your registration on the blockchain."
                 >
                   {teamImage && (
                     <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">Team Image Preview</h3>
+                      <h3 className="text-lg font-semibold text-white mb-4">Org Image Preview</h3>
                       <div className="flex justify-start">
                         <Image
                           src={URL.createObjectURL(teamImage)}
@@ -469,7 +469,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
                     <DataOverview
                       data={teamData}
-                      title="Team Overview"
+                      title="Org Overview"
                       excludeKeys={['formResponseId']}
                     />
                   </div>
@@ -486,7 +486,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           ecosystem.
                           <br />
                           <br />
-                          You can add more signers later via your Team management portal.
+                          You can add more signers later via your Org management portal.
                         </p>
                       </div>
                       <div className="flex flex-col bg-slate-800/50 border border-slate-600/30 rounded-[20px] pb-10 p-5 mt-5">
@@ -496,7 +496,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           currently connected wallet will act as the Manager.
                           <br />
                           <br />
-                          You can add a manager or members to your organization using your Team
+                          You can add a manager or members to your organization using your Org
                           Management Portal.
                         </p>
                       </div>
@@ -508,7 +508,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   <TermsCheckbox checked={agreedToCondition} onChange={setAgreedToCondition} />
                   <PrivyWeb3Button
                     id="team-checkout-button"
-                    label={isLoadingMint ? 'Creating Team...' : 'Create Team'}
+                    label={isLoadingMint ? 'Creating Org...' : 'Create Org'}
                     className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     isDisabled={!agreedToCondition || isLoadingMint || isLoadingGasEstimate}
                     action={callMint}
@@ -516,7 +516,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   {isLoadingMint && (
                     <div className="mt-4 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl">
                       <p className="text-slate-300 text-center">
-                        Creating your team on the blockchain...
+                        Creating your org on the blockchain...
                       </p>
                       <p className="text-slate-400 text-sm text-center mt-2">
                         This process can take up to a minute. Please wait while the transaction is

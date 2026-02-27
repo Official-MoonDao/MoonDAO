@@ -6,6 +6,8 @@ import Image from 'next/image'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import LanguageChange from './Sidebar/LanguageChange'
+import { OrgsNavDropdown } from './Sidebar/OrgsNavDropdown'
+import { ProjectsNavDropdown } from './Sidebar/ProjectsNavDropdown'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { LogoSidebar } from '../assets'
 
@@ -106,19 +108,31 @@ const TopNavBar = ({
           <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-1 justify-center max-w-[1024px] mx-auto">
             {navigation.map((item, i) => {
               if (!item) return null
-              
-              const isActive = 
+              const hasDropdown = item.children || item.dynamicChildren
+              const isActive =
                 router.pathname === item.href ||
-                item.children?.some((child: any) => router.pathname === child.href)
+                item.children?.some((child: any) => router.pathname === child.href) ||
+                (item.dynamicChildren === 'Orgs' &&
+                  (router.pathname.startsWith('/org') ||
+                    router.pathname === '/join' ||
+                    router.pathname === '/launch' ||
+                    router.pathname === '/jobs' ||
+                    router.pathname === '/marketplace')) ||
+                (item.dynamicChildren === 'Projects' &&
+                  (router.pathname.startsWith('/project') ||
+                    router.pathname === '/projects' ||
+                    router.pathname === '/proposals' ||
+                    router.pathname === '/contributions' ||
+                    router.pathname === '/projects-overview'))
 
               return (
                 <div
                   key={i}
                   className="relative dropdown-container"
-                  onMouseEnter={() => item.children && handleDropdownEnter(item.name)}
-                  onMouseLeave={() => item.children && handleDropdownLeave()}
+                  onMouseEnter={() => hasDropdown && handleDropdownEnter(item.name)}
+                  onMouseLeave={() => hasDropdown && handleDropdownLeave()}
                 >
-                  {item.children ? (
+                  {hasDropdown ? (
                     // For items with children, check if they also have an href
                     item.href ? (
                       // If they have both children and href, make it a clickable link with dropdown on hover
@@ -163,8 +177,8 @@ const TopNavBar = ({
                   )}
 
                   {/* Dropdown Menu */}
-                  {item.children && openDropdown === item.name && (
-                    <div 
+                  {hasDropdown && openDropdown === item.name && (
+                    <div
                       className="absolute top-full left-0 w-full z-50"
                       onMouseEnter={() => handleDropdownEnter(item.name)}
                       onMouseLeave={handleDropdownLeave}
@@ -172,31 +186,35 @@ const TopNavBar = ({
                       {/* Invisible bridge to prevent dropdown from closing when moving mouse */}
                       <div className="h-2 w-full"></div>
                       <div className="w-56 bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 rounded-xl">
-                      {item.children.map((child: any, j: number) => {
-                        if (!child.href) {
-                          return (
-                            <div key={j} className="px-4 py-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
-                              {child.name}
-                            </div>
-                          )
-                        }
-                        
-                        const isChildActive = router.pathname === child.href
-
-                        return (
-                          <Link
-                            key={j}
-                            href={child.href}
-                            className={`block px-4 py-2 text-sm transition-all duration-200 mx-2 rounded-lg ${
-                              isChildActive
-                                ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
-                                : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
-                            }`}
-                          >
-                            {child.name}
-                          </Link>
-                        )
-                      })}
+                        {item.dynamicChildren === 'Orgs' ? (
+                          <OrgsNavDropdown variant="desktop" />
+                        ) : item.dynamicChildren === 'Projects' ? (
+                          <ProjectsNavDropdown variant="desktop" />
+                        ) : (
+                          item.children?.map((child: any, j: number) => {
+                            if (!child.href) {
+                              return (
+                                <div key={j} className="px-4 py-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                  {child.name}
+                                </div>
+                              )
+                            }
+                            const isChildActive = router.pathname === child.href
+                            return (
+                              <Link
+                                key={j}
+                                href={child.href}
+                                className={`block px-4 py-2 text-sm transition-all duration-200 mx-2 rounded-lg ${
+                                  isChildActive
+                                    ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
+                                    : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
+                                }`}
+                              >
+                                {child.name}
+                              </Link>
+                            )
+                          })
+                        )}
                       </div>
                     </div>
                   )}

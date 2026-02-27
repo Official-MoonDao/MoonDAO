@@ -7,7 +7,7 @@
 import TeamABI from 'const/abis/Team.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import { TEAM_ADDRESSES, TEAM_TABLE_NAMES, TEAM_TABLE_ADDRESSES } from 'const/config'
-import { BLOCKED_TEAMS } from 'const/whitelist'
+import { BLOCKED_ORGS } from 'const/whitelist'
 import { Chain, getContract, NFT, readContract } from 'thirdweb'
 import { TeamRow, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
@@ -111,7 +111,7 @@ export async function fetchTeamsWithOwners(
 
     const teams: NFT[] = []
     for (const row of teamRows) {
-      if (!BLOCKED_TEAMS.has(row.id)) {
+      if (!BLOCKED_ORGS.has(row.id)) {
         try {
           teams.push(teamRowToNFT(row as TeamRow))
         } catch (error) {
@@ -190,7 +190,7 @@ export async function fetchTeamWithOwner(
     const teamStatement = `SELECT * FROM ${teamTableName} WHERE id = ${teamId}`
     const teamRows: any = await queryTable(chain, teamStatement)
 
-    if (!teamRows || teamRows.length === 0 || BLOCKED_TEAMS.has(Number(teamId))) {
+    if (!teamRows || teamRows.length === 0 || BLOCKED_ORGS.has(Number(teamId))) {
       return null
     }
 

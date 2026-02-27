@@ -1,6 +1,6 @@
 import { NFT } from 'thirdweb'
 
-export type NetworkTab = 'citizens' | 'teams' | 'map'
+export type NetworkTab = 'citizens' | 'orgs' | 'map'
 
 export type NetworkNFT = NFT & {
   metadata: {

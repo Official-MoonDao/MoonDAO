@@ -3,6 +3,8 @@ import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { OrgsNavDropdown } from './OrgsNavDropdown'
+import { ProjectsNavDropdown } from './ProjectsNavDropdown'
 
 //Checks if the navigation object has a property 'external' set to true, if so returns a link that opens another tab, otherwise checks if the navigation object has children. If it does, it returns the dropdown, if it doesn't it returns an internal navigation link.
 
@@ -10,6 +12,7 @@ const NavigationLink = ({ item, setSidebarOpen, index = 0 }: any) => {
   const router = useRouter()
   const { t } = useTranslation('common')
   if (!item) return <></>
+  const hasDropdown = item.children || item.dynamicChildren
   return (
     <li
       className={`list-none font-RobotoMono font-normal text-sm md:text-base text-white animate-slideInLeft`}
@@ -35,7 +38,7 @@ const NavigationLink = ({ item, setSidebarOpen, index = 0 }: any) => {
             {t(item.name)}
           </div>
         </Link>
-      ) : !item.children ? (
+      ) : !hasDropdown ? (
         <Link href={item.href} passHref>
           <div
             className={`${
@@ -52,23 +55,51 @@ const NavigationLink = ({ item, setSidebarOpen, index = 0 }: any) => {
           </div>
         </Link>
       ) : (
-        <Dropdown item={item} router={router} setSidebarOpen={setSidebarOpen} />
+        <Dropdown
+          item={item}
+          router={router}
+          setSidebarOpen={setSidebarOpen}
+          hasDynamicOrgs={item.dynamicChildren === 'Orgs'}
+          hasDynamicProjects={item.dynamicChildren === 'Projects'}
+        />
       )}
     </li>
   )
 }
 
-const Dropdown = ({ item, router, setSidebarOpen }: any) => {
+const Dropdown = ({
+  item,
+  router,
+  setSidebarOpen,
+  hasDynamicOrgs,
+  hasDynamicProjects,
+}: any) => {
+  const isOrgsActive =
+    hasDynamicOrgs &&
+    (router.pathname.startsWith('/org') ||
+      router.pathname === '/join' ||
+      router.pathname === '/launch' ||
+      router.pathname === '/jobs' ||
+      router.pathname === '/marketplace')
+  const isProjectsActive =
+    hasDynamicProjects &&
+    (router.pathname.startsWith('/project') ||
+      router.pathname === '/projects' ||
+      router.pathname === '/proposals' ||
+      router.pathname === '/contributions' ||
+      router.pathname === '/projects-overview')
+  const isChildrenActive =
+    item?.children?.some((e: any) => e.href === router.pathname) || item.href === router.pathname
+
   return (
     <Disclosure
       className="tracking-tighter"
       as="div"
       defaultOpen={
-        item?.children?.some((e: any) => e.href === router.pathname) ||
-        item.href === '/join'
+        isChildrenActive || isOrgsActive || isProjectsActive || item.href === '/join'
       }
       onClick={({ target }: any) => {
-        if (item.href) {
+        if (item.href && !hasDynamicOrgs && !hasDynamicProjects) {
           const expanded = target.getAttribute('aria-expanded')
           if (expanded === 'false') router.push(item.href)
         }
@@ -78,9 +109,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
         <>
           <Disclosure.Button
             className={`${
-              item?.children
-                ?.map((e: any) => e.href)
-                ?.includes(router.pathname) || router.pathname == item.href
+              isChildrenActive || isOrgsActive || isProjectsActive
                 ? 'bg-gradient-to-r from-blue-500/30 to-purple-500/30 text-white border border-blue-400/50 hover:scale-100 font-semibold'
                 : 'hover:bg-white/10 text-white'
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-200`}
@@ -89,23 +118,16 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
               className="flex"
               onClick={(e) => {
                 open && e.stopPropagation()
-                item.href && router.push(item.href)
+                if (item.href && !hasDynamicOrgs && !hasDynamicProjects)
+                  router.push(item.href)
               }}
             >
-              <item.icon
-                className={`mr-2 h-5 w-5  ${item?.children
-                  ?.map((e: any) => e.href)
-                  ?.includes(router.pathname)}`}
-                aria-hidden="true"
-              />
+              <item.icon className="mr-2 h-5 w-5" aria-hidden="true" />
               {item.name}
             </div>
             <span className="ml-4">
               <ChevronRightIcon
-                className={`
-            ${open && 'rotate-90'}
-            'h-5 w-5 translate-all duration-150 text-white'
-            `}
+                className={`${open && 'rotate-90'} h-5 w-5 translate-all duration-150 text-white`}
                 aria-hidden="true"
               />
             </span>
@@ -119,38 +141,54 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
             leaveTo="transform scale-95 opacity-0"
           >
             <Disclosure.Panel as="ul" className="pl-10">
-              {item.children.map((subItem: any) => {
-                if (subItem.href) {
-                  return (
-                    <li
-                      key={subItem.name}
-                      className="list-disc marker:text-white group hover:scale-105 transition-all duration-150"
-                      onClick={() => setSidebarOpen && setSidebarOpen(false)}
-                    >
-                      <Link
-                        href={subItem.href}
-                        className={`${
-                          router.asPath == subItem.href ||
-                          router.asPath == subItem.dynamicHref
-                            ? 'text-blue-300 font-semibold'
-                            : 'text-gray-300 hover:text-white'
-                        } my-3 flex items-center transition-colors duration-200`}
+              {hasDynamicOrgs ? (
+                <div onClick={() => setSidebarOpen && setSidebarOpen(false)}>
+                  <OrgsNavDropdown
+                    variant="mobile"
+                    onNavigate={() => setSidebarOpen && setSidebarOpen(false)}
+                  />
+                </div>
+              ) : hasDynamicProjects ? (
+                <div onClick={() => setSidebarOpen && setSidebarOpen(false)}>
+                  <ProjectsNavDropdown
+                    variant="mobile"
+                    onNavigate={() => setSidebarOpen && setSidebarOpen(false)}
+                  />
+                </div>
+              ) : (
+                item.children?.map((subItem: any) => {
+                  if (subItem.href) {
+                    return (
+                      <li
+                        key={subItem.name}
+                        className="list-disc marker:text-white group hover:scale-105 transition-all duration-150"
+                        onClick={() => setSidebarOpen && setSidebarOpen(false)}
+                      >
+                        <Link
+                          href={subItem.href}
+                          className={`${
+                            router.asPath == subItem.href ||
+                            router.asPath == subItem.dynamicHref
+                              ? 'text-blue-300 font-semibold'
+                              : 'text-gray-300 hover:text-white'
+                          } my-3 flex items-center transition-colors duration-200`}
+                        >
+                          {subItem.name}
+                        </Link>
+                      </li>
+                    )
+                  } else {
+                    return (
+                      <p
+                        className="relative right-[15%] text-[75%] opacity-75 text-gray-400"
+                        key={subItem.name}
                       >
                         {subItem.name}
-                      </Link>
-                    </li>
-                  )
-                } else {
-                  return (
-                    <p
-                      className="relative right-[15%] text-[75%] opacity-75 text-gray-400"
-                      key={subItem.name}
-                    >
-                      {subItem.name}
-                    </p>
-                  )
-                }
-              })}
+                      </p>
+                    )
+                  }
+                })
+              )}
             </Disclosure.Panel>
           </Transition>
         </>

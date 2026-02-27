@@ -271,7 +271,7 @@ export default function ProjectProfile({
           )}
 
           <SectionCard
-            header="Meet the Team"
+            header="Meet the Org"
             iconSrc="/assets/icon-team.svg"
             action={
               isManager && (

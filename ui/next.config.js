@@ -281,7 +281,12 @@ module.exports = withBundleAnalyzer(
           },
           {
             source: '/teams',
-            destination: '/network?tab=teams',
+            destination: '/network?tab=orgs',
+            permanent: true,
+          },
+          {
+            source: '/team/:path*',
+            destination: '/org/:path*',
             permanent: true,
           },
           {

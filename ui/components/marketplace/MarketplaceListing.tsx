@@ -57,7 +57,7 @@ export default function MarketplaceListing({
     }
 
     if (nftError) {
-      router.push(`/team/${listing.teamId}?listing=${listing.id}`)
+      router.push(`/org/${listing.teamId}?listing=${listing.id}`)
       return
     }
 
@@ -67,7 +67,7 @@ export default function MarketplaceListing({
   const handleTeamClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     router.push(
-      `/team/${
+      `/org/${
         listing.teamName ? generatePrettyLink(listing.teamName) : listing.teamId
       }`
     )
@@ -83,7 +83,7 @@ export default function MarketplaceListing({
               className="text-slate-300 hover:underline transition-colors text-left text-sm"
               onClick={handleTeamClick}
             >
-              {listing.teamName || `Team ${listing.teamId}`}
+              {listing.teamName || `Org ${listing.teamId}`}
             </button>
           }
           paragraph={listing.description}

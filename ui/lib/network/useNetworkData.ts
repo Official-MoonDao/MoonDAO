@@ -24,8 +24,8 @@ import {
   buildSearchClause,
   buildPaginationClause,
   calculateMaxPage,
-  sortTeamsWithFeatured,
-  filterBlockedTeams,
+  sortOrgsWithFeatured,
+  filterBlockedOrgs,
   filterBlockedCitizens,
 } from './utils'
 
@@ -87,7 +87,7 @@ export function useTableNames() {
   return { teamTableName, citizenTableName }
 }
 
-export function useTeamsCount(
+export function useOrgsCount(
   search: string = '',
   enabled: boolean = true
 ): { count: number; isLoading: boolean } {
@@ -123,10 +123,10 @@ export function useCitizensCount(
   return { count: Number(count), isLoading }
 }
 
-export function useTeams(options: UseNetworkDataOptions = {}): NetworkDataResult<NetworkNFT> {
+export function useOrgs(options: UseNetworkDataOptions = {}): NetworkDataResult<NetworkNFT> {
   const { page = 1, pageSize = PAGE_SIZE, search = '', enabled = true, initialData } = options
   const { teamTableName } = useTableNames()
-  const { count, isLoading: countLoading } = useTeamsCount(search, enabled)
+  const { count, isLoading: countLoading } = useOrgsCount(search, enabled)
 
   const searchClause = buildSearchClause(search)
   const paginationClause = buildPaginationClause(page, pageSize)
@@ -163,14 +163,14 @@ export function useTeams(options: UseNetworkDataOptions = {}): NetworkDataResult
       .filter((team): team is NetworkNFT => team !== null)
   }, [rows])
 
-  const filteredTeams = useMemo(() => filterBlockedTeams(teams), [teams])
+  const filteredOrgs = useMemo(() => filterBlockedOrgs(teams), [teams])
 
-  const sortedTeams = useMemo(() => sortTeamsWithFeatured(filteredTeams), [filteredTeams])
+  const sortedOrgs = useMemo(() => sortOrgsWithFeatured(filteredOrgs), [filteredOrgs])
 
   const maxPage = calculateMaxPage(count, pageSize)
 
   return {
-    data: sortedTeams,
+    data: sortedOrgs,
     isLoading: countLoading || rowsLoading,
     error: error || null,
     totalCount: count,
@@ -231,45 +231,45 @@ export function useCitizens(options: UseNetworkDataOptions = {}): NetworkDataRes
   }
 }
 
-export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataResult<NetworkNFT> {
+export function useValidOrgs(options: UseNetworkDataOptions = {}): NetworkDataResult<NetworkNFT> {
   const { page = 1, pageSize = PAGE_SIZE } = options
   const { selectedChain } = useContext(ChainContextV5)
   const chain = selectedChain || DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
-  // Fetch all teams without SQL pagination — we paginate after validation
-  // to ensure consistent page sizes (expired teams are filtered client-side)
-  const teamsResult = useTeams({ ...options, page: 1, pageSize: FETCH_ALL_LIMIT })
+  // Fetch all orgs without SQL pagination — we paginate after validation
+  // to ensure consistent page sizes (expired orgs are filtered client-side)
+  const orgsResult = useOrgs({ ...options, page: 1, pageSize: FETCH_ALL_LIMIT })
   // Show data optimistically while validation happens
-  const [validTeams, setValidTeams] = useState<NetworkNFT[]>(teamsResult.data || [])
+  const [validOrgs, setValidOrgs] = useState<NetworkNFT[]>(orgsResult.data || [])
   const [isValidating, setIsValidating] = useState(false)
   const [validationError, setValidationError] = useState<Error | null>(null)
   const lastValidatedDataKeyRef = useRef<string>('')
 
   // Create a stable reference key
   const dataKey = useMemo(() => {
-    if (!teamsResult.data || teamsResult.data.length === 0) return ''
-    return teamsResult.data.map((t) => t.metadata.id).join(',')
-  }, [teamsResult.data])
+    if (!orgsResult.data || orgsResult.data.length === 0) return ''
+    return orgsResult.data.map((t) => t.metadata.id).join(',')
+  }, [orgsResult.data])
 
   useEffect(() => {
     if (dataKey !== lastValidatedDataKeyRef.current) {
-      if (teamsResult.data) {
-        setValidTeams(teamsResult.data)
+      if (orgsResult.data) {
+        setValidOrgs(orgsResult.data)
       }
     }
-  }, [dataKey, teamsResult.data])
+  }, [dataKey, orgsResult.data])
 
   useEffect(() => {
-    async function validateTeams() {
-      if (!teamsResult.data || teamsResult.data.length === 0) {
-        setValidTeams([])
+    async function validateOrgs() {
+      if (!orgsResult.data || orgsResult.data.length === 0) {
+        setValidOrgs([])
         setIsValidating(false)
         lastValidatedDataKeyRef.current = ''
         return
       }
 
       // Skip validation if data hasn't changed
-      const currentDataKey = teamsResult.data.map((t) => t.metadata.id).join(',')
+      const currentDataKey = orgsResult.data.map((t) => t.metadata.id).join(',')
       if (currentDataKey === lastValidatedDataKeyRef.current) {
         return
       }
@@ -287,16 +287,16 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
         })
 
         const now = Math.floor(Date.now() / 1000)
-        const teamIds = teamsResult.data.map((t) => t.metadata.id)
+        const orgIds = orgsResult.data.map((t) => t.metadata.id)
 
         // Use batched validation with controlled concurrency
         const BATCH_SIZE = 25 // Smaller batches for client-side
         const batches = []
-        for (let i = 0; i < teamIds.length; i += BATCH_SIZE) {
-          batches.push(teamIds.slice(i, i + BATCH_SIZE))
+        for (let i = 0; i < orgIds.length; i += BATCH_SIZE) {
+          batches.push(orgIds.slice(i, i + BATCH_SIZE))
         }
 
-        const validTeamsMap = new Map<string | number, NetworkNFT>()
+        const validOrgsMap = new Map<string | number, NetworkNFT>()
 
         // Process batches with controlled concurrency
         for (const batch of batches) {
@@ -314,7 +314,7 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
                 }
               } catch (error) {
                 console.warn(
-                  `Error checking expiration for team ${id}, showing optimistically:`,
+                  `Error checking expiration for org ${id}, showing optimistically:`,
                   error
                 )
                 return { id, isValid: true } // Optimistic on error
@@ -324,22 +324,22 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
 
           for (const result of validationResults) {
             if (result.status === 'fulfilled' && result.value.isValid) {
-              const team = teamsResult.data.find((t) => t.metadata.id === result.value.id)
-              if (team) {
-                validTeamsMap.set(result.value.id, team)
+              const org = orgsResult.data.find((t) => t.metadata.id === result.value.id)
+              if (org) {
+                validOrgsMap.set(result.value.id, org)
               }
             }
           }
         }
 
-        const valid = teamsResult.data.filter((team) => validTeamsMap.has(team.metadata.id))
+        const valid = orgsResult.data.filter((org) => validOrgsMap.has(org.metadata.id))
 
         // Only update if we got valid results, otherwise keep optimistic data
         if (valid.length > 0) {
-          setValidTeams(valid)
+          setValidOrgs(valid)
         }
       } catch (error) {
-        console.error('Error validating teams:', error)
+        console.error('Error validating orgs:', error)
         setValidationError(error as Error)
         // Don't clear data on error - keep showing optimistic data
       } finally {
@@ -347,25 +347,25 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
       }
     }
 
-    validateTeams()
-  }, [dataKey, chain, chainSlug, teamsResult.data])
+    validateOrgs()
+  }, [dataKey, chain, chainSlug, orgsResult.data])
 
   // Paginate after validation to ensure consistent page sizes
-  const paginatedTeams = useMemo(() => {
+  const paginatedOrgs = useMemo(() => {
     const start = (page - 1) * pageSize
-    return validTeams.slice(start, start + pageSize)
-  }, [validTeams, page, pageSize])
+    return validOrgs.slice(start, start + pageSize)
+  }, [validOrgs, page, pageSize])
 
   const validMaxPage = useMemo(
-    () => calculateMaxPage(validTeams.length, pageSize),
-    [validTeams.length, pageSize]
+    () => calculateMaxPage(validOrgs.length, pageSize),
+    [validOrgs.length, pageSize]
   )
 
   return {
-    data: paginatedTeams,
-    isLoading: teamsResult.isLoading,
-    error: validationError || teamsResult.error,
-    totalCount: validTeams.length,
+    data: paginatedOrgs,
+    isLoading: orgsResult.isLoading,
+    error: validationError || orgsResult.error,
+    totalCount: validOrgs.length,
     maxPage: validMaxPage,
   }
 }

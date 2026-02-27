@@ -1,24 +1,24 @@
 import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
-import { MOONDAO_HAT_TREE_IDS } from 'const/config'
+import { PROJECT_HAT_TREE_IDS } from 'const/config'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { getChainSlug } from '../thirdweb/chain'
 
-export function useTeamWearer(
-  teamContract: any,
+export function useProjectWearer(
+  projectContract: any,
   selectedChain: any,
   address: any
 ) {
-  const [wornMoondaoHats, setWornMoondaoHats] = useState<any>()
+  const [wornProjectHats, setWornProjectHats] = useState<any>()
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    async function getWearerTeamHats() {
+    async function getWearerProjectHats() {
       try {
         setIsLoading(true)
-        setWornMoondaoHats(undefined)
+        setWornProjectHats(undefined)
         if (!address) {
-          setWornMoondaoHats([])
+          setWornProjectHats([])
           setIsLoading(false)
           return
         }
@@ -42,48 +42,45 @@ export function useTeamWearer(
 
         const hats: any = await res.json()
 
-        //filter worn hats to only include hats that are in the MoonDAO hat tree
         if (hats.currentHats) {
-          //filter hats to only include hats that are in the MoonDAO hat tree
-          const moondaoHats = hats.currentHats.filter(
+          const projectHats = hats.currentHats.filter(
             (hat: any) =>
-              hat.tree.id === MOONDAO_HAT_TREE_IDS[getChainSlug(selectedChain)]
+              hat.tree.id === PROJECT_HAT_TREE_IDS[getChainSlug(selectedChain)]
           )
 
-          //add the teamId to each hat
-          const moondaoHatsWithTeamId = await Promise.all(
-            moondaoHats.map(async (hat: any) => {
-              const teamIdFromHat = await readContract({
-                contract: teamContract,
+          const projectHatsWithId = await Promise.all(
+            projectHats.map(async (hat: any) => {
+              const projectIdFromHat = await readContract({
+                contract: projectContract,
                 method: 'adminHatToTokenId' as string,
                 params: [hat.id],
               })
-              const teamIdFromAdmin = await readContract({
-                contract: teamContract,
+              const projectIdFromAdmin = await readContract({
+                contract: projectContract,
                 method: 'adminHatToTokenId' as string,
                 params: [hat.admin.id],
               })
-              const teamIdFromAdminAdmin = await readContract({
-                contract: teamContract,
+              const projectIdFromAdminAdmin = await readContract({
+                contract: projectContract,
                 method: 'adminHatToTokenId' as string,
                 params: [hat.admin.admin.id],
               })
 
-              let teamId
-              if (+teamIdFromHat.toString() !== 0) {
-                teamId = teamIdFromHat
-              } else if (+teamIdFromAdmin.toString() !== 0) {
-                teamId = teamIdFromAdmin
-              } else if (+teamIdFromAdminAdmin.toString() !== 0) {
-                teamId = teamIdFromAdminAdmin
+              let projectId
+              if (+projectIdFromHat.toString() !== 0) {
+                projectId = projectIdFromHat
+              } else if (+projectIdFromAdmin.toString() !== 0) {
+                projectId = projectIdFromAdmin
+              } else if (+projectIdFromAdminAdmin.toString() !== 0) {
+                projectId = projectIdFromAdminAdmin
               } else {
-                teamId = 0
+                projectId = 0
               }
 
               const adminHatId = await readContract({
-                contract: teamContract,
+                contract: projectContract,
                 method: 'teamAdminHat' as string,
-                params: [teamId],
+                params: [projectId],
               })
               const prettyAdminHatId = hatIdDecimalToHex(
                 BigInt(adminHatId.toString())
@@ -97,43 +94,45 @@ export function useTeamWearer(
               ) {
                 return {
                   ...hat,
-                  teamId: teamId.toString(),
+                  projectId: projectId.toString(),
                 }
               }
               return null
             })
           ).then((results) => results.filter((result) => result !== null))
 
-          const uniqueTeams = [
-            ...new Set(moondaoHatsWithTeamId.map((hat: any) => hat.teamId)),
-          ].map((teamId: any) => {
+          const uniqueProjects = [
+            ...new Set(
+              projectHatsWithId.map((hat: any) => hat.projectId)
+            ),
+          ].map((projectId: any) => {
             return {
-              teamId: teamId,
-              hats: moondaoHatsWithTeamId.filter(
-                (hat: any) => +hat.teamId === +teamId
+              projectId: projectId,
+              hats: projectHatsWithId.filter(
+                (hat: any) => +hat.projectId === +projectId
               ),
             }
           })
 
-          setWornMoondaoHats(uniqueTeams)
+          setWornProjectHats(uniqueProjects)
         } else {
-          setWornMoondaoHats([])
+          setWornProjectHats([])
         }
         setIsLoading(false)
       } catch (err) {
         console.log(err)
-        setWornMoondaoHats([])
+        setWornProjectHats([])
         setIsLoading(false)
       }
     }
 
-    if (teamContract && selectedChain) {
-      getWearerTeamHats()
+    if (projectContract && selectedChain) {
+      getWearerProjectHats()
     } else {
-      setWornMoondaoHats([])
+      setWornProjectHats([])
       setIsLoading(false)
     }
-  }, [teamContract, selectedChain, address])
+  }, [projectContract, selectedChain, address])
 
-  return { userTeams: wornMoondaoHats, isLoading }
+  return { userProjects: wornProjectHats, isLoading }
 }

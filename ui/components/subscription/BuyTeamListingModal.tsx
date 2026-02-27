@@ -188,7 +188,7 @@ export default function BuyTeamListingModal({
             recipient,
             isCitizen: citizen ? true : false,
             shipping,
-            teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(teamNFT.metadata.name)}`,
+            teamLink: `${DEPLOYED_ORIGIN}/org/${generatePrettyLink(teamNFT.metadata.name)}`,
             accessToken,
           }),
         })

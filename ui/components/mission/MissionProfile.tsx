@@ -499,7 +499,7 @@ export default function MissionProfile({
                       height={30}
                     />
                     <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
-                      Meet the Team
+                      Meet the Org
                     </h2>
                   </div>
                   <div className="flex justify-end gap-2 w-full text-white mr-[5vw]">

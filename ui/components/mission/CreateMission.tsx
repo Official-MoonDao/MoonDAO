@@ -540,11 +540,11 @@ export default function CreateMission({
 "
                   action={() => {
                     if (!userTeamsAsManager || userTeamsAsManager.length === 0) {
-                      return toast.error('Please create a team or join one as a manager.', {
+                      return toast.error('Please create an org or join one as a manager.', {
                         style: toastStyle,
                       })
                     } else if (selectedTeamId === undefined) {
-                      return toast.error('Please select a team.', {
+                      return toast.error('Please select an org.', {
                         style: toastStyle,
                       })
                     }
@@ -578,11 +578,11 @@ export default function CreateMission({
                     {userTeamsAsManagerLoading ? (
                       <div className="flex items-center space-x-2">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span className="text-white">Loading your teams...</span>
+                        <span className="text-white">Loading your orgs...</span>
                       </div>
                     ) : !userTeamsAsManager || userTeamsAsManager.length === 0 ? (
-                      <StandardButton className="gradient-2" hoverEffect={false} link="/team">
-                        Create a Team
+                      <StandardButton className="gradient-2" hoverEffect={false} link="/join">
+                        Create an Org
                       </StandardButton>
                     ) : (
                       <></>
@@ -606,7 +606,7 @@ export default function CreateMission({
                     userTeamsAsManager &&
                     userTeamsAsManager.length > 1 && (
                       <div>
-                        <p>You are a manager of multiple teams, please select one:</p>
+                        <p>You are a manager of multiple orgs, please select one:</p>
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
                           {userTeamsAsManager.map((team: any) => (
                             <button
@@ -631,10 +631,10 @@ export default function CreateMission({
                     )}
                   {selectedTeamNFT && (
                     <p className="mt-4 font-GoodTimes">
-                      {`Selected Team : `}
+                      {`Selected Org : `}
                       <Link
                         className="text-lg text-light-warm font-bold hover:underline"
-                        href={`/team/${selectedTeamId}`}
+                        href={`/org/${selectedTeamId}`}
                       >
                         {userTeamsAsManagerLoading ? (
                           <LoadingSpinner className="scale-75" />
@@ -888,7 +888,7 @@ export default function CreateMission({
                           })
                         }
                         mode="dark"
-                        tooltip="ERC-20 tokens are not created by default, but teams can choose to deploy one, if they would like a market tradeable token."
+                        tooltip="ERC-20 tokens are not created by default, but orgs can choose to deploy one, if they would like a market tradeable token."
                       />
                     </div>
 
