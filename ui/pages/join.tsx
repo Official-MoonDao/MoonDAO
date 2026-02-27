@@ -10,7 +10,7 @@ import {
   TEAM_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
-import { BLOCKED_CITIZENS, BLOCKED_TEAMS, FEATURED_TEAMS } from 'const/whitelist'
+import { BLOCKED_CITIZENS, BLOCKED_ORGS, FEATURED_ORGS } from 'const/whitelist'
 import useTranslation from 'next-translate/useTranslation'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -87,7 +87,7 @@ export default function Join({
   const [mapView, setMapView] = useState<string>('earth') // For map sub-tabs
 
   function loadByTab(tab: string) {
-    if (tab === 'teams') {
+    if (tab === 'orgs') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
     } else if (tab === 'citizens') {
       setCachedNFTs(input != '' ? filterBySearch(filteredCitizens) : filteredCitizens)
@@ -139,7 +139,7 @@ export default function Join({
     const totalCitizens =
       input != '' ? filterBySearch(filteredCitizens).length : filteredCitizens.length
 
-    if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 10))
+    if (tab === 'orgs') setMaxPage(Math.ceil(totalTeams / 10))
     else if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 10))
     else if (tab === 'map') setMaxPage(1) // Map doesn't need pagination
   }, [tab, input, filteredCitizens, filteredTeams])
@@ -150,7 +150,7 @@ export default function Join({
 
   useEffect(() => {
     const { tab: urlTab, page: urlPage } = router.query
-    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')) {
+    if (urlTab && (urlTab === 'orgs' || urlTab === 'citizens' || urlTab === 'map')) {
       setTab(urlTab as string)
     }
     if (urlPage && !isNaN(Number(urlPage))) {
@@ -208,7 +208,7 @@ export default function Join({
         ? 'team'
         : 'citizen'
 
-      const link = `/${type === 'team' ? 'team' : 'citizen'}/${
+      const link = `/${type === 'team' ? 'org' : 'citizen'}/${
         type === 'team'
           ? generatePrettyLink(nft.metadata.name)
           : generatePrettyLinkWithId(nft.metadata.name, nft.id.toString())
@@ -276,9 +276,9 @@ export default function Join({
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
-                  link="/team"
+                  link="/join"
                 >
-                  Create a Team
+                  Create an Org
                 </StandardButton>
               </div>
             </div>
@@ -361,13 +361,13 @@ export default function Join({
                         src="/assets/team_image.webp"
                         width={96}
                         height={96}
-                        alt="Create a Team"
+                        alt="Create an Org"
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <h3 className="text-2xl font-GoodTimes text-white mb-4">Create a Team</h3>
+                    <h3 className="text-2xl font-GoodTimes text-white mb-4">Create an Org</h3>
                     <p className="text-slate-300 mb-6 leading-relaxed">
-                      Teams are driving innovation and tackling ambitious space challenges together.
+                      Orgs are driving innovation and tackling ambitious space challenges together.
                       From non-profits to startups and university teams, every group has something
                       to contribute to our multiplanetary future.
                     </p>
@@ -385,7 +385,7 @@ export default function Join({
                       textColor="text-white"
                       borderRadius="rounded-xl"
                       hoverEffect={false}
-                      link="/team"
+                      link="/join"
                     >
                       Create a Team
                     </StandardButton>
@@ -400,7 +400,7 @@ export default function Join({
         <div id="explore-network-header" className="max-w-6xl mx-auto mb-8 px-6 pt-12">
           <h2 className="header font-GoodTimes text-white text-center mb-4">Explore the Network</h2>
           <p className="sub-header text-white/80 text-center mb-8 max-w-3xl mx-auto">
-            Discover and connect with citizens and teams building the future of space exploration
+            Discover and connect with citizens and orgs building the future of space exploration
           </p>
         </div>
 
@@ -418,8 +418,8 @@ export default function Join({
                 input={input}
                 setInput={setInput}
                 placeholder={
-                  tab === 'teams'
-                    ? 'Search teams'
+                  tab === 'orgs'
+                    ? 'Search orgs'
                     : tab === 'citizens'
                     ? 'Search citizens'
                     : 'Search network'
@@ -439,12 +439,12 @@ export default function Join({
                   Citizens
                 </Tab>
                 <Tab
-                  tab="teams"
+                  tab="orgs"
                   currentTab={tab}
                   setTab={handleTabChange}
                   icon="/assets/icon-org.svg"
                 >
-                  Teams
+                  Orgs
                 </Tab>
                 <Tab
                   tab="map"
@@ -584,7 +584,7 @@ export default function Join({
             <h2 className="header font-GoodTimes text-white mb-4">Jobs Board</h2>
             <p className="sub-header text-white/80 max-w-3xl mx-auto mb-8">
               Join the mission to expand humanity to the Moon and beyond. Explore opportunities with
-              teams in the Space Acceleration Network.
+              orgs in the Space Acceleration Network.
             </p>
           </div>
 
@@ -612,7 +612,7 @@ export default function Join({
                     Citizens Only
                   </h3>
                   <p className="text-slate-300 mb-6 max-w-md mx-auto drop-shadow-md">
-                    Become a MoonDAO Citizen to access the jobs board and connect with teams
+                    Become a MoonDAO Citizen to access the jobs board and connect with orgs
                     building the future of space exploration.
                   </p>
                   <StandardButton
@@ -661,7 +661,7 @@ export default function Join({
                       </h3>
                       <p className="text-slate-300 text-sm mb-4 line-clamp-3">{job.description}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-400">Team #{job.teamId}</span>
+                        <span className="text-sm text-slate-400">Org #{job.teamId}</span>
                         <StandardButton
                           backgroundColor="bg-blue-600 hover:bg-blue-700"
                           textColor="text-white"
@@ -819,13 +819,13 @@ export async function getStaticProps() {
     })
 
     const sortedValidTeams = filteredValidTeams.reverse().sort((a: any, b: any) => {
-      const aIsFeatured = FEATURED_TEAMS.includes(Number(a.metadata.id))
-      const bIsFeatured = FEATURED_TEAMS.includes(Number(b.metadata.id))
+      const aIsFeatured = FEATURED_ORGS.includes(Number(a.metadata.id))
+      const bIsFeatured = FEATURED_ORGS.includes(Number(b.metadata.id))
 
       if (aIsFeatured && bIsFeatured) {
         return (
-          FEATURED_TEAMS.indexOf(Number(a.metadata.id)) -
-          FEATURED_TEAMS.indexOf(Number(b.metadata.id))
+          FEATURED_ORGS.indexOf(Number(a.metadata.id)) -
+          FEATURED_ORGS.indexOf(Number(b.metadata.id))
         )
       } else if (aIsFeatured) {
         return -1

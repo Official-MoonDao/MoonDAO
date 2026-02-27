@@ -25,10 +25,10 @@ export default function DashboardTeams({
     return (
       <div>
         <p className="text-gray-400 text-sm text-center py-2">
-          You are not a member of any teams.
+          You are not a member of any orgs.
         </p>
-        <StandardButton link="/team" className="w-full">
-          Create a Team
+        <StandardButton link="/join" className="w-full">
+          Create an Org
         </StandardButton>
       </div>
     )
@@ -56,10 +56,10 @@ export default function DashboardTeams({
         ) : (
           <div className="text-center py-8">
             <p className="text-gray-400 text-sm mb-4">
-              You are not a member of any teams.
+              You are not a member of any orgs.
             </p>
-            <StandardButton link="/team" className="inline-block">
-              Create a Team
+            <StandardButton link="/join" className="inline-block">
+              Create an Org
             </StandardButton>
           </div>
         )

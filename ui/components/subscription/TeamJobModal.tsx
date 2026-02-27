@@ -185,7 +185,7 @@ export default function TeamJobModal({
               'networkNotifications',
               `## [**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
-              } job](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
+              } job](${DEPLOYED_ORIGIN}/org/${generatePrettyLink(
                 teamName
               )}?job=${jobId}&_timestamp=123456789) <@&${DISCORD_CITIZEN_ROLE_ID}>`
             )

@@ -85,7 +85,7 @@ export default function MissionCard({
       link={`/mission/${mission?.id}`}
       title={metadata?.name}
       subheader={
-        <Link href={`/team/${generatePrettyLink(teamNFT?.metadata?.name || '')}`} passHref>
+        <Link href={`/org/${generatePrettyLink(teamNFT?.metadata?.name || '')}`} passHref>
           <p id="team-name" className="text-light-warm hover:underline">
             {teamNFT?.metadata?.name}
           </p>

@@ -451,10 +451,10 @@ export default function SignedInDashboard({
                   backgroundColor="bg-gradient-to-r from-orange-500 to-green-500"
                   hoverColor="hover:from-orange-600 hover:to-green-600"
                   className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
-                  link="/network"
+                  link="/network?tab=orgs"
                 >
                   <UserGroupIcon className="w-4 h-4" />
-                  Teams
+                  Orgs
                 </StandardButton>
                 <StandardButton
                   backgroundColor="bg-gradient-to-r from-green-500 to-teal-500"
@@ -1295,7 +1295,7 @@ export default function SignedInDashboard({
           />
         </div>
 
-        {/* Events and Your Teams Section - Side by Side */}
+        {/* Events and Your Orgs Section - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 mb-8">
           {/* Events Section */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
@@ -1344,13 +1344,13 @@ export default function SignedInDashboard({
             </div>
           </div>
 
-          {/* Your Teams Section */}
+          {/* Your Orgs Section */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
             <div className="mb-6">
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
                   <UserGroupIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
-                  <span className="leading-tight">Your Teams</span>
+                  <span className="leading-tight">Your Orgs</span>
                 </h3>
               </div>
             </div>
@@ -1365,7 +1365,7 @@ export default function SignedInDashboard({
           </div>
         </div>
 
-        {/* Citizens and Teams - Horizontal Scrollable Section Above Map */}
+        {/* Citizens and Orgs - Horizontal Scrollable Section Above Map */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* New Citizens - Horizontal */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
@@ -1417,13 +1417,13 @@ export default function SignedInDashboard({
             </div>
           </div>
 
-          {/* Featured Teams - Horizontal */}
+          {/* Featured Orgs - Horizontal */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
+              <h3 className="font-semibold text-white text-lg">Featured Orgs</h3>
               <StandardButton
                 className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                link="/network?tab=teams"
+                link="/network?tab=orgs"
               >
                 See all
               </StandardButton>
@@ -1434,7 +1434,7 @@ export default function SignedInDashboard({
                 filteredTeams.slice(0, 8).map((team: any, index: number) => (
                   <Link
                     key={team.id || index}
-                    href={`/team/${generatePrettyLink(team.name)}`}
+                    href={`/org/${generatePrettyLink(team.name)}`}
                     className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
                   >
                     <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
@@ -1453,7 +1453,7 @@ export default function SignedInDashboard({
                       )}
                     </div>
                     <h4 className="text-white font-medium text-xs truncate text-center">
-                      {team.name || 'Team'}
+                      {team.name || 'Org'}
                     </h4>
                   </Link>
                 ))
@@ -1549,7 +1549,7 @@ export default function SignedInDashboard({
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   {filteredTeams?.length || '0'}
                 </div>
-                <div className="text-xs sm:text-sm opacity-90 leading-tight">Total Teams</div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">Total Orgs</div>
               </div>
             </div>
           </div>

@@ -87,7 +87,7 @@ export function Hat({
       } ${vertical ? 'items-center text-center' : ''}`}
       onClick={() => {
         if (hat.teamId && !isDisabled) {
-          router.push(`/team/${hat.teamId}`)
+          router.push(`/org/${hat.teamId}`)
         }
       }}
     >

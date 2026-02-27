@@ -1,6 +1,6 @@
 import {
-  sortTeamsWithFeatured,
-  filterBlockedTeams,
+  sortOrgsWithFeatured,
+  filterBlockedOrgs,
   filterBlockedCitizens,
   buildSearchClause,
   buildPaginationClause,
@@ -9,64 +9,64 @@ import {
 import { NetworkNFT } from '@/lib/network/types'
 
 describe('Network Utils', () => {
-  describe('sortTeamsWithFeatured', () => {
-    it('should prioritize featured teams', () => {
-      const teams: NetworkNFT[] = [
-        { metadata: { id: '5', name: 'Team 5' } } as NetworkNFT,
-        { metadata: { id: '1', name: 'Team 1' } } as NetworkNFT,
-        { metadata: { id: '10', name: 'Team 10' } } as NetworkNFT,
-        { metadata: { id: '6', name: 'Team 6' } } as NetworkNFT,
+  describe('sortOrgsWithFeatured', () => {
+    it('should prioritize featured orgs', () => {
+      const orgs: NetworkNFT[] = [
+        { metadata: { id: '5', name: 'Org 5' } } as NetworkNFT,
+        { metadata: { id: '1', name: 'Org 1' } } as NetworkNFT,
+        { metadata: { id: '10', name: 'Org 10' } } as NetworkNFT,
+        { metadata: { id: '6', name: 'Org 6' } } as NetworkNFT,
       ]
 
-      const sorted = sortTeamsWithFeatured(teams)
+      const sorted = sortOrgsWithFeatured(orgs)
       expect(sorted[0].metadata.id).to.equal('6')
       expect(sorted[1].metadata.id).to.equal('1')
     })
 
-    it('should maintain featured team order', () => {
-      const teams: NetworkNFT[] = [
-        { metadata: { id: '8', name: 'Team 8' } } as NetworkNFT,
-        { metadata: { id: '7', name: 'Team 7' } } as NetworkNFT,
-        { metadata: { id: '6', name: 'Team 6' } } as NetworkNFT,
-        { metadata: { id: '13', name: 'Team 13' } } as NetworkNFT,
+    it('should maintain featured org order', () => {
+      const orgs: NetworkNFT[] = [
+        { metadata: { id: '8', name: 'Org 8' } } as NetworkNFT,
+        { metadata: { id: '7', name: 'Org 7' } } as NetworkNFT,
+        { metadata: { id: '6', name: 'Org 6' } } as NetworkNFT,
+        { metadata: { id: '13', name: 'Org 13' } } as NetworkNFT,
       ]
 
-      const sorted = sortTeamsWithFeatured(teams)
+      const sorted = sortOrgsWithFeatured(orgs)
       expect(sorted[0].metadata.id).to.equal('6')
       expect(sorted[1].metadata.id).to.equal('7')
     })
 
-    it('should handle teams with no featured teams', () => {
-      const teams: NetworkNFT[] = [
-        { metadata: { id: '100', name: 'Team 100' } } as NetworkNFT,
-        { metadata: { id: '101', name: 'Team 101' } } as NetworkNFT,
+    it('should handle orgs with no featured orgs', () => {
+      const orgs: NetworkNFT[] = [
+        { metadata: { id: '100', name: 'Org 100' } } as NetworkNFT,
+        { metadata: { id: '101', name: 'Org 101' } } as NetworkNFT,
       ]
 
-      const sorted = sortTeamsWithFeatured(teams)
+      const sorted = sortOrgsWithFeatured(orgs)
       expect(sorted.length).to.equal(2)
     })
   })
 
-  describe('filterBlockedTeams', () => {
-    it('should filter out blocked teams', () => {
-      const teams: NetworkNFT[] = [
-        { metadata: { id: '1', name: 'Team 1' } } as NetworkNFT,
-        { metadata: { id: '2', name: 'Team 2' } } as NetworkNFT,
-        { metadata: { id: '3', name: 'Team 3' } } as NetworkNFT,
+  describe('filterBlockedOrgs', () => {
+    it('should filter out blocked orgs', () => {
+      const orgs: NetworkNFT[] = [
+        { metadata: { id: '1', name: 'Org 1' } } as NetworkNFT,
+        { metadata: { id: '2', name: 'Org 2' } } as NetworkNFT,
+        { metadata: { id: '3', name: 'Org 3' } } as NetworkNFT,
       ]
 
-      const filtered = filterBlockedTeams(teams)
-      expect(filtered.length).to.be.at.most(teams.length)
+      const filtered = filterBlockedOrgs(orgs)
+      expect(filtered.length).to.be.at.most(orgs.length)
     })
 
-    it('should return all teams if none are blocked', () => {
-      const teams: NetworkNFT[] = [
-        { metadata: { id: '100', name: 'Team 100' } } as NetworkNFT,
-        { metadata: { id: '101', name: 'Team 101' } } as NetworkNFT,
+    it('should return all orgs if none are blocked', () => {
+      const orgs: NetworkNFT[] = [
+        { metadata: { id: '100', name: 'Org 100' } } as NetworkNFT,
+        { metadata: { id: '101', name: 'Org 101' } } as NetworkNFT,
       ]
 
-      const filtered = filterBlockedTeams(teams)
-      expect(filtered.length).to.equal(teams.length)
+      const filtered = filterBlockedOrgs(orgs)
+      expect(filtered.length).to.equal(orgs.length)
     })
   })
 

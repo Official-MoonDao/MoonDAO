@@ -4,6 +4,7 @@ import {
   HomeIcon,
   PlusIcon,
   RocketLaunchIcon,
+  UserGroupIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
@@ -18,21 +19,19 @@ export default function useNavigation(citizen: any) {
         icon: citizen ? HomeIcon : PlusIcon,
       },
       {
+        name: 'Orgs',
+        href: '/network?tab=orgs',
+        icon: UserGroupIcon,
+        dynamicChildren: 'Orgs' as const,
+      },
+      {
         name: 'Citizenship',
         href: '/network',
         icon: IconOrg,
         children: [
           { name: 'Become a Citizen', href: '/citizen' },
-          { name: 'Create a Team', href: '/team' },
+          { name: 'Explore Orgs', href: '/network?tab=orgs' },
           { name: 'Explore Citizens', href: '/network' },
-          {
-            name: 'Jobs',
-            href: '/jobs',
-          },
-          {
-            name: 'Marketplace',
-            href: '/marketplace',
-          },
         ],
       },
       {
@@ -54,21 +53,7 @@ export default function useNavigation(citizen: any) {
         name: 'Projects',
         icon: WrenchScrewdriverIcon,
         href: '/projects',
-        children: [
-          {
-            name: 'Propose Project',
-            href: '/proposals',
-          },
-          {
-            name: 'Projects',
-            href: '/projects',
-          },
-          {
-            name: 'Submit Contribution',
-            href: '/contributions',
-          },
-          { name: 'Projects Overview', href: '/projects-overview' },
-        ],
+        dynamicChildren: 'Projects' as const,
       },
       {
         name: 'Learn',

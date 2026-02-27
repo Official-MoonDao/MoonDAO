@@ -1,4 +1,4 @@
-// Team Profile Page
+// Org Profile Page
 import {
   BanknotesIcon,
   BuildingStorefrontIcon,
@@ -38,7 +38,7 @@ import {
   MISSION_CREATOR_ADDRESSES,
   EB_TEAM_ID,
 } from 'const/config'
-import { BLOCKED_TEAMS } from 'const/whitelist'
+import { BLOCKED_ORGS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -85,7 +85,7 @@ import TeamMissions from '@/components/subscription/TeamMissions'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import EBRewards from '@/components/subscription/EBRewards'
 
-export default function TeamDetailPage({
+export default function OrgDetailPage({
   tokenId,
   nft,
   imageIpfsLink,
@@ -460,11 +460,11 @@ export default function TeamDetailPage({
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
         >
-          {/* Team Statistics Overview */}
+          {/* Org Statistics Overview */}
           {!isDeleted && subIsValid && (
             <div className="mt-4 md:mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
-                title="Team Members"
+                title="Org Members"
                 value={teamStats.memberCount}
                 icon={<UserGroupIcon className="w-6 h-6 text-blue-400" />}
                 subtitle="Active members"
@@ -548,7 +548,7 @@ export default function TeamDetailPage({
           )}
           {subIsValid && !isDeleted ? (
             <div className="space-y-6 mb-10 mt-5 md:mt-0">
-              {/* Team Members */}
+              {/* Org Members */}
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
                   <div className="flex gap-5">
@@ -559,7 +559,7 @@ export default function TeamDetailPage({
                       height={30}
                       className="opacity-70"
                     />
-                    <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
+                    <h2 className="font-GoodTimes text-2xl text-white">Meet the Org</h2>
                   </div>
                   {isManager && hats?.[0]?.id && (
                     <div
@@ -704,7 +704,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
   const { fetchTeamWithOwner } = await import('@/lib/team/teamDataService')
   const nft = await fetchTeamWithOwner(chain, tokenId)
 
-  if (!nft || BLOCKED_TEAMS.has(Number(nft.metadata.id))) {
+  if (!nft || BLOCKED_ORGS.has(Number(nft.metadata.id))) {
     return {
       notFound: true,
     }

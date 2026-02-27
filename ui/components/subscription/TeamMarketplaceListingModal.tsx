@@ -241,7 +241,7 @@ export default function TeamMarketplaceListingModal({
               'networkNotifications',
               `## [**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
-              } listing ](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
+              } listing ](${DEPLOYED_ORIGIN}/org/${generatePrettyLink(
                 teamName
               )}?listing=${listingId}&_timestamp=123456789) <@&${DISCORD_CITIZEN_ROLE_ID}>`
             )

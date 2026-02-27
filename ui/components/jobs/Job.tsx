@@ -167,7 +167,7 @@ export default function Job({
           <div className="flex-1 min-w-0">
             {showTeam && teamNFT && (
               <Link
-                href={`/team/${job.teamId}`}
+                href={`/org/${job.teamId}`}
                 className="text-xs text-blue-400 hover:text-blue-300 mb-1 block"
                 onClick={(e) => e.stopPropagation()}
               >

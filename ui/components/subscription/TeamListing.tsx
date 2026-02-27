@@ -201,7 +201,7 @@ export default function TeamListing({
   const listingActions = (
     <div className="flex items-center gap-4">
       <ShareButton
-        link={`${window.location.origin}/team/${
+        link={`${window.location.origin}/org/${
           teamNFT?.metadata?.name ? generatePrettyLink(teamNFT.metadata.name) : listing?.teamId
         }?listing=${listing?.id}`}
       />
@@ -260,8 +260,8 @@ export default function TeamListing({
     <>
       <StandardCard
         title={listing?.title || ''}
-        headerLink={`/team/${listing?.teamId || ''}`}
-        headerLinkLabel={teamNFT?.metadata?.name || `Team ${listing?.teamId || ''}`}
+        headerLink={`/org/${listing?.teamId || ''}`}
+        headerLinkLabel={teamNFT?.metadata?.name || `Org ${listing?.teamId || ''}`}
         paragraph={listing?.description || ''}
         footer={listingFooter}
         actions={listingActions}

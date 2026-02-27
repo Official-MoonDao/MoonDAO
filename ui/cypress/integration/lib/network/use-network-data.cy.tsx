@@ -1,19 +1,19 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
-import { useValidTeams, useValidCitizens } from '@/lib/network/useNetworkData'
+import { useValidOrgs, useValidCitizens } from '@/lib/network/useNetworkData'
 
-const TeamsWrapper = ({ page = 1, search = '', enabled = true }: any) => {
-  const result = useValidTeams({ page, search, enabled })
+const OrgsWrapper = ({ page = 1, search = '', enabled = true }: any) => {
+  const result = useValidOrgs({ page, search, enabled })
 
   return (
     <div>
-      <div data-testid="teams-loading">{result.isLoading ? 'loading' : 'loaded'}</div>
-      <div data-testid="teams-error">{result.error ? result.error.message : 'no-error'}</div>
-      <div data-testid="teams-count">{result.data.length}</div>
-      <div data-testid="teams-total">{result.totalCount}</div>
-      <div data-testid="teams-max-page">{result.maxPage}</div>
-      {result.data.map((team, i) => (
-        <div key={i} data-testid={`team-${i}`}>
-          {team.metadata.name}
+      <div data-testid="orgs-loading">{result.isLoading ? 'loading' : 'loaded'}</div>
+      <div data-testid="orgs-error">{result.error ? result.error.message : 'no-error'}</div>
+      <div data-testid="orgs-count">{result.data.length}</div>
+      <div data-testid="orgs-total">{result.totalCount}</div>
+      <div data-testid="orgs-max-page">{result.maxPage}</div>
+      {result.data.map((org, i) => (
+        <div key={i} data-testid={`org-${i}`}>
+          {org.metadata.name}
         </div>
       ))}
     </div>
@@ -40,9 +40,9 @@ const CitizensWrapper = ({ page = 1, search = '', enabled = true }: any) => {
 }
 
 describe('useNetworkData hooks', () => {
-  const mockTeamRow = {
+  const mockOrgRow = {
     id: 1,
-    name: 'Test Team',
+    name: 'Test Org',
     description: 'Test Description',
     image: 'ipfs://test-image',
     website: 'https://test.com',
@@ -125,7 +125,7 @@ describe('useNetworkData hooks', () => {
         statement.includes('TEAMTABLE') &&
         !statement.includes('COUNT')
       ) {
-        req.reply({ statusCode: 200, body: [mockTeamRow] })
+        req.reply({ statusCode: 200, body: [mockOrgRow] })
         return
       }
 
@@ -157,52 +157,52 @@ describe('useNetworkData hooks', () => {
     })
   })
 
-  describe('useValidTeams', () => {
-    it('should fetch and display teams', () => {
+  describe('useValidOrgs', () => {
+    it('should fetch and display orgs', () => {
       cy.mount(
         <TestnetProviders>
-          <TeamsWrapper page={1} search="" enabled={true} />
+          <OrgsWrapper page={1} search="" enabled={true} />
         </TestnetProviders>
       )
 
       cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query
       cy.wait('@getTablelandQuery', { timeout: 10000 }) // SELECT query
-      cy.get('[data-testid="teams-loading"]', { timeout: 15000 }).should('contain', 'loaded')
+      cy.get('[data-testid="orgs-loading"]', { timeout: 15000 }).should('contain', 'loaded')
 
-      cy.get('[data-testid="teams-count"]').should('contain', '1')
-      cy.get('[data-testid="team-0"]').should('contain', 'Test Team')
+      cy.get('[data-testid="orgs-count"]').should('contain', '1')
+      cy.get('[data-testid="org-0"]').should('contain', 'Test Org')
     })
 
     it('should handle loading state', () => {
       cy.mount(
         <TestnetProviders>
-          <TeamsWrapper page={1} search="" enabled={true} />
+          <OrgsWrapper page={1} search="" enabled={true} />
         </TestnetProviders>
       )
 
-      cy.get('[data-testid="teams-loading"]').should('exist')
+      cy.get('[data-testid="orgs-loading"]').should('exist')
     })
 
     it('should handle search query', () => {
       cy.mount(
         <TestnetProviders>
-          <TeamsWrapper page={1} search="Test" enabled={true} />
+          <OrgsWrapper page={1} search="Test" enabled={true} />
         </TestnetProviders>
       )
 
       cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query with search
       cy.wait('@getTablelandQuery', { timeout: 10000 }) // SELECT query with search
-      cy.get('[data-testid="teams-count"]').should('exist')
+      cy.get('[data-testid="orgs-count"]').should('exist')
     })
 
     it('should calculate max page correctly', () => {
       cy.mount(
         <TestnetProviders>
-          <TeamsWrapper page={1} search="" enabled={true} />
+          <OrgsWrapper page={1} search="" enabled={true} />
         </TestnetProviders>
       )
 
-      cy.get('[data-testid="teams-max-page"]', { timeout: 15000 })
+      cy.get('[data-testid="orgs-max-page"]', { timeout: 15000 })
         .should('exist')
         .and('contain', '1')
     })
@@ -210,11 +210,11 @@ describe('useNetworkData hooks', () => {
     it('should not fetch when disabled', () => {
       cy.mount(
         <TestnetProviders>
-          <TeamsWrapper page={1} search="" enabled={false} />
+          <OrgsWrapper page={1} search="" enabled={false} />
         </TestnetProviders>
       )
 
-      cy.get('[data-testid="teams-count"]').should('contain', '0')
+      cy.get('[data-testid="orgs-count"]').should('contain', '0')
     })
   })
 

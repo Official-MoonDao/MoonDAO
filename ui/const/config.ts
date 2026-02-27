@@ -344,8 +344,8 @@ export const JBV5_TERMINAL_STORE_ADDRESS = '0xfE33B439Ec53748C87DcEDACb83f05aDd5
 export const JB_NATIVE_TOKEN_ADDRESS = '0x000000000000000000000000000000000000EEEe'
 export const JB_NATIVE_TOKEN_ID = 61166
 export const BENDYSTRAW_JB_VERSION = '5'
-//Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
-//Citizens & Teams Arbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/42
+//Citizens & Orgs Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
+//Citizens & Orgs Arbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/42
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '0x0000002a',
   sepolia: '0x00000182',

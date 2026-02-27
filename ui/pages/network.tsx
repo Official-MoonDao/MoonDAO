@@ -15,8 +15,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useDebounce } from 'react-use'
 import { NetworkTab } from '@/lib/network/types'
 import { useMapData } from '@/lib/network/useMapData'
-import { useValidTeams, useValidCitizens } from '@/lib/network/useNetworkData'
-import { filterBlockedTeams, filterBlockedCitizens } from '@/lib/network/utils'
+import { useValidOrgs, useValidCitizens } from '@/lib/network/useNetworkData'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { teamRowToNFT, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -38,11 +37,11 @@ const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 
 export default function Network({
-  initialTeams,
+  initialOrgs,
   initialCitizens,
   citizensLocationData,
 }: {
-  initialTeams?: any[]
+  initialOrgs?: any[]
   initialCitizens?: any[]
   citizensLocationData?: any[]
 }) {
@@ -69,7 +68,7 @@ export default function Network({
 
   useEffect(() => {
     const { tab: urlTab, page: urlPage } = router.query
-    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')) {
+    if (urlTab && (urlTab === 'orgs' || urlTab === 'citizens' || urlTab === 'map')) {
       setTab(urlTab as NetworkTab)
     }
     if (urlPage && !isNaN(Number(urlPage))) {
@@ -94,15 +93,15 @@ export default function Network({
     [shallowQueryRoute, tab]
   )
 
-  const isTeamsTab = tab === 'teams'
+  const isOrgsTab = tab === 'orgs'
   const isCitizensTab = tab === 'citizens'
   const isMapTab = tab === 'map'
 
-  const teamsResult = useValidTeams({
-    page: isTeamsTab ? pageIdx : 1,
-    search: isTeamsTab ? debouncedSearch : '',
-    enabled: isTeamsTab || isMapTab,
-    initialData: initialTeams,
+  const orgsResult = useValidOrgs({
+    page: isOrgsTab ? pageIdx : 1,
+    search: isOrgsTab ? debouncedSearch : '',
+    enabled: isOrgsTab || isMapTab,
+    initialData: initialOrgs,
   })
 
   const citizensResult = useValidCitizens({
@@ -115,8 +114,8 @@ export default function Network({
   // For map tab, use pre-fetched static data from getStaticProps
   const mapData = useMapData(isMapTab, { initialData: citizensLocationData })
 
-  const currentData = isTeamsTab
-    ? teamsResult
+  const currentData = isOrgsTab
+    ? orgsResult
     : isCitizensTab
     ? citizensResult
     : { data: [], isLoading: false, error: null, maxPage: 1 }
@@ -147,8 +146,8 @@ export default function Network({
     }
 
     return nfts.map((nft, i) => {
-      const link = `/${tab === 'teams' ? 'team' : 'citizen'}/${
-        tab === 'teams'
+      const link = `/${tab === 'orgs' ? 'org' : 'citizen'}/${
+        tab === 'orgs'
           ? generatePrettyLink(nft.metadata.name)
           : generatePrettyLinkWithId(nft.metadata.name, nft.id.toString())
       }`
@@ -170,7 +169,7 @@ export default function Network({
     <div className="animate-fadeIn">
       <Head
         title="Explore the Network | MoonDAO"
-        description="Discover and connect with citizens and teams building the future of space exploration"
+        description="Discover and connect with citizens and orgs building the future of space exploration"
         image="https://ipfs.io/ipfs/QmbbjvWBUAXPPibj4ZbzzErVaZBSD99r3dbt5CGQMd5Bkh"
       />
 
@@ -180,7 +179,7 @@ export default function Network({
             <div className="max-w-6xl mx-auto text-center">
               <h1 className="header font-GoodTimes text-white mb-3">Explore the Network</h1>
               <p className="sub-header text-white/80 max-w-3xl mx-auto mb-6">
-                Discover and connect with citizens and teams building the future of space
+                Discover and connect with citizens and orgs building the future of space
                 exploration
               </p>
             </div>
@@ -198,8 +197,8 @@ export default function Network({
                   input={input}
                   setInput={setInput}
                   placeholder={
-                    isTeamsTab
-                      ? 'Search teams'
+                    isOrgsTab
+                      ? 'Search orgs'
                       : isCitizensTab
                       ? 'Search citizens'
                       : 'Search network'
@@ -218,12 +217,12 @@ export default function Network({
                     Citizens
                   </Tab>
                   <Tab
-                    tab="teams"
+                    tab="orgs"
                     currentTab={tab}
                     setTab={handleTabChange}
                     icon="/assets/icon-org.svg"
                   >
-                    Teams
+                    Orgs
                   </Tab>
                   <Tab
                     tab="map"
@@ -434,7 +433,7 @@ export const getStaticProps: GetStaticProps = async () => {
     // This matches the format expected by useTablelandQuery fallbackData
     return {
       props: {
-        initialTeams: teamRows || [],
+        initialOrgs: teamRows || [],
         initialCitizens: citizenRows || [],
         citizensLocationData: citizensLocationData || [],
       },
@@ -444,7 +443,7 @@ export const getStaticProps: GetStaticProps = async () => {
     console.error('Error in getStaticProps for network page:', error)
     return {
       props: {
-        initialTeams: [],
+        initialOrgs: [],
         initialCitizens: [],
         citizensLocationData: [],
       },

@@ -1,16 +1,16 @@
-import { FEATURED_TEAMS, BLOCKED_TEAMS, BLOCKED_CITIZENS } from 'const/whitelist'
+import { FEATURED_ORGS, BLOCKED_ORGS, BLOCKED_CITIZENS } from 'const/whitelist'
 import { NetworkNFT } from './types'
 
-export function sortTeamsWithFeatured(teams: NetworkNFT[]): NetworkNFT[] {
-  return [...teams].sort((a: NetworkNFT, b: NetworkNFT) => {
+export function sortOrgsWithFeatured(orgs: NetworkNFT[]): NetworkNFT[] {
+  return [...orgs].sort((a: NetworkNFT, b: NetworkNFT) => {
     const aId = Number(a.metadata.id)
     const bId = Number(b.metadata.id)
-    const aIsFeatured = FEATURED_TEAMS.includes(aId)
-    const bIsFeatured = FEATURED_TEAMS.includes(bId)
+    const aIsFeatured = FEATURED_ORGS.includes(aId)
+    const bIsFeatured = FEATURED_ORGS.includes(bId)
 
     if (aIsFeatured && bIsFeatured) {
       return (
-        FEATURED_TEAMS.indexOf(aId) - FEATURED_TEAMS.indexOf(bId)
+        FEATURED_ORGS.indexOf(aId) - FEATURED_ORGS.indexOf(bId)
       )
     } else if (aIsFeatured) {
       return -1
@@ -22,10 +22,10 @@ export function sortTeamsWithFeatured(teams: NetworkNFT[]): NetworkNFT[] {
   })
 }
 
-export function filterBlockedTeams(teams: NetworkNFT[]): NetworkNFT[] {
-  return teams.filter((team) => {
-    const teamId = Number(team.metadata.id)
-    return !BLOCKED_TEAMS.has(teamId)
+export function filterBlockedOrgs(orgs: NetworkNFT[]): NetworkNFT[] {
+  return orgs.filter((org) => {
+    const orgId = Number(org.metadata.id)
+    return !BLOCKED_ORGS.has(orgId)
   })
 }
 
