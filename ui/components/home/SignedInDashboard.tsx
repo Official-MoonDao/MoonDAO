@@ -47,6 +47,7 @@ import { useContext, useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import { shouldShowTeamsSection } from '@/lib/dashboard/shouldShowTeamsSection'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
@@ -989,8 +990,12 @@ export default function SignedInDashboard({
           />
         </div>
 
-        {/* Events and Your Teams Section - Side by Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 mb-8">
+        {/* Events and Your Teams Section - Side by Side (Teams hidden when user has none) */}
+        <div
+          className={`grid gap-8 mt-8 mb-8 ${
+            shouldShowTeamsSection(teamHats, isLoadingTeams) ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'
+          }`}
+        >
           {/* Events Section */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -1038,25 +1043,30 @@ export default function SignedInDashboard({
             </div>
           </div>
 
-          {/* Your Teams Section */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
-            <div className="mb-6">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <UserGroupIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
-                  <span className="leading-tight">Your Teams</span>
-                </h3>
+          {/* Your Teams Section - only shown when user is a member of at least one team */}
+          {shouldShowTeamsSection(teamHats, isLoadingTeams) && (
+            <div
+              data-testid="dashboard-your-teams-section"
+              className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8"
+            >
+              <div className="mb-6">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                    <UserGroupIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                    <span className="leading-tight">Your Teams</span>
+                  </h3>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <DashboardTeams
+                  selectedChain={selectedChain}
+                  hatsContract={hatsContract}
+                  teamContract={teamContract}
+                />
               </div>
             </div>
-
-            <div className="space-y-3">
-              <DashboardTeams
-                selectedChain={selectedChain}
-                hatsContract={hatsContract}
-                teamContract={teamContract}
-              />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Open Jobs - Full Width */}
