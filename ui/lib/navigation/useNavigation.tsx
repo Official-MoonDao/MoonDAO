@@ -19,12 +19,6 @@ export default function useNavigation(citizen: any) {
         icon: citizen ? HomeIcon : PlusIcon,
       },
       {
-        name: 'Orgs',
-        href: '/network?tab=orgs',
-        icon: UserGroupIcon,
-        dynamicChildren: 'Orgs' as const,
-      },
-      {
         name: 'Citizenship',
         href: '/network',
         icon: IconOrg,
@@ -33,6 +27,12 @@ export default function useNavigation(citizen: any) {
           { name: 'Explore Orgs', href: '/network?tab=orgs' },
           { name: 'Explore Citizens', href: '/network' },
         ],
+      },
+      {
+        name: 'Orgs',
+        href: '/network?tab=orgs',
+        icon: UserGroupIcon,
+        dynamicChildren: 'Orgs' as const,
       },
       {
         name: '$MOONEY',
