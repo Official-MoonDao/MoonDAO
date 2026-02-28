@@ -45,6 +45,7 @@ import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import { normalizeMarkdownParagraphs } from './MissionDescription'
 import MissionTokenomicsExplainer from './MissionTokenomicsExplainer'
 import MissionWideCard from './MissionWideCard'
 import TeamRequirementModal from './TeamRequirementModal'
@@ -309,7 +310,7 @@ export default function CreateMission({
         [
           JSON.stringify({
             name: missionData.name,
-            description: missionData.description,
+            description: normalizeMarkdownParagraphs(missionData.description),
             tagline: missionData.tagline,
             infoUri: missionData.infoUri,
             socialLink: missionData.socialLink,

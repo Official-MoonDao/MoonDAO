@@ -26,6 +26,7 @@ import Input from '../layout/Input'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import { normalizeMarkdownParagraphs } from './MissionDescription'
 
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
@@ -253,7 +254,7 @@ export default function MissionMetadataModal({
         [
           JSON.stringify({
             name: missionData.name,
-            description: missionData.description,
+            description: normalizeMarkdownParagraphs(missionData.description),
             tagline: missionData.tagline,
             infoUri: missionData.infoUri,
             socialLink: missionData.socialLink,
