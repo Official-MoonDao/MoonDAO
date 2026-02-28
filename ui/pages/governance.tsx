@@ -75,11 +75,19 @@ const Governance: React.FC = () => {
   const governanceCards = [
     {
       icon: '/assets/icon-vote.svg',
-      iconAlt: 'Vote on Proposals',
-      header: 'Vote on Proposals',
+      iconAlt: 'Vote on Project Proposals',
+      header: 'Project Proposals',
       link: '/projects',
-      hovertext: 'Vote on Proposals',
-      paragraph: 'Vote on proposals and help shape the future of MoonDAO.',
+      hovertext: 'Vote on Project Proposals',
+      paragraph: 'Vote on project proposals requesting funding from MoonDAO.',
+    },
+    {
+      icon: '/assets/icon-governance.svg',
+      iconAlt: 'Governance Proposals',
+      header: 'Governance Proposals',
+      link: '/governance-proposals',
+      hovertext: 'Governance Proposals',
+      paragraph: 'View and vote on non-project governance proposals — amendments, policy changes, and more.',
     },
     {
       icon: '/assets/icon-constitution.svg',
@@ -239,7 +247,16 @@ const Governance: React.FC = () => {
                     hoverEffect={false}
                     link="/projects"
                   >
-                    View All Proposals
+                    Project Proposals
+                  </StandardButton>
+                  <StandardButton
+                    backgroundColor="bg-gradient-to-r from-indigo-600 to-violet-600"
+                    textColor="text-white"
+                    borderRadius="rounded-full"
+                    hoverEffect={false}
+                    link="/governance-proposals"
+                  >
+                    Governance Proposals
                   </StandardButton>
                   <StandardButton
                     backgroundColor="bg-gradient-to-r from-green-600 to-teal-600"
