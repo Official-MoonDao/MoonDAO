@@ -630,7 +630,7 @@ export default function Roadmap() {
         {/* Vertical line */}
         <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
 
-        <div className="max-w-6xl mx-auto px-6 space-y-16 lg:space-y-24">
+        <div className="max-w-6xl mx-auto px-6">
           {phases.map((phase, index) => (
             <div
               key={phase.id}
@@ -638,11 +638,14 @@ export default function Roadmap() {
               ref={(el) => {
                 if (el) phaseRefs.current.set(phase.id, el)
               }}
-              className={`transition-all duration-700 ${
+              className={`relative transition-all duration-700 ${
+                index === 0 ? '' : 'mt-12 lg:-mt-32'
+              } ${
                 visiblePhases.has(phase.id)
                   ? 'opacity-100 translate-y-0'
                   : 'opacity-0 translate-y-12'
               }`}
+              style={{ zIndex: phases.length - index }}
             >
               <PhaseCard
                 phase={phase}
