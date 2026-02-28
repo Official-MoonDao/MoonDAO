@@ -15,7 +15,13 @@ export function normalizeMarkdownParagraphs(md: string): string {
   if (!md) return ''
   // Skip normalization for content that is primarily HTML
   if (md.trimStart().startsWith('<')) return md
-  return md.replace(/([^\n])\n(?!\n)/g, '$1\n\n')
+  // Protect fenced code blocks from normalization
+  return md
+    .split(/(```[\s\S]*?```)/g)
+    .map((segment, i) =>
+      i % 2 === 1 ? segment : segment.replace(/([^\n])\n(?!\n)/g, '$1\n\n')
+    )
+    .join('')
 }
 
 export default function MissionDescription({
