@@ -30,6 +30,7 @@ interface Phase {
   }[]
   description: string
   image?: string
+  imagePosition?: string
 }
 
 const phases: Phase[] = [
@@ -66,7 +67,7 @@ const phases: Phase[] = [
     ],
     description:
       'MoonDAO was born from a simple idea: space exploration should not be controlled by a handful of governments and corporations. By pooling resources through crypto, anyone on Earth can help fund and participate in the journey to the Moon.',
-    image: '/assets/home/galaxy2.jpg',
+    image: '/assets/MoonDAO-OG.png',
   },
   {
     id: 'first-flights',
@@ -95,7 +96,7 @@ const phases: Phase[] = [
     ],
     description:
       'MoonDAO proved that a decentralized community can accomplish what only nations and billionaires had done before — send a human being to space. This phase established our credibility and demonstrated the power of crypto-native coordination for space exploration.',
-    image: '/assets/Moon-Launch.webp',
+    image: '/home/MoonDAO-New-Shepard.jpg',
   },
   {
     id: 'expansion',
@@ -188,7 +189,7 @@ const phases: Phase[] = [
     ],
     description:
       "This is where MoonDAO is today. We're actively designing the components that will make a permanent lunar settlement a reality. This includes habitation, power, life support, and communication systems — all coordinated through our open governance and launchpad.",
-    image: '/assets/Lunar-Colony-Dark.webp',
+    image: '/assets/Rovers.webp',
   },
   {
     id: 'manufacturing',
@@ -217,6 +218,7 @@ const phases: Phase[] = [
     ],
     description:
       'With designs finalized, manufacturing begins. Components will be built and rigorously tested in Earth-based simulations that replicate lunar conditions. In parallel, the first lunar settlers will be selected through an open, community-driven process.',
+    image: '/assets/launchpad/Astronaut-Handshake.png',
   },
   {
     id: 'launch-prep',
@@ -246,6 +248,7 @@ const phases: Phase[] = [
     ],
     description:
       'Every component is tested, every system is validated, and every crew member is trained. This is the final checkpoint before committing hardware and humans to the Moon.',
+    image: '/assets/Moon-Launch.webp',
   },
   {
     id: 'construction',
@@ -274,6 +277,7 @@ const phases: Phase[] = [
     ],
     description:
       "Infrastructure is sent to the Moon, and the first crew begins construction of humanity's first permanent settlement beyond Earth. This is the culmination of years of design, testing, and community coordination.",
+    image: '/assets/launchpad/Lunar-Satellites.png',
   },
   {
     id: 'lunar-settlement',
@@ -303,6 +307,7 @@ const phases: Phase[] = [
     description:
       "This is why MoonDAO exists. A permanent settlement on the Moon, built by a global community and governed by the people who made it possible. Not one nation's flag — everyone's Moon.",
     image: '/assets/Lunar-Colony-Dark.webp',
+    imagePosition: 'object-bottom',
   },
 ]
 
@@ -335,27 +340,17 @@ function StarField() {
 
 function ProgressBar({ phases: p }: { phases: Phase[] }) {
   const completed = p.filter((ph) => ph.status === 'completed').length
-  const active = p.filter((ph) => ph.status === 'active').length
-  const pct = ((completed + active * 0.5) / p.length) * 100
+  const pct = (completed / p.length) * 100
 
   return (
-    <div className="w-full max-w-3xl mx-auto mb-4">
-      <div className="flex justify-between text-xs text-gray-400 mb-2 font-mono">
-        <span>2021</span>
-        <span>2030</span>
-      </div>
-      <div className="relative h-3 bg-white/5 rounded-full overflow-hidden border border-white/10">
+    <div className="w-full max-w-2xl mx-auto mb-4">
+      <div className="relative h-2 bg-white/10 rounded-full overflow-visible">
         <div
-          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-400 transition-all duration-1000 ease-out"
+          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
           style={{ width: `${pct}%` }}
         />
-        {/* Glow pip at the end of the bar */}
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-lg shadow-purple-400/80 border-2 border-purple-400 transition-all duration-1000 ease-out"
-          style={{ left: `calc(${pct}% - 8px)` }}
-        />
       </div>
-      <p className="text-center text-sm text-gray-400 mt-3 font-mono">
+      <p className="text-center text-sm text-gray-500 mt-3">
         {completed} of {p.length} phases completed
       </p>
     </div>
@@ -408,7 +403,7 @@ function StatusBadge({ status }: { status: Phase['status'] }) {
   const { label, cls } = map[status]
   return (
     <span
-      className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border ${cls}`}
+      className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border whitespace-nowrap ${cls}`}
     >
       {status === 'active' && (
         <span className="relative flex h-2 w-2">
@@ -428,13 +423,9 @@ function StatusBadge({ status }: { status: Phase['status'] }) {
 function PhaseCard({
   phase,
   index,
-  isExpanded,
-  onToggle,
 }: {
   phase: Phase
   index: number
-  isExpanded: boolean
-  onToggle: () => void
 }) {
   const isEven = index % 2 === 0
   const cardRef = useRef<HTMLDivElement>(null)
@@ -455,9 +446,8 @@ function PhaseCard({
       {/* Card */}
       <div
         ref={cardRef}
-        onClick={onToggle}
         className={`
-          relative w-full lg:w-[45%] cursor-pointer group
+          relative w-full lg:w-[45%] group
           ${isEven ? 'lg:mr-auto' : 'lg:ml-auto'}
         `}
       >
@@ -467,11 +457,7 @@ function PhaseCard({
         />
 
         <div
-          className={`relative overflow-hidden rounded-2xl border transition-all duration-500 ${
-            isExpanded
-              ? 'border-white/20 bg-white/[0.07] backdrop-blur-xl'
-              : 'border-white/10 bg-white/[0.03] backdrop-blur-sm hover:border-white/20 hover:bg-white/[0.05]'
-          }`}
+          className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm hover:border-white/20 hover:bg-white/[0.06] transition-all duration-500"
         >
           {/* Optional phase image banner */}
           {phase.image && (
@@ -480,7 +466,7 @@ function PhaseCard({
                 src={phase.image}
                 alt={phase.title}
                 fill
-                className="object-cover object-center opacity-60 group-hover:opacity-80 transition-opacity duration-500"
+                className={`object-cover ${phase.imagePosition || 'object-center'} opacity-60 group-hover:opacity-80 transition-opacity duration-500`}
                 sizes="(max-width: 768px) 100vw, 45vw"
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-cool" />
@@ -499,7 +485,7 @@ function PhaseCard({
                     alt={phase.iconAlt}
                     width={phase.iconSize || 28}
                     height={phase.iconSize || 28}
-                    className="brightness-0 invert opacity-90"
+                    className={`opacity-90 ${phase.icon.includes('moondao-logo') ? '' : 'brightness-0 invert'}`}
                   />
                 </div>
                 <div>
@@ -535,44 +521,15 @@ function PhaseCard({
                     >
                       {m.label}
                     </p>
-                    {/* Expanded detail */}
-                    <div
-                      className={`overflow-hidden transition-all duration-500 ${
-                        isExpanded
-                          ? 'max-h-40 opacity-100 mt-1'
-                          : 'max-h-0 opacity-0'
-                      }`}
-                    >
-                      <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
-                        {m.detail}
-                      </p>
-                    </div>
+                    <p className="text-xs sm:text-sm text-gray-400 leading-relaxed mt-1">
+                      {m.detail}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Expand hint */}
-            <div className="mt-4 flex items-center justify-center">
-              <button className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
-                <svg
-                  className={`w-4 h-4 transition-transform duration-300 ${
-                    isExpanded ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-                {isExpanded ? 'Show less' : 'Show more'}
-              </button>
-            </div>
+
           </div>
         </div>
       </div>
@@ -585,7 +542,6 @@ function PhaseCard({
 ──────────────────────────────────────────────────────────────────────────────*/
 
 export default function Roadmap() {
-  const [expandedPhase, setExpandedPhase] = useState<string | null>(null)
   const [visiblePhases, setVisiblePhases] = useState<Set<string>>(new Set())
   const phaseRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
@@ -606,11 +562,6 @@ export default function Roadmap() {
     return () => observer.disconnect()
   }, [])
 
-  // Auto-expand active phase on first visit
-  useEffect(() => {
-    const activePhase = phases.find((p) => p.status === 'active')
-    if (activePhase) setExpandedPhase(activePhase.id)
-  }, [])
 
   return (
     <Container>
@@ -696,12 +647,6 @@ export default function Roadmap() {
               <PhaseCard
                 phase={phase}
                 index={index}
-                isExpanded={expandedPhase === phase.id}
-                onToggle={() =>
-                  setExpandedPhase(
-                    expandedPhase === phase.id ? null : phase.id
-                  )
-                }
               />
             </div>
           ))}
@@ -739,19 +684,18 @@ export default function Roadmap() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <StandardButton
               backgroundColor="bg-white"
-              textColor="text-black"
-              hoverColor="bg-gray-100"
-              borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+              textColor="text-dark-cool"
+              borderRadius="rounded-full"
               link="/join"
               paddingOnHover="pl-5"
             >
               Join the Mission
             </StandardButton>
             <StandardButton
-              backgroundColor="bg-white/10"
+              backgroundColor="bg-white/10 border border-white/20"
               textColor="text-white"
               hoverColor="hover:bg-white/20"
-              borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+              borderRadius="rounded-full"
               link="/launch"
               paddingOnHover="pl-5"
             >
