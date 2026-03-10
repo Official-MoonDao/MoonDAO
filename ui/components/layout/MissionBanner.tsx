@@ -63,7 +63,7 @@ export default function MissionBanner() {
                 </span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-slate-400">
-                  {'Contribute $50 for a free citizenship!'}
+                  {'Contribute $100 for a free citizenship!'}
                 </span>
               </span>
               {/* Duplicate for seamless loop */}
@@ -78,7 +78,7 @@ export default function MissionBanner() {
                 </span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-slate-400">
-                  {'Contribute $50 for a free citizenship!'}
+                  {'Contribute $100 for a free citizenship!'}
                 </span>
               </span>
             </div>
