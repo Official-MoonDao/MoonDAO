@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import Container from '../components/layout/Container'
 import { ExpandedFooter } from '../components/layout/ExpandedFooter'
