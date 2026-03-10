@@ -63,6 +63,7 @@ function MissionMetadataForm({ missionData, setMissionData }: any) {
           placeholder="Enter mission name"
           maxLength={100}
           variant="dark"
+          formatNumbers={false}
         />
         <Input
           id="mission-tagline-input"
@@ -72,6 +73,7 @@ function MissionMetadataForm({ missionData, setMissionData }: any) {
           placeholder="Enter a compelling tagline"
           maxLength={100}
           variant="dark"
+          formatNumbers={false}
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -83,6 +85,7 @@ function MissionMetadataForm({ missionData, setMissionData }: any) {
           placeholder="https://yourwebsite.com"
           maxLength={500}
           variant="dark"
+          formatNumbers={false}
         />
         <Input
           id="mission-social-input"
@@ -97,6 +100,7 @@ function MissionMetadataForm({ missionData, setMissionData }: any) {
           placeholder="https://discord.gg/... or https://t.me/..."
           maxLength={500}
           variant="dark"
+          formatNumbers={false}
         />
       </div>
       <Input
@@ -112,6 +116,7 @@ function MissionMetadataForm({ missionData, setMissionData }: any) {
         placeholder="https://youtube.com/watch?v=..."
         maxLength={500}
         variant="dark"
+        formatNumbers={false}
       />
     </div>
   )
