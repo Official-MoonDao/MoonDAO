@@ -12,6 +12,7 @@ import { useContext } from 'react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { estimateGasWithAPI } from '@/lib/onboarding/shared-utils'
 
 const UNIVERSAL_ROUTER_ABI = [
   {
@@ -70,7 +71,7 @@ export function useUniswapV4(
       })
       return ethers.utils.formatUnits(result.amountOut, tokenDecimals)
     },
-    [chainSlug, tokenAddress, tokenDecimals, wallets]
+    [chainSlug, tokenAddress, tokenDecimals, tickSpacing, hookAddress, wallets]
   )
 
   const swap = useCallback(
@@ -133,8 +134,69 @@ export function useUniswapV4(
 
       return tx.wait()
     },
-    [chainSlug, tokenAddress, tokenDecimals, wallets]
+    [chainSlug, tokenAddress, tokenDecimals, tickSpacing, hookAddress, wallets]
   )
 
-  return { quote, swap }
+  const estimateGas = useCallback(
+    async (amountIn: string, minOut: string): Promise<bigint> => {
+      const config: SwapExactInSingle = {
+        poolKey: {
+          currency0: ethers.constants.AddressZero,
+          currency1: tokenAddress,
+          fee: 10000,
+          tickSpacing: tickSpacing,
+          hooks: hookAddress,
+        },
+        zeroForOne: true,
+        amountIn: ethers.utils.parseEther(amountIn).toString(),
+        amountOutMinimum: ethers.utils
+          .parseUnits(minOut, tokenDecimals)
+          .toString(),
+        hookData: '0x00',
+      }
+
+      const v4Planner = new V4Planner()
+      v4Planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [config])
+      v4Planner.addAction(Actions.SETTLE_ALL, [
+        config.poolKey.currency0,
+        config.amountIn,
+      ])
+      v4Planner.addAction(Actions.TAKE_ALL, [
+        config.poolKey.currency1,
+        config.amountOutMinimum,
+      ])
+
+      const encodedActions = v4Planner.finalize()
+
+      const routePlanner = new RoutePlanner()
+      routePlanner.addCommand(CommandType.V4_SWAP, [
+        v4Planner.actions,
+        v4Planner.params,
+      ])
+
+      const deadline = Math.floor(Date.now() / 1000) + 3600
+
+      const routerAddress = UNISWAP_V4_ROUTER_ADDRESSES[chainSlug]
+      const iface = new ethers.utils.Interface(UNIVERSAL_ROUTER_ABI)
+      const data = iface.encodeFunctionData('execute', [
+        routePlanner.commands,
+        [encodedActions],
+        deadline,
+      ])
+
+      const chainId = selectedChain?.id
+      if (!chainId) throw new Error('No chain ID')
+
+      return estimateGasWithAPI({
+        chainId,
+        from: ethers.constants.AddressZero,
+        to: routerAddress,
+        data,
+        value: `0x${BigInt(config.amountIn).toString(16)}`,
+      })
+    },
+    [chainSlug, tokenAddress, tokenDecimals, tickSpacing, hookAddress, selectedChain]
+  )
+
+  return { quote, swap, estimateGas }
 }

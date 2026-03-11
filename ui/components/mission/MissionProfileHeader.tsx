@@ -27,7 +27,7 @@ interface MissionProfileHeaderProps {
   teamNFT: any
   ruleset: any
   fundingGoal: number
-  backers: any[]
+  paymentsCount: number
   deadline: number | undefined
   duration: any
   deadlinePassed: boolean
@@ -54,7 +54,7 @@ const MissionProfileHeader = React.memo(
     teamNFT,
     ruleset,
     fundingGoal,
-    backers,
+    paymentsCount,
     deadline,
     duration,
     deadlinePassed,
@@ -402,22 +402,22 @@ const MissionProfileHeader = React.memo(
                     </p>
                   </div>
 
-                  {/* Backers */}
+                  {/* Contributions */}
                   <div className="bg-slate-700/40 rounded-lg p-2 lg:p-3 border border-white/5">
                     <div className="flex items-center mb-1">
                       <Image
                         src="/assets/icon-backers.svg"
-                        alt="Backers"
+                        alt="Contributions"
                         width={14}
                         height={14}
                         className="mr-1"
                       />
                       <span className="text-gray-400 text-xs uppercase tracking-wide">
-                        Backers
+                        Contributions
                       </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {backers?.length || 0}
+                      {paymentsCount || 0}
                     </p>
                   </div>
                 </div>

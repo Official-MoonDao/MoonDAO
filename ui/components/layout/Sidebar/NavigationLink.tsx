@@ -1,7 +1,7 @@
 import { Disclosure, Transition } from '@headlessui/react'
 import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import useTranslation from 'next-translate/useTranslation'
-import Link from 'next/link'
+import { NavLink } from '../NavLink'
 import { useRouter } from 'next/router'
 
 //Checks if the navigation object has a property 'external' set to true, if so returns a link that opens another tab, otherwise checks if the navigation object has children. If it does, it returns the dropdown, if it doesn't it returns an internal navigation link.
@@ -20,37 +20,32 @@ const NavigationLink = ({ item, setSidebarOpen, index = 0 }: any) => {
       }}
     >
       {item.external ? (
-        <Link
+        <a
           href={item.href}
           target="_blank"
           rel="noopener noreferrer"
-          passHref
+          className={`
+             hover:bg-white/10 transition-all duration-200
+          group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 cursor-pointer`}
         >
-          <div
-            className={`
-               hover:bg-white/10 transition-all duration-200
-            group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 cursor-pointer`}
-          >
-            <item.icon className="mr-2 h-5 w-5 flex-shrink-0 text-white" />
-            {t(item.name)}
-          </div>
-        </Link>
+          <item.icon className="mr-2 h-5 w-5 flex-shrink-0 text-white" />
+          {t(item.name)}
+        </a>
       ) : !item.children ? (
-        <Link href={item.href} passHref>
-          <div
-            className={`${
-              router.pathname == item.href
-                ? 'bg-gradient-to-r from-blue-500/30 to-purple-500/30 text-white border border-blue-400/50 font-semibold'
-                : 'hover:bg-white/10 text-white'
-            } group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-200 cursor-pointer`}
-            onClick={() => setSidebarOpen && setSidebarOpen(false)}
-          >
-            <item.icon
-              className={`mr-2 h-5 w-5 flex-shrink-0 text-white`}
-            />
-            {t(item.name)}
-          </div>
-        </Link>
+        <NavLink
+          href={item.href}
+          onClick={() => setSidebarOpen && setSidebarOpen(false)}
+          className={`w-full text-left ${
+            router.pathname == item.href
+              ? 'bg-gradient-to-r from-blue-500/30 to-purple-500/30 text-white border border-blue-400/50 font-semibold'
+              : 'hover:bg-white/10 text-white'
+          } group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-200 cursor-pointer`}
+        >
+          <item.icon
+            className={`mr-2 h-5 w-5 flex-shrink-0 text-white`}
+          />
+          {t(item.name)}
+        </NavLink>
       ) : (
         <Dropdown item={item} router={router} setSidebarOpen={setSidebarOpen} />
       )}
@@ -125,11 +120,11 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
                     <li
                       key={subItem.name}
                       className="list-disc marker:text-white group hover:scale-105 transition-all duration-150"
-                      onClick={() => setSidebarOpen && setSidebarOpen(false)}
                     >
-                      <Link
+                      <NavLink
                         href={subItem.href}
-                        className={`${
+                        onClick={() => setSidebarOpen && setSidebarOpen(false)}
+                        className={`w-full text-left block ${
                           router.asPath == subItem.href ||
                           router.asPath == subItem.dynamicHref
                             ? 'text-blue-300 font-semibold'
@@ -137,7 +132,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
                         } my-3 flex items-center transition-colors duration-200`}
                       >
                         {subItem.name}
-                      </Link>
+                      </NavLink>
                     </li>
                   )
                 } else {

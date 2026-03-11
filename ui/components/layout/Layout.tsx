@@ -86,6 +86,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/lock',
     '/dashboard',
     '/bridge',
+    '/roadmap',
   ]
 
   const isFullscreen = fullscreenPaths.includes(router.pathname)

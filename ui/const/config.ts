@@ -557,7 +557,12 @@ export const CHAIN_TOKEN_NAMES: Index = {
   ethereum: 'ETH',
   polygon: 'MATIC',
   arbitrum: 'ETH',
+  base: 'ETH',
   sepolia: 'ETH',
+  'arbitrum-sepolia': 'ETH',
+  'base-sepolia': 'ETH',
+  'base-sepolia-testnet': 'ETH',
+  'op-sepolia': 'ETH',
 }
 
 export const IPFS_GATEWAY = 'https://gray-main-toad-36.mypinata.cloud/ipfs/'

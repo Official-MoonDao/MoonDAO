@@ -172,6 +172,7 @@ export function ExpandedFooter({
 
   const learnLinks = [
     { text: 'News', href: '/news' },
+    { text: 'Roadmap', href: '/roadmap' },
     { text: 'About', href: '/about' },
     { text: 'Treasury', href: '/treasury' },
     { text: 'Resources', href: '/resources' },
@@ -267,7 +268,7 @@ export function ExpandedFooter({
 
           {/* Social Links */}
           <div className="container mx-auto px-[5vw] xl:px-[2vw] max-w-[1200px] w-full">
-            <div className="flex flex-col items-center border-t border-white/10 pt-4">
+            <div className="flex flex-col items-center border-t border-white/10 mt-6 pt-6">
               <h3 className="text-sm font-medium text-gray-400 uppercase mb-4">
                 Follow Us
               </h3>

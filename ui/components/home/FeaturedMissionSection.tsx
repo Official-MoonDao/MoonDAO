@@ -63,7 +63,6 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
   const {
     subgraphData: featuredMissionSubgraphData,
     fundingGoal: featuredMissionFundingGoal,
-    backers: featuredMissionBackers,
   } = useMissionData({
     mission: featuredMission,
     missionTableContract,
@@ -237,22 +236,22 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
                   </p>
                 </div>
 
-                {/* Backers */}
+                {/* Contributions */}
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-between">
                   <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
                     <Image
                       src="/assets/icon-backers.svg"
-                      alt="Backers"
+                      alt="Contributions"
                       width={24}
                       height={24}
                       className="w-4 h-4 md:w-6 md:h-6 flex-shrink-0"
                     />
                     <span className="text-white/70 text-xs md:text-sm font-medium whitespace-nowrap">
-                      Backers
+                      Contributions
                     </span>
                   </div>
                   <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
-                    {featuredMissionBackers?.length || 0}
+                    {featuredMissionSubgraphData?.paymentsCount || 0}
                   </p>
                 </div>
               </div>
