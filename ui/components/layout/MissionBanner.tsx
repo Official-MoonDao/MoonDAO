@@ -1,4 +1,4 @@
-import { FEATURED_MISSION } from 'const/config'
+import { FEATURED_MISSION, FREE_MINT_THRESHOLD_LABEL } from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -63,7 +63,7 @@ export default function MissionBanner() {
                 </span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-slate-400">
-                  {'Contribute $100 for a free citizenship!'}
+                  {`Contribute ${FREE_MINT_THRESHOLD_LABEL} for a free citizenship!`}
                 </span>
               </span>
               {/* Duplicate for seamless loop */}
@@ -78,7 +78,7 @@ export default function MissionBanner() {
                 </span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-slate-400">
-                  {'Contribute $100 for a free citizenship!'}
+                  {`Contribute ${FREE_MINT_THRESHOLD_LABEL} for a free citizenship!`}
                 </span>
               </span>
             </div>
