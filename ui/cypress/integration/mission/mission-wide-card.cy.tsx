@@ -53,6 +53,7 @@ describe('MissionWideCard', () => {
 
   const mockSubgraphData = {
     volume: 500000000000000000, // 0.5 ETH in wei
+    paymentsCount: 42,
   }
 
   const defaultProps = {
@@ -148,6 +149,19 @@ describe('MissionWideCard', () => {
     cy.get('#link-frame', { timeout: 10000 }).should('exist')
     cy.get('#mission-stat-container', { timeout: 10000 }).should('exist')
     cy.get('#mission-stat-label', { timeout: 10000 }).should('contain', 'Goal')
+  })
+
+  it('Shows contributions count from subgraph paymentsCount', () => {
+    cy.mount(
+      <TestnetProviders>
+        <JuiceProviders projectId={mockMission.projectId} selectedChain={CYPRESS_CHAIN_V5}>
+          <MissionWideCard {...defaultProps} />
+        </JuiceProviders>
+      </TestnetProviders>
+    )
+    cy.get('#link-frame', { timeout: 10000 }).should('exist')
+    cy.get('#mission-stat-label', { timeout: 10000 }).should('contain', 'Contributions')
+    cy.get('#mission-stat-value', { timeout: 10000 }).should('contain', '42')
   })
 
   it('Shows contribute button when contribute prop is true', () => {

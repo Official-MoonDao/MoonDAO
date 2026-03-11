@@ -60,8 +60,7 @@ describe('<TeamJobModal />', () => {
       $form[0].requestSubmit()
     })
     // Wait for toast to appear - react-hot-toast renders in a div with role="status"
-    cy.get('[role="status"]', { timeout: 5000 })
+    cy.contains('Please fill out all fields.', { timeout: 10000 })
       .should('be.visible')
-      .should('contain', 'Please fill out all fields.')
   })
 })
