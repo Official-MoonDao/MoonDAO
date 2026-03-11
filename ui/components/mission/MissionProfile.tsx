@@ -47,7 +47,6 @@ import { getAttribute } from '@/lib/utils/nft'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
-import Head from '@/components/layout/Head'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionContributeModal from '@/components/mission/MissionContributeModal'
 import MissionDeployTokenModal from '@/components/mission/MissionDeployTokenModal'
@@ -377,11 +376,6 @@ export default function MissionProfile({
       />
 
       <Container containerwidth={true}>
-        <Head
-          title={mission?.metadata?.name}
-          image={mission?.metadata?.logoUri}
-          description={mission?.metadata?.tagline}
-        />
         <ContentLayout
           header={''}
           headerSize="max(20px, 3vw)"
