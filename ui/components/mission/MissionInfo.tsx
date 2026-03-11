@@ -211,15 +211,15 @@ export default function MissionInfo({
                 {mission?.metadata?.youtubeLink &&
                   mission?.metadata?.youtubeLink !== '' && (
                     <div className="mt-4 w-full p-4 2xl:p-0 max-w-[1200px]">
-                      <iframe
-                        src={mission?.metadata?.youtubeLink
-                          ?.replace('watch?v=', 'embed/')
-                          ?.replace('youtu.be/', 'www.youtube.com/embed/')}
-                        width="100%"
-                        height="500"
-                        allowFullScreen
-                        className="rounded-2xl"
-                      />
+                      <div className="relative w-full aspect-video">
+                        <iframe
+                          src={mission?.metadata?.youtubeLink
+                            ?.replace('watch?v=', 'embed/')
+                            ?.replace('youtu.be/', 'www.youtube.com/embed/')}
+                          className="absolute inset-0 w-full h-full rounded-2xl"
+                          allowFullScreen
+                        />
+                      </div>
                     </div>
                   )}
                 <div
