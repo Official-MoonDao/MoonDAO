@@ -1,8 +1,8 @@
 import CitizenABI from 'const/abis/Citizen.json'
 import {
+  BENDYSTRAW_JB_VERSION,
   DEFAULT_CHAIN_V5,
   CITIZEN_ADDRESSES,
-  MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
   FREE_MINT_THRESHOLD,
 } from 'const/config'
 import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
@@ -19,40 +19,46 @@ import { serverClient } from '@/lib/thirdweb/client'
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 const privateKey = process.env.XP_ORACLE_SIGNER_PK
+
+// Use the Bendystraw (Juicebox) subgraph which tracks participants and pay events
+const bendystrawUrl = `https://${
+  process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' ? 'testnet.' : ''
+}bendystraw.xyz/${process.env.BENDYSTRAW_API_KEY}/graphql`
+
 const subgraphClient = createClient({
-  url: MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
+  url: bendystrawUrl,
   exchanges: [fetchExchange, cacheExchange],
 })
 
 async function getTotalPaid(address: string) {
-  const fetchPayments = async () => {
-    const query = `
-      query {
-        backers(first: 100,
+  const query = `
+    query {
+      participants(
+        limit: 100,
         where: {
-          backer: "${address}"
-        }) {
-          id
-          backer
+          address: "${address.toLowerCase()}",
+          version: ${BENDYSTRAW_JB_VERSION},
+          chainId: ${chain.id}
+        }
+      ) {
+        items {
+          address
           projectId
-          totalAmountContributed
-          numberOfPayments
-          firstContributionTimestamp
-          lastContributionTimestamp
+          volume
+          paymentsCount
         }
       }
-    `
-    const subgraphRes = await subgraphClient.query(query, {}).toPromise()
-    if (subgraphRes.error) {
-      console.log(subgraphRes.error)
-      throw new Error(subgraphRes.error.message)
     }
-    return subgraphRes.data.backers
+  `
+  const subgraphRes = await subgraphClient.query(query, {}).toPromise()
+  if (subgraphRes.error) {
+    console.error('Bendystraw query error:', subgraphRes.error)
+    throw new Error(subgraphRes.error.message)
   }
-  const payments = await fetchPayments()
-  const totalPaid = payments.reduce((acc: any, payment: any) => {
-    return acc + parseInt(payment.totalAmountContributed)
-  }, 0)
+  const participants = subgraphRes.data?.participants?.items || []
+  const totalPaid = participants.reduce((acc: bigint, p: any) => {
+    return acc + BigInt(p.volume || '0')
+  }, BigInt(0))
   return totalPaid
 }
 
@@ -78,7 +84,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'You are already a citizen!' })
     }
     const totalPaid = await getTotalPaid(address)
-    if (totalPaid < FREE_MINT_THRESHOLD) {
+    if (totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
       return res.status(400).json({
         error: 'You have not contributed enough to earn a free citizen NFT!',
       })
@@ -119,8 +125,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       success: true,
       message: 'Fetched total paid.',
       data: {
-        totalPaid: totalPaid,
-        eligible: totalPaid >= FREE_MINT_THRESHOLD,
+        totalPaid: totalPaid.toString(),
+        eligible: totalPaid >= BigInt(FREE_MINT_THRESHOLD),
       },
     })
   }
