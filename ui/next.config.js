@@ -34,6 +34,7 @@ module.exports = withBundleAnalyzer(
         removeConsole: false,
       },
       experimental: {
+        esmExternals: 'loose',
         serverComponentsExternalPackages: ['thirdweb'],
         optimizePackageImports: [
           '@heroicons/react',
