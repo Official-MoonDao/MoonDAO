@@ -15,7 +15,6 @@ import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 
-// This API route allows users who have contributed to any Juicebox project to claim a free Citizen NFT.
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
