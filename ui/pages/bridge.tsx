@@ -1,6 +1,4 @@
-import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
-import React from 'react'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import ArbitrumBridge from '@/components/bridge/ArbitrumBridge'
@@ -8,8 +6,6 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SpaceBackground from '@/components/layout/SpaceBackground'
 
 export default function Bridge() {
-  const { t } = useTranslation('common')
-
   return (
     <>
       <WebsiteHead
@@ -20,23 +16,39 @@ export default function Bridge() {
       <Container is_fullwidth={true}>
         <SpaceBackground />
         <div className="min-h-screen text-white w-full relative z-10">
-          {/* Bridge MOONEY Section */}
-          <section className="py-12 px-6 w-full min-h-screen flex items-center">
-            <div className="max-w-4xl mx-auto w-full">
-              <div className="text-center mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
+          {/* Bridge MOONEY Section - Compact for above-the-fold */}
+          <section className="py-4 sm:py-6 px-4 sm:px-6 w-full min-h-[100dvh] flex flex-col justify-center">
+            <div className="max-w-2xl mx-auto w-full">
+              <div className="mb-3 sm:mb-4">
+                <h1 className="text-2xl sm:text-3xl font-bold font-GoodTimes text-white mb-1 sm:mb-2">
                   Bridge MOONEY
                 </h1>
-                <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-                  Transfer your MOONEY tokens securely across different blockchain networks to
-                  access various DeFi opportunities and governance features.
+                <p className="text-sm sm:text-base text-gray-300">
+                  This bridge transfers your ETH and MOONEY tokens from Ethereum mainnet to Arbitrum.
+                  Arbitrum offers faster transactions and lower fees while maintaining full security.
                 </p>
               </div>
 
-              {/* Centered Bridge Interface */}
-              <div className="max-w-xl mx-auto">
-                <div>
-                  <ArbitrumBridge />
+              {/* Bridge Interface */}
+              <div className="mb-4 sm:mb-6">
+                <ArbitrumBridge />
+              </div>
+
+              {/* Next Steps - Compact */}
+              <div className="w-full">
+                <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+                  <Link
+                    href="/lock"
+                    className="flex-1 min-w-[140px] sm:min-w-0 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white py-2.5 sm:py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 transform hover:scale-105 text-center"
+                  >
+                    Lock for Voting Power
+                  </Link>
+                  <Link
+                    href="/projects"
+                    className="flex-1 min-w-[140px] sm:min-w-0 bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white py-2.5 sm:py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 transform hover:scale-105 text-center"
+                  >
+                    View Governance
+                  </Link>
                 </div>
               </div>
             </div>

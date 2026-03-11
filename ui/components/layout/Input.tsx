@@ -27,6 +27,9 @@ export interface InputProps {
   min?: Date | string | number
   max?: Date | string | number
   formatNumbers?: boolean
+  wrapperClassName?: string
+  /** When true, renders only the input element without wrapper - for alignment with sibling elements */
+  bare?: boolean
 }
 
 export default function Input({
@@ -52,6 +55,8 @@ export default function Input({
   min,
   max,
   formatNumbers = true,
+  wrapperClassName = '',
+  bare = false,
 }: InputProps) {
   const isTextarea = type === 'textarea'
   const isDate = type === 'date'
@@ -195,10 +200,19 @@ export default function Input({
     />
   )
 
+  if (bare) {
+    return (
+      <>
+        {inputElement}
+        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+      </>
+    )
+  }
+
   return (
     <div
       data-cy="input-wrapper"
-      className={`w-full h-full py-1 flex flex-col justify-between gap-2 ${maxWidth}`}
+      className={`w-full h-full py-1 flex flex-col justify-between gap-2 ${maxWidth} ${wrapperClassName}`}
     >
       {(label || tooltip) && (
         <div className="flex flex-row items-center gap-2">

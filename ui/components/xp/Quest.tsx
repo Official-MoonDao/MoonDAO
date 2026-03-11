@@ -1,4 +1,4 @@
-import { CheckBadgeIcon } from '@heroicons/react/24/outline'
+import { CheckBadgeIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline'
 import { getAccessToken, usePrivy } from '@privy-io/react-auth'
 import ERC20ABI from 'const/abis/ERC20.json'
 import StagedXPVerifierABI from 'const/abis/StagedXPVerifier.json'
@@ -606,7 +606,7 @@ export default function Quest({
 
   const getButtonClasses = () => {
     const baseClasses =
-      'px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95'
+      'w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center'
     if (variant === 'weekly') {
       return `${baseClasses} bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 hover:from-purple-700 hover:via-purple-600 hover:to-purple-700 text-white`
     }
@@ -616,7 +616,7 @@ export default function Quest({
   // Base classes for different error button types
   const getBaseErrorButtonClasses = useCallback((type: string) => {
     const baseClasses =
-      'bg-gradient-to-r text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95'
+      'w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center'
 
     switch (type) {
       case 'github_link':
@@ -764,121 +764,25 @@ export default function Quest({
   )
 
   const ModalButton = quest?.modalButton || null
+  const QuestIcon = quest.icon
 
   return (
     <div
-      className={`px-4 py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
+      className={`w-full px-3 py-3 sm:px-4 sm:py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
     >
-      {/* Progress Background - Makes the whole card act as a progress bar */}
-      {(quest.verifier.type === 'staged' &&
-        stagedProgress &&
-        !isLoadingStagedProgress) ||
-      isCompleted ? (
-        <>
-          {/* Main Progress Gradient */}
-          <div
-            className="absolute inset-0 transition-all duration-1000 ease-out h-[85px]"
-            style={{
-              background: `linear-gradient(90deg, 
-                rgba(34, 197, 94, 0.15) 0%, 
-                rgba(34, 197, 94, 0.08) ${Math.min(
-                  100,
-                  (Number(userMetric) /
-                    Number(getNextUnclamedThreshold(stagedProgress))) *
-                    100
-                )}%, 
-                rgba(255, 255, 255, 0.02) ${Math.min(
-                  100,
-                  (Number(userMetric) /
-                    Number(getNextUnclamedThreshold(stagedProgress))) *
-                    100
-                )}%, 
-                rgba(255, 255, 255, 0.02) 100%)`,
-            }}
-          />
-
-          {/* Animated Shimmer Effect */}
-          <div
-            className="absolute inset-0 opacity-30 h-[85px]"
-            style={{
-              background: `linear-gradient(90deg, 
-                  transparent 0%, 
-                  rgba(34, 197, 94, 0.3) 25%, 
-                  rgba(34, 197, 94, 0.6) 50%, 
-                  rgba(34, 197, 94, 0.3) 75%, 
-                  transparent 100%)`,
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 10s ease-in-out infinite',
-              width: `${Math.min(
-                100,
-                (Number(userMetric) /
-                  Number(getNextUnclamedThreshold(stagedProgress))) *
-                  100
-              )}%`,
-            }}
-          />
-
-          {/* Pulsing Progress Edge Glow */}
-          {quest.verifier.type === 'staged' && !isCompleted && (
-            <div
-              className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-green-400 via-green-300 to-green-400 shadow-lg shadow-green-400/50 opacity-[0.35] h-[85px]"
-              style={{
-                left: `${Math.min(
-                  100,
-                  (Number(userMetric) /
-                    Number(getNextUnclamedThreshold(stagedProgress))) *
-                    100
-                )}%`,
-                transform: 'translateX(-50%)',
-                animation: 'pulse-glow 2s ease-in-out infinite',
-              }}
-            />
-          )}
-
-          {/* CSS Animations */}
-          <style jsx>{`
-            @keyframes shimmer {
-              0% {
-                background-position: -200% 0;
-              }
-              100% {
-                background-position: 200% 0;
-              }
-            }
-
-            @keyframes pulse-glow {
-              0%,
-              100% {
-                box-shadow: 0 0 20px rgba(34, 197, 94, 0.5),
-                  0 0 40px rgba(34, 197, 94, 0.3),
-                  0 0 60px rgba(34, 197, 94, 0.1);
-              }
-              50% {
-                box-shadow: 0 0 30px rgba(34, 197, 94, 0.8),
-                  0 0 60px rgba(34, 197, 94, 0.5),
-                  0 0 90px rgba(34, 197, 94, 0.2);
-              }
-            }
-          `}</style>
-        </>
-      ) : (
-        <></>
-      )}
-
-      <hr className="absolute top-[85px] left-0 w-full border-white/10" />
-
-      <div className="flex flex-col items-center gap-3 w-full relative z-10">
-        <div className="flex items-center justify-between gap-3 w-full h-[55px]">
-          <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 w-full relative z-10 min-w-0">
+        {/* Header: stack on mobile, row on larger screens */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 w-full min-w-0">
+          <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
             {/* Icon Section */}
             <div
               className={`p-2.5 rounded-xl flex-shrink-0 transition-all duration-500 ${getIconClasses()} h-10 w-10`}
             >
-              <quest.icon className="w-5 h-5 group-hover:rotate-12 transition-transform duration-500" />
+              <QuestIcon className="w-5 h-5 group-hover:rotate-12 transition-transform duration-500" />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <h3
-                className={`font-semibold text-base transition-all duration-300 ${
+                className={`font-semibold text-sm sm:text-base transition-all duration-300 break-words ${
                   isCheckingClaimed || isPollingClaim
                     ? 'text-white'
                     : isCompleted
@@ -888,60 +792,38 @@ export default function Quest({
                     : 'text-white group-hover:from-blue-400 group-hover:to-blue-300'
                 }`}
               >
-                {quest.title}
+                {quest.description}
               </h3>
               {isCompleted ? (
                 <CheckBadgeIcon className="w-5 h-5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-              ) : (
-                <></>
-              )}
+              ) : null}
             </div>
           </div>
 
-          {/* Stage and Threshold Info - Moved to upper right */}
+          {/* MOONEY amount - full width on mobile, auto on larger */}
           {quest.verifier.type === 'staged' &&
             stagedProgress &&
             !isLoadingStagedProgress && (
-              <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/30 to-orange-500/30 px-2.5 py-1 rounded-full border border-yellow-400/30 shadow-lg shadow-yellow-500/20 backdrop-blur-sm">
-                    Stage{' '}
-                    {Math.min(
-                      (stagedProgress.nextClaimableStage ?? -1) + 2,
-                      stagedProgress.stages.length
+              <div className="flex items-center sm:items-end sm:justify-end flex-shrink-0">
+                <span className="text-green-300 text-xs sm:text-sm font-medium bg-gradient-to-r from-green-500/30 to-emerald-500/30 px-2.5 py-1 rounded-full border border-green-400/30 shadow-lg shadow-green-500/20 backdrop-blur-sm whitespace-nowrap">
+                  +
+                  {stagedProgress.nextStageXP ??
+                    Number(
+                      stagedProgress.stages[
+                        stagedProgress.stages.length - 1
+                      ]?.xpAmount ?? 0
                     )}{' '}
-                    of {stagedProgress.stages.length}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-white">
-                  <span className="font-medium">{formattedUserMetric}</span>
-                  <span className="text-gray-400">/</span>
-                  <span className="font-medium">
-                    {formattedNextUnclamedThreshold}
-                  </span>
-                  <span className="font-sm">
-                    {`(${(
-                      (Number(userMetric) /
-                        Number(getNextUnclamedThreshold(stagedProgress))) *
-                      100
-                    ).toFixed(0)}%)`}
-                  </span>
-                </div>
+                  MOONEY
+                </span>
               </div>
             )}
         </div>
 
         {/* Content Section */}
         <div className="flex-1 w-full space-y-3">
-          {/* Description */}
-          <p className="mt-4 text-gray-300 text-sm leading-relaxed group-hover:text-gray-200 transition-colors duration-300">
-            {quest.description}
-          </p>
-
           {/* Progress Section */}
           <div className="w-full space-y-3">
             {quest.verifier.type === 'staged' ? (
-              // Staged quest progress display
               <div className="w-full space-y-3">
                 {isLoadingStagedProgress ? (
                   <div className="flex items-center gap-2 text-gray-400 text-sm">
@@ -949,61 +831,156 @@ export default function Quest({
                     Loading progress...
                   </div>
                 ) : stagedProgress ? (
-                  <div className="flex items-start justify-between gap-4 w-full">
-                    {/* XP Info Cards */}
-                    <div className="flex-1 min-w-0 space-y-2">
-                      {/* Ready to Claim Section */}
-                      {stagedProgress.totalClaimableXP > 0 && (
-                        <div className="text-green-300 text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm shadow-lg shadow-green-500/20">
-                          Ready to Claim: +{stagedProgress.totalClaimableXP}{' '}
-                          MOONEY
+                  <div className="flex flex-col gap-4 w-full min-w-0">
+                    {/* Referral quest: progress bar + link + buttons (same layout as other quests) */}
+                    {quest.actionText?.includes('Copy Referral Link') && (
+                      <div className="flex flex-col gap-4 w-full min-w-0">
+                        {/* Progress bar - matches other staged quests */}
+                        {stagedProgress && (
+                          <div className="w-full min-w-0 flex flex-col gap-1.5">
+                            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden shadow-inner">
+                              <div
+                                className="h-full min-w-[4px] bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 rounded-full transition-all duration-500 ease-out shadow-sm"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.max(
+                                      0,
+                                      (Number(userMetric) /
+                                        Math.max(
+                                          1,
+                                          Number(getNextUnclamedThreshold(stagedProgress))
+                                        )) *
+                                        100
+                                    )
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                            <p className="text-gray-400 text-xs font-medium min-w-0">
+                              {userMetric} / {getNextUnclamedThreshold(stagedProgress)} referrals
+                            </p>
+                          </div>
+                        )}
+                        {/* Copy Referral Link + Record Referral - same line, matching quest button style */}
+                        <div className="flex flex-row gap-2">
+                          {quest.action && citizen?.owner && (
+                            <button
+                              onClick={quest.action}
+                              className={`${getButtonClasses()} flex-1 min-w-0 gap-2`}
+                            >
+                              <ClipboardDocumentIcon className="w-4 h-4 flex-shrink-0" />
+                              Copy Referral Link
+                            </button>
+                          )}
+                          {!isCompleted && ModalButton && (
+                            <ModalButton className={`${getButtonClasses()} flex-1 min-w-0 gap-2`} />
+                          )}
                         </div>
-                      )}
+                        {/* Claim button + error */}
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+                          {!isCompleted &&
+                            !needsGitHubLink &&
+                            stagedProgress?.totalClaimableXP !== 0 && (
+                              <PrivyWeb3Button
+                                label={`Claim +${stagedProgress.totalClaimableXP} $MOONEY`}
+                                action={async () => {
+                                  await claimQuest()
+                                }}
+                                isDisabled={
+                                  isLoadingClaim ||
+                                  (quest.verifier.type === 'staged' &&
+                                    stagedProgress?.totalClaimableXP === 0)
+                                }
+                                requiredChain={DEFAULT_CHAIN_V5}
+                                className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/20 text-green-300 font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+                                noPadding
+                                noGradient
+                              />
+                            )}
+                          {getErrorButton(error || '')}
+                        </div>
+                      </div>
+                    )}
 
-                      {/* Next Stage or Final Stage Section */}
-                      {(() => {
-                        if (
-                          stagedProgress.isMaxStageReached &&
-                          stagedProgress.currentUserMetric >=
-                            getNextUnclamedThreshold(stagedProgress)
-                        ) {
-                          // Max stage reached - Purple
-                          return (
-                            <div className="text-purple-300 text-sm font-medium bg-gradient-to-r from-purple-500/20 to-violet-500/20 px-2.5 py-1.5 rounded-lg border border-purple-400/20 backdrop-blur-sm shadow-lg shadow-purple-500/20">
-                              🏆 Max Stage Reached - Congratulations!
+                    {/* Non-referral: progress bar + action buttons */}
+                    {!quest.actionText?.includes('Copy Referral Link') && (
+                    <div className="flex flex-col gap-3 w-full min-w-0">
+                      {/* Progress bar - full width, stacked above buttons on all screens */}
+                      {quest.verifier.type === 'staged' &&
+                        stagedProgress &&
+                        !isLoadingStagedProgress &&
+                        !quest.actionText?.includes('Copy Referral Link') && (
+                          <div className="w-full min-w-0 flex flex-col gap-1.5">
+                            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden shadow-inner">
+                              <div
+                                className="h-full min-w-[4px] bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 rounded-full transition-all duration-500 ease-out shadow-sm"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.max(
+                                      0,
+                                      (Number(userMetric) /
+                                        Math.max(
+                                          1,
+                                          Number(
+                                            getNextUnclamedThreshold(
+                                              stagedProgress
+                                            )
+                                          )
+                                        )) *
+                                        100
+                                    )
+                                  )}%`,
+                                }}
+                              />
                             </div>
-                          )
-                        } else if (
-                          stagedProgress.nextStageXP !== null &&
-                          stagedProgress.userHighestStage !==
-                            stagedProgress.stages.length - 1
-                        ) {
-                          // Next stage available - Blue
-                          return (
-                            <div className="text-blue-300 text-sm font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 px-2.5 py-1.5 rounded-lg border border-blue-400/20 backdrop-blur-sm shadow-lg shadow-blue-500/20">
-                              Next Stage: +{stagedProgress.nextStageXP} MOONEY
-                            </div>
-                          )
-                        } else {
-                          // Final stage info - Orange
-                          return (
-                            <div className="text-orange-300 text-sm font-medium bg-gradient-to-r from-orange-500/20 to-amber-500/20 px-2.5 py-1.5 rounded-lg border border-orange-400/20 backdrop-blur-sm shadow-lg shadow-purple-500/20">
-                              🎯 Final Stage: +{stagedProgress.nextStageXP}{' '}
-                              MOONEY
-                            </div>
-                          )
-                        }
-                      })()}
-                    </div>
+                            <p className="text-gray-400 text-xs font-medium min-w-0">
+                              {quest.verifier.metricFormatting
+                                ? quest.verifier.metricFormatting(userMetric)
+                                : userMetric >= 1000
+                                ? userMetric.toLocaleString()
+                                : userMetric}
+                              /
+                              {quest.verifier.metricFormatting
+                                ? quest.verifier.metricFormatting(
+                                    Number(getNextUnclamedThreshold(stagedProgress))
+                                  )
+                                : Number(
+                                    getNextUnclamedThreshold(stagedProgress)
+                                  ) >= 1000
+                                ? Number(
+                                    getNextUnclamedThreshold(stagedProgress)
+                                  ).toLocaleString()
+                                : Number(
+                                    getNextUnclamedThreshold(stagedProgress)
+                                  )}{' '}
+                              (
+                              {Math.min(
+                                100,
+                                Math.round(
+                                  (Number(userMetric) /
+                                    Math.max(
+                                      1,
+                                      Number(
+                                        getNextUnclamedThreshold(stagedProgress)
+                                      )
+                                    )) *
+                                    100
+                                )
+                              )}
+                              %)
+                            </p>
+                          </div>
+                        )}
 
-                    {/* Action Buttons - Right side */}
-                    <div className="flex gap-2 flex-col flex-shrink-0 items-end">
-                      <div className="flex gap-2">
+                      {/* Action buttons - stack on mobile, wrap on larger screens */}
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
                         {!isCompleted &&
                           !needsGitHubLink &&
                           stagedProgress?.totalClaimableXP !== 0 && (
                             <PrivyWeb3Button
-                              label="Claim"
+                              label={`Claim +${stagedProgress.totalClaimableXP} $MOONEY`}
                               action={async () => {
                                 await claimQuest()
                               }}
@@ -1013,17 +990,13 @@ export default function Quest({
                                   stagedProgress?.totalClaimableXP === 0)
                               }
                               requiredChain={DEFAULT_CHAIN_V5}
-                              className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/20 text-yellow-300 font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+                              className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/20 text-green-300 font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
                               noPadding
                               noGradient
                             />
                           )}
 
-                        {getErrorButton(error || '') && (
-                          <div className="flex justify-center">
-                            {getErrorButton(error || '')}
-                          </div>
-                        )}
+                        {getErrorButton(error || '')}
 
                         {!isCompleted &&
                           quest.link &&
@@ -1053,6 +1026,7 @@ export default function Quest({
                         {!isCompleted &&
                           quest.action &&
                           quest.actionText &&
+                          !quest.actionText.includes('Copy Referral Link') &&
                           !needsGitHubLink && (
                             <button
                               onClick={quest.action}
@@ -1061,9 +1035,10 @@ export default function Quest({
                               {quest.actionText}
                             </button>
                           )}
+                        {!isCompleted && ModalButton && <ModalButton />}
                       </div>
-                      {!isCompleted && ModalButton && <ModalButton />}
                     </div>
+                    )}
                   </div>
                 ) : (
                   <span className="text-gray-400 text-sm">
@@ -1073,8 +1048,8 @@ export default function Quest({
               </div>
             ) : (
               // Single quest XP display with buttons
-              <div className="flex items-center justify-between gap-4 w-full">
-                <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-2.5 py-1.5 rounded-lg border border-yellow-400/20 backdrop-blur-sm flex items-center justify-center">
+              <div className="flex flex-col gap-3 w-full min-w-0">
+                <span className="text-green-300 text-xs sm:text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 w-fit self-start">
                   +
                   {isLoadingXpAmount ? (
                     <div className="inline-flex items-center gap-1">
@@ -1086,72 +1061,62 @@ export default function Quest({
                   MOONEY
                 </span>
 
-                {/* Action Buttons - Right side */}
-                <div className="flex items-center flex-row gap-2 flex-nowrap">
+                {/* Action Buttons - stack on mobile, wrap on larger */}
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full sm:w-auto">
                   {!isCompleted && !needsGitHubLink && (
-                    <div className="inline-block">
-                      <PrivyWeb3Button
-                        label="Claim"
-                        action={async () => {
-                          await claimQuest()
-                        }}
-                        isDisabled={isLoadingClaim}
-                        requiredChain={DEFAULT_CHAIN_V5}
-                        className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/20 text-yellow-300 font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
-                        noPadding
-                        noGradient
-                      />
-                    </div>
+                    <PrivyWeb3Button
+                      label={`Claim +${xpAmount} $MOONEY`}
+                      action={async () => {
+                        await claimQuest()
+                      }}
+                      isDisabled={isLoadingClaim}
+                      requiredChain={DEFAULT_CHAIN_V5}
+                      className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/20 text-green-300 font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+                      noPadding
+                      noGradient
+                    />
                   )}
 
-                  <div className="inline-block">
-                    {getErrorButton(error || '')}
-                  </div>
+                  {getErrorButton(error || '')}
 
-                  <div className="flex flex-col gap-2">
-                    {!isCompleted &&
-                      quest.link &&
-                      quest.linkText &&
-                      !needsGitHubLink && (
-                        <div className="inline-block">
-                          <StandardButton
-                            className={getButtonClasses()}
-                            link={
-                              quest.link === 'citizenProfile'
-                                ? `/citizen/${generatePrettyLinkWithId(
-                                    citizen.metadata.name,
-                                    citizen.id
-                                  )}`
-                                : quest.link
-                            }
-                            target={
-                              quest.link.startsWith('/') ||
-                              quest.link === 'citizenProfile'
-                                ? '_self'
-                                : '_blank'
-                            }
-                          >
-                            {quest.linkText}
-                          </StandardButton>
-                        </div>
-                      )}
+                  {!isCompleted &&
+                    quest.link &&
+                    quest.linkText &&
+                    !needsGitHubLink && (
+                      <StandardButton
+                        className={getButtonClasses()}
+                        link={
+                          quest.link === 'citizenProfile'
+                            ? `/citizen/${generatePrettyLinkWithId(
+                                citizen.metadata.name,
+                                citizen.id
+                              )}`
+                            : quest.link
+                        }
+                        target={
+                          quest.link.startsWith('/') ||
+                          quest.link === 'citizenProfile'
+                            ? '_self'
+                            : '_blank'
+                        }
+                      >
+                        {quest.linkText}
+                      </StandardButton>
+                    )}
 
-                    {!isCompleted &&
-                      quest.action &&
-                      quest.actionText &&
-                      !needsGitHubLink && (
-                        <div className="inline-block">
-                          <button
-                            onClick={quest.action}
-                            className={getButtonClasses()}
-                          >
-                            {quest.actionText}
-                          </button>
-                        </div>
-                      )}
+                  {!isCompleted &&
+                    quest.action &&
+                    quest.actionText &&
+                    !needsGitHubLink && (
+                      <button
+                        onClick={quest.action}
+                        className={getButtonClasses()}
+                      >
+                        {quest.actionText}
+                      </button>
+                    )}
 
-                    {!isCompleted && ModalButton && <ModalButton />}
-                  </div>
+                  {!isCompleted && ModalButton && <ModalButton />}
                 </div>
               </div>
             )}

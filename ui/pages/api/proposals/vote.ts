@@ -157,7 +157,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   const currentQuarter = getCurrentQuarter()
   const quarter = req.body?.quarter || currentQuarter.quarter
   const year = req.body?.year || currentQuarter.year
-  
+
   console.log(`[vote tally] Starting tally for Q${quarter} ${year}`)
   
   const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE quarter = ${quarter} AND year = ${year}`
@@ -295,7 +295,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   console.log('[vote tally] ETH budgets:', ethBudgets)
 
   const voteOpenTimestamp: number = Math.floor(
-    Number(getThirdThursdayOfQuarterTimestamp(quarter, year)) / 1000
+    getThirdThursdayOfQuarterTimestamp(quarter, year).getTime() / 1000
   )
   const voteCloseTimestamp: number = voteOpenTimestamp + 60 * 60 * 24 * 5 // 5 days after vote opens
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
@@ -472,7 +472,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
     console.log(`[vote tally] Updated project ${projectId}: active=${approved ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED} (tx: ${receipt.transactionHash})`)
   }
-  
+
   return res.status(200).json({
     url: 'https://moondao.com/projects',
     outcome: outcome,

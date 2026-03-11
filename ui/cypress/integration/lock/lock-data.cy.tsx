@@ -18,10 +18,11 @@ describe('<LockData />', () => {
     )
     cy.get('#lock-data').should('exist')
 
-    //check lock data balances
+    //check lock data balances - vMOONEY is now calculated via linear decay from lock
+    // 1 MOONEY locked for 1 year = ~0.25 vMOONEY (1/4 of MAXTIME)
     cy.get('#lock-data')
       .get('#lock-data-vmooney-balance')
-      .should('have.text', '1')
+      .should('include.text', '0.25')
     cy.get('#lock-data')
       .get('#lock-data-locked-mooney')
       .should('have.text', '1.00')

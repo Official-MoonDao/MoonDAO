@@ -35,31 +35,41 @@ export default function StandardButton({
   styleOnly = false,
   type = 'button',
 }: StandardButtonProps) {
-  const buttonContent = (
+  const buttonStyles = `
+    px-4 py-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl
+    ${backgroundColor} 
+    ${hoverColor}
+    ${borderRadius} 
+    ${textColor}
+    ${className}
+    ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+  `
+
+  // Use span instead of button when wrapped in Link - nesting <button> inside <a> is invalid HTML
+  // and can prevent navigation from working (clicks don't reach the link)
+  if (!styleOnly && link && link !== '#') {
+    return (
+      <Link
+        href={link}
+        target={target}
+        rel="noopener noreferrer"
+        className={`inline-flex items-center justify-center ${buttonStyles}`}
+        onClick={onClick}
+      >
+        {children}
+      </Link>
+    )
+  }
+
+  return (
     <button
       id={id}
-      className={`
-        px-4 py-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl
-        ${backgroundColor} 
-        ${hoverColor}
-        ${borderRadius} 
-        ${textColor}
-        ${className}
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-      `}
-      onClick={onClick || null}
+      className={buttonStyles}
+      onClick={onClick || undefined}
       type={type as any}
       disabled={disabled}
     >
       {children}
     </button>
-  )
-
-  return styleOnly ? (
-    buttonContent
-  ) : (
-    <Link href={link} target={target} rel="noopener noreferrer">
-      {buttonContent}
-    </Link>
   )
 }

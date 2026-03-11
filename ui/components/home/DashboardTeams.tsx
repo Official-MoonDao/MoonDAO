@@ -36,11 +36,11 @@ export default function DashboardTeams({
     <>
       {!isLoading && hats ? (
         hats.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-2">
             {hats?.map((hat: any, index: number) => (
               <div
                 key={hat.id || `hat-${index}`}
-                className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors w-full"
+                className="bg-slate-600/20 rounded-lg p-3 hover:bg-slate-600/30 transition-colors w-full"
               >
                 <Hat
                   selectedChain={selectedChain}

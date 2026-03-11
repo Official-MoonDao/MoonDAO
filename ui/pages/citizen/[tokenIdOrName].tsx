@@ -131,7 +131,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
   // Balances
   const { nativeBalance } = useNativeBalance()
 
-  const MOONEYBalance = useTotalMooneyBalance(isGuest ? address : nft?.owner)
+  const { balance: MOONEYBalance } = useTotalMooneyBalance(isGuest ? address : nft?.owner)
 
   const { walletVP: VMOONEYBalance } = useTotalVP(nft?.owner)
 
