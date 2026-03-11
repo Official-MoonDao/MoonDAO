@@ -329,7 +329,7 @@ export default function MissionProfile({
         teamNFT={teamNFT}
         ruleset={ruleset}
         fundingGoal={fundingGoal}
-        backers={backers}
+        paymentsCount={subgraphData?.paymentsCount || 0}
         deadline={deadline}
         duration={duration}
         deadlinePassed={deadlinePassed}
