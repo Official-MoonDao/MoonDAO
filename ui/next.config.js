@@ -359,7 +359,7 @@ module.exports = withBundleAnalyzer(
           // Mission specific redirects
           {
             source: '/mission',
-            destination: `/mission/3`,
+            destination: `/mission/4`,
             permanent: false,
           },
           {
@@ -369,12 +369,12 @@ module.exports = withBundleAnalyzer(
           },
           {
             source: '/frank',
-            destination: 'https://luma.com/1vvxgrcz',
+            destination: '/mission/4',
             permanent: false,
           },
                     {
             source: '/overview',
-            destination: 'https://luma.com/1vvxgrcz',
+            destination: '/mission/4',
             permanent: false,
           },
           // Citizen specific referral redirects
