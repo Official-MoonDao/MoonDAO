@@ -1,15 +1,15 @@
-import { FEATURED_MISSION, FEATURED_MISSION_INDEX } from 'const/config'
+import { FEATURED_MISSION } from 'const/config'
 import FeaturedMissionSection from '@/components/home/FeaturedMissionSection'
 import TestnetProviders from '../../mock/TestnetProviders'
 
 const mockMissions = [
   {
-    id: '3',
+    id: '4',
     projectId: '1',
     metadata: {
-      name: 'Support the Inspiration4 Complex at Space Camp',
+      name: 'Go to Space with Frank White',
       description:
-        'Donate to support real training hardware and inspire future astronauts at Space Camp, USA',
+        'Want to go to space? Join Frank White and bring the Overview Effect to Earth to help unite humanity.',
       logoUri: '/assets/project-default.png',
     },
   },
@@ -43,9 +43,9 @@ describe('<FeaturedMissionSection />', () => {
       </TestnetProviders>
     )
 
-    if (FEATURED_MISSION && FEATURED_MISSION_INDEX !== null) {
+    if (FEATURED_MISSION && FEATURED_MISSION.id) {
       cy.contains('Featured Mission').should('be.visible')
-      cy.contains('Support the Inspiration4 Complex at Space Camp').should('be.visible')
+      cy.contains('Go to Space with Frank White').should('be.visible')
     } else {
       cy.get('section').should('not.exist')
     }
@@ -65,11 +65,11 @@ describe('<FeaturedMissionSection />', () => {
 
   it('Verifies FEATURED_MISSION config flag behavior', () => {
     if (FEATURED_MISSION === null) {
-      expect(FEATURED_MISSION_INDEX).to.be.null
+      expect(FEATURED_MISSION).to.be.null
     } else {
       expect(FEATURED_MISSION).to.have.property('id')
       expect(FEATURED_MISSION).to.have.property('name')
-      expect(FEATURED_MISSION_INDEX).to.not.be.null
+      expect(FEATURED_MISSION).to.have.property('description')
     }
   })
 })

@@ -302,8 +302,6 @@ export const FEATURED_MISSION =
           'Want to go to space? Join Frank White and bring the Overview Effect to Earth to help unite humanity.',
       }
     : null
-export const FEATURED_MISSION_INDEX = FEATURED_MISSION ? 4 : null
-
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,
   sepolia: sepoliaConfig.MissionTable,
