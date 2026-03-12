@@ -372,7 +372,7 @@ module.exports = withBundleAnalyzer(
             destination: '/mission/4',
             permanent: false,
           },
-                    {
+          {
             source: '/overview',
             destination: '/mission/4',
             permanent: false,
