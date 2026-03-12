@@ -45,7 +45,11 @@ export default function JuiceProviders({
   }, [])
 
   if (!mounted) {
-    return <>{children}</>
+    return (
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    )
   }
 
   return (
