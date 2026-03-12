@@ -296,14 +296,12 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 export const FEATURED_MISSION =
   process.env.NEXT_PUBLIC_FEATURED_MISSION !== 'false'
     ? {
-        id: '3',
-        name: 'Support the Inspiration4 Complex at Space Camp',
+        id: '4',
+        name: 'Go to Space with Frank White',
         description:
-          'Donate to support real training hardware and inspire future astronauts at Space Camp, USA',
+          'Want to go to space? Join Frank White and bring the Overview Effect to Earth to help unite humanity.',
       }
     : null
-export const FEATURED_MISSION_INDEX = FEATURED_MISSION ? 3 : null
-
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,
   sepolia: sepoliaConfig.MissionTable,

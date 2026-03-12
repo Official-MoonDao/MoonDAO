@@ -9,7 +9,7 @@ import {
   JB_NATIVE_TOKEN_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
-import { FEATURED_MISSION_INDEX } from 'const/config'
+import { FEATURED_MISSION } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import { getBackers } from '@/lib/mission'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -25,6 +25,12 @@ export async function fetchFeaturedMissionData(
 ): Promise<FeaturedMissionData | null> {
   try {
     const featuredMission =
+      (FEATURED_MISSION
+        ? missions.find(
+            (mission: Mission) =>
+              String(mission.id) === FEATURED_MISSION.id
+          )
+        : null) ||
       missions.find(
         (mission: Mission) =>
           mission.projectId &&
@@ -32,9 +38,7 @@ export async function fetchFeaturedMissionData(
           mission.fundingGoal &&
           mission.fundingGoal > 0
       ) ||
-      (missions.length > 0 && FEATURED_MISSION_INDEX !== null
-        ? missions[FEATURED_MISSION_INDEX] || missions[0]
-        : null)
+      (missions.length > 0 ? missions[0] : null)
 
     if (!featuredMission || !featuredMission.projectId) {
       return null

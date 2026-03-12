@@ -3,7 +3,7 @@ import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
-import { DEFAULT_CHAIN_V5, FEATURED_MISSION, FEATURED_MISSION_INDEX } from 'const/config'
+import { DEFAULT_CHAIN_V5, FEATURED_MISSION } from 'const/config'
 import {
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
@@ -58,7 +58,11 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
 
   const featuredMission =
     featuredMissionData?.mission ||
-    (FEATURED_MISSION_INDEX !== null ? missions?.[FEATURED_MISSION_INDEX] : null)
+    (FEATURED_MISSION
+      ? missions?.find((m: any) => String(m.id) === FEATURED_MISSION!.id)
+      : null) ||
+    missions?.[0] ||
+    null
 
   const {
     subgraphData: featuredMissionSubgraphData,
