@@ -160,8 +160,8 @@ describe('MissionWideCard', () => {
       </TestnetProviders>
     )
     cy.get('#link-frame', { timeout: 10000 }).should('exist')
-    cy.get('#mission-stat-label', { timeout: 10000 }).should('contain', 'Contributions')
-    cy.get('#mission-stat-value', { timeout: 10000 }).should('contain', '42')
+    cy.contains('#mission-stat-label', 'Contributions', { timeout: 10000 }).should('exist')
+    cy.contains('#mission-stat-label', 'Contributions').parent().parent().find('#mission-stat-value').should('contain', '42')
   })
 
   it('Shows contribute button when contribute prop is true', () => {
