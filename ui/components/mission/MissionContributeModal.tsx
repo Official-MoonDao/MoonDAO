@@ -28,6 +28,7 @@ import {
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -1200,7 +1201,7 @@ export default function MissionContributeModal({
                       <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg shadow-purple-500/10">
                           <Image
-                            src={mission?.metadata.logoUri}
+                            src={getIPFSGateway(mission?.metadata.logoUri)}
                             width={48}
                             height={48}
                             className="w-full h-full object-cover"

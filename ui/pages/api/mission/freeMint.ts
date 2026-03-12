@@ -80,7 +80,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       method: 'balanceOf' as string,
       params: [address],
     })
-    if (balance !== 0) {
+    if (balance !== BigInt(0)) {
       return res.status(400).json({ error: 'You are already a citizen!' })
     }
     const totalPaid = await getTotalPaid(address)
