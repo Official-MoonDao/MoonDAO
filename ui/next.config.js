@@ -80,6 +80,8 @@ module.exports = withBundleAnalyzer(
           'tan-collective-smelt-690.mypinata.cloud',
           'safe-transaction-assets.safe.global',
           'test.com',
+          'embed.filekitcdn.com',
+          'functions-js.kit.com',
         ],
         formats: ['image/avif', 'image/webp'],
       },

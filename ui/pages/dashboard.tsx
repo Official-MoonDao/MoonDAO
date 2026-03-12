@@ -229,7 +229,7 @@ export async function getStaticProps() {
       ])
 
       const [citizens, listings, jobs, teams, projects, missionRows] = await Promise.all([
-        citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 5`) : Promise.resolve([]),
+        citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 8`) : Promise.resolve([]),
         marketplaceTableName ? queryTable(
           chain,
           `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${Math.floor(
