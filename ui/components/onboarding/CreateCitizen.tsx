@@ -726,8 +726,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         await handlePostMint(mintedTokenId)
         setIsLoadingMint(false)
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
+      toast.error(err?.message || 'Something went wrong during minting.')
       setIsLoadingMint(false)
     }
   }, [

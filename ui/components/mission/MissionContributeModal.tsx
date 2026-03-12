@@ -10,7 +10,6 @@ import {
   LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
   JB_NATIVE_TOKEN_ADDRESS,
   DEPLOYED_ORIGIN,
-  FREE_MINT_THRESHOLD,
   LAYERZERO_MAX_CONTRIBUTION_ETH,
   LAYERZERO_MAX_ETH,
 } from 'const/config'
@@ -29,6 +28,7 @@ import {
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -840,24 +840,26 @@ export default function MissionContributeModal({
       })
 
       if (!isCitizen) {
-        const totalPaid =
-          backers.reduce((acc: any, payment: any) => {
-            return acc + payment.backer.toLowerCase() == address.toLowerCase()
-              ? parseInt(payment.totalAmountContributed)
-              : 0
-          }, 0) +
-          inputValue * 1e18
-        if (totalPaid > FREE_MINT_THRESHOLD) {
-          toast.success(
-            <div>
-              <Link href={'/citizen'}>
-                Mission token purchased! Click to claim free citizenship!
-              </Link>
-            </div>,
-            {
-              style: toastStyle,
-            }
+        // Check free mint eligibility via the API (uses Bendystraw participants data)
+        try {
+          const eligibilityRes = await fetch(
+            `/api/mission/freeMint?address=${address}`
           )
+          const eligibilityData = await eligibilityRes.json()
+          if (eligibilityData?.data?.eligible) {
+            toast.success(
+              <div>
+                <Link href={'/citizen'}>
+                  Mission token purchased! Click to claim free citizenship!
+                </Link>
+              </div>,
+              {
+                style: toastStyle,
+              }
+            )
+          }
+        } catch (err) {
+          console.error('Error checking free mint eligibility:', err)
         }
       } else {
         toast.success('Mission token purchased!', {
@@ -891,7 +893,6 @@ export default function MissionContributeModal({
     ethUsdPrice,
     usdInput,
     setModalEnabled,
-    backers,
     isCitizen,
     router,
     setUsdInput,
@@ -1200,7 +1201,7 @@ export default function MissionContributeModal({
                       <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg shadow-purple-500/10">
                           <Image
-                            src={mission?.metadata.logoUri}
+                            src={getIPFSGateway(mission?.metadata.logoUri)}
                             width={48}
                             height={48}
                             className="w-full h-full object-cover"

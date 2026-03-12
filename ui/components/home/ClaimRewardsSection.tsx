@@ -9,6 +9,7 @@ export default function ClaimRewardsSection() {
   const hasRewards = Number(withdrawable) > 0
 
   if (!hasRewards) return null
+
   const formattedAmount = hasRewards
     ? (Number(withdrawable) / 10 ** MOONEY_DECIMALS).toLocaleString('en-US', {
         minimumFractionDigits: 2,

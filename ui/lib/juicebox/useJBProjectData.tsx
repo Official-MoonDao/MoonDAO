@@ -70,14 +70,20 @@ export default function useJBProjectData({
   //Metadata
   useEffect(() => {
     async function getProjectMetadata() {
-      const metadataURI: any = await readContract({
-        contract: jbControllerContract,
-        method: 'uriOf' as string,
-        params: [projectId],
-      })
-      const res = await fetch(metadataURI)
-      const data = await res.json()
-      setMetadata(data)
+      try {
+        const metadataURI: any = await readContract({
+          contract: jbControllerContract,
+          method: 'uriOf' as string,
+          params: [projectId],
+        })
+        if (!metadataURI) return
+        const res = await fetch(metadataURI)
+        if (!res.ok) return
+        const data = await res.json()
+        setMetadata(data)
+      } catch (err) {
+        console.error('Failed to fetch project metadata:', err)
+      }
     }
 
     if (jbControllerContract && !projectMetadata && projectId !== undefined)
