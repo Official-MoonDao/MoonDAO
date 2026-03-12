@@ -849,7 +849,7 @@ export default function MissionContributeModal({
           if (eligibilityData?.data?.eligible) {
             toast.success(
               <div>
-                <Link href={'/citizen'}>
+                <Link href={'/citizen?freeMint=true'}>
                   Mission token purchased! Click to claim free citizenship!
                 </Link>
               </div>,

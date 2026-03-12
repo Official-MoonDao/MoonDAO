@@ -27,11 +27,11 @@ export default function Join() {
 
   useEffect(() => {
     if (router.isReady) {
-      if (router.query.onrampSuccess === 'true' || create === 'true') {
+      if (router.query.onrampSuccess === 'true' || create === 'true' || freeMint === 'true') {
         setSelectedTier('citizen')
       }
     }
-  }, [router.isReady, router.query.onrampSuccess, create])
+  }, [router.isReady, router.query.onrampSuccess, create, freeMint])
 
   if (selectedTier === 'citizen') {
     return (
