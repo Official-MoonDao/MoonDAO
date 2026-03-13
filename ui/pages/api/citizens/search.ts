@@ -1,7 +1,12 @@
-import { DEFAULT_CHAIN_V5, CITIZEN_TABLE_NAMES } from 'const/config'
+import {
+  DEFAULT_CHAIN_V5,
+  CITIZEN_TABLE_NAMES,
+  OVERVIEW_BLOCKED_CITIZEN_IDS,
+} from 'const/config'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { sanitizeSearchQuery } from '@/lib/overview-delegate/leaderboard'
 import { arbitrum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -29,17 +34,22 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const chainSlug = getChainSlug(chain)
     const tableName = CITIZEN_TABLE_NAMES[chainSlug]
 
-    const sanitized = query.trim().replace(/'/g, "''")
+    const sanitized = sanitizeSearchQuery(query)
     const isNumeric = /^\d+$/.test(sanitized)
 
-    let whereClause: string
+    const excludeIds =
+      OVERVIEW_BLOCKED_CITIZEN_IDS.length > 0
+        ? `id NOT IN (${OVERVIEW_BLOCKED_CITIZEN_IDS.join(',')})`
+        : '1=1'
+
+    let searchClause: string
     if (isNumeric) {
-      whereClause = `LOWER(name) LIKE LOWER('%${sanitized}%') OR id = ${parseInt(sanitized, 10)}`
+      searchClause = `LOWER(name) LIKE LOWER('%${sanitized}%') OR id = ${parseInt(sanitized, 10)}`
     } else {
-      whereClause = `LOWER(name) LIKE LOWER('%${sanitized}%')`
+      searchClause = `LOWER(name) LIKE LOWER('%${sanitized}%')`
     }
 
-    const statement = `SELECT id, name, owner, image FROM ${tableName} WHERE ${whereClause} ORDER BY name ASC LIMIT 20`
+    const statement = `SELECT id, name, owner, image FROM ${tableName} WHERE (${searchClause}) AND ${excludeIds} ORDER BY name ASC LIMIT 20`
 
     const results = await queryTable(chain, statement)
 

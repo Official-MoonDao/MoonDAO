@@ -90,7 +90,7 @@ export default function useNavigation(citizen: any) {
         href: '/launch',
         children: [
           { name: 'Launch', href: '/launch' },
-          { name: 'Back Your Astronaut', href: '/overview-delegate' },
+          { name: 'Fly to Space', href: '/overview-delegate' },
         ],
       },
     ]

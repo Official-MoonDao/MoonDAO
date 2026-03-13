@@ -2,6 +2,7 @@ import confetti from 'canvas-confetti'
 import VotesTableABI from 'const/abis/Votes.json'
 import {
   CITIZEN_TABLE_NAMES,
+  OVERVIEW_BLOCKED_CITIZEN_IDS,
   OVERVIEW_DELEGATION_VOTE_ID,
   OVERVIEW_TOKEN_ADDRESS,
   OVERVIEW_TOKEN_DECIMALS,
@@ -15,6 +16,14 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import {
+  applyOptimisticUpdate,
+  isValidEthAddress,
+  parseDelegations,
+  aggregateDelegations,
+  buildLeaderboard,
+} from '@/lib/overview-delegate/leaderboard'
+import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import { arbitrum } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
@@ -44,15 +53,6 @@ type Citizen = {
   owner: string
   image?: string
   displayName: string
-}
-
-type LeaderboardEntry = {
-  delegateeAddress: string
-  citizenId: number | string
-  citizenName: string
-  citizenImage?: string
-  totalDelegated: number
-  delegatorCount: number
 }
 
 type OverviewDelegateProps = {
@@ -87,6 +87,10 @@ export default function OverviewDelegate({
   const [isRefreshing, setIsRefreshing] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setDisplayLeaderboard(leaderboard)
+  }, [leaderboard])
 
   const votesContract = useContract({
     address: VOTES_TABLE_ADDRESSES[overviewChainSlug],
@@ -233,55 +237,19 @@ export default function OverviewDelegate({
       })
       toast.success('Delegation submitted!', { style: toastStyle })
 
-      // Optimistic leaderboard update
-      const optimistic = [...displayLeaderboard]
-
-      // Remove old delegation if redelegating
-      if (hasExistingDelegation && previousDelegation) {
-        const oldIdx = optimistic.findIndex(
-          (e) => e.delegateeAddress === previousDelegation.delegatee
-        )
-        if (oldIdx >= 0) {
-          optimistic[oldIdx] = {
-            ...optimistic[oldIdx],
-            totalDelegated: Math.max(
-              0,
-              optimistic[oldIdx].totalDelegated - previousDelegation.amount
-            ),
-            delegatorCount: Math.max(
-              0,
-              optimistic[oldIdx].delegatorCount - 1
-            ),
-          }
-          if (optimistic[oldIdx].totalDelegated <= 0) {
-            optimistic.splice(oldIdx, 1)
-          }
-        }
-      }
-
-      // Add new delegation
-      const newIdx = optimistic.findIndex(
-        (e) => e.delegateeAddress === selectedCitizen.owner.toLowerCase()
-      )
-      if (newIdx >= 0) {
-        optimistic[newIdx] = {
-          ...optimistic[newIdx],
-          totalDelegated: optimistic[newIdx].totalDelegated + delegateAmount,
-          delegatorCount: optimistic[newIdx].delegatorCount + 1,
-        }
-      } else {
-        optimistic.push({
+      const updatedLeaderboard = applyOptimisticUpdate(
+        displayLeaderboard,
+        {
           delegateeAddress: selectedCitizen.owner.toLowerCase(),
           citizenId: selectedCitizen.id,
           citizenName: selectedCitizen.name || selectedCitizen.displayName,
           citizenImage: selectedCitizen.image,
-          totalDelegated: delegateAmount,
-          delegatorCount: 1,
-        })
-      }
-
-      optimistic.sort((a, b) => b.totalDelegated - a.totalDelegated)
-      setDisplayLeaderboard(optimistic.slice(0, 25))
+          amount: delegateAmount,
+        },
+        previousDelegation,
+        hasExistingDelegation
+      )
+      setDisplayLeaderboard(updatedLeaderboard)
 
       // Update previous delegation to reflect the new one
       setPreviousDelegation({
@@ -321,8 +289,8 @@ export default function OverviewDelegate({
   return (
     <section className="overflow-visible">
       <Head
-        title="Back Your Astronaut"
-        description="Use your $OVERVIEW tokens to back the MoonDAO citizen you want to see fly with Frank White. The top 25 advance to the next round."
+        title="Fly to Space with Frank White"
+        description="Help fund the mission to send Frank White to space. Earn $OVERVIEW tokens to vote for the citizen you want to fly alongside him."
       />
       <Container>
         <div className="w-full">
@@ -330,26 +298,19 @@ export default function OverviewDelegate({
             {/* Page Header */}
             <div className="pt-6 sm:pt-8">
               <h1 className="font-GoodTimes text-white leading-tight text-2xl sm:text-3xl md:text-4xl">
-                Back Your Astronaut
+                Fly to Space with Frank White
               </h1>
               <p className="text-gray-300 text-sm sm:text-base mt-3 sm:mt-4 leading-relaxed">
-                Who should fly with Frank White? You decide. Delegate your $OVERVIEW tokens to the citizen you believe deserves a seat on the flight. The top 25 candidates with the most community backing will advance to Round 2 of the selection process.
-                {' '}
-                <Link
-                  href="/mission/4"
-                  className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 transition-colors"
-                >
-                  Learn how the selection works &rarr;
-                </Link>
+                Help fund the mission to send Frank White to space. Earn $OVERVIEW tokens to help govern decision-making, including voting for the citizen you want to fly alongside him.
               </p>
             </div>
             {/* Delegation Form */}
             <div className="relative z-10 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-visible">
               <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
-                Delegate Your $OVERVIEW
+                Back a Candidate
               </h2>
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                Choose a citizen and put your full $OVERVIEW balance behind them. Your tokens never leave your wallet — this only records your support.
+                Pledge your $OVERVIEW balance to your chosen candidate. Your tokens remain securely in your wallet. Only your voting power is recorded.
               </p>
 
               {/* Balance */}
@@ -450,7 +411,7 @@ export default function OverviewDelegate({
 
               {/* Submit */}
               <PrivyWeb3Button
-                label={isSubmitting ? 'Submitting...' : 'Delegate All $OVERVIEW'}
+                label={isSubmitting ? 'Submitting...' : 'Back This Candidate'}
                 action={handleSubmit}
                 requiredChain={overviewChain}
                 isDisabled={
@@ -477,7 +438,7 @@ export default function OverviewDelegate({
                 )}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                The top 25 candidates advance to Round 2, where they'll write about what the Overview Effect means to them. Want to compete? Mobilize your community to back you.
+                The 25 citizens with the most $OVERVIEW support advance to Round 2.
               </p>
 
               {displayLeaderboard.length === 0 ? (
@@ -546,7 +507,7 @@ export default function OverviewDelegate({
 
             {/* CTAs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              {/* Contribute CTA */}
+              {/* Get $OVERVIEW CTA */}
               <Link
                 href="/mission/4"
                 className="group p-4 sm:p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border border-indigo-500/20 hover:border-indigo-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10"
@@ -556,24 +517,24 @@ export default function OverviewDelegate({
                   Get $OVERVIEW Tokens
                 </h3>
                 <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-                  Contribute to the mission and receive $OVERVIEW tokens. The more you hold, the more weight your delegation carries.
+                  Contribute to the spaceflight mission. Every contribution grants you $OVERVIEW so you can back a candidate. Contributions over $100 automatically include MoonDAO Citizenship.
                 </p>
                 <span className="inline-block mt-3 text-indigo-400 text-xs sm:text-sm font-medium group-hover:text-indigo-300 transition-colors">
-                  Contribute Now &rarr;
+                  Go to Mission &rarr;
                 </span>
               </Link>
 
-              {/* Become a Citizen CTA */}
+              {/* Want to Compete CTA */}
               <Link
                 href="/citizen"
                 className="group p-4 sm:p-6 bg-gradient-to-br from-emerald-900/40 to-teal-900/30 border border-emerald-500/20 hover:border-emerald-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10"
               >
                 <div className="text-2xl sm:text-3xl mb-3">🌍</div>
                 <h3 className="font-GoodTimes text-white text-sm sm:text-base mb-2">
-                  Become a Citizen
+                  Want to Compete?
                 </h3>
                 <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-                  Want to compete for a seat? Only MoonDAO Citizens are eligible for the leaderboard. Contributions over $100 include citizenship at no extra cost.
+                  Only MoonDAO Citizens are eligible for the leaderboard. Rally your network to back you and secure your spot in the top 25.
                 </p>
                 <span className="inline-block mt-3 text-emerald-400 text-xs sm:text-sm font-medium group-hover:text-emerald-300 transition-colors">
                   Become a Citizen &rarr;
@@ -613,31 +574,7 @@ export async function getStaticProps() {
       }
     }
 
-    // Parse delegations
-    type ParsedDelegation = {
-      delegatorAddress: string
-      delegateeAddress: string
-      storedAmount: number
-    }
-
-    const delegations: ParsedDelegation[] = []
-    for (const row of rows) {
-      try {
-        const vote =
-          typeof row.vote === 'string' ? JSON.parse(row.vote) : row.vote
-        const entries = Object.entries(vote)
-        if (entries.length > 0) {
-          const [delegateeAddress, amount] = entries[0]
-          delegations.push({
-            delegatorAddress: row.address,
-            delegateeAddress,
-            storedAmount: Number(amount) || 0,
-          })
-        }
-      } catch {
-        continue
-      }
-    }
+    const delegations = parseDelegations(rows)
 
     if (delegations.length === 0) {
       return {
@@ -671,37 +608,18 @@ export async function getStaticProps() {
       }
     }
 
-    // 3. Compute leaderboard
-    const aggregated: Record<
-      string,
-      { totalDelegated: number; delegatorCount: number }
-    > = {}
+    const aggregated = aggregateDelegations(delegations, balanceMap)
 
-    for (const d of delegations) {
-      const currentBalance =
-        balanceMap[d.delegatorAddress.toLowerCase()] ?? 0
-      const effective = Math.min(d.storedAmount, currentBalance)
-      if (effective <= 0) continue
-
-      const key = d.delegateeAddress.toLowerCase()
-      if (!aggregated[key]) {
-        aggregated[key] = { totalDelegated: 0, delegatorCount: 0 }
-      }
-      aggregated[key].totalDelegated += effective
-      aggregated[key].delegatorCount += 1
-    }
-
-    // 4. Enrich with citizen data
-    const delegateeAddresses = Object.keys(aggregated)
-    if (delegateeAddresses.length === 0) {
+    if (aggregated.length === 0) {
       return {
         props: { leaderboard: [], tokenAddress },
         revalidate: 60,
       }
     }
 
-    const isValidHex = (s: string) => /^0x[a-fA-F0-9]{40}$/.test(s)
-    const safeAddresses = delegateeAddresses.filter(isValidHex)
+    const safeAddresses = aggregated
+      .map((e) => e.delegateeAddress)
+      .filter(isValidEthAddress)
 
     let citizenMap: Record<
       string,
@@ -720,6 +638,7 @@ export async function getStaticProps() {
 
           if (citizenRows) {
             for (const c of citizenRows) {
+              if (OVERVIEW_BLOCKED_CITIZEN_IDS.includes(c.id)) continue
               citizenMap[c.owner.toLowerCase()] = {
                 id: c.id,
                 name: c.name,
@@ -733,24 +652,10 @@ export async function getStaticProps() {
       }
     }
 
-    const leaderboard: LeaderboardEntry[] = []
-    for (const [addr, data] of Object.entries(aggregated)) {
-      const citizen = citizenMap[addr]
-      if (!citizen) continue
-      leaderboard.push({
-        delegateeAddress: addr,
-        citizenId: citizen.id,
-        citizenName: citizen.name || '',
-        citizenImage: citizen.image,
-        totalDelegated: Math.round(data.totalDelegated * 100) / 100,
-        delegatorCount: data.delegatorCount,
-      })
-    }
-
-    leaderboard.sort((a, b) => b.totalDelegated - a.totalDelegated)
+    const leaderboardResult = buildLeaderboard(aggregated, citizenMap, 25)
 
     return {
-      props: { leaderboard: leaderboard.slice(0, 25), tokenAddress },
+      props: { leaderboard: leaderboardResult, tokenAddress },
       revalidate: 60,
     }
   } catch (error) {

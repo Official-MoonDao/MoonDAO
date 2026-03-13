@@ -82,9 +82,9 @@ const searchMappings = [
     category: 'Projects'
   },
   {
-    keywords: ['overview', 'delegate', 'delegation', 'frank white', 'overview token', 'leaderboard', 'astronaut', 'back'],
-    title: 'Back Your Astronaut',
-    description: 'Back a MoonDAO citizen with your $OVERVIEW tokens to help them fly with Frank White',
+    keywords: ['overview', 'delegate', 'delegation', 'frank white', 'overview token', 'leaderboard', 'astronaut', 'back', 'fly', 'space', 'candidate'],
+    title: 'Fly to Space with Frank White',
+    description: 'Help fund the mission to send Frank White to space. Vote for the citizen you want to fly alongside him.',
     link: '/overview-delegate',
     category: 'Projects'
   },
