@@ -225,6 +225,13 @@ export default function OverviewDelegate({
               </h1>
               <p className="text-gray-300 text-sm sm:text-base mt-3 sm:mt-4 leading-relaxed">
                 Want to fly with Frank White? Rally your community to delegate their $OVERVIEW tokens to you. The top 25 citizens with the most delegated tokens advance to Round 2 of the selection process.
+                {' '}
+                <Link
+                  href="/mission/4"
+                  className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 transition-colors"
+                >
+                  Learn how the competition works &rarr;
+                </Link>
               </p>
             </div>
             {/* Delegation Form */}
