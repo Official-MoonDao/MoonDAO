@@ -22,8 +22,8 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { engineBatchRead } from '@/lib/thirdweb/engine'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
+import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
@@ -76,6 +76,7 @@ export default function OverviewDelegate({
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasExistingDelegation, setHasExistingDelegation] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -84,6 +85,27 @@ export default function OverviewDelegate({
     chain: overviewChain,
     abi: VotesTableABI.abi as any,
   })
+
+  const votesTableName = VOTES_TABLE_NAMES[overviewChainSlug]
+
+  useEffect(() => {
+    if (!userAddress || !votesTableName) return
+    const checkExisting = async () => {
+      try {
+        const stmt = `SELECT * FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID} AND address = '${userAddress.toLowerCase()}'`
+        const res = await fetch(
+          `https://tableland.network/api/v1/query?statement=${encodeURIComponent(stmt)}`
+        )
+        if (res.ok) {
+          const data = await res.json()
+          setHasExistingDelegation(Array.isArray(data) && data.length > 0)
+        }
+      } catch {
+        setHasExistingDelegation(false)
+      }
+    }
+    checkExisting()
+  }, [userAddress, votesTableName])
 
   // Citizen search
   const handleSearchChange = (value: string) => {
@@ -105,7 +127,7 @@ export default function OverviewDelegate({
       setIsSearching(true)
       try {
         const res = await fetch(
-          `/api/citizens/search?q=${encodeURIComponent(value)}`
+          `/api/citizens/search?q=${encodeURIComponent(value)}&chain=arbitrum`
         )
         const data = await res.json()
         if (res.ok) {
@@ -167,21 +189,14 @@ export default function OverviewDelegate({
     const vote = JSON.stringify({ [selectedCitizen.owner]: delegateAmount })
 
     try {
-      try {
-        const tx = prepareContractCall({
-          contract: votesContract,
-          method: 'insertIntoTable' as string,
-          params: [OVERVIEW_DELEGATION_VOTE_ID, vote],
-        })
-        await sendAndConfirmTransaction({ transaction: tx, account })
-      } catch {
-        const tx = prepareContractCall({
-          contract: votesContract,
-          method: 'updateTableCol' as string,
-          params: [OVERVIEW_DELEGATION_VOTE_ID, vote],
-        })
-        await sendAndConfirmTransaction({ transaction: tx, account })
-      }
+      const method = hasExistingDelegation ? 'updateTableCol' : 'insertIntoTable'
+      const tx = prepareContractCall({
+        contract: votesContract,
+        method: method as string,
+        params: [OVERVIEW_DELEGATION_VOTE_ID, vote],
+      })
+      await sendAndConfirmTransaction({ transaction: tx, account })
+      setHasExistingDelegation(true)
       toast.success('Delegation submitted!', { style: toastStyle })
       setTimeout(() => router.reload(), 5000)
     } catch (error) {
@@ -195,33 +210,36 @@ export default function OverviewDelegate({
   }
 
   return (
-    <section className="overflow-hidden">
+    <section className="overflow-visible">
       <Head
         title="Delegate $OVERVIEW"
-        description="Delegate your $OVERVIEW tokens to a MoonDAO citizen and help them climb the leaderboard."
+        description="Back a MoonDAO citizen with your $OVERVIEW tokens. The top 25 advance to Round 2 of the selection process to fly with Frank White."
       />
       <Container>
-        <ContentLayout
-          header="Delegate $OVERVIEW"
-          description="Delegate your full $OVERVIEW balance to a MoonDAO citizen. The leaderboard ranks citizens by total delegated tokens, capped at each delegator's current balance."
-          headerSize="max(20px, 3vw)"
-          preFooter={<NoticeFooter />}
-          mainPadding
-          mode="compact"
-          popOverEffect={false}
-          isProfile
-        >
-          <div className="flex flex-col gap-8 w-full max-w-[900px] mx-auto">
+        <div className="w-full">
+          <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[900px] mx-auto px-4 md:px-6 lg:px-0 py-8 md:py-12">
+            {/* Page Header */}
+            <div className="pt-6 sm:pt-8">
+              <h1 className="font-GoodTimes text-white leading-tight text-2xl sm:text-3xl md:text-4xl">
+                Delegate $OVERVIEW
+              </h1>
+              <p className="text-gray-300 text-sm sm:text-base mt-3 sm:mt-4 leading-relaxed">
+                Want to fly with Frank White? Rally your community to delegate their $OVERVIEW tokens to you. The top 25 citizens with the most delegated tokens advance to Round 2 of the selection process.
+              </p>
+            </div>
             {/* Delegation Form */}
-            <div className="p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-              <h2 className="text-xl font-GoodTimes text-white mb-6">
-                Delegate Tokens
+            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-visible">
+              <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
+                Back a Citizen
               </h2>
+              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                Delegate your full $OVERVIEW balance to the citizen you want to see fly with Frank White. Your tokens stay in your wallet — only your backing is recorded.
+              </p>
 
               {/* Balance */}
-              <div className="mb-6 bg-black/20 border border-white/10 rounded-lg p-4">
-                <p className="text-gray-400 text-sm">Your $OVERVIEW Balance</p>
-                <p className="text-white text-2xl font-semibold">
+              <div className="mb-4 sm:mb-6 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4">
+                <p className="text-gray-400 text-xs sm:text-sm">Your $OVERVIEW Balance</p>
+                <p className="text-white text-xl sm:text-2xl font-semibold">
                   {userAddress
                     ? userBalance != null
                       ? userBalance.toLocaleString(undefined, {
@@ -233,8 +251,8 @@ export default function OverviewDelegate({
               </div>
 
               {/* Citizen Search */}
-              <div className="mb-4 relative" ref={dropdownRef}>
-                <label className="block text-sm font-medium text-white mb-2">
+              <div className="mb-4 relative z-10" ref={dropdownRef}>
+                <label className="block text-xs sm:text-sm font-medium text-white mb-1.5 sm:mb-2">
                   Search Citizen
                 </label>
                 <div className="relative">
@@ -243,7 +261,7 @@ export default function OverviewDelegate({
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     placeholder="Search by name or token ID..."
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/20 rounded-xl text-sm sm:text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   {isSearching && (
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -258,12 +276,12 @@ export default function OverviewDelegate({
                       <button
                         key={citizen.id}
                         onClick={() => handleCitizenSelect(citizen)}
-                        className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0"
                       >
-                        <div className="text-white font-medium">
+                        <div className="text-white text-sm sm:text-base font-medium">
                           {citizen.displayName}
                         </div>
-                        <div className="text-gray-400 text-sm truncate">
+                        <div className="text-gray-400 text-xs sm:text-sm truncate">
                           {citizen.owner}
                         </div>
                       </button>
@@ -276,7 +294,7 @@ export default function OverviewDelegate({
                   searchQuery.trim().length >= 2 &&
                   !isSearching && (
                     <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg p-4">
-                      <div className="text-gray-400 text-center">
+                      <div className="text-gray-400 text-sm text-center">
                         No citizens found
                       </div>
                     </div>
@@ -285,12 +303,12 @@ export default function OverviewDelegate({
 
               {/* Selected Citizen */}
               {selectedCitizen && (
-                <div className="mb-4 bg-white/5 border border-white/20 rounded-xl p-4 flex items-center justify-between">
-                  <div>
-                    <div className="text-white font-medium">
+                <div className="mb-4 bg-white/5 border border-white/20 rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-white text-sm sm:text-base font-medium truncate">
                       {selectedCitizen.displayName}
                     </div>
-                    <div className="text-gray-400 text-sm">
+                    <div className="text-gray-400 text-xs sm:text-sm truncate">
                       {selectedCitizen.owner}
                     </div>
                   </div>
@@ -299,7 +317,7 @@ export default function OverviewDelegate({
                       setSelectedCitizen(null)
                       setSearchQuery('')
                     }}
-                    className="text-gray-400 hover:text-white transition-colors text-xl"
+                    className="flex-shrink-0 text-gray-400 hover:text-white transition-colors text-xl leading-none"
                   >
                     &times;
                   </button>
@@ -317,23 +335,26 @@ export default function OverviewDelegate({
                   !userBalance ||
                   userBalance <= 0
                 }
-                className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border-0 disabled:opacity-50"
+                className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border-0 disabled:opacity-50"
               />
             </div>
 
             {/* Leaderboard */}
-            <div className="p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-              <h2 className="text-xl font-GoodTimes text-white mb-6">
-                Leaderboard
+            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+              <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
+                Round 1 Leaderboard
               </h2>
+              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                The top 25 citizens with the most community backing advance to Round 2: The Essay. Rally your network to delegate their $OVERVIEW tokens and secure your spot.
+              </p>
 
               {leaderboard.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">
-                  No delegations yet. Be the first!
+                <p className="text-gray-400 text-center py-6 sm:py-8 text-sm">
+                  No delegations yet. Be the first to back a citizen!
                 </p>
               ) : (
-                <div className="space-y-3">
-                  {leaderboard.map((entry, index) => {
+                <div className="space-y-2 sm:space-y-3">
+                  {leaderboard.slice(0, 25).map((entry, index) => {
                     const citizenLink = entry.citizenName
                       ? `/citizen/${generatePrettyLinkWithId(entry.citizenName, entry.citizenId)}`
                       : `/citizen/${entry.citizenId}`
@@ -341,40 +362,48 @@ export default function OverviewDelegate({
                     return (
                       <div
                         key={entry.delegateeAddress}
-                        className="flex items-center gap-4 p-4 bg-black/20 border border-white/10 rounded-xl"
+                        className="flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 bg-black/20 border border-white/10 rounded-xl"
                       >
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white font-bold text-sm">
+                        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-white/10 text-white font-bold text-xs sm:text-sm">
                           {index + 1}
                         </div>
 
-                        {entry.citizenImage && (
-                          <img
-                            src={entry.citizenImage}
-                            alt={entry.citizenName}
-                            className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                          />
-                        )}
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0">
+                          {entry.citizenImage ? (
+                            <IPFSRenderer
+                              src={entry.citizenImage}
+                              alt={entry.citizenName || 'Citizen'}
+                              width={40}
+                              height={40}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                              {entry.citizenName?.[0]?.toUpperCase() || 'C'}
+                            </div>
+                          )}
+                        </div>
 
                         <div className="flex-1 min-w-0">
                           <Link
                             href={citizenLink}
-                            className="text-white font-medium hover:underline truncate block"
+                            className="text-white text-sm sm:text-base font-medium hover:underline truncate block"
                           >
                             {entry.citizenName || `Citizen #${entry.citizenId}`}
                           </Link>
-                          <p className="text-gray-400 text-sm">
+                          <p className="text-gray-400 text-xs sm:text-sm">
                             {entry.delegatorCount} delegator
                             {entry.delegatorCount !== 1 ? 's' : ''}
                           </p>
                         </div>
 
                         <div className="text-right flex-shrink-0">
-                          <p className="text-white font-semibold">
+                          <p className="text-white text-sm sm:text-base font-semibold">
                             {entry.totalDelegated.toLocaleString(undefined, {
                               maximumFractionDigits: 2,
                             })}
                           </p>
-                          <p className="text-gray-400 text-sm">$OVERVIEW</p>
+                          <p className="text-gray-400 text-xs sm:text-sm">$OVERVIEW</p>
                         </div>
                       </div>
                     )
@@ -383,7 +412,8 @@ export default function OverviewDelegate({
               )}
             </div>
           </div>
-        </ContentLayout>
+          <NoticeFooter />
+        </div>
       </Container>
     </section>
   )
@@ -551,7 +581,7 @@ export async function getStaticProps() {
     leaderboard.sort((a, b) => b.totalDelegated - a.totalDelegated)
 
     return {
-      props: { leaderboard, tokenAddress },
+      props: { leaderboard: leaderboard.slice(0, 25), tokenAddress },
       revalidate: 60,
     }
   } catch (error) {
