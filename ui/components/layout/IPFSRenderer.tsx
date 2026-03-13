@@ -33,7 +33,7 @@ export default function IPFSRenderer({
     (imageError || noSrc) && fallback ? fallback : imageError || noSrc ? '' : getIPFSGateway(src)
 
   return (
-    <div className="flex w-full h-full items-center justify-center">
+    <div className="relative flex w-full h-full items-center justify-center overflow-hidden">
       {imageSrc ? (
         <Image
           className={className}
@@ -47,7 +47,7 @@ export default function IPFSRenderer({
           onError={() => setImageError(true)}
         />
       ) : (
-        <p className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-white text-sm text-center">
+        <p className="text-white text-xs text-center truncate px-1">
           {alt}
         </p>
       )}
