@@ -319,7 +319,7 @@ export default function OverviewDelegate({
                   <p className="text-gray-400 text-xs sm:text-sm">Your $OVERVIEW Balance</p>
                   <p className="text-white text-xl sm:text-2xl font-semibold">
                     {userAddress
-                      ? userBalance != null
+                      ? userBalance != null && Number.isFinite(userBalance)
                         ? userBalance.toLocaleString(undefined, {
                             maximumFractionDigits: 2,
                           })
