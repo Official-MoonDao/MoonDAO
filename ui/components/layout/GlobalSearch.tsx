@@ -82,9 +82,9 @@ const searchMappings = [
     category: 'Projects'
   },
   {
-    keywords: ['overview', 'delegate', 'delegation', 'frank white', 'overview token', 'leaderboard', 'astronaut'],
-    title: 'Delegate $OVERVIEW',
-    description: 'Delegate your $OVERVIEW tokens to a MoonDAO citizen',
+    keywords: ['overview', 'delegate', 'delegation', 'frank white', 'overview token', 'leaderboard', 'astronaut', 'back'],
+    title: 'Back Your Astronaut',
+    description: 'Back a MoonDAO citizen with your $OVERVIEW tokens to help them fly with Frank White',
     link: '/overview-delegate',
     category: 'Projects'
   },

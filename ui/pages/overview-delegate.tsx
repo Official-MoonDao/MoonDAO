@@ -212,7 +212,7 @@ export default function OverviewDelegate({
   return (
     <section className="overflow-visible">
       <Head
-        title="Delegate $OVERVIEW"
+        title="Back Your Astronaut"
         description="Back a MoonDAO citizen with your $OVERVIEW tokens. The top 25 advance to Round 2 of the selection process to fly with Frank White."
       />
       <Container>
@@ -221,7 +221,7 @@ export default function OverviewDelegate({
             {/* Page Header */}
             <div className="pt-6 sm:pt-8">
               <h1 className="font-GoodTimes text-white leading-tight text-2xl sm:text-3xl md:text-4xl">
-                Delegate $OVERVIEW
+                Back Your Astronaut
               </h1>
               <p className="text-gray-300 text-sm sm:text-base mt-3 sm:mt-4 leading-relaxed">
                 Want to fly with Frank White? Rally your community to delegate their $OVERVIEW tokens to you. The top 25 citizens with the most delegated tokens advance to Round 2 of the selection process.
@@ -230,24 +230,32 @@ export default function OverviewDelegate({
             {/* Delegation Form */}
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-visible">
               <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
-                Back a Citizen
+                Delegate Your $OVERVIEW
               </h2>
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
                 Delegate your full $OVERVIEW balance to the citizen you want to see fly with Frank White. Your tokens stay in your wallet — only your backing is recorded.
               </p>
 
               {/* Balance */}
-              <div className="mb-4 sm:mb-6 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4">
-                <p className="text-gray-400 text-xs sm:text-sm">Your $OVERVIEW Balance</p>
-                <p className="text-white text-xl sm:text-2xl font-semibold">
-                  {userAddress
-                    ? userBalance != null
-                      ? userBalance.toLocaleString(undefined, {
-                          maximumFractionDigits: 2,
-                        })
-                      : '...'
-                    : 'Connect wallet'}
-                </p>
+              <div className="mb-4 sm:mb-6 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-gray-400 text-xs sm:text-sm">Your $OVERVIEW Balance</p>
+                  <p className="text-white text-xl sm:text-2xl font-semibold">
+                    {userAddress
+                      ? userBalance != null
+                        ? userBalance.toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })
+                        : '...'
+                      : 'Connect wallet'}
+                  </p>
+                </div>
+                <Link
+                  href="/mission/4"
+                  className="flex-shrink-0 px-3 sm:px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 hover:text-indigo-200 text-xs sm:text-sm font-medium rounded-lg transition-colors"
+                >
+                  Get $OVERVIEW
+                </Link>
               </div>
 
               {/* Citizen Search */}
@@ -410,6 +418,43 @@ export default function OverviewDelegate({
                   })}
                 </div>
               )}
+            </div>
+
+            {/* CTAs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {/* Contribute CTA */}
+              <Link
+                href="/mission/4"
+                className="group p-4 sm:p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border border-indigo-500/20 hover:border-indigo-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10"
+              >
+                <div className="text-2xl sm:text-3xl mb-3">🚀</div>
+                <h3 className="font-GoodTimes text-white text-sm sm:text-base mb-2">
+                  Get $OVERVIEW Tokens
+                </h3>
+                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                  Help send Frank White to space. Every contribution earns you $OVERVIEW tokens and a voice in who flies with him.
+                </p>
+                <span className="inline-block mt-3 text-indigo-400 text-xs sm:text-sm font-medium group-hover:text-indigo-300 transition-colors">
+                  Go to Mission &rarr;
+                </span>
+              </Link>
+
+              {/* Become a Citizen CTA */}
+              <Link
+                href="/citizen"
+                className="group p-4 sm:p-6 bg-gradient-to-br from-emerald-900/40 to-teal-900/30 border border-emerald-500/20 hover:border-emerald-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10"
+              >
+                <div className="text-2xl sm:text-3xl mb-3">🌍</div>
+                <h3 className="font-GoodTimes text-white text-sm sm:text-base mb-2">
+                  Become a Citizen
+                </h3>
+                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                  Only MoonDAO Citizens can appear on the leaderboard and compete to fly. Contributions over $100 include citizenship.
+                </p>
+                <span className="inline-block mt-3 text-emerald-400 text-xs sm:text-sm font-medium group-hover:text-emerald-300 transition-colors">
+                  Join Now &rarr;
+                </span>
+              </Link>
             </div>
           </div>
           <NoticeFooter />
