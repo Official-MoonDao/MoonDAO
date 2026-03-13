@@ -145,6 +145,7 @@ export default function Join({
   }, [tab, input, filteredCitizens, filteredTeams])
 
   const [cachedNFTs, setCachedNFTs] = useState<any[]>([])
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
 
   const [pageIdx, setPageIdx] = useState(1)
 
@@ -160,6 +161,7 @@ export default function Join({
 
   useEffect(() => {
     loadByTab(tab)
+    setIsDataLoaded(true)
   }, [tab, input, filteredTeams, filteredCitizens, router.query])
 
   useChainDefault()
@@ -167,13 +169,29 @@ export default function Join({
   // Modal states instead of full page replacement
 
   const renderNFTs = () => {
-    if (!cachedNFTs?.[0]) {
+    if (!isDataLoaded) {
       return (
         <>
           {Array.from({ length: 10 }).map((_, i) => (
             <CardSkeleton key={`card-skeleton-${i}`} />
           ))}
         </>
+      )
+    }
+
+    if (cachedNFTs.length === 0) {
+      return (
+        <div className="col-span-full text-center py-12">
+          <ListBulletIcon className="w-16 h-16 mx-auto mb-4 text-slate-400 opacity-50" />
+          <h3 className="text-xl font-GoodTimes text-white mb-2">
+            No {tab.charAt(0).toUpperCase() + tab.slice(1)} found
+          </h3>
+          <p className="text-slate-400">
+            {input
+              ? `No results for "${input}"`
+              : `No ${tab} available at the moment.`}
+          </p>
+        </div>
       )
     }
 

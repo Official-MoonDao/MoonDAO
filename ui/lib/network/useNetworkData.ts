@@ -334,10 +334,7 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
 
         const valid = teamsResult.data.filter((team) => validTeamsMap.has(team.metadata.id))
 
-        // Only update if we got valid results, otherwise keep optimistic data
-        if (valid.length > 0) {
-          setValidTeams(valid)
-        }
+        setValidTeams(valid)
       } catch (error) {
         console.error('Error validating teams:', error)
         setValidationError(error as Error)
@@ -477,10 +474,7 @@ export function useValidCitizens(
           validCitizensMap.has(citizen.metadata.id)
         )
 
-        // Only update if we got valid results, otherwise keep optimistic data
-        if (valid.length > 0) {
-          setValidCitizens(valid)
-        }
+        setValidCitizens(valid)
       } catch (error) {
         console.error('Error validating citizens:', error)
         setValidationError(error as Error)
