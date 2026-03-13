@@ -1,3 +1,4 @@
+import confetti from 'canvas-confetti'
 import VotesTableABI from 'const/abis/Votes.json'
 import {
   CITIZEN_TABLE_NAMES,
@@ -41,12 +42,13 @@ type Citizen = {
   id: string
   name: string
   owner: string
+  image?: string
   displayName: string
 }
 
 type LeaderboardEntry = {
   delegateeAddress: string
-  citizenId: number
+  citizenId: number | string
   citizenName: string
   citizenImage?: string
   totalDelegated: number
@@ -77,6 +79,12 @@ export default function OverviewDelegate({
   const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasExistingDelegation, setHasExistingDelegation] = useState(false)
+  const [previousDelegation, setPreviousDelegation] = useState<{
+    delegatee: string
+    amount: number
+  } | null>(null)
+  const [displayLeaderboard, setDisplayLeaderboard] = useState(leaderboard)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -98,7 +106,25 @@ export default function OverviewDelegate({
         )
         if (res.ok) {
           const data = await res.json()
-          setHasExistingDelegation(Array.isArray(data) && data.length > 0)
+          if (Array.isArray(data) && data.length > 0) {
+            setHasExistingDelegation(true)
+            try {
+              const vote =
+                typeof data[0].vote === 'string'
+                  ? JSON.parse(data[0].vote)
+                  : data[0].vote
+              const entries = Object.entries(vote)
+              if (entries.length > 0) {
+                const [delegatee, amount] = entries[0]
+                setPreviousDelegation({
+                  delegatee: delegatee.toLowerCase(),
+                  amount: Number(amount) || 0,
+                })
+              }
+            } catch {}
+          } else {
+            setHasExistingDelegation(false)
+          }
         }
       } catch {
         setHasExistingDelegation(false)
@@ -197,8 +223,91 @@ export default function OverviewDelegate({
       })
       await sendAndConfirmTransaction({ transaction: tx, account })
       setHasExistingDelegation(true)
+
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        shapes: ['circle', 'star'],
+        colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+      })
       toast.success('Delegation submitted!', { style: toastStyle })
-      setTimeout(() => router.reload(), 5000)
+
+      // Optimistic leaderboard update
+      const optimistic = [...displayLeaderboard]
+
+      // Remove old delegation if redelegating
+      if (hasExistingDelegation && previousDelegation) {
+        const oldIdx = optimistic.findIndex(
+          (e) => e.delegateeAddress === previousDelegation.delegatee
+        )
+        if (oldIdx >= 0) {
+          optimistic[oldIdx] = {
+            ...optimistic[oldIdx],
+            totalDelegated: Math.max(
+              0,
+              optimistic[oldIdx].totalDelegated - previousDelegation.amount
+            ),
+            delegatorCount: Math.max(
+              0,
+              optimistic[oldIdx].delegatorCount - 1
+            ),
+          }
+          if (optimistic[oldIdx].totalDelegated <= 0) {
+            optimistic.splice(oldIdx, 1)
+          }
+        }
+      }
+
+      // Add new delegation
+      const newIdx = optimistic.findIndex(
+        (e) => e.delegateeAddress === selectedCitizen.owner.toLowerCase()
+      )
+      if (newIdx >= 0) {
+        optimistic[newIdx] = {
+          ...optimistic[newIdx],
+          totalDelegated: optimistic[newIdx].totalDelegated + delegateAmount,
+          delegatorCount: optimistic[newIdx].delegatorCount + 1,
+        }
+      } else {
+        optimistic.push({
+          delegateeAddress: selectedCitizen.owner.toLowerCase(),
+          citizenId: selectedCitizen.id,
+          citizenName: selectedCitizen.name || selectedCitizen.displayName,
+          citizenImage: selectedCitizen.image,
+          totalDelegated: delegateAmount,
+          delegatorCount: 1,
+        })
+      }
+
+      optimistic.sort((a, b) => b.totalDelegated - a.totalDelegated)
+      setDisplayLeaderboard(optimistic.slice(0, 25))
+
+      // Update previous delegation to reflect the new one
+      setPreviousDelegation({
+        delegatee: selectedCitizen.owner.toLowerCase(),
+        amount: delegateAmount,
+      })
+
+      // Poll for real data in background
+      setIsRefreshing(true)
+      const pollForUpdate = async (retries = 5) => {
+        for (let i = 0; i < retries; i++) {
+          await new Promise((r) => setTimeout(r, 4000 + i * 2000))
+          try {
+            await fetch('/api/revalidate?path=/overview-delegate')
+            const res = await fetch('/overview-delegate', {
+              headers: { Accept: 'text/html' },
+            })
+            if (res.ok) {
+              router.replace(router.asPath)
+              break
+            }
+          } catch {}
+        }
+        setIsRefreshing(false)
+      }
+      pollForUpdate()
     } catch (error) {
       console.error('Error submitting delegation:', error)
       toast.error('Failed to submit delegation. Please try again.', {
@@ -213,7 +322,7 @@ export default function OverviewDelegate({
     <section className="overflow-visible">
       <Head
         title="Back Your Astronaut"
-        description="Back a MoonDAO citizen with your $OVERVIEW tokens. The top 25 advance to Round 2 of the selection process to fly with Frank White."
+        description="Use your $OVERVIEW tokens to back the MoonDAO citizen you want to see fly with Frank White. The top 25 advance to the next round."
       />
       <Container>
         <div className="w-full">
@@ -224,23 +333,23 @@ export default function OverviewDelegate({
                 Back Your Astronaut
               </h1>
               <p className="text-gray-300 text-sm sm:text-base mt-3 sm:mt-4 leading-relaxed">
-                Want to fly with Frank White? Rally your community to delegate their $OVERVIEW tokens to you. The top 25 citizens with the most delegated tokens advance to Round 2 of the selection process.
+                Who should fly with Frank White? You decide. Delegate your $OVERVIEW tokens to the citizen you believe deserves a seat on the flight. The top 25 candidates with the most community backing will advance to Round 2 of the selection process.
                 {' '}
                 <Link
                   href="/mission/4"
                   className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 transition-colors"
                 >
-                  Learn how the competition works &rarr;
+                  Learn how the selection works &rarr;
                 </Link>
               </p>
             </div>
             {/* Delegation Form */}
-            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-visible">
+            <div className="relative z-10 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-visible">
               <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
                 Delegate Your $OVERVIEW
               </h2>
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                Delegate your full $OVERVIEW balance to the citizen you want to see fly with Frank White. Your tokens stay in your wallet — only your backing is recorded.
+                Choose a citizen and put your full $OVERVIEW balance behind them. Your tokens never leave your wallet — this only records your support.
               </p>
 
               {/* Balance */}
@@ -268,14 +377,14 @@ export default function OverviewDelegate({
               {/* Citizen Search */}
               <div className="mb-4 relative z-10" ref={dropdownRef}>
                 <label className="block text-xs sm:text-sm font-medium text-white mb-1.5 sm:mb-2">
-                  Search Citizen
+                  Find a Citizen
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
-                    placeholder="Search by name or token ID..."
+                    placeholder="Search by name or citizen ID..."
                     className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/20 rounded-xl text-sm sm:text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   {isSearching && (
@@ -356,20 +465,28 @@ export default function OverviewDelegate({
 
             {/* Leaderboard */}
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-              <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
-                Round 1 Leaderboard
-              </h2>
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">
+                  Round 1 Leaderboard
+                </h2>
+                {isRefreshing && (
+                  <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
+                    <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+                    Updating...
+                  </div>
+                )}
+              </div>
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                The top 25 citizens with the most community backing advance to Round 2: The Essay. Rally your network to delegate their $OVERVIEW tokens and secure your spot.
+                The top 25 candidates advance to Round 2, where they'll write about what the Overview Effect means to them. Want to compete? Mobilize your community to back you.
               </p>
 
-              {leaderboard.length === 0 ? (
+              {displayLeaderboard.length === 0 ? (
                 <p className="text-gray-400 text-center py-6 sm:py-8 text-sm">
-                  No delegations yet. Be the first to back a citizen!
+                  No delegations yet. Be the first to back a candidate!
                 </p>
               ) : (
                 <div className="space-y-2 sm:space-y-3">
-                  {leaderboard.slice(0, 25).map((entry, index) => {
+                  {displayLeaderboard.slice(0, 25).map((entry, index) => {
                     const citizenLink = entry.citizenName
                       ? `/citizen/${generatePrettyLinkWithId(entry.citizenName, entry.citizenId)}`
                       : `/citizen/${entry.citizenId}`
@@ -439,10 +556,10 @@ export default function OverviewDelegate({
                   Get $OVERVIEW Tokens
                 </h3>
                 <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-                  Help send Frank White to space. Every contribution earns you $OVERVIEW tokens and a voice in who flies with him.
+                  Contribute to the mission and receive $OVERVIEW tokens. The more you hold, the more weight your delegation carries.
                 </p>
                 <span className="inline-block mt-3 text-indigo-400 text-xs sm:text-sm font-medium group-hover:text-indigo-300 transition-colors">
-                  Go to Mission &rarr;
+                  Contribute Now &rarr;
                 </span>
               </Link>
 
@@ -456,10 +573,10 @@ export default function OverviewDelegate({
                   Become a Citizen
                 </h3>
                 <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-                  Only MoonDAO Citizens can appear on the leaderboard and compete to fly. Contributions over $100 include citizenship.
+                  Want to compete for a seat? Only MoonDAO Citizens are eligible for the leaderboard. Contributions over $100 include citizenship at no extra cost.
                 </p>
                 <span className="inline-block mt-3 text-emerald-400 text-xs sm:text-sm font-medium group-hover:text-emerald-300 transition-colors">
-                  Join Now &rarr;
+                  Become a Citizen &rarr;
                 </span>
               </Link>
             </div>

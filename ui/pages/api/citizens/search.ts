@@ -39,7 +39,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       whereClause = `LOWER(name) LIKE LOWER('%${sanitized}%')`
     }
 
-    const statement = `SELECT id, name, owner FROM ${tableName} WHERE ${whereClause} ORDER BY name ASC LIMIT 20`
+    const statement = `SELECT id, name, owner, image FROM ${tableName} WHERE ${whereClause} ORDER BY name ASC LIMIT 20`
 
     const results = await queryTable(chain, statement)
 
@@ -51,6 +51,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       id: citizen.id,
       name: citizen.name,
       owner: citizen.owner,
+      image: citizen.image || null,
       displayName: citizen.name
         ? `${citizen.name} (#${citizen.id})`
         : `Citizen #${citizen.id}`,
