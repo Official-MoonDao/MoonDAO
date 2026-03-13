@@ -632,7 +632,7 @@ export async function getStaticProps() {
 
     let citizenMap: Record<
       string,
-      { id: number; name: string; image?: string }
+      { id: number | string; name: string; image?: string }
     > = {}
 
     if (safeAddresses.length > 0) {
