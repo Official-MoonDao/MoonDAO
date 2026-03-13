@@ -213,6 +213,12 @@ export default function OverviewDelegate({
       })
       return
     }
+    if (!votesContract) {
+      toast.error('Voting contract is not ready yet. Please wait a moment and try again.', {
+        style: toastStyle,
+      })
+      return
+    }
 
     const delegateAmount = Math.floor(userBalance)
     setIsSubmitting(true)
