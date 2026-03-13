@@ -222,6 +222,12 @@ export default function OverviewDelegate({
     }
 
     const delegateAmount = Math.floor(userBalance)
+    if (delegateAmount <= 0) {
+      toast.error('You do not have enough $OVERVIEW tokens to delegate.', {
+        style: toastStyle,
+      })
+      return
+    }
     setIsSubmitting(true)
     const vote = JSON.stringify({ [selectedCitizen.owner]: delegateAmount })
 
