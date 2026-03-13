@@ -37,6 +37,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const sanitized = sanitizeSearchQuery(query)
     const isNumeric = /^\d+$/.test(sanitized)
 
+    // Server-side validation to avoid overly broad searches like LIKE '%%'
+    if (!isNumeric && sanitized.length < 3) {
+      return res.status(400).json({ message: 'Query parameter is too short' })
+    }
+
     const excludeIds =
       OVERVIEW_BLOCKED_CITIZEN_IDS.length > 0
         ? `id NOT IN (${OVERVIEW_BLOCKED_CITIZEN_IDS.join(',')})`
