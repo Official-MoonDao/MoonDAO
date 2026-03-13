@@ -1,21 +1,23 @@
-import { rateLimit } from 'middleware/rateLimit'
-import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 
+const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET
 const ALLOWED_PATHS = ['/overview-delegate']
 
-async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  const { path } = req.query
+  const { secret, path } = req.body ?? {}
 
-  if (!path || typeof path !== 'string') {
-    return res.status(400).json({ message: 'Path parameter is required' })
+  if (!REVALIDATE_SECRET || secret !== REVALIDATE_SECRET) {
+    return res.status(401).json({ message: 'Invalid secret' })
   }
 
-  if (!ALLOWED_PATHS.includes(path)) {
+  if (!path || typeof path !== 'string' || !ALLOWED_PATHS.includes(path)) {
     return res.status(400).json({ message: 'Invalid path' })
   }
 
@@ -26,5 +28,3 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(500).json({ message: 'Error revalidating' })
   }
 }
-
-export default withMiddleware(handler, rateLimit)

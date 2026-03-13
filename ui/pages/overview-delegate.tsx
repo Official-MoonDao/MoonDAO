@@ -276,7 +276,14 @@ export default function OverviewDelegate({
         for (let i = 0; i < retries; i++) {
           await new Promise((r) => setTimeout(r, 4000 + i * 2000))
           try {
-            await fetch('/api/revalidate?path=/overview-delegate')
+            await fetch('/api/revalidate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                secret: process.env.NEXT_PUBLIC_REVALIDATE_SECRET,
+                path: '/overview-delegate',
+              }),
+            })
             const res = await fetch('/overview-delegate', {
               headers: { Accept: 'text/html' },
             })
