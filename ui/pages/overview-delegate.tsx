@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { formatUnits } from 'ethers'
 import {
   applyOptimisticUpdate,
   isValidEthAddress,
@@ -604,8 +605,10 @@ export async function getStaticProps() {
       for (let i = 0; i < uniqueDelegators.length; i++) {
         const raw = balances[i]
         const wei = BigInt(raw || '0')
-        balanceMap[uniqueDelegators[i].toLowerCase()] =
-          Number(wei) / 10 ** OVERVIEW_TOKEN_DECIMALS
+        const normalized = parseFloat(
+          formatUnits(wei, OVERVIEW_TOKEN_DECIMALS)
+        )
+        balanceMap[uniqueDelegators[i].toLowerCase()] = normalized
       }
     } catch (error) {
       console.error('Error fetching balances, using stored amounts:', error)
