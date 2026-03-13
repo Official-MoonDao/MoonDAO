@@ -797,6 +797,13 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
     if (symbolLower === 'usdt') {
       return <Image src="/coins/USDT.svg" width={24} height={24} alt={symbol} />
     }
+    if (symbolLower === 'overview' || symbolLower === '$overview') {
+      return (
+        <div className="w-6 h-6 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+          O
+        </div>
+      )
+    }
 
     // Fallback to a generic token icon or first letter
     return (

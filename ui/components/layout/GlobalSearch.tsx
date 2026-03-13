@@ -82,6 +82,13 @@ const searchMappings = [
     category: 'Projects'
   },
   {
+    keywords: ['overview', 'delegate', 'delegation', 'frank white', 'overview token', 'leaderboard', 'astronaut'],
+    title: 'Delegate $OVERVIEW',
+    description: 'Delegate your $OVERVIEW tokens to a MoonDAO citizen',
+    link: '/overview-delegate',
+    category: 'Projects'
+  },
+  {
     keywords: ['jobs', 'careers', 'work', 'employment', 'opportunities', 'hiring', 'job board', 'find work', 'career opportunities', 'space jobs', 'space careers'],
     title: 'Jobs Board',
     description: 'Find career opportunities in the space industry',

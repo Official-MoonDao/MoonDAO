@@ -222,6 +222,10 @@ export const VOTES_TABLE_NAMES: Index = {
 }
 export const WBA_VOTE_ID = 0
 export const BAIKONUR_VOTE_ID = 1
+export const OVERVIEW_DELEGATION_VOTE_ID = 2
+// TODO: Replace with actual $OVERVIEW token address from team
+export const OVERVIEW_TOKEN_ADDRESS = '0xc868dFc4Ad388F5d7A8A5c3ECa0cff226d77152a'
+export const OVERVIEW_TOKEN_DECIMALS = 18
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.VotingEscrowDepositor,
   sepolia: sepoliaConfig.VotingEscrowDepositor,
