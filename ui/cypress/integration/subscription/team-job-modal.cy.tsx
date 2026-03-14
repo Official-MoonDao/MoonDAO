@@ -2,7 +2,6 @@ import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import { JOBS_TABLE_ADDRESSES } from 'const/config'
-import { Toaster } from 'react-hot-toast'
 import { getContract } from 'thirdweb'
 import { serverClient } from '@/lib/thirdweb/client'
 import { Job } from '@/components/jobs/Job'
@@ -21,7 +20,7 @@ describe('<TeamJobModal />', () => {
   beforeEach(() => {
     props = {
       job,
-      teamId: 0,
+      teamId: '0',
       setEnabled: cy.stub(),
       refreshJobs: cy.stub(),
       jobTableContract: getContract({
@@ -41,27 +40,35 @@ describe('<TeamJobModal />', () => {
         <TeamJobModal {...props} />
       </TestnetProviders>
     )
-    cy.get('[data-testid="modal-title"]').contains('Create Job')
+    cy.get('[data-testid="modal-title"]').should('contain', 'Create Job')
     cy.get('#job-expiration-status').should(
       'have.text',
       `*This job post will end on ${new Date(job.endTime * 1000).toLocaleDateString()}`
     )
   })
 
-  it('Displays error when fields are empty', () => {
+  it('Shows disabled styling when required fields are empty', () => {
     cy.mount(
       <TestnetProviders>
         <TeamJobModal {...props} />
-        <Toaster />
       </TestnetProviders>
     )
 
-    cy.get('form').then(($form) => {
-      $form[0].requestSubmit()
-    })
-    // Wait for toast to appear - react-hot-toast renders in a div with role="status"
-    cy.get('[role="status"]', { timeout: 5000 })
-      .should('be.visible')
-      .should('contain', 'Please fill out all fields.')
+    cy.get('#job-title-input').should('have.value', '')
+    cy.get('#job-application-link-input').should('have.value', '')
+    cy.get('button[type="submit"]').should('have.class', 'opacity-50')
+  })
+
+  it('Removes disabled styling when required fields are filled', () => {
+    cy.mount(
+      <TestnetProviders>
+        <TeamJobModal {...props} />
+      </TestnetProviders>
+    )
+
+    cy.get('#job-title-input').type('Test Job')
+    cy.get('#job-description-input').type('A test description')
+    cy.get('#job-application-link-input').type('https://example.com')
+    cy.get('button[type="submit"]').should('not.have.class', 'opacity-50')
   })
 })
