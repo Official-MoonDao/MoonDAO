@@ -9,9 +9,24 @@ import {
 } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
 import IconOrg from '@/components/assets/IconOrg'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 
 export default function useNavigation(citizen: any) {
   return useMemo(() => {
+    const isCitizen = !!citizen?.metadata?.name
+    const citizenshipChildren = [
+      ...(isCitizen
+        ? [
+            {
+              name: 'Your Profile',
+              href: `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata.id)}`,
+            },
+          ]
+        : [{ name: 'Become a Citizen', href: '/citizen' }]),
+      { name: 'Submit a Contribution', href: '/contributions' },
+      { name: 'Explore Citizens', href: '/network' },
+    ]
+
     return [
       {
         name: citizen ? 'Dashboard' : 'Join',
@@ -22,11 +37,7 @@ export default function useNavigation(citizen: any) {
         name: 'Citizenship',
         href: '/network',
         icon: IconOrg,
-        children: [
-          { name: 'Become a Citizen', href: '/citizen' },
-          { name: 'Submit a Contribution', href: '/contributions' },
-          { name: 'Explore Citizens', href: '/network' },
-        ],
+        children: citizenshipChildren,
       },
       {
         name: 'Teams',
