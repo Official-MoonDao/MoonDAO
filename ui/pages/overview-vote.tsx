@@ -281,10 +281,10 @@ export default function OverviewDelegate({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 secret: process.env.NEXT_PUBLIC_REVALIDATE_SECRET,
-                path: '/leaderboard',
+                path: '/overview-vote',
               }),
             })
-            const res = await fetch('/leaderboard', {
+            const res = await fetch('/overview-vote', {
               headers: { Accept: 'text/html' },
             })
             if (res.ok) {
@@ -330,7 +330,7 @@ export default function OverviewDelegate({
                 Back a Candidate
               </h2>
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                Pledge your $OVERVIEW balance to your chosen candidate. Your tokens remain securely in your wallet. Only your voting power is recorded.
+                Pledge your $OVERVIEW balance to your chosen candidate. Your tokens remain securely in your wallet. Only your voting power is recorded. You can only back one candidate, but you can change your vote at any time until the voting period ends or accrue more voting power.
               </p>
 
               {/* Balance */}
@@ -357,9 +357,17 @@ export default function OverviewDelegate({
 
               {/* Citizen Search */}
               <div className="mb-4 relative z-10" ref={dropdownRef}>
-                <label className="block text-xs sm:text-sm font-medium text-white mb-1.5 sm:mb-2">
-                  Find a Citizen
-                </label>
+                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                  <label className="text-xs sm:text-sm font-medium text-white">
+                    Find a Citizen
+                  </label>
+                  <Link
+                    href="/network"
+                    className="text-xs sm:text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                  >
+                    Browse Directory →
+                  </Link>
+                </div>
                 <div className="relative">
                   <input
                     type="text"
@@ -505,7 +513,7 @@ export default function OverviewDelegate({
                             {entry.citizenName || `Citizen #${entry.citizenId}`}
                           </Link>
                           <p className="text-gray-400 text-xs sm:text-sm">
-                            {entry.delegatorCount} delegator
+                            {entry.delegatorCount} backer
                             {entry.delegatorCount !== 1 ? 's' : ''}
                           </p>
                         </div>

@@ -85,7 +85,7 @@ const searchMappings = [
     keywords: ['overview', 'delegate', 'delegation', 'frank white', 'overview token', 'leaderboard', 'astronaut', 'back', 'fly', 'space', 'candidate'],
     title: 'Fly to Space with Frank White',
     description: 'Help fund the mission to send Frank White to space. Vote for the citizen you want to fly alongside him.',
-    link: '/leaderboard',
+    link: '/overview-vote',
     category: 'Projects'
   },
   {
