@@ -82,6 +82,13 @@ const searchMappings = [
     category: 'Projects'
   },
   {
+    keywords: ['overview', 'delegate', 'delegation', 'frank white', 'overview token', 'leaderboard', 'astronaut', 'back', 'fly', 'space', 'candidate'],
+    title: 'Fly to Space with Frank White',
+    description: 'Help fund the mission to send Frank White to space. Vote for the citizen you want to fly alongside him.',
+    link: '/overview-vote',
+    category: 'Projects'
+  },
+  {
     keywords: ['jobs', 'careers', 'work', 'employment', 'opportunities', 'hiring', 'job board', 'find work', 'career opportunities', 'space jobs', 'space careers'],
     title: 'Jobs Board',
     description: 'Find career opportunities in the space industry',

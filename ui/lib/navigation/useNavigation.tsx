@@ -88,6 +88,11 @@ export default function useNavigation(citizen: any) {
         name: 'Launchpad',
         icon: RocketLaunchIcon,
         href: '/launch',
+        children: [
+          { name: 'Launchpad Explainer', href: '/launch' },
+          { name: 'Support Overview Flight', href: '/mission/4' },
+          { name: 'Fly with Frank', href: '/overview-vote' },
+        ],
       },
     ]
   }, [citizen])

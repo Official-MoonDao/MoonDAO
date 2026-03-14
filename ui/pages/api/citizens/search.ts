@@ -1,28 +1,60 @@
-import { DEFAULT_CHAIN_V5, CITIZEN_TABLE_NAMES } from 'const/config'
+import {
+  DEFAULT_CHAIN_V5,
+  CITIZEN_TABLE_NAMES,
+  OVERVIEW_BLOCKED_CITIZEN_IDS,
+} from 'const/config'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { sanitizeSearchQuery } from '@/lib/overview-delegate/leaderboard'
+import { arbitrum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+
+const SUPPORTED_CHAINS: Record<string, typeof arbitrum> = {
+  arbitrum,
+}
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  const { q: query } = req.query
+  const { q: query, chain: chainParam } = req.query
 
   if (!query || typeof query !== 'string') {
     return res.status(400).json({ message: 'Query parameter is required' })
   }
 
   try {
-    const chain = DEFAULT_CHAIN_V5
+    const chain =
+      typeof chainParam === 'string' && SUPPORTED_CHAINS[chainParam]
+        ? SUPPORTED_CHAINS[chainParam]
+        : DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
     const tableName = CITIZEN_TABLE_NAMES[chainSlug]
 
-    // Search by name (case insensitive) or token ID
-    const statement = `SELECT id, name, owner FROM ${tableName} WHERE LOWER(name) LIKE LOWER('%${query}%') OR id = '${query}' ORDER BY name ASC LIMIT 20`
+    const sanitized = sanitizeSearchQuery(query)
+    const isNumeric = /^\d+$/.test(sanitized)
+
+    // Server-side validation to avoid overly broad searches like LIKE '%%'
+    if (!isNumeric && sanitized.length < 3) {
+      return res.status(400).json({ message: 'Query parameter is too short' })
+    }
+
+    const excludeIds =
+      OVERVIEW_BLOCKED_CITIZEN_IDS.length > 0
+        ? `id NOT IN (${OVERVIEW_BLOCKED_CITIZEN_IDS.join(',')})`
+        : '1=1'
+
+    let searchClause: string
+    if (isNumeric) {
+      searchClause = `LOWER(name) LIKE LOWER('%${sanitized}%') OR id = ${parseInt(sanitized, 10)}`
+    } else {
+      searchClause = `LOWER(name) LIKE LOWER('%${sanitized}%')`
+    }
+
+    const statement = `SELECT id, name, owner, image FROM ${tableName} WHERE (${searchClause}) AND ${excludeIds} ORDER BY name ASC LIMIT 20`
 
     const results = await queryTable(chain, statement)
 
@@ -30,11 +62,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(500).json({ message: 'Error querying citizen table' })
     }
 
-    // Format results for the frontend
     const citizens = results.map((citizen: any) => ({
       id: citizen.id,
       name: citizen.name,
       owner: citizen.owner,
+      image: citizen.image || null,
       displayName: citizen.name
         ? `${citizen.name} (#${citizen.id})`
         : `Citizen #${citizen.id}`,
