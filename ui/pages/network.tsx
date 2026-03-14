@@ -15,10 +15,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useDebounce } from 'react-use'
 import { NetworkTab } from '@/lib/network/types'
 import { useMapData } from '@/lib/network/useMapData'
-import { useValidTeams, useValidCitizens } from '@/lib/network/useNetworkData'
-import { filterBlockedTeams, filterBlockedCitizens } from '@/lib/network/utils'
+import { useTeams, useCitizens } from '@/lib/network/useNetworkData'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import { teamRowToNFT, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -98,14 +96,14 @@ export default function Network({
   const isCitizensTab = tab === 'citizens'
   const isMapTab = tab === 'map'
 
-  const teamsResult = useValidTeams({
+  const teamsResult = useTeams({
     page: isTeamsTab ? pageIdx : 1,
     search: isTeamsTab ? debouncedSearch : '',
     enabled: isTeamsTab || isMapTab,
     initialData: initialTeams,
   })
 
-  const citizensResult = useValidCitizens({
+  const citizensResult = useCitizens({
     page: isCitizensTab ? pageIdx : 1,
     search: isCitizensTab ? debouncedSearch : '',
     enabled: isCitizensTab || isMapTab,

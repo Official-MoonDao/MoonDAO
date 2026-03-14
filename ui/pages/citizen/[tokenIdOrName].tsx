@@ -25,6 +25,7 @@ import { BLOCKED_CITIZENS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -75,7 +76,7 @@ import HatsABI from '../../const/abis/Hats.json'
 import JobsABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
-export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any) {
+function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
@@ -675,6 +676,15 @@ async function getTeamWearerServerSide(chain: any, teamContract: any, address: a
     console.error(err)
     return []
   }
+}
+
+const DynamicCitizenDetailPage = dynamic(
+  () => Promise.resolve({ default: CitizenDetailPageContent }),
+  { ssr: false }
+)
+
+export default function CitizenDetailPage(props: any) {
+  return <DynamicCitizenDetailPage {...props} />
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {

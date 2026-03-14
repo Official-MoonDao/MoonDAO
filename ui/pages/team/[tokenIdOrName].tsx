@@ -40,6 +40,7 @@ import {
 } from 'const/config'
 import { BLOCKED_TEAMS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -85,7 +86,7 @@ import TeamMissions from '@/components/subscription/TeamMissions'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import EBRewards from '@/components/subscription/EBRewards'
 
-export default function TeamDetailPage({
+function TeamDetailPageContent({
   tokenId,
   nft,
   imageIpfsLink,
@@ -533,15 +534,10 @@ export default function TeamDetailPage({
           {subIsValid && (
             <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
               <TeamMissions
-                selectedChain={selectedChain}
                 isManager={isManager}
                 teamId={tokenId}
                 missionTableContract={missionTableContract}
-                missionCreatorContract={missionCreatorContract}
                 jbControllerContract={jbControllerContract}
-                jbDirectoryContract={jbDirectoryContract}
-                jbTokensContract={jbTokensContract}
-                teamContract={teamContract}
                 missions={missions}
               />
             </div>
@@ -643,6 +639,15 @@ export default function TeamDetailPage({
       </ContentLayout>
     </Container>
   )
+}
+
+const DynamicTeamDetailPage = dynamic(
+  () => Promise.resolve({ default: TeamDetailPageContent }),
+  { ssr: false }
+)
+
+export default function TeamDetailPage(props: any) {
+  return <DynamicTeamDetailPage {...props} />
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params, query }) => {
