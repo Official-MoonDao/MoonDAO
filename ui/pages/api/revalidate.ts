@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 
 const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET
-const ALLOWED_PATHS = ['/overview-delegate']
+const ALLOWED_PATHS = ['/leaderboard']
 
 export default async function handler(
   req: NextApiRequest,

@@ -281,10 +281,10 @@ export default function OverviewDelegate({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 secret: process.env.NEXT_PUBLIC_REVALIDATE_SECRET,
-                path: '/overview-delegate',
+                path: '/leaderboard',
               }),
             })
-            const res = await fetch('/overview-delegate', {
+            const res = await fetch('/leaderboard', {
               headers: { Accept: 'text/html' },
             })
             if (res.ok) {
@@ -448,7 +448,7 @@ export default function OverviewDelegate({
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <h2 className="text-lg sm:text-xl font-GoodTimes text-white">
-                  Round 1 Leaderboard
+                  Overview Flight Leaderboard
                 </h2>
                 {isRefreshing && (
                   <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
