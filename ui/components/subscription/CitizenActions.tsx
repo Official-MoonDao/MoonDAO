@@ -207,19 +207,15 @@ export default function CitizenActions({
   }, [user?.linkedAccounts, hasDiscordLinked, performRoleCheck])
 
   return (
-    <div id="citizen-actions-container" className="mb-6">
+    <div id="citizen-actions-container">
       {address.toLowerCase() === nft?.owner?.toLowerCase() && (
         <>
           <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-6">
-              <div className="flex gap-5">
-                <h2 className="font-GoodTimes text-2xl text-white">Next Steps</h2>
-              </div>
-            </div>
+            <h2 className="font-GoodTimes text-2xl text-white mb-6">Next Steps</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {incompleteProfile && (
-                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                      onClick={() => setCitizenMetadataModalEnabled(true)}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
@@ -234,7 +230,7 @@ export default function CitizenActions({
               )}
               
               {!hasMooney && !hasVmooney && (
-                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                      onClick={() => router.push('/get-mooney')}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
@@ -254,7 +250,7 @@ export default function CitizenActions({
               )}
               
               {hasMooney && !hasVmooney && (
-                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                      onClick={() => router.push('/lock')}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
@@ -268,7 +264,7 @@ export default function CitizenActions({
                 </div>
               )}
               {hasMooney && !hasVmooney && (
-                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                      onClick={() => router.push('/lock')}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
@@ -282,7 +278,7 @@ export default function CitizenActions({
                 </div>
               )}
               
-              <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+              <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                    onClick={() => {
                      window.open(
                        `https://x.com/intent/tweet?url=${window.location.href}&text=I%20just%20became%20a%20Citizen%20of%20the%20Space%20Acceleration%20Network%20%40OfficialMoonDAO`
@@ -299,7 +295,7 @@ export default function CitizenActions({
                 </p>
               </div>
               
-              <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+              <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                    onClick={() => router.push('/proposals')}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
@@ -317,7 +313,7 @@ export default function CitizenActions({
                 </p>
               </div>
               
-              <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+              <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                    onClick={() => router.push('/contributions')}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
@@ -331,11 +327,11 @@ export default function CitizenActions({
                   <h3 className="font-bold text-white text-sm">Submit Contribution</h3>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Participate in quarterly retroactive rewards. The community votes on your contributions and you earn from a shared ETH and vMOONEY pool.
+                  Participate in quarterly retroactive rewards and earn from a shared ETH and vMOONEY pool.
                 </p>
               </div>
               
-              <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+              <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                    onClick={() => router.push('/map')}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
@@ -349,7 +345,7 @@ export default function CitizenActions({
               </div>
               
               <div id="check-roles-action" 
-                   className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+                   className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                    onClick={isCheckingRoles ? undefined : checkDiscordRoles}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
@@ -433,7 +429,7 @@ export default function CitizenActions({
               </div>
 
               {!isTeamMember && (
-                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group"
+                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                      onClick={() => router.push('/team')}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">

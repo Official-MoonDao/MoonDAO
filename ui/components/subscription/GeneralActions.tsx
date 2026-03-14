@@ -39,7 +39,7 @@ function GeneralAction({
 export default function GeneralActions() {
   return (
     <div className="p-6">
-      <div className="flex gap-5 mb-6">
+      <div className="flex gap-5 items-center mb-6">
         <Image
           src={'/assets/icon-action.svg'}
           alt="On-chain tools icon"

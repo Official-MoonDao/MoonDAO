@@ -3,116 +3,34 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
-import JuiceProviders from '@/lib/juicebox/JuiceProviders'
-import useMissionData from '@/lib/mission/useMissionData'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
-import { useShallowQueryRoute } from '@/lib/utils/hooks'
-import PaginationButtons from '../layout/PaginationButtons'
 import StandardButton from '../layout/StandardButton'
+import StandardDetailCard from '../layout/StandardDetailCard'
 import { Mission } from '../mission/MissionCard'
-import MissionWideCard from '../mission/MissionWideCard'
-
-type TeamMissionProps = {
-  mission: Mission
-  missionTableContract: any
-  missionCreatorContract: any
-  jbControllerContract: any
-  jbDirectoryContract: any
-  jbTokensContract: any
-  teamContract: any
-  isManager: boolean
-  selectedChain: any
-}
 
 type TeamMissionsProps = {
   teamId: number
   isManager: boolean
-  selectedChain: any
   missionTableContract: any
-  missionCreatorContract: any
   jbControllerContract: any
-  jbDirectoryContract: any
-  jbTokensContract: any
-  teamContract: any
-  missions?: Mission[] // Optional: can be provided externally to avoid fetching
-}
-
-export function TeamMission({
-  selectedChain,
-  mission,
-  missionTableContract,
-  missionCreatorContract,
-  jbControllerContract,
-  jbDirectoryContract,
-  jbTokensContract,
-  teamContract,
-  isManager,
-}: TeamMissionProps) {
-  const { subgraphData, token, fundingGoal, ruleset, primaryTerminalAddress, deadline } =
-    useMissionData({
-      mission,
-      missionTableContract,
-      missionCreatorContract,
-      jbControllerContract,
-      jbDirectoryContract,
-      jbTokensContract,
-      teamContract,
-    })
-
-  return (
-    <JuiceProviders projectId={mission?.projectId} selectedChain={selectedChain}>
-      <MissionWideCard
-        mission={mission}
-        token={token}
-        subgraphData={subgraphData}
-        fundingGoal={mission.fundingGoal}
-        ruleset={ruleset}
-        deadline={deadline}
-        contribute
-        editable={isManager}
-        showMore={false}
-        linkToMission
-        selectedChain={selectedChain}
-        primaryTerminalAddress={primaryTerminalAddress}
-        teamContract={teamContract}
-      />
-    </JuiceProviders>
-  )
+  missions?: Mission[]
 }
 
 export default function TeamMissions({
-  selectedChain,
   teamId,
   isManager,
   missionTableContract,
-  missionCreatorContract,
   jbControllerContract,
-  jbDirectoryContract,
-  jbTokensContract,
-  teamContract,
   missions: externalMissions,
 }: TeamMissionsProps) {
   const router = useRouter()
   const [internalMissions, setInternalMissions] = useState<Mission[]>()
-  const [pageIdx, setPageIdx] = useState(1)
   const [tableName, setTableName] = useState<string | null>(null)
-  const shallowQueryRoute = useShallowQueryRoute()
 
   const missions = externalMissions || internalMissions
-  const maxPage = missions?.length || 0
-
-  function handlePageChange(newPage: number) {
-    const nextMission = missions?.[newPage - 1]
-    setPageIdx(newPage)
-    shallowQueryRoute({
-      ...router.query,
-      mission: nextMission?.id,
-    })
-  }
-
   const shouldFetch = !externalMissions
 
-  // Get table name from contract
   useEffect(() => {
     async function getTableName() {
       if (!missionTableContract || !shouldFetch) return
@@ -130,14 +48,12 @@ export default function TeamMissions({
     getTableName()
   }, [missionTableContract, shouldFetch])
 
-  // Build statement and fetch with SWR
   const statement =
     shouldFetch && tableName ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}` : null
-  const { data: rows, mutate } = useTablelandQuery(statement, {
+  const { data: rows } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
 
-  // Process rows when they arrive
   useEffect(() => {
     async function processRows() {
       if (!rows || !jbControllerContract || !shouldFetch) return
@@ -172,80 +88,42 @@ export default function TeamMissions({
     processRows()
   }, [rows, jbControllerContract, shouldFetch])
 
-  //Scroll to mission
-  useEffect(() => {
-    if (router.query.mission && missions) {
-      const missionBoard = document.getElementById('team-missions')
-      if (missionBoard) {
-        missionBoard.scrollIntoView({ behavior: 'smooth' })
-      }
-
-      const missionId = router.query.mission
-      const missionIndex = missions?.findIndex((mission) => mission.id === Number(missionId))
-      if (missionIndex) {
-        setPageIdx(missionIndex + 1)
-      }
-    }
-  }, [router, missions])
-
   if (!missions?.[0]) return null
 
   return (
-    <section id="team-missions" className="p-4 md:p-6">
-      <div className="w-full flex flex-col justify-between gap-4 md:gap-5">
-        <div className="flex flex-col lg:flex-row gap-4 md:gap-5 justify-between items-start lg:items-center mb-4 md:mb-8">
-          <div className="flex gap-4 md:gap-5">
-            <Image
-              src={'/assets/icon-marketplace.svg'}
-              alt="Marketplace icon"
-              width={30}
-              height={30}
-              className="opacity-70 flex-shrink-0"
-            />
-            <h2 className="font-GoodTimes text-xl md:text-2xl text-white">
-              {missions.length > 1 ? 'Missions' : 'Mission'}
-            </h2>
-          </div>
-          {isManager && (
-            <StandardButton
-              className="w-full lg:w-auto lg:min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
-              onClick={() => router.push('/launch')}
-            >
-              Create a Mission
-            </StandardButton>
-          )}
+    <section id="team-missions" className="p-6">
+      <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center mb-6">
+        <div className="flex gap-5 items-center">
+          <Image
+            src={'/assets/icon-marketplace.svg'}
+            alt="Missions icon"
+            width={30}
+            height={30}
+            className="opacity-70 flex-shrink-0"
+          />
+          <h2 className="font-GoodTimes text-2xl text-white">
+            {missions.length > 1 ? 'Missions' : 'Mission'}
+          </h2>
         </div>
-        <div className="mt-2 md:mt-4">
-          <div className="flex flex-col gap-4">
-            {missions?.[0] &&
-              missions
-                .slice(pageIdx - 1, pageIdx)
-                .map((mission) => (
-                  <TeamMission
-                    key={mission.id}
-                    selectedChain={selectedChain}
-                    mission={mission}
-                    missionTableContract={missionTableContract}
-                    missionCreatorContract={missionCreatorContract}
-                    jbControllerContract={jbControllerContract}
-                    jbDirectoryContract={jbDirectoryContract}
-                    jbTokensContract={jbTokensContract}
-                    teamContract={teamContract}
-                    isManager={isManager}
-                  />
-                ))}
-          </div>
-        </div>
-        <div className="mt-6 md:mt-8">
-          {missions?.length > 1 && (
-            <PaginationButtons
-              handlePageChange={handlePageChange}
-              maxPage={missions.length}
-              pageIdx={pageIdx}
-              label="Mission"
-            />
-          )}
-        </div>
+        {isManager && (
+          <StandardButton
+            className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
+            onClick={() => router.push('/launch')}
+          >
+            Create a Mission
+          </StandardButton>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {missions.map((mission) => (
+          <StandardDetailCard
+            key={mission.id}
+            title={mission.metadata?.name}
+            paragraph={mission.metadata?.tagline}
+            image={getIPFSGateway(mission.metadata?.logoUri)}
+            link={`/mission/${mission.id}`}
+          />
+        ))}
       </div>
     </section>
   )

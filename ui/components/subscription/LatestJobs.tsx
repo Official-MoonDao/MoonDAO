@@ -76,11 +76,10 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
 
   return (
     <div className="w-full">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-6">
         <h2 className="font-GoodTimes text-2xl text-white">Latest Jobs</h2>
-
         <StandardButton
-          className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px] mt-2 lg:mt-0"
+          className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
           onClick={() => router.push('/jobs')}
         >
           See More
