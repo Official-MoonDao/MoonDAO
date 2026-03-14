@@ -191,61 +191,59 @@ export default function TeamMissions({
   if (!missions?.[0]) return null
 
   return (
-    <section id="team-missions" className="p-4 md:p-6">
-      <div className="w-full flex flex-col justify-between gap-4 md:gap-5">
-        <div className="flex flex-col lg:flex-row gap-4 md:gap-5 justify-between items-start lg:items-center mb-4 md:mb-8">
-          <div className="flex gap-4 md:gap-5">
+    <section id="team-missions" className="p-6">
+      <div className="w-full flex flex-col justify-between gap-5">
+        <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center mb-6">
+          <div className="flex gap-5 items-center">
             <Image
               src={'/assets/icon-marketplace.svg'}
-              alt="Marketplace icon"
+              alt="Missions icon"
               width={30}
               height={30}
               className="opacity-70 flex-shrink-0"
             />
-            <h2 className="font-GoodTimes text-xl md:text-2xl text-white">
+            <h2 className="font-GoodTimes text-2xl text-white">
               {missions.length > 1 ? 'Missions' : 'Mission'}
             </h2>
           </div>
           {isManager && (
             <StandardButton
-              className="w-full lg:w-auto lg:min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
+              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
               onClick={() => router.push('/launch')}
             >
               Create a Mission
             </StandardButton>
           )}
         </div>
-        <div className="mt-2 md:mt-4">
-          <div className="flex flex-col gap-4">
-            {missions?.[0] &&
-              missions
-                .slice(pageIdx - 1, pageIdx)
-                .map((mission) => (
-                  <TeamMission
-                    key={mission.id}
-                    selectedChain={selectedChain}
-                    mission={mission}
-                    missionTableContract={missionTableContract}
-                    missionCreatorContract={missionCreatorContract}
-                    jbControllerContract={jbControllerContract}
-                    jbDirectoryContract={jbDirectoryContract}
-                    jbTokensContract={jbTokensContract}
-                    teamContract={teamContract}
-                    isManager={isManager}
-                  />
-                ))}
-          </div>
+        <div className="flex flex-col gap-4">
+          {missions?.[0] &&
+            missions
+              .slice(pageIdx - 1, pageIdx)
+              .map((mission) => (
+                <TeamMission
+                  key={mission.id}
+                  selectedChain={selectedChain}
+                  mission={mission}
+                  missionTableContract={missionTableContract}
+                  missionCreatorContract={missionCreatorContract}
+                  jbControllerContract={jbControllerContract}
+                  jbDirectoryContract={jbDirectoryContract}
+                  jbTokensContract={jbTokensContract}
+                  teamContract={teamContract}
+                  isManager={isManager}
+                />
+              ))}
         </div>
-        <div className="mt-6 md:mt-8">
-          {missions?.length > 1 && (
+        {missions?.length > 1 && (
+          <div className="mt-4">
             <PaginationButtons
               handlePageChange={handlePageChange}
               maxPage={missions.length}
               pageIdx={pageIdx}
               label="Mission"
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   )

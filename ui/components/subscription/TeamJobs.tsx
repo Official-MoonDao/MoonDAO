@@ -110,15 +110,15 @@ export default function TeamJobs({
       <div className="w-full flex flex-col justify-between gap-5">
         <div
           id="job-title-container"
-          className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center mb-8"
+          className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center mb-6"
         >
-          <div className="flex gap-5">
+          <div className="flex gap-5 items-center">
             <Image src={jobIcon} alt="Job icon" width={30} height={30} className="opacity-70" />
             <h2 className="font-GoodTimes text-2xl text-white">Open Job Board</h2>
-          </div>{' '}
+          </div>
           {isManager && (
             <StandardButton
-              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105 mt-2 lg:mt-0"
+              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
               onClick={() => {
                 setTeamJobModalEnabled(true)
               }}
