@@ -645,7 +645,7 @@ export default function SignedInDashboard({
               </div>
 
               <div className="flex flex-col gap-4">
-                <ProposalList noPagination compact projects={proposals} />
+                <ProposalList noPagination compact projects={proposals.slice(0, 3)} />
               </div>
             </div>
           </div>

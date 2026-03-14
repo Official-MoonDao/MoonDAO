@@ -4,6 +4,7 @@ import {
   HomeIcon,
   PlusIcon,
   RocketLaunchIcon,
+  UserGroupIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
@@ -23,17 +24,21 @@ export default function useNavigation(citizen: any) {
         icon: IconOrg,
         children: [
           { name: 'Become a Citizen', href: '/citizen' },
-          { name: 'Create a Team', href: '/team' },
+          { name: 'Submit a Contribution', href: '/contributions' },
           { name: 'Explore Citizens', href: '/network' },
-          {
-            name: 'Jobs',
-            href: '/jobs',
-          },
-          {
-            name: 'Marketplace',
-            href: '/marketplace',
-          },
         ],
+      },
+      {
+        name: 'Teams',
+        href: '/network?tab=teams',
+        icon: UserGroupIcon,
+        dynamicChildren: 'Teams' as const,
+      },
+      {
+        name: 'Projects',
+        icon: WrenchScrewdriverIcon,
+        href: '/projects',
+        dynamicChildren: 'Projects' as const,
       },
       {
         name: '$MOONEY',
@@ -51,23 +56,13 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: 'Projects',
-        icon: WrenchScrewdriverIcon,
-        href: '/projects',
+        name: 'Launchpad',
+        icon: RocketLaunchIcon,
+        href: '/launch',
         children: [
-          {
-            name: 'Propose Project',
-            href: '/proposals',
-          },
-          {
-            name: 'Projects',
-            href: '/projects',
-          },
-          {
-            name: 'Submit Contribution',
-            href: '/contributions',
-          },
-          { name: 'Projects Overview', href: '/projects-overview' },
+          { name: 'Launchpad Explainer', href: '/launch' },
+          { name: 'Support Overview Flight', href: '/mission/4' },
+          { name: 'Fly with Frank', href: '/overview-vote' },
         ],
       },
       {
@@ -82,16 +77,6 @@ export default function useNavigation(citizen: any) {
           { name: 'Events', href: '/events' },
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
-        ],
-      },
-      {
-        name: 'Launchpad',
-        icon: RocketLaunchIcon,
-        href: '/launch',
-        children: [
-          { name: 'Launchpad Explainer', href: '/launch' },
-          { name: 'Support Overview Flight', href: '/mission/4' },
-          { name: 'Fly with Frank', href: '/overview-vote' },
         ],
       },
     ]
