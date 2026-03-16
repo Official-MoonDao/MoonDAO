@@ -263,20 +263,23 @@ export default function CitizenActions({
                   </p>
                 </div>
               )}
-              {hasMooney && !hasVmooney && (
-                <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
-                     onClick={() => router.push('/lock')}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
-                      <LockClosedIcon height={24} width={24} className="text-white" />
-                    </div>
-                    <h3 className="font-bold text-white text-sm">Lock to Vote</h3>
+              
+              <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
+                   onClick={() => {
+                     window.open(
+                       `https://x.com/intent/tweet?url=${window.location.href}&text=I%20just%20became%20a%20Citizen%20of%20the%20Space%20Acceleration%20Network%20%40OfficialMoonDAO`
+                     )
+                   }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
+                    <TwitterIcon />
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Lock your MOONEY to acquire voting power and vote on proposals.
-                  </p>
+                  <h3 className="font-bold text-white text-sm">Share on X</h3>
                 </div>
-              )}
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Share your citizen profile on X!
+                </p>
+              </div>
               
               <div className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors cursor-pointer group h-full flex flex-col"
                    onClick={() => {
