@@ -70,38 +70,67 @@ export function ProjectsNavDropdown({
           Projects Overview
         </Link>
       )}
-      <div className={isDesktop ? 'pt-2' : ''}>
-        <div className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-xs text-gray-400 font-medium uppercase tracking-wider`}>
-          Your Projects
-        </div>
-        {isLoading ? (
-          wrapMobile(
-            <div
-              className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-gray-400 text-sm`}
-            >
-              Loading your projects...
-            </div>
-          )
-        ) : projects && projects.length > 0 ? (
-          projects.map((proj: any) =>
+      {isDesktop ? (
+        <div className="pt-2">
+          <div className="px-4 py-2 mx-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
+            Your Projects
+          </div>
+          {isLoading ? (
             wrapMobile(
-              <ProjectNavItem
-                key={proj.projectId}
-                projectId={proj.projectId}
-                chainSlug={chainSlug}
-                baseClass={baseLinkClass}
-                onNavigate={onNavigate}
-              />
+              <div className="px-4 py-2 mx-2 text-gray-400 text-sm">
+                Loading your projects...
+              </div>
             )
-          )
-        ) : (
-          wrapMobile(
-            <Link href="/proposals" className={baseLinkClass} onClick={onNavigate}>
-              No projects yet — propose one
-            </Link>
-          )
-        )}
-      </div>
+          ) : projects && projects.length > 0 ? (
+            projects.map((proj: any) =>
+              wrapMobile(
+                <ProjectNavItem
+                  key={proj.projectId}
+                  projectId={proj.projectId}
+                  chainSlug={chainSlug}
+                  baseClass={baseLinkClass}
+                  onNavigate={onNavigate}
+                />
+              )
+            )
+          ) : (
+            wrapMobile(
+              <Link href="/proposals" className={baseLinkClass} onClick={onNavigate}>
+                No projects yet — propose one
+              </Link>
+            )
+          )}
+        </div>
+      ) : (
+        <>
+          <li className="my-3 text-xs text-gray-400 font-medium uppercase tracking-wider list-none">
+            Your Projects
+          </li>
+          {isLoading ? (
+            <li className="list-disc marker:text-white group my-3 text-gray-400 text-sm">
+              Loading your projects...
+            </li>
+          ) : projects && projects.length > 0 ? (
+            projects.map((proj: any) =>
+              wrapMobile(
+                <ProjectNavItem
+                  key={proj.projectId}
+                  projectId={proj.projectId}
+                  chainSlug={chainSlug}
+                  baseClass={baseLinkClass}
+                  onNavigate={onNavigate}
+                />
+              )
+            )
+          ) : (
+            wrapMobile(
+              <Link href="/proposals" className={baseLinkClass} onClick={onNavigate}>
+                No projects yet — propose one
+              </Link>
+            )
+          )}
+        </>
+      )}
     </>
   )
 }
