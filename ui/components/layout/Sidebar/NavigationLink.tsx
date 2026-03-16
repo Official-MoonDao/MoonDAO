@@ -71,7 +71,6 @@ const Dropdown = ({
     hasDynamicTeams &&
     (router.pathname.startsWith('/team') ||
       router.pathname === '/join' ||
-      router.pathname === '/launch' ||
       router.pathname === '/jobs' ||
       router.pathname === '/marketplace')
   const isProjectsActive =
