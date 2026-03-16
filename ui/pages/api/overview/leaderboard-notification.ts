@@ -20,6 +20,7 @@ import {
   aggregateDelegations,
   buildLeaderboard,
   isValidEthAddress,
+  formatLeaderboardStandings,
 } from '@/lib/overview-delegate/leaderboard'
 import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import { getPrivyUserData } from '@/lib/privy'
@@ -30,7 +31,6 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { engineBatchRead } from '@/lib/thirdweb/engine'
 import { getBlocksInTimeframe } from '@/lib/utils/blocks'
-import { formatNumberWithCommasAndDecimals } from '@/lib/utils/numbers'
 
 const ERC20_BALANCE_OF_ABI = [
   {
@@ -54,26 +54,6 @@ const usedTransactions = new Set<string>()
 setInterval(() => {
   usedTransactions.clear()
 }, 60 * 60 * 1000)
-
-const RANK_EMOJIS = ['🥇', '🥈', '🥉']
-
-function formatLeaderboardStandings(leaderboard: LeaderboardEntry[]): string {
-  return leaderboard
-    .slice(0, 10)
-    .map((entry, i) => {
-      const rank = i < 3 ? RANK_EMOJIS[i] : `${i + 1}.`
-      const name = entry.citizenName || `Citizen #${entry.citizenId}`
-      const link = entry.citizenName
-        ? `[${name}](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(name, String(entry.citizenId))})`
-        : name
-      const amount = formatNumberWithCommasAndDecimals(
-        entry.totalDelegated,
-        0
-      )
-      return `${rank} **${link}** — ${amount} $OVERVIEW (${entry.delegatorCount} backer${entry.delegatorCount !== 1 ? 's' : ''})`
-    })
-    .join('\n')
-}
 
 async function buildCurrentLeaderboard(): Promise<LeaderboardEntry[]> {
   const votesTableName = VOTES_TABLE_NAMES[chainSlug]
@@ -282,7 +262,7 @@ async function handler(req: any, res: any) {
     let content = `## 🗳️ **${voterDisplay}** has backed **${delegateeDisplay}** in the Overview Flight!`
 
     if (leaderboard.length > 0) {
-      content += `\n\n### Current Standings\n${formatLeaderboardStandings(leaderboard)}`
+      content += `\n\n### Current Standings\n${formatLeaderboardStandings(leaderboard, DEPLOYED_ORIGIN, generatePrettyLinkWithId)}`
       content += `\n\n[Vote now →](${DEPLOYED_ORIGIN}/overview-vote)`
     }
 
