@@ -40,7 +40,6 @@ import {
 } from 'const/config'
 import { BLOCKED_TEAMS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
-import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -641,13 +640,8 @@ function TeamDetailPageContent({
   )
 }
 
-const DynamicTeamDetailPage = dynamic(
-  () => Promise.resolve({ default: TeamDetailPageContent }),
-  { ssr: false }
-)
-
 export default function TeamDetailPage(props: any) {
-  return <DynamicTeamDetailPage {...props} />
+  return <TeamDetailPageContent {...props} />
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params, query }) => {
