@@ -245,7 +245,13 @@ async function handler(req: any, res: any) {
     }
 
     let delegateeCitizen: any = null
-    const delegateeAddress = data.delegateeAddress?.toLowerCase()
+    let delegateeAddress: string | null = null
+    if (typeof data.delegateeAddress === 'string') {
+      const candidateAddress = data.delegateeAddress.toLowerCase()
+      if (isValidEthAddress(candidateAddress)) {
+        delegateeAddress = candidateAddress
+      }
+    }
     if (citizenTableName && delegateeAddress) {
       try {
         const delegateeRows: any = await queryTable(
