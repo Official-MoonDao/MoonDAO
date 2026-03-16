@@ -337,7 +337,7 @@ export default function CreateMission({
           selectedTeamId,
           teamMultisig,
           missionMetadataIpfsHash,
-          Math.trunc(fundingGoalInETH * 1e18),
+          ethers.utils.parseEther(String(fundingGoalInETH)),
           deadlineTimestamp,
           refundPeriod,
           missionData.token.tradeable,
@@ -357,12 +357,18 @@ export default function CreateMission({
       const missionCreatedEventSignature = ethers.utils.id(
         'MissionCreated(uint256,uint256,uint256,address,uint256)'
       )
-      // Find the log that matches the Transfer event signature
+      // Find the log that matches the MissionCreated event signature
       const missionCreatedLog = receipt.logs.find(
         (log: any) => log.topics[0] === missionCreatedEventSignature
       )
 
-      const missionId = ethers.BigNumber.from(missionCreatedLog?.topics[1]).toString()
+      if (!missionCreatedLog || !missionCreatedLog.topics[1]) {
+        toast.error('Mission was created on-chain but could not extract mission ID from logs.')
+        setSigningTx(false)
+        return
+      }
+
+      const missionId = ethers.BigNumber.from(missionCreatedLog.topics[1]).toString()
 
       setCreatedMission(true)
 

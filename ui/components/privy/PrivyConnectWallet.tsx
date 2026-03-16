@@ -705,7 +705,18 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
 
       // Listen for message events from Coinbase onramp
       const handleMessage = (event: MessageEvent) => {
-        if (!event.origin.includes('coinbase.com') && !event.origin.includes('cb-pay.com')) {
+        let hostname: string
+        try {
+          hostname = new URL(event.origin).hostname
+        } catch {
+          return
+        }
+        const isCoinbase =
+          hostname === 'coinbase.com' ||
+          hostname.endsWith('.coinbase.com') ||
+          hostname === 'cb-pay.com' ||
+          hostname.endsWith('.cb-pay.com')
+        if (!isCoinbase) {
           return
         }
 

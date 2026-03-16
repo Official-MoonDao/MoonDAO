@@ -57,13 +57,17 @@ export function calculateTotalMintCost(
 }
 
 /**
- * Extracts token ID from a transaction receipt by parsing the Transfer event
+ * Extracts token ID from a transaction receipt by parsing the ERC-721 Transfer event.
+ * ERC-721 Transfer has 4 topics (sig + from + to + tokenId), while ERC-20 Transfer
+ * has 3 topics (sig + from + to) with the same signature, so we filter by topic count.
  */
 export function extractTokenIdFromReceipt(receipt: any): string | null {
   if (!receipt?.logs) return null
 
   const transferEventSignature = ethers.utils.id('Transfer(address,address,uint256)')
-  const transferLog = receipt.logs.find((log: any) => log.topics[0] === transferEventSignature)
+  const transferLog = receipt.logs.find(
+    (log: any) => log.topics[0] === transferEventSignature && log.topics.length === 4
+  )
 
   if (!transferLog) return null
 

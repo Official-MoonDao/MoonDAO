@@ -55,8 +55,11 @@ export function useCitizenData(nft: any, citizenContract: any) {
 
   const incompleteProfile = useMemo(() => {
     if (
-      (nft.metadata.description !== '' || socials.twitter !== '',
-      socials.discord !== '' || socials.website !== '' || location !== '')
+      nft.metadata.description !== '' ||
+      socials.twitter !== '' ||
+      socials.discord !== '' ||
+      socials.website !== '' ||
+      location !== ''
     ) {
       return false
     } else {
