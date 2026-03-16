@@ -35,7 +35,8 @@ export function TeamsNavDropdown({ variant, onNavigate }: TeamsNavDropdownProps)
     address
   )
 
-  const shouldShowLoading = isLoading || (!!address && !userTeams)
+  const shouldShowLoading =
+    !!address && (!teamContract || isLoading || userTeams === undefined)
 
   const isDesktop = variant === 'desktop'
 
