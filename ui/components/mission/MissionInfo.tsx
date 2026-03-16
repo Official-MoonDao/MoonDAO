@@ -22,14 +22,17 @@ function MissionInfoTab({
   const isActive = currentTab === tab
   return (
     <button
-      className={`relative px-4 py-2.5 text-sm md:text-base font-medium rounded-lg transition-all duration-200 ${
+      className={`relative px-5 py-3 text-base md:text-lg font-semibold tracking-wide transition-all duration-200 ${
         isActive
-          ? 'text-white bg-white/[0.08] shadow-sm'
-          : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.03]'
+          ? 'text-white'
+          : 'text-gray-500 hover:text-gray-300'
       }`}
       onClick={() => setTab(tab)}
     >
       {tab.charAt(0).toUpperCase() + tab.slice(1)}
+      {isActive && (
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[2px] bg-indigo-400 rounded-full" />
+      )}
     </button>
   )
 }
@@ -188,7 +191,7 @@ export default function MissionInfo({
 
       {/* Tab Navigation */}
       <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
-        <div className="flex items-center gap-1 bg-white/[0.02] rounded-xl p-1 border border-white/[0.05]">
+        <div className="flex items-center gap-1 border-b border-white/[0.08]">
           <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
@@ -205,8 +208,8 @@ export default function MissionInfo({
       </div>
 
       {/* Content Area */}
-      <div id="mission-info-content" className="w-full flex items-start gap-6 relative">
-        <div className="flex-1 min-w-0">
+      <div id="mission-info-content" className="w-full flex items-start gap-8 relative">
+        <div className="flex-1 min-w-0 pr-2">
           {tab === 'about' && (
             <div className="w-full mb-8">
               <MissionInfoHeader
@@ -270,7 +273,7 @@ export default function MissionInfo({
           )}
         </div>
         <div className="hidden xl:block min-w-[350px] lg:w-[400px] pt-[47px]">
-          <div ref={stickyRef}>
+          <div ref={stickyRef} className="pl-8 border-l border-white/[0.06]">
             <MissionPayRedeem
               ruleset={ruleset}
               stage={stage}
