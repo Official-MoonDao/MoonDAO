@@ -35,6 +35,10 @@ export function ProjectsNavDropdown({
     address
   )
 
+  const isContractReady = !!projectContract && !!selectedChain
+  const shouldShowLoading =
+    !!address && (!isContractReady || isLoading || projects === undefined)
+
   const isDesktop = variant === 'desktop'
 
   const baseLinkClass = isDesktop
@@ -75,7 +79,7 @@ export function ProjectsNavDropdown({
           <div className="px-4 py-2 mx-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
             Your Projects
           </div>
-          {isLoading ? (
+          {shouldShowLoading ? (
             wrapMobile(
               <div className="px-4 py-2 mx-2 text-gray-400 text-sm">
                 Loading your projects...
@@ -106,7 +110,7 @@ export function ProjectsNavDropdown({
           <li className="my-3 text-xs text-gray-400 font-medium uppercase tracking-wider list-none">
             Your Projects
           </li>
-          {isLoading ? (
+          {shouldShowLoading ? (
             <li className="list-disc marker:text-white group my-3 text-gray-400 text-sm">
               Loading your projects...
             </li>

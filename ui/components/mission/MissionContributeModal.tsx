@@ -402,7 +402,7 @@ export default function MissionContributeModal({
             mission?.projectId,
             toWei(inputValue),
             address || ZERO_ADDRESS,
-            output * 0,
+            (toWei(output) * BigInt(95)) / BigInt(100),
             message,
             '0x00',
           ],
@@ -749,7 +749,7 @@ export default function MissionContributeModal({
             mission?.projectId,
             toWei(inputValue),
             address || ZERO_ADDRESS,
-            output * 0,
+            (toWei(output) * BigInt(95)) / BigInt(100),
             message,
             '0x00',
           ],
@@ -801,7 +801,7 @@ export default function MissionContributeModal({
         body: JSON.stringify({
           txHash: receipt.transactionHash,
           accessToken: accessToken,
-          txChainSlug: chainSlug,
+          txChainSlug: defaultChainSlug,
           projectId: mission?.projectId,
         }),
       })
