@@ -107,7 +107,6 @@ const TopNavBar = ({
                 (item.dynamicChildren === 'Teams' &&
                   (router.pathname.startsWith('/team') ||
                     router.pathname === '/join' ||
-                    router.pathname === '/launch' ||
                     router.pathname === '/jobs' ||
                     router.pathname === '/marketplace')) ||
                 (item.dynamicChildren === 'Projects' &&
