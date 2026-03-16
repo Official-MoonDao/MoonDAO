@@ -133,19 +133,19 @@ const Dropdown = ({
             leaveFrom="transform scale-100 opacity-100"
             leaveTo="transform scale-95 opacity-0"
           >
-            <Disclosure.Panel as="ul" className="pl-10">
+            <Disclosure.Panel as="div" className="pl-10">
               {hasDynamicTeams ? (
                 <div onClick={() => setSidebarOpen && setSidebarOpen(false)}>
                   <TeamsNavDropdown
-                    variant="mobile"
-                    onNavigate={() => setSidebarOpen && setSidebarOpen(false)}
+                  variant="mobile"
+                  onNavigate={() => setSidebarOpen && setSidebarOpen(false)}
                   />
                 </div>
               ) : hasDynamicProjects ? (
                 <div onClick={() => setSidebarOpen && setSidebarOpen(false)}>
                   <ProjectsNavDropdown
-                    variant="mobile"
-                    onNavigate={() => setSidebarOpen && setSidebarOpen(false)}
+                  variant="mobile"
+                  onNavigate={() => setSidebarOpen && setSidebarOpen(false)}
                   />
                 </div>
               ) : (
