@@ -63,36 +63,71 @@ export function TeamsNavDropdown({ variant, onNavigate }: TeamsNavDropdownProps)
           Marketplace
         </Link>
       )}
-      <div className={isDesktop ? 'pt-2' : ''}>
-        <div className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-xs text-gray-400 font-medium uppercase tracking-wider`}>
-          Your Teams
-        </div>
-        {isLoading ? (
-          wrapMobile(
-            <div className={`${isDesktop ? 'px-4 py-2 mx-2' : 'my-3'} text-gray-400 text-sm`}>
-              Loading your teams...
-            </div>
-          )
-        ) : userTeams && userTeams.length > 0 ? (
-          userTeams.map((team: any) =>
+      {isDesktop ? (
+        <div className="pt-2">
+          <div className="px-4 py-2 mx-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
+            Your Teams
+          </div>
+          {isLoading ? (
             wrapMobile(
-              <TeamNavItem
-                key={team.teamId}
-                teamContract={teamContract}
-                teamId={team.teamId}
-                baseClass={baseLinkClass}
-                onNavigate={onNavigate}
-              />
+              <div className="px-4 py-2 mx-2 text-gray-400 text-sm">
+                Loading your teams...
+              </div>
             )
-          )
-        ) : (
-          wrapMobile(
-            <Link href="/join" className={baseLinkClass} onClick={onNavigate}>
-              No teams yet — create one
-            </Link>
-          )
-        )}
-      </div>
+          ) : userTeams && userTeams.length > 0 ? (
+            userTeams.map((team: any) =>
+              wrapMobile(
+                <TeamNavItem
+                  key={team.teamId}
+                  teamContract={teamContract}
+                  teamId={team.teamId}
+                  baseClass={baseLinkClass}
+                  onNavigate={onNavigate}
+                />
+              )
+            )
+          ) : (
+            wrapMobile(
+              <Link href="/join" className={baseLinkClass} onClick={onNavigate}>
+                No teams yet — create one
+              </Link>
+            )
+          )}
+        </div>
+      ) : (
+        <>
+          {wrapMobile(
+            <div className="my-3 text-xs text-gray-400 font-medium uppercase tracking-wider">
+              Your Teams
+            </div>
+          )}
+          {isLoading ? (
+            wrapMobile(
+              <div className="my-3 text-gray-400 text-sm">
+                Loading your teams...
+              </div>
+            )
+          ) : userTeams && userTeams.length > 0 ? (
+            userTeams.map((team: any) =>
+              wrapMobile(
+                <TeamNavItem
+                  key={team.teamId}
+                  teamContract={teamContract}
+                  teamId={team.teamId}
+                  baseClass={baseLinkClass}
+                  onNavigate={onNavigate}
+                />
+              )
+            )
+          ) : (
+            wrapMobile(
+              <Link href="/join" className={baseLinkClass} onClick={onNavigate}>
+                No teams yet — create one
+              </Link>
+            )
+          )}
+        </>
+      )}
     </>
   )
 }
