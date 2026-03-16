@@ -187,6 +187,17 @@ async function handler(req: any, res: any) {
       return res.status(400).json({ message: 'Transaction not found' })
     }
 
+    const txFrom = txReceipt.from?.toLowerCase()
+    const normalizedWalletAddresses = walletAddresses.map((addr: string) =>
+      addr?.toLowerCase()
+    )
+
+    if (!txFrom || !normalizedWalletAddresses.includes(txFrom)) {
+      return res.status(403).json({
+        message: 'Transaction sender does not match authenticated user',
+      })
+    }
+
     const votesAddress = VOTES_TABLE_ADDRESSES[chainSlug]
     if (txReceipt.to?.toLowerCase() !== votesAddress?.toLowerCase()) {
       return res.status(400).json({
