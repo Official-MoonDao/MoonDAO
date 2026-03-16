@@ -83,6 +83,9 @@ export default function OverviewDelegate({
   const [previousDelegation, setPreviousDelegation] = useState<{
     delegatee: string
     amount: number
+    citizenName?: string
+    citizenImage?: string
+    citizenId?: string | number
   } | null>(null)
   const [displayLeaderboard, setDisplayLeaderboard] = useState(leaderboard)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -121,9 +124,50 @@ export default function OverviewDelegate({
               const entries = Object.entries(vote)
               if (entries.length > 0) {
                 const [delegatee, amount] = entries[0]
+                const delegateeLower = delegatee.toLowerCase()
+
+                const match = leaderboard.find(
+                  (e) => e.delegateeAddress.toLowerCase() === delegateeLower
+                )
+
+                let citizenName: string | undefined
+                let citizenImage: string | undefined
+                let citizenId: string | number | undefined
+
+                if (match) {
+                  citizenName = match.citizenName
+                  citizenImage = match.citizenImage
+                  citizenId = match.citizenId
+                } else {
+                  try {
+                    const citizenTableName =
+                      CITIZEN_TABLE_NAMES[overviewChainSlug]
+                    if (citizenTableName) {
+                      const citizenStmt = `SELECT id, name, image FROM ${citizenTableName} WHERE LOWER(owner) = '${delegateeLower}'`
+                      const citizenRes = await fetch(
+                        `https://tableland.network/api/v1/query?statement=${encodeURIComponent(citizenStmt)}`
+                      )
+                      if (citizenRes.ok) {
+                        const citizenData = await citizenRes.json()
+                        if (
+                          Array.isArray(citizenData) &&
+                          citizenData.length > 0
+                        ) {
+                          citizenName = citizenData[0].name
+                          citizenImage = citizenData[0].image
+                          citizenId = citizenData[0].id
+                        }
+                      }
+                    }
+                  } catch {}
+                }
+
                 setPreviousDelegation({
-                  delegatee: delegatee.toLowerCase(),
+                  delegatee: delegateeLower,
                   amount: Number(amount) || 0,
+                  citizenName,
+                  citizenImage,
+                  citizenId,
                 })
               }
             } catch {}
@@ -136,7 +180,7 @@ export default function OverviewDelegate({
       }
     }
     checkExisting()
-  }, [userAddress, votesTableName])
+  }, [userAddress, votesTableName, leaderboard, overviewChainSlug])
 
   // Citizen search
   const handleSearchChange = (value: string) => {
@@ -264,10 +308,12 @@ export default function OverviewDelegate({
       )
       setDisplayLeaderboard(updatedLeaderboard)
 
-      // Update previous delegation to reflect the new one
       setPreviousDelegation({
         delegatee: selectedCitizen.owner.toLowerCase(),
         amount: delegateAmount,
+        citizenName: selectedCitizen.name || selectedCitizen.displayName,
+        citizenImage: selectedCitizen.image,
+        citizenId: selectedCitizen.id,
       })
 
       // Poll for real data in background
@@ -354,6 +400,56 @@ export default function OverviewDelegate({
                   Get $OVERVIEW
                 </Link>
               </div>
+
+              {/* Current Vote */}
+              {previousDelegation && (
+                <div className="mb-4 sm:mb-6 bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3 sm:p-4">
+                  <p className="text-indigo-300 text-xs sm:text-sm font-medium mb-2">
+                    Your Current Vote
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0">
+                      {previousDelegation.citizenImage ? (
+                        <IPFSRenderer
+                          src={previousDelegation.citizenImage}
+                          alt={previousDelegation.citizenName || 'Citizen'}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                          {previousDelegation.citizenName?.[0]?.toUpperCase() || '?'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {previousDelegation.citizenName ? (
+                        <Link
+                          href={
+                            previousDelegation.citizenId
+                              ? `/citizen/${generatePrettyLinkWithId(previousDelegation.citizenName, String(previousDelegation.citizenId))}`
+                              : '#'
+                          }
+                          className="text-white text-sm sm:text-base font-medium hover:underline truncate block"
+                        >
+                          {previousDelegation.citizenName}
+                        </Link>
+                      ) : (
+                        <p className="text-white text-sm sm:text-base font-medium truncate">
+                          {previousDelegation.delegatee.slice(0, 6)}...{previousDelegation.delegatee.slice(-4)}
+                        </p>
+                      )}
+                      <p className="text-gray-400 text-xs sm:text-sm">
+                        {previousDelegation.amount.toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        $OVERVIEW delegated
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Citizen Search */}
               <div className="mb-4 relative z-10" ref={dropdownRef}>
