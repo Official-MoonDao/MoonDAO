@@ -6,6 +6,7 @@ import {
   OVERVIEW_DELEGATION_VOTE_ID,
   OVERVIEW_TOKEN_ADDRESS,
   OVERVIEW_TOKEN_DECIMALS,
+  TABLELAND_ENDPOINT,
   VOTES_TABLE_ADDRESSES,
   VOTES_TABLE_NAMES,
 } from 'const/config'
@@ -146,7 +147,7 @@ export default function OverviewDelegate({
                     if (citizenTableName) {
                       const citizenStmt = `SELECT id, name, image FROM ${citizenTableName} WHERE LOWER(owner) = '${delegateeLower}'`
                       const citizenRes = await fetch(
-                        `https://tableland.network/api/v1/query?statement=${encodeURIComponent(citizenStmt)}`
+                        `${TABLELAND_ENDPOINT}/api/v1/query?statement=${encodeURIComponent(citizenStmt)}`
                       )
                       if (citizenRes.ok) {
                         const citizenData = await citizenRes.json()
