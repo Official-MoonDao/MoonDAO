@@ -11,6 +11,9 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
+// Simple in-memory cache to avoid repeated getNFT calls per team
+const teamNameCache = new Map<string, string>()
+
 type TeamsNavDropdownProps = {
   variant: 'desktop' | 'mobile'
   onNavigate?: () => void
@@ -147,12 +150,29 @@ function TeamNavItem({
 
   useEffect(() => {
     if (!teamContract || !teamId) return
+
+    // Use cached name if available to avoid repeated on-chain calls
+    const cachedName = teamNameCache.get(teamId)
+    if (cachedName) {
+      setName(cachedName)
+      return
+    }
+
     getNFT({
       contract: teamContract,
       tokenId: BigInt(teamId),
     })
-      .then((nft) => setName(nft?.metadata?.name as string || `Team #${teamId}`))
-      .catch(() => setName(`Team #${teamId}`))
+      .then((nft) => {
+        const resolvedName =
+          (nft?.metadata?.name as string | undefined) || `Team #${teamId}`
+        teamNameCache.set(teamId, resolvedName)
+        setName(resolvedName)
+      })
+      .catch(() => {
+        const fallback = `Team #${teamId}`
+        teamNameCache.set(teamId, fallback)
+        setName(fallback)
+      })
   }, [teamContract, teamId])
 
   return (
