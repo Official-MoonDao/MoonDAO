@@ -994,7 +994,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         description=""
       >
         <div className="flex flex-row w-full">
-          <div className="px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1000px]">
+          <div className="px-2 sm:px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1000px]">
             <div className="flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
               <Steps
                 className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
@@ -1069,7 +1069,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 title="Citizen Profile"
                 description="Please complete your citizen profile."
               >
-                <div className="w-full max-w-[900px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
+                <div className="w-full max-w-[900px] md:bg-black/20 md:backdrop-blur-sm md:border md:border-white/10 md:rounded-2xl overflow-hidden relative">
                   {isSubmittingTypeform && (
                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl">
                       <div className="flex flex-col items-center gap-4">
