@@ -5,6 +5,8 @@ import {
   applyOptimisticUpdate,
   sanitizeSearchQuery,
   isValidEthAddress,
+  resolveVoteCitizenInfo,
+  formatLeaderboardStandings,
 } from '@/lib/overview-delegate/leaderboard'
 import type {
   ParsedDelegation,
@@ -628,6 +630,354 @@ describe('Overview Delegate – Leaderboard Logic', () => {
       const leaderboard = buildLeaderboard(aggregated, citizenMap)
 
       expect(leaderboard).to.have.length(0)
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // resolveVoteCitizenInfo
+  // ---------------------------------------------------------------------------
+  describe('resolveVoteCitizenInfo', () => {
+    const leaderboard: LeaderboardEntry[] = [
+      {
+        delegateeAddress: '0xalice',
+        citizenId: 1,
+        citizenName: 'Alice',
+        citizenImage: 'ipfs://alice',
+        totalDelegated: 500,
+        delegatorCount: 3,
+      },
+      {
+        delegateeAddress: '0xbob',
+        citizenId: 2,
+        citizenName: 'Bob',
+        totalDelegated: 300,
+        delegatorCount: 2,
+      },
+    ]
+
+    it('returns citizen info when delegatee is on leaderboard', () => {
+      const result = resolveVoteCitizenInfo('0xalice', leaderboard)
+      expect(result).to.not.be.null
+      expect(result!.citizenName).to.equal('Alice')
+      expect(result!.citizenImage).to.equal('ipfs://alice')
+      expect(result!.citizenId).to.equal(1)
+    })
+
+    it('matches case-insensitively', () => {
+      const result = resolveVoteCitizenInfo('0xALICE', leaderboard)
+      expect(result).to.not.be.null
+      expect(result!.citizenName).to.equal('Alice')
+    })
+
+    it('returns null when delegatee is not on leaderboard', () => {
+      const result = resolveVoteCitizenInfo('0xunknown', leaderboard)
+      expect(result).to.be.null
+    })
+
+    it('returns null for empty leaderboard', () => {
+      const result = resolveVoteCitizenInfo('0xalice', [])
+      expect(result).to.be.null
+    })
+
+    it('handles entry without citizenImage', () => {
+      const result = resolveVoteCitizenInfo('0xbob', leaderboard)
+      expect(result).to.not.be.null
+      expect(result!.citizenName).to.equal('Bob')
+      expect(result!.citizenImage).to.be.undefined
+    })
+
+    it('matches mixed-case leaderboard address against lowercase input', () => {
+      const lb: LeaderboardEntry[] = [
+        {
+          delegateeAddress: '0xAbCdEf',
+          citizenId: 99,
+          citizenName: 'Mixed',
+          totalDelegated: 100,
+          delegatorCount: 1,
+        },
+      ]
+      const result = resolveVoteCitizenInfo('0xabcdef', lb)
+      expect(result).to.not.be.null
+      expect(result!.citizenId).to.equal(99)
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // formatLeaderboardStandings
+  // ---------------------------------------------------------------------------
+  describe('formatLeaderboardStandings', () => {
+    const stubFormatLink = (name: string, id: string | number) =>
+      `${name.toLowerCase().replace(/\s+/g, '-')}-${id}`
+
+    const sampleLeaderboard: LeaderboardEntry[] = [
+      {
+        delegateeAddress: '0xc1',
+        citizenId: 1,
+        citizenName: 'Alice',
+        citizenImage: 'ipfs://a',
+        totalDelegated: 1500,
+        delegatorCount: 5,
+      },
+      {
+        delegateeAddress: '0xc2',
+        citizenId: 2,
+        citizenName: 'Bob',
+        citizenImage: 'ipfs://b',
+        totalDelegated: 1000,
+        delegatorCount: 3,
+      },
+      {
+        delegateeAddress: '0xc3',
+        citizenId: 3,
+        citizenName: 'Charlie',
+        totalDelegated: 800,
+        delegatorCount: 1,
+      },
+      {
+        delegateeAddress: '0xc4',
+        citizenId: 4,
+        citizenName: 'Diana',
+        totalDelegated: 500,
+        delegatorCount: 2,
+      },
+    ]
+
+    it('formats top entries with medal emojis for top 3', () => {
+      const result = formatLeaderboardStandings(
+        sampleLeaderboard,
+        'https://app.example.com',
+        stubFormatLink
+      )
+      const lines = result.split('\n')
+      expect(lines[0]).to.include('🥇')
+      expect(lines[1]).to.include('🥈')
+      expect(lines[2]).to.include('🥉')
+    })
+
+    it('uses numeric rank for entries beyond top 3', () => {
+      const result = formatLeaderboardStandings(
+        sampleLeaderboard,
+        'https://app.example.com',
+        stubFormatLink
+      )
+      const lines = result.split('\n')
+      expect(lines[3]).to.match(/^4\./)
+    })
+
+    it('includes citizen name as a link with correct origin', () => {
+      const result = formatLeaderboardStandings(
+        sampleLeaderboard,
+        'https://moondao.com',
+        stubFormatLink
+      )
+      expect(result).to.include('[Alice](https://moondao.com/citizen/alice-1)')
+    })
+
+    it('includes total delegated and backer count', () => {
+      const result = formatLeaderboardStandings(
+        sampleLeaderboard,
+        'https://app.example.com',
+        stubFormatLink
+      )
+      expect(result).to.include('$OVERVIEW')
+      expect(result).to.include('5 backers')
+    })
+
+    it('uses singular "backer" for count of 1', () => {
+      const result = formatLeaderboardStandings(
+        sampleLeaderboard,
+        'https://app.example.com',
+        stubFormatLink
+      )
+      expect(result).to.include('1 backer)')
+    })
+
+    it('respects the limit parameter', () => {
+      const result = formatLeaderboardStandings(
+        sampleLeaderboard,
+        'https://app.example.com',
+        stubFormatLink,
+        2
+      )
+      const lines = result.split('\n')
+      expect(lines).to.have.length(2)
+    })
+
+    it('defaults to 10 entries', () => {
+      const bigLb: LeaderboardEntry[] = Array.from(
+        { length: 15 },
+        (_, i) => ({
+          delegateeAddress: `0x${i}`,
+          citizenId: i,
+          citizenName: `Citizen ${i}`,
+          totalDelegated: 100 - i,
+          delegatorCount: 1,
+        })
+      )
+      const result = formatLeaderboardStandings(
+        bigLb,
+        'https://app.example.com',
+        stubFormatLink
+      )
+      const lines = result.split('\n')
+      expect(lines).to.have.length(10)
+    })
+
+    it('handles empty leaderboard', () => {
+      const result = formatLeaderboardStandings(
+        [],
+        'https://app.example.com',
+        stubFormatLink
+      )
+      expect(result).to.equal('')
+    })
+
+    it('falls back to Citizen #id when citizenName is empty', () => {
+      const lb: LeaderboardEntry[] = [
+        {
+          delegateeAddress: '0xc1',
+          citizenId: 42,
+          citizenName: '',
+          totalDelegated: 100,
+          delegatorCount: 1,
+        },
+      ]
+      const result = formatLeaderboardStandings(
+        lb,
+        'https://app.example.com',
+        stubFormatLink
+      )
+      expect(result).to.include('Citizen #42')
+      expect(result).to.not.include('[Citizen #42]')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // applyOptimisticUpdate – citizen info preservation
+  // ---------------------------------------------------------------------------
+  describe('applyOptimisticUpdate – citizen info fields', () => {
+    const baseLb: LeaderboardEntry[] = [
+      {
+        delegateeAddress: '0xalice',
+        citizenId: 1,
+        citizenName: 'Alice',
+        citizenImage: 'ipfs://alice',
+        totalDelegated: 500,
+        delegatorCount: 3,
+      },
+    ]
+
+    it('preserves existing citizen image when updating an existing entry', () => {
+      const result = applyOptimisticUpdate(
+        baseLb,
+        {
+          delegateeAddress: '0xalice',
+          citizenId: 1,
+          citizenName: 'Alice',
+          citizenImage: 'ipfs://alice',
+          amount: 200,
+        },
+        null,
+        false
+      )
+      const alice = result.find((e) => e.delegateeAddress === '0xalice')!
+      expect(alice.citizenImage).to.equal('ipfs://alice')
+      expect(alice.citizenName).to.equal('Alice')
+      expect(alice.citizenId).to.equal(1)
+    })
+
+    it('stores citizen info when adding a brand-new entry', () => {
+      const result = applyOptimisticUpdate(
+        baseLb,
+        {
+          delegateeAddress: '0xnew',
+          citizenId: 99,
+          citizenName: 'NewCitizen',
+          citizenImage: 'ipfs://new',
+          amount: 100,
+        },
+        null,
+        false
+      )
+      const newEntry = result.find((e) => e.delegateeAddress === '0xnew')!
+      expect(newEntry.citizenName).to.equal('NewCitizen')
+      expect(newEntry.citizenImage).to.equal('ipfs://new')
+      expect(newEntry.citizenId).to.equal(99)
+    })
+
+    it('preserves citizen info on redelegation to same candidate', () => {
+      const result = applyOptimisticUpdate(
+        baseLb,
+        {
+          delegateeAddress: '0xalice',
+          citizenId: 1,
+          citizenName: 'Alice',
+          citizenImage: 'ipfs://alice',
+          amount: 300,
+        },
+        { delegatee: '0xalice', amount: 200 },
+        true
+      )
+      const alice = result.find((e) => e.delegateeAddress === '0xalice')!
+      expect(alice.citizenImage).to.equal('ipfs://alice')
+      expect(alice.citizenName).to.equal('Alice')
+      expect(alice.totalDelegated).to.equal(600)
+    })
+
+    it('preserves citizen info on both entries during cross-candidate redelegation', () => {
+      const lb: LeaderboardEntry[] = [
+        {
+          delegateeAddress: '0xalice',
+          citizenId: 1,
+          citizenName: 'Alice',
+          citizenImage: 'ipfs://alice',
+          totalDelegated: 500,
+          delegatorCount: 2,
+        },
+        {
+          delegateeAddress: '0xbob',
+          citizenId: 2,
+          citizenName: 'Bob',
+          citizenImage: 'ipfs://bob',
+          totalDelegated: 300,
+          delegatorCount: 1,
+        },
+      ]
+      const result = applyOptimisticUpdate(
+        lb,
+        {
+          delegateeAddress: '0xbob',
+          citizenId: 2,
+          citizenName: 'Bob',
+          citizenImage: 'ipfs://bob',
+          amount: 200,
+        },
+        { delegatee: '0xalice', amount: 200 },
+        true
+      )
+      const alice = result.find((e) => e.delegateeAddress === '0xalice')!
+      const bob = result.find((e) => e.delegateeAddress === '0xbob')!
+      expect(alice.citizenImage).to.equal('ipfs://alice')
+      expect(alice.citizenName).to.equal('Alice')
+      expect(bob.citizenImage).to.equal('ipfs://bob')
+      expect(bob.citizenName).to.equal('Bob')
+    })
+
+    it('handles new entry without citizenImage', () => {
+      const result = applyOptimisticUpdate(
+        baseLb,
+        {
+          delegateeAddress: '0xnoimage',
+          citizenId: 50,
+          citizenName: 'NoImage',
+          amount: 100,
+        },
+        null,
+        false
+      )
+      const entry = result.find((e) => e.delegateeAddress === '0xnoimage')!
+      expect(entry.citizenName).to.equal('NoImage')
+      expect(entry.citizenImage).to.be.undefined
     })
   })
 })

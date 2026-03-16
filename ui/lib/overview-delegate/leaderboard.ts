@@ -173,3 +173,55 @@ export function sanitizeSearchQuery(query: string): string {
 export function isValidEthAddress(s: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(s)
 }
+
+/**
+ * Case-insensitive lookup of a delegatee address in the leaderboard.
+ * Returns citizen metadata if found, null otherwise.
+ */
+export function resolveVoteCitizenInfo(
+  delegateeAddress: string,
+  leaderboard: LeaderboardEntry[]
+): {
+  citizenName: string
+  citizenImage?: string
+  citizenId: number | string
+} | null {
+  const lower = delegateeAddress.toLowerCase()
+  const match = leaderboard.find(
+    (e) => e.delegateeAddress.toLowerCase() === lower
+  )
+  if (!match) return null
+  return {
+    citizenName: match.citizenName,
+    citizenImage: match.citizenImage,
+    citizenId: match.citizenId,
+  }
+}
+
+const RANK_EMOJIS = ['🥇', '🥈', '🥉']
+
+/**
+ * Formats the top entries of a leaderboard into a Discord-markdown string.
+ * Each line shows rank, linked citizen name, total delegated, and backer count.
+ */
+export function formatLeaderboardStandings(
+  leaderboard: LeaderboardEntry[],
+  origin: string,
+  formatLink: (name: string, id: string | number) => string,
+  limit = 10
+): string {
+  return leaderboard
+    .slice(0, limit)
+    .map((entry, i) => {
+      const rank = i < 3 ? RANK_EMOJIS[i] : `${i + 1}.`
+      const name = entry.citizenName || `Citizen #${entry.citizenId}`
+      const link = entry.citizenName
+        ? `[${name}](${origin}/citizen/${formatLink(name, String(entry.citizenId))})`
+        : name
+      const amount = entry.totalDelegated.toLocaleString('en-US', {
+        maximumFractionDigits: 0,
+      })
+      return `${rank} **${link}** — ${amount} $OVERVIEW (${entry.delegatorCount} backer${entry.delegatorCount !== 1 ? 's' : ''})`
+    })
+    .join('\n')
+}
