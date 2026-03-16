@@ -120,7 +120,7 @@ const Dropdown = ({
             </div>
             <span className="ml-4">
               <ChevronRightIcon
-                className={`${open && 'rotate-90'} h-5 w-5 translate-all duration-150 text-white`}
+                className={`${open && 'rotate-90'} h-5 w-5 transition-all duration-150 text-white`}
                 aria-hidden="true"
               />
             </span>
