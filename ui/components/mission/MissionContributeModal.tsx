@@ -801,7 +801,7 @@ export default function MissionContributeModal({
         body: JSON.stringify({
           txHash: receipt.transactionHash,
           accessToken: accessToken,
-          txChainSlug: chainSlug,
+          txChainSlug: defaultChainSlug,
           projectId: mission?.projectId,
         }),
       })

@@ -13,12 +13,11 @@ import {
   JBV5_TERMINAL_ADDRESS,
   JBV5_TERMINAL_STORE_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
-  MISSION_CROSS_CHAIN_PAY_ADDRESS,
   MISSION_TABLE_NAMES,
   TEST_CHANNEL_ID,
 } from 'const/config'
 import { DEPLOYED_ORIGIN } from 'const/config'
-import { BigNumber, Transaction } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { getContract, readContract, waitForReceipt } from 'thirdweb'
@@ -143,47 +142,42 @@ async function handler(req: any, res: any) {
       // Mark transaction as used to prevent replay attacks
       usedTransactions.add(txHash)
 
-      //Make sure the tx is to the JB pay terminal or cross chain pay contract for missions
-      if (
-        txReceipt.to?.toLowerCase() !== JBV5_TERMINAL_ADDRESS.toLowerCase() &&
-        txReceipt.to?.toLowerCase() !==
-          MISSION_CROSS_CHAIN_PAY_ADDRESS.toLowerCase()
-      ) {
+      // Find the Pay event emitted by the JBV5 terminal to verify and extract contribution details.
+      // This works for both same-chain and cross-chain (LayerZero) contributions,
+      // where txReceipt.to may be a LayerZero endpoint rather than the terminal itself.
+      const PAY_EVENT_SIGNATURE =
+        '0x133161f1c9161488f777ab9a26aae91d47c0d9a3fafb398960f138db02c73797'
+      const payLog = txReceipt.logs.find(
+        (log: any) =>
+          log.topics[0] === PAY_EVENT_SIGNATURE &&
+          log.address?.toLowerCase() === JBV5_TERMINAL_ADDRESS.toLowerCase()
+      )
+
+      if (!payLog) {
         return res.status(400).send({
-          message:
-            'Transaction is not to the JBPayTerminal or CrossChainPay contracts',
+          message: 'No Pay event found from JBV5 terminal in transaction',
         })
       }
 
-      const contributionTx = (await provider.getTransaction(
-        txHash
-      )) as Transaction
-      if (!contributionTx) {
-        return res.status(400).send({
-          message: 'Transaction not found',
-        })
-      }
-      //Make sure ETH was sent w/ the tx, will be used in notification
-      const txValue = BigNumber.from(contributionTx.value.toString())
+      const payEventInterface = new ethers.utils.Interface([
+        'event Pay(uint256 indexed rulesetId, uint256 indexed rulesetCycleNumber, uint256 indexed projectId, address payer, address beneficiary, uint256 amount, uint256 newlyIssuedTokenCount, string memo, bytes metadata, address caller)',
+      ])
+      const decodedPay = payEventInterface.decodeEventLog(
+        'Pay',
+        payLog.data,
+        payLog.topics
+      )
+
+      const verifiedProjectId = BigNumber.from(
+        payLog.topics[3]
+      ).toNumber()
+      const txValue = BigNumber.from(decodedPay.amount)
+      const contributorAddress: string = decodedPay.beneficiary.toLowerCase()
+
       if (txValue.isZero()) {
         return res.status(400).send({
-          message: 'Transaction did not send any ETH',
+          message: 'Pay event amount is zero',
         })
-      }
-
-      //Get the JB project that the user contributed to
-      let verifiedProjectId = projectId
-      if (
-        txReceipt.to?.toLowerCase() === JBV5_TERMINAL_ADDRESS.toLowerCase() &&
-        txChain === DEFAULT_CHAIN_V5
-      ) {
-        const payLog = txReceipt.logs?.[txReceipt.logs.length - 1]
-        verifiedProjectId = parseInt(payLog?.topics[3]?.toString() || '0')
-        if (!verifiedProjectId) {
-          return res.status(400).send({
-            message: 'Project ID not found',
-          })
-        }
       }
 
       let citizen: any = null
@@ -192,7 +186,7 @@ async function handler(req: any, res: any) {
           txChain,
           `SELECT name, id, image, owner FROM ${
             CITIZEN_TABLE_NAMES[chainSlug]
-          } WHERE owner = '${txReceipt.from.toLowerCase()}'`
+          } WHERE owner = '${contributorAddress}'`
         )
 
         if (citizenRows.length > 0) {
@@ -301,7 +295,7 @@ async function handler(req: any, res: any) {
                 citizen.name,
                 citizen.id
               )})`
-            : txReceipt.from.slice(0, 6) + '...' + txReceipt.from.slice(-4)
+            : contributorAddress.slice(0, 6) + '...' + contributorAddress.slice(-4)
         }** has contributed ${formatNumberWithCommasAndDecimals(
           contributionAmountETH,
           contributionAmountETH >= 1 ? 3 : 5
