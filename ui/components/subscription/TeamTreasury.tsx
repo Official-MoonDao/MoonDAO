@@ -63,8 +63,10 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress }: Te
               className="opacity-70"
             />
             <h2 className="font-GoodTimes text-2xl text-white">Treasury</h2>
-            <span
-              className="text-sm text-slate-400 cursor-pointer hover:text-slate-200 transition-colors"
+            <button
+              type="button"
+              className="text-sm text-slate-400 cursor-pointer hover:text-slate-200 transition-colors bg-transparent border-0 p-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              aria-label="Copy treasury address"
               onClick={() => {
                 navigator.clipboard.writeText(multisigAddress)
                 toast.success('Address copied to clipboard.')
@@ -72,7 +74,7 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress }: Te
             >
               {multisigAddress &&
                 `${multisigAddress.slice(0, 6)}...${multisigAddress.slice(-4)}`}
-            </span>
+            </button>
           </div>
           {safeData && isSigner && (
             <div className="flex flex-col sm:flex-row gap-3">
