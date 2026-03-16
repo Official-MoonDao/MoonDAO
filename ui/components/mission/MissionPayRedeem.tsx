@@ -56,40 +56,39 @@ function MissionPayRedeemContent({
   return (
     <div
       id="mission-pay-redeem-container"
-      className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-[5vw] md:rounded-[2vw] w-full flex flex-col gap-4 lg:min-w-[430px] xl:items-stretch shadow-2xl"
+      className="bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] rounded-2xl w-full flex flex-col gap-4 xl:items-stretch shadow-2xl"
     >
       {shouldShowSwapOnly ? (
         <MissionTokenSwapV4 token={token} />
       ) : (
         !isRefundable && (
-          <div id="mission-pay-container" className="p-4 flex flex-col">
+          <div id="mission-pay-container" className="p-5 flex flex-col">
             {/* You pay */}
             <div className="space-y-2">
-              <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
                 You pay
               </label>
-              <div className="bg-gradient-to-r from-[#121C42] to-[#090D21] border border-white/10 rounded-xl p-4 shadow-lg">
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-8 h-8 bg-light-cool rounded-full flex items-center justify-center">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center ring-1 ring-white/10">
                       <Image
                         src="/coins/ETH.svg"
                         alt="ETH"
-                        width={16}
-                        height={16}
-                        className="w-4 h-4"
+                        width={18}
+                        height={18}
                       />
                     </div>
                     <div>
-                      <p className="font-bold text-white text-lg flex items-center gap-1">
+                      <p className="font-bold text-white text-lg leading-tight">
                         {calculateEthAmount()} ETH
                       </p>
-                      <p className="text-gray-400 text-xs">Ethereum</p>
+                      <p className="text-gray-500 text-xs">Ethereum</p>
                     </div>
                   </div>
-                  <div className="bg-[#111C42] rounded-lg px-3 py-2 border border-white/10 w-full md:w-1/2">
+                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06] w-full md:w-1/2">
                     <div className="flex items-center space-x-2">
-                      <span className="text-white font-medium">$</span>
+                      <span className="text-gray-400 font-medium">$</span>
                       <input
                         id="usd-contribution-input"
                         type="text"
@@ -108,35 +107,34 @@ function MissionPayRedeemContent({
 
             {/* Connecting element */}
             <div className="mt-4 flex justify-center">
-              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-darkest-cool/50 to-dark-cool/50 rounded-full border border-white/10 shadow-lg">
-                <ArrowDownIcon className="w-4 h-4 text-gray-300" />
+              <div className="flex items-center justify-center w-7 h-7 bg-white/[0.04] rounded-lg border border-white/[0.06]">
+                <ArrowDownIcon className="w-3.5 h-3.5 text-gray-500" />
               </div>
             </div>
 
             {/* You receive */}
             {token?.tokenSymbol && (
-              <div className="mt-[-16px] space-y-2">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              <div className="mt-[-10px] space-y-2">
+                <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
                   You receive
                 </label>
-                <div className="bg-gradient-to-r from-[#121C42] to-[#090D21] border border-white/10 rounded-xl p-4 shadow-lg">
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
                   <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
                         <Image
                           src="/assets/icon-star.svg"
                           alt="Token"
                           width={16}
                           height={16}
-                          className="w-4 h-4 text-white"
                         />
                       </div>
                       <div>
-                        <p className="font-bold text-white text-lg">{token?.tokenSymbol}</p>
-                        <p className="text-gray-400 text-xs">{token?.tokenName}</p>
+                        <p className="font-bold text-white text-lg leading-tight">{token?.tokenSymbol}</p>
+                        <p className="text-gray-500 text-xs">{token?.tokenName}</p>
                       </div>
                     </div>
-                    <div className="bg-[#111C42] rounded-lg px-3 py-2 border border-white/10 w-full md:w-1/2">
+                    <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06] w-full md:w-1/2">
                       <div className="flex items-center justify-end gap-2">
                         <p
                           id="token-output"
@@ -151,7 +149,7 @@ function MissionPayRedeemContent({
               </div>
             )}
 
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center mt-2">
               <PrivyWeb3Button
                 label={
                   isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
@@ -159,11 +157,11 @@ function MissionPayRedeemContent({
                     : 'Contribute'
                 }
                 id="open-contribute-modal"
-                className="mt-4 rounded-full gradient-2 rounded-full w-full py-1"
+                className="rounded-xl gradient-2 w-full py-2.5 font-medium"
                 action={() => onOpenModal?.(usdInput)}
                 isDisabled={isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0}
               />
-              <p className="pt-2 text-sm text-gray-300 italic">{`Sign In ● Fund ● Contribute`}</p>
+              <p className="pt-2.5 pb-1 text-xs text-gray-500">{`Sign In · Fund · Contribute`}</p>
             </div>
 
             <div className="w-full space-y-2">
@@ -176,7 +174,7 @@ function MissionPayRedeemContent({
                 label={`Claim ${formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $${
                   token?.tokenSymbol
                 }`}
-                className="rounded-full gradient-2 rounded-full w-full py-1"
+                className="rounded-xl gradient-2 w-full py-2 font-medium"
                 action={claimTokenCredit}
               />
             )}
@@ -185,69 +183,68 @@ function MissionPayRedeemContent({
       )}
       {/* Token Section - Consolidated */}
       {(token?.tokenSupply > 0 || tokenBalance > 0 || isRefundable) && (
-        <div id="mission-token-section" className="px-4 pb-4 space-y-1.5">
-          <label className="text-gray-300 font-medium text-xs uppercase tracking-wide">Token</label>
-          <div className="bg-black/20 border border-white/10 rounded-lg p-3 space-y-3">
-            {/* Your Balance */}
-            {tokenBalance > 0 && (
-              <div>
-                <p className="text-gray-400 text-xs">Your Balance</p>
-                <p className="font-semibold text-white text-lg">
-                  {formatTokenAmount(tokenBalance, 2)}{' '}
-                  <span className="text-gray-400">${token?.tokenSymbol}</span>
-                  {token?.tokenSupply > 0 && (
-                    <span className="text-gray-500 text-sm ml-2">
-                      ({((tokenBalance / (+token?.tokenSupply.toString() / 1e18)) * 100).toFixed(1)}
-                      % of Supply)
-                    </span>
-                  )}
+        <div id="mission-token-section" className="px-5 py-5 space-y-3">
+
+          {/* Your Balance */}
+          {tokenBalance > 0 && (
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+              <p className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">Your Balance</p>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="font-semibold text-white text-lg">
+                  {formatTokenAmount(tokenBalance, 2)}
+                </span>
+                <span className="text-gray-400 text-sm font-medium">${token?.tokenSymbol}</span>
+                {token?.tokenSupply > 0 && (
+                  <span className="text-gray-600 text-xs">
+                    ({((tokenBalance / (+token?.tokenSupply.toString() / 1e18)) * 100).toFixed(1)}% of Supply)
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Current Supply and Exchange Rate */}
+          {token?.tokenSupply > 0 && !isRefundable && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+                <p className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">Supply</p>
+                <p className="font-semibold text-white text-sm">
+                  {formatTokenAmount(+token?.tokenSupply.toString() / 1e18, 2)}{' '}
+                  <span className="text-gray-400 text-xs">${token?.tokenSymbol}</span>
                 </p>
               </div>
-            )}
-
-            {/* Current Supply and Exchange Rate */}
-            {token?.tokenSupply > 0 && !isRefundable && (
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <p className="text-gray-400 text-xs">Current Supply</p>
-                  <p className="font-semibold text-white">
-                    {formatTokenAmount(+token?.tokenSupply.toString() / 1e18, 2)}{' '}
-                    <span className="text-gray-400">${token?.tokenSymbol}</span>
-                  </p>
-                </div>
-                <div className="flex-1">
-                  <MissionTokenExchangeRates
-                    currentStage={currentStage}
-                    tokenSymbol={token?.tokenSymbol}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Refund Section */}
-            {isRefundable && (tokenBalance > 0 || tokenCredit > 0) && (
-              <div className="space-y-3 pt-2">
-                <PrivyWeb3Button
-                  requiredChain={DEFAULT_CHAIN_V5}
-                  id="redeem-button"
-                  className="w-full rounded-lg py-2 bg-gradient-to-r from-red-500/20 to-red-600/20 border border-red-400/30 hover:from-red-500/30 hover:to-red-600/30 text-red-300 hover:text-red-200 transition-all duration-200"
-                  label={
-                    isLoadingRedeemAmount ? (
-                      <LoadingSpinner />
-                    ) : (
-                      `Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`
-                    )
-                  }
-                  isDisabled={isLoadingRedeemAmount}
-                  action={redeem}
-                  noPadding
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+                <MissionTokenExchangeRates
+                  currentStage={currentStage}
+                  tokenSymbol={token?.tokenSymbol}
                 />
-                <p className="text-sm text-gray-400 text-center">
-                  This mission did not reach its funding goal. You can claim your refund here.
-                </p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Refund Section */}
+          {isRefundable && (tokenBalance > 0 || tokenCredit > 0) && (
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
+              <PrivyWeb3Button
+                requiredChain={DEFAULT_CHAIN_V5}
+                id="redeem-button"
+                className="w-full rounded-xl py-2.5 gradient-2 font-medium"
+                label={
+                  isLoadingRedeemAmount ? (
+                    <LoadingSpinner />
+                  ) : (
+                    `Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`
+                  )
+                }
+                isDisabled={isLoadingRedeemAmount}
+                action={redeem}
+                noPadding
+              />
+              <p className="text-xs text-gray-500 text-center leading-relaxed">
+                This mission did not reach its funding goal. You can claim your refund here.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

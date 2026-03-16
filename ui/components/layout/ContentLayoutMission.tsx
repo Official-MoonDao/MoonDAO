@@ -40,11 +40,11 @@ const ContentLayout: React.FC<ContentProps> = ({
 
   return (
     <div className="">
-      <section id="title-section" className="z-0 relative bg-black">
+      <section id="title-section" className="z-0 relative bg-[#090d21]">
         <div className="absolute inset-0 w-full h-full overflow-hidden">
         </div>
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#020617] from-0% to-[#020617] to-80%"></div>
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-transparent from-90% sm:from-40% lg:from-80% to-[#090d21] to-90% sm:to-40% lg:to-80%"></div>
+        <div className="absolute inset-0 w-full h-full bg-[#090d21]"></div>
+        <div className="absolute inset-0 w-full h-full bg-[#090d21]"></div>
         <div id="title-section-container">
           <div id="title" className="relative z-10 flex items-center xl:justify-center">
             <div
@@ -169,9 +169,9 @@ const ContentLayout: React.FC<ContentProps> = ({
                             ${contentwide ? 'p-0' : ''}
                         `}
             >
-              <div className="overflow-hidden">
+              <div>
                 <div id="content">
-                  <div className="">{children}</div>
+                  <div>{children}</div>
                 </div>
               </div>
             </div>

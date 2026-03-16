@@ -19,30 +19,30 @@ function MissionInfoTab({
   currentTab: MissionInfoTabType
   setTab: (tab: MissionInfoTabType) => void
 }) {
+  const isActive = currentTab === tab
   return (
-    <div className="relative">
-      <button
-        className={`text-sm md:text-xl ${
-          currentTab === tab ? 'text-white' : 'text-gray-400'
-        }`}
-        onClick={() => setTab(tab)}
-      >
-        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-      </button>
-      {currentTab === tab && (
-        <div className="absolute w-[150%] h-1 bg-white -bottom-2 left-1/2 -translate-x-1/2" />
-      )}
-    </div>
+    <button
+      className={`relative px-4 py-2.5 text-sm md:text-base font-medium rounded-lg transition-all duration-200 ${
+        isActive
+          ? 'text-white bg-white/[0.08] shadow-sm'
+          : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.03]'
+      }`}
+      onClick={() => setTab(tab)}
+    >
+      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+    </button>
   )
 }
 
 function MissionInfoHeader({ title, icon }: { title: string; icon: string }) {
   return (
-    <div className="flex w-full gap-2 text-light-cool">
-      <Image src={icon} alt="Star Icon" width={30} height={30} />
-      <h1 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+        <Image src={icon} alt="Section Icon" width={18} height={18} />
+      </div>
+      <h2 className="text-xl md:text-2xl font-GoodTimes text-white">
         {title}
-      </h1>
+      </h2>
     </div>
   )
 }
@@ -87,56 +87,62 @@ export default function MissionInfo({
       const parentElement = document.getElementById('mission-info-content')
       if (!parentElement) return
 
-      const parentRect = parentElement.getBoundingClientRect()
-      const stickyRect = stickyElement.getBoundingClientRect()
+      const stickyWrapper = stickyElement.parentElement
+      if (!stickyWrapper) return
 
-      const stickyTop = stickyRect.top
+      // Use the scroll container to get scroll position
+      const scrollContainer =
+        document.getElementById('main-container') || document.documentElement
+      const scrollTop =
+        scrollContainer === document.documentElement
+          ? window.scrollY
+          : scrollContainer.scrollTop
+
+      const parentRect = parentElement.getBoundingClientRect()
+      const stickyHeight = stickyElement.getBoundingClientRect().height
 
       const stickyPoint = 75
 
-      const parentBottom = parentRect.bottom
+      // Calculate parent's top relative to the document (not viewport)
+      const parentTopAbsolute = parentRect.top + scrollTop
+      const parentHeight = parentRect.height
 
-      const parentTop = parentRect.top
+      // Where the sticky element should start sticking
+      const stickStart = parentTopAbsolute - stickyPoint
+      // Where it should stop (so it doesn't go past the parent bottom)
+      const stickEnd = parentTopAbsolute + parentHeight - stickyHeight - stickyPoint
 
-      const stickyHeight = stickyRect.height
-
-      if (parentTop > stickyPoint) {
+      if (scrollTop <= stickStart) {
+        // Haven't scrolled enough — stay at natural position
         stickyElement.style.position = 'relative'
         stickyElement.style.top = '0'
         stickyElement.style.width = '100%'
-      } else if (
-        stickyTop <= stickyPoint &&
-        parentBottom > window.innerHeight
-      ) {
-        stickyElement.style.position = 'fixed'
-        stickyElement.style.top = `${stickyPoint}px`
-        stickyElement.style.width = '350px'
-      } else if (parentBottom <= window.innerHeight) {
-        const bottomOffset = window.innerHeight - parentBottom
-        const newTop = window.innerHeight - stickyHeight - bottomOffset
-
-        if (newTop < stickyPoint) {
-          stickyElement.style.position = 'absolute'
-          stickyElement.style.top = `${parentRect.height - stickyHeight}px`
-          stickyElement.style.width = '350px'
-        } else {
-          stickyElement.style.position = 'fixed'
-          stickyElement.style.top = `${stickyPoint}px`
-          stickyElement.style.width = '350px'
-        }
+      } else if (scrollTop <= stickEnd) {
+        // In the sticky zone — follow scroll using absolute within parent
+        const offset = scrollTop - parentTopAbsolute + stickyPoint
+        stickyElement.style.position = 'absolute'
+        stickyElement.style.top = `${offset}px`
+        stickyElement.style.width = `${stickyWrapper.offsetWidth}px`
       } else {
-        stickyElement.style.position = 'relative'
-        stickyElement.style.top = '0'
-        stickyElement.style.width = '100%'
+        // Past the end — pin to bottom of parent
+        stickyElement.style.position = 'absolute'
+        stickyElement.style.top = `${parentHeight - stickyHeight}px`
+        stickyElement.style.width = `${stickyWrapper.offsetWidth}px`
       }
     }
 
-    window.addEventListener('scroll', handleScroll)
+    // Listen on both possible scroll containers
+    const mainContainer = document.getElementById('main-container')
+    window.addEventListener('scroll', handleScroll, true)
+    mainContainer?.addEventListener('scroll', handleScroll)
+    window.addEventListener('resize', handleScroll)
 
     handleScroll()
 
     return () => {
-      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('scroll', handleScroll, true)
+      mainContainer?.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleScroll)
     }
   }, [])
 
@@ -169,7 +175,8 @@ export default function MissionInfo({
 
   return (
     <div className="w-full">
-      <div className="-ml-3 block md:hidden flex items-center justify-center gap-2 w-full">
+      {/* Mobile Social Links */}
+      <div className="block md:hidden flex items-center justify-center mb-4">
         <MissionSocialLinks
           socials={{
             socialLink: mission?.metadata?.socialLink,
@@ -178,73 +185,72 @@ export default function MissionInfo({
           className="justify-center w-full"
         />
       </div>
-      <div className="w-full pl-[2vw] flex flex-col md:flex-row gap-10 md:gap-2 justify-between max-w-[1200px]">
-        <div
-          id="mission-info-tabs"
-          className="px-10 sm:px-4 md:px-0 justify-between sm:justify-start mt-4 flex gap-10 md:gap-20 w-full"
-        >
+
+      {/* Tab Navigation */}
+      <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-1 bg-white/[0.02] rounded-xl p-1 border border-white/[0.05]">
           <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
         </div>
-
-        <div className="hidden md:block md:mt-4 flex items-center md:justify-end gap-2 w-full">
+        <div className="hidden md:flex items-center gap-2">
           <MissionSocialLinks
             socials={{
               socialLink: mission?.metadata?.socialLink,
               infoUri: mission?.metadata?.infoUri,
             }}
-            className="justify-end w-full"
+            className="justify-end"
           />
         </div>
       </div>
 
-      <div id="mission-info-content" className="mt-8 w-full flex gap-4">
-        <div className="flex-1 overflow-auto">
+      {/* Content Area */}
+      <div id="mission-info-content" className="w-full flex items-start gap-6 relative">
+        <div className="flex-1 min-w-0">
           {tab === 'about' && (
-            <div className="flex gap-4 mb-[5vw] md:mb-[2vw] w-full">
-              <div className="w-full">
-                <MissionInfoHeader
-                  title="About the Mission"
-                  icon="/assets/icon-star-blue.svg"
-                />
-                {mission?.metadata?.youtubeLink &&
-                  mission?.metadata?.youtubeLink !== '' && (
-                    <div className="mt-4 w-full p-4 2xl:p-0 max-w-[1200px]">
-                      <div className="relative w-full aspect-video">
-                        <iframe
-                          src={mission?.metadata?.youtubeLink
-                            ?.replace('watch?v=', 'embed/')
-                            ?.replace('youtu.be/', 'www.youtube.com/embed/')}
-                          className="absolute inset-0 w-full h-full rounded-2xl"
-                          allowFullScreen
-                        />
-                      </div>
+            <div className="w-full mb-8">
+              <MissionInfoHeader
+                title="About the Mission"
+                icon="/assets/icon-star-blue.svg"
+              />
+              {mission?.metadata?.youtubeLink &&
+                mission?.metadata?.youtubeLink !== '' && (
+                  <div className="w-full mb-6">
+                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/[0.06]">
+                      <iframe
+                        src={mission?.metadata?.youtubeLink
+                          ?.replace('watch?v=', 'embed/')
+                          ?.replace('youtu.be/', 'www.youtube.com/embed/')}
+                        className="absolute inset-0 w-full h-full"
+                        allowFullScreen
+                      />
                     </div>
-                  )}
-                <div
-                  className="mt-4 prose prose-invert w-full max-w-none"
-                  dangerouslySetInnerHTML={{
-                    __html: mission?.metadata?.description || '',
-                  }}
-                />
-              </div>
+                  </div>
+                )}
+              <div
+                className="prose prose-invert prose-lg max-w-none [&>p]:text-gray-300 [&>p]:leading-relaxed [&>h1]:text-white [&>h2]:text-white [&>h3]:text-white [&>ul]:text-gray-300 [&>ol]:text-gray-300 [&>a]:text-indigo-400"
+                dangerouslySetInnerHTML={{
+                  __html: mission?.metadata?.description || '',
+                }}
+              />
             </div>
           )}
           {tab === 'activity' && (
-            <div className="w-full">
+            <div className="w-full mb-8">
               <MissionInfoHeader
                 title="Mission Activity"
                 icon="/assets/icon-star-blue.svg"
               />
-              <MissionTimelineChart
-                points={points}
-                isLoadingPoints={isLoadingPoints}
-                height={500}
-                createdAt={subgraphData?.createdAt}
-                range={range}
-                setRange={setRange}
-              />
+              <div className="mb-6">
+                <MissionTimelineChart
+                  points={points}
+                  isLoadingPoints={isLoadingPoints}
+                  height={400}
+                  createdAt={subgraphData?.createdAt}
+                  range={range}
+                  setRange={setRange}
+                />
+              </div>
               <MissionActivityList
                 selectedChain={selectedChain}
                 tokenSymbol={token?.tokenSymbol}
@@ -254,7 +260,7 @@ export default function MissionInfo({
             </div>
           )}
           {tab === 'tokenomics' && (
-            <div className="w-full">
+            <div className="w-full mb-8">
               <MissionInfoHeader
                 title="Mission Tokenomics"
                 icon="/assets/icon-star-blue.svg"
@@ -263,7 +269,7 @@ export default function MissionInfo({
             </div>
           )}
         </div>
-        <div className="hidden xl:block  min-w-[350px] lg:w-[400px]">
+        <div className="hidden xl:block min-w-[350px] lg:w-[400px] pt-[47px]">
           <div ref={stickyRef}>
             <MissionPayRedeem
               ruleset={ruleset}

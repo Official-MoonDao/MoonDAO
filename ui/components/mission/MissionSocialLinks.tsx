@@ -31,10 +31,10 @@ export default function MissionSocialLinks({
   if (!hasAnyLink) return null
 
   return (
-    <div className={`flex gap-2 ${className}`}>
+    <div className={`flex items-center gap-1 ${className}`}>
       {socials.communications && (
         <Link
-          className="flex gap-2 hover:scale-105 transition-all duration-200"
+          className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all duration-200"
           href={socials.communications}
           target="_blank"
           passHref
@@ -44,7 +44,7 @@ export default function MissionSocialLinks({
       )}
       {socials.twitter && (
         <Link
-          className="flex gap-2 hover:scale-105 transition-all duration-200"
+          className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all duration-200"
           href={socials.twitter}
           target="_blank"
           passHref
@@ -54,7 +54,7 @@ export default function MissionSocialLinks({
       )}
       {socials.website && (
         <Link
-          className="flex gap-2 hover:scale-105 transition-all duration-200"
+          className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all duration-200"
           href={socials.website}
           target="_blank"
           passHref
@@ -64,7 +64,7 @@ export default function MissionSocialLinks({
       )}
       {socials.socialLink && (
         <Link
-          className="flex gap-2 hover:scale-105 transition-all duration-200"
+          className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all duration-200"
           href={socials.socialLink}
           target="_blank"
           passHref
@@ -74,7 +74,7 @@ export default function MissionSocialLinks({
       )}
       {socials.infoUri && (
         <Link
-          className="flex gap-2 hover:scale-105 transition-all duration-200"
+          className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all duration-200"
           href={socials.infoUri}
           target="_blank"
           passHref
