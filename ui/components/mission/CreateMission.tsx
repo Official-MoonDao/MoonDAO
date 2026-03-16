@@ -353,7 +353,7 @@ export default function CreateMission({
         account,
       })
       setSigningTx(false)
-      // Define the event signature for the Transfer event
+      // Define the event signature for the MissionCreated event
       const missionCreatedEventSignature = ethers.utils.id(
         'MissionCreated(uint256,uint256,uint256,address,uint256)'
       )
