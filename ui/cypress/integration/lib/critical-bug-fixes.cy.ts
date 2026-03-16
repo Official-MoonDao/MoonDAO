@@ -243,7 +243,7 @@ describe('Bug #4: Funding goal precision', () => {
   it('should correctly convert 1.1 ETH without precision loss', () => {
     // The old bug: Math.trunc(1.1 * 1e18) === 1100000000000000100 (100 wei off)
     const oldBugResult = Math.trunc(1.1 * 1e18)
-    expect(oldBugResult).to.not.equal(1.1e18)
+    expect(oldBugResult.toString()).to.not.equal('1100000000000000000')
 
     // The fix: ethers.utils.parseEther handles it correctly
     const fixedResult = ethers.utils.parseEther('1.1')
