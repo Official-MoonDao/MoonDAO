@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+import { getAccessToken } from '@privy-io/react-auth'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -282,8 +283,21 @@ export default function OverviewDelegate({
         method: method as string,
         params: [OVERVIEW_DELEGATION_VOTE_ID, vote],
       })
-      await sendAndConfirmTransaction({ transaction: tx, account })
+      const receipt: any = await sendAndConfirmTransaction({ transaction: tx, account })
       setHasExistingDelegation(true)
+
+      // Send Discord notification (fire-and-forget)
+      getAccessToken().then((accessToken) => {
+        fetch('/api/overview/leaderboard-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            txHash: receipt.transactionHash,
+            accessToken,
+            delegateeAddress: selectedCitizen.owner,
+          }),
+        }).catch(() => {})
+      }).catch(() => {})
 
       confetti({
         particleCount: 150,
