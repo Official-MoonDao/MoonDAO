@@ -52,19 +52,29 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress }: Te
           setEnabled={setSafeSendModalEnabled}
         />
       )}
-      <div className="w-full flex flex-col gap-5">
+      <div className="w-full flex flex-col gap-5 p-6">
         <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
-          <div
-            className="flex gap-5 cursor-pointer"
-            onClick={() => {
-              navigator.clipboard.writeText(multisigAddress)
-              toast.success('Address copied to clipboard.')
-            }}
-          >
-            <h2 className="font-GoodTimes text-lg text-white/80">
+          <div className="flex gap-5 items-center">
+            <Image
+              src="/assets/icon-star.svg"
+              alt="Treasury icon"
+              width={30}
+              height={30}
+              className="opacity-70"
+            />
+            <h2 className="font-GoodTimes text-2xl text-white">Treasury</h2>
+            <button
+              type="button"
+              className="text-sm text-slate-400 cursor-pointer hover:text-slate-200 transition-colors bg-transparent border-0 p-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              aria-label="Copy treasury address"
+              onClick={() => {
+                navigator.clipboard.writeText(multisigAddress)
+                toast.success('Address copied to clipboard.')
+              }}
+            >
               {multisigAddress &&
                 `${multisigAddress.slice(0, 6)}...${multisigAddress.slice(-4)}`}
-            </h2>
+            </button>
           </div>
           {safeData && isSigner && (
             <div className="flex flex-col sm:flex-row gap-3">

@@ -6,6 +6,8 @@ import Image from 'next/image'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import LanguageChange from './Sidebar/LanguageChange'
+import { TeamsNavDropdown } from './Sidebar/TeamsNavDropdown'
+import { ProjectsNavDropdown } from './Sidebar/ProjectsNavDropdown'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { LogoSidebar } from '../assets'
 
@@ -29,9 +31,7 @@ const TopNavBar = ({
   const [lastScrollY, setLastScrollY] = useState(0)
   const dropdownTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Handle hover-based dropdown with proper timeout management
   const handleDropdownEnter = (itemName: string) => {
-    // Clear any existing timer
     if (dropdownTimerRef.current) {
       clearTimeout(dropdownTimerRef.current)
       dropdownTimerRef.current = null
@@ -40,18 +40,15 @@ const TopNavBar = ({
   }
 
   const handleDropdownLeave = () => {
-    // Clear any existing timer first
     if (dropdownTimerRef.current) {
       clearTimeout(dropdownTimerRef.current)
     }
-    // Set a new timer
     dropdownTimerRef.current = setTimeout(() => {
       setOpenDropdown(null)
       dropdownTimerRef.current = null
-    }, 500) // Increased to 500ms for better UX
+    }, 500)
   }
 
-  // Clean up timer on unmount
   useEffect(() => {
     return () => {
       if (dropdownTimerRef.current) {
@@ -60,17 +57,13 @@ const TopNavBar = ({
     }
   }, [])
 
-  // Handle scroll behavior
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY
       
-      // Show navbar if at top of page
       if (currentScrollY < 10) {
         setIsVisible(true)
-      }
-      // Hide when scrolling down, show when scrolling up
-      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsVisible(false)
       } else if (currentScrollY < lastScrollY) {
         setIsVisible(true)
@@ -93,7 +86,6 @@ const TopNavBar = ({
       }`}>
       <div className="max-w-full mx-auto px-2 lg:px-4 xl:px-6">
         <div className="flex items-center justify-between h-16 lg:h-18 min-w-0">
-          {/* Logo - responsive sizing */}
           <NavLink
             href="/"
             className="flex-shrink-0 ml-2 md:ml-4 mr-4 lg:mr-6 xl:mr-8 cursor-pointer"
@@ -105,24 +97,33 @@ const TopNavBar = ({
             </div>
           </NavLink>
 
-          {/* Navigation Links - Show on large screens and up (1024px+) */}
           <div className="hidden lg:flex items-center gap-1 xl:gap-2 flex-1 justify-center max-w-[1024px] mx-auto">
             {navigation.map((item, i) => {
               if (!item) return null
-              
-              const isActive = 
+              const hasDropdown = item.children || item.dynamicChildren
+              const isActive =
                 router.pathname === item.href ||
-                item.children?.some((child: any) => router.pathname === child.href)
+                item.children?.some((child: any) => router.pathname === child.href) ||
+                (item.dynamicChildren === 'Teams' &&
+                  (router.pathname.startsWith('/team') ||
+                    router.pathname === '/join' ||
+                    router.pathname === '/jobs' ||
+                    router.pathname === '/marketplace')) ||
+                (item.dynamicChildren === 'Projects' &&
+                  (router.pathname.startsWith('/project') ||
+                    router.pathname === '/projects' ||
+                    router.pathname === '/proposals' ||
+                    router.pathname === '/contributions' ||
+                    router.pathname === '/projects-overview'))
 
               return (
                 <div
                   key={i}
                   className="relative dropdown-container w-fit"
-                  onMouseEnter={() => item.children && handleDropdownEnter(item.name)}
-                  onMouseLeave={() => item.children && handleDropdownLeave()}
+                  onMouseEnter={() => hasDropdown && handleDropdownEnter(item.name)}
+                  onMouseLeave={() => hasDropdown && handleDropdownLeave()}
                 >
-                  {item.children ? (
-                    // Single click: show dropdown. Double click: navigate to parent link.
+                  {hasDropdown ? (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -158,10 +159,8 @@ const TopNavBar = ({
                     </NavLink>
                   )}
 
-                  {/* Dropdown Menu */}
-                  {item.children && openDropdown === item.name && (
+                  {hasDropdown && openDropdown === item.name && (
                     <>
-                      {/* Invisible bridge - covers path from trigger to dropdown so mouse doesn't leave and close menu */}
                       <div
                         className="absolute top-full left-0 right-0 w-full -mt-1 h-48 z-40"
                         onMouseEnter={() => handleDropdownEnter(item.name)}
@@ -173,31 +172,35 @@ const TopNavBar = ({
                         onMouseLeave={handleDropdownLeave}
                       >
                       <div className="min-w-56 w-full bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 px-2 rounded-xl">
-                      {item.children.map((child: any, j: number) => {
-                        if (!child.href) {
-                          return (
-                            <div key={j} className="px-3 py-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
-                              {child.name}
-                            </div>
-                          )
-                        }
-                        
-                        const isChildActive = router.pathname === child.href
-
-                        return (
-                          <NavLink
-                            key={j}
-                            href={child.href}
-                            className={`block w-full text-left px-3 py-2 text-sm transition-all duration-200 rounded-lg ${
-                              isChildActive
-                                ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
-                                : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
-                            }`}
-                          >
-                            {child.name}
-                          </NavLink>
-                        )
-                      })}
+                        {item.dynamicChildren === 'Teams' ? (
+                          <TeamsNavDropdown variant="desktop" />
+                        ) : item.dynamicChildren === 'Projects' ? (
+                          <ProjectsNavDropdown variant="desktop" />
+                        ) : (
+                          item.children?.map((child: any, j: number) => {
+                            if (!child.href) {
+                              return (
+                                <div key={j} className="px-3 py-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                  {child.name}
+                                </div>
+                              )
+                            }
+                            const isChildActive = router.pathname === child.href
+                            return (
+                              <NavLink
+                                key={j}
+                                href={child.href}
+                                className={`block w-full text-left px-3 py-2 text-sm transition-all duration-200 rounded-lg ${
+                                  isChildActive
+                                    ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
+                                    : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
+                                }`}
+                              >
+                                {child.name}
+                              </NavLink>
+                            )
+                          })
+                        )}
                       </div>
                     </div>
                     </>
@@ -207,9 +210,7 @@ const TopNavBar = ({
             })}
           </div>
 
-          {/* Right side - Wallet and Settings - Desktop only */}
           <div className="flex items-center space-x-2 lg:space-x-3 xl:space-x-4 flex-shrink-0">
-            {/* Wallet/Address Button */}
             <div className="flex items-center space-x-4 lg:space-x-6">
               <div className="max-w-[200px] overflow-hidden scale-90 lg:scale-100 xl:scale-105 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
                 <PrivyConnectWallet
@@ -222,7 +223,6 @@ const TopNavBar = ({
               </div>
             </div>
             
-            {/* Language Settings Only */}
             <div className="scale-90 lg:scale-100 xl:scale-105">
               <LanguageChange />
             </div>

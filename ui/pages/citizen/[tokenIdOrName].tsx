@@ -25,6 +25,7 @@ import { BLOCKED_CITIZENS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -75,7 +76,7 @@ import HatsABI from '../../const/abis/Hats.json'
 import JobsABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
-export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any) {
+function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
@@ -229,16 +230,16 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
   useChainDefault()
 
   const ProfileHeader = (
-    <div id="citizenheader-container" className="w-full">
+    <div id="citizenheader-container" className="w-full max-w-[1080px] mx-auto">
       <div className="w-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 overflow-hidden">
-        <div id="frame-content-container" className="w-full p-6 lg:p-8">
+        <div id="frame-content-container" className="w-full p-6">
           <div
             id="frame-content"
             className="w-full flex flex-col lg:flex-row items-start justify-between gap-6"
           >
             <div
               id="profile-description-section"
-              className="flex w-full flex-col lg:flex-row items-stretch gap-6"
+              className="flex w-full flex-col lg:flex-row items-center lg:items-stretch gap-6"
             >
               {nft?.metadata?.image ? (
                 <div id="citizen-image-container" className="relative flex-shrink-0">
@@ -267,10 +268,10 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
                 className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]"
               >
                 <div id="team-name" className="flex flex-col gap-4 w-full">
-                  <div id="team-name-container" className="flex flex-col w-full">
+                  <div id="team-name-container" className="relative flex flex-col w-full">
                     {subIsValid && isOwner && (
                       <button
-                        className="absolute top-4 right-4 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
+                        className="absolute top-0 right-0 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
                         onClick={() => {
                           if (isOwner) setCitizenMetadataModalEnabled(true)
                           else
@@ -301,7 +302,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
                   </div>
                     <div
                       id="interactions-container"
-                      className="flex flex-col sm:flex-row flex-wrap items-stretch gap-4"
+                      className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4"
                     >
                     {(discordLink && !discordLink.includes('/users/undefined')) ||
                     (socials && (socials.twitter || socials.website || socials.instagram || socials.linkedin)) ? (
@@ -412,18 +413,6 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
           description={nft?.metadata?.description}
           image={`https://ipfs.io/ipfs/${nft?.metadata?.image.split('ipfs://')[1]}`}
         />
-        {!isDeleted && subIsValid && isOwner && (
-          <CitizenActions
-            nft={nft}
-            address={address || ''}
-            incompleteProfile={incompleteProfile}
-            isTeamMember={hats?.length > 0}
-            mooneyBalance={MOONEYBalance}
-            vmooneyBalance={VMOONEYBalance}
-            setCitizenMetadataModalEnabled={setCitizenMetadataModalEnabled}
-          />
-        )}
-
         {citizenMetadataModalEnabled && (
           <CitizenMetadataModal
             nft={nft}
@@ -452,14 +441,22 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
           />
         )}
         {subIsValid && !isDeleted && !isGuest ? (
-          <div className="space-y-6 mb-10">
-            {/* Mooney and Voting Power */}
-            {citizen || isOwner ? (
+          <div className="flex flex-col gap-5 w-full max-w-[1080px] mx-auto pb-10">
+            {!isDeleted && subIsValid && isOwner && (
+              <CitizenActions
+                nft={nft}
+                address={address || ''}
+                incompleteProfile={incompleteProfile}
+                isTeamMember={hats?.length > 0}
+                mooneyBalance={MOONEYBalance}
+                vmooneyBalance={VMOONEYBalance}
+                setCitizenMetadataModalEnabled={setCitizenMetadataModalEnabled}
+              />
+            )}
+            {(citizen || isOwner) && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="font-GoodTimes text-2xl text-white">Governance</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <h2 className="font-GoodTimes text-2xl text-white mb-6">Governance</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-slate-600/20 rounded-xl p-4">
                     <p className="text-lg text-slate-300 mb-2">$MOONEY</p>
                     <p className="text-3xl font-bold text-white">
@@ -494,11 +491,9 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
                   </div>
                 )}
               </div>
-            ) : (
-              <></>
             )}
             {isOwner && (
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <OpenVotes proposals={proposals} />
               </div>
             )}
@@ -526,36 +521,32 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
             {isOwner && (
               <>
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                  <div className="w-full">
-                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8">
-                      <h2 className="font-GoodTimes text-2xl text-white">Newest Listings</h2>
-
-                      <StandardButton
-                        className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px] mt-2 lg:mt-0"
-                        onClick={() => router.push('/marketplace')}
-                      >
-                        See More
-                      </StandardButton>
-                    </div>
-
-                    <SlidingCardMenu>
-                      <div id="new-marketplace-listings-container" className="flex gap-5">
-                        {newListings.map((listing, i) => (
-                          <TeamListing
-                            key={`team-listing-${i}`}
-                            listing={listing}
-                            selectedChain={selectedChain}
-                            teamContract={teamContract}
-                            marketplaceTableContract={marketplaceTableContract}
-                            teamName
-                            isCitizen={true}
-                          />
-                        ))}
-                      </div>
-                    </SlidingCardMenu>
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-6">
+                    <h2 className="font-GoodTimes text-2xl text-white">Newest Listings</h2>
+                    <StandardButton
+                      className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
+                      onClick={() => router.push('/marketplace')}
+                    >
+                      See More
+                    </StandardButton>
                   </div>
+                  <SlidingCardMenu>
+                    <div id="new-marketplace-listings-container" className="flex gap-5">
+                      {newListings.map((listing, i) => (
+                        <TeamListing
+                          key={`team-listing-${i}`}
+                          listing={listing}
+                          selectedChain={selectedChain}
+                          teamContract={teamContract}
+                          marketplaceTableContract={marketplaceTableContract}
+                          teamName
+                          isCitizen={true}
+                        />
+                      ))}
+                    </div>
+                  </SlidingCardMenu>
                 </div>
-                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                   <LatestJobs teamContract={teamContract} jobTableContract={jobTableContract} />
                 </div>
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
@@ -685,6 +676,10 @@ async function getTeamWearerServerSide(chain: any, teamContract: any, address: a
     console.error(err)
     return []
   }
+}
+
+export default function CitizenDetailPage(props: any) {
+  return <CitizenDetailPageContent {...props} />
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {

@@ -85,7 +85,7 @@ import TeamMissions from '@/components/subscription/TeamMissions'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import EBRewards from '@/components/subscription/EBRewards'
 
-export default function TeamDetailPage({
+function TeamDetailPageContent({
   tokenId,
   nft,
   imageIpfsLink,
@@ -216,16 +216,16 @@ export default function TeamDetailPage({
 
   //Profile Header Section
   const ProfileHeader = (
-    <div id="teamheader-container" className="w-full">
+    <div id="teamheader-container" className="w-full max-w-[1080px] mx-auto">
       <div className="w-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 overflow-hidden">
-        <div id="frame-content-container" className="w-full p-6 lg:p-8">
+        <div id="frame-content-container" className="w-full p-6">
           <div
             id="frame-content"
             className="w-full flex flex-col lg:flex-row items-start justify-between gap-6"
           >
             <div
               id="profile-description-section"
-              className="flex w-full flex-col lg:flex-row items-stretch gap-6"
+              className="flex w-full flex-col lg:flex-row items-center lg:items-stretch gap-6"
             >
               {nft?.metadata?.image ? (
                 <div id="team-image-container" className="relative flex-shrink-0">
@@ -254,10 +254,10 @@ export default function TeamDetailPage({
                 className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]"
               >
                 <div id="team-name" className="flex flex-col gap-4 w-full">
-                  <div id="team-name-container" className="flex flex-col w-full">
+                  <div id="team-name-container" className="relative flex flex-col w-full">
                     {subIsValid && isManager && (
                       <button
-                        className="absolute top-4 right-4 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
+                        className="absolute top-0 right-0 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
                         onClick={() => {
                           if (address === nft?.owner || isManager) setTeamMetadataModalEnabled(true)
                           else
@@ -458,11 +458,11 @@ export default function TeamDetailPage({
       >
         <div
           id="page-container"
-          className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
+          className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px] mx-auto pb-10"
         >
           {/* Team Statistics Overview */}
           {!isDeleted && subIsValid && (
-            <div className="mt-4 md:mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title="Team Members"
                 value={teamStats.memberCount}
@@ -533,25 +533,20 @@ export default function TeamDetailPage({
           {subIsValid && (
             <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
               <TeamMissions
-                selectedChain={selectedChain}
                 isManager={isManager}
                 teamId={tokenId}
                 missionTableContract={missionTableContract}
-                missionCreatorContract={missionCreatorContract}
                 jbControllerContract={jbControllerContract}
-                jbDirectoryContract={jbDirectoryContract}
-                jbTokensContract={jbTokensContract}
-                teamContract={teamContract}
                 missions={missions}
               />
             </div>
           )}
           {subIsValid && !isDeleted ? (
-            <div className="space-y-6 mb-10 mt-5 md:mt-0">
+            <>
               {/* Team Members */}
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
-                  <div className="flex gap-5">
+                  <div className="flex gap-5 items-center">
                     <Image
                       src={teamIcon}
                       alt="Team icon"
@@ -562,43 +557,26 @@ export default function TeamDetailPage({
                     <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
                   </div>
                   {isManager && hats?.[0]?.id && (
-                    <div
-                      id="button-container"
-                      className="my-2 flex flex-col md:flex-row justify-start items-center gap-2"
-                    >
-                      {/* <StandardButton
-                        className="min-w-[200px] gradient-2 rounded-[5vmax]"
-                        onClick={() => {
-                          window.open(
-                            `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
-                          )
-                        }}
-                      >
-                        Manage Members
-                      </StandardButton> */}
-                      <TeamManageMembers
-                        account={account}
-                        hats={hats}
-                        hatsContract={hatsContract}
-                        teamContract={teamContract}
-                        teamId={tokenId}
-                        selectedChain={selectedChain}
-                        multisigAddress={nft.owner}
-                        adminHatId={adminHatId}
-                        managerHatId={managerHatId}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4">
-                  {hats?.[0].id && (
-                    <TeamMembers
+                    <TeamManageMembers
+                      account={account}
                       hats={hats}
                       hatsContract={hatsContract}
-                      citizenContract={citizenContract}
+                      teamContract={teamContract}
+                      teamId={tokenId}
+                      selectedChain={selectedChain}
+                      multisigAddress={nft.owner}
+                      adminHatId={adminHatId}
+                      managerHatId={managerHatId}
                     />
                   )}
                 </div>
+                {hats?.[0].id && (
+                  <TeamMembers
+                    hats={hats}
+                    hatsContract={hatsContract}
+                    citizenContract={citizenContract}
+                  />
+                )}
               </div>
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
                 <TeamJobs
@@ -621,33 +599,17 @@ export default function TeamDetailPage({
                   listings={listings}
                 />
               </div>
-              {/* General Actions */}
               {isManager && (
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
                   <GeneralActions />
                 </div>
               )}
-              {/* EB Rewards - Only show for EB team managers */}
-              {(() => {
-                const shouldShowEBRewards =
-                  isManager &&
-                  EB_TEAM_ID &&
-                  String(tokenId) === String(EB_TEAM_ID)
-                if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-                  console.log('[EB Rewards] Render check:', {
-                    isManager,
-                    EB_TEAM_ID,
-                    tokenId,
-                    tokenIdString: String(tokenId),
-                    ebTeamIdString: String(EB_TEAM_ID),
-                    shouldShowEBRewards,
-                  })
-                }
-                return shouldShowEBRewards ? (
+              {isManager &&
+                EB_TEAM_ID &&
+                String(tokenId) === String(EB_TEAM_ID) && (
                   <EBRewards isManager={isManager} teamId={tokenId} />
-                ) : null
-              })()}
-            </div>
+                )}
+            </>
           ) : (
             // Subscription Expired
             <div className="bg-gradient-to-b from-red-900/20 to-red-800/30 rounded-2xl border border-red-600/30 p-6 mb-10">
@@ -676,6 +638,10 @@ export default function TeamDetailPage({
       </ContentLayout>
     </Container>
   )
+}
+
+export default function TeamDetailPage(props: any) {
+  return <TeamDetailPageContent {...props} />
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params, query }) => {

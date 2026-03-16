@@ -4,13 +4,29 @@ import {
   HomeIcon,
   PlusIcon,
   RocketLaunchIcon,
+  UserGroupIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
 import IconOrg from '@/components/assets/IconOrg'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 
 export default function useNavigation(citizen: any) {
   return useMemo(() => {
+    const isCitizen = !!citizen?.metadata?.name
+    const citizenshipChildren = [
+      ...(isCitizen
+        ? [
+            {
+              name: 'Your Profile',
+              href: `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata.id)}`,
+            },
+          ]
+        : [{ name: 'Become a Citizen', href: '/citizen' }]),
+      { name: 'Submit a Contribution', href: '/contributions' },
+      { name: 'Explore Citizens', href: '/network' },
+    ]
+
     return [
       {
         name: citizen ? 'Dashboard' : 'Join',
@@ -21,19 +37,19 @@ export default function useNavigation(citizen: any) {
         name: 'Citizenship',
         href: '/network',
         icon: IconOrg,
-        children: [
-          { name: 'Become a Citizen', href: '/citizen' },
-          { name: 'Create a Team', href: '/team' },
-          { name: 'Explore Citizens', href: '/network' },
-          {
-            name: 'Jobs',
-            href: '/jobs',
-          },
-          {
-            name: 'Marketplace',
-            href: '/marketplace',
-          },
-        ],
+        children: citizenshipChildren,
+      },
+      {
+        name: 'Teams',
+        href: '/network?tab=teams',
+        icon: UserGroupIcon,
+        dynamicChildren: 'Teams' as const,
+      },
+      {
+        name: 'Projects',
+        icon: WrenchScrewdriverIcon,
+        href: '/projects',
+        dynamicChildren: 'Projects' as const,
       },
       {
         name: '$MOONEY',
@@ -51,23 +67,13 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: 'Projects',
-        icon: WrenchScrewdriverIcon,
-        href: '/projects',
+        name: 'Launchpad',
+        icon: RocketLaunchIcon,
+        href: '/launch',
         children: [
-          {
-            name: 'Propose Project',
-            href: '/proposals',
-          },
-          {
-            name: 'Projects',
-            href: '/projects',
-          },
-          {
-            name: 'Submit Contribution',
-            href: '/contributions',
-          },
-          { name: 'Projects Overview', href: '/projects-overview' },
+          { name: 'Launchpad Explainer', href: '/launch' },
+          { name: 'Support Overview Flight', href: '/mission/4' },
+          { name: 'Fly with Frank', href: '/overview-vote' },
         ],
       },
       {
@@ -82,16 +88,6 @@ export default function useNavigation(citizen: any) {
           { name: 'Events', href: '/events' },
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
-        ],
-      },
-      {
-        name: 'Launchpad',
-        icon: RocketLaunchIcon,
-        href: '/launch',
-        children: [
-          { name: 'Launchpad Explainer', href: '/launch' },
-          { name: 'Support Overview Flight', href: '/mission/4' },
-          { name: 'Fly with Frank', href: '/overview-vote' },
         ],
       },
     ]
