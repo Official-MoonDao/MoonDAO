@@ -678,13 +678,8 @@ async function getTeamWearerServerSide(chain: any, teamContract: any, address: a
   }
 }
 
-const DynamicCitizenDetailPage = dynamic(
-  () => Promise.resolve({ default: CitizenDetailPageContent }),
-  { ssr: false }
-)
-
 export default function CitizenDetailPage(props: any) {
-  return <DynamicCitizenDetailPage {...props} />
+  return <CitizenDetailPageContent {...props} />
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
