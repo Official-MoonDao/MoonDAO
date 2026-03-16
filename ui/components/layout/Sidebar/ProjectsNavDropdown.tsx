@@ -35,7 +35,9 @@ export function ProjectsNavDropdown({
     address
   )
 
-  const shouldShowLoading = isLoading || (!!address && !projects)
+  const isContractReady = !!projectContract && !!selectedChain
+  const shouldShowLoading =
+    !!address && (!isContractReady || isLoading || projects === undefined)
 
   const isDesktop = variant === 'desktop'
 
