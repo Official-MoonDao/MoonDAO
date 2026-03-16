@@ -130,8 +130,15 @@ export function useTeamWearer(
     if (teamContract && selectedChain) {
       getWearerTeamHats()
     } else {
-      setWornMoondaoHats([])
-      setIsLoading(false)
+      if (address) {
+        // User is connected but contracts/chains are not ready yet: treat as initializing/loading
+        setWornMoondaoHats(undefined)
+        setIsLoading(true)
+      } else {
+        // No address means definitively no teams
+        setWornMoondaoHats([])
+        setIsLoading(false)
+      }
     }
   }, [teamContract, selectedChain, address])
 
