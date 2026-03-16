@@ -283,7 +283,7 @@ async function handler(req: any, res: any) {
 
     if (leaderboard.length > 0) {
       content += `\n\n### Current Standings\n${formatLeaderboardStandings(leaderboard)}`
-      content += `\n\n[Vote now →](${DEPLOYED_ORIGIN}/overview)`
+      content += `\n\n[Vote now →](${DEPLOYED_ORIGIN}/overview-vote)`
     }
 
     const messageData: any = {
