@@ -35,6 +35,8 @@ export function TeamsNavDropdown({ variant, onNavigate }: TeamsNavDropdownProps)
     address
   )
 
+  const shouldShowLoading = isLoading || (!!address && !userTeams)
+
   const isDesktop = variant === 'desktop'
 
   const baseLinkClass = isDesktop
@@ -71,7 +73,7 @@ export function TeamsNavDropdown({ variant, onNavigate }: TeamsNavDropdownProps)
           <div className="px-4 py-2 mx-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
             Your Teams
           </div>
-          {isLoading ? (
+          {shouldShowLoading ? (
             wrapMobile(
               <div className="px-4 py-2 mx-2 text-gray-400 text-sm">
                 Loading your teams...
@@ -104,7 +106,7 @@ export function TeamsNavDropdown({ variant, onNavigate }: TeamsNavDropdownProps)
               Your Teams
             </div>
           )}
-          {isLoading ? (
+          {shouldShowLoading ? (
             wrapMobile(
               <div className="my-3 text-gray-400 text-sm">
                 Loading your teams...

@@ -130,6 +130,7 @@ export function useTeamWearer(
     if (teamContract && selectedChain) {
       getWearerTeamHats()
     } else {
+      setWornMoondaoHats([])
       setIsLoading(false)
     }
   }, [teamContract, selectedChain, address])
