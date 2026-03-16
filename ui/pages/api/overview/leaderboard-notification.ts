@@ -259,7 +259,7 @@ async function handler(req: any, res: any) {
         ? `${delegateeAddress.slice(0, 6)}...${delegateeAddress.slice(-4)}`
         : 'a candidate'
 
-    let content = `## 🗳️ **${voterDisplay}** has backed **${delegateeDisplay}** in the Overview Flight!`
+    let content = `## 🗳️ **${delegateeDisplay}** received a new backer in the Overview Flight!`
 
     if (leaderboard.length > 0) {
       content += `\n\n### Current Standings\n${formatLeaderboardStandings(leaderboard, DEPLOYED_ORIGIN, generatePrettyLinkWithId)}`
@@ -270,7 +270,11 @@ async function handler(req: any, res: any) {
       embeds: [{ description: content }],
     }
 
-    if (voterCitizen?.image) {
+    if (delegateeCitizen?.image) {
+      messageData.embeds[0].thumbnail = {
+        url: `https://ipfs.io/ipfs/${delegateeCitizen.image.replace('ipfs://', '')}`,
+      }
+    } else if (voterCitizen?.image) {
       messageData.embeds[0].thumbnail = {
         url: `https://ipfs.io/ipfs/${voterCitizen.image.replace('ipfs://', '')}`,
       }
