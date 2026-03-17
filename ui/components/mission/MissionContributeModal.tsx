@@ -798,6 +798,7 @@ export default function MissionContributeModal({
 
       const contributionNotification: any = await fetch('/api/mission/contribution-notification', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           txHash: receipt.transactionHash,
           accessToken: accessToken,

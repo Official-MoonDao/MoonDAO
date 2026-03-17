@@ -67,162 +67,160 @@ setInterval(() => {
 }, 60 * 60 * 1000)
 
 async function handler(req: any, res: any) {
-  if (req.method === 'POST') {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' })
+  }
+
+  try {
+    const data =
+      typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+    if (!data) {
+      return res.status(400).json({ message: 'Bad request' })
+    }
+
+    const { txHash, accessToken, txChainSlug, projectId } = data
+
+    if (!txHash || !accessToken || !txChainSlug) {
+      return res.status(400).json({ message: 'Missing required fields' })
+    }
+
+    const txChain = v4SlugToV5Chain(txChainSlug)
+    if (!txChain) {
+      return res.status(400).json({ message: 'Invalid transaction chain' })
+    }
+
+    // Verify the Privy access token
+    const privyUserData = await getPrivyUserData(accessToken)
+    if (!privyUserData) {
+      return res.status(400).json({ message: 'Invalid access token' })
+    }
+
+    const { walletAddresses } = privyUserData
+    if (walletAddresses.length === 0) {
+      return res.status(400).json({ message: 'No wallet addresses found' })
+    }
+
+    // Check if transaction has already been used
+    if (usedTransactions.has(txHash)) {
+      return res.status(400).json({
+        message:
+          'This transaction has already been processed for contribution notification',
+      })
+    }
+
+    // Verify transaction exists and is valid
+    const txReceipt = await waitForReceipt({
+      client: serverClient,
+      chain: txChain,
+      transactionHash: txHash,
+    })
+
+    if (!txReceipt) {
+      return res.status(400).json({ message: 'Transaction not found' })
+    }
+
+    // Check if transaction is recent (within 10 minutes)
+    const txBlockNumber = parseInt(
+      typeof txReceipt.blockNumber === 'object' &&
+        txReceipt.blockNumber &&
+        'toString' in txReceipt.blockNumber
+        ? (txReceipt.blockNumber as any).toString()
+        : String(txReceipt.blockNumber)
+    )
+    const provider = ethers5Adapter.provider.toEthers({
+      client: serverClient,
+      chain: txChain,
+    })
+    const currBlockNumber = await provider.getBlockNumber()
+    const maxBlocksAge = getBlocksInTimeframe(txChain, 10) // 10 minutes
+    const blockAge = currBlockNumber - txBlockNumber
+
+    if (blockAge > maxBlocksAge) {
+      return res.status(400).json({
+        message: `Transaction is too old`,
+      })
+    }
+
+    // Mark transaction as used to prevent replay attacks
+    usedTransactions.add(txHash)
+
+    // Find the Pay event emitted by the JBV5 terminal to verify and extract contribution details.
+    // This works for both same-chain and cross-chain (LayerZero) contributions,
+    // where txReceipt.to may be a LayerZero endpoint rather than the terminal itself.
+    const PAY_EVENT_SIGNATURE =
+      '0x133161f1c9161488f777ab9a26aae91d47c0d9a3fafb398960f138db02c73797'
+    const payLog = txReceipt.logs.find(
+      (log: any) =>
+        log.topics[0] === PAY_EVENT_SIGNATURE &&
+        log.address?.toLowerCase() === JBV5_TERMINAL_ADDRESS.toLowerCase()
+    )
+
+    if (!payLog) {
+      return res.status(400).json({
+        message: 'No Pay event found from JBV5 terminal in transaction',
+      })
+    }
+
+    const payEventInterface = new ethers.utils.Interface([
+      'event Pay(uint256 indexed rulesetId, uint256 indexed rulesetCycleNumber, uint256 indexed projectId, address payer, address beneficiary, uint256 amount, uint256 newlyIssuedTokenCount, string memo, bytes metadata, address caller)',
+    ])
+    const decodedPay = payEventInterface.decodeEventLog(
+      'Pay',
+      payLog.data,
+      payLog.topics
+    )
+
+    const verifiedProjectId = BigNumber.from(payLog.topics[3]).toNumber()
+    const txValue = BigNumber.from(decodedPay.amount)
+    const contributorAddress: string = decodedPay.beneficiary.toLowerCase()
+
+    if (txValue.isZero()) {
+      return res.status(400).json({ message: 'Pay event amount is zero' })
+    }
+
+    let citizen: any = null
     try {
-      const data = req.body
-      if (!data) {
-        return res.status(400).send({ message: 'Bad request' })
-      }
-
-      const { txHash, accessToken, txChainSlug, projectId } = JSON.parse(data)
-
-      if (!txHash || !accessToken || !txChainSlug) {
-        return res.status(400).send({ message: 'Missing required fields' })
-      }
-
-      const txChain = v4SlugToV5Chain(txChainSlug)
-      if (!txChain) {
-        return res.status(400).send({ message: 'Invalid transaction chain' })
-      }
-
-      // Verify the Privy access token
-      const privyUserData = await getPrivyUserData(accessToken)
-      if (!privyUserData) {
-        return res.status(400).send({ message: 'Invalid access token' })
-      }
-
-      const { walletAddresses } = privyUserData
-      if (walletAddresses.length === 0) {
-        return res.status(400).send({ message: 'No wallet addresses found' })
-      }
-
-      // Check if transaction has already been used
-      if (usedTransactions.has(txHash)) {
-        return res.status(400).send({
-          message:
-            'This transaction has already been processed for contribution notification',
-        })
-      }
-
-      // Verify transaction exists and is valid
-      const txReceipt = await waitForReceipt({
-        client: serverClient,
-        chain: txChain,
-        transactionHash: txHash,
-      })
-
-      if (!txReceipt) {
-        return res.status(400).send({
-          message: 'Transaction not found',
-        })
-      }
-
-      // Check if transaction is recent (within 10 minutes)
-      const txBlockNumber = parseInt(
-        typeof txReceipt.blockNumber === 'object' &&
-          txReceipt.blockNumber &&
-          'toString' in txReceipt.blockNumber
-          ? (txReceipt.blockNumber as any).toString()
-          : String(txReceipt.blockNumber)
-      )
-      const provider = ethers5Adapter.provider.toEthers({
-        client: serverClient,
-        chain: txChain,
-      })
-      const currBlockNumber = await provider.getBlockNumber()
-      const maxBlocksAge = getBlocksInTimeframe(txChain, 10) // 10 minutes
-      const blockAge = currBlockNumber - txBlockNumber
-
-      if (blockAge > maxBlocksAge) {
-        return res.status(400).send({
-          message: `Transaction is too old. Must be within 10 minutes (${maxBlocksAge} blocks). Transaction is ${blockAge} blocks old.`,
-        })
-      }
-
-      // Mark transaction as used to prevent replay attacks
-      usedTransactions.add(txHash)
-
-      // Find the Pay event emitted by the JBV5 terminal to verify and extract contribution details.
-      // This works for both same-chain and cross-chain (LayerZero) contributions,
-      // where txReceipt.to may be a LayerZero endpoint rather than the terminal itself.
-      const PAY_EVENT_SIGNATURE =
-        '0x133161f1c9161488f777ab9a26aae91d47c0d9a3fafb398960f138db02c73797'
-      const payLog = txReceipt.logs.find(
-        (log: any) =>
-          log.topics[0] === PAY_EVENT_SIGNATURE &&
-          log.address?.toLowerCase() === JBV5_TERMINAL_ADDRESS.toLowerCase()
-      )
-
-      if (!payLog) {
-        return res.status(400).send({
-          message: 'No Pay event found from JBV5 terminal in transaction',
-        })
-      }
-
-      const payEventInterface = new ethers.utils.Interface([
-        'event Pay(uint256 indexed rulesetId, uint256 indexed rulesetCycleNumber, uint256 indexed projectId, address payer, address beneficiary, uint256 amount, uint256 newlyIssuedTokenCount, string memo, bytes metadata, address caller)',
-      ])
-      const decodedPay = payEventInterface.decodeEventLog(
-        'Pay',
-        payLog.data,
-        payLog.topics
-      )
-
-      const verifiedProjectId = BigNumber.from(
-        payLog.topics[3]
-      ).toNumber()
-      const txValue = BigNumber.from(decodedPay.amount)
-      const contributorAddress: string = decodedPay.beneficiary.toLowerCase()
-
-      if (txValue.isZero()) {
-        return res.status(400).send({
-          message: 'Pay event amount is zero',
-        })
-      }
-
-      let citizen: any = null
-      try {
-        const citizenRows: any = await queryTable(
-          txChain,
-          `SELECT name, id, image, owner FROM ${
-            CITIZEN_TABLE_NAMES[chainSlug]
-          } WHERE owner = '${contributorAddress}'`
-        )
-
-        if (citizenRows.length > 0) {
-          citizen = citizenRows[0]
-        }
-      } catch (err: any) {
-        console.log(err)
-      }
-
-      //Contribution amount in ETH and USD
-      const ethPrice = await getETHPrice()
-      if (!ethPrice) {
-        return res.status(400).json({
-          error: 'Failed to get ETH price',
-        })
-      }
-      const contributionAmountETH = parseFloat(txValue.toString()) / 1e18
-      const contributionAmountUSD = contributionAmountETH * ethPrice
-
-      //Mission table data
-      const missionRows: any = await queryTable(
+      const citizenRows: any = await queryTable(
         txChain,
-        `SELECT id, fundingGoal FROM ${MISSION_TABLE_NAMES[chainSlug]} WHERE projectId = ${verifiedProjectId}`
+        `SELECT name, id, image, owner FROM ${
+          CITIZEN_TABLE_NAMES[chainSlug]
+        } WHERE owner = '${contributorAddress}'`
       )
 
-      if (missionRows.length === 0) {
-        return res.status(400).json({
-          message: 'Mission not found in mission table',
-        })
+      if (citizenRows.length > 0) {
+        citizen = citizenRows[0]
       }
-      const mission = missionRows[0]
+    } catch (err: any) {
+      console.error('Failed to fetch citizen data:', err.message)
+    }
 
-      const missionFundingGoal =
-        parseFloat(mission.fundingGoal.toString()) / 1e18
+    //Contribution amount in ETH and USD
+    const ethPrice = await getETHPrice()
+    if (!ethPrice) {
+      return res.status(400).json({ message: 'Failed to get ETH price' })
+    }
+    const contributionAmountETH = parseFloat(txValue.toString()) / 1e18
+    const contributionAmountUSD = contributionAmountETH * ethPrice
 
-      //Mission total raised
+    //Mission table data
+    const missionRows: any = await queryTable(
+      txChain,
+      `SELECT id, fundingGoal FROM ${MISSION_TABLE_NAMES[chainSlug]} WHERE projectId = ${verifiedProjectId}`
+    )
+
+    if (missionRows.length === 0) {
+      return res.status(400).json({ message: 'Mission not found in mission table' })
+    }
+    const mission = missionRows[0]
+
+    const missionFundingGoal =
+      parseFloat(mission.fundingGoal.toString()) / 1e18
+
+    //Mission total raised
+    let missionTotalRaised = 0
+    let missionTotalRaisedUSD = 0
+    let percentOfGoalRaised = 0
+    try {
       const missionBalance = await readContract({
         contract: jbTerminalStoreContract,
         method: 'balanceOf' as string,
@@ -244,14 +242,19 @@ async function handler(req: any, res: any) {
         ],
       })
 
-      const missionTotalRaised =
+      missionTotalRaised =
         (parseFloat(missionBalance.toString()) / 1e18 || 0) +
         (parseFloat(missionUsedPayoutLimit.toString()) / 1e18 || 0)
-      const missionTotalRaisedUSD = missionTotalRaised * ethPrice
-      const percentOfGoalRaised =
+      missionTotalRaisedUSD = missionTotalRaised * ethPrice
+      percentOfGoalRaised =
         (missionTotalRaised / missionFundingGoal) * 100
+    } catch (err: any) {
+      console.error('Failed to fetch mission balance:', err.message)
+    }
 
-      //Mission metadata
+    //Mission metadata
+    let missionMetadata: any = { name: `Mission #${mission.id}` }
+    try {
       const missionMetadataURI = await readContract({
         contract: jbControllerContract,
         method: 'uriOf' as string,
@@ -260,112 +263,107 @@ async function handler(req: any, res: any) {
       const missionMetadataRes = await fetch(
         `${IPFS_GATEWAY}${missionMetadataURI}`
       )
-      const missionMetadata = await missionMetadataRes.json()
+      missionMetadata = await missionMetadataRes.json()
+    } catch (err: any) {
+      console.error('Failed to fetch mission metadata:', err.message)
+    }
 
-      //Mission deadline
+    //Mission deadline
+    let missionDeadline = null
+    try {
       const payHookAddress: any = await readContract({
         contract: missionCreatorContract,
         method: 'missionIdToPayHook' as string,
         params: [mission.id],
       })
 
-      const payHookContract = getContract({
-        client: serverClient,
-        address: payHookAddress,
-        chain: DEFAULT_CHAIN_V5,
-        abi: PayHookABI.abi as any,
-      })
-      let missionDeadline = null
-      if (payHookContract) {
+      if (
+        payHookAddress &&
+        payHookAddress !== '0x0000000000000000000000000000000000000000'
+      ) {
+        const payHookContract = getContract({
+          client: serverClient,
+          address: payHookAddress,
+          chain: DEFAULT_CHAIN_V5,
+          abi: PayHookABI.abi as any,
+        })
         missionDeadline = await readContract({
           contract: payHookContract,
           method: 'deadline' as string,
-          params: [verifiedProjectId],
-        })
-      }
-
-      //Send discord notification
-      try {
-        let messageData: any = {}
-        const content = `## **${
-          citizen?.name
-            ? `[${
-                citizen.name
-              }](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(
-                citizen.name,
-                citizen.id
-              )})`
-            : contributorAddress.slice(0, 6) + '...' + contributorAddress.slice(-4)
-        }** has contributed ${formatNumberWithCommasAndDecimals(
-          contributionAmountETH,
-          contributionAmountETH >= 1 ? 3 : 5
-        )} ETH ($${formatNumberWithCommasAndDecimals(
-          contributionAmountUSD
-        )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}/mission/${mission.id})`}** mission!\n\n**Total Raised**: ${formatNumberWithCommasAndDecimals(
-          missionTotalRaised,
-          missionTotalRaised >= 1 ? 3 : 5
-        )} ETH ($${formatNumberWithCommasAndDecimals(
-          missionTotalRaisedUSD
-        )})\n**Progress to Goal**: ${
-          percentOfGoalRaised < 1
-            ? percentOfGoalRaised.toFixed(4)
-            : percentOfGoalRaised.toFixed(0)
-        }%\n${
-          missionDeadline !== null && missionDeadline !== undefined
-            ? `**Deadline**: <t:${missionDeadline.toString()}:R>`
-            : ''
-        }`
-
-        if (citizen) {
-          messageData.embeds = [
-            {
-              description: content,
-              image: {
-                url: `${IPFS_GATEWAY}${citizen.image.replace('ipfs://', '')}`,
-              },
-            },
-          ]
-        } else {
-          messageData.embeds = [
-            {
-              description: content,
-            },
-          ]
-        }
-
-        const response = await fetch(
-          `https://discord.com/api/v10/channels/${NOTIFICATION_CHANNEL_ID}/messages`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-            },
-            body: JSON.stringify(messageData),
-          }
-        )
-
-        if (!response.ok) {
-          throw new Error('Failed to send message to discord')
-        }
-
-        return res.status(200).json({ success: true })
-      } catch (err: any) {
-        console.log(err)
-        // Remove transaction from used set if notification failed, allowing retry
-        usedTransactions.delete(txHash)
-        return res.status(400).json({
-          message: err.message,
+          params: [],
         })
       }
     } catch (err: any) {
-      console.log(err)
-      return res.status(400).json({
-        error: 'Failed to send contribution notification',
-      })
+      console.error('Failed to fetch mission deadline:', err.message)
     }
-  } else {
-    res.status(405).send({ message: 'Method not allowed' })
+
+    //Send discord notification
+    const messageData: any = {
+      embeds: [
+        {
+          description: `## **${
+            citizen?.name
+              ? `[${
+                  citizen.name
+                }](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(
+                  citizen.name,
+                  citizen.id
+                )})`
+              : contributorAddress.slice(0, 6) +
+                '...' +
+                contributorAddress.slice(-4)
+          }** has contributed ${formatNumberWithCommasAndDecimals(
+            contributionAmountETH,
+            contributionAmountETH >= 1 ? 3 : 5
+          )} ETH ($${formatNumberWithCommasAndDecimals(
+            contributionAmountUSD
+          )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}/mission/${mission.id})`}** mission!\n\n**Total Raised**: ${formatNumberWithCommasAndDecimals(
+            missionTotalRaised,
+            missionTotalRaised >= 1 ? 3 : 5
+          )} ETH ($${formatNumberWithCommasAndDecimals(
+            missionTotalRaisedUSD
+          )})\n**Progress to Goal**: ${
+            percentOfGoalRaised < 1
+              ? percentOfGoalRaised.toFixed(4)
+              : percentOfGoalRaised.toFixed(0)
+          }%\n${
+            missionDeadline !== null && missionDeadline !== undefined
+              ? `**Deadline**: <t:${missionDeadline.toString()}:R>`
+              : ''
+          }`,
+        },
+      ],
+    }
+
+    if (citizen?.image) {
+      messageData.embeds[0].image = {
+        url: `${IPFS_GATEWAY}${citizen.image.replace('ipfs://', '')}`,
+      }
+    }
+
+    const response = await fetch(
+      `https://discord.com/api/v10/channels/${NOTIFICATION_CHANNEL_ID}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        },
+        body: JSON.stringify(messageData),
+      }
+    )
+
+    if (!response.ok) {
+      usedTransactions.delete(txHash)
+      throw new Error('Failed to send message to Discord')
+    }
+
+    return res.status(200).json({ success: true })
+  } catch (err: any) {
+    console.error('Contribution notification error:', err)
+    return res.status(400).json({
+      message: err.message || 'Failed to send contribution notification',
+    })
   }
 }
 export default withMiddleware(handler, authMiddleware)
