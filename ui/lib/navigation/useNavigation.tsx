@@ -25,6 +25,7 @@ export default function useNavigation(citizen: any) {
         : [{ name: 'Become a Citizen', href: '/citizen' }]),
       { name: 'Submit a Contribution', href: '/contributions' },
       { name: 'Explore Citizens', href: '/network' },
+      { name: 'Map', href: '/map' },
     ]
 
     return [
@@ -34,7 +35,7 @@ export default function useNavigation(citizen: any) {
         icon: citizen ? HomeIcon : PlusIcon,
       },
       {
-        name: 'Citizenship',
+        name: 'Citizens',
         href: '/network',
         icon: IconOrg,
         children: citizenshipChildren,

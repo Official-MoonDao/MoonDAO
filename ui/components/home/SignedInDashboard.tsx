@@ -35,22 +35,28 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
+  NEXT_QUARTER_BUDGET_ETH,
   TEAM_ADDRESSES,
-  ETH_BUDGET,
 } from 'const/config'
-import { BLOCKED_PROJECTS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState, useEffect } from 'react'
+import { useContext, useState, useEffect, useMemo } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import {
+  buildDashboardProjectLists,
+  countDashboardCitizens,
+  countUniqueCountries,
+  filterDashboardCitizens,
+  getDashboardCitizenMetadata,
+  getDashboardMissionSupportStat,
+} from '@/lib/dashboard/dashboardData'
 import { shouldShowTeamsSection } from '@/lib/dashboard/shouldShowTeamsSection'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
-import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -82,37 +88,6 @@ import DashboardQuests from './DashboardQuests'
 import DashboardTeams from './DashboardTeams'
 import LazyEarth from '@/components/globe/LazyEarth'
 
-// Parse citizen location from Tableland (can be JSON or plain string)
-function getCitizenLocation(citizen: any): string | null {
-  const loc = citizen?.location ?? citizen?.metadata?.attributes?.find((a: any) => a.trait_type === 'location')?.value
-  if (!loc || typeof loc !== 'string') return null
-  const trimmed = loc.trim()
-  if (!trimmed || trimmed.startsWith('[object')) return null
-  try {
-    if (trimmed.startsWith('{')) {
-      const parsed = JSON.parse(trimmed)
-      return parsed?.name || null
-    }
-    return trimmed
-  } catch {
-    return trimmed
-  }
-}
-
-// Get citizen metadata for card (location, or fallback to twitter/discord handle)
-function getCitizenMetadata(citizen: any): string | null {
-  const location = getCitizenLocation(citizen)
-  if (location) return location
-  const twitter = citizen?.twitter ?? citizen?.metadata?.attributes?.find((a: any) => a.trait_type === 'twitter')?.value
-  if (twitter) {
-    const handle = twitter.includes('twitter.com/') ? '@' + twitter.split('twitter.com/').pop()?.split(/[?/]/)[0] : twitter
-    return handle?.length > 25 ? handle.slice(0, 22) + '…' : handle
-  }
-  const discord = citizen?.discord ?? citizen?.metadata?.attributes?.find((a: any) => a.trait_type === 'discord')?.value
-  if (discord) return discord.length > 25 ? discord.slice(0, 22) + '…' : discord
-  return null
-}
-
 // Get team metadata for card (description preview, communications, or website)
 function getTeamMetadata(team: any): string | null {
   const desc = (team?.description ?? team?.metadata?.description ?? '').replace(/<[^>]*>/g, '').trim()
@@ -131,24 +106,6 @@ function getTeamMetadata(team: any): string | null {
   return null
 }
 
-// Function to count unique countries from location data
-function countUniqueCountries(locations: any[]): number {
-  if (!locations || locations.length === 0) return 25
-
-  try {
-    const countries = new Set(
-      locations
-        .map((loc) => loc.country || loc.formattedAddress?.split(',').pop()?.trim() || 'Unknown')
-        .filter((country) => country && country !== 'Unknown' && country !== '')
-    )
-
-    // Return fallback of 25 if no valid countries found
-    return countries.size > 0 ? countries.size : 25
-  } catch (error) {
-    console.error('Error counting countries:', error)
-    return 25
-  }
-}
 
 export default function SignedInDashboard({
   newestCitizens,
@@ -162,26 +119,6 @@ export default function SignedInDashboard({
   featuredMissionData,
   citizensLocationData = [],
 }: any) {
-  const proposals = []
-  const currentProjects = []
-  console.log('projects', projects)
-  for (let i = 0; i < projects.length; i++) {
-    if (!BLOCKED_PROJECTS.has(projects[i].id)) {
-      const activeStatus = projects[i].active
-      if (activeStatus == PROJECT_PENDING) {
-        proposals.push(projects[i])
-      } else if (activeStatus == PROJECT_ACTIVE) {
-        currentProjects.push(projects[i])
-      }
-    }
-  }
-  console.log('proposals', proposals)
-  currentProjects.sort((a, b) => {
-    if (a.eligible === b.eligible) {
-      return 0
-    }
-    return a.eligible ? 1 : -1
-  })
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
@@ -202,6 +139,20 @@ export default function SignedInDashboard({
   // Client-side newsletter state (fetch on client-side)
   const [clientNewsletters, setClientNewsletters] = useState<any[]>([])
   const [newslettersLoading, setNewslettersLoading] = useState(false)
+  const dashboardEthBudget = NEXT_QUARTER_BUDGET_ETH
+
+  const { proposals, currentProjects } = useMemo(
+    () => buildDashboardProjectLists(projects),
+    [projects]
+  )
+  const visibleNewestCitizens = useMemo(
+    () => filterDashboardCitizens(newestCitizens).slice(0, 8),
+    [newestCitizens]
+  )
+  const dashboardCitizenCount = useMemo(
+    () => countDashboardCitizens(citizensLocationData),
+    [citizensLocationData]
+  )
 
   // Fetch newsletters on client-side
   useEffect(() => {
@@ -232,6 +183,7 @@ export default function SignedInDashboard({
 
     fetchNewsletters()
   }, [])
+
 
   const account = useActiveAccount()
   const address = account?.address
@@ -347,6 +299,14 @@ export default function SignedInDashboard({
     _ruleset: featuredMissionData?._ruleset,
     _backers: featuredMissionData?._backers,
   })
+  const missionSupportStat = useMemo(
+    () =>
+      getDashboardMissionSupportStat(
+        featuredMissionSubgraphData,
+        featuredMissionBackers
+      ),
+    [featuredMissionBackers, featuredMissionSubgraphData]
+  )
 
   return (
     <Container>
@@ -447,9 +407,9 @@ export default function SignedInDashboard({
               </div>
 
               <div className="flex flex-col gap-1 flex-1 min-h-0">
-                {newestCitizens && newestCitizens.length > 0 ? (
-                  newestCitizens.slice(0, 8).map((citizen: any) => {
-                    const metadata = getCitizenMetadata(citizen)
+                {visibleNewestCitizens.length > 0 ? (
+                  visibleNewestCitizens.map((citizen: any) => {
+                    const metadata = getDashboardCitizenMetadata(citizen)
                     const bio = (citizen.description || citizen.metadata?.description || '')
                       .replace(/<[^>]*>/g, '')
                       .trim()
@@ -894,14 +854,16 @@ export default function SignedInDashboard({
                           </p>
                         </div>
 
-                        {/* Backers */}
+                        {/* Support */}
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
                             <UserGroupIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">Backers</span>
+                            <span className="text-blue-200 text-xs font-medium">
+                              {missionSupportStat.label}
+                            </span>
                           </div>
                           <p className="text-white font-bold text-sm">
-                            {featuredMissionBackers?.length || 0}
+                            {missionSupportStat.value}
                           </p>
                         </div>
 
@@ -985,7 +947,7 @@ export default function SignedInDashboard({
         {/* Active Projects Section - Full Width */}
         <DashboardActiveProjects
           currentProjects={currentProjects}
-          ethBudget={ETH_BUDGET}
+          ethBudget={dashboardEthBudget}
           showBudget={true}
           maxProjects={6}
         />
@@ -1170,7 +1132,7 @@ export default function SignedInDashboard({
             >
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  {citizenSubgraphData?.transfers?.length || '145'}
+                  {dashboardCitizenCount}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">Global Citizens</div>
               </div>

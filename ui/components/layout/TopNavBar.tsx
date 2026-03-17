@@ -1,8 +1,12 @@
 import { NavLink } from './NavLink'
 import { useRouter } from 'next/router'
-import { useState, useEffect, useRef } from 'react'
+import { useContext, useState, useEffect, useRef } from 'react'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
+import { useActiveAccount } from 'thirdweb/react'
+import TeamABI from 'const/abis/Team.json'
+import ProjectABI from 'const/abis/Project.json'
+import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES, PROJECT_ADDRESSES } from 'const/config'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import LanguageChange from './Sidebar/LanguageChange'
@@ -10,6 +14,11 @@ import { TeamsNavDropdown } from './Sidebar/TeamsNavDropdown'
 import { ProjectsNavDropdown } from './Sidebar/ProjectsNavDropdown'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { LogoSidebar } from '../assets'
+import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { useProjectWearer } from '@/lib/hats/useProjectWearer'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
 interface TopNavBarProps {
   navigation: any[]
@@ -30,6 +39,34 @@ const TopNavBar = ({
   const [isVisible, setIsVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
   const dropdownTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const account = useActiveAccount()
+  const address = account?.address
+  const { selectedChain } = useContext(ChainContextV5)
+  const resolvedChain = selectedChain || DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(resolvedChain)
+
+  const teamContract = useContract({
+    address: TEAM_ADDRESSES[chainSlug],
+    chain: resolvedChain,
+    abi: TeamABI as any,
+  })
+  const projectContract = useContract({
+    address: PROJECT_ADDRESSES[chainSlug],
+    chain: resolvedChain,
+    abi: ProjectABI as any,
+  })
+
+  const { userTeams, isLoading: teamsLoading } = useTeamWearer(
+    teamContract,
+    resolvedChain,
+    address
+  )
+  const { userProjects, isLoading: projectsLoading } = useProjectWearer(
+    projectContract,
+    resolvedChain,
+    address
+  )
 
   const handleDropdownEnter = (itemName: string) => {
     if (dropdownTimerRef.current) {
@@ -173,9 +210,17 @@ const TopNavBar = ({
                       >
                       <div className="min-w-56 w-full bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 px-2 rounded-xl">
                         {item.dynamicChildren === 'Teams' ? (
-                          <TeamsNavDropdown variant="desktop" />
+                          <TeamsNavDropdown
+                            variant="desktop"
+                            prefetchedTeams={userTeams}
+                            prefetchedLoading={teamsLoading}
+                          />
                         ) : item.dynamicChildren === 'Projects' ? (
-                          <ProjectsNavDropdown variant="desktop" />
+                          <ProjectsNavDropdown
+                            variant="desktop"
+                            prefetchedProjects={userProjects}
+                            prefetchedLoading={projectsLoading}
+                          />
                         ) : (
                           item.children?.map((child: any, j: number) => {
                             if (!child.href) {

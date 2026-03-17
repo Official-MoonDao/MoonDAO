@@ -5,7 +5,7 @@ import { useContext, useEffect, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import TeamABI from 'const/abis/Team.json'
-import { TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES } from 'const/config'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -17,26 +17,37 @@ const teamNameCache = new Map<string, string>()
 type TeamsNavDropdownProps = {
   variant: 'desktop' | 'mobile'
   onNavigate?: () => void
+  prefetchedTeams?: any[]
+  prefetchedLoading?: boolean
 }
 
-export function TeamsNavDropdown({ variant, onNavigate }: TeamsNavDropdownProps) {
+export function TeamsNavDropdown({
+  variant,
+  onNavigate,
+  prefetchedTeams,
+  prefetchedLoading,
+}: TeamsNavDropdownProps) {
   const account = useActiveAccount()
   const address = account?.address
   const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = selectedChain ? getChainSlug(selectedChain) : 'arbitrum'
+  const resolvedChain = selectedChain || DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(resolvedChain)
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
-    chain: selectedChain,
+    chain: resolvedChain,
     abi: TeamABI as any,
   })
-  const { userTeams, isLoading } = useTeamWearer(
+  const { userTeams: internalTeams, isLoading: internalLoading } = useTeamWearer(
     teamContract,
-    selectedChain,
+    resolvedChain,
     address
   )
 
-  const shouldShowLoading =
-    !!address && (!teamContract || isLoading || userTeams === undefined)
+  const hasPrefetched = prefetchedTeams !== undefined
+  const userTeams = hasPrefetched ? prefetchedTeams : internalTeams
+  const isLoading = hasPrefetched ? !!prefetchedLoading : internalLoading
+
+  const shouldShowLoading = !!address && isLoading
 
   const isDesktop = variant === 'desktop'
 

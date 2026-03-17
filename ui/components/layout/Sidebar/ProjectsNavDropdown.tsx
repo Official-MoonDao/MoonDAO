@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import ProjectABI from 'const/abis/Project.json'
-import { PROJECT_ADDRESSES, PROJECT_TABLE_NAMES } from 'const/config'
+import { DEFAULT_CHAIN_V5, PROJECT_ADDRESSES, PROJECT_TABLE_NAMES } from 'const/config'
 import { useProjectWearer } from '@/lib/hats/useProjectWearer'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -14,30 +14,37 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 type ProjectsNavDropdownProps = {
   variant: 'desktop' | 'mobile'
   onNavigate?: () => void
+  prefetchedProjects?: any[]
+  prefetchedLoading?: boolean
 }
 
 export function ProjectsNavDropdown({
   variant,
   onNavigate,
+  prefetchedProjects,
+  prefetchedLoading,
 }: ProjectsNavDropdownProps) {
   const account = useActiveAccount()
   const address = account?.address
   const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = selectedChain ? getChainSlug(selectedChain) : 'arbitrum'
+  const resolvedChain = selectedChain || DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(resolvedChain)
   const projectContract = useContract({
     address: PROJECT_ADDRESSES[chainSlug],
-    chain: selectedChain,
+    chain: resolvedChain,
     abi: ProjectABI as any,
   })
-  const { userProjects: projects, isLoading } = useProjectWearer(
+  const { userProjects: internalProjects, isLoading: internalLoading } = useProjectWearer(
     projectContract,
-    selectedChain,
+    resolvedChain,
     address
   )
 
-  const isContractReady = !!projectContract && !!selectedChain
-  const shouldShowLoading =
-    !!address && (!isContractReady || isLoading || projects === undefined)
+  const hasPrefetched = prefetchedProjects !== undefined
+  const projects = hasPrefetched ? prefetchedProjects : internalProjects
+  const isLoading = hasPrefetched ? !!prefetchedLoading : internalLoading
+
+  const shouldShowLoading = !!address && isLoading
 
   const isDesktop = variant === 'desktop'
 
