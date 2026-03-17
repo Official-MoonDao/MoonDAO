@@ -514,6 +514,8 @@ export default function MissionProfile({
                         className="hover:text-white transition-colors duration-200 p-1.5 rounded-lg hover:bg-white/5"
                         href={teamSocials.communications}
                         target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Team communications"
                         passHref
                       >
                         <ChatBubbleLeftIcon height={20} width={20} />
@@ -524,6 +526,8 @@ export default function MissionProfile({
                         className="hover:text-white transition-colors duration-200 p-1.5 rounded-lg hover:bg-white/5"
                         href={teamSocials.twitter}
                         target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Team Twitter"
                         passHref
                       >
                         <TwitterIcon />
