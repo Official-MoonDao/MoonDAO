@@ -155,7 +155,8 @@ export function ExpandedFooter({
 
   const governLinks = [
     { text: 'Governance Overview', href: '/governance' },
-    { text: 'Proposals', href: '/projects' },
+    { text: 'Project Proposals', href: '/projects' },
+    { text: 'Governance Proposals', href: '/governance-proposals' },
     { text: 'Constitution', href: '/constitution' },
   ]
 
