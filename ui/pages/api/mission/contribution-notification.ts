@@ -261,7 +261,7 @@ async function handler(req: any, res: any) {
         params: [verifiedProjectId],
       })
       const missionMetadataRes = await fetch(
-        `${IPFS_GATEWAY}${missionMetadataURI}`
+        `${IPFS_GATEWAY}${String(missionMetadataURI).replace('ipfs://', '')}`
       )
       missionMetadata = await missionMetadataRes.json()
     } catch (err: any) {
