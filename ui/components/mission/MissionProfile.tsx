@@ -137,7 +137,7 @@ export default function MissionProfile({
     setUsdInput,
     contributeModalEnabled,
     setContributeModalEnabled,
-  } = useOnrampFlow(mission, router, chainSlugs)
+  } = useOnrampFlow(router, chainSlugs)
 
   const { isVisible: isPayRedeemContainerVisible } = useElementVisibility(payRedeemContainerRef, {
     visibilityThreshold: 0.75,

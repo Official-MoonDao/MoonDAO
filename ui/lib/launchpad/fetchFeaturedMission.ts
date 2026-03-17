@@ -27,7 +27,7 @@ export async function fetchFeaturedMissionData(
       (FEATURED_MISSION
         ? missions.find(
             (mission: Mission) =>
-              String(mission.id) === FEATURED_MISSION.id
+              String(mission.id) === FEATURED_MISSION!.id
           )
         : null) ||
       missions.find(
