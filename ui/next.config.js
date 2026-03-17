@@ -379,6 +379,11 @@ module.exports = withBundleAnalyzer(
             destination: '/mission/4',
             permanent: false,
           },
+                    {
+            source: '/overview-media',
+            destination: 'https://drive.google.com/drive/folders/1_Nwjqwq8oHfp0irBcBKyyRjL3KcGRqC5?usp=drive_link',
+            permanent: false,
+          },
           // Citizen specific referral redirects
           {
             source: '/anthrofuturism',
