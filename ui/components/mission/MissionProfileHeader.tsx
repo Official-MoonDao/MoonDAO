@@ -271,9 +271,9 @@ const MissionProfileHeader = React.memo(
                 </div>
 
                 {/* Stats Row */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {/* Goal */}
-                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05]">
+                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Image src="/assets/launchpad/target.svg" alt="Goal" width={14} height={14} className="opacity-60" />
                       <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium">Goal</span>
@@ -299,7 +299,7 @@ const MissionProfileHeader = React.memo(
                   </div>
 
                   {/* Deadline */}
-                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05]">
+                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Image src="/assets/launchpad/clock.svg" alt="Deadline" width={14} height={14} className="opacity-60" />
                       <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium">
@@ -310,7 +310,7 @@ const MissionProfileHeader = React.memo(
                           : 'Deadline'}
                       </span>
                     </div>
-                    <p className="text-white font-GoodTimes text-sm">
+                    <p className="text-white font-GoodTimes text-xs sm:text-sm break-words">
                       {refundPeriodPassed || deadlinePassed
                         ? deadlinePassed
                           ? `${new Date(deadline || 0).toLocaleDateString('en-US', {
@@ -326,10 +326,10 @@ const MissionProfileHeader = React.memo(
                   </div>
 
                   {/* Contributions */}
-                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05]">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Image src="/assets/icon-backers.svg" alt="Contributions" width={14} height={14} className="opacity-60" />
-                      <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium">
+                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
+                      <Image src="/assets/icon-backers.svg" alt="Contributions" width={14} height={14} className="opacity-60 flex-shrink-0" />
+                      <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
                         Contributions
                       </span>
                     </div>
