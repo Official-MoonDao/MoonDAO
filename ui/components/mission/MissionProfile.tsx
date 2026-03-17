@@ -552,6 +552,7 @@ export default function MissionProfile({
                     className="flex items-center gap-3 group"
                     href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
                     target="_blank"
+                    rel="noopener noreferrer"
                   >
                     <div className="group-hover:scale-[1.05] transition-all duration-200">
                       <JuiceboxLogoWhite />
