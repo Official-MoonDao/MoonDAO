@@ -10,6 +10,41 @@ import { useActiveAccount } from 'thirdweb/react'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
+function formatTokenAmount(
+  amount: bigint,
+  decimals: number,
+  maxFractionDigits: number,
+): string {
+  if (amount === 0n) return '0'
+
+  const negative = amount < 0n
+  const absAmount = negative ? -amount : amount
+  const base = 10n ** BigInt(decimals)
+  const integerPart = absAmount / base
+  const fractionalPart = absAmount % base
+
+  if (fractionalPart === 0n) {
+    return (negative ? '-' : '') + integerPart.toString()
+  }
+
+  let fractionStr = fractionalPart.toString().padStart(decimals, '0')
+  const limitedFraction = fractionStr.slice(0, maxFractionDigits)
+  const trimmedFraction = limitedFraction.replace(/0+$/, '')
+
+  // If the value is smaller than 10^-maxFractionDigits but non-zero,
+  // show the minimal positive representable value instead of "0".
+  if (integerPart === 0n && !trimmedFraction && absAmount > 0n) {
+    const minimal = '0.' + '0'.repeat(maxFractionDigits - 1) + '1'
+    return (negative ? '-' : '') + minimal
+  }
+
+  return (
+    (negative ? '-' : '') +
+    integerPart.toString() +
+    (trimmedFraction ? '.' + trimmedFraction : '')
+  )
+}
+
 function VestingCardSkeleton({ isTeam = false }: { isTeam?: boolean }) {
   return (
     <div className="bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 border border-white/[0.08] rounded-2xl p-5 space-y-4 animate-pulse">
@@ -79,8 +114,8 @@ export default function VestingCard({
             }),
           ])
         const available = BigInt(String(vested)) - BigInt(String(withdrawn))
-        setWithdrawable(parseFloat((Number(available) / 1e18).toFixed(6)).toString())
-        setTotal(parseFloat((Number(totalReceived) / 1e18).toFixed(4)).toString())
+        setWithdrawable(formatTokenAmount(available, 18, 6))
+        setTotal(formatTokenAmount(BigInt(String(totalReceived)), 18, 4))
       } catch (error) {
         console.error('Error fetching vesting data:', error)
       } finally {
