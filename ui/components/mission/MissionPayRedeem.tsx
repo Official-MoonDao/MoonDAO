@@ -113,41 +113,39 @@ function MissionPayRedeemContent({
             </div>
 
             {/* You receive */}
-            {token?.tokenSymbol && (
-              <div className="mt-[-10px] space-y-2">
-                <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
-                  You receive
-                </label>
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-9 h-9 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
-                        <Image
-                          src="/assets/icon-star.svg"
-                          alt="Token"
-                          width={16}
-                          height={16}
-                        />
-                      </div>
-                      <div>
-                        <p className="font-bold text-white text-lg leading-tight">{token?.tokenSymbol}</p>
-                        <p className="text-gray-500 text-xs">{token?.tokenName}</p>
-                      </div>
+            <div className="mt-[-10px] space-y-2">
+              <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
+                You receive
+              </label>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-9 h-9 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
+                      <Image
+                        src="/assets/icon-star.svg"
+                        alt="Token"
+                        width={16}
+                        height={16}
+                      />
                     </div>
-                    <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06] w-full md:w-1/2">
-                      <div className="flex items-center justify-end gap-2">
-                        <p
-                          id="token-output"
-                          className="w-full bg-transparent border-none outline-none text-lg font-bold text-white text-right w-16 placeholder-gray-500 focus:placeholder-gray-400 transition-colors duration-200"
-                        >
-                          {formatContributionOutput(output)}
-                        </p>
-                      </div>
+                    <div>
+                      <p className="font-bold text-white text-lg leading-tight">{token?.tokenSymbol || 'Tokens'}</p>
+                      <p className="text-gray-500 text-xs">{token?.tokenName || 'Mission Tokens'}</p>
+                    </div>
+                  </div>
+                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06] w-full md:w-1/2">
+                    <div className="flex items-center justify-end gap-2">
+                      <p
+                        id="token-output"
+                        className="w-full bg-transparent border-none outline-none text-lg font-bold text-white text-right w-16 placeholder-gray-500 focus:placeholder-gray-400 transition-colors duration-200"
+                      >
+                        {formatContributionOutput(output)}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
             <div className="flex flex-col items-center justify-center mt-2">
               <PrivyWeb3Button

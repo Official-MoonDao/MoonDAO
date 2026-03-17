@@ -1191,38 +1191,36 @@ export default function MissionContributeModal({
               </div>
 
               {/* Token Receive Section */}
-              {token?.tokenSymbol && (
-                <div className="space-y-3">
-                  <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                    You Receive
-                  </label>
-                  <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/30 transition-all duration-300">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg shadow-purple-500/10">
-                          <Image
-                            src={getIPFSGateway(mission?.metadata.logoUri)}
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-cover"
-                            alt={`${token?.tokenSymbol} logo`}
-                          />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-white text-lg">{token?.tokenSymbol}</p>
-                          <p className="text-gray-400 text-xs">{token?.tokenName}</p>
-                        </div>
+              <div className="space-y-3">
+                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                  You Receive
+                </label>
+                <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/30 transition-all duration-300">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg shadow-purple-500/10">
+                        <Image
+                          src={getIPFSGateway(mission?.metadata.logoUri)}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover"
+                          alt={`${token?.tokenSymbol || 'Token'} logo`}
+                        />
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-white text-xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                          {formatContributionOutput(output)}
-                        </p>
-                        <p className="text-gray-400 text-xs">{token?.tokenSymbol}</p>
+                      <div>
+                        <p className="font-semibold text-white text-lg">{token?.tokenSymbol || 'Tokens'}</p>
+                        <p className="text-gray-400 text-xs">{token?.tokenName || 'Mission Tokens'}</p>
                       </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-white text-xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                        {formatContributionOutput(output)}
+                      </p>
+                      <p className="text-gray-400 text-xs">{token?.tokenSymbol || 'Tokens'}</p>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Recipient Address */}
               <div className="space-y-3">
