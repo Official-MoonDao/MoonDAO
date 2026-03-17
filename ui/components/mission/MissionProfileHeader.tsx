@@ -94,7 +94,7 @@ const MissionProfileHeader = React.memo(
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent pointer-events-none" />
 
         <div className="relative z-10 w-full px-5 md:px-8 lg:px-12 pt-6 pb-4 lg:pt-8 lg:pb-6">
-          <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 items-center max-w-[1200px] mx-auto">
+          <div className="w-full flex flex-col lg:flex-row gap-8 lg:gap-10 items-center max-w-[1200px] mx-auto">
             {/* Left Column - Mission Image */}
             <div className="flex-shrink-0">
               <div className="relative group">
@@ -173,7 +173,7 @@ const MissionProfileHeader = React.memo(
               )}
 
               {/* Funding Card */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/[0.06] w-full max-w-2xl">
+              <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/[0.06] w-full">
                 {/* Amount Raised + CTA Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                   <div>
