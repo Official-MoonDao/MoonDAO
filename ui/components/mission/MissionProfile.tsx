@@ -539,6 +539,34 @@ export default function MissionProfile({
                 </SlidingCardMenu>
               </div>
             </div>
+            {/* Support Candidates Card - only for mission 4 (Overview flight on Arbitrum) */}
+            {(mission?.id === 4 || String(mission?.id) === '4') && (
+            <div className="w-full px-[5vw] flex justify-center">
+              <Link
+                href={`/overview-vote?from=mission&missionId=${mission?.id ?? ''}`}
+                className="w-full max-w-[1200px] block bg-gradient-to-r from-indigo-900/30 via-purple-900/20 to-blue-900/20 border border-indigo-500/20 hover:border-indigo-500/40 rounded-[2vw] p-4 sm:p-6 transition-all duration-300 group"
+              >
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30 group-hover:scale-105 transition-transform">
+                      <span className="text-2xl">🗳️</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white group-hover:text-indigo-200 transition-colors">
+                        Support candidates
+                      </h3>
+                      <p className="text-gray-400 text-sm">
+                        After contributing, back a candidate on the leaderboard to amplify your impact.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-indigo-400 font-medium text-sm sm:text-base group-hover:text-indigo-300 whitespace-nowrap">
+                    Back a candidate →
+                  </span>
+                </div>
+              </Link>
+            </div>
+            )}
             <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
               <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 py-4">
                 <div className="flex items-center relative rounded-tl-[20px] rounded-bl-[5vmax] p-4">
