@@ -71,9 +71,6 @@ const MissionDataWrapper = ({ mission, props }: { mission: any; props: any }) =>
       <button data-testid="refresh-stage-btn" onClick={() => data.refreshStage()}>
         Refresh Stage
       </button>
-      <button data-testid="refresh-backers-btn" onClick={() => data.refreshBackers()}>
-        Refresh Backers
-      </button>
     </div>
   )
 }
@@ -96,7 +93,6 @@ describe('useMissionData', () => {
     },
     _fundingGoal: 1000000000000000000,
     _ruleset: [{ weight: 1000 }, { reservedPercent: 0 }],
-    _backers: [],
     projectMetadata: {
       name: 'Test Mission',
       description: 'Test Description',
@@ -105,7 +101,6 @@ describe('useMissionData', () => {
 
   beforeEach(() => {
     cy.mountNextRouter('/')
-    cy.intercept('GET', '**/api/mission/backers**', { body: { backers: [] } }).as('backersApi')
     cy.intercept('GET', '**/api/juicebox/query**', { body: { projects: { items: [] } } }).as('juiceboxQuery')
     cy.intercept('GET', '**', (req) => {
       if (req.url.includes('ipfs://') || req.url.includes('ipfs.io')) {
@@ -155,19 +150,6 @@ describe('useMissionData', () => {
     cy.get('[data-testid="stage"]').should('exist')
     cy.get('[data-testid="refresh-stage-btn"]').click()
     cy.get('[data-testid="stage"]').should('exist')
-  })
-
-  it('provides refreshBackers function', () => {
-    cy.mount(
-      <TestnetProviders>
-        <MissionDataWrapper mission={mockMission} props={mockProps} />
-      </TestnetProviders>
-    )
-
-    cy.get('[data-testid="refresh-backers-btn"]').should('exist')
-    cy.get('[data-testid="stage"]').should('exist')
-    cy.get('[data-testid="refresh-backers-btn"]').click()
-    cy.wait('@backersApi')
   })
 
   it('returns expected data structure', () => {

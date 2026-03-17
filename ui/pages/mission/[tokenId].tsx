@@ -1,14 +1,11 @@
-import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import dynamic from 'next/dynamic'
 import { fetchFromIPFSWithFallback } from '@/lib/ipfs/gateway'
-import { getBackers } from '@/lib/mission'
 import { getMissionServerData } from '@/lib/mission/fetchMissionServerData'
 import { fetchTokenMetadata } from '@/lib/mission/fetchTokenServerData'
-import queryTable from '@/lib/tableland/queryTable'
 import { fetchTeamNFTAndHats } from '@/lib/team/fetchTeamServerData'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import Head from '@/components/layout/Head'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionProfile from '@/components/mission/MissionProfile'
@@ -18,7 +15,6 @@ const JuiceProviders = dynamic(() => import('@/lib/juicebox/JuiceProviders'), {
 })
 
 const CHAIN = DEFAULT_CHAIN_V5
-const CHAIN_SLUG = getChainSlug(CHAIN)
 
 type ProjectProfileProps = {
   tokenId: string
@@ -32,8 +28,6 @@ type ProjectProfileProps = {
   _teamHats?: any[]
   _fundingGoal: number
   _ruleset: any[]
-  _backers: any[]
-  _citizens: any[]
 }
 
 export default function MissionProfilePage({
@@ -47,8 +41,6 @@ export default function MissionProfilePage({
   _teamHats,
   _fundingGoal,
   _ruleset,
-  _backers,
-  _citizens,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -71,8 +63,6 @@ export default function MissionProfilePage({
           _teamHats={_teamHats}
           _fundingGoal={_fundingGoal}
           _ruleset={_ruleset}
-          _backers={_backers}
-          _citizens={_citizens}
         />
       </JuiceProviders>
     </>
@@ -114,7 +104,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params, res }) =>
     }
 
     const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
 
     // Validate tokenId
     if (tokenId === undefined || isNaN(Number(tokenId))) {
@@ -171,37 +160,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params, res }) =>
         ]
       : [{ weight: 0 }, { reservedPercent: 0 }]
 
-    // Fetch backers
-    let _backers: any[] = []
-    try {
-      _backers = await getBackers(mission.projectId, mission.id)
-    } catch (err: any) {
-      _backers = []
-      console.error('[Mission SSR] Failed to fetch backers:', {
-        tokenId,
-        projectId: mission.projectId,
-        error: err?.message,
-      })
-    }
-
-    // Only query citizens if there are backers (prevents invalid SQL)
-    let _citizens: any[] = []
-    if (_backers.length > 0) {
-      try {
-        const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}
-         WHERE owner IN (${_backers.map((backer) => `"${backer.backer}"`).join(',')})`
-        _citizens = await queryTable(chain, citizenStatement)
-      } catch (err: any) {
-        console.error('[Mission SSR] Failed to fetch citizens:', {
-          tokenId,
-          projectId: mission.projectId,
-          backersCount: _backers.length,
-          error: err?.message,
-        })
-        _citizens = []
-      }
-    }
-
     return {
       props: {
         mission,
@@ -214,8 +172,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params, res }) =>
         _teamHats: teamHats,
         _fundingGoal: missionRow.fundingGoal,
         _ruleset,
-        _backers,
-        _citizens,
       },
     }
   } catch (error: any) {

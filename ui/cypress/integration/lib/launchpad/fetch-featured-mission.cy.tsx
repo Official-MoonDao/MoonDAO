@@ -2,7 +2,6 @@ import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import * as thirdweb from 'thirdweb'
 import { fetchFeaturedMissionData } from '@/lib/launchpad/fetchFeaturedMission'
 import { Mission } from '@/lib/launchpad/types'
-import * as missionModule from '@/lib/mission'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
 describe('fetchFeaturedMissionData', () => {
@@ -39,7 +38,6 @@ describe('fetchFeaturedMissionData', () => {
   beforeEach(() => {
     cy.stub(thirdweb, 'getContract').returns({} as any)
     cy.stub(thirdweb, 'readContract').resolves('0x123')
-    cy.stub(missionModule, 'getBackers').resolves([])
   })
 
   it('Returns null when no featured mission found', async () => {
@@ -57,19 +55,6 @@ describe('fetchFeaturedMissionData', () => {
   })
 
   it('Fetches and returns complete FeaturedMissionData structure with all properties', () => {
-    const mockBackers = [
-      {
-        id: '1',
-        backer: '0x123',
-        projectId: '100',
-        totalAmountContributed: '1000000',
-        numberOfPayments: 1,
-        firstContributionTimestamp: '1000000',
-        lastContributionTimestamp: '1000000',
-      },
-    ]
-
-    cy.stub(missionModule, 'getBackers').resolves(mockBackers)
     cy.stub(thirdweb, 'readContract')
       .onCall(0)
       .resolves(1)
@@ -123,9 +108,6 @@ describe('fetchFeaturedMissionData', () => {
         expect(result._fundingGoal).to.equal(1000000)
         expect(result).to.have.property('_ruleset')
         expect(result._ruleset).to.not.be.null
-        expect(result).to.have.property('_backers')
-        expect(result._backers).to.be.an('array')
-        expect(result._backers.length).to.equal(1)
         expect(result).to.have.property('projectMetadata')
         expect(result.projectMetadata).to.have.property('name')
         expect(result.projectMetadata.name).to.equal('Test Mission')

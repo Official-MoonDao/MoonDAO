@@ -90,8 +90,6 @@ type MissionProfileProps = {
   _teamHats?: any[]
   _fundingGoal: number
   _ruleset: any[]
-  _backers: any[]
-  _citizens: any[]
 }
 
 export default function MissionProfile({
@@ -105,8 +103,6 @@ export default function MissionProfile({
   _teamHats,
   _fundingGoal,
   _ruleset,
-  _backers,
-  _citizens,
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const router = useRouter()
@@ -205,8 +201,6 @@ export default function MissionProfile({
     stage,
     deadline,
     refundPeriod,
-    refreshBackers,
-    backers,
     refreshStage,
     poolDeployerAddress,
   } = useMissionData({
@@ -223,7 +217,6 @@ export default function MissionProfile({
     _token,
     _fundingGoal,
     _ruleset,
-    _backers,
   })
 
   // Use deadline tracking hook
@@ -358,8 +351,6 @@ export default function MissionProfile({
               primaryTerminalAddress={primaryTerminalAddress}
               jbControllerContract={jbControllerContract}
               jbTokensContract={jbTokensContract}
-              refreshBackers={refreshBackers}
-              backers={backers}
               refreshTotalFunding={refreshTotalFunding}
               ruleset={ruleset}
               onOpenModal={() => {
@@ -405,8 +396,6 @@ export default function MissionProfile({
             primaryTerminalAddress={primaryTerminalAddress}
             jbControllerContract={jbControllerContract}
             jbTokensContract={jbTokensContract}
-            refreshBackers={refreshBackers}
-            backers={backers}
             refreshTotalFunding={refreshTotalFunding}
             ruleset={ruleset}
             onOpenModal={() => {
@@ -440,8 +429,6 @@ export default function MissionProfile({
                     primaryTerminalAddress={primaryTerminalAddress}
                     jbControllerContract={jbControllerContract}
                     jbTokensContract={jbTokensContract}
-                    refreshBackers={refreshBackers}
-                    backers={backers}
                     refreshTotalFunding={refreshTotalFunding}
                     ruleset={ruleset}
                     onOpenModal={() => {
@@ -476,9 +463,7 @@ export default function MissionProfile({
                   subgraphData={subgraphData}
                   token={token}
                   primaryTerminalAddress={primaryTerminalAddress}
-                  refreshBackers={refreshBackers}
-                  backers={backers}
-                  citizens={_citizens}
+                  citizens={[]}
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}
@@ -579,8 +564,6 @@ export default function MissionProfile({
         setModalEnabled={setContributeModalEnabled}
         primaryTerminalAddress={primaryTerminalAddress}
         jbControllerContract={jbControllerContract}
-        refreshBackers={refreshBackers}
-        backers={backers}
         refreshTotalFunding={refreshTotalFunding}
         ruleset={ruleset}
         usdInput={usdInput || ''}

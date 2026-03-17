@@ -82,7 +82,6 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
     _token: featuredMissionData?._token,
     _fundingGoal: featuredMissionData?._fundingGoal,
     _ruleset: featuredMissionData?._ruleset,
-    _backers: featuredMissionData?._backers,
   })
 
   if (!featuredMission) {
@@ -244,7 +243,7 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-between">
                   <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
                     <Image
-                      src="/assets/icon-backers.svg"
+                      src="/assets/icon-contributions.svg"
                       alt="Contributions"
                       width={24}
                       height={24}

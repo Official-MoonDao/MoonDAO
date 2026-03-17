@@ -11,7 +11,6 @@ import {
 } from 'const/config'
 import { FEATURED_MISSION } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
-import { getBackers } from '@/lib/mission'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { ChainType, FeaturedMissionData, Mission } from './types'
@@ -188,13 +187,6 @@ export async function fetchFeaturedMissionData(
         ]
       : null
 
-    let _backers: FeaturedMissionData['_backers'] = []
-    try {
-      _backers = await getBackers(featuredMission.projectId, featuredMission.id)
-    } catch (err) {
-      console.warn('Failed to fetch backers:', err)
-    }
-
     return {
       mission: featuredMission,
       _stage: stage ? +stage.toString() : 1,
@@ -204,7 +196,6 @@ export async function fetchFeaturedMissionData(
       _token: tokenData,
       _fundingGoal: featuredMission.fundingGoal || 0,
       _ruleset: _ruleset as any[] | null,
-      _backers: _backers,
       projectMetadata: featuredMission.metadata,
     }
   } catch (error) {

@@ -267,8 +267,6 @@ export type MissionPayRedeemProps = {
   jbControllerContract?: any
   jbTokensContract?: any
   forwardClient?: any
-  refreshBackers?: () => void
-  backers: any
   refreshTotalFunding?: () => void
   ruleset: JBRuleset
   onOpenModal?: (usdInput: string) => void
@@ -289,7 +287,6 @@ function MissionPayRedeemComponent({
   jbControllerContract,
   jbTokensContract,
   forwardClient,
-  refreshBackers,
   refreshTotalFunding,
   ruleset,
   onOpenModal,
@@ -347,10 +344,7 @@ function MissionPayRedeemComponent({
   const refreshMissionData = useCallback(() => {
     refreshTotalFunding?.()
     refreshTokenBalances()
-    setTimeout(() => {
-      refreshBackers?.()
-    }, 3000)
-  }, [refreshTotalFunding, refreshBackers, refreshTokenBalances])
+  }, [refreshTotalFunding, refreshTokenBalances])
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {

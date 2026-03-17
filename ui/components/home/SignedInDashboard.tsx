@@ -328,7 +328,6 @@ export default function SignedInDashboard({
   const {
     subgraphData: featuredMissionSubgraphData,
     fundingGoal: featuredMissionFundingGoal,
-    backers: featuredMissionBackers,
     deadline: featuredMissionDeadline,
   } = useMissionData({
     mission: featuredMission,
@@ -345,7 +344,6 @@ export default function SignedInDashboard({
     _token: featuredMissionData?._token,
     _fundingGoal: featuredMissionData?._fundingGoal,
     _ruleset: featuredMissionData?._ruleset,
-    _backers: featuredMissionData?._backers,
   })
 
   return (
@@ -894,14 +892,14 @@ export default function SignedInDashboard({
                           </p>
                         </div>
 
-                        {/* Backers */}
+                        {/* Contributions */}
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
                             <UserGroupIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">Backers</span>
+                            <span className="text-blue-200 text-xs font-medium">Contributions</span>
                           </div>
                           <p className="text-white font-bold text-sm">
-                            {featuredMissionBackers?.length || 0}
+                            {featuredMissionSubgraphData?.paymentsCount || 0}
                           </p>
                         </div>
 

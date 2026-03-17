@@ -121,7 +121,7 @@ const MISSION_DESCRIPTION_TEMPLATE = `
 *If you were reading this for the first time, would you be excited to contribute?*
 
 ### Funding & Rewards
-*What will supporters receive in return? Funding a mission is more engaging when contributors get something meaningful in return. Outline what backers can expect:*
+*What will supporters receive in return? Funding a mission is more engaging when contributors get something meaningful in return. Outline what contributors can expect:*
 - Governance Tokens – Enable participation in mission decisions.
 - Mission Patches & Digital Collectibles – Unique digital memorabilia tied to the mission.
 `
@@ -542,7 +542,7 @@ export default function CreateMission({
                   account={account}
                   stage={stage}
                   setStage={setStage}
-                  description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential backers and compel them to contribute.
+                  description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential contributors and compel them to contribute.
 "
                   action={() => {
                     if (!userTeamsAsManager || userTeamsAsManager.length === 0) {

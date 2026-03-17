@@ -73,11 +73,9 @@ describe('MissionMobileContributeButton', () => {
       primaryTerminalAddress: '0x1234567890123456789012345678901234567890',
       jbTokensContract: mockJbTokensContract,
       jbControllerContract: mockJbControllerContract,
-      refreshBackers: cy.stub(),
       refreshTotalFunding: cy.stub(),
       ruleset: mockRuleset,
       onOpenModal: onOpenModalStub,
-      backers: [],
       isPayRedeemContainerVisible: false,
       deadlinePassed: false,
     }

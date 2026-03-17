@@ -188,7 +188,7 @@ export default function MissionWideCard({
                 <MissionStat
                   label="Contributions"
                   value={subgraphData?.paymentsCount || 0}
-                  icon="/assets/icon-backers.svg"
+                  icon="/assets/icon-contributions.svg"
                 />
               </div>
             )}

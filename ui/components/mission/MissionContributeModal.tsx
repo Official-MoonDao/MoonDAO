@@ -65,8 +65,6 @@ type MissionContributeModalProps = {
   primaryTerminalAddress: string
   jbControllerContract?: any
   forwardClient?: any
-  refreshBackers?: () => void
-  backers: any
   refreshTotalFunding?: () => void
   ruleset: JBRuleset
   usdInput: string
@@ -80,8 +78,6 @@ export default function MissionContributeModal({
   setModalEnabled,
   primaryTerminalAddress,
   forwardClient,
-  refreshBackers,
-  backers,
   refreshTotalFunding,
   ruleset,
   usdInput,
@@ -652,10 +648,7 @@ export default function MissionContributeModal({
 
   const refreshMissionData = useCallback(() => {
     refreshTotalFunding?.()
-    setTimeout(() => {
-      refreshBackers?.()
-    }, 3000)
-  }, [refreshTotalFunding, refreshBackers])
+  }, [refreshTotalFunding])
 
   const getQuote = useCallback(async () => {
     try {
