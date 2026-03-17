@@ -10,6 +10,7 @@ import {
   PROJECT_VOTE_FAILED,
 } from '@/lib/nance/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
 
 export type ProposalStatus =
   | 'Voting'
@@ -18,6 +19,20 @@ export type ProposalStatus =
   | 'Approved'
   | 'Archived'
   | 'Discussion'
+
+// Map Nance API status strings to our ProposalStatus type
+function mapNanceStatus(nanceStatus: string): ProposalStatus | undefined {
+  const statusMap: Record<string, ProposalStatus> = {
+    'Cancelled': 'Cancelled',
+    'Approved': 'Approved',
+    'Voting': 'Voting',
+    'Temperature Check': 'Temperature Check',
+    'Archived': 'Archived',
+    'Discussion': 'Discussion',
+  }
+  return statusMap[nanceStatus]
+}
+
 export function useProposalStatus(project: any) {
   const [proposalStatus, setProposalStatus] = useState<any>()
   const chain = DEFAULT_CHAIN_V5
@@ -31,18 +46,60 @@ export function useProposalStatus(project: any) {
       chain: chain,
     })
     async function fetchData() {
-      const tempCheckApproved = await readContract({
-        contract: proposalContract,
-        method: 'tempCheckApproved' as string,
-        params: [mdp],
-      })
-      const tempCheckFailed = await readContract({
-        contract: proposalContract,
-        method: 'tempCheckFailed' as string,
-        params: [mdp],
-      })
-      const status = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
-      setProposalStatus(status)
+      try {
+        const tempCheckApproved = await readContract({
+          contract: proposalContract,
+          method: 'tempCheckApproved' as string,
+          params: [mdp],
+        })
+        const tempCheckFailed = await readContract({
+          contract: proposalContract,
+          method: 'tempCheckFailed' as string,
+          params: [mdp],
+        })
+        const onChainStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
+
+        // If on-chain says "Temperature Check" (both tempCheck flags are false),
+        // the contract data may be stale. Cross-reference with Nance API.
+        if (onChainStatus === 'Temperature Check') {
+          try {
+            const res = await fetch(
+              `${NANCE_API_URL}/${NANCE_SPACE_NAME}/proposal/${mdp}`
+            )
+            if (res.ok) {
+              const data = await res.json()
+              const nanceStatus = data?.data?.status
+              const mapped = nanceStatus ? mapNanceStatus(nanceStatus) : undefined
+              if (mapped && mapped !== 'Temperature Check') {
+                setProposalStatus(mapped)
+                return
+              }
+            }
+          } catch {
+            // Nance API unavailable, fall through to on-chain status
+          }
+        }
+
+        setProposalStatus(onChainStatus)
+      } catch {
+        // Contract read failed, try Nance API as fallback
+        try {
+          const res = await fetch(
+            `${NANCE_API_URL}/${NANCE_SPACE_NAME}/proposal/${mdp}`
+          )
+          if (res.ok) {
+            const data = await res.json()
+            const nanceStatus = data?.data?.status
+            const mapped = nanceStatus ? mapNanceStatus(nanceStatus) : undefined
+            if (mapped) {
+              setProposalStatus(mapped)
+              return
+            }
+          }
+        } catch {
+          // Both sources failed
+        }
+      }
     }
     fetchData()
   }, [project])
