@@ -333,7 +333,7 @@ jobs:
           BROWSERSTACK_LOCAL: true
           BROWSERSTACK_LOCAL_IDENTIFIER: "moon-dao-tests-${{ github.run_id }}-${{ strategy.job-index }}"
           CYPRESS_BASE_URL: "http://localhost:3000"
-          BUILD_NUMBER: ${{ github.run_id }}
+          BUILD_NUMBER: "${{ github.run_id }}-${{ strategy.job-index }}"
           SPLIT: ${{ strategy.job-total }}
           SPLIT_INDEX: ${{ strategy.job-index }}
 
