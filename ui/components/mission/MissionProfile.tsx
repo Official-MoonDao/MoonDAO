@@ -596,7 +596,7 @@ export default function MissionProfile({
                         (Edit Project)
                       </span>
                     )}
-                  </Link>
+                  </div>
                 </div>
               </div>
             </div>
