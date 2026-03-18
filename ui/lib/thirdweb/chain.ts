@@ -10,6 +10,31 @@ import {
   sepolia,
 } from '../rpc/chains'
 
+// Inlined to avoid circular dependency: chain.ts <- config (DEFAULT_CHAIN_V5)
+const DEFAULT_CHAIN_V5 =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? arbitrum
+    : process.env.NEXT_PUBLIC_TEST_CHAIN === 'arbitrum-sepolia'
+      ? arbitrumSepolia
+      : sepolia
+
+/**
+ * Returns the chain to use for MoonDAO data (teams, projects, citizens, etc.).
+ * When mainnet, always returns arbitrum - never testnet.
+ */
+export function getMoonDAODataChain(selectedChain?: Chain | null): Chain {
+  if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet') return arbitrum
+  return selectedChain || DEFAULT_CHAIN_V5
+}
+
+/**
+ * Returns the chain slug to use for MoonDAO data (teams, projects, citizens, etc.).
+ * When mainnet, always returns 'arbitrum' - never testnet data.
+ */
+export function getMoonDAODataChainSlug(selectedChain?: Chain | null): string {
+  return getChainSlug(getMoonDAODataChain(selectedChain))
+}
+
 export function getChainSlug(chain: Chain) {
   let slug
   // Special cases for chains with different naming

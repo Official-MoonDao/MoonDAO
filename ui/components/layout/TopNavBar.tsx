@@ -16,7 +16,7 @@ import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { LogoSidebar } from '../assets'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { useProjectWearer } from '@/lib/hats/useProjectWearer'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getMoonDAODataChain, getMoonDAODataChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
@@ -43,8 +43,8 @@ const TopNavBar = ({
   const account = useActiveAccount()
   const address = account?.address
   const { selectedChain } = useContext(ChainContextV5)
-  const resolvedChain = selectedChain || DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(resolvedChain)
+  const resolvedChain = getMoonDAODataChain(selectedChain)
+  const chainSlug = getMoonDAODataChainSlug(selectedChain)
 
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],

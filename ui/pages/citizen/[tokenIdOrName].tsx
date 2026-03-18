@@ -41,7 +41,7 @@ import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getMoonDAODataChain, getMoonDAODataChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -83,7 +83,8 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
 
   const { citizen } = useContext(CitizenContext)
   const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  const dataChain = getMoonDAODataChain(selectedChain)
+  const chainSlug = getMoonDAODataChainSlug(selectedChain)
 
   const [subModalEnabled, setSubModalEnabled] = useState(false)
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
@@ -92,25 +93,25 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
 
   // Contracts
   const citizenContract = useContract({
-    chain: selectedChain,
+    chain: dataChain,
     address: CITIZEN_ADDRESSES[chainSlug],
     abi: CitizenABI as any,
   })
 
   const teamContract = useContract({
-    chain: selectedChain,
+    chain: dataChain,
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
   })
 
   const marketplaceTableContract = useContract({
-    chain: selectedChain,
+    chain: dataChain,
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceABI as any,
   })
 
   const jobTableContract = useContract({
-    chain: selectedChain,
+    chain: dataChain,
     address: JOBS_TABLE_ADDRESSES[chainSlug],
     abi: JobsABI as any,
   })

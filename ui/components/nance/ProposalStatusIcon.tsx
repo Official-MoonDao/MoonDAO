@@ -5,6 +5,7 @@ import {
   CheckCircleIcon,
   ChatBubbleBottomCenterTextIcon,
 } from '@heroicons/react/24/outline'
+import { getProposalStatusLabel } from '@/lib/nance/useProposalStatus'
 import { classNames } from '@/lib/utils/tailwind'
 
 export default function ProposalStatusIcon({
@@ -61,7 +62,7 @@ export default function ProposalStatusIcon({
           aria-hidden="true"
         />
         <p className="mb-1 block h-6 w-fit items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20 sm:hidden">
-          {status}
+          {getProposalStatusLabel(status)}
         </p>
       </>
     )

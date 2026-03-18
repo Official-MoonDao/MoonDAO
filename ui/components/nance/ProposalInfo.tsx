@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import useAccount from '../../lib/nance/useAccountAddress'
-import { STATUS_CONFIG, ProposalStatus } from '@/lib/nance/useProposalStatus'
+import { STATUS_CONFIG, ProposalStatus, getProposalStatusLabel } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
 import { AddressLink } from './AddressLink'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
@@ -145,7 +145,7 @@ function ProposalStatusDisplay({ status }: { status: ProposalStatus }) {
         <span
           className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}
         >
-          {status}
+          {getProposalStatusLabel(status)}
         </span>
       </div>
     </div>

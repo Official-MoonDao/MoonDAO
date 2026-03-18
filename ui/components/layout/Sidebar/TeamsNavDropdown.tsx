@@ -7,7 +7,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import TeamABI from 'const/abis/Team.json'
 import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES } from 'const/config'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getMoonDAODataChain, getMoonDAODataChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
@@ -30,8 +30,8 @@ export function TeamsNavDropdown({
   const account = useActiveAccount()
   const address = account?.address
   const { selectedChain } = useContext(ChainContextV5)
-  const resolvedChain = selectedChain || DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(resolvedChain)
+  const resolvedChain = getMoonDAODataChain(selectedChain)
+  const chainSlug = getMoonDAODataChainSlug(selectedChain)
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
     chain: resolvedChain,
@@ -98,6 +98,7 @@ export function TeamsNavDropdown({
                   key={team.teamId}
                   teamContract={teamContract}
                   teamId={team.teamId}
+                  teamName={team.name}
                   baseClass={baseLinkClass}
                   onNavigate={onNavigate}
                 />
@@ -131,6 +132,7 @@ export function TeamsNavDropdown({
                   key={team.teamId}
                   teamContract={teamContract}
                   teamId={team.teamId}
+                  teamName={team.name}
                   baseClass={baseLinkClass}
                   onNavigate={onNavigate}
                 />
@@ -152,23 +154,25 @@ export function TeamsNavDropdown({
 function TeamNavItem({
   teamContract,
   teamId,
+  teamName,
   baseClass,
   onNavigate,
 }: {
   teamContract: any
   teamId: string
+  teamName?: string | null
   baseClass: string
   onNavigate?: () => void
 }) {
-  const [name, setName] = useState<string | null>(null)
+  const [fetchedName, setFetchedName] = useState<string | null>(null)
 
   useEffect(() => {
+    if (teamName) return
     if (!teamContract || !teamId) return
 
-    // Use cached name if available to avoid repeated on-chain calls
     const cachedName = teamNameCache.get(teamId)
     if (cachedName) {
-      setName(cachedName)
+      setFetchedName(cachedName)
       return
     }
 
@@ -180,14 +184,16 @@ function TeamNavItem({
         const resolvedName =
           (nft?.metadata?.name as string | undefined) || `Team #${teamId}`
         teamNameCache.set(teamId, resolvedName)
-        setName(resolvedName)
+        setFetchedName(resolvedName)
       })
       .catch(() => {
         const fallback = `Team #${teamId}`
         teamNameCache.set(teamId, fallback)
-        setName(fallback)
+        setFetchedName(fallback)
       })
-  }, [teamContract, teamId])
+  }, [teamName, teamContract, teamId])
+
+  const displayName = teamName || fetchedName || `Team #${teamId}`
 
   return (
     <Link
@@ -195,7 +201,7 @@ function TeamNavItem({
       className={baseClass}
       onClick={onNavigate}
     >
-      {name || `Team #${teamId}`}
+      {displayName}
     </Link>
   )
 }

@@ -1,4 +1,5 @@
 import JBV5Controller from 'const/abis/JBV5Controller.json'
+import MissionTableABI from 'const/abis/MissionTable.json'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { Chain, getContract, readContract } from 'thirdweb'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
@@ -74,7 +75,7 @@ export async function fetchMissions(
             id: missionRow.id,
             teamId: missionRow.teamId,
             projectId: missionRow.projectId,
-            fundingGoal: missionRow.fundingGoal || 0,
+            fundingGoal: Number(missionRow.fundingGoal) || 0,
             metadata: metadata,
           }
         } catch (error) {
@@ -83,7 +84,7 @@ export async function fetchMissions(
             id: missionRow?.id || `fallback-${index}`,
             teamId: missionRow?.teamId || null,
             projectId: missionRow?.projectId || null,
-            fundingGoal: missionRow?.fundingGoal || 0,
+            fundingGoal: Number(missionRow?.fundingGoal) || 0,
             metadata: {
               name: 'Mission Unavailable',
               description: 'This mission is temporarily unavailable.',

@@ -29,7 +29,7 @@ import useProjectData, { Project } from '@/lib/project/useProjectData'
 import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getMoonDAODataChain, getMoonDAODataChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -81,23 +81,24 @@ export default function ProjectProfile({
   const address = account?.address
 
   const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  const dataChain = getMoonDAODataChain(selectedChain)
+  const chainSlug = getMoonDAODataChainSlug(selectedChain)
 
   //Contracts
   const hatsContract = useContract({
     address: HATS_ADDRESS,
     abi: HatsABI as any,
-    chain: selectedChain,
+    chain: dataChain,
   })
   const projectContract = useContract({
     address: PROJECT_ADDRESSES[chainSlug],
     abi: ProjectABI as any,
-    chain: selectedChain,
+    chain: dataChain,
   })
   const citizenContract = useContract({
     address: CITIZEN_ADDRESSES[chainSlug],
     abi: CitizenABI as any,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const [isExpanded, setIsExpanded] = useState(false)
@@ -116,7 +117,7 @@ export default function ProjectProfile({
   const safeData = useSafe(safeAddress)
   const isSigner = safeOwners.includes(address || '')
   //Hats
-  const hats = useSubHats(selectedChain, adminHatId, true)
+  const hats = useSubHats(dataChain, adminHatId, true)
 
   useChainDefault()
 

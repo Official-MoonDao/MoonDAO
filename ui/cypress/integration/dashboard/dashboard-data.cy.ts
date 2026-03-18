@@ -10,37 +10,35 @@ import { getRecentPublicNewsletters } from '@/lib/newsletter/newsletterData'
 import { NEXT_QUARTER_BUDGET_ETH } from 'const/config'
 
 describe('dashboard data helpers', () => {
-  it('filters out non-public newsletters using the API public field', () => {
+  it('filters out drafts (items without published_at)', () => {
     const newsletters = getRecentPublicNewsletters(
       [
         {
           id: 1,
-          subject: 'Public newsletter',
-          public: true,
+          subject: 'Published newsletter',
           published_at: '2026-03-01T00:00:00.000Z',
-          public_url: 'https://moondao.kit.com/posts/public-newsletter',
+          public_url: 'https://moondao.kit.com/posts/published-newsletter',
         },
         {
           id: 2,
-          subject: 'Private draft',
-          public: false,
+          subject: 'Another published',
           published_at: '2026-03-02T00:00:00.000Z',
           public_url: null,
         },
         {
           id: 3,
           subject: 'Draft no date',
-          public: false,
           created_at: '2026-03-03T00:00:00.000Z',
         },
       ],
       new Date('2026-03-17T00:00:00.000Z')
     )
 
-    expect(newsletters).to.have.length(1)
-    expect(newsletters[0].title).to.equal('Public newsletter')
+    expect(newsletters).to.have.length(2)
+    expect(newsletters[0].title).to.equal('Another published')
+    expect(newsletters[1].title).to.equal('Published newsletter')
     expect(newsletters[0].url).to.equal(
-      'https://news.moondao.com/posts/public-newsletter'
+      'https://news.moondao.com/posts/another-published'
     )
   })
 

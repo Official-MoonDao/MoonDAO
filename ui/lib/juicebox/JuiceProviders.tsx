@@ -17,13 +17,19 @@ const bendystrawUrl = `https://${
   process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' ? 'testnet.' : ''
 }bendystraw.xyz`
 
+const isMainnet = process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+const mainnetChains = [mainnet, arbitrum, base]
+const testnetChains = [...mainnetChains, sepolia]
+
 const wagmiConfig = createConfig({
-  chains: [mainnet, arbitrum, base, sepolia],
+  chains: isMainnet ? mainnetChains : testnetChains,
   transports: {
     [mainnet.id]: http(ethereumInfura.rpc),
     [arbitrum.id]: http(arbitrumInfura.rpc),
     [base.id]: http(baseInfura.rpc),
-    [sepolia.id]: http(sepoliaInfura.rpc),
+    ...(process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && {
+      [sepolia.id]: http(sepoliaInfura.rpc),
+    }),
   },
 })
 

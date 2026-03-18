@@ -53,6 +53,10 @@ export const DEFAULT_CHAIN_V5 = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? ar
 
 export const DEFAULT_CHAIN_V5_SLUG = getChainSlug(DEFAULT_CHAIN_V5)
 
+/** When mainnet, MoonDAO data (teams, projects, citizens, missions) always comes from Arbitrum. */
+export const IS_MAINNET = process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+export const MOONDAO_DATA_CHAIN_SLUG = IS_MAINNET ? 'arbitrum' : DEFAULT_CHAIN_V5_SLUG
+
 export const THIRDWEB_ENGINE_URL = 'https://engine.thirdweb.com/v1/read/contract'
 
 export const MOONEY_ADDRESSES: Index = {

@@ -6,7 +6,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import ProjectABI from 'const/abis/Project.json'
 import { DEFAULT_CHAIN_V5, PROJECT_ADDRESSES, PROJECT_TABLE_NAMES } from 'const/config'
 import { useProjectWearer } from '@/lib/hats/useProjectWearer'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getMoonDAODataChain, getMoonDAODataChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -27,8 +27,8 @@ export function ProjectsNavDropdown({
   const account = useActiveAccount()
   const address = account?.address
   const { selectedChain } = useContext(ChainContextV5)
-  const resolvedChain = selectedChain || DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(resolvedChain)
+  const resolvedChain = getMoonDAODataChain(selectedChain)
+  const chainSlug = getMoonDAODataChainSlug(selectedChain)
   const projectContract = useContract({
     address: PROJECT_ADDRESSES[chainSlug],
     chain: resolvedChain,
@@ -98,6 +98,7 @@ export function ProjectsNavDropdown({
                 <ProjectNavItem
                   key={proj.projectId}
                   projectId={proj.projectId}
+                  projectName={proj.name}
                   chainSlug={chainSlug}
                   baseClass={baseLinkClass}
                   onNavigate={onNavigate}
@@ -127,6 +128,7 @@ export function ProjectsNavDropdown({
                 <ProjectNavItem
                   key={proj.projectId}
                   projectId={proj.projectId}
+                  projectName={proj.name}
                   chainSlug={chainSlug}
                   baseClass={baseLinkClass}
                   onNavigate={onNavigate}
@@ -148,29 +150,33 @@ export function ProjectsNavDropdown({
 
 function ProjectNavItem({
   projectId,
+  projectName,
   chainSlug,
   baseClass,
   onNavigate,
 }: {
   projectId: string
+  projectName?: string | null
   chainSlug: string
   baseClass: string
   onNavigate?: () => void
 }) {
-  const [name, setName] = useState<string | null>(null)
+  const [fetchedName, setFetchedName] = useState<string | null>(null)
   const tableName = PROJECT_TABLE_NAMES[chainSlug]
   const numericId = parseInt(projectId, 10)
   const statement =
-    tableName && !isNaN(numericId)
+    !projectName && tableName && !isNaN(numericId)
       ? `SELECT name FROM ${tableName} WHERE id = ${numericId} OR MDP = ${numericId} LIMIT 1`
       : null
   const { data: rows } = useTablelandQuery(statement)
 
   useEffect(() => {
     if (rows && rows[0]) {
-      setName((rows[0] as any).name || `Project #${projectId}`)
+      setFetchedName((rows[0] as any).name || null)
     }
-  }, [rows, projectId])
+  }, [rows])
+
+  const displayName = projectName || fetchedName || `Project #${projectId}`
 
   return (
     <Link
@@ -178,7 +184,7 @@ function ProjectNavItem({
       className={baseClass}
       onClick={onNavigate}
     >
-      {name || `Project #${projectId}`}
+      {displayName}
     </Link>
   )
 }

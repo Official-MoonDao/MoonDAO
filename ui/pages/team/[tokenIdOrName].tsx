@@ -56,7 +56,7 @@ import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getMoonDAODataChain, getMoonDAODataChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -98,7 +98,8 @@ function TeamDetailPageContent({
   const address = account?.address
   //privy
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  const dataChain = getMoonDAODataChain(selectedChain)
+  const chainSlug = getMoonDAODataChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
   const [teamMetadataModalEnabled, setTeamMetadataModalEnabled] = useState(false)
   const [teamSubscriptionModalEnabled, setTeamSubscriptionModalEnabled] = useState(false)
@@ -108,61 +109,61 @@ function TeamDetailPageContent({
   const hatsContract = useContract({
     address: HATS_ADDRESS,
     abi: HatsABI,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const citizenContract = useContract({
     address: CITIZEN_ADDRESSES[chainSlug],
     abi: CitizenABI,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const jobTableContract = useContract({
     address: JOBS_TABLE_ADDRESSES[chainSlug],
     abi: JobTableABI,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const marketplaceTableContract = useContract({
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceTableABI,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const missionTableContract = useContract({
     address: MISSION_TABLE_ADDRESSES[chainSlug],
     abi: MissionTableABI,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
     abi: MissionCreator.abi,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const jbControllerContract = useContract({
     address: JBV5_CONTROLLER_ADDRESS,
     abi: JBV5Controller.abi,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const jbDirectoryContract = useContract({
     address: JBV5_DIRECTORY_ADDRESS,
     abi: JBV5Directory.abi,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const jbTokensContract = useContract({
     address: JBV5_TOKENS_ADDRESS,
     abi: JBV5Tokens.abi,
-    chain: selectedChain,
+    chain: dataChain,
   })
 
   const {
@@ -182,14 +183,14 @@ function TeamDetailPageContent({
     isLoadingActivityData,
   } = useTeamData(teamContract, hatsContract, nft, citizen, {
     teamId: tokenId,
-    selectedChain,
+    selectedChain: dataChain,
     jobTableContract,
     marketplaceTableContract,
     missionTableContract,
     jbControllerContract,
   })
 
-  const hats = useSubHats(selectedChain, adminHatId, true)
+  const hats = useSubHats(dataChain, adminHatId, true)
   const wearers = useUniqueHatWearers(hats)
 
   const safeData = useSafe(nft?.owner)

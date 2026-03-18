@@ -8,17 +8,20 @@ import {
   PROJECT_TABLE_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
-import { BLOCKED_MISSIONS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import { getContract, readContract } from 'thirdweb'
 import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { getCitizensLocationData } from '@/lib/map'
+import { fetchFeaturedMissionData } from '@/lib/launchpad/fetchFeaturedMission'
+import { fetchMissions } from '@/lib/launchpad/fetchMissions'
+import { fetchNewslettersFromKit } from '@/lib/newsletter/newsletterData'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import { LoadingSpinner } from '../components/layout/LoadingSpinner'
@@ -46,7 +49,9 @@ export default function Home({
   missions,
   featuredMissionData,
   citizensLocationData,
+  initialNewsletters = [],
 }: any) {
+  useChainDefault()
   return (
     <>
       <WebsiteHead
@@ -65,6 +70,7 @@ export default function Home({
         missions={missions}
         featuredMissionData={featuredMissionData}
         citizensLocationData={citizensLocationData}
+        initialNewsletters={initialNewsletters}
       />
     </>
   )
@@ -158,7 +164,7 @@ export async function getStaticProps() {
 
       const [citizens, listings, jobs, teams, projects, missionRows] = await Promise.all([
         citizenTableName
-          ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 8`)
+          ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 20`)
           : Promise.resolve([]),
         marketplaceTableName
           ? queryTable(
@@ -190,7 +196,28 @@ export async function getStaticProps() {
     }
   }
 
-  const [transferResult, contractResult, aumResult, mooneyPriceResult, locationResult] =
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+
+  const fetchMissionsAndFeatured = async () => {
+    const missionsList = await fetchMissions(
+      chain,
+      chainSlug,
+      MISSION_TABLE_ADDRESSES[chainSlug],
+      JBV5_CONTROLLER_ADDRESS
+    )
+    const JBV5Controller = (await import('const/abis/JBV5Controller.json')).default
+    const featuredData = await fetchFeaturedMissionData(
+      missionsList,
+      chain,
+      chainSlug,
+      JBV5_CONTROLLER_ADDRESS,
+      JBV5Controller.abi as any
+    )
+    return { missions: missionsList, featuredMissionData: featuredData }
+  }
+
+  const [transferResult, contractResult, aumResult, mooneyPriceResult, locationResult, newslettersResult, missionsAndFeaturedResult] =
     await Promise.allSettled([
       getAllNetworkTransfers().catch(() => ({ citizenTransfers: [], teamTransfers: [] })),
       contractOperations(),
@@ -199,6 +226,8 @@ export async function getStaticProps() {
         .then((d) => d?.price || 0)
         .catch(() => 0),
       getCitizensLocationData().catch(() => []),
+      fetchNewslettersFromKit().catch(() => []),
+      fetchMissionsAndFeatured().catch(() => ({ missions: [], featuredMissionData: null })),
     ])
 
   transferData =
@@ -219,76 +248,19 @@ export async function getStaticProps() {
   }
 
   if (contractResult.status === 'fulfilled') {
-    const { citizens, listings, jobs, teams, projects, missionRows } = contractResult.value
+    const { citizens, listings, jobs, teams, projects } = contractResult.value
     newestCitizens = citizens
     newestListings = listings
     newestJobs = jobs
     newestTeams = teams
     allProjects = projects
-
-    if (missionRows && missionRows.length > 0) {
-      const filteredMissionRows = missionRows.filter((mission: any) => {
-        return !BLOCKED_MISSIONS.has(mission.id) && mission && mission.id
-      })
-      if (filteredMissionRows.length > 0 && filteredMissionRows[0]?.projectId) {
-        try {
-          const chain = DEFAULT_CHAIN_V5
-          const jbV5ControllerContract = getContract({
-            client: serverClient,
-            address: JBV5_CONTROLLER_ADDRESS,
-            abi: JBV5Controller.abi as any,
-            chain: chain,
-          })
-
-          const metadataURI = await readContract({
-            contract: jbV5ControllerContract,
-            method: 'uriOf' as string,
-            params: [filteredMissionRows[0].projectId],
-          }).catch(() => null)
-
-          if (metadataURI) {
-            const metadataRes = await fetch(getIPFSGateway(metadataURI))
-            const metadata = await metadataRes.json()
-
-            missions = [
-              {
-                id: filteredMissionRows[0].id,
-                teamId: filteredMissionRows[0].teamId,
-                projectId: filteredMissionRows[0].projectId,
-                fundingGoal: filteredMissionRows[0].fundingGoal || 0,
-                deadline: filteredMissionRows[0].deadline || null,
-                stage: filteredMissionRows[0].stage || 1,
-                metadata: metadata,
-              },
-            ]
-
-            featuredMissionData = {
-              mission: missions[0],
-              projectMetadata: metadata,
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to fetch featured mission metadata:', error)
-          missions = [
-            {
-              id: filteredMissionRows[0].id,
-              teamId: filteredMissionRows[0].teamId,
-              projectId: filteredMissionRows[0].projectId,
-              fundingGoal: filteredMissionRows[0].fundingGoal || 0,
-              deadline: filteredMissionRows[0].deadline || null,
-              stage: filteredMissionRows[0].stage || 1,
-              metadata: {
-                name: 'Featured Mission',
-                description: 'Loading mission details...',
-                image: '/assets/placeholder-mission.png',
-              },
-            },
-          ]
-        }
-      }
-    }
-
     filteredTeams = teams || []
+  }
+
+  if (missionsAndFeaturedResult.status === 'fulfilled') {
+    const { missions: missionsList, featuredMissionData: featuredData } = missionsAndFeaturedResult.value
+    missions = missionsList
+    featuredMissionData = featuredData
   }
 
   if (mooneyPriceResult.status === 'fulfilled') {
@@ -298,6 +270,11 @@ export async function getStaticProps() {
   if (locationResult.status === 'fulfilled') {
     citizensLocationData = locationResult.value
   }
+
+  const initialNewsletters =
+    newslettersResult.status === 'fulfilled' && Array.isArray(newslettersResult.value)
+      ? newslettersResult.value
+      : []
 
   return {
     props: {
@@ -312,6 +289,7 @@ export async function getStaticProps() {
       missions,
       featuredMissionData,
       citizensLocationData,
+      initialNewsletters,
     },
     revalidate: 60,
   }

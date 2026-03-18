@@ -1,146 +1,73 @@
-import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
-import { MOONDAO_HAT_TREE_IDS } from 'const/config'
 import { useEffect, useState } from 'react'
-import { readContract } from 'thirdweb'
-import { getChainSlug } from '../thirdweb/chain'
 
+/**
+ * Team-centric approach: fetch teams where the user wears a hat in the team's
+ * hat tree. Uses /api/hats/user-memberships which iterates teams and checks
+ * wearers directly (more reliable than get-wearer + adminHatToTokenId mapping).
+ */
 export function useTeamWearer(
-  teamContract: any,
+  _teamContract: any,
   selectedChain: any,
-  address: any
+  address: string | undefined
 ) {
-  const [wornMoondaoHats, setWornMoondaoHats] = useState<any>()
+  const [userTeams, setUserTeams] = useState<any>()
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    async function getWearerTeamHats() {
+    async function fetchUserTeams() {
       try {
         setIsLoading(true)
-        setWornMoondaoHats(undefined)
+        setUserTeams(undefined)
         if (!address) {
-          setWornMoondaoHats([])
+          setUserTeams([])
           setIsLoading(false)
           return
         }
-        const propsParam = encodeURIComponent(
-          JSON.stringify({
-            currentHats: {
-              props: {
-                tree: {},
-                admin: {
-                  admin: {
-                    admin: {},
-                  },
-                },
-              },
-            },
-          })
-        )
-        const res = await fetch(
-          `/api/hats/get-wearer?chainId=${selectedChain.id}&wearerAddress=${address}&props=${propsParam}`
-        )
-
-        const hats: any = await res.json()
-
-        //filter worn hats to only include hats that are in the MoonDAO hat tree
-        if (hats.currentHats) {
-          //filter hats to only include hats that are in the MoonDAO hat tree
-          const moondaoHats = hats.currentHats.filter(
-            (hat: any) =>
-              hat.tree.id === MOONDAO_HAT_TREE_IDS[getChainSlug(selectedChain)]
-          )
-
-          //add the teamId to each hat
-          const moondaoHatsWithTeamId = await Promise.all(
-            moondaoHats.map(async (hat: any) => {
-              const teamIdFromHat = await readContract({
-                contract: teamContract,
-                method: 'adminHatToTokenId' as string,
-                params: [hat.id],
-              })
-              const teamIdFromAdmin = await readContract({
-                contract: teamContract,
-                method: 'adminHatToTokenId' as string,
-                params: [hat.admin.id],
-              })
-              const teamIdFromAdminAdmin = await readContract({
-                contract: teamContract,
-                method: 'adminHatToTokenId' as string,
-                params: [hat.admin.admin.id],
-              })
-
-              let teamId
-              if (+teamIdFromHat.toString() !== 0) {
-                teamId = teamIdFromHat
-              } else if (+teamIdFromAdmin.toString() !== 0) {
-                teamId = teamIdFromAdmin
-              } else if (+teamIdFromAdminAdmin.toString() !== 0) {
-                teamId = teamIdFromAdminAdmin
-              } else {
-                teamId = 0
-              }
-
-              const adminHatId = await readContract({
-                contract: teamContract,
-                method: 'teamAdminHat' as string,
-                params: [teamId],
-              })
-              const prettyAdminHatId = hatIdDecimalToHex(
-                BigInt(adminHatId.toString())
-              )
-
-              if (
-                hat.id === prettyAdminHatId ||
-                hat.admin.id === prettyAdminHatId ||
-                hat.admin.admin.id === prettyAdminHatId ||
-                hat.admin.admin.admin.id === prettyAdminHatId
-              ) {
-                return {
-                  ...hat,
-                  teamId: teamId.toString(),
-                }
-              }
-              return null
-            })
-          ).then((results) => results.filter((result) => result !== null))
-
-          const uniqueTeams = [
-            ...new Set(moondaoHatsWithTeamId.map((hat: any) => hat.teamId)),
-          ].map((teamId: any) => {
-            return {
-              teamId: teamId,
-              hats: moondaoHatsWithTeamId.filter(
-                (hat: any) => +hat.teamId === +teamId
-              ),
-            }
-          })
-
-          setWornMoondaoHats(uniqueTeams)
-        } else {
-          setWornMoondaoHats([])
+        if (!selectedChain?.id) {
+          setUserTeams([])
+          setIsLoading(false)
+          return
         }
-        setIsLoading(false)
+
+        const res = await fetch(
+          `/api/hats/user-memberships?chainId=${selectedChain.id}&wearerAddress=${encodeURIComponent(address)}`
+        )
+        const data = await res.json()
+
+        if (data?.teams && Array.isArray(data.teams)) {
+          setUserTeams(
+            data.teams.map((t: { teamId: string; name: string }) => ({
+              teamId: t.teamId,
+              name: t.name || `Team #${t.teamId}`,
+              hats: [],
+            }))
+          )
+        } else if (data?.teamIds && Array.isArray(data.teamIds)) {
+          setUserTeams(
+            data.teamIds.map((teamId: string) => ({
+              teamId,
+              name: null,
+              hats: [],
+            }))
+          )
+        } else {
+          setUserTeams([])
+        }
       } catch (err) {
-        console.log(err)
-        setWornMoondaoHats([])
+        console.warn('[useTeamWearer] Error:', err)
+        setUserTeams([])
+      } finally {
         setIsLoading(false)
       }
     }
 
-    if (teamContract && selectedChain) {
-      getWearerTeamHats()
+    if (address && selectedChain) {
+      fetchUserTeams()
     } else {
-      if (address) {
-        // User is connected but contracts/chains are not ready yet: treat as initializing/loading
-        setWornMoondaoHats(undefined)
-        setIsLoading(true)
-      } else {
-        // No address means definitively no teams
-        setWornMoondaoHats([])
-        setIsLoading(false)
-      }
+      setUserTeams(address ? undefined : [])
+      setIsLoading(Boolean(address))
     }
-  }, [teamContract, selectedChain, address])
+  }, [address, selectedChain])
 
-  return { userTeams: wornMoondaoHats, isLoading }
+  return { userTeams, isLoading }
 }

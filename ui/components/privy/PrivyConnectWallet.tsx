@@ -133,16 +133,14 @@ export function SendModal({
 
   const sendModalChainSlug = getChainSlug(sendModalChain)
 
-  // Available chains for the network selector
-  const availableChains = [
-    arbitrum,
-    ethereum,
-    base,
-    polygon,
-    sepolia,
-    arbitrumSepolia,
-    optimismSepolia,
-  ]
+  // Available chains for the network selector - mainnet only shows mainnet chains
+  const availableChains = useMemo(
+    () =>
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+        ? [arbitrum, ethereum, base, polygon]
+        : [arbitrum, ethereum, base, polygon, sepolia, arbitrumSepolia, optimismSepolia],
+    []
+  )
 
   // Fetch tokens for the selected network in SendModal
   const {

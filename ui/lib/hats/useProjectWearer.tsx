@@ -1,11 +1,12 @@
-import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
-import { PROJECT_HAT_TREE_IDS } from 'const/config'
 import { useEffect, useState } from 'react'
-import { readContract } from 'thirdweb'
-import { getChainSlug } from '../thirdweb/chain'
 
+/**
+ * Uses team-centric API: iterates through projects and checks if the user's
+ * address appears as a wearer in each project's hat tree. More reliable than
+ * the previous get-wearer approach when subgraph mapping had issues.
+ */
 export function useProjectWearer(
-  projectContract: any,
+  _projectContract: any,
   selectedChain: any,
   address: any
 ) {
@@ -13,7 +14,7 @@ export function useProjectWearer(
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    async function getWearerProjectHats() {
+    async function fetchUserProjects() {
       try {
         setIsLoading(true)
         setWornProjectHats(undefined)
@@ -22,117 +23,49 @@ export function useProjectWearer(
           setIsLoading(false)
           return
         }
-        const propsParam = encodeURIComponent(
-          JSON.stringify({
-            currentHats: {
-              props: {
-                tree: {},
-                admin: {
-                  admin: {
-                    admin: {},
-                  },
-                },
-              },
-            },
-          })
-        )
+        if (!selectedChain?.id) {
+          setWornProjectHats([])
+          setIsLoading(false)
+          return
+        }
+
         const res = await fetch(
-          `/api/hats/get-wearer?chainId=${selectedChain.id}&wearerAddress=${address}&props=${propsParam}`
+          `/api/hats/user-memberships?chainId=${selectedChain.id}&wearerAddress=${encodeURIComponent(address)}`
         )
+        const data = await res.json().catch(() => ({}))
 
-        const hats: any = await res.json()
-
-        if (hats.currentHats) {
-          const projectHats = hats.currentHats.filter(
-            (hat: any) =>
-              hat.tree.id === PROJECT_HAT_TREE_IDS[getChainSlug(selectedChain)]
-          )
-
-          const projectHatsWithId = await Promise.all(
-            projectHats.map(async (hat: any) => {
-              const projectIdFromHat = await readContract({
-                contract: projectContract,
-                method: 'adminHatToTokenId' as string,
-                params: [hat.id],
-              })
-              const projectIdFromAdmin = await readContract({
-                contract: projectContract,
-                method: 'adminHatToTokenId' as string,
-                params: [hat.admin.id],
-              })
-              const projectIdFromAdminAdmin = await readContract({
-                contract: projectContract,
-                method: 'adminHatToTokenId' as string,
-                params: [hat.admin.admin.id],
-              })
-
-              let projectId
-              if (+projectIdFromHat.toString() !== 0) {
-                projectId = projectIdFromHat
-              } else if (+projectIdFromAdmin.toString() !== 0) {
-                projectId = projectIdFromAdmin
-              } else if (+projectIdFromAdminAdmin.toString() !== 0) {
-                projectId = projectIdFromAdminAdmin
-              } else {
-                projectId = 0
-              }
-
-              const adminHatId = await readContract({
-                contract: projectContract,
-                method: 'teamAdminHat' as string,
-                params: [projectId],
-              })
-              const prettyAdminHatId = hatIdDecimalToHex(
-                BigInt(adminHatId.toString())
-              )
-
-              if (
-                hat.id === prettyAdminHatId ||
-                hat.admin.id === prettyAdminHatId ||
-                hat.admin.admin.id === prettyAdminHatId ||
-                hat.admin.admin.admin.id === prettyAdminHatId
-              ) {
-                return {
-                  ...hat,
-                  projectId: projectId.toString(),
-                }
-              }
-              return null
-            })
-          ).then((results) => results.filter((result) => result !== null))
-
-          const uniqueProjects = [
-            ...new Set(
-              projectHatsWithId.map((hat: any) => hat.projectId)
-            ),
-          ].map((projectId: any) => {
-            return {
-              projectId: projectId,
-              hats: projectHatsWithId.filter(
-                (hat: any) => +hat.projectId === +projectId
-              ),
-            }
-          })
-
-          setWornProjectHats(uniqueProjects)
+        if (data?.projects && Array.isArray(data.projects)) {
+          const formatted = data.projects.map((p: { projectId: string; name: string }) => ({
+            projectId: p.projectId,
+            name: p.name || `Project #${p.projectId}`,
+            hats: [],
+          }))
+          setWornProjectHats(formatted)
+        } else if (data?.projectIds && Array.isArray(data.projectIds)) {
+          const formatted = data.projectIds.map((projectId: string) => ({
+            projectId,
+            name: null,
+            hats: [],
+          }))
+          setWornProjectHats(formatted)
         } else {
           setWornProjectHats([])
         }
         setIsLoading(false)
       } catch (err) {
-        console.log(err)
+        console.warn('[useProjectWearer] Error:', err)
         setWornProjectHats([])
         setIsLoading(false)
       }
     }
 
-    if (projectContract && selectedChain) {
-      getWearerProjectHats()
+    if (address && selectedChain) {
+      fetchUserProjects()
     } else {
-      setWornProjectHats([])
-      setIsLoading(false)
+      setWornProjectHats(address ? undefined : [])
+      setIsLoading(Boolean(address))
     }
-  }, [projectContract, selectedChain, address])
+  }, [address, selectedChain])
 
   return { userProjects: wornProjectHats, isLoading }
 }

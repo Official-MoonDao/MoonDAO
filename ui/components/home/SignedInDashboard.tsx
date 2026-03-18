@@ -42,7 +42,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState, useEffect, useMemo } from 'react'
+import { useContext, useState, useEffect, useMemo, useRef } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -51,7 +51,6 @@ import {
   countDashboardCitizens,
   countUniqueCountries,
   filterDashboardCitizens,
-  getDashboardCitizenMetadata,
   getDashboardMissionSupportStat,
 } from '@/lib/dashboard/dashboardData'
 import { shouldShowTeamsSection } from '@/lib/dashboard/shouldShowTeamsSection'
@@ -67,6 +66,7 @@ import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import { truncateTokenValue } from '@/lib/utils/numbers'
+import { useVisibleItemCount } from '@/lib/utils/hooks/useVisibleItemCount'
 import { networkCard } from '@/lib/layout/styles'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import WalletInfoCard from '@/components/home/WalletInfoCard'
@@ -87,6 +87,8 @@ import DashboardActiveProjects from '../project/DashboardActiveProjects'
 import DashboardQuests from './DashboardQuests'
 import DashboardTeams from './DashboardTeams'
 import LazyEarth from '@/components/globe/LazyEarth'
+import { useVisibleItemCount } from '@/lib/utils/hooks/useVisibleItemCount'
+import { useVisibleItemCount } from '@/lib/utils/hooks/useVisibleItemCount'
 
 // Get team metadata for card (description preview, communications, or website)
 function getTeamMetadata(team: any): string | null {
@@ -118,6 +120,7 @@ export default function SignedInDashboard({
   missions,
   featuredMissionData,
   citizensLocationData = [],
+  initialNewsletters = [],
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -136,9 +139,20 @@ export default function SignedInDashboard({
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
-  // Client-side newsletter state (fetch on client-side)
-  const [clientNewsletters, setClientNewsletters] = useState<any[]>([])
+  // Client-side newsletter state (fetch on client-side; use server data as initial)
+  const [clientNewsletters, setClientNewsletters] = useState<any[]>(
+    Array.isArray(initialNewsletters) ? initialNewsletters : []
+  )
   const [newslettersLoading, setNewslettersLoading] = useState(false)
+
+  // Client-side missions/featured fallback when getStaticProps returns empty (e.g. build-time failure)
+  const [clientMissions, setClientMissions] = useState<any[] | null>(null)
+  const [clientFeaturedMissionData, setClientFeaturedMissionData] = useState<any | null>(null)
+  const [missionsLoading, setMissionsLoading] = useState(false)
+
+  const effectiveMissions = clientMissions ?? (Array.isArray(missions) ? missions : [])
+  const effectiveFeaturedMissionData = clientFeaturedMissionData ?? featuredMissionData ?? null
+
   const dashboardEthBudget = NEXT_QUARTER_BUDGET_ETH
 
   const { proposals, currentProjects } = useMemo(
@@ -149,6 +163,7 @@ export default function SignedInDashboard({
     () => filterDashboardCitizens(newestCitizens).slice(0, 8),
     [newestCitizens]
   )
+  // Fetch extra citizens so filtering (blocked/test) still yields 8; slice ensures exactly 8
   const dashboardCitizenCount = useMemo(
     () => countDashboardCitizens(citizensLocationData),
     [citizensLocationData]
@@ -184,6 +199,28 @@ export default function SignedInDashboard({
     fetchNewsletters()
   }, [])
 
+  // Client-side fallback: fetch missions + featured when getStaticProps returned empty
+  useEffect(() => {
+    const hasData = effectiveMissions.length > 0 || effectiveFeaturedMissionData
+    if (hasData) return
+
+    const fetchMissionsAndFeatured = async () => {
+      setMissionsLoading(true)
+      try {
+        const res = await fetch('/api/featured-mission', { cache: 'no-store' })
+        const data = await res.json().catch(() => ({}))
+        const ms = data?.missions
+        const feat = data?.featuredMissionData
+        if (Array.isArray(ms) && ms.length > 0) setClientMissions(ms)
+        if (feat) setClientFeaturedMissionData(feat)
+      } catch (e) {
+        console.warn('Featured mission fetch failed:', e)
+      } finally {
+        setMissionsLoading(false)
+      }
+    }
+    fetchMissionsAndFeatured()
+  }, [effectiveMissions.length, effectiveFeaturedMissionData])
 
   const account = useActiveAccount()
   const address = account?.address
@@ -268,13 +305,16 @@ export default function SignedInDashboard({
   })
 
   // Find the best mission to feature - one with active funding, otherwise the newest one
+  // Use effectiveMissions/effectiveFeaturedMissionData so client-side fallback data is used
   const featuredMission =
-    featuredMissionData?.mission ||
-    missions?.find(
+    effectiveFeaturedMissionData?.mission ||
+    effectiveMissions?.find(
       (mission: any) =>
-        mission.projectId && mission.projectId > 0 && mission.fundingGoal && mission.fundingGoal > 0
+        mission.projectId &&
+        (Number(mission.projectId) || 0) > 0 &&
+        (Number(mission.fundingGoal) || 0) > 0
     ) ||
-    (missions?.length > 0 ? missions[0] : null)
+    (effectiveMissions?.length > 0 ? effectiveMissions[0] : null)
 
   // Featured mission data - exactly like launchpad
   const {
@@ -289,15 +329,15 @@ export default function SignedInDashboard({
     jbControllerContract,
     jbDirectoryContract,
     jbTokensContract,
-    projectMetadata: featuredMissionData?.projectMetadata,
-    _stage: featuredMissionData?._stage,
-    _deadline: featuredMissionData?._deadline,
-    _refundPeriod: featuredMissionData?._refundPeriod,
-    _primaryTerminalAddress: featuredMissionData?._primaryTerminalAddress,
-    _token: featuredMissionData?._token,
-    _fundingGoal: featuredMissionData?._fundingGoal,
-    _ruleset: featuredMissionData?._ruleset,
-    _backers: featuredMissionData?._backers,
+    projectMetadata: effectiveFeaturedMissionData?.projectMetadata,
+    _stage: effectiveFeaturedMissionData?._stage,
+    _deadline: effectiveFeaturedMissionData?._deadline,
+    _refundPeriod: effectiveFeaturedMissionData?._refundPeriod,
+    _primaryTerminalAddress: effectiveFeaturedMissionData?._primaryTerminalAddress,
+    _token: effectiveFeaturedMissionData?._token,
+    _fundingGoal: effectiveFeaturedMissionData?._fundingGoal,
+    _ruleset: effectiveFeaturedMissionData?._ruleset,
+    _backers: effectiveFeaturedMissionData?._backers,
   })
   const missionSupportStat = useMemo(
     () =>
@@ -409,7 +449,6 @@ export default function SignedInDashboard({
               <div className="flex flex-col gap-1 flex-1 min-h-0">
                 {visibleNewestCitizens.length > 0 ? (
                   visibleNewestCitizens.map((citizen: any) => {
-                    const metadata = getDashboardCitizenMetadata(citizen)
                     const bio = (citizen.description || citizen.metadata?.description || '')
                       .replace(/<[^>]*>/g, '')
                       .trim()
@@ -443,9 +482,9 @@ export default function SignedInDashboard({
                           <h4 className="text-white font-medium text-base truncate">
                             {citizen.name || 'Anonymous'}
                           </h4>
-                          {(metadata || bioPreview) && (
+                          {bioPreview && (
                             <p className="text-white/50 text-sm leading-snug mt-0.5 line-clamp-2">
-                              {[metadata, bioPreview].filter(Boolean).join(' · ')}
+                              {bioPreview}
                             </p>
                           )}
                         </div>
@@ -586,7 +625,13 @@ export default function SignedInDashboard({
                   <div className="text-center py-16 min-h-[300px] flex flex-col justify-center">
                     <NewspaperIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
                     <p className="text-gray-400 text-sm">No newsletters available</p>
-                    <p className="text-gray-500 text-xs mt-1">Check back soon for updates</p>
+                    <p className="text-gray-500 text-xs mt-1">Check back soon or view all at news.moondao.com</p>
+                    <StandardButton
+                      className="mt-4 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg"
+                      link="https://moondao.ck.page/profile/posts"
+                    >
+                      View Newsletters
+                    </StandardButton>
                   </div>
                 )}
               </div>
@@ -916,11 +961,19 @@ export default function SignedInDashboard({
             ) : (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 mx-auto mb-4">
-                  <RocketLaunchIcon className="w-8 h-8" />
+                  {missionsLoading ? (
+                    <LoadingSpinner width="w-8" height="h-8" />
+                  ) : (
+                    <RocketLaunchIcon className="w-8 h-8" />
+                  )}
                 </div>
-                <h4 className="font-bold text-white text-xl mb-2">Missions Loading</h4>
+                <h4 className="font-bold text-white text-xl mb-2">
+                  {missionsLoading ? 'Loading mission...' : 'Missions Loading'}
+                </h4>
                 <p className="text-blue-200 text-sm mb-4">
-                  We're preparing exciting new missions for space exploration.
+                  {missionsLoading
+                    ? 'Fetching the latest mission data...'
+                    : "We're preparing exciting new missions for space exploration."}
                 </p>
                 <div className="text-blue-300 text-xs">Stay tuned for mission updates!</div>
               </div>

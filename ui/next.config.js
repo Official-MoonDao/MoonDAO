@@ -82,6 +82,8 @@ module.exports = withBundleAnalyzer(
           'test.com',
           'embed.filekitcdn.com',
           'functions-js.kit.com',
+          'images.lumacdn.com',
+          'pbs.twimg.com',
         ],
         formats: ['image/avif', 'image/webp'],
       },

@@ -8,7 +8,7 @@ import { getContract, prepareContractCall, sendAndConfirmTransaction } from 'thi
 import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { sepolia } from '@/lib/rpc/chains'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -36,8 +36,7 @@ export type DePrizeProps = {
 export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   const account = useActiveAccount()
 
-  // TODO enable mainnet
-  const selectedChain = sepolia
+  const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
   const [joinModalOpen, setJoinModalOpen] = useState(false)
