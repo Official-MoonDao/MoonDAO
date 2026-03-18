@@ -17,7 +17,7 @@ export default function CitizenProfileLink() {
         href={profileUrl}
         className="flex items-center justify-center cursor-pointer"
       >
-        <div className="rounded-[100%] w-[40px] h-[40px] overflow-hidden animate-fadeIn flex items-center justify-center">
+        <span className="inline-flex rounded-[100%] w-[40px] h-[40px] overflow-hidden animate-fadeIn items-center justify-center">
           <IPFSRenderer
             className="object-cover"
             src={citizen.metadata.image}
@@ -25,7 +25,7 @@ export default function CitizenProfileLink() {
             height={40}
             alt="Citizen Image"
           />
-        </div>
+        </span>
       </NavLink>
     )
   }
