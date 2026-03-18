@@ -20,6 +20,9 @@ import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import queryTable from '@/lib/tableland/queryTable'
 import { processHatsWithTeamData } from '@/lib/hats/batchHatOperations'
+import pLimit from 'p-limit'
+
+const concurrencyLimit = pLimit(10)
 
 function collectWearerAddresses(hat: any): string[] {
   const addresses: string[] = []
@@ -236,13 +239,20 @@ export async function getUserMemberships(
 
     const [teamResults, projectResults] = await Promise.all([
       Promise.all(
-        teamIdsToCheck.map(async (id) => ({ id, isMember: await checkTeamHats(id) }))
+        teamIdsToCheck.map((id) =>
+          concurrencyLimit(async () => ({
+            id,
+            isMember: await checkTeamHats(id),
+          }))
+        )
       ),
       Promise.all(
-        projectIdsToCheck.map(async (id) => ({
-          id,
-          isMember: await checkProjectHats(id),
-        }))
+        projectIdsToCheck.map((id) =>
+          concurrencyLimit(async () => ({
+            id,
+            isMember: await checkProjectHats(id),
+          }))
+        )
       ),
     ])
 
