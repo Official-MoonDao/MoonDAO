@@ -65,8 +65,8 @@ import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
-import { truncateTokenValue } from '@/lib/utils/numbers'
 import { useVisibleItemCount } from '@/lib/utils/hooks/useVisibleItemCount'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import { networkCard } from '@/lib/layout/styles'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import WalletInfoCard from '@/components/home/WalletInfoCard'
@@ -87,8 +87,6 @@ import DashboardActiveProjects from '../project/DashboardActiveProjects'
 import DashboardQuests from './DashboardQuests'
 import DashboardTeams from './DashboardTeams'
 import LazyEarth from '@/components/globe/LazyEarth'
-import { useVisibleItemCount } from '@/lib/utils/hooks/useVisibleItemCount'
-import { useVisibleItemCount } from '@/lib/utils/hooks/useVisibleItemCount'
 
 // Get team metadata for card (description preview, communications, or website)
 function getTeamMetadata(team: any): string | null {
@@ -159,11 +157,30 @@ export default function SignedInDashboard({
     () => buildDashboardProjectLists(projects),
     [projects]
   )
-  const visibleNewestCitizens = useMemo(
-    () => filterDashboardCitizens(newestCitizens).slice(0, 8),
+  const filteredCitizens = useMemo(
+    () => filterDashboardCitizens(newestCitizens),
     [newestCitizens]
   )
-  // Fetch extra citizens so filtering (blocked/test) still yields 8; slice ensures exactly 8
+  const citizensContainerRef = useRef<HTMLDivElement>(null)
+  const teamsContainerRef = useRef<HTMLDivElement>(null)
+  const citizensVisibleCount = useVisibleItemCount(citizensContainerRef, {
+    rowHeight: 88,
+    minCount: 2,
+    maxCount: 12,
+  })
+  const teamsVisibleCount = useVisibleItemCount(teamsContainerRef, {
+    rowHeight: 88,
+    minCount: 2,
+    maxCount: 12,
+  })
+  const visibleNewestCitizens = useMemo(
+    () => filteredCitizens.slice(0, citizensVisibleCount),
+    [filteredCitizens, citizensVisibleCount]
+  )
+  const visibleFeaturedTeams = useMemo(
+    () => (filteredTeams ?? []).slice(0, teamsVisibleCount),
+    [filteredTeams, teamsVisibleCount]
+  )
   const dashboardCitizenCount = useMemo(
     () => countDashboardCitizens(citizensLocationData),
     [citizensLocationData]
@@ -446,7 +463,7 @@ export default function SignedInDashboard({
                 </StandardButton>
               </div>
 
-              <div className="flex flex-col gap-1 flex-1 min-h-0">
+              <div ref={citizensContainerRef} className="flex flex-col gap-1 flex-1 min-h-0">
                 {visibleNewestCitizens.length > 0 ? (
                   visibleNewestCitizens.map((citizen: any) => {
                     const bio = (citizen.description || citizen.metadata?.description || '')
@@ -687,9 +704,9 @@ export default function SignedInDashboard({
                 </StandardButton>
               </div>
 
-              <div className="flex flex-col gap-1 flex-1 min-h-0">
+              <div ref={teamsContainerRef} className="flex flex-col gap-1 flex-1 min-h-0">
                 {filteredTeams && filteredTeams.length > 0 ? (
-                  filteredTeams.slice(0, 8).map((team: any, index: number) => {
+                  filteredTeams.slice(0, teamsVisibleCount).map((team: any, index: number) => {
                     const metadata = getTeamMetadata(team)
                     return (
                       <Link
