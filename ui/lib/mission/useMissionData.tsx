@@ -141,18 +141,23 @@ export default function useMissionData({
         return
       }
 
-      const payHookAddress: any = await readContract({
-        contract: missionCreatorContract,
-        method: 'missionIdToPayHook' as string,
-        params: [mission.id],
-      })
-      const payHookContract = getContract({
-        client,
-        address: payHookAddress,
-        chain: DEFAULT_CHAIN_V5,
-        abi: LaunchPadPayHookABI.abi as any,
-      })
-      if (payHookContract) {
+      if (!missionCreatorContract?.address || mission?.id == null) return
+
+      try {
+        const payHookAddress: any = await readContract({
+          contract: missionCreatorContract,
+          method: 'missionIdToPayHook' as string,
+          params: [mission.id],
+        })
+        const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+        if (!payHookAddress || payHookAddress === ZERO_ADDRESS) return
+
+        const payHookContract = getContract({
+          client,
+          address: payHookAddress,
+          chain: DEFAULT_CHAIN_V5,
+          abi: LaunchPadPayHookABI.abi as any,
+        })
         const deadline: any = await readContract({
           contract: payHookContract,
           method: 'deadline' as string,
@@ -165,6 +170,8 @@ export default function useMissionData({
         })
         setDeadline(+deadline.toString() * 1000) // Convert to milliseconds
         setRefundPeriod(+refundPeriod.toString() * 1000) // Convert to milliseconds
+      } catch (err) {
+        console.warn('Failed to fetch mission deadline/refundPeriod:', err)
       }
     }
     if (missionCreatorContract && mission?.id !== undefined) {

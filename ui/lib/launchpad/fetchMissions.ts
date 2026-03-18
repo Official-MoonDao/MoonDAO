@@ -1,10 +1,10 @@
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
+import { MISSION_TABLE_NAMES } from 'const/config'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
-import { Chain, getContract, readContract } from 'thirdweb'
+import { getContract, readContract } from 'thirdweb'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import queryTable from '@/lib/tableland/queryTable'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { ChainType, Mission } from './types'
 
@@ -15,18 +15,28 @@ export async function fetchMissions(
   jbV5ControllerAddress: string
 ): Promise<Mission[]> {
   try {
-    const missionTableContract = getContract({
-      client: serverClient,
-      address: missionTableAddress,
-      abi: {} as any,
-      chain: chain,
-    })
+    // Use pre-configured table name when available to avoid contract call and ABI resolution issues
+    let missionTableName: string | undefined = MISSION_TABLE_NAMES[chainSlug]
 
-    const missionTableName: any = await readContract({
-      contract: missionTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
+    if (!missionTableName) {
+      const missionTableContract = getContract({
+        client: serverClient,
+        address: missionTableAddress,
+        abi: Array.isArray(MissionTableABI) ? MissionTableABI : (MissionTableABI as { abi: unknown[] }).abi,
+        chain: chain,
+      })
+
+      missionTableName = await readContract({
+        contract: missionTableContract,
+        method: 'getTableName' as string,
+        params: [],
+      }) as string
+    }
+
+    if (!missionTableName) {
+      console.warn('Could not resolve mission table name for chain:', chainSlug)
+      return []
+    }
 
     const statement = `SELECT * FROM ${missionTableName}`
     const missionRows = await queryTable(chain, statement)

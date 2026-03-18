@@ -136,18 +136,24 @@ export default function Quest({
           setIsCheckingClaimed(true)
         }
 
-        const claimed = await readContract({
-          contract: xpManagerContract,
-          method: 'hasClaimedFromVerifier' as string,
-          params: [userAddress, quest.verifier.verifierId],
-        })
+        try {
+          const claimed = await readContract({
+            contract: xpManagerContract,
+            method: 'hasClaimedFromVerifier' as string,
+            params: [userAddress, quest.verifier.verifierId],
+          })
 
-        setHasClaimed(Boolean(claimed))
-        // Always clear checking status when not polling, regardless of result
-        if (!polling) {
-          setIsCheckingClaimed(false)
+          setHasClaimed(Boolean(claimed))
+          return Boolean(claimed)
+        } catch (err) {
+          console.warn('Failed to fetch claim status for quest:', quest.verifier.verifierId, err)
+          setHasClaimed(false)
+          return false
+        } finally {
+          if (!polling) {
+            setIsCheckingClaimed(false)
+          }
         }
-        return Boolean(claimed)
       } else {
         // Always clear checking status when not polling
         if (!polling) {
@@ -387,11 +393,20 @@ export default function Quest({
         abi: ERC20ABI as any,
       })
 
-      const xpManagerMooneyBalance = await readContract({
-        contract: mooneyContract,
-        method: 'balanceOf' as string,
-        params: [xpManagerContract.address],
-      })
+      let xpManagerMooneyBalance
+      try {
+        xpManagerMooneyBalance = await readContract({
+          contract: mooneyContract,
+          method: 'balanceOf' as string,
+          params: [xpManagerContract.address],
+        })
+      } catch (err) {
+        console.warn('Failed to fetch XP manager MOONEY balance:', err)
+        return toast.error('Failed to verify rewards. Please try again.', {
+          duration: 5000,
+          style: toastStyle,
+        })
+      }
 
       if (+xpManagerMooneyBalance.toString() / 1e18 < xpAmount) {
         return toast.error('Insufficient rewards. Please contact support.', {
@@ -517,12 +532,16 @@ export default function Quest({
       }
 
       if (verifierContract && userAddress) {
-        const xpAmount = await readContract({
-          contract: verifierContract,
-          method: 'xpPerClaim' as string,
-          params: [],
-        })
-        setXpAmount(Number(xpAmount))
+        try {
+          const xpAmount = await readContract({
+            contract: verifierContract,
+            method: 'xpPerClaim' as string,
+            params: [],
+          })
+          setXpAmount(Number(xpAmount))
+        } catch (err) {
+          console.warn('Failed to fetch XP amount for quest:', quest.verifier.verifierId, err)
+        }
       }
       setIsLoadingXpAmount(false)
     }

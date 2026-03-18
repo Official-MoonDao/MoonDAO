@@ -276,6 +276,11 @@ export async function getStaticProps() {
       ? newslettersResult.value
       : []
 
+  // Sanitize featuredMissionData for JSON serialization (undefined -> null)
+  const serializableFeaturedMissionData = featuredMissionData
+    ? JSON.parse(JSON.stringify(featuredMissionData))
+    : null
+
   return {
     props: {
       newestCitizens,
@@ -287,7 +292,7 @@ export async function getStaticProps() {
       filteredTeams,
       allProjects,
       missions,
-      featuredMissionData,
+      featuredMissionData: serializableFeaturedMissionData,
       citizensLocationData,
       initialNewsletters,
     },

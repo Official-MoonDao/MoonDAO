@@ -198,8 +198,8 @@ export async function fetchFeaturedMissionData(
     return {
       mission: featuredMission,
       _stage: stage ? +stage.toString() : 1,
-      _deadline: deadline,
-      _refundPeriod: refundPeriod,
+      _deadline: deadline ?? null,
+      _refundPeriod: refundPeriod ?? null,
       _primaryTerminalAddress: primaryTerminalAddress,
       _token: tokenData,
       _fundingGoal: featuredMission.fundingGoal || 0,

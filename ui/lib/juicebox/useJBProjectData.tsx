@@ -70,6 +70,8 @@ export default function useJBProjectData({
   //Metadata
   useEffect(() => {
     async function getProjectMetadata() {
+      if (!jbControllerContract?.address || projectId == null || projectId <= 0)
+        return
       try {
         const metadataURI: any = await readContract({
           contract: jbControllerContract,
@@ -86,19 +88,30 @@ export default function useJBProjectData({
       }
     }
 
-    if (jbControllerContract && !projectMetadata && projectId !== undefined)
+    if (
+      jbControllerContract?.address &&
+      !projectMetadata &&
+      projectId != null &&
+      projectId > 0
+    )
       getProjectMetadata()
   }, [jbControllerContract, projectId, projectMetadata])
 
   //Ruleset, refresh if stage changes
   useEffect(() => {
     async function getProjectRuleset() {
-      const rs: any = await readContract({
-        contract: jbControllerContract,
-        method: 'currentRulesetOf' as string,
-        params: [projectId],
-      })
-      setRuleset(rs)
+      if (!jbControllerContract?.address || projectId == null || projectId <= 0)
+        return
+      try {
+        const rs: any = await readContract({
+          contract: jbControllerContract,
+          method: 'currentRulesetOf' as string,
+          params: [projectId],
+        })
+        setRuleset(rs)
+      } catch (err) {
+        console.warn('Failed to fetch project ruleset:', err)
+      }
     }
     if (jbControllerContract && projectId !== undefined && stage !== undefined)
       getProjectRuleset()
@@ -107,21 +120,28 @@ export default function useJBProjectData({
   //Token Address
   useEffect(() => {
     async function getProjectToken() {
-      const token: any = await readContract({
-        contract: jbTokensContract,
-        method: 'tokenOf' as string,
-        params: [projectId],
-      })
-      setToken((prev: any) => ({ ...prev, tokenAddress: token }))
+      if (!jbTokensContract?.address || projectId == null || projectId <= 0)
+        return
+      try {
+        const token: any = await readContract({
+          contract: jbTokensContract,
+          method: 'tokenOf' as string,
+          params: [projectId],
+        })
+        setToken((prev: any) => ({ ...prev, tokenAddress: token }))
+      } catch (err) {
+        console.warn('Failed to fetch project token:', err)
+      }
     }
 
-    if (jbTokensContract && projectId) getProjectToken()
+    if (jbTokensContract?.address && projectId != null && projectId > 0)
+      getProjectToken()
   }, [projectId, jbTokensContract])
 
   //Token Data
   useEffect(() => {
     async function getTokenData() {
-      if (!tokenContract) return
+      if (!tokenContract?.address) return
       const [nameResult, symbolResult, supplyResult] = await Promise.allSettled(
         [
           readContract({
