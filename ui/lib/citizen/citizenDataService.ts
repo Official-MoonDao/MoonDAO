@@ -127,29 +127,6 @@ function parseLocationData(citizenLocation: string | undefined): {
 }
 
 /**
- * Extract country from formatted address
- */
-function extractCountryFromAddress(formattedAddress: string): string {
-  if (!formattedAddress || formattedAddress === 'Antarctica') {
-    return 'Antarctica'
-  }
-
-  const parts = formattedAddress.split(',').map((part) => part.trim())
-  if (parts.length === 0) return 'Unknown'
-
-  const country = parts[parts.length - 1]
-
-  const countryMappings: { [key: string]: string } = {
-    USA: 'United States',
-    US: 'United States',
-    UK: 'United Kingdom',
-    UAE: 'United Arab Emirates',
-  }
-
-  return countryMappings[country] || country
-}
-
-/**
  * Group citizens by location coordinates
  */
 function groupCitizensByLocation(
