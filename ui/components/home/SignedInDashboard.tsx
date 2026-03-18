@@ -48,7 +48,6 @@ import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import {
   buildDashboardProjectLists,
-  countDashboardCitizens,
   countUniqueCountries,
   filterDashboardCitizens,
   getDashboardMissionSupportStat,
@@ -56,6 +55,7 @@ import {
 import { shouldShowTeamsSection } from '@/lib/dashboard/shouldShowTeamsSection'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
+import { useCitizensCount } from '@/lib/network/useNetworkData'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -181,10 +181,17 @@ export default function SignedInDashboard({
     () => (filteredTeams ?? []).slice(0, teamsVisibleCount),
     [filteredTeams, teamsVisibleCount]
   )
-  const dashboardCitizenCount = useMemo(
-    () => countDashboardCitizens(citizensLocationData),
+  const { count: totalCitizensCount, isLoading: citizensCountLoading } = useCitizensCount('', true)
+  const locationBasedCount = useMemo(
+    () =>
+      (citizensLocationData ?? []).reduce(
+        (sum: number, loc: any) => sum + (Array.isArray(loc?.citizens) ? loc.citizens.length : 0),
+        0
+      ),
     [citizensLocationData]
   )
+  const dashboardCitizenCount =
+    !citizensCountLoading ? totalCitizensCount : locationBasedCount
 
   // Fetch newsletters on client-side
   useEffect(() => {
