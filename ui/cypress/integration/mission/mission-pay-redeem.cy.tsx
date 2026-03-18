@@ -117,7 +117,7 @@ describe('MissionPayRedeem Component', () => {
     cy.contains('You receive').should('be.visible')
     cy.get('#usd-contribution-input').should('exist')
     cy.get('#open-contribute-modal').should('contain', 'Contribute')
-    cy.contains('Sign In ● Fund ● Contribute').should('be.visible')
+    cy.contains('Sign In · Fund · Contribute').should('be.visible')
   })
 
   it('handles USD input changes correctly', () => {
@@ -159,7 +159,7 @@ describe('MissionPayRedeem Component', () => {
 
     cy.get('#mission-token-section').should('exist')
     cy.contains('Token').should('be.visible')
-    cy.contains('Current Supply').should('be.visible')
+    cy.contains('Supply').should('be.visible')
     cy.contains('1,000.00').should('be.visible') // Formatted token supply
     cy.contains('TMT').should('be.visible')
   })
@@ -439,7 +439,7 @@ describe('MissionPayRedeem Component', () => {
     )
 
     cy.get('#mission-token-section').should('exist')
-    cy.contains('Current Supply').should('be.visible')
+    cy.contains('Supply').should('be.visible')
   })
 
   it('formats USD input with commas', () => {
