@@ -31,7 +31,12 @@ describe('<Network />', () => {
     cy.mountNextRouter('/network')
 
     cy.intercept('GET', '/api/tableland/query*', (req) => {
-      const url = decodeURIComponent(req.url)
+      let url = req.url
+      try {
+        url = decodeURIComponent(req.url)
+      } catch {
+        url = req.url
+      }
       if (url.includes('COUNT') || url.includes('count')) {
         if (url.includes('TEAMTABLE') || url.includes('TEAM')) {
           req.reply({ body: [{ count: 10 }] })
@@ -143,7 +148,12 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
+      // Wait for initial load requests to complete first
+      cy.wait('@getTablelandQuery')
+      cy.wait('@getTablelandQuery')
+
       cy.get('input[name="search"]').type('Test')
+      // Wait for debounce (500ms) + search request
       cy.wait('@getTablelandQuery', { timeout: 10000 })
     })
   })
@@ -156,7 +166,13 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
+      // Wait for initial citizens tab requests (COUNT + SELECT)
+      cy.wait('@getTablelandQuery')
+      cy.wait('@getTablelandQuery')
+
       cy.contains('Teams').click()
+
+      // Wait for teams tab requests (COUNT + SELECT)
       cy.wait('@getTablelandQuery')
       cy.wait('@getTablelandQuery')
 
