@@ -45,40 +45,24 @@ export async function batchFetchHatTeamData(
     const contractCalls: any[] = []
     const callMetadata: Array<{ hatId: string; type: string; level: string }> = []
 
-    // For each hat, we need to check:
-    // 1. adminHatToTokenId for the hat itself
-    // 2. adminHatToTokenId for hat.admin
-    // 3. adminHatToTokenId for hat.admin.admin (if exists)
+    // For each hat, traverse the admin chain to find team mappings.
+    // Sub-hats (e.g. Executive Branch member, Overview member) may be 5+ levels deep.
     for (const hat of hats) {
-      // Check hat itself
-      contractCalls.push({
-        contractAddress: teamContract.address,
-        method: 'adminHatToTokenId',
-        params: [hat.id],
-        abi: TeamABI,
-      })
-      callMetadata.push({ hatId: hat.id, type: 'adminHatToTokenId', level: 'self' })
-
-      // Check admin
-      if (hat.admin?.id) {
+      const adminIds = [
+        hat.id,
+        hat.admin?.id,
+        hat.admin?.admin?.id,
+        hat.admin?.admin?.admin?.id,
+        hat.admin?.admin?.admin?.admin?.id,
+      ].filter(Boolean)
+      for (const adminId of adminIds) {
         contractCalls.push({
           contractAddress: teamContract.address,
           method: 'adminHatToTokenId',
-          params: [hat.admin.id],
+          params: [adminId],
           abi: TeamABI,
         })
         callMetadata.push({ hatId: hat.id, type: 'adminHatToTokenId', level: 'admin' })
-      }
-
-      // Check admin.admin
-      if (hat.admin?.admin?.id) {
-        contractCalls.push({
-          contractAddress: teamContract.address,
-          method: 'adminHatToTokenId',
-          params: [hat.admin.admin.id],
-          abi: TeamABI,
-        })
-        callMetadata.push({ hatId: hat.id, type: 'adminHatToTokenId', level: 'adminAdmin' })
       }
     }
 
@@ -87,7 +71,7 @@ export async function batchFetchHatTeamData(
       chainId: chain.id,
     })
 
-    // Process results to find which hat belongs to which team
+    // Process results: adminHatToTokenId is the source of truth - if it returns a team, the user is in that team
     const hatTeamMap = new Map<string, string>()
     tokenIdResults.forEach((result, index) => {
       const metadata = callMetadata[index]
@@ -98,47 +82,15 @@ export async function batchFetchHatTeamData(
       }
     })
 
-    // Now fetch teamAdminHat for each unique teamId we found
-    const uniqueTeamIds = Array.from(new Set(hatTeamMap.values())).filter((id) => id !== '0')
-
-    if (uniqueTeamIds.length > 0) {
-      const adminHatCalls = uniqueTeamIds.map((teamId) => ({
-        contractAddress: teamContract.address,
-        method: 'teamAdminHat',
-        params: [teamId],
-        abi: TeamABI,
-      }))
-
-      const adminHatResults = await engineMulticall<{ result: string }>(adminHatCalls, {
-        chainId: chain.id,
-      })
-
-      const teamAdminHatMap = new Map<string, string>()
-      adminHatResults.forEach((result, index) => {
-        const teamId = uniqueTeamIds[index]
-        const adminHatId = result.result
-        teamAdminHatMap.set(teamId, adminHatId)
-      })
-
-      // Build final result map
-      for (const hat of hats) {
-        const teamId = hatTeamMap.get(hat.id)
-        if (teamId && teamId !== '0') {
-          const adminHatId = teamAdminHatMap.get(teamId)
-          const isAdminHat =
-            hat.id === adminHatId ||
-            hat.admin?.id === adminHatId ||
-            hat.admin?.admin?.id === adminHatId ||
-            hat.admin?.admin?.admin?.id === adminHatId
-
-          if (isAdminHat) {
-            resultMap.set(hat.id, {
-              hatId: hat.id,
-              teamId,
-              isAdminHat: true,
-            })
-          }
-        }
+    // Map each hat to its team (first non-zero teamId we found in its admin chain)
+    for (const hat of hats) {
+      const teamId = hatTeamMap.get(hat.id)
+      if (teamId && teamId !== '0') {
+        resultMap.set(hat.id, {
+          hatId: hat.id,
+          teamId,
+          isAdminHat: true,
+        })
       }
     }
 

@@ -11,6 +11,7 @@ import {
   TEAM_TABLE_NAMES,
   PROJECT_ADDRESSES,
   MOONDAO_HAT_TREE_IDS,
+  EB_TEAM_ID,
 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import type { Chain } from 'thirdweb/chains'
@@ -103,7 +104,8 @@ export async function getUserMemberships(
             currentHats: {
               props: {
                 tree: {},
-                admin: { admin: { admin: {} } },
+                // Traverse 4 admin levels to catch sub-hats (e.g. Executive Branch, Overview)
+                admin: { admin: { admin: { admin: {} } } },
               },
             },
           },
@@ -208,14 +210,15 @@ export async function getUserMemberships(
     const MAX_TEAMS = 60
     const MAX_PROJECTS = 40
 
-    const teamIdsToCheck = [
-      ...new Set(
-        teamRows
-          .map((r: any) => (r.id != null ? Number(r.id) : NaN))
-          .filter((id: number) => !isNaN(id) && id > 0)
-          .sort((a: number, b: number) => b - a)
-      ),
-    ].slice(0, MAX_TEAMS)
+    const teamIdsFromTable = teamRows
+      .map((r: any) => (r.id != null ? Number(r.id) : NaN))
+      .filter((id: number) => !isNaN(id) && id >= 0)
+      .sort((a: number, b: number) => b - a)
+    const knownTeamIds = [Number(EB_TEAM_ID)].filter((id) => !isNaN(id) && id >= 0)
+    const teamIdsToCheck = [...new Set([...knownTeamIds, ...teamIdsFromTable])].slice(
+      0,
+      MAX_TEAMS + knownTeamIds.length
+    )
 
     const projectIdsToCheck = [
       ...new Set(
@@ -243,20 +246,41 @@ export async function getUserMemberships(
       ),
     ])
 
-    // Prefer wearer-first team IDs (finds ALL teams user wears) over iteration (limited to 60)
-    if (wearerFirstTeamIds.length > 0) {
-      teamIds.push(...wearerFirstTeamIds)
-    } else {
-      teamResults.forEach(({ id, isMember }) => {
-        if (isMember) teamIds.push(String(id))
-      })
-    }
+    // Merge wearer-first and fallback: both can find teams the other misses
+    const fromWearerFirst = new Set(wearerFirstTeamIds)
+    teamResults.forEach(({ id, isMember }) => {
+      if (isMember) fromWearerFirst.add(String(id))
+    })
+    teamIds.push(...fromWearerFirst)
 
     const teamIdToName = new Map<number, string>()
     for (const r of teamRows) {
       const n = r?.name
       if (typeof n === 'string' && n.trim()) {
         if (r.id != null) teamIdToName.set(Number(r.id), n.trim())
+      }
+    }
+
+    // Fetch names for teams not in teamRows (e.g. EB, Overview with low IDs)
+    const missingTeamIds = [...new Set(teamIds)]
+      .map(Number)
+      .filter((id) => !isNaN(id) && !teamIdToName.has(id))
+    if (teamTableName && missingTeamIds.length > 0) {
+      try {
+        const idsClause = missingTeamIds.join(',')
+        const extraRows =
+          (await queryTable(
+            chain,
+            `SELECT id, name FROM ${teamTableName} WHERE id IN (${idsClause})`
+          )) ?? []
+        for (const r of extraRows) {
+          const n = r?.name
+          if (typeof n === 'string' && n.trim() && r.id != null) {
+            teamIdToName.set(Number(r.id), n.trim())
+          }
+        }
+      } catch {
+        // ignore
       }
     }
 
