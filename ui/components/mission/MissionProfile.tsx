@@ -419,17 +419,18 @@ export default function MissionProfile({
           />
           <div
             id="page-container"
-            className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
+            className="bg-[#090d21] animate-fadeIn flex flex-col items-center w-full"
           >
+            {/* Mobile Pay/Redeem Panel */}
             <div
-              ref={payRedeemContainerRef} // Add ref to the full component container
-              className="flex z-20 xl:hidden w-full px-[5vw]"
+              ref={payRedeemContainerRef}
+              className="flex z-20 xl:hidden w-full px-5 md:px-8 lg:px-12"
             >
               {primaryTerminalAddress &&
               primaryTerminalAddress !== '0x0000000000000000000000000000000000000000' ? (
                 <div
                   id="mission-pay-redeem-container"
-                  className="xl:bg-darkest-cool lg:max-w-[650px] mt-[5vw] md:mt-0 xl:mt-[2vw] w-full xl:rounded-tl-[2vmax] rounded-[2vmax] xl:pr-0 overflow-hidden xl:rounded-bl-[5vmax]"
+                  className="w-full max-w-2xl mx-auto mt-6 md:mt-4 rounded-2xl"
                 >
                   <MissionPayRedeem
                     mission={mission}
@@ -452,14 +453,15 @@ export default function MissionProfile({
                   />
                 </div>
               ) : (
-                <div className="p-4 text-center">
+                <div className="p-6 text-center text-gray-400">
                   <p>Loading payment terminal...</p>
                 </div>
               )}
             </div>
+
             {/* Project Overview */}
-            <div className="px-[5vw] w-full flex items-center justify-center">
-              <div className="z-50 w-[100%] md:pb-[2vw] md:pr-0 overflow-hidden xl:px-[2vw] max-w-[1200px] xl:min-w-[1200px] xl:bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
+            <div className="w-full px-5 md:px-8 lg:px-12 flex justify-center mt-6 md:mt-8">
+              <div className="w-full max-w-[1200px]">
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}
@@ -488,43 +490,49 @@ export default function MissionProfile({
                 />
               </div>
             </div>
-            <div className="w-full px-[5vw] flex justify-center">
-              <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
-                <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex justify-between w-full gap-2 text-light-cool">
-                  <div className="flex items-center gap-2 w-full">
-                    <Image
-                      src={'/assets/icon-star-blue.svg'}
-                      alt="Job icon"
-                      width={30}
-                      height={30}
-                    />
-                    <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
+
+            {/* Meet the Team Section */}
+            <div className="w-full px-5 md:px-8 lg:px-12 flex justify-center mt-8 md:mt-10">
+              <div className="w-full max-w-[1200px] bg-gradient-to-br from-slate-900/80 to-slate-800/40 border border-white/[0.06] rounded-2xl overflow-hidden">
+                <div className="px-6 md:px-8 pt-6 pb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                      <Image
+                        src={'/assets/icon-star-blue.svg'}
+                        alt="Team icon"
+                        width={18}
+                        height={18}
+                      />
+                    </div>
+                    <h2 className="text-xl md:text-2xl font-GoodTimes text-white">
                       Meet the Team
                     </h2>
                   </div>
-                  <div className="flex justify-end gap-2 w-full text-white mr-[5vw]">
-                    <div className="flex gap-2 justify-start justify-end">
-                      {teamSocials.communications && (
-                        <Link
-                          className="flex gap-2 hover:scale-105 transition-all duration-200"
-                          href={teamSocials.communications}
-                          target="_blank"
-                          passHref
-                        >
-                          <ChatBubbleLeftIcon height={25} width={25} />
-                        </Link>
-                      )}
-                      {teamSocials.twitter && (
-                        <Link
-                          className="flex gap-2 hover:scale-105 transition-all duration-200"
-                          href={teamSocials.twitter}
-                          target="_blank"
-                          passHref
-                        >
-                          <TwitterIcon />
-                        </Link>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-3 text-white/70">
+                    {teamSocials.communications && (
+                      <Link
+                        className="hover:text-white transition-colors duration-200 p-1.5 rounded-lg hover:bg-white/5"
+                        href={teamSocials.communications}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Team communications"
+                        passHref
+                      >
+                        <ChatBubbleLeftIcon height={20} width={20} />
+                      </Link>
+                    )}
+                    {teamSocials.twitter && (
+                      <Link
+                        className="hover:text-white transition-colors duration-200 p-1.5 rounded-lg hover:bg-white/5"
+                        href={teamSocials.twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Team Twitter"
+                        passHref
+                      >
+                        <TwitterIcon />
+                      </Link>
+                    )}
                   </div>
                 </div>
                 <SlidingCardMenu>
@@ -577,21 +585,18 @@ export default function MissionProfile({
                       WebkitOverflowScrolling: 'touch',
                     }}
                   >
-                    <Link
-                      className="flex flex-col group"
-                      href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
-                      target="_blank"
-                    >
-                      <div className="group-hover:scale-[1.05] transition-all duration-200">
-                        <JuiceboxLogoWhite />
-                      </div>
-                      {isManager && (
-                        <p className="text-xs opacity-90 uppercase group-hover:scale-105 transition-all duration-200">
-                          (Edit Project)
-                        </p>
-                      )}
-                    </Link>
-                  </div>
+                    <div className="group-hover:scale-[1.05] transition-all duration-200">
+                      <JuiceboxLogoWhite />
+                    </div>
+                    <span className="text-sm text-gray-400 group-hover:text-white transition-colors duration-200">
+                      View on Juicebox
+                    </span>
+                    {isManager && (
+                      <span className="text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
+                        (Edit Project)
+                      </span>
+                    )}
+                  </Link>
                 </div>
               </div>
             </div>
