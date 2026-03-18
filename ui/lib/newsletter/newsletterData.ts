@@ -244,9 +244,10 @@ export function getRecentPublicNewsletters(
       const publishedDate =
         broadcast?.published_at || broadcast?.send_at || broadcast?.created_at
 
-      const url = broadcast?.public_url
+      let url = broadcast?.public_url
         ? normalizeNewsletterUrl(broadcast.public_url) || broadcast.public_url
         : null
+      if (!url) url = buildNewsletterUrl(broadcast)
 
       return {
         id: broadcast?.id?.toString() || Math.random().toString(),
@@ -255,7 +256,7 @@ export function getRecentPublicNewsletters(
         publishedAt: publishedDate,
         views: broadcast?.total_recipients || null,
         image: broadcast?.thumbnail_url || null,
-        url: url || 'https://news.moondao.com/posts',
+        url,
         stats: broadcast?.stats || {},
         isArchived: new Date(publishedDate) < new Date('2024-01-01'),
         isPublic: true,
