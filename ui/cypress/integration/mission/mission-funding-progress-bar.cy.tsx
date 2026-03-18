@@ -34,15 +34,15 @@ describe('<MissionFundingProgressBar />', () => {
     cy.contains('20%').should('be.visible')
   })
 
-  it('Should not render when stage is invalid', () => {
+  it('Should render with valid props', () => {
     cy.mount(
       <TestnetProviders>
         <MissionFundingProgressBar {...defaultProps} />
       </TestnetProviders>
     )
 
-    // Component should still render even with valid props
-    cy.get('.relative.w-full.rounded-full').should('exist')
+    // Component should render with valid props (uses mb-3 in normal mode)
+    cy.get('.relative.mb-3').should('exist')
   })
 
   it('Should render in compact mode when specified', () => {
