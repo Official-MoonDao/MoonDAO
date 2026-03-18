@@ -367,9 +367,12 @@ export default function OverviewDelegate({
     }
   }
 
-  const fromMission = router?.query?.from === 'mission'
-  const missionId = router?.query?.missionId as string | undefined
-  const isOverviewMission = missionId === '4' || missionId === 4
+  const fromParam = router?.query?.from
+  const missionIdParam = router?.query?.missionId
+  const from = Array.isArray(fromParam) ? fromParam[0] : fromParam
+  const missionId = Array.isArray(missionIdParam) ? missionIdParam[0] : (missionIdParam as string | undefined)
+  const fromMission = from === 'mission'
+  const isOverviewMission = missionId === '4'
 
   return (
     <section className="overflow-visible">
