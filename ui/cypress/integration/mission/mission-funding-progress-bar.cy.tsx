@@ -42,7 +42,7 @@ describe('<MissionFundingProgressBar />', () => {
     )
 
     // Component should still render even with valid props
-    cy.get('.relative.max-w-\\[800px\\]').should('exist')
+    cy.get('.relative.w-full.rounded-full').should('exist')
   })
 
   it('Should render in compact mode when specified', () => {
@@ -52,9 +52,9 @@ describe('<MissionFundingProgressBar />', () => {
       </TestnetProviders>
     )
 
-    // In compact mode, should have mb-2 class
-    cy.get('.mb-2').should('exist')
-    cy.get('.mb-4').should('not.exist')
+    // In compact mode, should have mb-1 class
+    cy.get('.mb-1').should('exist')
+    cy.get('.mb-3').should('not.exist')
   })
 
   it('Should render in normal mode by default', () => {
@@ -64,8 +64,8 @@ describe('<MissionFundingProgressBar />', () => {
       </TestnetProviders>
     )
 
-    // In normal mode, should have mb-4 class
-    cy.get('.mb-4').should('exist')
-    cy.get('.mb-2').should('not.exist')
+    // In normal mode, should have mb-3 class
+    cy.get('.mb-3').should('exist')
+    cy.get('.mb-1').should('not.exist')
   })
 })
