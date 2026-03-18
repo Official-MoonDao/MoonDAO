@@ -156,7 +156,13 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
+      // Wait for initial citizens tab requests (COUNT + SELECT)
+      cy.wait('@getTablelandQuery')
+      cy.wait('@getTablelandQuery')
+
       cy.contains('Teams').click()
+
+      // Wait for teams tab requests (COUNT + SELECT)
       cy.wait('@getTablelandQuery')
       cy.wait('@getTablelandQuery')
 
