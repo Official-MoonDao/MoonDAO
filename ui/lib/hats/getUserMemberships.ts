@@ -162,6 +162,26 @@ export async function getUserMemberships(
                 subHats: {
                   props: {
                     wearers: { props: {} },
+                    subHats: {
+                      props: {
+                        wearers: { props: {} },
+                        subHats: {
+                          props: {
+                            wearers: { props: {} },
+                            subHats: {
+                              props: {
+                                wearers: { props: {} },
+                                subHats: {
+                                  props: {
+                                    wearers: { props: {} },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
                   },
                 },
               },
@@ -196,6 +216,26 @@ export async function getUserMemberships(
                 subHats: {
                   props: {
                     wearers: { props: {} },
+                    subHats: {
+                      props: {
+                        wearers: { props: {} },
+                        subHats: {
+                          props: {
+                            wearers: { props: {} },
+                            subHats: {
+                              props: {
+                                wearers: { props: {} },
+                                subHats: {
+                                  props: {
+                                    wearers: { props: {} },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
                   },
                 },
               },
