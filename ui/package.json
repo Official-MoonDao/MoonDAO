@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev",
+    "dev:mainnet": "NODE_OPTIONS='--max-old-space-size=8192' NEXT_PUBLIC_CHAIN=mainnet next dev",
     "build": "NODE_OPTIONS='--max-old-space-size=8192' next build",
     "analyze": "ANALYZE=true NODE_OPTIONS='--max-old-space-size=8192' next build",
     "postbuild": "next-sitemap",

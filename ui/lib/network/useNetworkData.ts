@@ -16,7 +16,7 @@ import { useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainSlug, getMoonDAODataChain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import { NetworkNFT, NetworkDataResult, UseNetworkDataOptions } from './types'
@@ -37,7 +37,8 @@ const FETCH_ALL_LIMIT = 9999
 
 export function useTableNames() {
   const { selectedChain } = useContext(ChainContextV5)
-  const chain = selectedChain || DEFAULT_CHAIN_V5
+  // When mainnet, MoonDAO data (teams, citizens) always comes from Arbitrum
+  const chain = getMoonDAODataChain(selectedChain)
   const chainSlug = getChainSlug(chain)
   const [teamTableName, setTeamTableName] = useState<string | null>(
     TEAM_TABLE_NAMES[chainSlug] || null
@@ -234,7 +235,8 @@ export function useCitizens(options: UseNetworkDataOptions = {}): NetworkDataRes
 export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataResult<NetworkNFT> {
   const { page = 1, pageSize = PAGE_SIZE } = options
   const { selectedChain } = useContext(ChainContextV5)
-  const chain = selectedChain || DEFAULT_CHAIN_V5
+  // When mainnet, MoonDAO data always comes from Arbitrum
+  const chain = getMoonDAODataChain(selectedChain)
   const chainSlug = getChainSlug(chain)
   // Fetch all teams without SQL pagination — we paginate after validation
   // to ensure consistent page sizes (expired teams are filtered client-side)
@@ -372,7 +374,8 @@ export function useValidCitizens(
 ): NetworkDataResult<NetworkNFT> {
   const { page = 1, pageSize = PAGE_SIZE } = options
   const { selectedChain } = useContext(ChainContextV5)
-  const chain = selectedChain || DEFAULT_CHAIN_V5
+  // When mainnet, MoonDAO data always comes from Arbitrum
+  const chain = getMoonDAODataChain(selectedChain)
   const chainSlug = getChainSlug(chain)
   // Fetch all citizens without SQL pagination — we paginate after validation
   // to ensure consistent page sizes (expired citizens are filtered client-side)

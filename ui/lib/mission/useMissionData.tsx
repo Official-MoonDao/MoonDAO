@@ -5,7 +5,7 @@ import { readContract, getContract } from 'thirdweb'
 import client from '@/lib/thirdweb/client'
 import useJBProjectData from '../juicebox/useJBProjectData'
 import { useTablelandQuery } from '../swr/useTablelandQuery'
-import { getChainSlug } from '../thirdweb/chain'
+import { getMoonDAODataChainSlug } from '../thirdweb/chain'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 
 /*
@@ -35,7 +35,8 @@ export default function useMissionData({
   _backers,
 }: any) {
   const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  // When mainnet, mission data always comes from Arbitrum
+  const chainSlug = getMoonDAODataChainSlug(selectedChain)
   const [fundingGoal, setFundingGoal] = useState(_fundingGoal)
   const [stage, setStage] = useState<MissionStage>(_stage)
   const [backers, setBackers] = useState<any[]>(
@@ -135,10 +136,15 @@ export default function useMissionData({
 
   useEffect(() => {
     async function getDeadline() {
-      if (_deadline && _refundPeriod) {
+      // Use pre-fetched deadline when available (Time display only needs deadline)
+      if (_deadline) {
         setDeadline(_deadline)
+      }
+      if (_refundPeriod) {
         setRefundPeriod(_refundPeriod)
-        return
+      }
+      if (_deadline && _refundPeriod) {
+        return // Both from server, skip contract fetch
       }
 
       if (!missionCreatorContract?.address || mission?.id == null) return

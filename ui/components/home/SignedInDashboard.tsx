@@ -1039,84 +1039,79 @@ export default function SignedInDashboard({
           />
         </div>
 
-        {/* Events and Your Teams Section - Side by Side (Teams hidden when user has none) */}
-        <div
-          className={`grid gap-8 mt-8 mb-8 ${
-            shouldShowTeamsSection(teamHats, isLoadingTeams) ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'
-          }`}
-        >
-          {/* Events Section */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <NewspaperIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
-                  <span className="leading-tight">Upcoming Events</span>
-                </h3>
-                <p className="text-gray-300 text-sm sm:text-base leading-tight">
-                  Join the community events and discussions
-                </p>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div
-                id="luma-loading-dashboard-small"
-                className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[500px]"
-              >
-                <div className="text-white text-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
-                  <p className="text-xs">Loading events...</p>
-                </div>
-              </div>
-              <iframe
-                src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
-                width="100%"
-                height="600"
-                frameBorder="0"
-                style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
-                allowFullScreen
-                aria-hidden="false"
-                tabIndex={0}
-                className="rounded-lg relative z-10"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="MoonDAO Events Calendar"
-                onLoad={(e) => {
-                  const loadingDiv = document.getElementById('luma-loading-dashboard-small')
-                  if (loadingDiv) {
-                    loadingDiv.style.display = 'none'
-                  }
-                }}
-              />
+        {/* Upcoming Events - Full Width */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 mt-8 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                <NewspaperIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                <span className="leading-tight">Upcoming Events</span>
+              </h3>
+              <p className="text-gray-300 text-sm sm:text-base leading-tight">
+                Join the community events and discussions
+              </p>
             </div>
           </div>
 
-          {/* Your Teams Section - only shown when user is a member of at least one team */}
-          {shouldShowTeamsSection(teamHats, isLoadingTeams) && (
+          <div className="relative">
             <div
-              data-testid="dashboard-your-teams-section"
-              className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-5"
+              id="luma-loading-dashboard-small"
+              className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[500px]"
             >
-              <div className="mb-3">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base sm:text-lg font-bold text-white mb-1 flex items-center gap-2">
-                    <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                    <span className="leading-tight">Your Teams</span>
-                  </h3>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <DashboardTeams
-                  selectedChain={selectedChain}
-                  hatsContract={hatsContract}
-                  teamContract={teamContract}
-                />
+              <div className="text-white text-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
+                <p className="text-xs">Loading events...</p>
               </div>
             </div>
-          )}
+            <iframe
+              src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
+              width="100%"
+              height="600"
+              frameBorder="0"
+              style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
+              allowFullScreen
+              aria-hidden="false"
+              tabIndex={0}
+              className="rounded-lg relative z-10"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="MoonDAO Events Calendar"
+              onLoad={(e) => {
+                const loadingDiv = document.getElementById('luma-loading-dashboard-small')
+                if (loadingDiv) {
+                  loadingDiv.style.display = 'none'
+                }
+              }}
+            />
+          </div>
         </div>
+
+        {/* Your Teams - Full Width Horizontal (like Open Jobs), below Upcoming Events */}
+        {shouldShowTeamsSection(teamHats, isLoadingTeams) && (
+          <div
+            data-testid="dashboard-your-teams-section"
+            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-8"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-white text-lg flex items-center gap-2">
+                <UserGroupIcon className="w-5 h-5 flex-shrink-0" />
+                Your Teams
+              </h3>
+              <StandardButton
+                className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                link="/team"
+              >
+                See all
+              </StandardButton>
+            </div>
+
+            <DashboardTeams
+              selectedChain={selectedChain}
+              hatsContract={hatsContract}
+              teamContract={teamContract}
+            />
+          </div>
+        )}
 
         {/* Open Jobs - Full Width */}
         <div className="mb-6">

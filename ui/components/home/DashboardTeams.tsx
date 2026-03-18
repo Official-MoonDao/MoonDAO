@@ -36,11 +36,11 @@ export default function DashboardTeams({
     <>
       {!isLoading && hats ? (
         hats.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-2">
+          <div className="flex flex-row flex-wrap gap-3">
             {hats?.map((hat: any, index: number) => (
               <div
                 key={hat.id || `hat-${index}`}
-                className="bg-slate-600/20 rounded-lg p-3 hover:bg-slate-600/30 transition-colors w-full"
+                className="flex-shrink-0 min-w-[200px] sm:min-w-[220px] max-w-[280px] bg-slate-600/20 rounded-lg p-3 hover:bg-slate-600/30 transition-colors"
               >
                 <Hat
                   selectedChain={selectedChain}
