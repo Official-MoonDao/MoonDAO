@@ -379,7 +379,25 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       method: 'tempCheckApprovedTimestamp' as string,
       params: [mdp],
     })
-    const proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
+    let proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
+
+    // If on-chain says "Temperature Check" (both tempCheck flags are false),
+    // the contract data may be stale. Cross-reference with Nance API.
+    if (proposalStatus === 'Temperature Check') {
+      try {
+        const { NANCE_API_URL, NANCE_SPACE_NAME } = await import('@/lib/nance/constants')
+        const nanceRes = await fetch(`${NANCE_API_URL}/${NANCE_SPACE_NAME}/proposal/${mdp}`)
+        if (nanceRes.ok) {
+          const nanceData = await nanceRes.json()
+          const nanceStatus = nanceData?.data?.status
+          if (nanceStatus && nanceStatus !== 'Temperature Check') {
+            proposalStatus = nanceStatus
+          }
+        }
+      } catch {
+        // Nance API unavailable, use on-chain status
+      }
+    }
 
     let proposalJSON: any = {}
     try {

@@ -10,6 +10,7 @@ import {
   PROJECT_VOTE_FAILED,
 } from '@/lib/nance/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
 
 export type ProposalStatus =
   | 'Voting'
@@ -18,6 +19,20 @@ export type ProposalStatus =
   | 'Approved'
   | 'Archived'
   | 'Discussion'
+
+// Map Nance API status strings to our ProposalStatus type
+function mapNanceStatus(nanceStatus: string): ProposalStatus | undefined {
+  const statusMap: Record<string, ProposalStatus> = {
+    'Cancelled': 'Cancelled',
+    'Approved': 'Approved',
+    'Voting': 'Voting',
+    'Temperature Check': 'Temperature Check',
+    'Archived': 'Archived',
+    'Discussion': 'Discussion',
+  }
+  return statusMap[nanceStatus]
+}
+
 export function useProposalStatus(project: any) {
   const [proposalStatus, setProposalStatus] = useState<any>()
   const chain = DEFAULT_CHAIN_V5

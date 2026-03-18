@@ -13,20 +13,17 @@ export default function MissionFundingProgressBar({
   const isFunded = stageProgress >= 100
 
   return (
-    <div className={`relative ${compact ? 'mb-2' : 'mb-4'} max-w-[800px]`}>
-      {/* Progress bar with subtle glow for funded missions */}
-      <div className={isFunded ? 'relative' : ''}>
-        {isFunded && (
-          <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 via-emerald-400/20 to-green-400/20 rounded-full blur-md" />
-        )}
-        <ProgressBar
-          height={compact ? '24px' : '32px'}
-          progress={stageProgress}
-          label={`${stageProgress < 1 ? stageProgress.toFixed(2) : Math.floor(stageProgress)}%`}
-          compact={compact}
-          isCelebrating={isFunded}
-        />
-      </div>
+    <div className={`relative ${compact ? 'mb-1' : 'mb-3'}`}>
+      {isFunded && (
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-green-400/10 to-emerald-400/10 rounded-full blur-lg" />
+      )}
+      <ProgressBar
+        height={compact ? '20px' : '28px'}
+        progress={stageProgress}
+        label={`${stageProgress < 1 ? stageProgress.toFixed(2) : Math.floor(stageProgress)}%`}
+        compact={compact}
+        isCelebrating={isFunded}
+      />
     </div>
   )
 }

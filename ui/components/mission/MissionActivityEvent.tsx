@@ -45,18 +45,18 @@ function getEventIcon(header?: string) {
 function getEventColorClass(header?: string) {
   const headerLower = header?.toLowerCase() || ''
   if (headerLower.includes('paid') || headerLower.includes('pay')) {
-    return 'bg-gradient-to-br from-white/5 via-green-500/8 to-emerald-500/8 border-green-500/15 hover:from-white/8 hover:via-green-500/10 hover:to-emerald-500/10 hover:border-green-500/20'
+    return 'bg-emerald-500/[0.04] border-emerald-500/10 hover:bg-emerald-500/[0.07] hover:border-emerald-500/15'
   }
   if (headerLower.includes('added') || headerLower.includes('balance')) {
-    return 'bg-gradient-to-br from-white/5 via-blue-500/8 to-cyan-500/8 border-blue-500/15 hover:from-white/8 hover:via-blue-500/10 hover:to-cyan-500/10 hover:border-blue-500/20'
+    return 'bg-blue-500/[0.04] border-blue-500/10 hover:bg-blue-500/[0.07] hover:border-blue-500/15'
   }
   if (headerLower.includes('burned') || headerLower.includes('burn')) {
-    return 'bg-gradient-to-br from-white/5 via-orange-500/8 to-red-500/8 border-orange-500/15 hover:from-white/8 hover:via-orange-500/10 hover:to-red-500/10 hover:border-orange-500/20'
+    return 'bg-orange-500/[0.04] border-orange-500/10 hover:bg-orange-500/[0.07] hover:border-orange-500/15'
   }
   if (headerLower.includes('minted') || headerLower.includes('mint')) {
-    return 'bg-gradient-to-br from-white/5 via-purple-500/8 to-pink-500/8 border-purple-500/15 hover:from-white/8 hover:via-purple-500/10 hover:to-pink-500/10 hover:border-purple-500/20'
+    return 'bg-purple-500/[0.04] border-purple-500/10 hover:bg-purple-500/[0.07] hover:border-purple-500/15'
   }
-  return 'bg-gradient-to-br from-white/5 to-slate-800/20 border-white/10 hover:from-white/8 hover:to-slate-700/25'
+  return 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.08]'
 }
 
 export default function MissionActivityEvent({
@@ -76,26 +76,26 @@ export default function MissionActivityEvent({
 
   return (
     <div
-      className={`${colorClass} backdrop-blur-md border rounded-xl p-4 transition-all duration-300 hover:shadow-lg`}
+      className={`${colorClass} backdrop-blur-sm border rounded-xl p-4 transition-all duration-200`}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           {Icon && (
             <div
-              className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+              className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
                 isPayEvent
-                  ? 'bg-gradient-to-br from-green-500/15 to-emerald-500/15 text-green-400/70'
-                  : 'bg-white/10 text-white/70'
+                  ? 'bg-emerald-500/10 text-emerald-400/80'
+                  : 'bg-white/[0.06] text-white/60'
               }`}
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-4.5 h-4.5" />
             </div>
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span
-                className={`text-xs font-medium uppercase tracking-wide ${
-                  isPayEvent ? 'text-green-400/60' : 'text-grey-400'
+                className={`text-[11px] font-medium uppercase tracking-wider ${
+                  isPayEvent ? 'text-emerald-400/70' : 'text-gray-500'
                 }`}
               >
                 {header}

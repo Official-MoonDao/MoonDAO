@@ -22,23 +22,23 @@ export default function MissionTeamSection({
   citizenContract,
 }: MissionTeamSectionProps) {
   return (
-    <div className="w-full px-[5vw] flex justify-center">
-      <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
-        <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex justify-between w-full gap-2 text-light-cool">
-          <div className="flex items-center gap-2 w-full">
-            <Image
-              src={'/assets/icon-star-blue.svg'}
-              alt="Job icon"
-              width={30}
-              height={30}
-            />
-            <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
+    <div className="w-full px-5 md:px-8 lg:px-12 flex justify-center">
+      <div className="w-full max-w-[1200px] bg-gradient-to-br from-slate-900/80 to-slate-800/40 border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div className="px-6 md:px-8 pt-6 pb-2 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+              <Image
+                src={'/assets/icon-star-blue.svg'}
+                alt="Team icon"
+                width={18}
+                height={18}
+              />
+            </div>
+            <h2 className="text-xl md:text-2xl font-GoodTimes text-white">
               Meet the Team
             </h2>
           </div>
-          <div className="flex justify-end gap-2 w-full text-white mr-[5vw]">
-            <MissionSocialLinks socials={teamSocials} />
-          </div>
+          <MissionSocialLinks socials={teamSocials} />
         </div>
         <SlidingCardMenu>
           <div className="flex gap-4"></div>
