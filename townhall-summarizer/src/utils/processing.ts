@@ -122,13 +122,32 @@ function splitTranscriptIntoChunks(
   return chunks;
 }
 
+async function getYtDlpCookieArgs(): Promise<string> {
+  const cookieFile = process.env.YOUTUBE_COOKIE_FILE;
+  if (cookieFile) {
+    // Copy cookies to a writable temp file (secret mounts are read-only)
+    const tempCookieFile = join(tmpdir(), `yt-cookies-${Date.now()}.txt`);
+    try {
+      const cookieData = await readFile(cookieFile, 'utf-8');
+      const { writeFile: writeFileAsync } = await import('fs/promises');
+      await writeFileAsync(tempCookieFile, cookieData);
+      return `--cookies "${tempCookieFile}"`;
+    } catch (err) {
+      console.warn(`Warning: Could not copy cookie file: ${err}`);
+      return '';
+    }
+  }
+  return '';
+}
+
 export async function extractAudioUrl(videoId: string): Promise<string> {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   console.log(`Extracting audio URL for video: ${videoId}`);
 
   try {
+    const cookieArgs = await getYtDlpCookieArgs();
     const { stdout } = await execAsync(
-      `yt-dlp -g -f "bestaudio/best" --no-warnings "${videoUrl}"`
+      `yt-dlp -g -f "bestaudio/best" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`
     );
 
     const audioUrl = stdout.trim().split("\n")[0];
@@ -161,8 +180,10 @@ export async function transcribeAudio(
     console.log("Downloading audio with yt-dlp...");
     console.log("This may take a few minutes for long videos...");
 
+    const cookieArgs = await getYtDlpCookieArgs();
     await execAsync(
-      `yt-dlp -f "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio" -o "${tempFile}" --no-warnings "${videoUrl}"`
+      `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`,
+      { maxBuffer: 50 * 1024 * 1024 } // 50MB buffer for fragmented livestream downloads
     );
 
     // Check file size and compress if needed
@@ -225,6 +246,27 @@ export async function transcribeAudio(
         await execAsync(
           `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a ${lowerBitrate}k -ar ${AUDIO_CONFIG.sampleRate} -ac ${AUDIO_CONFIG.channels} "${compressedFile}" -y`
         );
+
+        // Check again and try ultra-low bitrate for very long videos
+        const recompressedBuffer = await readFile(compressedFile);
+        const recompressedSizeMB = recompressedBuffer.length / (1024 * 1024);
+
+        if (recompressedSizeMB > AUDIO_CONFIG.maxSizeMB) {
+          console.log(
+            `Still ${recompressedSizeMB.toFixed(2)} MB after re-compression, trying ultra-low bitrate...`
+          );
+          const ultraLowBitrate = Math.max(
+            AUDIO_CONFIG.minBitrate,
+            Math.floor(
+              ((AUDIO_CONFIG as any).ultraLowTargetSizeMB || 15) * 8 * 1024 / durationSeconds
+            )
+          );
+          console.log(`Using ultra-low bitrate: ${ultraLowBitrate} kbps`);
+
+          await execAsync(
+            `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a ${ultraLowBitrate}k -ar ${AUDIO_CONFIG.sampleRate} -ac ${AUDIO_CONFIG.channels} "${compressedFile}" -y`
+          );
+        }
       }
 
       // Clean up original file

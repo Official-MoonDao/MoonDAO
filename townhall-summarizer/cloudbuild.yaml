@@ -25,4 +25,6 @@ steps:
       - "10"
       - "--allow-unauthenticated"
       - "--set-secrets"
-      - "GROQ_API_KEY=groq-api-key:latest"
+      - "GROQ_API_KEY=groq-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest,ALLOWED_YOUTUBE_CHANNEL_ID=allowed-youtube-channel-id:latest,DISCORD_WEBHOOK_URL=discord-webhook-url:latest,/secrets/youtube-cookies.txt=youtube-cookies:latest"
+      - "--set-env-vars"
+      - "YOUTUBE_COOKIE_FILE=/secrets/youtube-cookies.txt"
