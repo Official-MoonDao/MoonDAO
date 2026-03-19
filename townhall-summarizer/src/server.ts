@@ -16,7 +16,6 @@ import {
   ConvertKitBroadcast,
 } from "./utils/convertkit";
 import { getVideoMetadata, validateVideoChannel } from "./utils/youtube";
-import { sendDiscordNotification, stripHtml } from "./utils/discord";
 
 const execAsync = promisify(exec);
 
@@ -75,51 +74,32 @@ app.post(
           .json({ error: "convertKitApiKey is required" } as any);
       }
 
-      // Fetch YouTube metadata for channel validation and date/title resolution
-      let resolvedVideoDate = videoDate;
-      let resolvedVideoTitle = videoTitle;
-      const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+      const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
+      if (allowedChannelId) {
+        const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+        if (!youtubeApiKey) {
+          return res.status(400).json({
+            error: "YOUTUBE_API_KEY is required for channel validation",
+          } as any);
+        }
 
-      if (youtubeApiKey) {
         const videoMetadata = await getVideoMetadata(videoId, youtubeApiKey);
         if (!videoMetadata) {
           return res.status(404).json({ error: "Video not found" } as any);
         }
 
-        // Use YouTube publish date if no date was provided
-        if (!resolvedVideoDate && videoMetadata.publishedAt) {
-          resolvedVideoDate = videoMetadata.publishedAt;
-          console.log(`Using YouTube publish date: ${resolvedVideoDate}`);
+        const isValidChannel = await validateVideoChannel(
+          videoMetadata,
+          allowedChannelId
+        );
+        if (!isValidChannel) {
+          return res.status(403).json({
+            error: "Video is not from the allowed YouTube channel",
+            channelId: videoMetadata.channelId,
+            channelTitle: videoMetadata.channelTitle,
+          } as any);
         }
-
-        // Use YouTube title if no title was provided
-        if (!resolvedVideoTitle && videoMetadata.title) {
-          resolvedVideoTitle = videoMetadata.title;
-          console.log(`Using YouTube title: ${resolvedVideoTitle}`);
-        }
-
-        // Validate channel if configured
-        const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
-        if (allowedChannelId) {
-          const isValidChannel = await validateVideoChannel(
-            videoMetadata,
-            allowedChannelId
-          );
-          if (!isValidChannel) {
-            return res.status(403).json({
-              error: "Video is not from the allowed YouTube channel",
-              channelId: videoMetadata.channelId,
-              channelTitle: videoMetadata.channelTitle,
-            } as any);
-          }
-        }
-      } else {
-        console.warn("YOUTUBE_API_KEY not set, skipping metadata lookup");
       }
-
-      // Fall back to defaults
-      resolvedVideoDate = resolvedVideoDate || new Date().toISOString();
-      resolvedVideoTitle = resolvedVideoTitle || "Town Hall";
 
       console.log(`Starting full pipeline for video: ${videoId}`);
 
@@ -148,13 +128,13 @@ app.post(
       // Step 4: Format summary
       const formattedSummary = formatSummaryForConvertKit(
         summary,
-        resolvedVideoTitle,
-        resolvedVideoDate,
+        videoTitle || "Town Hall",
+        videoDate || new Date().toISOString(),
         videoId
       );
 
       const broadcastSubject = `Town Hall Summary - ${new Date(
-        resolvedVideoDate
+        videoDate || new Date()
       ).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -171,23 +151,6 @@ app.post(
         );
       } else {
         console.log("Test mode: Skipping ConvertKit broadcast creation");
-      }
-
-      // Step 6: Send Discord notification (non-blocking — don't fail the pipeline)
-      const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
-      if (discordWebhookUrl && !testMode) {
-        try {
-          const summaryPreview = stripHtml(summary);
-          await sendDiscordNotification(discordWebhookUrl, {
-            videoTitle: resolvedVideoTitle,
-            videoDate: resolvedVideoDate,
-            videoId,
-            summaryPreview,
-            broadcastUrl: broadcast?.public_url,
-          });
-        } catch (discordError) {
-          console.error("Discord notification failed (non-fatal):", discordError);
-        }
       }
 
       console.log(`Pipeline completed successfully for video: ${videoId}`);
@@ -232,22 +195,8 @@ app.get("/audio", async (req: Request, res: Response) => {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     console.log(`Downloading audio for video: ${videoId}`);
-    const cookieFile = process.env.YOUTUBE_COOKIE_FILE;
-    let cookieArgs = '';
-    if (cookieFile) {
-      const tempCookieFile = join(tmpdir(), `yt-cookies-audio-${Date.now()}.txt`);
-      try {
-        const cookieData = await readFile(cookieFile, 'utf-8');
-        const { writeFile: writeFileAsync } = await import('fs/promises');
-        await writeFileAsync(tempCookieFile, cookieData);
-        cookieArgs = `--cookies "${tempCookieFile}"`;
-      } catch (err) {
-        console.warn(`Warning: Could not copy cookie file: ${err}`);
-      }
-    }
     await execAsync(
-      `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`,
-      { maxBuffer: 50 * 1024 * 1024 } // 50MB buffer for fragmented livestream downloads
+      `yt-dlp -f "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio" -o "${tempFile}" --no-warnings "${videoUrl}"`
     );
 
     const audioBuffer = await readFile(tempFile);

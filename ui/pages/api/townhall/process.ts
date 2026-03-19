@@ -7,12 +7,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  // Vercel crons send: Authorization: Bearer <CRON_SECRET>
-  // Also support manual triggers via x-cron-secret header or ?secret= query param
-  const authHeader = req.headers['authorization']
-  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-  const cronSecret = bearerToken || req.headers['x-cron-secret'] || req.query.secret
-  const expectedSecret = process.env.CRON_SECRET || process.env.TOWNHALL_CRON_SECRET
+  const cronSecret = req.headers['x-cron-secret'] || req.query.secret
+  const expectedSecret = process.env.TOWNHALL_CRON_SECRET
 
   if (expectedSecret && cronSecret !== expectedSecret) {
     return res.status(401).json({ message: 'Unauthorized' })
@@ -67,16 +63,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Call the Cloud Run service to handle the full pipeline
     // Fire-and-forget: don't wait for response to avoid Vercel timeout limits
-    // Use AbortController with a generous timeout to ensure the request is actually sent
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 30000) // 30s to ensure request reaches Cloud Run
-
     fetch(`${processingServiceUrl}/process`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      signal: controller.signal,
       body: JSON.stringify({
         videoId: latestVideo.id,
         videoTitle: videoMetadata.title,
@@ -85,20 +76,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         whisperModel: whisperModel,
         convertKitApiKey: process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY,
       }),
+    }).catch((error) => {
+      // Log errors but don't block the response
+      console.error('Error triggering processing service (non-blocking):', error)
     })
-      .then((resp) => {
-        clearTimeout(timeout)
-        console.log(`Processing service responded with status: ${resp.status}`)
-      })
-      .catch((error) => {
-        clearTimeout(timeout)
-        // Log errors but don't block the response
-        if (error.name === 'AbortError') {
-          console.log('Processing request sent successfully (timed out waiting for response, which is expected for long processing)')
-        } else {
-          console.error('Error triggering processing service (non-blocking):', error)
-        }
-      })
 
     return res.status(202).json({
       message: 'Town hall processing started successfully!',
