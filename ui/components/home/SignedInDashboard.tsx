@@ -43,11 +43,12 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState, useEffect } from 'react'
+import { useContext, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { shouldShowTeamsSection } from '@/lib/dashboard/shouldShowTeamsSection'
+import { useNewsletters } from '@/lib/home/useHomeData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
@@ -208,39 +209,8 @@ export default function SignedInDashboard({
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
-  // Client-side newsletter state (fetch on client-side)
-  const [clientNewsletters, setClientNewsletters] = useState<any[]>([])
-  const [newslettersLoading, setNewslettersLoading] = useState(false)
-
-  // Fetch newsletters on client-side
-  useEffect(() => {
-    const fetchNewsletters = async (retries = 2) => {
-      setNewslettersLoading(true)
-      try {
-        for (let attempt = 0; attempt <= retries; attempt++) {
-          const response = await fetch('/api/newsletters', {
-            cache: 'no-store',
-            headers: { Accept: 'application/json' },
-          })
-          const data = await response.json().catch(() => ({}))
-          const newsletters = data?.newsletters
-          if (Array.isArray(newsletters)) {
-            setClientNewsletters(newsletters)
-            return
-          }
-          if (attempt < retries) {
-            await new Promise((r) => setTimeout(r, 500 * (attempt + 1)))
-          }
-        }
-      } catch (error) {
-        console.warn('Newsletter fetch failed:', error)
-      } finally {
-        setNewslettersLoading(false)
-      }
-    }
-
-    fetchNewsletters()
-  }, [])
+  // Newsletter data (fetched via SWR with caching)
+  const { newsletters: clientNewsletters, isLoading: newslettersLoading } = useNewsletters()
 
   const account = useActiveAccount()
   const address = account?.address
