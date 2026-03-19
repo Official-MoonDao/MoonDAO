@@ -195,8 +195,21 @@ app.get("/audio", async (req: Request, res: Response) => {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     console.log(`Downloading audio for video: ${videoId}`);
+    const cookieFile = process.env.YOUTUBE_COOKIE_FILE;
+    let cookieArgs = '';
+    if (cookieFile) {
+      const tempCookieFile = join(tmpdir(), `yt-cookies-audio-${Date.now()}.txt`);
+      try {
+        const cookieData = await readFile(cookieFile, 'utf-8');
+        const { writeFile: writeFileAsync } = await import('fs/promises');
+        await writeFileAsync(tempCookieFile, cookieData);
+        cookieArgs = `--cookies "${tempCookieFile}"`;
+      } catch (err) {
+        console.warn(`Warning: Could not copy cookie file: ${err}`);
+      }
+    }
     await execAsync(
-      `yt-dlp -f "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio" -o "${tempFile}" --no-warnings "${videoUrl}"`
+      `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings ${cookieArgs} "${videoUrl}"`
     );
 
     const audioBuffer = await readFile(tempFile);
