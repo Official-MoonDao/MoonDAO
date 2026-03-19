@@ -367,6 +367,13 @@ export default function OverviewDelegate({
     }
   }
 
+  const fromParam = router?.query?.from
+  const missionIdParam = router?.query?.missionId
+  const from = Array.isArray(fromParam) ? fromParam[0] : fromParam
+  const missionId = Array.isArray(missionIdParam) ? missionIdParam[0] : (missionIdParam as string | undefined)
+  const fromMission = from === 'mission'
+  const isOverviewMission = missionId === '4'
+
   return (
     <section className="overflow-visible">
       <Head
@@ -376,6 +383,30 @@ export default function OverviewDelegate({
       <Container>
         <div className="w-full">
           <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[900px] mx-auto px-4 md:px-6 lg:px-0 py-8 md:py-12">
+            {/* Contextual banner when arriving from Overview mission (mission 4) contribution */}
+            {fromMission && isOverviewMission && (
+              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-4 sm:p-5 flex items-start gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                  <span className="text-xl">✓</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-indigo-200 font-medium">
+                    You contributed! Back a candidate to support the community.
+                  </p>
+                  <p className="text-indigo-300/80 text-sm mt-1">
+                    Pledge your $OVERVIEW balance to your chosen candidate. Your tokens stay in your wallet — only your voting power is recorded.
+                  </p>
+                  {missionId && (
+                    <Link
+                      href={`/mission/${missionId}`}
+                      className="inline-block mt-3 text-sm text-indigo-300 hover:text-indigo-200 underline underline-offset-2"
+                    >
+                      ← Back to mission
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
             {/* Page Header */}
             <div className="pt-6 sm:pt-8">
               <h1 className="font-GoodTimes text-white leading-tight text-2xl sm:text-3xl md:text-4xl">

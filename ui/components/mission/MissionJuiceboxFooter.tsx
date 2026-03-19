@@ -11,31 +11,27 @@ export default function MissionJuiceboxFooter({
   isManager,
 }: MissionJuiceboxFooterProps) {
   return (
-    <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
-      <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 py-4">
-        <div className="flex items-center relative rounded-tl-[20px] rounded-bl-[5vmax] p-4">
-          <div
-            className="pl-4 pr-8 flex overflow-x-auto overflow-y-hidden"
-            style={{
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch',
-            }}
+    <div className="w-full px-5 md:px-8 lg:px-12 pb-8 md:pb-12 flex justify-center">
+      <div className="w-full max-w-[1200px] bg-gradient-to-br from-slate-900/60 to-slate-800/30 border border-white/[0.06] rounded-2xl px-6 py-5">
+        <div className="flex items-center gap-4">
+          <Link
+            className="flex items-center gap-3 group"
+            href={`https://juicebox.money/v5/arb:${projectId}`}
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <Link
-              className="flex flex-col group"
-              href={`https://juicebox.money/v5/arb:${projectId}`}
-              target="_blank"
-            >
-              <div className="group-hover:scale-[1.05] transition-all duration-200">
-                <JuiceboxLogoWhite />
-              </div>
-              {isManager && (
-                <p className="text-xs opacity-90 uppercase group-hover:scale-105 transition-all duration-200">
-                  (Edit Project)
-                </p>
-              )}
-            </Link>
-          </div>
+            <div className="group-hover:scale-[1.05] transition-all duration-200">
+              <JuiceboxLogoWhite />
+            </div>
+            <span className="text-sm text-gray-400 group-hover:text-white transition-colors duration-200">
+              View on Juicebox
+            </span>
+            {isManager && (
+              <span className="text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
+                (Edit Project)
+              </span>
+            )}
+          </Link>
         </div>
       </div>
     </div>

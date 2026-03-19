@@ -10,15 +10,56 @@ import { useActiveAccount } from 'thirdweb/react'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
+function formatTokenAmount(
+  amount: bigint,
+  decimals: number,
+  maxFractionDigits: number,
+): string {
+  if (amount === 0n) return '0'
+
+  const negative = amount < 0n
+  const absAmount = negative ? -amount : amount
+  const base = 10n ** BigInt(decimals)
+  const integerPart = absAmount / base
+  const fractionalPart = absAmount % base
+
+  if (fractionalPart === 0n) {
+    return (negative ? '-' : '') + integerPart.toString()
+  }
+
+  let fractionStr = fractionalPart.toString().padStart(decimals, '0')
+  const limitedFraction = fractionStr.slice(0, maxFractionDigits)
+  const trimmedFraction = limitedFraction.replace(/0+$/, '')
+
+  // If the value is smaller than 10^-maxFractionDigits but non-zero,
+  // show the minimal positive representable value instead of "0".
+  if (integerPart === 0n && !trimmedFraction && absAmount > 0n) {
+    const minimal = '0.' + '0'.repeat(maxFractionDigits - 1) + '1'
+    return (negative ? '-' : '') + minimal
+  }
+
+  return (
+    (negative ? '-' : '') +
+    integerPart.toString() +
+    (trimmedFraction ? '.' + trimmedFraction : '')
+  )
+}
+
 function VestingCardSkeleton({ isTeam = false }: { isTeam?: boolean }) {
   return (
-    <div className="flex flex-col gap-2 bg-dark-cool p-4 rounded-lg animate-pulse">
-      <div className="h-7 bg-gray-700/50 rounded w-32 animate-pulse" />
-      <div className="h-4 bg-gray-700/50 rounded w-20 animate-pulse mt-1" />
-      <div className="h-6 bg-gray-700/50 rounded w-24 animate-pulse" />
-      <div className="h-4 bg-gray-700/50 rounded w-20 animate-pulse mt-1" />
-      <div className="h-6 bg-gray-700/50 rounded w-24 animate-pulse" />
-      <div className="h-10 bg-gray-700/50 rounded-full w-20 animate-pulse mt-2" />
+    <div className="bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 border border-white/[0.08] rounded-2xl p-5 space-y-4 animate-pulse">
+      <div className="h-5 bg-white/[0.06] rounded-lg w-36" />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05] space-y-2">
+          <div className="h-3 bg-white/[0.06] rounded w-20" />
+          <div className="h-5 bg-white/[0.06] rounded w-28" />
+        </div>
+        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05] space-y-2">
+          <div className="h-3 bg-white/[0.06] rounded w-20" />
+          <div className="h-5 bg-white/[0.06] rounded w-24" />
+        </div>
+      </div>
+      <div className="h-10 bg-white/[0.06] rounded-xl w-28" />
     </div>
   )
 }
@@ -73,8 +114,8 @@ export default function VestingCard({
             }),
           ])
         const available = BigInt(String(vested)) - BigInt(String(withdrawn))
-        setWithdrawable((Number(available) / 1e18).toFixed(10))
-        setTotal((Number(totalReceived) / 1e18).toFixed(4))
+        setWithdrawable(formatTokenAmount(available, 18, 6))
+        setTotal(formatTokenAmount(BigInt(String(totalReceived)), 18, 4))
       } catch (error) {
         console.error('Error fetching vesting data:', error)
       } finally {
@@ -106,23 +147,41 @@ export default function VestingCard({
   }
 
   return (
-    <div className="flex flex-col gap-2 bg-dark-cool p-4 rounded-lg">
-      <h2 className="text-lg">{isTeam ? 'Team ' : 'MoonDAO '} Vesting</h2>
-      <p className="font-bold text-sm">Withdrawable</p>
-      <p>
-        {withdrawable} {tokenSymbol}
-      </p>
-      <p className="font-bold text-sm">Total Vesting</p>
-      <p>
-        {total} {tokenSymbol}
-      </p>
+    <div className="bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 border border-white/[0.08] rounded-2xl p-5 space-y-4">
+      {/* Header */}
+      <h2 className="text-base font-semibold text-white">
+        {isTeam ? 'Team' : 'MoonDAO'} Vesting
+      </h2>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05]">
+          <p className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">
+            Withdrawable
+          </p>
+          <p className="text-white font-semibold text-sm truncate">
+            {withdrawable}{' '}
+            <span className="text-gray-400 font-normal">{tokenSymbol}</span>
+          </p>
+        </div>
+        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05]">
+          <p className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">
+            Total Vesting
+          </p>
+          <p className="text-white font-semibold text-sm truncate">
+            {total}{' '}
+            <span className="text-gray-400 font-normal">{tokenSymbol}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Withdraw Button */}
       <PrivyWeb3Button
         action={handleWithdraw}
         label="Withdraw"
-        className="gradient-2 rounded-full mt-2 w-fit"
+        className="gradient-2 rounded-xl py-2 px-5 text-sm font-medium w-fit"
         isDisabled={!vestingContract || Number(withdrawable) === 0}
         onSuccess={() => {
-          // Refresh data after successful withdrawal
           setWithdrawable('0')
           setIsLoading(true)
         }}

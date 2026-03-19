@@ -128,6 +128,7 @@ export default function MissionContributeModal({
     error: jwtError,
   } = useOnrampJWT()
 
+  const [showBackPrompt, setShowBackPrompt] = useState(false)
   const [agreedToCondition, setAgreedToCondition] = useState(() => {
     return router?.query?.agreed === 'true'
   })
@@ -808,8 +809,12 @@ export default function MissionContributeModal({
       setInput('0')
       setUsdInput('0')
 
-      if (setModalEnabled) {
-        setModalEnabled(false)
+      // Show back-a-candidate prompt only for mission 4 (Overview flight on Arbitrum)
+      const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'
+      if (isOverviewMission) {
+        setShowBackPrompt(true)
+      } else {
+        setModalEnabled?.(false)
       }
 
       // Clean up onramp URL params after successful transaction
@@ -1063,6 +1068,7 @@ export default function MissionContributeModal({
 
   // Clear parameter when modal is closed
   const handleModalClose = useCallback(() => {
+    setShowBackPrompt(false)
     if (setModalEnabled) {
       setModalEnabled(false)
     }
@@ -1115,7 +1121,34 @@ export default function MissionContributeModal({
         />
 
         <div className="space-y-5">
-          {isAutoTriggering ? (
+          {showBackPrompt ? (
+            <div className="space-y-6 py-4">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-500/30 to-emerald-500/20 flex items-center justify-center border border-green-500/30">
+                  <span className="text-3xl">✓</span>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">You contributed!</h3>
+                <p className="text-gray-400 text-sm max-w-md mx-auto">
+                  Your support helps build the future of space. Back a candidate on the leaderboard to amplify your impact in the community.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href={`/overview-vote?from=mission&missionId=${mission?.id ?? ''}`}
+                  className="flex-1 flex justify-center items-center px-6 py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
+                >
+                  Back a Candidate
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleModalClose}
+                  className="flex-1 px-6 py-3.5 bg-slate-800/60 hover:bg-slate-700/60 border border-white/10 text-white font-medium rounded-xl transition-all duration-300"
+                >
+                  Done for now
+                </button>
+              </div>
+            </div>
+          ) : isAutoTriggering ? (
             <MissionContributeAutoTriggeringView
               account={account}
               isVerifyingJWT={isVerifyingJWT}
@@ -1185,38 +1218,36 @@ export default function MissionContributeModal({
               </div>
 
               {/* Token Receive Section */}
-              {token?.tokenSymbol && (
-                <div className="space-y-3">
-                  <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                    You Receive
-                  </label>
-                  <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/30 transition-all duration-300">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg shadow-purple-500/10">
-                          <Image
-                            src={getIPFSGateway(mission?.metadata.logoUri)}
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-cover"
-                            alt={`${token?.tokenSymbol} logo`}
-                          />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-white text-lg">{token?.tokenSymbol}</p>
-                          <p className="text-gray-400 text-xs">{token?.tokenName}</p>
-                        </div>
+              <div className="space-y-3">
+                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                  You Receive
+                </label>
+                <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/30 transition-all duration-300">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg shadow-purple-500/10">
+                        <Image
+                          src={getIPFSGateway(mission?.metadata.logoUri)}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover"
+                          alt={`${token?.tokenSymbol || 'Token'} logo`}
+                        />
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-white text-xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                          {formatContributionOutput(output)}
-                        </p>
-                        <p className="text-gray-400 text-xs">{token?.tokenSymbol}</p>
+                      <div>
+                        <p className="font-semibold text-white text-lg">{token?.tokenSymbol || 'Tokens'}</p>
+                        <p className="text-gray-400 text-xs">{token?.tokenName || 'Mission Tokens'}</p>
                       </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-white text-xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                        {formatContributionOutput(output)}
+                      </p>
+                      <p className="text-gray-400 text-xs">{token?.tokenSymbol || 'Tokens'}</p>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Recipient Address */}
               <div className="space-y-3">
