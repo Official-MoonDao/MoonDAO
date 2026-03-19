@@ -8,7 +8,7 @@ import {
   PROJECT_TABLE_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
-import { BLOCKED_MISSIONS, BLOCKED_PROJECTS } from 'const/whitelist'
+import { BLOCKED_CITIZENS, BLOCKED_MISSIONS, BLOCKED_PROJECTS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useContext, useEffect } from 'react'
@@ -321,7 +321,7 @@ export async function getStaticProps() {
 
   if (contractResult.status === 'fulfilled') {
     const { citizens, listings, jobs, teams, projects, missionRows } = contractResult.value
-    newestCitizens = citizens
+    newestCitizens = citizens.filter((c: any) => !BLOCKED_CITIZENS.has(c.id))
     newestListings = listings
     newestJobs = jobs
     newestTeams = teams
