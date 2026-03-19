@@ -91,12 +91,18 @@ export default function useJBProjectData({
   //Ruleset, refresh if stage changes
   useEffect(() => {
     async function getProjectRuleset() {
-      const rs: any = await readContract({
-        contract: jbControllerContract,
-        method: 'currentRulesetOf' as string,
-        params: [projectId],
-      })
-      setRuleset(rs)
+      try {
+        const rs: any = await readContract({
+          contract: jbControllerContract,
+          method: 'currentRulesetOf' as string,
+          params: [projectId],
+        })
+        setRuleset(rs)
+      } catch (err) {
+        // RPC/decode failures (empty return data, wrong network) must not reject the
+        // promise tree — Cypress and error monitors treat that as a test/app failure.
+        console.error('Failed to fetch project ruleset:', err)
+      }
     }
     if (jbControllerContract && projectId !== undefined && stage !== undefined)
       getProjectRuleset()
@@ -105,12 +111,16 @@ export default function useJBProjectData({
   //Token Address
   useEffect(() => {
     async function getProjectToken() {
-      const token: any = await readContract({
-        contract: jbTokensContract,
-        method: 'tokenOf' as string,
-        params: [projectId],
-      })
-      setToken((prev: any) => ({ ...prev, tokenAddress: token }))
+      try {
+        const tokenAddr: any = await readContract({
+          contract: jbTokensContract,
+          method: 'tokenOf' as string,
+          params: [projectId],
+        })
+        setToken((prev: any) => ({ ...prev, tokenAddress: tokenAddr }))
+      } catch (err) {
+        console.error('Failed to fetch project token address:', err)
+      }
     }
 
     if (jbTokensContract && projectId) getProjectToken()
@@ -177,24 +187,22 @@ export default function useJBProjectData({
   //Project Directory Data
   useEffect(() => {
     async function getProjectDirectoryData() {
-      let primaryTerminal: string = ZERO_ADDRESS
-
-      while (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
+      const maxAttempts = 5
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
-          const primaryTerminal: any = await readContract({
+          const fetched: any = await readContract({
             contract: jbDirectoryContract,
             method: 'primaryTerminalOf' as string,
             params: [projectId, JB_NATIVE_TOKEN_ADDRESS],
           })
 
-          if (primaryTerminal !== ZERO_ADDRESS && primaryTerminal) {
-            setPrimaryTerminalAddress(primaryTerminal)
-            return // Successfully got a valid terminal address
-          } else {
-            console.warn(
-              `Retrieved zero or invalid address for project ${projectId}, retrying...`
-            )
+          if (fetched !== ZERO_ADDRESS && fetched) {
+            setPrimaryTerminalAddress(fetched)
+            return
           }
+          console.warn(
+            `Retrieved zero or invalid address for project ${projectId} (attempt ${attempt + 1}/${maxAttempts})`
+          )
         } catch (error) {
           console.error(
             `Error getting primary terminal for project ${projectId}:`,
@@ -203,14 +211,10 @@ export default function useJBProjectData({
         }
       }
 
-      // If we've exhausted all retries and still don't have a valid address
-      if (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
-        console.error(
-          `Failed to get valid primary terminal for project ${projectId} after multiple attempts`
-        )
-      }
-
-      setPrimaryTerminalAddress(primaryTerminal)
+      console.error(
+        `Failed to get valid primary terminal for project ${projectId} after ${maxAttempts} attempts`
+      )
+      setPrimaryTerminalAddress(ZERO_ADDRESS)
     }
 
     // Only fetch if _primaryTerminalAddress was not provided
