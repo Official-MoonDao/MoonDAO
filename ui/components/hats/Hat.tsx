@@ -55,7 +55,7 @@ export function Hat({
 
   useEffect(() => {
     async function getTeamNFT() {
-      if (!teamContract || !hat?.teamId) return
+      if (!teamContract || hat?.teamId == null || hat?.teamId === '') return
 
       setIsTeamNFTLoading(true)
       setTeamNFTError(null)
@@ -63,7 +63,7 @@ export function Hat({
       try {
         const nft = await getNFT({
           contract: teamContract,
-          tokenId: BigInt(hat.teamId),
+          tokenId: BigInt(String(hat.teamId)),
         })
         setTeamNFT(nft)
       } catch (error) {

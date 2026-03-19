@@ -1,7 +1,8 @@
 import { PROJECT_HAT_TREE_IDS } from 'const/config'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getChainSlug } from '../thirdweb/chain'
 import { hatTreeMatches } from './hatTreeMatches'
+import { fetchWearerHatsJsonCached } from './fetchWearerHatsCached'
 import {
   buildRoleHatToEntityIndex,
   resolveEntityIdFromWornHat,
@@ -40,59 +41,72 @@ const WEARER_PROPS = encodeURIComponent(
   })
 )
 
-async function loadProjectsForWearer(
-  projectContract: any,
+/** Hats in the project tree only — cheap (subgraph/API) before any on-chain index scan */
+async function fetchProjectTreeHatsForAddress(
   selectedChain: any,
-  wearerAddress: string,
-  roleHatIndex: Map<string, string>
-): Promise<Array<{ projectId: string; hats: any[] }>> {
-  const res = await fetch(
-    `/api/hats/get-wearer?chainId=${selectedChain.id}&wearerAddress=${wearerAddress}&props=${WEARER_PROPS}`
-  )
-
-  if (!res.ok) {
-    return []
-  }
-
-  const hats: any = await res.json()
-  if (!hats.currentHats) {
-    return []
-  }
-
-  const expectedTree = PROJECT_HAT_TREE_IDS[getChainSlug(selectedChain)]
-  const projectHats = hats.currentHats.filter((hat: any) =>
-    hat.tree?.id && expectedTree ? hatTreeMatches(hat.tree.id, expectedTree) : false
-  )
-
-  const projectHatsWithId = await Promise.all(
-    projectHats.map(async (hat: any) => {
-      const projectId = await resolveEntityIdFromWornHat(
-        projectContract,
-        hat,
-        roleHatIndex
-      )
-      if (projectId == null || projectId === '') {
-        return null
-      }
-      return {
-        ...hat,
-        projectId,
-      }
-    })
-  ).then((results) => results.filter((result) => result !== null))
-
-  const uniqueProjects = [
-    ...new Set(projectHatsWithId.map((hat: any) => hat.projectId)),
-  ].map((projectId: any) => {
-    return {
-      projectId: projectId,
-      hats: projectHatsWithId.filter(
-        (hat: any) => +hat.projectId === +projectId
-      ),
+  wearerAddress: string
+): Promise<any[]> {
+  try {
+    const hats = await fetchWearerHatsJsonCached(
+      selectedChain.id,
+      wearerAddress,
+      WEARER_PROPS
+    )
+    if (!hats?.currentHats) {
+      return []
     }
-  })
 
-  return uniqueProjects
+    const expectedTree = PROJECT_HAT_TREE_IDS[getChainSlug(selectedChain)]
+    return hats.currentHats.filter((hat: any) =>
+      hat.tree?.id && expectedTree ? hatTreeMatches(hat.tree.id, expectedTree) : false
+    )
+  } catch {
+    return []
+  }
+}
+
+function groupHatsByProjectId(
+  projectHatsWithId: Array<{ projectId: string; [k: string]: any }>
+): Array<{ projectId: string; hats: any[] }> {
+  return [
+    ...new Set(projectHatsWithId.map((hat: any) => hat.projectId)),
+  ].map((projectId: any) => ({
+    projectId,
+    hats: projectHatsWithId.filter(
+      (hat: any) => +hat.projectId === +projectId
+    ),
+  }))
+}
+
+async function resolveProjectTreeHatsToBatches(
+  projectContract: any,
+  projectHats: any[],
+  roleHatIndex: Map<string, string> | undefined
+): Promise<Array<{ projectId: string; hats: any[] }>> {
+  const projectHatsWithId = (
+    await Promise.all(
+      projectHats.map(async (hat: any) => {
+        try {
+          const projectId = await resolveEntityIdFromWornHat(
+            projectContract,
+            hat,
+            roleHatIndex
+          )
+          if (projectId == null || projectId === '') {
+            return null
+          }
+          return {
+            ...hat,
+            projectId,
+          }
+        } catch {
+          return null
+        }
+      })
+    )
+  ).filter((result) => result !== null)
+
+  return groupHatsByProjectId(projectHatsWithId as any)
 }
 
 function mergeProjectLists(
@@ -131,35 +145,104 @@ export function useProjectWearer(
   const addresses = normalizeWearerAddresses(wearerAddressOrAddresses)
   const addressKey = addresses.slice().sort().join(',')
 
+  // thirdweb's getContract() often yields a new object identity without semantic change;
+  // depending on `projectContract` in useEffect can cause an infinite update loop.
+  const projectContractRef = useRef(projectContract)
+  const selectedChainRef = useRef(selectedChain)
+  projectContractRef.current = projectContract
+  selectedChainRef.current = selectedChain
+
+  const contractAddress =
+    typeof projectContract?.address === 'string'
+      ? projectContract.address.toLowerCase()
+      : undefined
+  const chainId = selectedChain?.id
+
   useEffect(() => {
+    let cancelled = false
+
     async function getWearerProjectHats() {
+      const pc = projectContractRef.current
+      const sc = selectedChainRef.current
       try {
         setIsLoading(true)
         setWornProjectHats(undefined)
         if (addresses.length === 0) {
-          setWornProjectHats([])
-          setIsLoading(false)
+          if (!cancelled) {
+            setWornProjectHats([])
+          }
           return
         }
 
-        const roleHatIndex = await buildRoleHatToEntityIndex(projectContract)
-        const batches = await Promise.all(
-          addresses.map((addr) =>
-            loadProjectsForWearer(
-              projectContract,
-              selectedChain,
-              addr,
-              roleHatIndex
+        const hatLists = await Promise.all(
+          addresses.map((addr) => fetchProjectTreeHatsForAddress(sc, addr))
+        )
+        if (cancelled) return
+
+        if (!hatLists.some((list) => list.length > 0)) {
+          if (!cancelled) {
+            setWornProjectHats([])
+          }
+          return
+        }
+
+        const firstPass = await Promise.all(
+          hatLists.map((list) =>
+            Promise.all(
+              list.map((hat) =>
+                resolveEntityIdFromWornHat(pc, hat, undefined)
+              )
             )
           )
         )
+        if (cancelled) return
 
+        const needsFullRoleIndex = firstPass.some((row) =>
+          row.some((id) => id == null)
+        )
+
+        let batches: Array<Array<{ projectId: string; hats: any[] }>>
+
+        if (!needsFullRoleIndex) {
+          batches = hatLists.map((list, i) => {
+            const withIds = list
+              .map((hat, j) => {
+                const projectId = firstPass[i][j]
+                if (projectId == null || projectId === '') return null
+                return { ...hat, projectId }
+              })
+              .filter(Boolean) as any[]
+            return groupHatsByProjectId(withIds)
+          })
+        } else {
+          let roleHatIndex = await buildRoleHatToEntityIndex(pc)
+          if (roleHatIndex.size === 0 && !cancelled) {
+            await new Promise((r) => setTimeout(r, 450))
+            if (!cancelled) {
+              roleHatIndex = await buildRoleHatToEntityIndex(pc)
+            }
+          }
+          if (cancelled) return
+          batches = await Promise.all(
+            hatLists.map((projectHats) =>
+              resolveProjectTreeHatsToBatches(pc, projectHats, roleHatIndex)
+            )
+          )
+        }
+
+        if (cancelled) return
         setWornProjectHats(mergeProjectLists(batches))
-        setIsLoading(false)
       } catch (err) {
         console.log(err)
-        setWornProjectHats([])
-        setIsLoading(false)
+        if (!cancelled) {
+          setWornProjectHats((prev) =>
+            Array.isArray(prev) && prev.length > 0 ? prev : []
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -168,13 +251,19 @@ export function useProjectWearer(
     } else {
       if (addresses.length > 0) {
         setWornProjectHats(undefined)
-        setIsLoading(true)
+        setIsLoading(false)
       } else {
         setWornProjectHats([])
         setIsLoading(false)
       }
     }
-  }, [projectContract, selectedChain, addressKey])
+
+    return () => {
+      cancelled = true
+    }
+    // Primitives only: contract/chain objects from thirdweb are unstable references.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- addressKey tracks wallet list; refs hold latest contract
+  }, [contractAddress, chainId, addressKey])
 
   return { userProjects: wornProjectHats, isLoading }
 }

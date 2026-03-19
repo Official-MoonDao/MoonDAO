@@ -159,10 +159,19 @@ function TeamNavItem({
   const [name, setName] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!teamContract || !teamId) return
+    // teamId "0" is valid (Executive Branch); avoid `!teamId` which drops numeric 0.
+    if (
+      !teamContract ||
+      teamId == null ||
+      teamId === '' ||
+      (typeof teamId === 'number' && !Number.isFinite(teamId))
+    )
+      return
+
+    const teamIdKey = String(teamId)
 
     // Use cached name if available to avoid repeated on-chain calls
-    const cachedName = teamNameCache.get(teamId)
+    const cachedName = teamNameCache.get(teamIdKey)
     if (cachedName) {
       setName(cachedName)
       return
@@ -170,24 +179,24 @@ function TeamNavItem({
 
     getNFT({
       contract: teamContract,
-      tokenId: BigInt(teamId),
+      tokenId: BigInt(teamIdKey),
     })
       .then((nft) => {
         const resolvedName =
-          (nft?.metadata?.name as string | undefined) || `Team #${teamId}`
-        teamNameCache.set(teamId, resolvedName)
+          (nft?.metadata?.name as string | undefined) || `Team #${teamIdKey}`
+        teamNameCache.set(teamIdKey, resolvedName)
         setName(resolvedName)
       })
       .catch(() => {
-        const fallback = `Team #${teamId}`
-        teamNameCache.set(teamId, fallback)
+        const fallback = `Team #${teamIdKey}`
+        teamNameCache.set(teamIdKey, fallback)
         setName(fallback)
       })
   }, [teamContract, teamId])
 
   return (
     <Link
-      href={`/team/${teamId}`}
+      href={`/team/${String(teamId)}`}
       className={baseClass}
       onClick={onNavigate}
     >

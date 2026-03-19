@@ -1,7 +1,8 @@
 import { MOONDAO_HAT_TREE_IDS } from 'const/config'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getChainSlug } from '../thirdweb/chain'
 import { hatTreeMatches } from './hatTreeMatches'
+import { fetchWearerHatsJsonCached } from './fetchWearerHatsCached'
 import {
   buildRoleHatToEntityIndex,
   resolveEntityIdFromWornHat,
@@ -40,59 +41,72 @@ const WEARER_PROPS = encodeURIComponent(
   })
 )
 
-async function loadTeamsForWearer(
-  teamContract: any,
+async function fetchTeamTreeHatsForAddress(
   selectedChain: any,
-  wearerAddress: string,
-  roleHatIndex: Map<string, string>
-): Promise<Array<{ teamId: string; hats: any[] }>> {
-  const res = await fetch(
-    `/api/hats/get-wearer?chainId=${selectedChain.id}&wearerAddress=${wearerAddress}&props=${WEARER_PROPS}`
-  )
+  wearerAddress: string
+): Promise<any[]> {
+  try {
+    const hats = await fetchWearerHatsJsonCached(
+      selectedChain.id,
+      wearerAddress,
+      WEARER_PROPS
+    )
+    if (!hats?.currentHats) {
+      return []
+    }
 
-  if (!res.ok) {
+    const expectedTree = MOONDAO_HAT_TREE_IDS[getChainSlug(selectedChain)]
+    return hats.currentHats.filter((hat: any) =>
+      hat.tree?.id && expectedTree ? hatTreeMatches(hat.tree.id, expectedTree) : false
+    )
+  } catch {
     return []
   }
+}
 
-  const hats: any = await res.json()
-  if (!hats.currentHats) {
-    return []
-  }
-
-  const expectedTree = MOONDAO_HAT_TREE_IDS[getChainSlug(selectedChain)]
-  const moondaoHats = hats.currentHats.filter((hat: any) =>
-    hat.tree?.id && expectedTree ? hatTreeMatches(hat.tree.id, expectedTree) : false
-  )
-
-  const moondaoHatsWithTeamId = await Promise.all(
-    moondaoHats.map(async (hat: any) => {
-      const teamId = await resolveEntityIdFromWornHat(
-        teamContract,
-        hat,
-        roleHatIndex
-      )
-      if (teamId == null || teamId === '') {
-        return null
-      }
-      return {
-        ...hat,
-        teamId,
-      }
-    })
-  ).then((results) => results.filter((result) => result !== null))
-
+function groupHatsByTeamId(
+  moondaoHatsWithTeamId: Array<{ teamId: string; [k: string]: any }>
+): Array<{ teamId: string; hats: any[] }> {
   const uniqueTeams = [
     ...new Set(moondaoHatsWithTeamId.map((hat: any) => hat.teamId)),
-  ].map((teamId: any) => {
-    return {
-      teamId: teamId,
-      hats: moondaoHatsWithTeamId.filter(
-        (hat: any) => +hat.teamId === +teamId
-      ),
-    }
-  })
-
+  ].map((teamId: any) => ({
+    teamId,
+    hats: moondaoHatsWithTeamId.filter(
+      (hat: any) => +hat.teamId === +teamId
+    ),
+  }))
   return uniqueTeams
+}
+
+async function resolveTeamTreeHatsToBatches(
+  teamContract: any,
+  moondaoHats: any[],
+  roleHatIndex: Map<string, string> | undefined
+): Promise<Array<{ teamId: string; hats: any[] }>> {
+  const moondaoHatsWithTeamId = (
+    await Promise.all(
+      moondaoHats.map(async (hat: any) => {
+        try {
+          const teamId = await resolveEntityIdFromWornHat(
+            teamContract,
+            hat,
+            roleHatIndex
+          )
+          if (teamId == null || teamId === '') {
+            return null
+          }
+          return {
+            ...hat,
+            teamId,
+          }
+        } catch {
+          return null
+        }
+      })
+    )
+  ).filter((result) => result !== null)
+
+  return groupHatsByTeamId(moondaoHatsWithTeamId as any)
 }
 
 function mergeTeamLists(
@@ -134,35 +148,102 @@ export function useTeamWearer(
   const addresses = normalizeWearerAddresses(wearerAddressOrAddresses)
   const addressKey = addresses.slice().sort().join(',')
 
+  const teamContractRef = useRef(teamContract)
+  const selectedChainRef = useRef(selectedChain)
+  teamContractRef.current = teamContract
+  selectedChainRef.current = selectedChain
+
+  const contractAddress =
+    typeof teamContract?.address === 'string'
+      ? teamContract.address.toLowerCase()
+      : undefined
+  const chainId = selectedChain?.id
+
   useEffect(() => {
+    let cancelled = false
+
     async function getWearerTeamHats() {
+      const tc = teamContractRef.current
+      const sc = selectedChainRef.current
       try {
         setIsLoading(true)
         setWornMoondaoHats(undefined)
         if (addresses.length === 0) {
-          setWornMoondaoHats([])
-          setIsLoading(false)
+          if (!cancelled) {
+            setWornMoondaoHats([])
+          }
           return
         }
 
-        const roleHatIndex = await buildRoleHatToEntityIndex(teamContract)
-        const batches = await Promise.all(
-          addresses.map((addr) =>
-            loadTeamsForWearer(
-              teamContract,
-              selectedChain,
-              addr,
-              roleHatIndex
+        const hatLists = await Promise.all(
+          addresses.map((addr) => fetchTeamTreeHatsForAddress(sc, addr))
+        )
+        if (cancelled) return
+
+        if (!hatLists.some((list) => list.length > 0)) {
+          if (!cancelled) {
+            setWornMoondaoHats([])
+          }
+          return
+        }
+
+        const firstPass = await Promise.all(
+          hatLists.map((list) =>
+            Promise.all(
+              list.map((hat) =>
+                resolveEntityIdFromWornHat(tc, hat, undefined)
+              )
             )
           )
         )
+        if (cancelled) return
 
+        const needsFullRoleIndex = firstPass.some((row) =>
+          row.some((id) => id == null)
+        )
+
+        let batches: Array<Array<{ teamId: string; hats: any[] }>>
+
+        if (!needsFullRoleIndex) {
+          batches = hatLists.map((list, i) => {
+            const withIds = list
+              .map((hat, j) => {
+                const teamId = firstPass[i][j]
+                if (teamId == null || teamId === '') return null
+                return { ...hat, teamId }
+              })
+              .filter(Boolean) as any[]
+            return groupHatsByTeamId(withIds)
+          })
+        } else {
+          let roleHatIndex = await buildRoleHatToEntityIndex(tc)
+          if (roleHatIndex.size === 0 && !cancelled) {
+            await new Promise((r) => setTimeout(r, 450))
+            if (!cancelled) {
+              roleHatIndex = await buildRoleHatToEntityIndex(tc)
+            }
+          }
+          if (cancelled) return
+          batches = await Promise.all(
+            hatLists.map((moondaoHats) =>
+              resolveTeamTreeHatsToBatches(tc, moondaoHats, roleHatIndex)
+            )
+          )
+        }
+
+        if (cancelled) return
         setWornMoondaoHats(mergeTeamLists(batches))
-        setIsLoading(false)
       } catch (err) {
         console.log(err)
-        setWornMoondaoHats([])
-        setIsLoading(false)
+        if (!cancelled) {
+          setWornMoondaoHats((prev) =>
+            Array.isArray(prev) && prev.length > 0 ? prev : []
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -171,13 +252,18 @@ export function useTeamWearer(
     } else {
       if (addresses.length > 0) {
         setWornMoondaoHats(undefined)
-        setIsLoading(true)
+        setIsLoading(false)
       } else {
         setWornMoondaoHats([])
         setIsLoading(false)
       }
     }
-  }, [teamContract, selectedChain, addressKey])
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see useProjectWearer
+  }, [contractAddress, chainId, addressKey])
 
   return { userTeams: wornMoondaoHats, isLoading }
 }

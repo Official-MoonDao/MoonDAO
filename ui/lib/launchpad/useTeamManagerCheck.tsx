@@ -19,12 +19,17 @@ export function useTeamManagerCheck(
 
       const teamChecks = await Promise.all(
         userTeams.map(async (hat: UserTeam) => {
-          if (!hat?.teamId || !hat.hats?.[0]?.id) return { hat, isManager: false }
+          if (
+            hat?.teamId == null ||
+            hat?.teamId === '' ||
+            !hat.hats?.[0]?.id
+          )
+            return { hat, isManager: false }
 
           const managerHatId: any = await readContract({
             contract: teamContract,
             method: 'teamManagerHat' as string,
-            params: [hat.teamId],
+            params: [BigInt(String(hat.teamId))],
           })
 
           const isManager = hatIdDecimalToHex(managerHatId) === hat.hats?.[0].id
