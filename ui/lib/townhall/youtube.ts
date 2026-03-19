@@ -31,8 +31,7 @@ export async function getLatestLiveVideo(
   apiKey: string
 ): Promise<YouTubeVideoMetadata | null> {
   try {
-    // First try: search for completed live streams (town halls are usually live)
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=completed&type=video&order=date&maxResults=10&key=${apiKey}`
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=completed&type=video&order=date&maxResults=50&key=${apiKey}`
 
     const response = await fetch(searchUrl)
     if (!response.ok) {
@@ -41,36 +40,16 @@ export async function getLatestLiveVideo(
 
     const data = await response.json()
 
-    if (data.items && data.items.length > 0) {
-      for (const item of data.items) {
-        if (item.id?.videoId) {
-          const videoId = item.id.videoId
-          const videoDetails = await getVideoMetadata(videoId, apiKey)
-          // Accept completed livestreams — liveBroadcastContent will be 'none' after processing
-          if (videoDetails) {
-            return videoDetails
-          }
-        }
-      }
+    if (!data.items || data.items.length === 0) {
+      return null
     }
 
-    // Fallback: search for recent uploads with "town hall" in title
-    const fallbackUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=10&q=town+hall&key=${apiKey}`
-
-    const fallbackResponse = await fetch(fallbackUrl)
-    if (!fallbackResponse.ok) {
-      throw new Error(`YouTube API error: ${fallbackResponse.status}`)
-    }
-
-    const fallbackData = await fallbackResponse.json()
-
-    if (fallbackData.items && fallbackData.items.length > 0) {
-      for (const item of fallbackData.items) {
-        if (item.id?.videoId) {
-          const videoDetails = await getVideoMetadata(item.id.videoId, apiKey)
-          if (videoDetails) {
-            return videoDetails
-          }
+    for (const item of data.items) {
+      if (item.snippet?.liveBroadcastContent === 'none' && item.id?.videoId) {
+        const videoId = item.id.videoId
+        const videoDetails = await getVideoMetadata(videoId, apiKey)
+        if (videoDetails && videoDetails.liveBroadcastContent === 'none') {
+          return videoDetails
         }
       }
     }
