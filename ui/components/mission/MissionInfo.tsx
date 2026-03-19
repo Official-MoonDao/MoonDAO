@@ -65,8 +65,6 @@ export default function MissionInfo({
   primaryTerminalAddress,
   stage,
   deadline,
-  refreshBackers,
-  backers,
   citizens,
   refreshTotalFunding,
   ruleset,
@@ -284,8 +282,6 @@ export default function MissionInfo({
               primaryTerminalAddress={primaryTerminalAddress}
               jbTokensContract={jbTokensContract}
               jbControllerContract={jbControllerContract}
-              refreshBackers={refreshBackers}
-              backers={backers}
               refreshTotalFunding={refreshTotalFunding}
               onOpenModal={() => {
                 setContributeModalEnabled(true)

@@ -32,15 +32,11 @@ export default function useMissionData({
   _token,
   _fundingGoal,
   _ruleset,
-  _backers,
 }: any) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const [fundingGoal, setFundingGoal] = useState(_fundingGoal)
   const [stage, setStage] = useState<MissionStage>(_stage)
-  const [backers, setBackers] = useState<any[]>(
-    _backers !== undefined ? _backers : undefined
-  )
   const [deadline, setDeadline] = useState<number | undefined>(_deadline)
   const [refundPeriod, setRefundPeriod] = useState<number | undefined>(
     _refundPeriod
@@ -172,48 +168,24 @@ export default function useMissionData({
     }
   }, [missionCreatorContract, mission?.id, _deadline, _refundPeriod])
 
-  // Backers - memoize projectId to prevent unnecessary refreshes
-  const projectId = useMemo(() => mission?.projectId, [mission?.projectId])
-
-  const refreshBackers = useCallback(async () => {
-    if (projectId === undefined) return
-    try {
-      const res = await fetch(`/api/mission/backers?projectId=${projectId}`)
-      const data = await res.json()
-      setBackers(data.backers)
-    } catch (error) {
-      console.error('Error fetching backers:', error)
-    }
-  }, [projectId])
-
-  useEffect(() => {
-    if (backers === undefined) {
-      refreshBackers()
-    }
-  }, [backers, refreshBackers])
-
   // Memoize return object to prevent unnecessary re-renders
   return useMemo(
     () => ({
       ...jbProjectData,
       fundingGoal,
       stage,
-      backers,
       deadline,
       refundPeriod,
       poolDeployerAddress,
-      refreshBackers,
       refreshStage,
     }),
     [
       jbProjectData,
       fundingGoal,
       stage,
-      backers,
       deadline,
       refundPeriod,
       poolDeployerAddress,
-      refreshBackers,
       refreshStage,
     ]
   )

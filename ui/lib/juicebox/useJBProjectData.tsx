@@ -2,13 +2,11 @@
 import JBV5Token from 'const/abis/JBV5Token.json'
 import {
   JB_NATIVE_TOKEN_ADDRESS,
-  MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
   ZERO_ADDRESS,
 } from 'const/config'
 import { BigNumber } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
-import { cacheExchange, createClient, fetchExchange } from 'urql'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 import useContract from '../thirdweb/hooks/useContract'
 import { projectQuery } from './subgraph'

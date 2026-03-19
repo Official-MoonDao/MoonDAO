@@ -25,7 +25,6 @@ const mockFeaturedMissionData = {
   _token: '0x0000000000000000000000000000000000000000',
   _fundingGoal: BigInt(0),
   _ruleset: [],
-  _backers: [],
 }
 
 describe('<FeaturedMissionSection />', () => {

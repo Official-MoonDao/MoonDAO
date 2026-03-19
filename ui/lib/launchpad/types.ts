@@ -30,18 +30,7 @@ export type FeaturedMissionData = {
   }
   _fundingGoal: number
   _ruleset: Array<{ weight: number; reservedPercent: number }> | null
-  _backers: Backer[]
   projectMetadata: Mission['metadata']
-}
-
-export type Backer = {
-  id: string
-  backer: string
-  projectId: string
-  totalAmountContributed: string
-  numberOfPayments: number
-  firstContributionTimestamp: string
-  lastContributionTimestamp: string
 }
 
 export type UserTeam = {

@@ -65,12 +65,10 @@ const MissionPayRedeemWrapper = (props: any) => {
 
 describe('MissionPayRedeem Component', () => {
   let mockProps: any
-  let refreshBackersStub: any
   let onOpenModalStub: any
 
   beforeEach(() => {
     // Create stubs inside beforeEach
-    refreshBackersStub = cy.stub()
     onOpenModalStub = cy.stub()
 
     // Create mock contract objects for thirdweb hooks
@@ -94,7 +92,6 @@ describe('MissionPayRedeem Component', () => {
       primaryTerminalAddress: '0x1234567890123456789012345678901234567890',
       jbTokensContract: mockJbTokensContract,
       jbControllerContract: mockJbControllerContract,
-      refreshBackers: refreshBackersStub,
       refreshTotalFunding: cy.stub(),
       ruleset: mockRuleset,
       onOpenModal: onOpenModalStub,

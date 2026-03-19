@@ -22,7 +22,7 @@ const FAQS = [
   {
     question: 'Why use blockchain for space crowdfunding?',
     answer:
-      'Blockchain ensures transparency, security, and trust in fundraising as well as being open to a global audience in a borderless nature. Every transaction is recorded onchain, meaning full visibility for backers as to how funds are used, and offers unique opportunities for backers to continue interacting with the project, including through governance decision making via tokens, ongoing stakeholding, or even revenue share opportunities in some cases, all through transparent and auditable computer code.',
+      'Blockchain ensures transparency, security, and trust in fundraising as well as being open to a global audience in a borderless nature. Every transaction is recorded onchain, meaning full visibility for contributors as to how funds are used, and offers unique opportunities for contributors to continue interacting with the project, including through governance decision making via tokens, ongoing stakeholding, or even revenue share opportunities in some cases, all through transparent and auditable computer code.',
   },
   {
     question: 'Is this platform only for space startups?',
