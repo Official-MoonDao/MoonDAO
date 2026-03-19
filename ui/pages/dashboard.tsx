@@ -1,12 +1,16 @@
 import {
   CITIZEN_TABLE_ADDRESSES,
+  CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JBV5_CONTROLLER_ADDRESS,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
+  MISSION_TABLE_NAMES,
   PROJECT_TABLE_ADDRESSES,
+  PROJECT_TABLE_NAMES,
   TEAM_TABLE_ADDRESSES,
+  TEAM_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_CITIZENS, BLOCKED_MISSIONS, BLOCKED_PROJECTS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
@@ -50,6 +54,7 @@ export default function Dashboard({
   missions,
   featuredMissionData,
   citizensLocationData,
+  citizensCount,
 }: any) {
   const router = useRouter()
   const { citizen, isLoading } = useContext(CitizenContext)
@@ -95,6 +100,7 @@ export default function Dashboard({
         missions={missions}
         featuredMissionData={featuredMissionData}
         citizensLocationData={citizensLocationData}
+        citizensCount={citizensCount}
       />
     </>
   )
@@ -139,12 +145,14 @@ export async function getStaticProps() {
       const chain = DEFAULT_CHAIN_V5
       const chainSlug = getChainSlug(chain)
 
-      const citizenTableContract = getContract({
-        client: serverClient,
-        address: CITIZEN_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: CitizenTableABI as any,
-      })
+      const citizenTableContract = CITIZEN_TABLE_ADDRESSES[chainSlug]
+        ? getContract({
+            client: serverClient,
+            address: CITIZEN_TABLE_ADDRESSES[chainSlug],
+            chain: chain,
+            abi: CitizenTableABI as any,
+          })
+        : null
 
       const marketplaceTableContract = getContract({
         client: serverClient,
@@ -160,43 +168,51 @@ export async function getStaticProps() {
         abi: JobTableABI as any,
       })
 
-      const teamTableContract = getContract({
-        client: serverClient,
-        address: TEAM_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: TeamTableABI as any,
-      })
+      const teamTableContract = TEAM_TABLE_ADDRESSES[chainSlug]
+        ? getContract({
+            client: serverClient,
+            address: TEAM_TABLE_ADDRESSES[chainSlug],
+            chain: chain,
+            abi: TeamTableABI as any,
+          })
+        : null
 
-      const projectTableContract = getContract({
-        client: serverClient,
-        address: PROJECT_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: ProjectTableABI as any,
-      })
+      const projectTableContract = PROJECT_TABLE_ADDRESSES[chainSlug]
+        ? getContract({
+            client: serverClient,
+            address: PROJECT_TABLE_ADDRESSES[chainSlug],
+            chain: chain,
+            abi: ProjectTableABI as any,
+          })
+        : null
 
-      const missionTableContract = getContract({
-        client: serverClient,
-        address: MISSION_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: MissionTableABI as any,
-      })
+      const missionTableContract = MISSION_TABLE_ADDRESSES[chainSlug]
+        ? getContract({
+            client: serverClient,
+            address: MISSION_TABLE_ADDRESSES[chainSlug],
+            chain: chain,
+            abi: MissionTableABI as any,
+          })
+        : null
 
-      // Table queries
+      // Table queries - use config names as fallback when contract unavailable
       const [
-        citizenTableName,
+        citizenTableNameResolved,
         marketplaceTableName,
         jobTableName,
-        teamTableName,
-        projectTableName,
-        missionTableName,
+        teamTableNameResolved,
+        projectTableNameResolved,
+        missionTableNameResolved,
       ] = await Promise.all([
-        readContract({
-          contract: citizenTableContract,
-          method: 'getTableName',
-        }).catch((error) => {
-          console.error('Error reading citizen table name:', error)
-          return ''
-        }),
+        citizenTableContract
+          ? readContract({
+              contract: citizenTableContract,
+              method: 'getTableName',
+            }).catch((error) => {
+              console.error('Error reading citizen table name:', error)
+              return ''
+            })
+          : Promise.resolve(''),
         readContract({
           contract: marketplaceTableContract,
           method: 'getTableName',
@@ -208,28 +224,46 @@ export async function getStaticProps() {
           console.error('Error reading job table name:', error)
           return ''
         }),
-        readContract({ contract: teamTableContract, method: 'getTableName' }).catch((error) => {
-          console.error('Error reading team table name:', error)
-          return ''
-        }),
-        readContract({
-          contract: projectTableContract,
-          method: 'getTableName',
-        }).catch((error) => {
-          console.error('Error reading project table name:', error)
-          return ''
-        }),
-        readContract({
-          contract: missionTableContract,
-          method: 'getTableName',
-        }).catch((error) => {
-          console.error('Error reading mission table name:', error)
-          return ''
-        }),
+        teamTableContract
+          ? readContract({ contract: teamTableContract, method: 'getTableName' }).catch((error) => {
+              console.error('Error reading team table name:', error)
+              return ''
+            })
+          : Promise.resolve(''),
+        projectTableContract
+          ? readContract({
+              contract: projectTableContract,
+              method: 'getTableName',
+            }).catch((error) => {
+              console.error('Error reading project table name:', error)
+              return ''
+            })
+          : Promise.resolve(''),
+        missionTableContract
+          ? readContract({
+              contract: missionTableContract,
+              method: 'getTableName',
+            }).catch((error) => {
+              console.error('Error reading mission table name:', error)
+              return ''
+            })
+          : Promise.resolve(''),
       ])
 
-      const [citizens, listings, jobs, teams, projects, missionRows] = await Promise.all([
-        citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 8`) : Promise.resolve([]),
+      const citizenTableName = citizenTableNameResolved || CITIZEN_TABLE_NAMES[chainSlug] || ''
+      const teamTableName = teamTableNameResolved || TEAM_TABLE_NAMES[chainSlug] || ''
+      const projectTableName =
+        projectTableNameResolved || PROJECT_TABLE_NAMES[chainSlug] || ''
+      const missionTableName =
+        missionTableNameResolved || MISSION_TABLE_NAMES[chainSlug] || ''
+
+      const blockedIds = BLOCKED_CITIZENS.size > 0
+        ? ` WHERE id NOT IN (${Array.from(BLOCKED_CITIZENS).join(',')})`
+        : ''
+      const [citizens, citizensCountResult, listings, jobs, teams, projects, missionRows] =
+        await Promise.all([
+          citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 8`) : Promise.resolve([]),
+          citizenTableName ? queryTable(chain, `SELECT COUNT(*) as count FROM ${citizenTableName}${blockedIds}`) : Promise.resolve([{ count: 0 }]),
         marketplaceTableName ? queryTable(
           chain,
           `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${Math.floor(
@@ -249,11 +283,13 @@ export async function getStaticProps() {
         missionTableName ? queryTable(chain, `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 1`) : Promise.resolve([]),
       ])
 
-      return { citizens, listings, jobs, teams, projects, missionRows }
+      const citizensCount = Number(citizensCountResult?.[0]?.count ?? 0)
+      return { citizens, citizensCount, listings, jobs, teams, projects, missionRows }
     } catch (error) {
       console.error('Contract operations failed:', error)
       return {
         citizens: [],
+        citizensCount: 0,
         listings: [],
         jobs: [],
         teams: [],
@@ -319,6 +355,7 @@ export async function getStaticProps() {
     }
   }
 
+  let citizensCount = 0
   if (contractResult.status === 'fulfilled') {
     const { citizens, listings, jobs, teams, projects, missionRows } = contractResult.value
     newestCitizens = citizens.filter((c: any) => !BLOCKED_CITIZENS.has(c.id))
@@ -419,6 +456,7 @@ export async function getStaticProps() {
       missions,
       featuredMissionData,
       citizensLocationData,
+      citizensCount,
     },
     revalidate: 60, // 1 minute - optimized with batched validation
   }

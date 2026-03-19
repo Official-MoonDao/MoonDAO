@@ -131,6 +131,16 @@ function getTeamMetadata(team: any): string | null {
   return null
 }
 
+// Count citizens from location data (sum of citizens in each group)
+function countCitizensFromLocationData(locations: any[]): number {
+  if (!locations || locations.length === 0) return 0
+  try {
+    return locations.reduce((sum, g) => sum + (g.citizens?.length || 0), 0)
+  } catch {
+    return 0
+  }
+}
+
 // Function to count unique countries from location data
 function countUniqueCountries(locations: any[]): number {
   if (!locations || locations.length === 0) return 25
@@ -161,10 +171,10 @@ export default function SignedInDashboard({
   missions,
   featuredMissionData,
   citizensLocationData = [],
+  citizensCount = 0,
 }: any) {
   const proposals = []
   const currentProjects = []
-  console.log('projects', projects)
   for (let i = 0; i < projects.length; i++) {
     if (!BLOCKED_PROJECTS.has(projects[i].id)) {
       const activeStatus = projects[i].active
@@ -175,7 +185,6 @@ export default function SignedInDashboard({
       }
     }
   }
-  console.log('proposals', proposals)
   currentProjects.sort((a, b) => {
     if (a.eligible === b.eligible) {
       return 0
@@ -1168,7 +1177,9 @@ export default function SignedInDashboard({
             >
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  {citizenSubgraphData?.transfers?.length || '145'}
+                  {citizensCount ||
+                    countCitizensFromLocationData(citizensLocationData || []) ||
+                    0}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">Global Citizens</div>
               </div>
@@ -1204,7 +1215,7 @@ export default function SignedInDashboard({
             >
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  {filteredTeams?.length || '0'}
+                  {filteredTeams?.length ?? 0}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">Total Teams</div>
               </div>
