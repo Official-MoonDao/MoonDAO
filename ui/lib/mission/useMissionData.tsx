@@ -137,30 +137,49 @@ export default function useMissionData({
         return
       }
 
-      const payHookAddress: any = await readContract({
-        contract: missionCreatorContract,
-        method: 'missionIdToPayHook' as string,
-        params: [mission.id],
-      })
-      const payHookContract = getContract({
-        client,
-        address: payHookAddress,
-        chain: DEFAULT_CHAIN_V5,
-        abi: LaunchPadPayHookABI.abi as any,
-      })
-      if (payHookContract) {
-        const deadline: any = await readContract({
-          contract: payHookContract,
-          method: 'deadline' as string,
-          params: [],
+      try {
+        const payHookAddressResult: any = await readContract({
+          contract: missionCreatorContract,
+          method: 'missionIdToPayHook' as string,
+          params: [mission.id],
+        }).catch(() => null)
+
+        const payHookAddress =
+          typeof payHookAddressResult === 'string'
+            ? payHookAddressResult
+            : payHookAddressResult?.toString?.() ?? null
+
+        if (
+          !payHookAddress ||
+          payHookAddress === '0x0000000000000000000000000000000000000000'
+        ) {
+          return
+        }
+
+        const payHookContract = getContract({
+          client,
+          address: payHookAddress,
+          chain: DEFAULT_CHAIN_V5,
+          abi: LaunchPadPayHookABI.abi as any,
         })
-        const refundPeriod: any = await readContract({
-          contract: payHookContract,
-          method: 'refundPeriod' as string,
-          params: [],
-        })
-        setDeadline(+deadline.toString() * 1000) // Convert to milliseconds
-        setRefundPeriod(+refundPeriod.toString() * 1000) // Convert to milliseconds
+
+        const [deadlineResult, refundPeriodResult] = await Promise.all([
+          readContract({
+            contract: payHookContract,
+            method: 'deadline' as string,
+            params: [],
+          }),
+          readContract({
+            contract: payHookContract,
+            method: 'refundPeriod' as string,
+            params: [],
+          }),
+        ])
+
+        setDeadline(+deadlineResult.toString() * 1000) // Convert to milliseconds
+        setRefundPeriod(+refundPeriodResult.toString() * 1000) // Convert to milliseconds
+      } catch (error) {
+        console.error('Error fetching mission deadline:', error)
       }
     }
     if (missionCreatorContract && mission?.id !== undefined) {

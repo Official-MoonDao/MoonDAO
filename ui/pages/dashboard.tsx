@@ -357,10 +357,8 @@ export async function getStaticProps() {
 
   let citizensCount = 0
   if (contractResult.status === 'fulfilled') {
-    const { citizens, citizensCount: count, listings, jobs, teams, projects, missionRows } =
-      contractResult.value
-    newestCitizens = citizens
-    citizensCount = count ?? 0
+    const { citizens, listings, jobs, teams, projects, missionRows } = contractResult.value
+    newestCitizens = citizens.filter((c: any) => !BLOCKED_CITIZENS.has(c.id))
     newestListings = listings
     newestJobs = jobs
     newestTeams = teams
