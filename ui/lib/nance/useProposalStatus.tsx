@@ -161,9 +161,14 @@ export const STATUS_CONFIG = {
     dot: 'bg-blue-500',
   },
   Cancelled: {
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/30',
-    text: 'text-red-400',
-    dot: 'bg-red-500',
+    bg: 'bg-slate-500/10',
+    border: 'border-slate-500/30',
+    text: 'text-slate-400',
+    dot: 'bg-slate-500',
   },
+}
+
+/** Display label for "Vote Closed" instead of "Cancelled" */
+export const STATUS_DISPLAY_LABELS: Partial<Record<ProposalStatus, string>> = {
+  Cancelled: 'Vote Closed',
 }

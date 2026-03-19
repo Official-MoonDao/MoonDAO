@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import useAccount from '../../lib/nance/useAccountAddress'
-import { STATUS_CONFIG, ProposalStatus } from '@/lib/nance/useProposalStatus'
+import { STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
 import { AddressLink } from './AddressLink'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
@@ -135,6 +135,7 @@ function ProposalStatusDisplay({ status }: { status: ProposalStatus }) {
     text: 'text-gray-400',
     dot: 'bg-gray-500',
   }
+  const displayLabel = STATUS_DISPLAY_LABELS[status] ?? status
 
   return (
     <div className="flex items-center gap-2">
@@ -145,7 +146,7 @@ function ProposalStatusDisplay({ status }: { status: ProposalStatus }) {
         <span
           className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}
         >
-          {status}
+          {displayLabel}
         </span>
       </div>
     </div>
