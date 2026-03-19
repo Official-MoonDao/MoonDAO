@@ -130,7 +130,13 @@ export default function Quest({
 
   const fetchHasClaimed = useCallback(
     async (polling = false) => {
-      if (xpManagerContract && userAddress) {
+      const verifierId = quest.verifier?.verifierId
+      if (
+        xpManagerContract &&
+        userAddress &&
+        verifierId !== undefined &&
+        verifierId !== null
+      ) {
         // Only show "Checking status..." if we're not already polling for confirmation
         if (!polling) {
           setIsCheckingClaimed(true)
@@ -139,7 +145,7 @@ export default function Quest({
         const claimed = await readContract({
           contract: xpManagerContract,
           method: 'hasClaimedFromVerifier' as string,
-          params: [userAddress, quest.verifier.verifierId],
+          params: [userAddress, verifierId],
         })
 
         setHasClaimed(Boolean(claimed))
