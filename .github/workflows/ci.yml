@@ -5,6 +5,9 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+    paths:
+      - "ui/**"
+      - ".github/workflows/ci.yml"
 
 env:
   NEXT_PUBLIC_ENV: "dev"
@@ -108,10 +111,14 @@ jobs:
         working-directory: ui
         run: yarn build
 
-  # E2E tests on BrowserStack - can run in parallel with component tests
+  # E2E tests on BrowserStack - split into 3 parallel jobs using cypress-split
   e2e-tests:
     runs-on: ubuntu-latest
     needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        containers: [1, 2, 3]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -144,6 +151,15 @@ jobs:
           key: next-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             next-${{ runner.os }}-
+
+      - name: Restore cypress-split timings cache (e2e)
+        uses: actions/cache@v4
+        with:
+          path: ui/.cypress-split-times
+          key: cypress-e2e-timings-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            cypress-e2e-timings-${{ github.ref }}-
+            cypress-e2e-timings-
 
       - name: Install dependencies
         working-directory: ui
@@ -233,9 +249,9 @@ jobs:
             sleep 1
           done
 
-          # Start BrowserStack Local binary
+          # Start BrowserStack Local binary (use BROWSERSTACK_LOCAL_IDENTIFIER for unique ID per parallel job)
           echo "Starting BrowserStack Local binary..."
-          BS_LOCAL_IDENTIFIER="moon-dao-tests-${BUILD_NUMBER}"
+          BS_LOCAL_IDENTIFIER="${BROWSERSTACK_LOCAL_IDENTIFIER:-moon-dao-tests-${BUILD_NUMBER}}"
           cd ..
           ./BrowserStackLocal \
             --key "${BROWSERSTACK_ACCESS_KEY}" \
@@ -246,9 +262,19 @@ jobs:
           INITIAL_PID=$!
           cd ui
 
-          # Wait for Local binary to establish connection
+          # Wait for Local binary to establish connection (poll log instead of fixed sleep)
           echo "Waiting for BrowserStack Local connection..."
-          sleep 20
+          for i in {1..60}; do
+            if [ -f ../bs-local.log ] && grep -q "You can now access your local server" ../bs-local.log 2>/dev/null; then
+              echo "✓ BrowserStack Local connected (after ${i}s)"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "⚠ BrowserStack Local log check timed out after 60 attempts, continuing anyway"
+              break
+            fi
+            sleep 2
+          done
 
           # Verify Local binary is running by checking for BrowserStackLocal process
           # (--daemon start forks, so the initial PID may exit, but daemon process should be running)
@@ -305,9 +331,11 @@ jobs:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           BROWSERSTACK_LOCAL: true
-          BROWSERSTACK_LOCAL_IDENTIFIER: "moon-dao-tests-${BUILD_NUMBER}"
+          BROWSERSTACK_LOCAL_IDENTIFIER: "moon-dao-tests-${{ github.run_id }}-${{ strategy.job-index }}"
           CYPRESS_BASE_URL: "http://localhost:3000"
-          BUILD_NUMBER: ${{ github.run_id }}
+          BUILD_NUMBER: "${{ github.run_id }}-${{ strategy.job-index }}"
+          SPLIT: ${{ strategy.job-total }}
+          SPLIT_INDEX: ${{ strategy.job-index }}
 
   # Component tests - split into 4 parallel jobs using cypress-split
   component-tests:

@@ -28,7 +28,7 @@
     }
   ],
   "run_settings": {
-    "specs": "cypress/e2e/*.cy.ts",
+    "specs": "cypress/e2e/**/*.cy.{ts,tsx}",
     "cypress_config_file": "cypress.config.js",
     "cache_dependencies": true,
     "npm_dependencies": {

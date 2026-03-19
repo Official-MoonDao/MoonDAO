@@ -21,6 +21,16 @@ module.exports = defineConfig({
         ...process.env,
       }
 
+      // Apply cypress-split for E2E parallelization in CI
+      if (process.env.SPLIT && process.env.SPLIT_INDEX !== undefined) {
+        try {
+          const splitConfig = cypressSplit(on, config)
+          if (splitConfig) config = splitConfig
+        } catch (e) {
+          console.warn('[Cypress E2E] cypress-split error:', e.message)
+        }
+      }
+
       on('task', {
         log(message) {
           console.log(message)
