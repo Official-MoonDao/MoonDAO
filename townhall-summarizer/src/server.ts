@@ -16,6 +16,7 @@ import {
   ConvertKitBroadcast,
 } from "./utils/convertkit";
 import { getVideoMetadata, validateVideoChannel } from "./utils/youtube";
+import { sendDiscordNotification, stripHtml } from "./utils/discord";
 
 const execAsync = promisify(exec);
 
@@ -170,6 +171,23 @@ app.post(
         );
       } else {
         console.log("Test mode: Skipping ConvertKit broadcast creation");
+      }
+
+      // Step 6: Send Discord notification (non-blocking — don't fail the pipeline)
+      const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+      if (discordWebhookUrl && !testMode) {
+        try {
+          const summaryPreview = stripHtml(summary);
+          await sendDiscordNotification(discordWebhookUrl, {
+            videoTitle: resolvedVideoTitle,
+            videoDate: resolvedVideoDate,
+            videoId,
+            summaryPreview,
+            broadcastUrl: broadcast?.public_url,
+          });
+        } catch (discordError) {
+          console.error("Discord notification failed (non-fatal):", discordError);
+        }
       }
 
       console.log(`Pipeline completed successfully for video: ${videoId}`);
