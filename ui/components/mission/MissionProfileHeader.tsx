@@ -32,6 +32,7 @@ interface MissionProfileHeaderProps {
   duration: any
   deadlinePassed: boolean
   refundPeriodPassed: boolean
+  refundPeriod: number | undefined
   stage: number
   token: any
   poolDeployerAddress: string | undefined
@@ -59,6 +60,7 @@ const MissionProfileHeader = React.memo(
     duration,
     deadlinePassed,
     refundPeriodPassed,
+    refundPeriod,
     stage,
     token,
     poolDeployerAddress,
@@ -277,6 +279,21 @@ const MissionProfileHeader = React.memo(
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Image src="/assets/launchpad/target.svg" alt="Goal" width={14} height={14} className="opacity-60" />
                       <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium">Goal</span>
+                      {refundPeriod && refundPeriod > 0 ? (
+                        <Tooltip
+                          text="This is an all-or-nothing mission. Refunds are available if the goal is not met."
+                          buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                        >
+                          ?
+                        </Tooltip>
+                      ) : (
+                        <Tooltip
+                          text="This mission does not have refunds enabled. Contributions are final."
+                          buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                        >
+                          ?
+                        </Tooltip>
+                      )}
                     </div>
                     <Tooltip
                       text={

@@ -327,6 +327,7 @@ export default function MissionProfile({
         duration={duration}
         deadlinePassed={deadlinePassed}
         refundPeriodPassed={refundPeriodPassed}
+        refundPeriod={refundPeriod}
         stage={stage}
         poolDeployerAddress={poolDeployerAddress}
         isManager={isManager}
