@@ -38,18 +38,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const CONVERTKIT_API_KEY =
       process.env.CONVERT_KIT_V4_API_KEY || process.env.CONVERT_KIT_API_KEY
+    // Try v3 API first (uses api_secret - many accounts have v3 key, v4 returns 401 for v3 keys)
+    const v3ApiSecret =
+      process.env.CONVERT_KIT_API_SECRET || process.env.CONVERT_KIT_API_KEY
 
-    if (!CONVERTKIT_API_KEY) {
-      console.log('[newsletters] API key not found')
+    // Allow proceeding if either a v4/v3 API key or a v3 API secret is configured
+    if (!CONVERTKIT_API_KEY && !v3ApiSecret) {
+      console.log('[newsletters] API key/secret not found')
       return emptyResponse(res)
     }
 
     let allBroadcasts: any[] = []
     let source = 'convertkit'
 
-    // Try v3 API first (uses api_secret - many accounts have v3 key, v4 returns 401 for v3 keys)
-    const v3ApiSecret =
-      process.env.CONVERT_KIT_API_SECRET || process.env.CONVERT_KIT_API_KEY
     if (v3ApiSecret) {
       try {
         const v3Url = `https://api.convertkit.com/v3/broadcasts?page=1&sort_order=desc&api_secret=${encodeURIComponent(v3ApiSecret)}`
