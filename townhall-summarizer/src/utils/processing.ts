@@ -147,7 +147,7 @@ export async function extractAudioUrl(videoId: string): Promise<string> {
   try {
     const cookieArgs = await getYtDlpCookieArgs();
     const { stdout } = await execAsync(
-      `yt-dlp -g -f "bestaudio/best" --no-warnings ${cookieArgs} "${videoUrl}"`
+      `yt-dlp -g -f "bestaudio/best" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`
     );
 
     const audioUrl = stdout.trim().split("\n")[0];
@@ -182,7 +182,8 @@ export async function transcribeAudio(
 
     const cookieArgs = await getYtDlpCookieArgs();
     await execAsync(
-      `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings ${cookieArgs} "${videoUrl}"`
+      `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`,
+      { maxBuffer: 50 * 1024 * 1024 } // 50MB buffer for fragmented livestream downloads
     );
 
     // Check file size and compress if needed
@@ -245,6 +246,27 @@ export async function transcribeAudio(
         await execAsync(
           `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a ${lowerBitrate}k -ar ${AUDIO_CONFIG.sampleRate} -ac ${AUDIO_CONFIG.channels} "${compressedFile}" -y`
         );
+
+        // Check again and try ultra-low bitrate for very long videos
+        const recompressedBuffer = await readFile(compressedFile);
+        const recompressedSizeMB = recompressedBuffer.length / (1024 * 1024);
+
+        if (recompressedSizeMB > AUDIO_CONFIG.maxSizeMB) {
+          console.log(
+            `Still ${recompressedSizeMB.toFixed(2)} MB after re-compression, trying ultra-low bitrate...`
+          );
+          const ultraLowBitrate = Math.max(
+            AUDIO_CONFIG.minBitrate,
+            Math.floor(
+              ((AUDIO_CONFIG as any).ultraLowTargetSizeMB || 15) * 8 * 1024 / durationSeconds
+            )
+          );
+          console.log(`Using ultra-low bitrate: ${ultraLowBitrate} kbps`);
+
+          await execAsync(
+            `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a ${ultraLowBitrate}k -ar ${AUDIO_CONFIG.sampleRate} -ac ${AUDIO_CONFIG.channels} "${compressedFile}" -y`
+          );
+        }
       }
 
       // Clean up original file

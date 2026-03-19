@@ -74,32 +74,51 @@ app.post(
           .json({ error: "convertKitApiKey is required" } as any);
       }
 
-      const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
-      if (allowedChannelId) {
-        const youtubeApiKey = process.env.YOUTUBE_API_KEY;
-        if (!youtubeApiKey) {
-          return res.status(400).json({
-            error: "YOUTUBE_API_KEY is required for channel validation",
-          } as any);
-        }
+      // Fetch YouTube metadata for channel validation and date/title resolution
+      let resolvedVideoDate = videoDate;
+      let resolvedVideoTitle = videoTitle;
+      const youtubeApiKey = process.env.YOUTUBE_API_KEY;
 
+      if (youtubeApiKey) {
         const videoMetadata = await getVideoMetadata(videoId, youtubeApiKey);
         if (!videoMetadata) {
           return res.status(404).json({ error: "Video not found" } as any);
         }
 
-        const isValidChannel = await validateVideoChannel(
-          videoMetadata,
-          allowedChannelId
-        );
-        if (!isValidChannel) {
-          return res.status(403).json({
-            error: "Video is not from the allowed YouTube channel",
-            channelId: videoMetadata.channelId,
-            channelTitle: videoMetadata.channelTitle,
-          } as any);
+        // Use YouTube publish date if no date was provided
+        if (!resolvedVideoDate && videoMetadata.publishedAt) {
+          resolvedVideoDate = videoMetadata.publishedAt;
+          console.log(`Using YouTube publish date: ${resolvedVideoDate}`);
         }
+
+        // Use YouTube title if no title was provided
+        if (!resolvedVideoTitle && videoMetadata.title) {
+          resolvedVideoTitle = videoMetadata.title;
+          console.log(`Using YouTube title: ${resolvedVideoTitle}`);
+        }
+
+        // Validate channel if configured
+        const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
+        if (allowedChannelId) {
+          const isValidChannel = await validateVideoChannel(
+            videoMetadata,
+            allowedChannelId
+          );
+          if (!isValidChannel) {
+            return res.status(403).json({
+              error: "Video is not from the allowed YouTube channel",
+              channelId: videoMetadata.channelId,
+              channelTitle: videoMetadata.channelTitle,
+            } as any);
+          }
+        }
+      } else {
+        console.warn("YOUTUBE_API_KEY not set, skipping metadata lookup");
       }
+
+      // Fall back to defaults
+      resolvedVideoDate = resolvedVideoDate || new Date().toISOString();
+      resolvedVideoTitle = resolvedVideoTitle || "Town Hall";
 
       console.log(`Starting full pipeline for video: ${videoId}`);
 
@@ -128,13 +147,13 @@ app.post(
       // Step 4: Format summary
       const formattedSummary = formatSummaryForConvertKit(
         summary,
-        videoTitle || "Town Hall",
-        videoDate || new Date().toISOString(),
+        resolvedVideoTitle,
+        resolvedVideoDate,
         videoId
       );
 
       const broadcastSubject = `Town Hall Summary - ${new Date(
-        videoDate || new Date()
+        resolvedVideoDate
       ).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -209,7 +228,8 @@ app.get("/audio", async (req: Request, res: Response) => {
       }
     }
     await execAsync(
-      `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings ${cookieArgs} "${videoUrl}"`
+      `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`,
+      { maxBuffer: 50 * 1024 * 1024 } // 50MB buffer for fragmented livestream downloads
     );
 
     const audioBuffer = await readFile(tempFile);
