@@ -14,7 +14,7 @@ import {
   PlusIcon,
   ArrowUpRightIcon,
 } from '@heroicons/react/24/outline'
-import { useFundWallet } from '@privy-io/react-auth'
+import { useFundWallet, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
@@ -43,13 +43,14 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { shouldShowTeamsSection } from '@/lib/dashboard/shouldShowTeamsSection'
 import { useNewsletters } from '@/lib/home/useHomeData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import useMissionData from '@/lib/mission/useMissionData'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
@@ -214,6 +215,11 @@ export default function SignedInDashboard({
 
   const account = useActiveAccount()
   const address = account?.address
+  const { user } = usePrivy()
+  const wearerAddresses = useMemo(
+    () => getLinkedEvmAddresses(user, account?.address),
+    [user, account?.address]
+  )
 
   // Hooks for SendModal
   const { nativeBalance } = useNativeBalance()
@@ -243,7 +249,7 @@ export default function SignedInDashboard({
   const { userTeams: teamHats, isLoading: isLoadingTeams } = useTeamWearer(
     teamContract,
     selectedChain,
-    address
+    wearerAddresses
   )
   const marketplaceTableContract = useContract({
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],

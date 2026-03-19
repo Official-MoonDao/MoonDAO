@@ -6,7 +6,6 @@ import { Contract, TeamManagerCheckResult, UserTeam } from './types'
 export function useTeamManagerCheck(
   teamContract: Contract | undefined,
   userTeams: UserTeam[] | undefined,
-  address: string | undefined,
   userTeamsLoading: boolean
 ): TeamManagerCheckResult {
   const [userTeamsAsManager, setUserTeamsAsManager] = useState<UserTeam[]>()
@@ -39,13 +38,13 @@ export function useTeamManagerCheck(
       setUserTeamsAsManager(teamsAsManager)
       setIsLoading(false)
     }
-    if (teamContract && userTeams && address && !userTeamsLoading) {
+    if (teamContract && userTeams !== undefined && !userTeamsLoading) {
       getUserTeamsAsManager()
     } else {
       setUserTeamsAsManager(undefined)
       setIsLoading(true)
     }
-  }, [teamContract, userTeams, address, userTeamsLoading])
+  }, [teamContract, userTeams, userTeamsLoading])
 
   return { userTeamsAsManager: userTeamsAsManager || [], isLoading }
 }

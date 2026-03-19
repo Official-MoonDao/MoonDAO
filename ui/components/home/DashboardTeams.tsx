@@ -1,5 +1,8 @@
+import { usePrivy } from '@privy-io/react-auth'
+import { useMemo } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import { Hat } from '../hats/Hat'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
@@ -14,11 +17,15 @@ export default function DashboardTeams({
   teamContract: any
 }) {
   const account = useActiveAccount()
-  const address = account?.address
+  const { user } = usePrivy()
+  const wearerAddresses = useMemo(
+    () => getLinkedEvmAddresses(user, account?.address),
+    [user, account?.address]
+  )
   const { userTeams: hats, isLoading } = useTeamWearer(
     teamContract,
     selectedChain,
-    address
+    wearerAddresses
   )
 
   if (!isLoading && !hats)

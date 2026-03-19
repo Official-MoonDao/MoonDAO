@@ -1,16 +1,16 @@
 'use client'
 
+import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import TeamABI from 'const/abis/Team.json'
-import { TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES } from 'const/config'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-
 // Simple in-memory cache to avoid repeated getNFT calls per team
 const teamNameCache = new Map<string, string>()
 
@@ -21,22 +21,29 @@ type TeamsNavDropdownProps = {
 
 export function TeamsNavDropdown({ variant, onNavigate }: TeamsNavDropdownProps) {
   const account = useActiveAccount()
-  const address = account?.address
-  const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = selectedChain ? getChainSlug(selectedChain) : 'arbitrum'
+  const { user } = usePrivy()
+  const wearerAddresses = useMemo(
+    () => getLinkedEvmAddresses(user, account?.address),
+    [user, account?.address]
+  )
+  // Teams only exist on the deployment chain (Arbitrum / testnets), not on e.g. Ethereum
+  // when the user picks another network in the wallet UI.
+  const membershipChain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(membershipChain)
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
-    chain: selectedChain,
+    chain: membershipChain,
     abi: TeamABI as any,
   })
   const { userTeams, isLoading } = useTeamWearer(
     teamContract,
-    selectedChain,
-    address
+    membershipChain,
+    wearerAddresses
   )
 
   const shouldShowLoading =
-    !!address && (!teamContract || isLoading || userTeams === undefined)
+    wearerAddresses.length > 0 &&
+    (!teamContract || isLoading || userTeams === undefined)
 
   const isDesktop = variant === 'desktop'
 

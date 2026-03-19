@@ -1,5 +1,4 @@
 //Citizen Profile
-import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import {
   GlobeAltIcon,
   LockClosedIcon,
@@ -624,47 +623,54 @@ async function getTeamWearerServerSide(chain: any, teamContract: any, address: a
             method: 'adminHatToTokenId' as string,
             params: [hat.id],
           })
-          const teamIdFromAdmin = await readContract({
-            contract: teamContract,
-            method: 'adminHatToTokenId' as string,
-            params: [hat.admin.id],
-          })
-          const teamIdFromAdminAdmin = await readContract({
-            contract: teamContract,
-            method: 'adminHatToTokenId' as string,
-            params: [hat.admin.admin.id],
-          })
+          const teamIdFromAdmin = hat.admin?.id
+            ? await readContract({
+                contract: teamContract,
+                method: 'adminHatToTokenId' as string,
+                params: [hat.admin.id],
+              })
+            : null
+          const teamIdFromAdminAdmin = hat.admin?.admin?.id
+            ? await readContract({
+                contract: teamContract,
+                method: 'adminHatToTokenId' as string,
+                params: [hat.admin.admin.id],
+              })
+            : null
+          const teamIdFromAdminAdminAdmin = hat.admin?.admin?.admin?.id
+            ? await readContract({
+                contract: teamContract,
+                method: 'adminHatToTokenId' as string,
+                params: [hat.admin.admin.admin.id],
+              })
+            : null
 
           let teamId
           if (+teamIdFromHat.toString() !== 0) {
             teamId = teamIdFromHat
-          } else if (+teamIdFromAdmin.toString() !== 0) {
+          } else if (teamIdFromAdmin && +teamIdFromAdmin.toString() !== 0) {
             teamId = teamIdFromAdmin
-          } else if (+teamIdFromAdminAdmin.toString() !== 0) {
+          } else if (
+            teamIdFromAdminAdmin &&
+            +teamIdFromAdminAdmin.toString() !== 0
+          ) {
             teamId = teamIdFromAdminAdmin
+          } else if (
+            teamIdFromAdminAdminAdmin &&
+            +teamIdFromAdminAdminAdmin.toString() !== 0
+          ) {
+            teamId = teamIdFromAdminAdminAdmin
           } else {
             teamId = 0
           }
 
-          const adminHatId = await readContract({
-            contract: teamContract,
-            method: 'teamAdminHat' as string,
-            params: [teamId],
-          })
-          const prettyAdminHatId = hatIdDecimalToHex(BigInt(adminHatId.toString()))
-
-          if (
-            hat.id === prettyAdminHatId ||
-            hat.admin.id === prettyAdminHatId ||
-            hat.admin.admin.id === prettyAdminHatId ||
-            hat.admin.admin.admin.id === prettyAdminHatId
-          ) {
-            return {
-              ...hat,
-              teamId: teamId.toString(),
-            }
+          if (+teamId.toString() === 0) {
+            return null
           }
-          return null
+          return {
+            ...hat,
+            teamId: teamId.toString(),
+          }
         })
       ).then((results) => results.filter((result) => result !== null))
 
