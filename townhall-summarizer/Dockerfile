@@ -2,10 +2,10 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install Python, pip, yt-dlp, ffmpeg, and yarn
+# Install Python, pip, yt-dlp, ffmpeg, PO token plugin, and yarn
 RUN apt-get update && \
-    apt-get install -y python3 python3-pip ffmpeg && \
-    pip3 install --no-cache-dir --break-system-packages --upgrade yt-dlp && \
+    apt-get install -y python3 python3-pip ffmpeg git && \
+    pip3 install --no-cache-dir --break-system-packages --upgrade yt-dlp bgutil-ytdlp-pot-provider && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     npm install -g yarn --force

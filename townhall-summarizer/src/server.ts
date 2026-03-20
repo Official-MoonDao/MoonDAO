@@ -10,12 +10,14 @@ import {
   transcribeAudio,
   summarizeTranscript,
   formatSummaryForConvertKit,
+  getYtDlpCookieArgs,
 } from "./utils/processing";
 import {
   createConvertKitBroadcast,
   ConvertKitBroadcast,
 } from "./utils/convertkit";
 import { getVideoMetadata, validateVideoChannel } from "./utils/youtube";
+import { sendDiscordNotification, stripHtml } from "./utils/discord";
 
 const execAsync = promisify(exec);
 
@@ -74,32 +76,51 @@ app.post(
           .json({ error: "convertKitApiKey is required" } as any);
       }
 
-      const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
-      if (allowedChannelId) {
-        const youtubeApiKey = process.env.YOUTUBE_API_KEY;
-        if (!youtubeApiKey) {
-          return res.status(400).json({
-            error: "YOUTUBE_API_KEY is required for channel validation",
-          } as any);
-        }
+      // Fetch YouTube metadata for channel validation and date/title resolution
+      let resolvedVideoDate = videoDate;
+      let resolvedVideoTitle = videoTitle;
+      const youtubeApiKey = process.env.YOUTUBE_API_KEY;
 
+      if (youtubeApiKey) {
         const videoMetadata = await getVideoMetadata(videoId, youtubeApiKey);
         if (!videoMetadata) {
           return res.status(404).json({ error: "Video not found" } as any);
         }
 
-        const isValidChannel = await validateVideoChannel(
-          videoMetadata,
-          allowedChannelId
-        );
-        if (!isValidChannel) {
-          return res.status(403).json({
-            error: "Video is not from the allowed YouTube channel",
-            channelId: videoMetadata.channelId,
-            channelTitle: videoMetadata.channelTitle,
-          } as any);
+        // Use YouTube publish date if no date was provided
+        if (!resolvedVideoDate && videoMetadata.publishedAt) {
+          resolvedVideoDate = videoMetadata.publishedAt;
+          console.log(`Using YouTube publish date: ${resolvedVideoDate}`);
         }
+
+        // Use YouTube title if no title was provided
+        if (!resolvedVideoTitle && videoMetadata.title) {
+          resolvedVideoTitle = videoMetadata.title;
+          console.log(`Using YouTube title: ${resolvedVideoTitle}`);
+        }
+
+        // Validate channel if configured
+        const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
+        if (allowedChannelId) {
+          const isValidChannel = await validateVideoChannel(
+            videoMetadata,
+            allowedChannelId
+          );
+          if (!isValidChannel) {
+            return res.status(403).json({
+              error: "Video is not from the allowed YouTube channel",
+              channelId: videoMetadata.channelId,
+              channelTitle: videoMetadata.channelTitle,
+            } as any);
+          }
+        }
+      } else {
+        console.warn("YOUTUBE_API_KEY not set, skipping metadata lookup");
       }
+
+      // Fall back to defaults
+      resolvedVideoDate = resolvedVideoDate || new Date().toISOString();
+      resolvedVideoTitle = resolvedVideoTitle || "Town Hall";
 
       console.log(`Starting full pipeline for video: ${videoId}`);
 
@@ -128,13 +149,13 @@ app.post(
       // Step 4: Format summary
       const formattedSummary = formatSummaryForConvertKit(
         summary,
-        videoTitle || "Town Hall",
-        videoDate || new Date().toISOString(),
+        resolvedVideoTitle,
+        resolvedVideoDate,
         videoId
       );
 
       const broadcastSubject = `Town Hall Summary - ${new Date(
-        videoDate || new Date()
+        resolvedVideoDate
       ).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -151,6 +172,23 @@ app.post(
         );
       } else {
         console.log("Test mode: Skipping ConvertKit broadcast creation");
+      }
+
+      // Step 6: Send Discord notification (non-blocking — don't fail the pipeline)
+      const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+      if (discordWebhookUrl && !testMode) {
+        try {
+          const summaryPreview = stripHtml(summary);
+          await sendDiscordNotification(discordWebhookUrl, {
+            videoTitle: resolvedVideoTitle,
+            videoDate: resolvedVideoDate,
+            videoId,
+            summaryPreview,
+            broadcastUrl: broadcast?.public_url,
+          });
+        } catch (discordError) {
+          console.error("Discord notification failed (non-fatal):", discordError);
+        }
       }
 
       console.log(`Pipeline completed successfully for video: ${videoId}`);
@@ -190,23 +228,18 @@ app.get("/audio", async (req: Request, res: Response) => {
   }
 
   const tempFile = join(tmpdir(), `audio-${videoId}-${Date.now()}.m4a`);
+  const { args: cookieArgs, cleanup: cleanupCookies } = await getYtDlpCookieArgs();
 
   try {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     console.log(`Downloading audio for video: ${videoId}`);
     await execAsync(
-      `yt-dlp -f "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio" -o "${tempFile}" --no-warnings "${videoUrl}"`
+      `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`,
+      { maxBuffer: 50 * 1024 * 1024 } // 50MB buffer for fragmented livestream downloads
     );
 
     const audioBuffer = await readFile(tempFile);
-
-    // Clean up temp file
-    try {
-      await unlink(tempFile);
-    } catch (cleanupError) {
-      // Ignore cleanup errors
-    }
 
     res.setHeader("Content-Type", "audio/m4a");
     res.setHeader(
@@ -215,17 +248,14 @@ app.get("/audio", async (req: Request, res: Response) => {
     );
     res.status(200).send(audioBuffer);
   } catch (error) {
-    // Clean up temp file on error
-    try {
-      await unlink(tempFile).catch(() => {});
-    } catch {
-      // Ignore cleanup errors
-    }
-
     return res.status(500).json({
       error: "Failed to extract audio",
       message: error instanceof Error ? error.message : "Unknown error",
     });
+  } finally {
+    // Clean up temp files (audio + cookies)
+    await cleanupCookies();
+    try { await unlink(tempFile); } catch { /* ignore */ }
   }
 });
 

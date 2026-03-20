@@ -1,28 +1,38 @@
 steps:
+  # Build and push the main container image
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/townhall-summarizer", "."]
+    args: ["build", "-t", "gcr.io/$PROJECT_ID/townhall-summarizer:$BUILD_ID", "-t", "gcr.io/$PROJECT_ID/townhall-summarizer:latest", "."]
   - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$PROJECT_ID/townhall-summarizer"]
+    args: ["push", "gcr.io/$PROJECT_ID/townhall-summarizer:$BUILD_ID"]
+
+  # Stamp the built image into the Cloud Run service YAML
+  - name: "gcr.io/cloud-builders/gcloud"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        sed "s|IMAGE_PLACEHOLDER|gcr.io/$PROJECT_ID/townhall-summarizer:$BUILD_ID|g" \
+          service.yaml > /workspace/service-resolved.yaml
+        cat /workspace/service-resolved.yaml
+
+  # Deploy with bgutil PO token sidecar — no YouTube cookies needed
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
     args:
       - "run"
-      - "deploy"
-      - "townhall-summarizer"
-      - "--image"
-      - "gcr.io/$PROJECT_ID/townhall-summarizer"
-      - "--platform"
-      - "managed"
+      - "services"
+      - "replace"
+      - "/workspace/service-resolved.yaml"
       - "--region"
       - "us-central1"
-      - "--timeout"
-      - "3600"
-      - "--memory"
-      - "512Mi"
-      - "--min-instances"
-      - "0"
-      - "--max-instances"
-      - "10"
-      - "--allow-unauthenticated"
-      - "--set-secrets"
-      - "GROQ_API_KEY=groq-api-key:latest"
+
+  # Ensure the service allows unauthenticated access (ignore if already set)
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: bash
+    args:
+      - "-c"
+      - |
+        gcloud run services add-iam-policy-binding townhall-summarizer \
+          --region us-central1 \
+          --member allUsers \
+          --role roles/run.invoker || true
