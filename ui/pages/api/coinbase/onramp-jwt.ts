@@ -13,6 +13,8 @@ interface OnrampJwtRequest {
   selectedWallet?: number
   missionId?: string
   context?: string
+  contributorEmail?: string
+  newsletterOptIn?: boolean
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -32,6 +34,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       selectedWallet,
       missionId,
       context,
+      contributorEmail,
+      newsletterOptIn,
     }: OnrampJwtRequest = req.body
 
     if (!address || !chainSlug) {
@@ -59,6 +63,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       selectedWallet,
       missionId,
       context,
+      contributorEmail: contributorEmail || '',
+      newsletterOptIn: newsletterOptIn === true,
       timestamp: now,
     })
       .setProtectedHeader({ alg: 'HS256' })

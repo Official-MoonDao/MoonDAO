@@ -82,8 +82,8 @@ const jbControllerContract = getContract({
 type MissionProfileProps = {
   mission: Mission
   _stage: number
-  _deadline: number | undefined
-  _refundPeriod: number | undefined
+  _deadline: number | null | undefined
+  _refundPeriod: number | null | undefined
   _primaryTerminalAddress: string
   _token?: any
   _teamNFT?: any
