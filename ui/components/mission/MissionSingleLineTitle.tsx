@@ -44,8 +44,10 @@ export default function MissionSingleLineTitle({
     if (!el) return
 
     const update = () => {
-      setAllowWrap(el.clientWidth > 0 && el.clientWidth < WRAP_TITLE_MAX_CONTAINER_PX)
+      const w = el.clientWidth
+      setAllowWrap(w > 0 && w < WRAP_TITLE_MAX_CONTAINER_PX)
     }
+
     update()
 
     let ro: ResizeObserver | undefined

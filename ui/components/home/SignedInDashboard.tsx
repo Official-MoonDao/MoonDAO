@@ -344,7 +344,7 @@ export default function SignedInDashboard({
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-2 lg:order-1">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-1 lg:order-1">
             {/* Your Profile */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
               <div className="flex items-center justify-between mb-4">
@@ -490,7 +490,7 @@ export default function SignedInDashboard({
           </div>
 
           {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-1 lg:order-2">
+          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-2 lg:order-2">
             {/* Activity Feed */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
@@ -641,7 +641,7 @@ export default function SignedInDashboard({
           </div>
 
           {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3 min-w-0">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-3 lg:order-3 min-w-0">
             {/* Wallet Info Card */}
             {address && (
               <WalletInfoCard
