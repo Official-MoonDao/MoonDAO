@@ -132,7 +132,8 @@ describe('CreateCitizen Onramp E2E Flow', () => {
     })
 
     cy.get('#app-layout', { timeout: 60000 }).should('exist')
-    // Allow client to run restoreCache / expiry handling without a fixed racey delay
+    // Allow client some time to run restoreCache / expiry handling.
+    // Note: this uses a fixed delay and is therefore not fully deterministic.
     cy.wait(1500)
 
     // Verify expired cache behavior
