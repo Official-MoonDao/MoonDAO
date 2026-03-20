@@ -5,10 +5,6 @@ import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import { DEFAULT_CHAIN_V5, FEATURED_MISSION } from 'const/config'
 import {
-  getMissionMinimumUsdGoal,
-  MISSION_MINIMUM_GOAL_TOOLTIP,
-} from 'const/missionMilestones'
-import {
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
   JBV5_TOKENS_ADDRESS,
@@ -24,7 +20,6 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '@/components/layout/StandardButton'
-import Tooltip from '@/components/layout/Tooltip'
 import MissionSingleLineTitle from '@/components/mission/MissionSingleLineTitle'
 
 export default function FeaturedMissionSection({ missions, featuredMissionData }: any) {
@@ -94,8 +89,6 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
     console.log('No featured mission found, returning null')
     return null
   }
-
-  const minUsdGoal = getMissionMinimumUsdGoal(featuredMission?.id)
 
   return (
     <section className="relative min-h-[600px] md:min-h-[700px] lg:min-h-[800px] overflow-hidden">
@@ -245,23 +238,12 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
                     <span className="text-white/70 text-xs md:text-sm font-medium whitespace-nowrap">
                       Goal
                     </span>
-                    {minUsdGoal != null ? (
-                      <Tooltip
-                        compact
-                        text={MISSION_MINIMUM_GOAL_TOOLTIP}
-                        buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5 shrink-0"
-                      >
-                        ?
-                      </Tooltip>
-                    ) : null}
                   </div>
                   <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
-                    {minUsdGoal != null
-                      ? `$${minUsdGoal.toLocaleString('en-US')}`
-                      : featuredMissionFundingGoal
-                        ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
-                        : '0'}
-                    {minUsdGoal != null ? '' : ' ETH'}
+                    {featuredMissionFundingGoal
+                      ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
+                      : '0'}{' '}
+                    ETH
                   </p>
                 </div>
 

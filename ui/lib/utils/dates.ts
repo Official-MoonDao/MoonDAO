@@ -52,21 +52,22 @@ export function formatTimeUntilDeadline(deadline: Date): string {
     return '0 SECONDS'
   }
 
-  const oneDayMs = 24 * 60 * 60 * 1000
-
-  // More than 24 hours left: whole days only (no hours)
-  if (timeDifference > oneDayMs) {
-    const d = Math.floor(timeDifference / oneDayMs)
-    return d === 1 ? '1 DAY' : `${d} DAYS`
-  }
-
-  // Calculate time units (deadline within the next 24 hours, inclusive of exactly 24h)
-  const totalHours = Math.floor(timeDifference / (1000 * 60 * 60))
-  const minutes = Math.floor(timeDifference / (1000 * 60)) % 60
+  // Calculate time units
   const seconds = Math.floor(timeDifference / 1000) % 60
+  const minutes = Math.floor(timeDifference / (1000 * 60)) % 60
+  const hours = Math.floor(timeDifference / (1000 * 60 * 60)) % 24
+  const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24))
 
-  if (totalHours >= 1) {
-    return `${totalHours} ${totalHours === 1 ? 'HOUR' : 'HOURS'}, ${minutes} ${
+  // Format based on remaining time
+  if (days >= 2) {
+    // More than 48 hours: show days and hours
+    return `${days} DAYS, ${hours} HOURS`
+  } else if (days === 1) {
+    // Between 24-48 hours: show day (singular) and hours
+    return `${days} DAY, ${hours} HOURS`
+  } else if (hours >= 1) {
+    // Less than 24 hours: show hours and minutes
+    return `${hours} ${hours === 1 ? 'HOUR' : 'HOURS'}, ${minutes} ${
       minutes === 1 ? 'MINUTE' : 'MINUTES'
     }`
   } else if (minutes >= 1) {
