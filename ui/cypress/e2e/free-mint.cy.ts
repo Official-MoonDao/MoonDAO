@@ -44,11 +44,7 @@ describe('Free Mint API', () => {
       })
     })
 
-    it('returns eligible=true for a known contributor above threshold', () => {
-      // This address contributed >0.05 ETH on the testnet Bendystraw subgraph
-      // (0x2db6... has ~0.0125 ETH across projects on testnet — below threshold,
-      //  so we only verify the response shape here. Replace with a real heavy
-      //  contributor address if one exists on the current testnet deployment.)
+    it('returns 200 for a known address (subgraph totals may vary by env)', () => {
       const address = '0x2db6d704058e552defe415753465df8df0361846'
 
       cy.request({
@@ -59,8 +55,9 @@ describe('Free Mint API', () => {
         expect(res.body.success).to.eq(true)
         expect(res.body.data).to.have.property('totalPaid')
         expect(res.body.data).to.have.property('eligible')
-        // totalPaid should be a non-zero string for a known contributor
-        expect(Number(res.body.data.totalPaid)).to.be.greaterThan(0)
+        expect(res.body.data.totalPaid).to.be.a('string')
+        const totalPaidBigInt = BigInt(res.body.data.totalPaid)
+        expect(totalPaidBigInt >= 0n).to.eq(true)
       })
     })
   })

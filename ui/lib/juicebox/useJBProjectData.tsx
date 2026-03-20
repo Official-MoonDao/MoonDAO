@@ -212,20 +212,19 @@ export default function useJBProjectData({
 
       while (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
         try {
-          const primaryTerminal: any = await readContract({
+          const fetched: any = await readContract({
             contract: jbDirectoryContract,
             method: 'primaryTerminalOf' as string,
             params: [jbPid, JB_NATIVE_TOKEN_ADDRESS],
           })
 
-          if (primaryTerminal !== ZERO_ADDRESS && primaryTerminal) {
-            setPrimaryTerminalAddress(primaryTerminal)
-            return // Successfully got a valid terminal address
-          } else {
-            console.warn(
-              `Retrieved zero or invalid address for project ${projectId}, retrying...`
-            )
+          if (fetched !== ZERO_ADDRESS && fetched) {
+            setPrimaryTerminalAddress(fetched)
+            return
           }
+          console.warn(
+            `Retrieved zero or invalid address for project ${projectId} (attempt ${attempt + 1}/${maxAttempts})`
+          )
         } catch (error) {
           console.error(
             `Error getting primary terminal for project ${projectId}:`,
@@ -234,14 +233,10 @@ export default function useJBProjectData({
         }
       }
 
-      // If we've exhausted all retries and still don't have a valid address
-      if (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
-        console.error(
-          `Failed to get valid primary terminal for project ${projectId} after multiple attempts`
-        )
-      }
-
-      setPrimaryTerminalAddress(primaryTerminal)
+      console.error(
+        `Failed to get valid primary terminal for project ${projectId} after ${maxAttempts} attempts`
+      )
+      setPrimaryTerminalAddress(ZERO_ADDRESS)
     }
 
     // Only fetch if _primaryTerminalAddress was not provided
