@@ -251,7 +251,7 @@ export function useProjectWearer(
     } else {
       if (addresses.length > 0) {
         setWornProjectHats(undefined)
-        setIsLoading(false)
+        setIsLoading(true)
       } else {
         setWornProjectHats([])
         setIsLoading(false)
