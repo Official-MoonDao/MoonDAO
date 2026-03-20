@@ -298,7 +298,7 @@ const ProjectsOverview: React.FC<{
                     <h4 className="text-xl font-bold text-white mb-3">ETH Rewards</h4>
                     <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-3 mb-3 border border-orange-400/20">
                       <div className="text-2xl font-bold text-orange-400">
-                        {ETH_BUDGET.toFixed(2)} ETH{' '}
+                        {ETH_BUDGET.toFixed(1)} ETH{' '}
                         <span className="text-lg text-orange-300">
                           ($
                           {usdBudget.toLocaleString(undefined, {
@@ -431,7 +431,9 @@ const ProjectsOverview: React.FC<{
                       </svg>
                     </div>
                     <h4 className="text-lg font-bold text-white mb-2">Max Budget/Project</h4>
-                    <p className="text-xl font-bold text-yellow-400">{MAX_BUDGET_ETH} ETH</p>
+                    <p className="text-xl font-bold text-yellow-400">
+                      {MAX_BUDGET_ETH.toFixed(5)} ETH
+                    </p>
                     <p className="text-sm text-yellow-300 mt-1">(20% of quarterly budget)</p>
                   </div>
 
@@ -467,9 +469,13 @@ const ProjectsOverview: React.FC<{
                       Total Quarterly Retroactive Rewards
                     </p>
                     <p className="text-3xl md:text-4xl font-bold text-white">
-                      {NEXT_QUARTER_BUDGET_ETH} ETH{' '}
+                      {NEXT_QUARTER_BUDGET_ETH.toFixed(1)} ETH{' '}
                       <span className="text-xl text-purple-300">
-                        (~${NEXT_QUARTER_BUDGET_ETH * ethPrice.toFixed(2)})
+                        (~$
+                        {(NEXT_QUARTER_BUDGET_ETH * ethPrice).toLocaleString(undefined, {
+                          maximumFractionDigits: 0,
+                        })}
+                        )
                       </span>
                     </p>
                     <p className="text-xs text-purple-400 mt-2">

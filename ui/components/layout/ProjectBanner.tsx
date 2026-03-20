@@ -22,7 +22,7 @@ export default function ProjectBanner() {
     return null
   }
 
-  const budgetDisplay = `${NEXT_QUARTER_FUNDING_ETH} ETH`
+  const budgetDisplay = `${NEXT_QUARTER_FUNDING_ETH.toFixed(1)} ETH`
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900 text-white shadow-2xl border-t border-blue-700/50 backdrop-blur-sm">
@@ -71,7 +71,7 @@ export default function ProjectBanner() {
                 </span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-blue-200">
-                  Max per project: {MAX_BUDGET_ETH} ETH
+                  Max per project: {MAX_BUDGET_ETH.toFixed(1)} ETH
                 </span>
               </span>
               {/* Duplicate for seamless loop */}
@@ -89,7 +89,7 @@ export default function ProjectBanner() {
                 </span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-blue-200">
-                  Max per project: {MAX_BUDGET_ETH} ETH
+                  Max per project: {MAX_BUDGET_ETH.toFixed(1)} ETH
                 </span>
               </span>
             </div>

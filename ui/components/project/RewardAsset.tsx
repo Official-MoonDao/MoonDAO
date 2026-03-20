@@ -5,10 +5,24 @@ function formatValueForDisplay(value: string | number): {
   full: string
   abbreviated: string
 } {
-  const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
+  const trimmed =
+    typeof value === 'string' ? value.trim().replace(/,/g, '') : String(value)
+  const numValue = typeof value === 'string' ? parseFloat(trimmed) : value
 
   if (isNaN(numValue)) {
     return { full: value.toString(), abbreviated: value.toString() }
+  }
+
+  // Preserve fixed-decimal strings from callers (e.g. ETH amounts from toFixed)
+  if (typeof value === 'string' && /^-?\d+\.\d+$/.test(trimmed)) {
+    const full = trimmed
+    let abbreviated = full
+    if (numValue >= 1_000_000) {
+      abbreviated = `${(numValue / 1_000_000).toFixed(2)}M`
+    } else if (numValue >= 1000) {
+      abbreviated = `${(numValue / 1000).toFixed(1)} K`
+    }
+    return { full, abbreviated }
   }
 
   const full = numValue.toLocaleString()
