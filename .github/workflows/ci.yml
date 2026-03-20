@@ -266,7 +266,7 @@ jobs:
           echo "Waiting for BrowserStack Local connection..."
           for i in {1..90}; do
             if [ -f ../bs-local.log ] && grep -q "You can now access your local server" ../bs-local.log 2>/dev/null; then
-              echo "✓ BrowserStack Local connected (after ${i}s)"
+              echo "✓ BrowserStack Local connected (after $((i * 2))s)"
               break
             fi
             if [ $i -eq 90 ]; then
