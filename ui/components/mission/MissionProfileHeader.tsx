@@ -1,8 +1,13 @@
 import { PencilIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
+import {
+  getMissionMinimumUsdGoal,
+  MISSION_FUNDING_MILESTONES_USD,
+  MISSION_MINIMUM_GOAL_TOOLTIP,
+} from 'const/missionMilestones'
 import Image from 'next/image'
 import Link from 'next/link'
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
@@ -11,7 +16,10 @@ import IPFSRenderer from '../layout/IPFSRenderer'
 import StandardButton from '../layout/StandardButton'
 import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import { formatUsdCompact, milestoneSegmentProgress } from '@/lib/mission/milestoneProgress'
+import MissionFundingMilestonesList from './MissionFundingMilestonesList'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
+import MissionSingleLineTitle from './MissionSingleLineTitle'
 
 // Loading skeleton components
 const TextSkeleton = ({
@@ -21,6 +29,24 @@ const TextSkeleton = ({
   width: string
   height?: string
 }) => <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
+
+function exactClosingTooltipText(deadline: number | undefined): string {
+  if (deadline == null || deadline === 0) {
+    return 'No closing date is set for this mission.'
+  }
+  return `Exact closing (UTC): ${new Date(deadline).toLocaleString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone: 'UTC',
+    timeZoneName: 'short',
+  })}`
+}
 
 interface MissionProfileHeaderProps {
   mission: any
@@ -77,6 +103,22 @@ const MissionProfileHeader = React.memo(
     const account = useActiveAccount()
     const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
+    const minUsdGoal = getMissionMinimumUsdGoal(mission?.id)
+
+    const milestoneBar = useMemo(() => {
+      const steps =
+        mission?.id != null ? MISSION_FUNDING_MILESTONES_USD[mission.id] : undefined
+      if (!steps?.length || !ethPrice || ethPrice <= 0 || isLoadingTotalFunding) return null
+      const raisedUsd = (Number(totalFunding || 0) / 1e18) * ethPrice
+      const seg = milestoneSegmentProgress(raisedUsd, steps)
+      const caption = seg.allMilestonesComplete
+        ? 'All milestones below are unlocked. Funding continues toward the full campaign goal.'
+        : `Toward the ${formatUsdCompact(seg.segmentEndUsd)} milestone · ${formatUsdCompact(
+            Math.max(0, seg.segmentEndUsd - raisedUsd)
+          )} to go`
+      return { seg, raisedUsd, steps, caption }
+    }, [mission?.id, ethPrice, isLoadingTotalFunding, totalFunding])
+
     return (
       <div className="w-full bg-[#090d21] relative overflow-hidden">
         {/* Edit Button for Managers */}
@@ -94,37 +136,34 @@ const MissionProfileHeader = React.memo(
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent pointer-events-none" />
 
         <div className="relative z-10 w-full px-5 md:px-8 lg:px-12 pt-6 pb-4 lg:pt-8 lg:pb-6">
-          <div className="w-full flex flex-col lg:flex-row gap-8 lg:gap-10 items-center max-w-[1200px] mx-auto">
-            {/* Left Column - Mission Image */}
-            <div className="flex-shrink-0">
-              <div className="relative group">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start lg:items-center max-w-[1200px] mx-auto">
+            {/* Mission image — full grid cell width at every breakpoint (no mobile max-w shrink) */}
+            <div className="w-full min-w-0">
+              <div className="relative group w-full">
                 {mission?.metadata?.logoUri ? (
-                  <div className="relative">
-                    <div className="relative w-64 h-64 sm:w-72 sm:h-72 lg:w-[300px] lg:h-[300px]">
-                      <IPFSRenderer
-                        src={mission?.metadata?.logoUri}
-                        className="rounded-2xl shadow-2xl border border-white/10 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                        height={300}
-                        width={300}
-                        alt="Mission Image"
-                      />
-                      {/* Team badge */}
-                      {teamNFT?.metadata?.image && (
-                        <div className="absolute -bottom-3 -right-3">
-                          <IPFSRenderer
-                            src={teamNFT?.metadata?.image}
-                            className="w-14 h-14 lg:w-16 lg:h-16 rounded-full border-2 border-[#090d21] shadow-lg ring-2 ring-white/10"
-                            height={64}
-                            width={64}
-                            alt="Team Image"
-                          />
-                        </div>
-                      )}
-                    </div>
+                  <div className="relative aspect-square w-full rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+                    <IPFSRenderer
+                      src={mission?.metadata?.logoUri}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                      height={640}
+                      width={640}
+                      alt="Mission Image"
+                    />
+                    {teamNFT?.metadata?.image && (
+                      <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
+                        <IPFSRenderer
+                          src={teamNFT?.metadata?.image}
+                          className="w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full border-2 border-[#090d21] shadow-lg ring-2 ring-white/10"
+                          height={72}
+                          width={72}
+                          alt="Team Image"
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="w-64 h-64 sm:w-72 sm:h-72 lg:w-[300px] lg:h-[300px] bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-white/10 flex items-center justify-center">
-                    <div className="text-center">
+                  <div className="aspect-square w-full rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl">
+                    <div className="text-center px-4">
                       <div className="w-12 h-12 mx-auto mb-3 bg-indigo-500/20 rounded-xl flex items-center justify-center">
                         <Image src="/assets/icon-star-blue.svg" alt="Mission" width={24} height={24} />
                       </div>
@@ -135,14 +174,17 @@ const MissionProfileHeader = React.memo(
               </div>
             </div>
 
-            {/* Right Column - Mission Info */}
-            <div className="flex flex-col justify-center flex-grow min-w-0 mt-2 lg:mt-0 space-y-4">
+            {/* Mission copy + funding (same column width as image on lg) */}
+            <div className="flex flex-col justify-center min-w-0 mt-1 lg:mt-0 space-y-4">
               {/* Title & Tagline */}
               <div className="space-y-2">
                 {mission?.metadata?.name && (
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-GoodTimes text-white leading-tight tracking-tight">
-                    {mission.metadata.name}
-                  </h1>
+                  <MissionSingleLineTitle
+                    text={mission.metadata.name}
+                    minPx={22}
+                    maxPx={42}
+                    data-testid="mission-profile-title"
+                  />
                 )}
                 {mission?.metadata?.tagline && (
                   <p className="text-base sm:text-lg text-gray-400 leading-relaxed max-w-2xl">
@@ -177,27 +219,31 @@ const MissionProfileHeader = React.memo(
                 {/* Amount Raised + CTA Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                   <div>
-                    <Tooltip
-                      text={
-                        isLoadingTotalFunding
-                          ? 'Loading...'
-                          : `${truncateTokenValue(Number(totalFunding || 0) / 1e18 || 0, 'ETH').toLocaleString()} ETH`
-                      }
-                      wrap
-                    >
-                      <div className="flex items-baseline gap-2 cursor-default">
-                        {isLoadingTotalFunding || !ethPrice || ethPrice <= 0 ? (
-                          <TextSkeleton width="w-24" height="h-8" />
-                        ) : (
-                          <span className="text-3xl font-GoodTimes text-white">
-                            {`$${Math.round((Number(totalFunding || 0) / 1e18 || 0) * ethPrice).toLocaleString()}`}
-                          </span>
-                        )}
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      {isLoadingTotalFunding || !ethPrice || ethPrice <= 0 ? (
+                        <TextSkeleton width="w-24" height="h-8" />
+                      ) : (
+                        <span className="text-3xl font-GoodTimes text-white">
+                          {`$${Math.round((Number(totalFunding || 0) / 1e18 || 0) * ethPrice).toLocaleString()}`}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1">
                         <span className="text-sm font-medium text-indigo-400 uppercase tracking-wider">
                           raised
                         </span>
+                        <Tooltip
+                          compact
+                          text={
+                            isLoadingTotalFunding
+                              ? 'Loading...'
+                              : `${truncateTokenValue(Number(totalFunding || 0) / 1e18 || 0, 'ETH').toLocaleString()} ETH has been raised. The USD equivalent fluctuates based on the current price of Ethereum.`
+                          }
+                          buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                        >
+                          ?
+                        </Tooltip>
                       </div>
-                    </Tooltip>
+                    </div>
                   </div>
                   <div className="flex flex-col items-stretch sm:items-end gap-2">
                     {contributeButton}
@@ -261,13 +307,24 @@ const MissionProfileHeader = React.memo(
                   </div>
                 </div>
 
-                {/* Progress Bar */}
+                {/* Progress Bar (milestone-relative for missions with USD steps, e.g. Frank White / id 4) */}
                 <div className="mb-4">
                   <MissionFundingProgressBar
                     fundingGoal={fundingGoal}
                     volume={Number(totalFunding || 0) / 1e18}
                     compact={true}
+                    progressOverride={
+                      milestoneBar ? milestoneBar.seg.progressPercent : undefined
+                    }
+                    caption={milestoneBar?.caption}
                   />
+                  {milestoneBar ? (
+                    <MissionFundingMilestonesList
+                      milestones={milestoneBar.steps}
+                      raisedUsd={milestoneBar.raisedUsd}
+                      nextMilestoneIndex={milestoneBar.seg.nextMilestoneIndex}
+                    />
+                  ) : null}
                 </div>
 
                 {/* Stats Row */}
@@ -278,24 +335,35 @@ const MissionProfileHeader = React.memo(
                       <Image src="/assets/launchpad/target.svg" alt="Goal" width={14} height={14} className="opacity-60" />
                       <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium">Goal</span>
                       <Tooltip
-                        text="This is an all-or-nothing mission. Refunds are available if the goal is not met."
+                        compact
+                        text={
+                          minUsdGoal != null
+                            ? MISSION_MINIMUM_GOAL_TOOLTIP
+                            : 'This is an all-or-nothing mission. Refunds are available if the goal is not met.'
+                        }
                         buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
                       >
                         ?
                       </Tooltip>
                     </div>
-                    <Tooltip
-                      text={
-                        !isLoadingTotalFunding && ethPrice && ethPrice > 0
-                          ? `$${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()}`
-                          : `Loading...`
-                      }
-                      wrap
-                    >
+                    {minUsdGoal != null ? (
                       <p className="text-white font-GoodTimes text-sm">
-                        {+(fundingGoal / 1e18).toFixed(3)} ETH
+                        ${minUsdGoal.toLocaleString('en-US')}
                       </p>
-                    </Tooltip>
+                    ) : (
+                      <Tooltip
+                        text={
+                          !isLoadingTotalFunding && ethPrice && ethPrice > 0
+                            ? `$${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()}`
+                            : `Loading...`
+                        }
+                        wrap
+                      >
+                        <p className="text-white font-GoodTimes text-sm">
+                          {+(fundingGoal / 1e18).toFixed(3)} ETH
+                        </p>
+                      </Tooltip>
+                    )}
                   </div>
 
                   {/* Deadline */}
@@ -309,6 +377,15 @@ const MissionProfileHeader = React.memo(
                           ? 'Closed'
                           : 'Deadline'}
                       </span>
+                      {deadline != null && deadline > 0 ? (
+                        <Tooltip
+                          text={exactClosingTooltipText(deadline)}
+                          compact
+                          buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                        >
+                          ?
+                        </Tooltip>
+                      ) : null}
                     </div>
                     <p className="text-white font-GoodTimes text-xs sm:text-sm break-words">
                       {refundPeriodPassed || deadlinePassed

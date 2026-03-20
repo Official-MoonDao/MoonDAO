@@ -12,6 +12,14 @@ import useContract from '../thirdweb/hooks/useContract'
 import { projectQuery } from './subgraph'
 import useJBProjectTrendingPercentageIncrease from './useJBProjectTrendingPercentageIncrease'
 
+/** Juicebox project ids are positive uint256; null/0/invalid must not be passed to `readContract`. */
+function normalizedJuiceboxProjectId(projectId: unknown): number | null {
+  if (projectId == null || projectId === '') return null
+  const n = Number(projectId)
+  if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) return null
+  return n
+}
+
 export default function useJBProjectData({
   projectId,
   jbControllerContract,
@@ -68,11 +76,13 @@ export default function useJBProjectData({
   //Metadata
   useEffect(() => {
     async function getProjectMetadata() {
+      const jbPid = normalizedJuiceboxProjectId(projectId)
+      if (jbPid == null) return
       try {
         const metadataURI: any = await readContract({
           contract: jbControllerContract,
           method: 'uriOf' as string,
-          params: [projectId],
+          params: [jbPid],
         })
         if (!metadataURI) return
         const res = await fetch(metadataURI)
@@ -193,7 +203,7 @@ export default function useJBProjectData({
           const fetched: any = await readContract({
             contract: jbDirectoryContract,
             method: 'primaryTerminalOf' as string,
-            params: [projectId, JB_NATIVE_TOKEN_ADDRESS],
+            params: [jbPid, JB_NATIVE_TOKEN_ADDRESS],
           })
 
           if (fetched !== ZERO_ADDRESS && fetched) {

@@ -7,6 +7,10 @@ import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
+import {
+  getMissionMinimumUsdGoal,
+  MISSION_MINIMUM_GOAL_TOOLTIP,
+} from 'const/missionMilestones'
 import Card from '../layout/Card'
 import StandardButton from '../layout/StandardButton'
 import { Mission } from './MissionCard'
@@ -66,6 +70,7 @@ export default function MissionWideCard({
 
   const { data: ethPrice } = useETHPrice(1)
   const { totalFunding } = useTotalFunding(mission?.projectId)
+  const minUsdGoal = getMissionMinimumUsdGoal(mission?.id)
 
   const duration = useMemo(() => {
     return deadline ? formatTimeUntilDeadline(new Date(deadline)) : undefined
@@ -156,11 +161,17 @@ export default function MissionWideCard({
               <MissionStat
                 icon="/assets/target.png"
                 label="Goal"
-                value={`${fundingGoal ? truncateTokenValue(fundingGoal / 1e18, 'ETH') : 0} ETH`}
+                value={
+                  minUsdGoal != null
+                    ? `$${minUsdGoal.toLocaleString('en-US')}`
+                    : `${fundingGoal ? truncateTokenValue(fundingGoal / 1e18, 'ETH') : 0} ETH`
+                }
                 tooltip={
-                  ethPrice
-                    ? `~ $${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()} USD`
-                    : undefined
+                  minUsdGoal != null
+                    ? MISSION_MINIMUM_GOAL_TOOLTIP
+                    : ethPrice
+                      ? `~ $${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()} USD`
+                      : undefined
                 }
               />
             </div>

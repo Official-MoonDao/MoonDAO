@@ -39,15 +39,20 @@ import {
   ETH_BUDGET,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
+import {
+  getMissionMinimumUsdGoal,
+  MISSION_MINIMUM_GOAL_TOOLTIP,
+} from 'const/missionMilestones'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState, useEffect } from 'react'
+import { useContext, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { shouldShowTeamsSection } from '@/lib/dashboard/shouldShowTeamsSection'
+import { useNewsletters } from '@/lib/home/useHomeData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
@@ -68,6 +73,7 @@ import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
+import Tooltip from '@/components/layout/Tooltip'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import { SendModal } from '@/components/privy/PrivyConnectWallet'
 import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
@@ -208,39 +214,8 @@ export default function SignedInDashboard({
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
-  // Client-side newsletter state (fetch on client-side)
-  const [clientNewsletters, setClientNewsletters] = useState<any[]>([])
-  const [newslettersLoading, setNewslettersLoading] = useState(false)
-
-  // Fetch newsletters on client-side
-  useEffect(() => {
-    const fetchNewsletters = async (retries = 2) => {
-      setNewslettersLoading(true)
-      try {
-        for (let attempt = 0; attempt <= retries; attempt++) {
-          const response = await fetch('/api/newsletters', {
-            cache: 'no-store',
-            headers: { Accept: 'application/json' },
-          })
-          const data = await response.json().catch(() => ({}))
-          const newsletters = data?.newsletters
-          if (Array.isArray(newsletters)) {
-            setClientNewsletters(newsletters)
-            return
-          }
-          if (attempt < retries) {
-            await new Promise((r) => setTimeout(r, 500 * (attempt + 1)))
-          }
-        }
-      } catch (error) {
-        console.warn('Newsletter fetch failed:', error)
-      } finally {
-        setNewslettersLoading(false)
-      }
-    }
-
-    fetchNewsletters()
-  }, [])
+  // Newsletter data (fetched via SWR with caching)
+  const { newsletters: clientNewsletters, isLoading: newslettersLoading } = useNewsletters()
 
   const account = useActiveAccount()
   const address = account?.address
@@ -354,6 +329,8 @@ export default function SignedInDashboard({
     _fundingGoal: featuredMissionData?._fundingGoal,
     _ruleset: featuredMissionData?._ruleset,
   })
+
+  const featuredMinUsdGoal = getMissionMinimumUsdGoal(featuredMission?.id)
 
   return (
     <Container>
@@ -761,55 +738,53 @@ export default function SignedInDashboard({
             </StandardButton>
           </div>
 
-          <div className="bg-black/20 rounded-xl p-6 border border-blue-500/20">
+          <div className="bg-black/20 rounded-xl p-4 sm:p-5 lg:p-6 border border-blue-500/20">
             {featuredMission ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full items-stretch">
-                {/* Left Column - Mission Image */}
-                <div className="flex justify-center lg:justify-start h-full">
-                  <div className="relative w-full max-w-sm h-full">
-                    <div className="relative rounded-2xl overflow-hidden shadow-xl h-full min-h-[300px]">
-                      {featuredMission.metadata?.logoUri ? (
-                        <IPFSRenderer
-                          src={featuredMission.metadata.logoUri}
-                          alt={featuredMission.metadata.name || 'Mission'}
-                          className="w-full h-full object-cover"
-                          width={400}
-                          height={400}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 flex items-center justify-center">
-                          <RocketLaunchIcon className="w-16 h-16 text-blue-400/60" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-
-                      {/* Mission Status Badge */}
-                      <div className="absolute top-3 right-3">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                            featuredMission.projectId && featuredMission.projectId > 0
-                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                              : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                          }`}
-                        >
-                          {featuredMission.projectId && featuredMission.projectId > 0
-                            ? 'Active'
-                            : 'Completed'}
-                        </span>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 lg:gap-8 items-start">
+                {/* Mission image — full grid cell width; no max-w/mx-auto (was shrinking vs stats) */}
+                <div className="w-full min-w-0">
+                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl">
+                    {featuredMission.metadata?.logoUri ? (
+                      <IPFSRenderer
+                        src={featuredMission.metadata.logoUri}
+                        alt={featuredMission.metadata.name || 'Mission'}
+                        className="w-full h-full object-cover"
+                        width={720}
+                        height={720}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 flex items-center justify-center">
+                        <RocketLaunchIcon className="w-16 h-16 text-blue-400/60" />
                       </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+
+                    {/* Mission Status Badge */}
+                    <div className="absolute top-3 right-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
+                          featuredMission.projectId && featuredMission.projectId > 0
+                            ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                            : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                        }`}
+                      >
+                        {featuredMission.projectId && featuredMission.projectId > 0
+                          ? 'Active'
+                          : 'Completed'}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Column - Mission Info */}
-                <div className="space-y-4">
+                {/* Mission copy + funding — same width track as image */}
+                <div className="w-full min-w-0 space-y-4">
                   {/* Mission Title */}
                   <div>
                     <h4 className="font-bold text-white text-xl lg:text-2xl mb-2 leading-tight">
                       {featuredMission.metadata.name}
                     </h4>
                     {featuredMission.metadata.tagline && (
-                      <p className="text-blue-200/80 text-sm mb-3">
+                      <p className="text-blue-200/80 text-sm md:text-base mb-3 leading-relaxed">
                         {featuredMission.metadata.tagline}
                       </p>
                     )}
@@ -892,12 +867,23 @@ export default function SignedInDashboard({
                           <div className="flex items-center gap-2 mb-2">
                             <TrophyIcon className="w-4 h-4 text-blue-400" />
                             <span className="text-blue-200 text-xs font-medium">Goal</span>
+                            {featuredMinUsdGoal != null ? (
+                              <Tooltip
+                                compact
+                                text={MISSION_MINIMUM_GOAL_TOOLTIP}
+                                buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                              >
+                                ?
+                              </Tooltip>
+                            ) : null}
                           </div>
                           <p className="text-white font-bold text-sm">
-                            {featuredMissionFundingGoal
-                              ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
-                              : '0'}{' '}
-                            ETH
+                            {featuredMinUsdGoal != null
+                              ? `$${featuredMinUsdGoal.toLocaleString('en-US')}`
+                              : featuredMissionFundingGoal
+                                ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
+                                : '0'}
+                            {featuredMinUsdGoal != null ? '' : ' ETH'}
                           </p>
                         </div>
 
