@@ -161,11 +161,32 @@ export const STATUS_CONFIG = {
     dot: 'bg-blue-500',
   },
   Cancelled: {
-    bg: 'bg-slate-500/10',
-    border: 'border-slate-500/30',
-    text: 'text-slate-400',
-    dot: 'bg-slate-500',
+    bg: 'bg-gray-500/10',
+    border: 'border-gray-500/30',
+    text: 'text-gray-400',
+    dot: 'bg-gray-400',
   },
+}
+
+export type StatusIndicatorStyle = (typeof STATUS_CONFIG)[keyof typeof STATUS_CONFIG]
+
+const DEFAULT_STATUS_INDICATOR: StatusIndicatorStyle = {
+  bg: 'bg-gray-500/10',
+  border: 'border-gray-500/30',
+  text: 'text-gray-400',
+  dot: 'bg-gray-500',
+}
+
+/** Normalize API/on-chain strings so indicator + label stay aligned (e.g. “Vote Closed” → Cancelled). */
+export function getStatusIndicatorConfig(
+  status: string | undefined | null
+): StatusIndicatorStyle {
+  if (status == null || status === '') return DEFAULT_STATUS_INDICATOR
+  const normalized =
+    status === 'Vote Closed' || status === 'vote closed' ? 'Cancelled' : status
+  return (
+    STATUS_CONFIG[normalized as keyof typeof STATUS_CONFIG] ?? DEFAULT_STATUS_INDICATOR
+  )
 }
 
 /** Display label for "Vote Closed" instead of "Cancelled" */
