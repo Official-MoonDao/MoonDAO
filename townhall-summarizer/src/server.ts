@@ -10,6 +10,7 @@ import {
   transcribeAudio,
   summarizeTranscript,
   formatSummaryForConvertKit,
+  getYtDlpCookieArgs,
 } from "./utils/processing";
 import {
   createConvertKitBroadcast,
@@ -227,37 +228,18 @@ app.get("/audio", async (req: Request, res: Response) => {
   }
 
   const tempFile = join(tmpdir(), `audio-${videoId}-${Date.now()}.m4a`);
+  const { args: cookieArgs, cleanup: cleanupCookies } = await getYtDlpCookieArgs();
 
   try {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     console.log(`Downloading audio for video: ${videoId}`);
-    const cookieFile = process.env.YOUTUBE_COOKIE_FILE;
-    let cookieArgs = '';
-    if (cookieFile) {
-      const tempCookieFile = join(tmpdir(), `yt-cookies-audio-${Date.now()}.txt`);
-      try {
-        const cookieData = await readFile(cookieFile, 'utf-8');
-        const { writeFile: writeFileAsync } = await import('fs/promises');
-        await writeFileAsync(tempCookieFile, cookieData);
-        cookieArgs = `--cookies "${tempCookieFile}"`;
-      } catch (err) {
-        console.warn(`Warning: Could not copy cookie file: ${err}`);
-      }
-    }
     await execAsync(
       `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`,
       { maxBuffer: 50 * 1024 * 1024 } // 50MB buffer for fragmented livestream downloads
     );
 
     const audioBuffer = await readFile(tempFile);
-
-    // Clean up temp file
-    try {
-      await unlink(tempFile);
-    } catch (cleanupError) {
-      // Ignore cleanup errors
-    }
 
     res.setHeader("Content-Type", "audio/m4a");
     res.setHeader(
@@ -266,17 +248,14 @@ app.get("/audio", async (req: Request, res: Response) => {
     );
     res.status(200).send(audioBuffer);
   } catch (error) {
-    // Clean up temp file on error
-    try {
-      await unlink(tempFile).catch(() => {});
-    } catch {
-      // Ignore cleanup errors
-    }
-
     return res.status(500).json({
       error: "Failed to extract audio",
       message: error instanceof Error ? error.message : "Unknown error",
     });
+  } finally {
+    // Clean up temp files (audio + cookies)
+    await cleanupCookies();
+    try { await unlink(tempFile); } catch { /* ignore */ }
   }
 });
 

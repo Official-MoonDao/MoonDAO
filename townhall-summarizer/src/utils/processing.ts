@@ -1,6 +1,6 @@
 import { exec } from "child_process";
 import { promisify } from "util";
-import { readFile, unlink } from "fs/promises";
+import { readFile, writeFile, unlink } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 import { File } from "buffer";
@@ -122,30 +122,68 @@ function splitTranscriptIntoChunks(
   return chunks;
 }
 
-async function getYtDlpCookieArgs(): Promise<string> {
+/**
+ * Build yt-dlp auth arguments.
+ *
+ * Strategy (in priority order):
+ *   1. PO Token plugin via the bgutil sidecar (POT_PROVIDER_URL env var).
+ *      The bgutil-ytdlp-pot-provider pip package is installed in the Docker
+ *      image; it talks to the sidecar HTTP server automatically.
+ *   2. Cookie file fallback (YOUTUBE_COOKIE_FILE env var) — kept as a
+ *      last-resort escape hatch. Cookies are copied to a writable temp
+ *      file because GCP secret mounts are read-only.
+ *   3. No auth — works for many public videos.
+ */
+export async function getYtDlpCookieArgs(): Promise<{ args: string; cleanup: () => Promise<void> }> {
+  // Enable Node.js runtime for yt-dlp JS challenges (required since yt-dlp 2025+)
+  // --remote-components ejs:github downloads the EJS challenge solver needed for n-token decryption
+  const baseArgs = '--js-runtimes node --remote-components ejs:github';
+
+  // PO Token provider sidecar args (for GVS format downloads)
+  const potUrl = process.env.POT_PROVIDER_URL;
+  const potArgs = potUrl
+    ? `--extractor-args "youtube:player-client=mweb" --extractor-args "youtubepot-bgutilhttp:base_url=${potUrl}"`
+    : '';
+  if (potUrl) console.log(`Using PO token provider at ${potUrl}`);
+
+  // Cookie file — required to bypass IP-level bot detection on Cloud Run.
+  // PO tokens alone don't help because YouTube blocks the player API request
+  // before PO tokens even come into play. Cookies + PO tokens is the combo.
   const cookieFile = process.env.YOUTUBE_COOKIE_FILE;
   if (cookieFile) {
-    // Copy cookies to a writable temp file (secret mounts are read-only)
     const tempCookieFile = join(tmpdir(), `yt-cookies-${Date.now()}.txt`);
     try {
       const cookieData = await readFile(cookieFile, 'utf-8');
-      const { writeFile: writeFileAsync } = await import('fs/promises');
-      await writeFileAsync(tempCookieFile, cookieData);
-      return `--cookies "${tempCookieFile}"`;
+      await writeFile(tempCookieFile, cookieData);
+      console.log('Using cookie file + PO tokens for YouTube auth');
+      return {
+        args: `${baseArgs} --cookies "${tempCookieFile}" ${potArgs}`.trim(),
+        cleanup: async () => {
+          try { await unlink(tempCookieFile); } catch { /* ignore */ }
+        },
+      };
     } catch (err) {
       console.warn(`Warning: Could not copy cookie file: ${err}`);
-      return '';
     }
   }
-  return '';
+
+  // PO tokens only (works when IP is not flagged)
+  if (potUrl) {
+    console.log('No cookie file — using PO tokens only');
+    return { args: `${baseArgs} ${potArgs}`.trim(), cleanup: async () => {} };
+  }
+
+  // No auth
+  console.log('No YouTube auth configured — downloading without cookies or PO token');
+  return { args: baseArgs, cleanup: async () => {} };
 }
 
 export async function extractAudioUrl(videoId: string): Promise<string> {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   console.log(`Extracting audio URL for video: ${videoId}`);
 
+  const { args: cookieArgs, cleanup } = await getYtDlpCookieArgs();
   try {
-    const cookieArgs = await getYtDlpCookieArgs();
     const { stdout } = await execAsync(
       `yt-dlp -g -f "bestaudio/best" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`
     );
@@ -160,6 +198,8 @@ export async function extractAudioUrl(videoId: string): Promise<string> {
   } catch (error: any) {
     console.error(`yt-dlp error: ${error.message}`);
     throw new Error(`Failed to extract audio URL: ${error.message}`);
+  } finally {
+    await cleanup();
   }
 }
 
@@ -180,11 +220,15 @@ export async function transcribeAudio(
     console.log("Downloading audio with yt-dlp...");
     console.log("This may take a few minutes for long videos...");
 
-    const cookieArgs = await getYtDlpCookieArgs();
-    await execAsync(
-      `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`,
-      { maxBuffer: 50 * 1024 * 1024 } // 50MB buffer for fragmented livestream downloads
-    );
+    const { args: cookieArgs, cleanup: cleanupCookies } = await getYtDlpCookieArgs();
+    try {
+      await execAsync(
+        `yt-dlp -f "bestaudio" -o "${tempFile}" --no-warnings --no-progress ${cookieArgs} "${videoUrl}"`,
+        { maxBuffer: 50 * 1024 * 1024 } // 50MB buffer for fragmented livestream downloads
+      );
+    } finally {
+      await cleanupCookies();
+    }
 
     // Check file size and compress if needed
     const audioBuffer = await readFile(tempFile);

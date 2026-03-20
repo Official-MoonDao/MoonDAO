@@ -7,11 +7,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
+  // Normalize header/query values that may be string | string[] in Next.js
+  const first = (v: string | string[] | undefined): string | undefined =>
+    Array.isArray(v) ? v[0] : v
+
   // Vercel crons send: Authorization: Bearer <CRON_SECRET>
   // Also support manual triggers via x-cron-secret header or ?secret= query param
-  const authHeader = req.headers['authorization']
-  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-  const cronSecret = bearerToken || req.headers['x-cron-secret'] || req.query.secret
+  const authHeader = first(req.headers['authorization'])
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null
+  const cronSecret = bearerToken || first(req.headers['x-cron-secret']) || first(req.query.secret)
   const expectedSecret = process.env.CRON_SECRET || process.env.TOWNHALL_CRON_SECRET
 
   if (expectedSecret && cronSecret !== expectedSecret) {
@@ -94,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         clearTimeout(timeout)
         // Log errors but don't block the response
         if (error.name === 'AbortError') {
-          console.log('Processing request sent successfully (timed out waiting for response, which is expected for long processing)')
+          console.log('Processing request timed out waiting for response; delivery to Cloud Run is unconfirmed (expected for long-running processing)')
         } else {
           console.error('Error triggering processing service (non-blocking):', error)
         }
