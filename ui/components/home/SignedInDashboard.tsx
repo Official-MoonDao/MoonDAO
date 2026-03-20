@@ -39,6 +39,10 @@ import {
   ETH_BUDGET,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
+import {
+  getMissionMinimumUsdGoal,
+  MISSION_MINIMUM_GOAL_TOOLTIP,
+} from 'const/missionMilestones'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -69,6 +73,7 @@ import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
+import Tooltip from '@/components/layout/Tooltip'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import { SendModal } from '@/components/privy/PrivyConnectWallet'
 import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
@@ -324,6 +329,8 @@ export default function SignedInDashboard({
     _fundingGoal: featuredMissionData?._fundingGoal,
     _ruleset: featuredMissionData?._ruleset,
   })
+
+  const featuredMinUsdGoal = getMissionMinimumUsdGoal(featuredMission?.id)
 
   return (
     <Container>
@@ -860,12 +867,23 @@ export default function SignedInDashboard({
                           <div className="flex items-center gap-2 mb-2">
                             <TrophyIcon className="w-4 h-4 text-blue-400" />
                             <span className="text-blue-200 text-xs font-medium">Goal</span>
+                            {featuredMinUsdGoal != null ? (
+                              <Tooltip
+                                compact
+                                text={MISSION_MINIMUM_GOAL_TOOLTIP}
+                                buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                              >
+                                ?
+                              </Tooltip>
+                            ) : null}
                           </div>
                           <p className="text-white font-bold text-sm">
-                            {featuredMissionFundingGoal
-                              ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
-                              : '0'}{' '}
-                            ETH
+                            {featuredMinUsdGoal != null
+                              ? `$${featuredMinUsdGoal.toLocaleString('en-US')}`
+                              : featuredMissionFundingGoal
+                                ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
+                                : '0'}
+                            {featuredMinUsdGoal != null ? '' : ' ETH'}
                           </p>
                         </div>
 
