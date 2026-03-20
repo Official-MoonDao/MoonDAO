@@ -54,17 +54,32 @@ export function useFitSingleLineFontPx(
     }
 
     const run = () => {
-      void document.fonts.ready.then(() => {
+      const anyDocument = document as any
+      const fonts = anyDocument.fonts
+
+      // If Font Loading API is available, wait for fonts; otherwise, compute immediately.
+      if (fonts && fonts.ready && typeof fonts.ready.then === 'function') {
+        void fonts.ready.then(() => {
+          if (!cancelled) compute()
+        })
+      } else {
         if (!cancelled) compute()
-      })
+      }
     }
 
     run()
-    const ro = new ResizeObserver(() => run())
-    ro.observe(container)
+
+    let ro: ResizeObserver | undefined
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => run())
+      ro.observe(container)
+    }
+
     return () => {
       cancelled = true
-      ro.disconnect()
+      if (ro) {
+        ro.disconnect()
+      }
     }
   }, [text, minPx, maxPx, layoutKey])
 
