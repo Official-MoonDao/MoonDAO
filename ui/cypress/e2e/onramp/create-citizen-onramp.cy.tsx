@@ -62,8 +62,7 @@ describe('CreateCitizen Onramp E2E Flow', () => {
       },
     })
 
-    // Wait for page to load
-    cy.wait(2000)
+    cy.get('#app-layout', { timeout: 60000 }).should('exist')
 
     // Verify cache still exists (should be restored by the component)
     cy.window().then((win) => {
@@ -102,7 +101,7 @@ describe('CreateCitizen Onramp E2E Flow', () => {
       },
     })
 
-    cy.wait(2000)
+    cy.get('#app-layout', { timeout: 60000 }).should('exist')
 
     // Cache should still exist even without JWT
     cy.window().then((win) => {
@@ -132,8 +131,10 @@ describe('CreateCitizen Onramp E2E Flow', () => {
       },
     })
 
-    // Wait for component to process
-    cy.wait(5000)
+    cy.get('#app-layout', { timeout: 60000 }).should('exist')
+    // Allow client some time to run restoreCache / expiry handling.
+    // Note: this uses a fixed delay and is therefore not fully deterministic.
+    cy.wait(1500)
 
     // Verify expired cache behavior
     // restoreCache() should return null for expired cache and clear it

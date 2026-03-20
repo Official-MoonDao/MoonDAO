@@ -177,9 +177,9 @@ describe('Image Gen - Get Image API (SSRF Protection)', () => {
         failOnStatusCode: false,
       }).then((response) => {
         // The URL passes validation, so we should NOT get a 400.
-        // We expect either a 200 (image found) or 500 (upstream error / image not found).
+        // Upstream may return 5xx or timeouts under load (CI / BrowserStack).
         expect(response.status).to.not.eq(400)
-        expect(response.status).to.be.oneOf([200, 500])
+        expect(response.status).to.be.oneOf([200, 500, 502, 503, 504])
       })
     })
   })

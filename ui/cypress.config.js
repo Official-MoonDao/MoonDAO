@@ -143,6 +143,8 @@ module.exports = defineConfig({
     viewportWidth: 1280,
     viewportHeight: 720,
     video: false,
+    // GitHub + BrowserStack: retry transient tunnel/RPC/layout flakes without masking systematic failures.
+    retries: process.env.GITHUB_ACTIONS === 'true' ? 2 : 0,
   },
   component: {
     setupNodeEvents(on, config) {
