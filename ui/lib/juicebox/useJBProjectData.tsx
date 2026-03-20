@@ -101,17 +101,20 @@ export default function useJBProjectData({
   //Ruleset, refresh if stage changes
   useEffect(() => {
     async function getProjectRuleset() {
+      const jbPid = normalizedJuiceboxProjectId(projectId)
+      if (jbPid == null) return
       try {
         const rs: any = await readContract({
           contract: jbControllerContract,
           method: 'currentRulesetOf' as string,
-          params: [projectId],
+          params: [jbPid],
         })
         setRuleset(rs)
       } catch (err) {
-        // RPC/decode failures (empty return data, wrong network) must not reject the
-        // promise tree — Cypress and error monitors treat that as a test/app failure.
-        console.error('Failed to fetch project ruleset:', err)
+        console.error(
+          'Failed to read Juicebox ruleset (currentRulesetOf):',
+          { projectId: jbPid, err }
+        )
       }
     }
     if (jbControllerContract && projectId !== undefined && stage !== undefined)
@@ -121,15 +124,20 @@ export default function useJBProjectData({
   //Token Address
   useEffect(() => {
     async function getProjectToken() {
+      const jbPid = normalizedJuiceboxProjectId(projectId)
+      if (jbPid == null) return
       try {
-        const tokenAddr: any = await readContract({
+        const token: any = await readContract({
           contract: jbTokensContract,
           method: 'tokenOf' as string,
-          params: [projectId],
+          params: [jbPid],
         })
-        setToken((prev: any) => ({ ...prev, tokenAddress: tokenAddr }))
+        setToken((prev: any) => ({ ...prev, tokenAddress: token }))
       } catch (err) {
-        console.error('Failed to fetch project token address:', err)
+        console.error('Failed to read Juicebox project token (tokenOf):', {
+          projectId: jbPid,
+          err,
+        })
       }
     }
 
@@ -197,8 +205,12 @@ export default function useJBProjectData({
   //Project Directory Data
   useEffect(() => {
     async function getProjectDirectoryData() {
-      const maxAttempts = 5
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const jbPid = normalizedJuiceboxProjectId(projectId)
+      if (jbPid == null) return
+
+      let primaryTerminal: string = ZERO_ADDRESS
+
+      while (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
         try {
           const fetched: any = await readContract({
             contract: jbDirectoryContract,
