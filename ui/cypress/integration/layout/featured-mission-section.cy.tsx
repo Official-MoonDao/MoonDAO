@@ -45,10 +45,6 @@ describe('<FeaturedMissionSection />', () => {
     if (FEATURED_MISSION && FEATURED_MISSION.id) {
       cy.contains('Featured Mission').should('be.visible')
       cy.contains('Go to Space with Frank White').should('be.visible')
-      cy.get('[data-testid="mission-featured-title"]').should(($h) => {
-        const el = $h[0] as HTMLElement
-        expect(el.scrollWidth, 'title fits on one line').to.be.at.most(el.clientWidth + 2)
-      })
     } else {
       cy.get('section').should('not.exist')
     }

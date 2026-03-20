@@ -731,53 +731,55 @@ export default function SignedInDashboard({
             </StandardButton>
           </div>
 
-          <div className="bg-black/20 rounded-xl p-4 sm:p-5 lg:p-6 border border-blue-500/20">
+          <div className="bg-black/20 rounded-xl p-6 border border-blue-500/20">
             {featuredMission ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 lg:gap-8 items-start">
-                {/* Mission image — full grid cell width; no max-w/mx-auto (was shrinking vs stats) */}
-                <div className="w-full min-w-0">
-                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl">
-                    {featuredMission.metadata?.logoUri ? (
-                      <IPFSRenderer
-                        src={featuredMission.metadata.logoUri}
-                        alt={featuredMission.metadata.name || 'Mission'}
-                        className="w-full h-full object-cover"
-                        width={720}
-                        height={720}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 flex items-center justify-center">
-                        <RocketLaunchIcon className="w-16 h-16 text-blue-400/60" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full items-stretch">
+                {/* Left Column - Mission Image */}
+                <div className="flex justify-center lg:justify-start h-full">
+                  <div className="relative w-full max-w-sm h-full">
+                    <div className="relative rounded-2xl overflow-hidden shadow-xl h-full min-h-[300px]">
+                      {featuredMission.metadata?.logoUri ? (
+                        <IPFSRenderer
+                          src={featuredMission.metadata.logoUri}
+                          alt={featuredMission.metadata.name || 'Mission'}
+                          className="w-full h-full object-cover"
+                          width={400}
+                          height={400}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 flex items-center justify-center">
+                          <RocketLaunchIcon className="w-16 h-16 text-blue-400/60" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
 
-                    {/* Mission Status Badge */}
-                    <div className="absolute top-3 right-3">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                          featuredMission.projectId && featuredMission.projectId > 0
-                            ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                            : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                        }`}
-                      >
-                        {featuredMission.projectId && featuredMission.projectId > 0
-                          ? 'Active'
-                          : 'Completed'}
-                      </span>
+                      {/* Mission Status Badge */}
+                      <div className="absolute top-3 right-3">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
+                            featuredMission.projectId && featuredMission.projectId > 0
+                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                              : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                          }`}
+                        >
+                          {featuredMission.projectId && featuredMission.projectId > 0
+                            ? 'Active'
+                            : 'Completed'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Mission copy + funding — same width track as image */}
-                <div className="w-full min-w-0 space-y-4">
+                {/* Right Column - Mission Info */}
+                <div className="space-y-4">
                   {/* Mission Title */}
                   <div>
                     <h4 className="font-bold text-white text-xl lg:text-2xl mb-2 leading-tight">
                       {featuredMission.metadata.name}
                     </h4>
                     {featuredMission.metadata.tagline && (
-                      <p className="text-blue-200/80 text-sm md:text-base mb-3 leading-relaxed">
+                      <p className="text-blue-200/80 text-sm mb-3">
                         {featuredMission.metadata.tagline}
                       </p>
                     )}
