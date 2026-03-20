@@ -11,9 +11,11 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { GetStaticProps, GetStaticPropsResult } from 'next'
-import { useContext } from 'react'
+import { usePrivy } from '@privy-io/react-auth'
+import { useContext, useMemo } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import { fetchFeaturedMissionData } from '@/lib/launchpad/fetchFeaturedMission'
 import { fetchMissions } from '@/lib/launchpad/fetchMissions'
 import { FeaturedMissionData, Mission } from '@/lib/launchpad/types'
@@ -41,6 +43,11 @@ type LaunchProps = {
 export default function Launch({ missions, featuredMissionData }: LaunchProps) {
   const account = useActiveAccount()
   const address = account?.address
+  const { user } = usePrivy()
+  const wearerAddresses = useMemo(
+    () => getLinkedEvmAddresses(user, account?.address),
+    [user, account?.address]
+  )
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
 
@@ -65,13 +72,12 @@ export default function Launch({ missions, featuredMissionData }: LaunchProps) {
   const { userTeams, isLoading: userTeamsLoading } = useTeamWearer(
     teamContract,
     selectedChain,
-    address
+    wearerAddresses
   )
 
   const { userTeamsAsManager, isLoading: userTeamsAsManagerLoading } = useTeamManagerCheck(
     teamContract,
     userTeams,
-    address,
     userTeamsLoading
   )
 

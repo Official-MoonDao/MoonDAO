@@ -371,6 +371,8 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 export const PROJECT_HAT_TREE_IDS: Index = {
   arbitrum: '0x00000046',
   sepolia: '0x000002d9',
+  // Testnet projects tree (align with deployment); avoids filtering out every hat when slug is arbitrum-sepolia
+  'arbitrum-sepolia': '0x000002d9',
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {

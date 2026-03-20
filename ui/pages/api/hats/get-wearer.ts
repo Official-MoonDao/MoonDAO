@@ -43,6 +43,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     res.status(200).json(wearerHats)
   } catch (err: any) {
+    // SDK throws when the wearer entity has never been indexed (no hats minted yet).
+    if (err?.name === 'SubgraphWearerNotExistError') {
+      return res.status(200).json({ currentHats: [] })
+    }
     console.error(`Error fetching wearer hats: ${err.message}`)
     res.status(500).json(`Error fetching wearer hats: ${err.message}`)
   }

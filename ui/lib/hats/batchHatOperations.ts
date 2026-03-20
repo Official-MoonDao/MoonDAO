@@ -4,6 +4,7 @@
  * Efficiently batch multiple hat-related contract calls using Engine API
  * to avoid sequential RPC calls when fetching team membership data
  */
+import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import TeamABI from 'const/abis/Team.json'
 import { TEAM_ADDRESSES } from 'const/config'
 import { Chain, getContract } from 'thirdweb'
@@ -49,6 +50,7 @@ export async function batchFetchHatTeamData(
     // 1. adminHatToTokenId for the hat itself
     // 2. adminHatToTokenId for hat.admin
     // 3. adminHatToTokenId for hat.admin.admin (if exists)
+    // 4. one more level for deeper hat trees
     for (const hat of hats) {
       // Check hat itself
       contractCalls.push({
@@ -79,6 +81,20 @@ export async function batchFetchHatTeamData(
           abi: TeamABI,
         })
         callMetadata.push({ hatId: hat.id, type: 'adminHatToTokenId', level: 'adminAdmin' })
+      }
+
+      if (hat.admin?.admin?.admin?.id) {
+        contractCalls.push({
+          contractAddress: teamContract.address,
+          method: 'adminHatToTokenId',
+          params: [hat.admin.admin.admin.id],
+          abi: TeamABI,
+        })
+        callMetadata.push({
+          hatId: hat.id,
+          type: 'adminHatToTokenId',
+          level: 'adminAdminAdmin',
+        })
       }
     }
 
@@ -120,24 +136,26 @@ export async function batchFetchHatTeamData(
         teamAdminHatMap.set(teamId, adminHatId)
       })
 
-      // Build final result map
+      // Build final result map — any hat that resolves to a team token is a member
+      // (admin, manager, or member role). isAdminHat is derived for callers that need it.
       for (const hat of hats) {
         const teamId = hatTeamMap.get(hat.id)
         if (teamId && teamId !== '0') {
-          const adminHatId = teamAdminHatMap.get(teamId)
-          const isAdminHat =
-            hat.id === adminHatId ||
-            hat.admin?.id === adminHatId ||
-            hat.admin?.admin?.id === adminHatId ||
-            hat.admin?.admin?.admin?.id === adminHatId
-
-          if (isAdminHat) {
-            resultMap.set(hat.id, {
-              hatId: hat.id,
-              teamId,
-              isAdminHat: true,
-            })
+          const adminHatIdRaw = teamAdminHatMap.get(teamId)
+          let isAdminHat = false
+          if (adminHatIdRaw) {
+            const prettyAdminHatId = hatIdDecimalToHex(BigInt(adminHatIdRaw.toString()))
+            isAdminHat =
+              hat.id === prettyAdminHatId ||
+              hat.admin?.id === prettyAdminHatId ||
+              hat.admin?.admin?.id === prettyAdminHatId ||
+              hat.admin?.admin?.admin?.id === prettyAdminHatId
           }
+          resultMap.set(hat.id, {
+            hatId: hat.id,
+            teamId,
+            isAdminHat,
+          })
         }
       }
     }
