@@ -20,6 +20,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '@/components/layout/StandardButton'
+import MissionSingleLineTitle from '@/components/mission/MissionSingleLineTitle'
 
 export default function FeaturedMissionSection({ missions, featuredMissionData }: any) {
   const router = useRouter()
@@ -119,20 +120,22 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
         </div>
 
         <JuiceProviders projectId={featuredMission?.projectId || 0} selectedChain={selectedChain}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12 items-center">
-            {/* Left Column - Mission Image */}
-            <div className="flex justify-center lg:justify-start order-1 lg:order-1 px-4 md:px-0">
-              <div className="relative w-full max-w-md lg:max-w-lg xl:max-w-xl">
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+          {/* Single horizontal inset from parent px-* only — avoid extra px on one column (was skewing mobile) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-8 gap-x-0 lg:gap-x-12 lg:gap-y-12 items-start">
+            {/* Mission art — full width of grid cell; matches text column inset */}
+            <div className="w-full min-w-0 order-1 lg:order-1">
+              <div className="relative w-full">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl aspect-square w-full">
                   <Image
                     src={
                       getIPFSGateway(featuredMission?.metadata?.logoUri) ||
                       '/assets/project-default.png'
                     }
                     alt={featuredMission?.metadata?.name || 'Mission'}
-                    width={500}
-                    height={500}
-                    className="w-full h-auto object-cover"
+                    width={720}
+                    height={720}
+                    className="w-full h-full object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                 </div>
@@ -152,13 +155,18 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
               </div>
             </div>
 
-            {/* Right Column - Mission Info */}
-            <div className="space-y-6 lg:space-y-8 order-2 lg:order-2">
+            {/* Mission Info — min-w-0 prevents grid overflow; same width track as image */}
+            <div className="w-full min-w-0 space-y-6 lg:space-y-8 order-2 lg:order-2">
               {/* Mission Title & Tagline */}
-              <div className="space-y-2 md:space-y-3 lg:space-y-4">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white leading-tight">
-                  {featuredMission?.metadata?.name || 'Welcome to the MoonDAO Launchpad'}
-                </h1>
+              <div className="min-w-0 space-y-2 md:space-y-3 lg:space-y-4">
+                <MissionSingleLineTitle
+                  text={
+                    featuredMission?.metadata?.name || 'Welcome to the MoonDAO Launchpad'
+                  }
+                  minPx={24}
+                  maxPx={60}
+                  data-testid="mission-featured-title"
+                />
                 {(featuredMission?.metadata?.tagline || featuredMission?.metadata?.description) && (
                   <p className="text-sm md:text-lg lg:text-xl xl:text-2xl text-white/80 font-light">
                     {featuredMission?.metadata?.tagline || featuredMission?.metadata?.description}
