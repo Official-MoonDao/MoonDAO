@@ -1,6 +1,10 @@
 import { PencilIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
-import { MISSION_FUNDING_MILESTONES_USD } from 'const/missionMilestones'
+import {
+  getMissionMinimumUsdGoal,
+  MISSION_FUNDING_MILESTONES_USD,
+  MISSION_MINIMUM_GOAL_TOOLTIP,
+} from 'const/missionMilestones'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
@@ -98,6 +102,8 @@ const MissionProfileHeader = React.memo(
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
     const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
+
+    const minUsdGoal = getMissionMinimumUsdGoal(mission?.id)
 
     const milestoneBar = useMemo(() => {
       const steps =
@@ -329,24 +335,35 @@ const MissionProfileHeader = React.memo(
                       <Image src="/assets/launchpad/target.svg" alt="Goal" width={14} height={14} className="opacity-60" />
                       <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium">Goal</span>
                       <Tooltip
-                        text="This is an all-or-nothing mission. Refunds are available if the goal is not met."
+                        compact
+                        text={
+                          minUsdGoal != null
+                            ? MISSION_MINIMUM_GOAL_TOOLTIP
+                            : 'This is an all-or-nothing mission. Refunds are available if the goal is not met.'
+                        }
                         buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
                       >
                         ?
                       </Tooltip>
                     </div>
-                    <Tooltip
-                      text={
-                        !isLoadingTotalFunding && ethPrice && ethPrice > 0
-                          ? `$${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()}`
-                          : `Loading...`
-                      }
-                      wrap
-                    >
+                    {minUsdGoal != null ? (
                       <p className="text-white font-GoodTimes text-sm">
-                        {+(fundingGoal / 1e18).toFixed(3)} ETH
+                        ${minUsdGoal.toLocaleString('en-US')}
                       </p>
-                    </Tooltip>
+                    ) : (
+                      <Tooltip
+                        text={
+                          !isLoadingTotalFunding && ethPrice && ethPrice > 0
+                            ? `$${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()}`
+                            : `Loading...`
+                        }
+                        wrap
+                      >
+                        <p className="text-white font-GoodTimes text-sm">
+                          {+(fundingGoal / 1e18).toFixed(3)} ETH
+                        </p>
+                      </Tooltip>
+                    )}
                   </div>
 
                   {/* Deadline */}
