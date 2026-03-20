@@ -4,6 +4,7 @@ import {
   DEFAULT_CHAIN_V5,
   CITIZEN_ADDRESSES,
   FREE_MINT_THRESHOLD,
+  MISSION_TABLE_NAMES,
 } from 'const/config'
 import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import { rateLimit } from 'middleware/rateLimit'
@@ -12,6 +13,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 
@@ -30,14 +32,59 @@ const subgraphClient = createClient({
   exchanges: [fetchExchange, cacheExchange],
 })
 
+function isValidEvmAddress(addr: string): boolean {
+  return /^0x[0-9a-fA-F]{40}$/.test(addr)
+}
+
+// Cache MoonDAO mission projectIds (refreshes every 5 minutes)
+let cachedProjectIds: number[] = []
+let projectIdsCacheTime = 0
+const PROJECT_IDS_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+async function getMoonDAOProjectIds(): Promise<number[]> {
+  const now = Date.now()
+  if (cachedProjectIds.length > 0 && now - projectIdsCacheTime < PROJECT_IDS_CACHE_TTL) {
+    return cachedProjectIds
+  }
+
+  try {
+    const tableName = MISSION_TABLE_NAMES[chainSlug]
+    if (!tableName) {
+      console.error('No MissionTable name for chain:', chainSlug)
+      return cachedProjectIds
+    }
+    const rows = await queryTable(chain, `SELECT projectId FROM ${tableName}`)
+    const ids = (rows || [])
+      .map((r: any) => Number(r.projectId))
+      .filter((id: number) => id > 0 && !isNaN(id))
+    if (ids.length > 0) {
+      cachedProjectIds = ids
+      projectIdsCacheTime = now
+    }
+    return cachedProjectIds
+  } catch (err) {
+    console.error('Error fetching MoonDAO project IDs:', err)
+    return cachedProjectIds // return stale cache on error
+  }
+}
+
 async function getTotalPaid(address: string) {
+  if (!isValidEvmAddress(address)) {
+    throw new Error('Invalid EVM address')
+  }
+
+  const moonDAOProjectIds = await getMoonDAOProjectIds()
+
+  // Query participants across all chains (cross-chain payments settle on Arbitrum,
+  // but we keep this broad in case of indexing differences or direct payments).
+  // We filter to only MoonDAO mission projectIds to avoid counting unrelated JB projects.
   const query = `
-    query {
+    query ($addr: String!, $version: Int!) {
       participants(
         limit: 1000,
         where: {
-          address: "${address.toLowerCase()}",
-          version: ${BENDYSTRAW_JB_VERSION}
+          address: $addr,
+          version: $version
         }
       ) {
         items {
@@ -49,15 +96,23 @@ async function getTotalPaid(address: string) {
       }
     }
   `
-  const subgraphRes = await subgraphClient.query(query, {}).toPromise()
+  const subgraphRes = await subgraphClient.query(query, {
+    addr: address.toLowerCase(),
+    version: Number(BENDYSTRAW_JB_VERSION),
+  }).toPromise()
   if (subgraphRes.error) {
     console.error('Bendystraw query error:', subgraphRes.error)
     throw new Error(subgraphRes.error.message)
   }
   const participants = subgraphRes.data?.participants?.items || []
-  const totalPaid = participants.reduce((acc: bigint, p: any) => {
-    return acc + BigInt(p.volume || '0')
-  }, BigInt(0))
+
+  // Only count volume from MoonDAO mission projects
+  const projectIdSet = new Set(moonDAOProjectIds)
+  const totalPaid = participants
+    .filter((p: any) => projectIdSet.has(Number(p.projectId)))
+    .reduce((acc: bigint, p: any) => {
+      return acc + BigInt(p.volume || '0')
+    }, BigInt(0))
   return totalPaid
 }
 
@@ -67,6 +122,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { address, name, image, privacy, formId } = req.body
     if (!address || !name || !image || !privacy || !formId) {
       return res.status(400).json({ error: 'Mint params not found!' })
+    }
+    if (!isValidEvmAddress(address)) {
+      return res.status(400).json({ error: 'Invalid wallet address format.' })
     }
     const citizenContract = getContract({
       client: serverClient,
@@ -117,6 +175,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     if (!address || typeof address !== 'string') {
       return res.status(400).json({ error: 'Address is required.' })
+    }
+    if (!isValidEvmAddress(address)) {
+      return res.status(400).json({ error: 'Invalid wallet address format.' })
     }
 
     const totalPaid = await getTotalPaid(address as string)
