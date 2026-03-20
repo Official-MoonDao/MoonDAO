@@ -252,7 +252,7 @@ export function useTeamWearer(
     } else {
       if (addresses.length > 0) {
         setWornMoondaoHats(undefined)
-        setIsLoading(false)
+        setIsLoading(true)
       } else {
         setWornMoondaoHats([])
         setIsLoading(false)
