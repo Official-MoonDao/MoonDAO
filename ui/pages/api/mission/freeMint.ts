@@ -34,11 +34,10 @@ async function getTotalPaid(address: string) {
   const query = `
     query {
       participants(
-        limit: 100,
+        limit: 1000,
         where: {
           address: "${address.toLowerCase()}",
-          version: ${BENDYSTRAW_JB_VERSION},
-          chainId: ${chain.id}
+          version: ${BENDYSTRAW_JB_VERSION}
         }
       ) {
         items {
