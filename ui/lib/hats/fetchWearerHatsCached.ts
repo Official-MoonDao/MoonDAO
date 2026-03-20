@@ -19,6 +19,9 @@ export async function fetchWearerHatsJsonCached(
   const hit = cache.get(key)
   if (hit && hit.expiresAt > Date.now()) {
     return hit.json
+  } else if (hit) {
+    // Entry is expired; remove it so the cache doesn't grow without bound.
+    cache.delete(key)
   }
 
   const existing = inflight.get(key)
