@@ -139,12 +139,13 @@ export default function ProposalList({
                 }`}
               >
                 {projects.slice(0, itemsPerPage).map((project) => (
-                  <div
+                  <Link
                     key={project.id}
-                    className={`h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]`}
+                    href={`/project/${project.MDP ?? project.id}`}
+                    className={`block h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02] cursor-pointer`}
                   >
                     <Proposal project={project} />
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
