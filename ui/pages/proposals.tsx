@@ -58,14 +58,14 @@ export default function ProposalsPage({ project }: { project: Project }) {
                   <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                     <RewardAsset
                       name="ETH"
-                      value={NEXT_QUARTER_FUNDING_ETH.toFixed(4)}
+                      value={NEXT_QUARTER_FUNDING_ETH.toFixed(1)}
                       usdValue={(ethPrice ?? 0) * NEXT_QUARTER_FUNDING_ETH}
                     />
                   </div>
                   <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                     <RewardAsset
                       name="ETH"
-                      value={MAX_BUDGET_ETH.toFixed(4)}
+                      value={MAX_BUDGET_ETH.toFixed(1)}
                       usdValue={(ethPrice ?? 0) * MAX_BUDGET_ETH}
                     />
                   </div>

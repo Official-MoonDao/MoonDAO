@@ -1,5 +1,8 @@
-import React from 'react'
+import React, { useLayoutEffect, useState } from 'react'
 import { useFitSingleLineFontPx } from '@/lib/utils/hooks/useFitSingleLineFontPx'
+
+/** Below this container width, allow the title to wrap to multiple lines (avoids overflow on phones / narrow columns). */
+const WRAP_TITLE_MAX_CONTAINER_PX = 640
 
 type MissionSingleLineTitleProps = {
   text: string
@@ -15,7 +18,8 @@ type MissionSingleLineTitleProps = {
 }
 
 /**
- * One-line mission title: as large as fits in the container (no ellipsis, no horizontal scroll).
+ * Mission title sized to fit the container on one line when there is room; below ~sm width the
+ * container may wrap to multiple lines so long titles do not overflow horizontally.
  */
 export default function MissionSingleLineTitle({
   text,
@@ -34,6 +38,29 @@ export default function MissionSingleLineTitle({
     measureClassName
   )
 
+  const [allowWrap, setAllowWrap] = useState(false)
+  useLayoutEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const update = () => {
+      const w = el.clientWidth
+      setAllowWrap(w > 0 && w < WRAP_TITLE_MAX_CONTAINER_PX)
+    }
+
+    update()
+
+    let ro: ResizeObserver | undefined
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => update())
+      ro.observe(el)
+    }
+
+    return () => {
+      if (ro) ro.disconnect()
+    }
+  }, [text, minPx, maxPx, measureClassName])
+
   const Heading = as
 
   return (
@@ -47,7 +74,9 @@ export default function MissionSingleLineTitle({
       </span>
       <Heading
         data-testid={dataTestId}
-        className={`font-GoodTimes text-white leading-tight whitespace-nowrap ${metricsClassName} ${className}`.trim()}
+        className={`font-GoodTimes text-white leading-tight ${metricsClassName} ${className} ${
+          allowWrap ? 'whitespace-normal break-words' : 'whitespace-nowrap'
+        }`.trim()}
         style={{ fontSize: `${fontSizePx}px` }}
       >
         {text}

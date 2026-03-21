@@ -35,7 +35,7 @@ export default function DashboardActiveProjects({
             {showBudget && ethBudget !== undefined && (
               <div className="bg-black/20 rounded-xl px-5 py-3 border border-green-500/20">
                 <div className="text-xl font-bold text-white">
-                  {Math.round(ethBudget)} ETH
+                  {Number(ethBudget).toFixed(1)} ETH
                 </div>
                 <div className="text-green-200 text-sm">Quarterly Budget</div>
               </div>
