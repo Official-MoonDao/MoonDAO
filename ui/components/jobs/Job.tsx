@@ -51,6 +51,7 @@ export default function Job({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isActive, setIsActive] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   const [teamNFT, setTeamNFT] = useState<any>()
 
@@ -187,9 +188,20 @@ export default function Job({
 
         {/* Description */}
         <div className="flex-1 mb-4">
-          <p className="text-sm text-slate-300 line-clamp-3 leading-relaxed">
+          <p className={`text-sm text-slate-300 leading-relaxed ${isDescriptionExpanded ? '' : 'line-clamp-3'}`}>
             {job.description}
           </p>
+          {job.description && job.description.length > 150 && (
+            <button
+              className="text-xs text-blue-400 hover:text-blue-300 mt-1 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsDescriptionExpanded(!isDescriptionExpanded)
+              }}
+            >
+              {isDescriptionExpanded ? 'Show less' : 'Read more'}
+            </button>
+          )}
         </div>
 
         {/* Metadata (compensation, location) */}
