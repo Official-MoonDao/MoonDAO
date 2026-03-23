@@ -1,12 +1,8 @@
 import { DEFAULT_CHAIN_V5, JBV5_CONTROLLER_ADDRESS, MISSION_TABLE_ADDRESSES, FEATURED_MISSION } from 'const/config'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
-import { useContext, useEffect } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import CitizenContext from '@/lib/citizen/citizen-context'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -44,21 +40,6 @@ const PartnerSection = dynamic(() => import('../components/home/PartnerSection')
 })
 
 export default function Home({ missions, featuredMissionData }: any) {
-  const router = useRouter()
-  const { citizen, isLoading } = useContext(CitizenContext)
-
-  // Redirect citizens to dashboard
-  useEffect(() => {
-    if (!isLoading && citizen) {
-      router.push('/dashboard')
-    }
-  }, [citizen, isLoading, router])
-
-  // Show nothing while checking/redirecting
-  if (citizen) {
-    return null
-  }
-
   return (
     <Container>
       <Head>

@@ -30,7 +30,7 @@ export default function useNavigation(citizen: any) {
     return [
       {
         name: citizen ? 'Dashboard' : 'Join',
-        href: citizen ? '/' : '/citizen?create=true',
+        href: citizen ? '/dashboard' : '/citizen?create=true',
         icon: citizen ? HomeIcon : PlusIcon,
       },
       {
