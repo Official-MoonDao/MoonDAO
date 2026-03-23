@@ -139,7 +139,7 @@ export default function TeamJobs({
                     jobTableContract={jobTableContract}
                     editable={isManager}
                     refreshJobs={getEntityJobs}
-                    previewMode={!hasFullAccess}
+                    previewMode={false}
                   />
                 ))
               ) : (
