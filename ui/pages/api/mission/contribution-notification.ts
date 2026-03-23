@@ -29,6 +29,11 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { getBlocksInTimeframe } from '@/lib/utils/blocks'
+import {
+  sendContributionThankYouEmail,
+  subscribeContributorToNewsletter,
+} from '@/lib/contribution/contributionFollowUp'
+import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import { formatNumberWithCommasAndDecimals } from '@/lib/utils/numbers'
 
 const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -78,7 +83,8 @@ async function handler(req: any, res: any) {
       return res.status(400).json({ message: 'Bad request' })
     }
 
-    const { txHash, accessToken, txChainSlug, projectId } = data
+    const { txHash, accessToken, txChainSlug, projectId, contributorEmail, newsletterOptIn } =
+      data
 
     if (!txHash || !accessToken || !txChainSlug) {
       return res.status(400).json({ message: 'Missing required fields' })
@@ -356,6 +362,28 @@ async function handler(req: any, res: any) {
     if (!response.ok) {
       usedTransactions.delete(txHash)
       throw new Error('Failed to send message to Discord')
+    }
+
+    const emailTrim =
+      typeof contributorEmail === 'string' ? contributorEmail.trim() : ''
+    const wantsNewsletter = newsletterOptIn === true
+
+    if (isValidContributorEmail(emailTrim)) {
+      // Fire-and-forget: don't block the response on follow-up delivery.
+      sendContributionThankYouEmail(emailTrim).catch((err: any) => {
+        console.error(
+          'Contribution thank-you email failed:',
+          err?.message || err
+        )
+      })
+      if (wantsNewsletter) {
+        subscribeContributorToNewsletter(emailTrim).catch((err: any) => {
+          console.error(
+            'Contribution newsletter subscribe failed:',
+            err?.message || err
+          )
+        })
+      }
     }
 
     return res.status(200).json({ success: true })

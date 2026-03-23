@@ -37,9 +37,11 @@ export default function useMissionData({
   const chainSlug = getChainSlug(selectedChain)
   const [fundingGoal, setFundingGoal] = useState(_fundingGoal)
   const [stage, setStage] = useState<MissionStage>(_stage)
-  const [deadline, setDeadline] = useState<number | undefined>(_deadline)
+  const [deadline, setDeadline] = useState<number | undefined>(
+    _deadline ?? undefined
+  )
   const [refundPeriod, setRefundPeriod] = useState<number | undefined>(
-    _refundPeriod
+    _refundPeriod ?? undefined
   )
   const [poolDeployerAddress, setPoolDeployerAddress] = useState<string>()
 

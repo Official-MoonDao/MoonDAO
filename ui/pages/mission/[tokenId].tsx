@@ -20,8 +20,8 @@ type ProjectProfileProps = {
   tokenId: string
   mission: Mission
   _stage: number
-  _deadline: number | undefined
-  _refundPeriod: number | undefined
+  _deadline: number | null
+  _refundPeriod: number | null
   _primaryTerminalAddress: string
   _token?: any
   _teamNFT?: any
@@ -164,8 +164,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params, res }) =>
       props: {
         mission,
         _stage: +contractData.stage.toString(),
-        _deadline: timeData.deadline,
-        _refundPeriod: timeData.refundPeriod,
+        _deadline: timeData.deadline ?? null,
+        _refundPeriod: timeData.refundPeriod ?? null,
         _primaryTerminalAddress: contractData.primaryTerminalAddress,
         _token: tokenData,
         _teamNFT: teamNFT ? { ...teamNFT, id: teamNFT.id.toString() } : null,

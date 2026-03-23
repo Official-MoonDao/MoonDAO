@@ -32,8 +32,10 @@ import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { useMissionParticipantVolume } from '@/lib/juicebox/useMissionParticipantVolume'
 import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import { formatContributionOutput } from '@/lib/mission'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
@@ -54,6 +56,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { MissionContributeAutoTriggeringView } from './MissionContributeAutoTriggeringView'
 import { MissionContributeModalHeader } from './MissionContributeModalHeader'
 import { MissionContributeStatusNotices } from './MissionContributeStatusNotices'
+import MissionActivityList from './MissionActivityList'
 import MissionTokenNotice from './MissionTokenNotice'
 import { PaymentBreakdown } from './PaymentBreakdown'
 
@@ -113,6 +116,11 @@ export default function MissionContributeModal({
 
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
 
+  const { volumeWei: modalContributedWei, isLoading: isLoadingModalContributed } =
+    useMissionParticipantVolume(mission?.projectId, address)
+  const modalMissionContributedEth =
+    modalContributedWei != null ? Number(modalContributedWei) / 1e18 : null
+
   const [coinbaseEthReceive, setCoinbaseEthReceive] = useState<number | null>(null)
   const [coinbasePaymentSubtotal, setCoinbasePaymentSubtotal] = useState<number>()
   const [coinbasePaymentTotal, setCoinbasePaymentTotal] = useState<number>()
@@ -129,6 +137,8 @@ export default function MissionContributeModal({
   } = useOnrampJWT()
 
   const [showBackPrompt, setShowBackPrompt] = useState(false)
+  const [contributorEmail, setContributorEmail] = useState('')
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false)
   const [agreedToCondition, setAgreedToCondition] = useState(() => {
     return router?.query?.agreed === 'true'
   })
@@ -716,6 +726,20 @@ export default function MissionContributeModal({
       })
     }
 
+    const emailTrim = contributorEmail.trim()
+    if (newsletterOptIn && !isValidContributorEmail(emailTrim)) {
+      toast.error('Enter a valid email to join the newsletter.', {
+        style: toastStyle,
+      })
+      return
+    }
+    if (emailTrim && !isValidContributorEmail(emailTrim)) {
+      toast.error('Please enter a valid email address.', {
+        style: toastStyle,
+      })
+      return
+    }
+
     // Reset rejection state when attempting a new transaction
     setTransactionRejected(false)
 
@@ -798,6 +822,12 @@ export default function MissionContributeModal({
           accessToken: accessToken,
           txChainSlug: defaultChainSlug,
           projectId: mission?.projectId,
+          ...(emailTrim
+            ? {
+                contributorEmail: emailTrim,
+                newsletterOptIn: newsletterOptIn && isValidContributorEmail(emailTrim),
+              }
+            : {}),
         }),
       })
       const contributionNotificationData = await contributionNotification.json()
@@ -895,6 +925,8 @@ export default function MissionContributeModal({
     isCitizen,
     router,
     setUsdInput,
+    contributorEmail,
+    newsletterOptIn,
   ])
 
   // Calculate quote when input changes
@@ -956,14 +988,21 @@ export default function MissionContributeModal({
       }
     },
     onFormRestore: (restored: any) => {
-      if (restored?.usdAmount) {
-        setUsdInput(restored.usdAmount)
+      const fd = restored?.formData ?? restored
+      if (fd?.usdAmount) {
+        setUsdInput(fd.usdAmount)
       }
-      if (typeof restored?.agreed === 'boolean') {
-        setAgreedToCondition(restored.agreed)
+      if (typeof fd?.agreed === 'boolean') {
+        setAgreedToCondition(fd.agreed)
       }
-      if (restored?.message) {
-        setMessage(restored.message)
+      if (fd?.message) {
+        setMessage(fd.message)
+      }
+      if (typeof fd?.contributorEmail === 'string') {
+        setContributorEmail(fd.contributorEmail)
+      }
+      if (typeof fd?.newsletterOptIn === 'boolean') {
+        setNewsletterOptIn(fd.newsletterOptIn)
       }
       setIsAutoTriggering(true)
     },
@@ -971,8 +1010,9 @@ export default function MissionContributeModal({
       return !!hasEnoughBalance
     },
     shouldProceed: (restored: any) => {
-      const agreed = restored?.agreed ?? agreedToCondition
-      const amount = restored?.usdAmount || usdInput
+      const fd = restored?.formData ?? restored
+      const agreed = fd?.agreed ?? agreedToCondition
+      const amount = fd?.usdAmount || usdInput
       return agreed && amount && parseFloat(amount.replace(/,/g, '')) > 0
     },
     restoreCache: () => {
@@ -985,17 +1025,22 @@ export default function MissionContributeModal({
         if (parts.length !== 3) return null
         const payload = JSON.parse(atob(parts[1]))
         return {
-          usdAmount: payload.usdAmount,
-          agreed: payload.agreed,
-          message: payload.message,
-          selectedWallet: payload.selectedWallet,
-          chainSlug: payload.chainSlug,
+          formData: {
+            usdAmount: payload.usdAmount,
+            agreed: payload.agreed,
+            message: payload.message,
+            selectedWallet: payload.selectedWallet,
+            chainSlug: payload.chainSlug,
+            contributorEmail: payload.contributorEmail,
+            newsletterOptIn: payload.newsletterOptIn,
+          },
         }
       } catch {
         return null
       }
     },
-    getChainSlugFromCache: (restored: any) => restored?.chainSlug,
+    getChainSlugFromCache: (restored: any) =>
+      restored?.formData?.chainSlug ?? restored?.chainSlug,
     setSelectedWallet,
     waitForReady: () => {
       return !isLoadingGasEstimate && estimatedGas > BigInt(0) && effectiveGasPrice > BigInt(0)
@@ -1086,6 +1131,8 @@ export default function MissionContributeModal({
     setCoinbaseEthInsufficient(false)
 
     clearOnrampJWT()
+    setContributorEmail('')
+    setNewsletterOptIn(false)
 
     // Clean up onramp URL params when modal closes
     if (router?.query?.onrampSuccess === 'true') {
@@ -1336,6 +1383,43 @@ export default function MissionContributeModal({
                       maxLength={100}
                     />
                   </div>
+                  <div className="space-y-3 bg-slate-800/20 border border-white/10 rounded-xl p-4">
+                    <label
+                      htmlFor="contribution-contributor-email-direct"
+                      className="text-gray-300 font-medium text-sm uppercase tracking-wider"
+                    >
+                      Email (optional)
+                    </label>
+                    <p className="text-gray-400 text-xs leading-relaxed -mt-1">
+                      We&apos;ll send a short thank-you note. Subscribe below if you want MoonDAO
+                      updates.
+                    </p>
+                    <input
+                      id="contribution-contributor-email-direct"
+                      type="email"
+                      autoComplete="email"
+                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
+                      placeholder="you@example.com"
+                      value={contributorEmail}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setContributorEmail(v)
+                        if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
+                      }}
+                    />
+                    <label className="flex gap-3 items-start cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        disabled={!contributorEmail.trim()}
+                        checked={newsletterOptIn}
+                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-white/30 bg-black/40 text-blue-500 focus:ring-blue-500/40 disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                      <span className="text-sm text-gray-300 leading-relaxed group-disabled:opacity-50">
+                        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
+                      </span>
+                    </label>
+                  </div>
                   {/* Payment Breakdown */}
                   {ethUsdPrice && usdInput && (
                     <PaymentBreakdown
@@ -1358,6 +1442,8 @@ export default function MissionContributeModal({
                       coinbaseEthReceive={coinbaseEthReceive}
                       isAdjustedForMinimum={isAdjustedForMinimum}
                       coinbaseEthInsufficient={coinbaseEthInsufficient}
+                      missionContributedEth={modalMissionContributedEth}
+                      missionContributedLoading={isLoadingModalContributed}
                     />
                   )}
 
@@ -1486,6 +1572,44 @@ export default function MissionContributeModal({
                     />
                   </div>
 
+                  <div className="space-y-3 bg-slate-800/20 border border-white/10 rounded-xl p-4">
+                    <label
+                      htmlFor="contribution-contributor-email-onramp"
+                      className="text-gray-300 font-medium text-sm uppercase tracking-wider"
+                    >
+                      Email (optional)
+                    </label>
+                    <p className="text-gray-400 text-xs leading-relaxed -mt-1">
+                      We&apos;ll send a short thank-you note. Subscribe below if you want MoonDAO
+                      updates.
+                    </p>
+                    <input
+                      id="contribution-contributor-email-onramp"
+                      type="email"
+                      autoComplete="email"
+                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
+                      placeholder="you@example.com"
+                      value={contributorEmail}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setContributorEmail(v)
+                        if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
+                      }}
+                    />
+                    <label className="flex gap-3 items-start cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        disabled={!contributorEmail.trim()}
+                        checked={newsletterOptIn}
+                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-white/30 bg-black/40 text-blue-500 focus:ring-blue-500/40 disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                      <span className="text-sm text-gray-300 leading-relaxed">
+                        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
+                      </span>
+                    </label>
+                  </div>
+
                   {/* Show balance breakdown if user has some ETH */}
                   {usdInput && ethUsdPrice && (
                     <PaymentBreakdown
@@ -1508,6 +1632,8 @@ export default function MissionContributeModal({
                       coinbaseEthInsufficient={coinbaseEthInsufficient}
                       coinbaseTotalFees={coinbaseTotalFees}
                       coinbasePaymentTotal={coinbasePaymentTotal}
+                      missionContributedEth={modalMissionContributedEth}
+                      missionContributedLoading={isLoadingModalContributed}
                     />
                   )}
 
@@ -1528,6 +1654,9 @@ export default function MissionContributeModal({
                           selectedWallet: selectedWallet,
                           missionId: mission?.id?.toString(),
                           context: mission?.id?.toString(),
+                          contributorEmail: contributorEmail.trim() || undefined,
+                          newsletterOptIn:
+                            newsletterOptIn && isValidContributorEmail(contributorEmail.trim()),
                         })
                       }}
                       redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
@@ -1571,6 +1700,21 @@ export default function MissionContributeModal({
                   >
                     Close
                   </button>
+                </div>
+              )}
+
+              {mission?.projectId != null && mission?.projectId !== '' && (
+                <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
+                  <h3 className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                    Recent contributions
+                  </h3>
+                  <div className="max-h-[min(420px,50vh)] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
+                    <MissionActivityList
+                      selectedChain={selectedChain}
+                      tokenSymbol={token?.tokenSymbol}
+                      projectId={mission?.projectId}
+                    />
+                  </div>
                 </div>
               )}
             </>
