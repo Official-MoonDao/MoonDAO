@@ -12,6 +12,7 @@ import { TransactionReceipt } from 'thirdweb/dist/types/transaction/types'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
+import { useMissionParticipantVolume } from '@/lib/juicebox/useMissionParticipantVolume'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatContributionOutput } from '@/lib/mission'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
@@ -24,6 +25,12 @@ import Modal from '../layout/Modal'
 import AcceptedPaymentMethods from '../privy/AcceptedPaymentMethods'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
+
+function formatContributedEth(eth: number): string {
+  if (!Number.isFinite(eth) || eth <= 0) return '0'
+  if (eth < 0.0001) return eth.toPrecision(4)
+  return eth.toLocaleString('en-US', { maximumFractionDigits: 6 })
+}
 
 function MissionPayRedeemContent({
   token,
@@ -44,10 +51,21 @@ function MissionPayRedeemContent({
   isLoadingEthUsdPrice,
   usdInput,
   setUsdInput,
+  address,
+  contributedEthWei,
+  isLoadingContributedEth,
+  ethUsdPrice,
 }: any) {
   const isRefundable = Number(stage) === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
   const shouldShowSwapOnly = deadlineHasPassed && Number(stage) === 2
+  const contributedEth =
+    contributedEthWei != null ? Number(contributedEthWei) / 1e18 : 0
+  const showContributedRow =
+    Boolean(address) &&
+    (isLoadingContributedEth || contributedEth > 1e-12)
+  const contributedUsdApprox =
+    ethUsdPrice && contributedEth > 0 ? contributedEth * ethUsdPrice : null
 
   if (isRefundable && (!tokenCredit || tokenCredit <= 0) && (!tokenBalance || tokenBalance <= 0)) {
     return null
@@ -180,24 +198,67 @@ function MissionPayRedeemContent({
         )
       )}
       {/* Token Section - Consolidated */}
-      {(token?.tokenSupply > 0 || tokenBalance > 0 || isRefundable) && (
+      {(token?.tokenSupply > 0 ||
+        tokenBalance > 0 ||
+        isRefundable ||
+        showContributedRow) && (
         <div id="mission-token-section" className="px-5 py-5 space-y-3">
 
-          {/* Your Balance */}
-          {tokenBalance > 0 && (
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-              <p className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">Your Balance</p>
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="font-semibold text-white text-lg">
-                  {formatTokenAmount(tokenBalance, 2)}
-                </span>
-                <span className="text-gray-400 text-sm font-medium">${token?.tokenSymbol}</span>
-                {token?.tokenSupply > 0 && (
-                  <span className="text-gray-600 text-xs">
-                    ({((tokenBalance / (+token?.tokenSupply.toString() / 1e18)) * 100).toFixed(1)}% of Supply)
-                  </span>
-                )}
-              </div>
+          {/* Your contribution & balance */}
+          {(showContributedRow || tokenBalance > 0) && (
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-4">
+              {showContributedRow && (
+                <div>
+                  <p className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">
+                    You contributed
+                  </p>
+                  {isLoadingContributedEth ? (
+                    <LoadingSpinner className="scale-50 ml-0" />
+                  ) : (
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="font-semibold text-white text-lg">
+                        Ξ {formatContributedEth(contributedEth)} ETH
+                      </span>
+                      {contributedUsdApprox != null && contributedUsdApprox > 0 && (
+                        <span className="text-gray-400 text-sm">
+                          (~$
+                          {contributedUsdApprox.toLocaleString('en-US', {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2,
+                          })}
+                          )
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              {showContributedRow && tokenBalance > 0 && (
+                <div className="border-t border-white/[0.06] pt-4" />
+              )}
+              {tokenBalance > 0 && (
+                <div>
+                  <p className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">
+                    Your Balance
+                  </p>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-semibold text-white text-lg">
+                      {formatTokenAmount(tokenBalance, 2)}
+                    </span>
+                    <span className="text-gray-400 text-sm font-medium">${token?.tokenSymbol}</span>
+                    {token?.tokenSupply > 0 && (
+                      <span className="text-gray-600 text-xs">
+                        (
+                        {(
+                          (tokenBalance / (+token?.tokenSupply.toString() / 1e18)) *
+                          100
+                        ).toFixed(1)}
+                        % of Supply)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -301,6 +362,9 @@ function MissionPayRedeemComponent({
   const [isLoadingRedeemAmount, setIsLoadingRedeemAmount] = useState(true)
 
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
+
+  const { volumeWei: contributedEthWei, isLoading: isLoadingContributedEth } =
+    useMissionParticipantVolume(mission?.projectId, address)
 
   const currentStage = useMissionFundingStage(mission?.id)
 
@@ -729,6 +793,10 @@ function MissionPayRedeemComponent({
                 isLoadingEthUsdPrice={isLoadingEthUsdPrice}
                 setUsdInput={setUsdInput}
                 usdInput={usdInput}
+                address={address}
+                contributedEthWei={contributedEthWei}
+                isLoadingContributedEth={isLoadingContributedEth}
+                ethUsdPrice={ethUsdPrice}
               />
             </div>
           )}

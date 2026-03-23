@@ -148,6 +148,38 @@ export function projectEventsQuery(
   `
 }
 
+/** Total native-token volume paid by `participantAddress` into `projectId` on the default JB chain. */
+export function missionParticipantVolumeQuery(
+  projectId: number,
+  participantAddress: string
+): string | null {
+  const addr = participantAddress.toLowerCase()
+  if (!/^0x[a-f0-9]{40}$/i.test(addr)) {
+    return null
+  }
+  const pid = Number(projectId)
+  if (!Number.isFinite(pid) || pid <= 0) {
+    return null
+  }
+  return `
+    query {
+      participants(
+        limit: 1,
+        where: {
+          address: "${addr}",
+          projectId: ${pid},
+          version: ${BENDYSTRAW_JB_VERSION},
+          chainId: ${DEFAULT_CHAIN_V5.id}
+        }
+      ) {
+        items {
+          volume
+        }
+      }
+    }
+  `
+}
+
 export function trendingProjectsQuery(
   count: number,
   orderBy: string = 'trendingScore'

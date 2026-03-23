@@ -370,7 +370,7 @@ async function handler(req: any, res: any) {
 
     if (isValidContributorEmail(emailTrim)) {
       try {
-        await sendContributionThankYouEmail(emailTrim, String(missionMetadata.name || ''))
+        await sendContributionThankYouEmail(emailTrim)
       } catch (err: any) {
         console.error('Contribution thank-you email failed:', err?.message || err)
       }

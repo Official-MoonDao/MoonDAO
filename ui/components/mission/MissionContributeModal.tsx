@@ -32,6 +32,7 @@ import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { useMissionParticipantVolume } from '@/lib/juicebox/useMissionParticipantVolume'
 import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
@@ -55,6 +56,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { MissionContributeAutoTriggeringView } from './MissionContributeAutoTriggeringView'
 import { MissionContributeModalHeader } from './MissionContributeModalHeader'
 import { MissionContributeStatusNotices } from './MissionContributeStatusNotices'
+import MissionActivityList from './MissionActivityList'
 import MissionTokenNotice from './MissionTokenNotice'
 import { PaymentBreakdown } from './PaymentBreakdown'
 
@@ -113,6 +115,11 @@ export default function MissionContributeModal({
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
 
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
+
+  const { volumeWei: modalContributedWei, isLoading: isLoadingModalContributed } =
+    useMissionParticipantVolume(mission?.projectId, address)
+  const modalMissionContributedEth =
+    modalContributedWei != null ? Number(modalContributedWei) / 1e18 : null
 
   const [coinbaseEthReceive, setCoinbaseEthReceive] = useState<number | null>(null)
   const [coinbasePaymentSubtotal, setCoinbasePaymentSubtotal] = useState<number>()
@@ -1435,6 +1442,8 @@ export default function MissionContributeModal({
                       coinbaseEthReceive={coinbaseEthReceive}
                       isAdjustedForMinimum={isAdjustedForMinimum}
                       coinbaseEthInsufficient={coinbaseEthInsufficient}
+                      missionContributedEth={modalMissionContributedEth}
+                      missionContributedLoading={isLoadingModalContributed}
                     />
                   )}
 
@@ -1623,6 +1632,8 @@ export default function MissionContributeModal({
                       coinbaseEthInsufficient={coinbaseEthInsufficient}
                       coinbaseTotalFees={coinbaseTotalFees}
                       coinbasePaymentTotal={coinbasePaymentTotal}
+                      missionContributedEth={modalMissionContributedEth}
+                      missionContributedLoading={isLoadingModalContributed}
                     />
                   )}
 
@@ -1689,6 +1700,21 @@ export default function MissionContributeModal({
                   >
                     Close
                   </button>
+                </div>
+              )}
+
+              {mission?.projectId != null && mission?.projectId !== '' && (
+                <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
+                  <h3 className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                    Recent contributions
+                  </h3>
+                  <div className="max-h-[min(420px,50vh)] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
+                    <MissionActivityList
+                      selectedChain={selectedChain}
+                      tokenSymbol={token?.tokenSymbol}
+                      projectId={mission?.projectId}
+                    />
+                  </div>
                 </div>
               )}
             </>

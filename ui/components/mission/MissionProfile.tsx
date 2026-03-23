@@ -465,7 +465,6 @@ export default function MissionProfile({
                   subgraphData={subgraphData}
                   token={token}
                   primaryTerminalAddress={primaryTerminalAddress}
-                  citizens={[]}
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}

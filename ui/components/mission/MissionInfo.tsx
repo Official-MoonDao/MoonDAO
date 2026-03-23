@@ -65,7 +65,6 @@ export default function MissionInfo({
   primaryTerminalAddress,
   stage,
   deadline,
-  citizens,
   refreshTotalFunding,
   ruleset,
   setContributeModalEnabled,
@@ -256,7 +255,6 @@ export default function MissionInfo({
                 selectedChain={selectedChain}
                 tokenSymbol={token?.tokenSymbol}
                 projectId={mission?.projectId}
-                citizens={citizens}
               />
             </div>
           )}
