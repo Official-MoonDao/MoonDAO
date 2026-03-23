@@ -369,17 +369,20 @@ async function handler(req: any, res: any) {
     const wantsNewsletter = newsletterOptIn === true
 
     if (isValidContributorEmail(emailTrim)) {
-      try {
-        await sendContributionThankYouEmail(emailTrim)
-      } catch (err: any) {
-        console.error('Contribution thank-you email failed:', err?.message || err)
-      }
+      // Fire-and-forget: don't block the response on follow-up delivery.
+      sendContributionThankYouEmail(emailTrim).catch((err: any) => {
+        console.error(
+          'Contribution thank-you email failed:',
+          err?.message || err
+        )
+      })
       if (wantsNewsletter) {
-        try {
-          await subscribeContributorToNewsletter(emailTrim)
-        } catch (err: any) {
-          console.error('Contribution newsletter subscribe failed:', err?.message || err)
-        }
+        subscribeContributorToNewsletter(emailTrim).catch((err: any) => {
+          console.error(
+            'Contribution newsletter subscribe failed:',
+            err?.message || err
+          )
+        })
       }
     }
 
