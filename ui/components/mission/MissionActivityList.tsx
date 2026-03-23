@@ -71,21 +71,30 @@ export default function MissionActivityList({
     projectId,
   })
 
-  const contributorAddressesKey = useMemo(() => {
-    const set = new Set<string>()
+  const transformedEvents = useMemo(() => {
+    const events: any[] = []
     for (const page of projectEventsQueryResult?.pages ?? []) {
       for (const raw of page.data.activityEvents.items) {
         const ev = transformEventData(raw)
-        if (!ev) continue
-        const addr = contributorAddressForEvent(ev)
-        if (addr && isLikelyEthAddress(addr)) {
-          set.add(addr.toLowerCase())
+        if (ev) {
+          events.push(ev)
         }
+      }
+    }
+    return events
+  }, [projectEventsQueryResult?.pages])
+
+  const contributorAddressesKey = useMemo(() => {
+    const set = new Set<string>()
+    for (const ev of transformedEvents) {
+      const addr = contributorAddressForEvent(ev)
+      if (addr && isLikelyEthAddress(addr)) {
+        set.add(addr.toLowerCase())
       }
     }
     const list = [...set].sort()
     return list.slice(0, MAX_CITIZEN_LOOKUP_ADDRESSES).join(',')
-  }, [projectEventsQueryResult?.pages])
+  }, [transformedEvents])
 
   const citizenLookupStatement = useMemo(() => {
     const chainSlug = getChainSlug(selectedChain)
