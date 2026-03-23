@@ -9,7 +9,6 @@ import {
 } from 'const/config'
 import { GetStaticProps } from 'next'
 import dynamic from 'next/dynamic'
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useDebounce } from 'react-use'
@@ -27,6 +26,7 @@ import Head from '../components/layout/Head'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import NetworkCardSkeleton from '@/components/layout/NetworkCardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
@@ -298,50 +298,13 @@ export default function Network({
                 </CardGridContainer>
 
                 {!isMapTab && (
-                  <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
-                    <div className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8">
-                      <button
-                        onClick={() => {
-                          if (pageIdx > 1) {
-                            handlePageChange(pageIdx - 1)
-                          }
-                        }}
-                        className={`pagination-button transition-opacity hover:scale-110 ${
-                          pageIdx === 1 ? 'opacity-30' : 'cursor-pointer opacity-100'
-                        }`}
-                        disabled={pageIdx === 1}
-                      >
-                        <Image
-                          src="/assets/icon-left.svg"
-                          alt="Left Arrow"
-                          width={35}
-                          height={35}
-                        />
-                      </button>
-                      <p id="page-number" className="px-5 font-bold text-white">
-                        Page {pageIdx} of {currentData.maxPage}
-                      </p>
-                      <button
-                        onClick={() => {
-                          if (pageIdx < currentData.maxPage) {
-                            handlePageChange(pageIdx + 1)
-                          }
-                        }}
-                        className={`pagination-button transition-opacity hover:scale-110 ${
-                          pageIdx === currentData.maxPage
-                            ? 'opacity-30'
-                            : 'cursor-pointer opacity-100'
-                        }`}
-                        disabled={pageIdx === currentData.maxPage}
-                      >
-                        <Image
-                          src="/assets/icon-right.svg"
-                          alt="Right Arrow"
-                          width={35}
-                          height={35}
-                        />
-                      </button>
-                    </div>
+                  <div className="mt-8">
+                    <PaginationButtons
+                      handlePageChange={handlePageChange}
+                      maxPage={currentData.maxPage}
+                      pageIdx={pageIdx}
+                      label="Page"
+                    />
                   </div>
                 )}
               </div>
