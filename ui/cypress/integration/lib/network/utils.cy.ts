@@ -5,6 +5,8 @@ import {
   buildSearchClause,
   buildPaginationClause,
   calculateMaxPage,
+  buildExcludeIdsCondition,
+  appendToWhereClause,
 } from '@/lib/network/utils'
 import { NetworkNFT } from '@/lib/network/types'
 
@@ -125,6 +127,52 @@ describe('Network Utils', () => {
     it('should use custom column name', () => {
       const clause = buildSearchClause('test', 'description')
       expect(clause).to.include('description LIKE')
+    })
+  })
+
+  describe('buildExcludeIdsCondition', () => {
+    it('should return empty string for empty set', () => {
+      const condition = buildExcludeIdsCondition(new Set<number>())
+      expect(condition).to.equal('')
+    })
+
+    it('should build NOT IN condition for a single id', () => {
+      const condition = buildExcludeIdsCondition(new Set([48]))
+      expect(condition).to.equal('id NOT IN (48)')
+    })
+
+    it('should build NOT IN condition for multiple ids', () => {
+      const condition = buildExcludeIdsCondition(new Set([48, 72, 140, 177]))
+      expect(condition).to.include('id NOT IN')
+      expect(condition).to.include('48')
+      expect(condition).to.include('72')
+      expect(condition).to.include('140')
+      expect(condition).to.include('177')
+    })
+  })
+
+  describe('appendToWhereClause', () => {
+    it('should return empty string when both inputs are empty', () => {
+      const result = appendToWhereClause('', '')
+      expect(result).to.equal('')
+    })
+
+    it('should return WHERE condition when whereClause is empty', () => {
+      const result = appendToWhereClause('', 'id NOT IN (48,72)')
+      expect(result).to.equal('WHERE id NOT IN (48,72)')
+    })
+
+    it('should return existing whereClause when condition is empty', () => {
+      const result = appendToWhereClause("WHERE name LIKE '%test%'", '')
+      expect(result).to.equal("WHERE name LIKE '%test%'")
+    })
+
+    it('should combine both clauses with AND', () => {
+      const result = appendToWhereClause("WHERE name LIKE '%test%'", 'id NOT IN (48,72)')
+      expect(result).to.include('WHERE')
+      expect(result).to.include("name LIKE '%test%'")
+      expect(result).to.include('AND')
+      expect(result).to.include('id NOT IN (48,72)')
     })
   })
 
