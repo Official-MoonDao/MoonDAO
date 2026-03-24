@@ -12,6 +12,7 @@ import {
   DEPLOYED_ORIGIN,
   LAYERZERO_MAX_CONTRIBUTION_ETH,
   LAYERZERO_MAX_ETH,
+  OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL,
 } from 'const/config'
 import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
@@ -99,6 +100,40 @@ export default function MissionContributeModal({
     [isTestnet]
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
+
+  const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'
+
+  const contributionTermsCheckboxLabel = useMemo(
+    () => (
+      <p className="text-sm text-gray-300 leading-relaxed">
+        {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
+        <Link
+          href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          risks
+        </Link>
+        {` associated with participation in the MoonDAO Launchpad.`}
+        {isOverviewMission ? (
+          <>
+            {` I have read and agree to the `}
+            <Link
+              href={OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL}
+              className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Overview Flight Terms and Conditions
+            </Link>
+            {`.`}
+          </>
+        ) : null}
+      </p>
+    ),
+    [isOverviewMission]
+  )
 
   const account = useActiveAccount()
   // In test mode (Cypress), use mock address from window if available
@@ -900,7 +935,6 @@ export default function MissionContributeModal({
       setUsdInput('0')
 
       // Show back-a-candidate prompt only for mission 4 (Overview flight on Arbitrum)
-      const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'
       if (isOverviewMission) {
         setShowBackPrompt(true)
       } else {
@@ -987,6 +1021,7 @@ export default function MissionContributeModal({
     setUsdInput,
     contributorEmail,
     newsletterOptIn,
+    isOverviewMission,
   ])
 
   // Calculate quote when input changes
@@ -1538,20 +1573,7 @@ export default function MissionContributeModal({
                     <MissionTokenNotice />
                     <ConditionCheckbox
                       id="contribution-terms-checkbox"
-                      label={
-                        <p className="text-sm text-gray-300 leading-relaxed">
-                          {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
-                          <Link
-                            href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
-                            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            risks
-                          </Link>
-                          {` associated with participation in the MoonDAO Launchpad.`}
-                        </p>
-                      }
+                      label={contributionTermsCheckboxLabel}
                       agreedToCondition={agreedToCondition}
                       setAgreedToCondition={setAgreedToCondition}
                     />
@@ -1597,20 +1619,7 @@ export default function MissionContributeModal({
                     <MissionTokenNotice />
                     <ConditionCheckbox
                       id="pre-contribution-terms-checkbox"
-                      label={
-                        <p className="text-sm text-gray-300 leading-relaxed">
-                          {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
-                          <Link
-                            href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
-                            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            risks
-                          </Link>
-                          {` associated with participation in the MoonDAO Launchpad.`}
-                        </p>
-                      }
+                      label={contributionTermsCheckboxLabel}
                       agreedToCondition={agreedToCondition}
                       setAgreedToCondition={setAgreedToCondition}
                     />

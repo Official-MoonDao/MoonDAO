@@ -608,6 +608,10 @@ export const FREE_MINT_THRESHOLD_LABEL = `${FREE_MINT_THRESHOLD / 1e18} ETH (~$1
 
 export const EB_TEAM_ID = '0'
 
+/** MoonDAO docs — Overview Flight mission (e.g. mission id 4). */
+export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
+  'https://docs.moondao.com/Legal/Overview-Flight/Overview-Flight-Terms-and-Conditions'
+
 // Project System Configuration
 export const PROJECT_SYSTEM_CONFIG = {
   // Q1 2026 deadline - second Thursday of the quarter
