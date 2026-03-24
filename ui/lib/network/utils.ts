@@ -57,3 +57,18 @@ export function calculateMaxPage(totalCount: number, pageSize: number): number {
   return Math.max(1, Math.ceil(totalCount / pageSize))
 }
 
+export function buildExcludeIdsCondition(ids: Set<number>): string {
+  if (!ids || ids.size === 0) return ''
+  const safeIds = Array.from(ids)
+    .map((id) => Math.trunc(Number(id)))
+    .filter((id) => Number.isFinite(id))
+  if (safeIds.length === 0) return ''
+  return `id NOT IN (${safeIds.join(',')})`
+}
+
+export function appendToWhereClause(whereClause: string, condition: string): string {
+  if (!condition) return whereClause
+  if (!whereClause) return `WHERE ${condition}`
+  return `${whereClause} AND ${condition}`
+}
+
