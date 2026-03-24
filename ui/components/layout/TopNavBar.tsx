@@ -101,14 +101,20 @@ const TopNavBar = ({
             {navigation.map((item, i) => {
               if (!item) return null
               const hasDropdown = item.children || item.dynamicChildren
+              const isNetworkTeams =
+                router.pathname === '/network' && router.query.tab === 'teams'
               const isActive =
-                router.pathname === item.href ||
-                item.children?.some((child: any) => router.pathname === child.href) ||
+                (!isNetworkTeams && router.pathname === item.href) ||
+                (!isNetworkTeams &&
+                  item.children?.some(
+                    (child: any) => router.pathname === child.href
+                  )) ||
                 (item.dynamicChildren === 'Teams' &&
                   (router.pathname.startsWith('/team') ||
                     router.pathname === '/join' ||
                     router.pathname === '/jobs' ||
-                    router.pathname === '/marketplace')) ||
+                    router.pathname === '/marketplace' ||
+                    isNetworkTeams)) ||
                 (item.dynamicChildren === 'Projects' &&
                   (router.pathname.startsWith('/project') ||
                     router.pathname === '/projects' ||

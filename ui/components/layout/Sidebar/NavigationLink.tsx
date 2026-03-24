@@ -72,7 +72,8 @@ const Dropdown = ({
     (router.pathname.startsWith('/team') ||
       router.pathname === '/join' ||
       router.pathname === '/jobs' ||
-      router.pathname === '/marketplace')
+      router.pathname === '/marketplace' ||
+      (router.pathname === '/network' && router.query.tab === 'teams'))
   const isProjectsActive =
     hasDynamicProjects &&
     (router.pathname.startsWith('/project') ||
@@ -80,8 +81,12 @@ const Dropdown = ({
       router.pathname === '/proposals' ||
       router.pathname === '/contributions' ||
       router.pathname === '/projects-overview')
+  const isNetworkTeams =
+    router.pathname === '/network' && router.query.tab === 'teams'
   const isChildrenActive =
-    item?.children?.some((e: any) => e.href === router.pathname) || item.href === router.pathname
+    !isNetworkTeams &&
+    (item?.children?.some((e: any) => e.href === router.pathname) ||
+      item.href === router.pathname)
 
   return (
     <Disclosure
