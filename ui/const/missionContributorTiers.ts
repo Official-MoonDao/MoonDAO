@@ -15,12 +15,12 @@ export const MISSION_CONTRIBUTOR_TIERS: Partial<Record<number, MissionContributo
     },
     {
       amountUsd: 1_000,
-      title: "Collector's Horizon",
+      title: 'Horizon Collector',
       description: 'Signed copy of the 4th edition of The Overview Effect.',
     },
     {
       amountUsd: 10_000,
-      title: 'Vision Circle',
+      title: 'Kármán Circle',
       description:
         'Private virtual briefing with Frank White and the mission team, public supporter recognition, and insider updates at major milestones. Details coordinated after your contribution.',
     },
