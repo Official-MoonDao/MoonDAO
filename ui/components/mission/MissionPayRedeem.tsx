@@ -4,8 +4,7 @@ import { DEFAULT_CHAIN_V5, JB_NATIVE_TOKEN_ADDRESS } from 'const/config'
 import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
-import React from 'react'
-import { useEffect, useState, useCallback } from 'react'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction, simulateTransaction } from 'thirdweb'
 import { TransactionReceipt } from 'thirdweb/dist/types/transaction/types'
@@ -15,8 +14,13 @@ import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import { useMissionParticipantVolume } from '@/lib/juicebox/useMissionParticipantVolume'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatContributionOutput } from '@/lib/mission'
+import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
+import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import MissionTokenSwapV4 from '@/components/uniswap/MissionTokenSwapV4'
@@ -58,6 +62,9 @@ function MissionPayRedeemContent({
   contributedEthWei,
   isLoadingContributedEth,
   ethUsdPrice,
+  nativeBalance,
+  selectedChain,
+  applyMaxContribution,
 }: any) {
   const isRefundable = Number(stage) === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
@@ -84,43 +91,73 @@ function MissionPayRedeemContent({
       ) : (
         !isRefundable && (
           <div id="mission-pay-container" className="p-5 flex flex-col">
-            {/* You pay */}
+            {/* You contribute */}
             <div className="space-y-2">
               <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
-                You pay
+                You contribute
               </label>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center ring-1 ring-white/10">
-                      <Image
-                        src="/coins/ETH.svg"
-                        alt="ETH"
-                        width={18}
-                        height={18}
-                      />
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 min-w-0">
+                <div className="flex flex-col gap-4 min-w-0">
+                  {/* ETH ↔ USD: side-by-side from md up, stacked on small screens */}
+                  <div className="flex flex-col md:flex-row md:items-center gap-4 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 md:flex-1">
+                      <div className="w-9 h-9 shrink-0 bg-slate-700 rounded-full flex items-center justify-center ring-1 ring-white/10">
+                        <Image
+                          src="/coins/ETH.svg"
+                          alt="ETH"
+                          width={18}
+                          height={18}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-white text-lg leading-tight break-all sm:break-normal">
+                          {calculateEthAmount()}
+                        </p>
+                        <p className="text-gray-500 text-xs">ETH</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-white text-lg leading-tight">
-                        {calculateEthAmount()} ETH
-                      </p>
-                      <p className="text-gray-500 text-xs">Ethereum</p>
-                    </div>
-                  </div>
-                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06] w-full md:w-1/2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-400 font-medium">$</span>
+
+                    <div className="flex min-w-0 w-full md:flex-1 items-center gap-2 rounded-lg px-3 py-2.5 border border-white/[0.06] bg-white/[0.04]">
+                      <span className="text-gray-400 font-medium shrink-0">$</span>
                       <input
                         id="usd-contribution-input"
                         type="text"
-                        className="w-full bg-transparent border-none outline-none text-lg font-bold text-white text-right w-16 placeholder-gray-500 focus:placeholder-gray-400 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="min-w-0 flex-1 bg-transparent border-none outline-none text-lg font-bold text-white text-right placeholder-gray-500 focus:placeholder-gray-400 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-white text-sm font-medium">USD</span>
+                      <span className="text-white text-sm font-medium shrink-0">USD</span>
                     </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/[0.08] min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-gray-400 text-xs sm:text-sm leading-relaxed break-words min-w-0">
+                      <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
+                      <span className="text-white font-medium tabular-nums">
+                        {nativeBalance != null && Number(nativeBalance) >= 0
+                          ? `${formatEthFiveSigFigs(Number(nativeBalance))} ETH`
+                          : '—'}
+                      </span>
+                      <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
+                        on {selectedChain?.name?.replace(' One', '') ?? 'network'}
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyMaxContribution}
+                      disabled={
+                        !address ||
+                        nativeBalance == null ||
+                        Number(nativeBalance) <= 0 ||
+                        !ethUsdPrice ||
+                        isLoadingEthUsdPrice
+                      }
+                      className="shrink-0 self-start sm:self-auto px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide bg-white/10 hover:bg-white/15 border border-white/15 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Max
+                    </button>
                   </div>
                 </div>
               </div>
@@ -151,7 +188,12 @@ function MissionPayRedeemContent({
                     </div>
                     <div>
                       <p className="font-bold text-white text-lg leading-tight">{token?.tokenSymbol || 'Tokens'}</p>
-                      <p className="text-gray-500 text-xs">{token?.tokenName || 'Mission Tokens'}</p>
+                      {(() => {
+                        const sym = (token?.tokenSymbol || '').trim()
+                        const name = (token?.tokenName || '').trim()
+                        if (!name || name.toLowerCase() === sym.toLowerCase()) return null
+                        return <p className="text-gray-500 text-xs">{name}</p>
+                      })()}
                     </div>
                   </div>
                   <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06] w-full md:w-1/2">
@@ -372,8 +414,14 @@ function MissionPayRedeemComponent({
   buttonMode = 'standard',
   buttonClassName = '',
 }: MissionPayRedeemProps) {
+  const { selectedChain } = useContext(ChainContextV5)
+  const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+  const chainSlug = getChainSlug(selectedChain)
+
   const account = useActiveAccount()
   const address = account?.address
+
+  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
 
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
@@ -426,23 +474,20 @@ function MissionPayRedeemComponent({
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
-    if (!usdInput) return '0.0000'
+    if (!usdInput) return '0'
     const numericValue = usdInput.replace(/,/g, '')
 
     if (!usdInput || isNaN(Number(numericValue))) {
-      return '0.0000'
+      return '0'
     }
     if (isLoadingEthUsdPrice) {
       return <LoadingSpinner className="scale-50" />
     }
     if (!ethUsdPrice) {
-      return '0.0000'
+      return '0'
     }
-    const ethAmount = (Number(numericValue) / ethUsdPrice).toFixed(4)
-    return parseFloat(ethAmount).toLocaleString('en-US', {
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 4,
-    })
+    const eth = Number(numericValue) / ethUsdPrice
+    return formatEthFiveSigFigs(eth)
   }, [usdInput, ethUsdPrice, isLoadingEthUsdPrice])
 
   // Format input with commas in real-time
@@ -464,6 +509,29 @@ function MissionPayRedeemComponent({
 
     return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger
   }, [])
+
+  const applyMaxContribution = useCallback(() => {
+    if (!ethUsdPrice || nativeBalance == null || !address) return
+    const balanceEth = Number(nativeBalance)
+    const maxUsd = computeContributionMaxUsd({
+      balanceEth,
+      selectedChainId: selectedChain?.id ?? 0,
+      chainSlug,
+      defaultChainSlug,
+      ethUsdPrice,
+    })
+    if (maxUsd == null || maxUsd <= 0) return
+    setUsdInput(formatInputWithCommas(maxUsd.toFixed(2)))
+  }, [
+    ethUsdPrice,
+    nativeBalance,
+    address,
+    chainSlug,
+    defaultChainSlug,
+    selectedChain?.id,
+    formatInputWithCommas,
+    setUsdInput,
+  ])
 
   // Format token amount with commas
   const formatTokenAmount = useCallback((value: number, decimals: number = 2) => {
@@ -817,6 +885,9 @@ function MissionPayRedeemComponent({
                 contributedEthWei={contributedEthWei}
                 isLoadingContributedEth={isLoadingContributedEth}
                 ethUsdPrice={ethUsdPrice}
+                nativeBalance={nativeBalance}
+                selectedChain={selectedChain}
+                applyMaxContribution={applyMaxContribution}
               />
             </div>
           )}

@@ -32,6 +32,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { useDeadlineTracking } from '@/lib/mission/useDeadlineTracking'
+import { useMissionDefaultFundingChain } from '@/lib/mission/useMissionDefaultFundingChain'
 import { useManagerActions } from '@/lib/mission/useManagerActions'
 import useMissionData from '@/lib/mission/useMissionData'
 import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
@@ -107,6 +108,8 @@ export default function MissionProfile({
   const account = useActiveAccount()
   const router = useRouter()
   const { selectedChain } = useContext(ChainContextV5)
+
+  const walletAddress = account?.address
 
   const payRedeemContainerRef = useRef<HTMLDivElement>(null)
 
@@ -217,6 +220,17 @@ export default function MissionProfile({
     _token,
     _fundingGoal,
     _ruleset,
+  })
+
+  const missionDefaultFundingChainEnabled =
+    !!primaryTerminalAddress &&
+    primaryTerminalAddress !== '0x0000000000000000000000000000000000000000' &&
+    Number(stage) !== 4
+
+  useMissionDefaultFundingChain({
+    enabled: missionDefaultFundingChainEnabled,
+    address: walletAddress,
+    chains,
   })
 
   // Use deadline tracking hook

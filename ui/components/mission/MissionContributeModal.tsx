@@ -40,13 +40,15 @@ import { formatContributionOutput } from '@/lib/mission'
 import {
   fetchNativeBalanceWei,
   pickChainWithMaxNativeBalance,
+  switchPrivyWalletToChainIfNeeded,
 } from '@/lib/mission/contributeModalDefaultChain'
+import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
+import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
@@ -186,6 +188,7 @@ export default function MissionContributeModal({
       return
     }
     if (!address || contributeModalDefaultChainAppliedRef.current) return
+    if (wallets.length === 0) return
 
     const startedChainId = selectedChainIdRef.current
     let cancelled = false
@@ -204,26 +207,10 @@ export default function MissionContributeModal({
       setSelectedChain(best)
       contributeModalDefaultChainAppliedRef.current = true
 
-      const wallet = walletsRef.current[selectedWalletRef.current]
-      if (wallet && typeof wallet.switchChain === 'function') {
-        try {
-          const walletChainId = wallet.chainId ? +wallet.chainId.split(':')[1] : null
-          if (walletChainId !== best.id) {
-            await wallet.switchChain(best.id)
-          }
-        } catch (err: any) {
-          if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
-            const success = await addNetworkToWallet(best)
-            if (success) {
-              try {
-                await wallet.switchChain(best.id)
-              } catch {
-                /* user rejected or switch failed */
-              }
-            }
-          }
-        }
-      }
+      await switchPrivyWalletToChainIfNeeded(
+        walletsRef.current[selectedWalletRef.current],
+        best
+      )
 
       refetchNativeBalance()
     })()
@@ -231,7 +218,7 @@ export default function MissionContributeModal({
     return () => {
       cancelled = true
     }
-  }, [modalEnabled, address, chains, setSelectedChain, refetchNativeBalance])
+  }, [modalEnabled, address, wallets.length, chains, setSelectedChain, refetchNativeBalance])
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -251,16 +238,13 @@ export default function MissionContributeModal({
     const numericValue = usdInput.replace(/,/g, '')
 
     if (!usdInput || isNaN(Number(numericValue))) {
-      return '0.0000'
+      return '0'
     }
     if (!ethUsdPrice) {
-      return '0.0000'
+      return '0'
     }
-    const ethAmount = (Number(numericValue) / ethUsdPrice).toFixed(4)
-    return parseFloat(ethAmount).toLocaleString('en-US', {
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 4,
-    })
+    const eth = Number(numericValue) / ethUsdPrice
+    return formatEthFiveSigFigs(eth)
   }, [usdInput, ethUsdPrice])
 
   // Format input with commas in real-time
@@ -665,33 +649,15 @@ export default function MissionContributeModal({
   const applyMaxContribution = useCallback(() => {
     if (!ethUsdPrice || nativeBalance == null || !address) return
     const balanceEth = Number(nativeBalance)
-    if (!Number.isFinite(balanceEth) || balanceEth <= 0) return
-
-    const isCrossChain = chainSlug !== defaultChainSlug
-
-    let maxContribEth: number
-    if (!isCrossChain) {
-      const chainId = selectedChain?.id
-      let gasReserveEth = 0.001
-      if (chainId === arbitrum.id) gasReserveEth = 0.0001
-      else if (chainId === base.id) gasReserveEth = 0.0001
-      else if (chainId === ethereum.id) gasReserveEth = 0.001
-      maxContribEth = Math.max(0, balanceEth - gasReserveEth)
-    } else {
-      const bufferEth = 0.001
-      maxContribEth = Math.max(0, balanceEth - bufferEth)
-    }
-
-    let maxUsd = maxContribEth * ethUsdPrice
-    if (maxUsd <= 0) return
-
-    if (isCrossChain && (chainSlug === 'ethereum' || chainSlug === 'base')) {
-      maxUsd = Math.min(maxUsd, LAYERZERO_MAX_CONTRIBUTION_ETH * ethUsdPrice)
-    }
-
-    const rounded = Math.floor(maxUsd * 100) / 100
-    if (rounded <= 0) return
-    setUsdInput(formatInputWithCommas(rounded.toFixed(2)))
+    const maxUsd = computeContributionMaxUsd({
+      balanceEth,
+      selectedChainId: selectedChain?.id ?? 0,
+      chainSlug,
+      defaultChainSlug,
+      ethUsdPrice,
+    })
+    if (maxUsd == null || maxUsd <= 0) return
+    setUsdInput(formatInputWithCommas(maxUsd.toFixed(2)))
   }, [
     ethUsdPrice,
     nativeBalance,
@@ -1355,9 +1321,9 @@ export default function MissionContributeModal({
                       </div>
                       <div>
                         <p className="font-semibold text-white text-lg">
-                          {calculateEthAmount()} ETH
+                          {calculateEthAmount()}
                         </p>
-                        <p className="text-gray-400 text-xs">Ethereum</p>
+                        <p className="text-gray-400 text-xs">ETH</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -1379,10 +1345,7 @@ export default function MissionContributeModal({
                       <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
                       <span className="text-white font-medium tabular-nums">
                         {nativeBalance != null && Number(nativeBalance) >= 0
-                          ? `${Number(nativeBalance).toLocaleString('en-US', {
-                              maximumFractionDigits: 6,
-                              minimumFractionDigits: 0,
-                            })} ETH`
+                          ? `${formatEthFiveSigFigs(Number(nativeBalance))} ETH`
                           : '—'}
                       </span>
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
@@ -1426,14 +1389,18 @@ export default function MissionContributeModal({
                       </div>
                       <div>
                         <p className="font-semibold text-white text-lg">{token?.tokenSymbol || 'Tokens'}</p>
-                        <p className="text-gray-400 text-xs">{token?.tokenName || 'Mission Tokens'}</p>
+                        {(() => {
+                          const sym = (token?.tokenSymbol || '').trim()
+                          const name = (token?.tokenName || '').trim()
+                          if (!name || name.toLowerCase() === sym.toLowerCase()) return null
+                          return <p className="text-gray-400 text-xs">{name}</p>
+                        })()}
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-white text-xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                         {formatContributionOutput(output)}
                       </p>
-                      <p className="text-gray-400 text-xs">{token?.tokenSymbol || 'Tokens'}</p>
                     </div>
                   </div>
                 </div>

@@ -20,7 +20,7 @@ export const MISSION_CONTRIBUTOR_TIERS: Partial<Record<number, MissionContributo
     },
     {
       amountUsd: 10_000,
-      title: 'Stratosphere Circle',
+      title: 'Vision Circle',
       description:
         'Private virtual briefing with Frank White and the mission team, public supporter recognition, and insider updates at major milestones. Details coordinated after your contribution.',
     },

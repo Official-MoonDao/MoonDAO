@@ -1,4 +1,35 @@
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import { arbitrum, arbitrumSepolia, type Chain } from '@/lib/rpc/chains'
+
+type PrivyEvmWallet = {
+  chainId?: string
+  switchChain?: (chainId: number) => Promise<unknown>
+}
+
+/** Align connected wallet with the chosen chain (add network if needed). */
+export async function switchPrivyWalletToChainIfNeeded(
+  wallet: PrivyEvmWallet | undefined,
+  bestChain: Chain
+): Promise<void> {
+  if (!wallet || typeof wallet.switchChain !== 'function') return
+  try {
+    const walletChainId = wallet.chainId ? +wallet.chainId.split(':')[1] : null
+    if (walletChainId !== bestChain.id) {
+      await wallet.switchChain(bestChain.id)
+    }
+  } catch (err: any) {
+    if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
+      const success = await addNetworkToWallet(bestChain)
+      if (success) {
+        try {
+          await wallet.switchChain(bestChain.id)
+        } catch {
+          /* user rejected or switch failed */
+        }
+      }
+    }
+  }
+}
 
 /** Read native balance (wei) via JSON-RPC; no wallet chain switch required. */
 export async function fetchNativeBalanceWei(
