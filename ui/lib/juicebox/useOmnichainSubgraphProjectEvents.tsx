@@ -12,7 +12,7 @@ export type EventType =
 
 type ProjectEventFilter = 'all' | EventType | ''
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 20
 
 const useOmnichainSubgraphProjectEvents = ({
   filter,

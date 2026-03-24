@@ -65,6 +65,7 @@ function MissionPayRedeemContent({
   nativeBalance,
   nativeBalanceChain,
   applyMaxContribution,
+  hideRecentContributions = false,
 }: any) {
   const isRefundable = Number(stage) === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
@@ -175,10 +176,10 @@ function MissionPayRedeemContent({
               <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
                 You receive
               </label>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 min-w-0">
+                <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 w-full md:w-auto md:flex-1">
+                    <div className="w-9 h-9 shrink-0 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
                       <Image
                         src="/assets/icon-star.svg"
                         alt="Token"
@@ -186,7 +187,7 @@ function MissionPayRedeemContent({
                         height={16}
                       />
                     </div>
-                    <div>
+                    <div className="min-w-0 text-left">
                       <p className="font-bold text-white text-lg leading-tight">{token?.tokenSymbol || 'Tokens'}</p>
                       {(() => {
                         const sym = (token?.tokenSymbol || '').trim()
@@ -353,20 +354,22 @@ function MissionPayRedeemContent({
         </div>
       )}
 
-      {mission?.projectId != null && mission?.projectId !== '' && (
-        <div className="px-5 pb-5 pt-2 border-t border-white/[0.08] space-y-3">
-          <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">
-            Recent contributions
-          </h3>
-          <div className="max-h-[min(1600px,calc(100dvh-5.5rem))] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
-            <MissionActivityList
-              selectedChain={DEFAULT_CHAIN_V5}
-              tokenSymbol={token?.tokenSymbol}
-              projectId={mission?.projectId}
-            />
+      {!hideRecentContributions &&
+        mission?.projectId != null &&
+        mission?.projectId !== '' && (
+          <div className="px-5 pb-5 pt-2 border-t border-white/[0.08] space-y-3">
+            <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">
+              Recent contributions
+            </h3>
+            <div className="max-h-[calc(100dvh-5rem)] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
+              <MissionActivityList
+                selectedChain={DEFAULT_CHAIN_V5}
+                tokenSymbol={token?.tokenSymbol}
+                projectId={mission?.projectId}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   )
 }
@@ -391,6 +394,8 @@ export type MissionPayRedeemProps = {
   visibleButton?: boolean
   buttonMode?: 'fixed' | 'standard'
   buttonClassName?: string
+  /** Hide “Recent contributions” (e.g. shown under About on mobile instead). */
+  hideRecentContributions?: boolean
 }
 
 function MissionPayRedeemComponent({
@@ -413,6 +418,7 @@ function MissionPayRedeemComponent({
   visibleButton = true,
   buttonMode = 'standard',
   buttonClassName = '',
+  hideRecentContributions = false,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -894,6 +900,7 @@ function MissionPayRedeemComponent({
                 nativeBalance={nativeBalance}
                 nativeBalanceChain={nativeBalanceChain}
                 applyMaxContribution={applyMaxContribution}
+                hideRecentContributions={hideRecentContributions}
               />
             </div>
           )}

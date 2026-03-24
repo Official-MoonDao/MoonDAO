@@ -452,6 +452,7 @@ export default function MissionProfile({
                     }}
                     usdInput={usdInput || ''}
                     setUsdInput={setUsdInput}
+                    hideRecentContributions
                   />
                 </div>
               ) : (

@@ -2,7 +2,7 @@ import { ArrowDownIcon } from '@heroicons/react/24/outline'
 import { CITIZEN_TABLE_NAMES } from 'const/config'
 import { BLOCKED_CITIZENS } from 'const/whitelist'
 import { NativeTokenValue, useSuckers } from 'juice-sdk-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { transformEventData } from '@/lib/juicebox/transformEventData'
 import useOmnichainSubgraphProjectEvents from '@/lib/juicebox/useOmnichainSubgraphProjectEvents'
@@ -141,6 +141,21 @@ export default function MissionActivityList({
     [projectEventsQueryResult?.pages, tokenSymbol, citizens, ethPrice]
   )
 
+  const [isLoadingAll, setIsLoadingAll] = useState(false)
+
+  const handleLoadAll = useCallback(async () => {
+    if (!hasNextPage || isFetchingNextPage || isLoadingAll) return
+    setIsLoadingAll(true)
+    try {
+      let res = await fetchNextPage()
+      while (res.hasNextPage) {
+        res = await fetchNextPage()
+      }
+    } finally {
+      setIsLoadingAll(false)
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isLoadingAll])
+
   return (
     <div>
       <div className="flex flex-col gap-4 py-2">
@@ -156,42 +171,79 @@ export default function MissionActivityList({
           />
         ))}
         {hasNextPage && (
-          <button
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            className="w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 hover:from-slate-600/30 hover:to-slate-700/40 hover:border-white/20 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center justify-center gap-2 text-white/90 hover:text-white font-medium"
-          >
-            {isFetchingNextPage ? (
-              <>
-                <svg
-                  className="animate-spin h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                <span>Loading...</span>
-              </>
-            ) : (
-              <>
-                <ArrowDownIcon className="w-5 h-5" />
-                <span>Load more</span>
-              </>
-            )}
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage || isLoadingAll}
+              className="w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 hover:from-slate-600/30 hover:to-slate-700/40 hover:border-white/20 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center justify-center gap-2 text-white/90 hover:text-white font-medium"
+            >
+              {isFetchingNextPage && !isLoadingAll ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <>
+                  <ArrowDownIcon className="w-5 h-5" />
+                  <span>Load more</span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleLoadAll()}
+              disabled={isFetchingNextPage || isLoadingAll}
+              className="w-full py-2.5 text-sm text-indigo-300/90 hover:text-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoadingAll ? (
+                <span className="inline-flex items-center gap-2 justify-center">
+                  <svg
+                    className="animate-spin h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Loading all…
+                </span>
+              ) : (
+                'Load all contributions'
+              )}
+            </button>
+          </div>
         )}
       </div>
     </div>
