@@ -166,15 +166,13 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
               {/* Pagination */}
               {filteredListings && filteredListings.length > ITEMS_PER_PAGE && (
-                <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 p-6 mt-8">
-                  <div className="w-full flex justify-center">
-                    <PaginationButtons
-                      handlePageChange={handlePageChange}
-                      maxPage={Math.ceil(filteredListings.length / ITEMS_PER_PAGE)}
-                      pageIdx={pageIdx}
-                      label="Page"
-                    />
-                  </div>
+                <div className="mt-8">
+                  <PaginationButtons
+                    handlePageChange={handlePageChange}
+                    maxPage={Math.ceil(filteredListings.length / ITEMS_PER_PAGE)}
+                    pageIdx={pageIdx}
+                    label="Page"
+                  />
                 </div>
               )}
             </div>

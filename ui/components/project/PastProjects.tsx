@@ -1,7 +1,6 @@
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import { HATS_ADDRESS, PROJECT_ADDRESSES } from 'const/config'
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useCallback, useContext, useMemo } from 'react'
 import { Project } from '@/lib/project/useProjectData'
@@ -13,6 +12,7 @@ import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import Frame from '@/components/layout/Frame'
+import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
 import ProjectCard from '@/components/project/ProjectCard'
 
@@ -158,55 +158,13 @@ export default function PastProjects({ projects }: PastProjectProps) {
           </>
         )}
       </div>
-      <div className="mt-6 bg-black/20 rounded-xl p-4 border border-white/10">
-        <div
-          id="pagination-container"
-          className="w-full flex font-GoodTimes text-lg flex-row justify-center items-center gap-2 sm:gap-8"
-        >
-          <button
-            onClick={() => {
-              if (pageIdx > 1) {
-                handlePageChange(pageIdx - 1)
-              }
-            }}
-            className={`pagination-button p-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
-              pageIdx === 1
-                ? 'opacity-30 cursor-not-allowed'
-                : 'cursor-pointer opacity-100 hover:bg-white/10 hover:scale-110'
-            }`}
-            disabled={pageIdx === 1}
-          >
-            <Image
-              src="/../.././assets/icon-left.svg"
-              alt="Left Arrow"
-              width={35}
-              height={35}
-            />
-          </button>
-          <p id="page-number" className="px-2 sm:px-5 font-bold text-white/80 whitespace-nowrap text-sm sm:text-lg">
-            Page {pageIdx} of {maxPage}
-          </p>
-          <button
-            onClick={() => {
-              if (pageIdx < maxPage) {
-                handlePageChange(pageIdx + 1)
-              }
-            }}
-            className={`pagination-button p-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
-              pageIdx === maxPage
-                ? 'opacity-30 cursor-not-allowed'
-                : 'cursor-pointer opacity-100 hover:bg-white/10 hover:scale-110'
-            }`}
-            disabled={pageIdx === maxPage}
-          >
-            <Image
-              src="/../.././assets/icon-right.svg"
-              alt="Right Arrow"
-              width={35}
-              height={35}
-            />
-          </button>
-        </div>
+      <div className="mt-6">
+        <PaginationButtons
+          handlePageChange={handlePageChange}
+          maxPage={maxPage}
+          pageIdx={pageIdx}
+          label="Page"
+        />
       </div>
     </div>
   )
