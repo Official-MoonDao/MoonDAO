@@ -69,7 +69,7 @@ export function pickChainWithMaxNativeBalance(
   tieBreakOrder: Chain[]
 ): Chain {
   if (entries.length === 0) {
-    throw new Error('pickChainWithMaxNativeBalance: empty entries')
+    return tieBreakOrder[0] ?? arbitrum
   }
   const maxWei = entries.reduce((m, e) => (e.wei > m ? e.wei : m), BigInt(0))
   const top = entries.filter((e) => e.wei === maxWei)

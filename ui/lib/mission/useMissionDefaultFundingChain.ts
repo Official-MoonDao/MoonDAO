@@ -47,6 +47,8 @@ export function useMissionDefaultFundingChain({
       return
     }
 
+    if (chains.length === 0) return
+
     if (wallets.length === 0) return
 
     if (appliedForAddressRef.current === address) return
