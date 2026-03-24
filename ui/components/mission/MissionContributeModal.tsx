@@ -1,6 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { getAccessToken } from '@privy-io/react-auth'
+import { getAccessToken, useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
@@ -37,17 +37,21 @@ import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import { formatContributionOutput } from '@/lib/mission'
+import {
+  fetchNativeBalanceWei,
+  pickChainWithMaxNativeBalance,
+} from '@/lib/mission/contributeModalDefaultChain'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import Modal from '@/components/layout/Modal'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
-import { CopyIcon } from '../assets'
 import { CBOnramp } from '../coinbase/CBOnramp'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -102,6 +106,15 @@ export default function MissionContributeModal({
   // In test mode (Cypress), use mock address from window if available
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
+
+  const { wallets } = useWallets()
+  const selectedChainIdRef = useRef(selectedChain.id)
+  selectedChainIdRef.current = selectedChain.id
+  const walletsRef = useRef(wallets)
+  walletsRef.current = wallets
+  const selectedWalletRef = useRef(selectedWallet)
+  selectedWalletRef.current = selectedWallet
+  const contributeModalDefaultChainAppliedRef = useRef(false)
 
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
@@ -166,6 +179,59 @@ export default function MissionContributeModal({
 
   const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
   const { effectiveGasPrice } = useGasPrice(selectedChain)
+
+  useEffect(() => {
+    if (!modalEnabled) {
+      contributeModalDefaultChainAppliedRef.current = false
+      return
+    }
+    if (!address || contributeModalDefaultChainAppliedRef.current) return
+
+    const startedChainId = selectedChainIdRef.current
+    let cancelled = false
+
+    ;(async () => {
+      const entries = await Promise.all(
+        chains.map(async (chain) => {
+          const wei = await fetchNativeBalanceWei(chain, address)
+          return { chain, wei }
+        })
+      )
+      if (cancelled) return
+      if (selectedChainIdRef.current !== startedChainId) return
+
+      const best = pickChainWithMaxNativeBalance(entries, chains)
+      setSelectedChain(best)
+      contributeModalDefaultChainAppliedRef.current = true
+
+      const wallet = walletsRef.current[selectedWalletRef.current]
+      if (wallet && typeof wallet.switchChain === 'function') {
+        try {
+          const walletChainId = wallet.chainId ? +wallet.chainId.split(':')[1] : null
+          if (walletChainId !== best.id) {
+            await wallet.switchChain(best.id)
+          }
+        } catch (err: any) {
+          if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
+            const success = await addNetworkToWallet(best)
+            if (success) {
+              try {
+                await wallet.switchChain(best.id)
+              } catch {
+                /* user rejected or switch failed */
+              }
+            }
+          }
+        }
+      }
+
+      refetchNativeBalance()
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [modalEnabled, address, chains, setSelectedChain, refetchNativeBalance])
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -595,6 +661,47 @@ export default function MissionContributeModal({
     const hasEnough = nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
     return hasEnough
   }, [nativeBalance, requiredEth])
+
+  const applyMaxContribution = useCallback(() => {
+    if (!ethUsdPrice || nativeBalance == null || !address) return
+    const balanceEth = Number(nativeBalance)
+    if (!Number.isFinite(balanceEth) || balanceEth <= 0) return
+
+    const isCrossChain = chainSlug !== defaultChainSlug
+
+    let maxContribEth: number
+    if (!isCrossChain) {
+      const chainId = selectedChain?.id
+      let gasReserveEth = 0.001
+      if (chainId === arbitrum.id) gasReserveEth = 0.0001
+      else if (chainId === base.id) gasReserveEth = 0.0001
+      else if (chainId === ethereum.id) gasReserveEth = 0.001
+      maxContribEth = Math.max(0, balanceEth - gasReserveEth)
+    } else {
+      const bufferEth = 0.001
+      maxContribEth = Math.max(0, balanceEth - bufferEth)
+    }
+
+    let maxUsd = maxContribEth * ethUsdPrice
+    if (maxUsd <= 0) return
+
+    if (isCrossChain && (chainSlug === 'ethereum' || chainSlug === 'base')) {
+      maxUsd = Math.min(maxUsd, LAYERZERO_MAX_CONTRIBUTION_ETH * ethUsdPrice)
+    }
+
+    const rounded = Math.floor(maxUsd * 100) / 100
+    if (rounded <= 0) return
+    setUsdInput(formatInputWithCommas(rounded.toFixed(2)))
+  }, [
+    ethUsdPrice,
+    nativeBalance,
+    address,
+    chainSlug,
+    defaultChainSlug,
+    selectedChain?.id,
+    formatInputWithCommas,
+    setUsdInput,
+  ])
 
   // Calculate LayerZero cross-chain fee
   const layerZeroFeeDisplay = useMemo(() => {
@@ -1222,6 +1329,13 @@ export default function MissionContributeModal({
                 ethDeficit={ethDeficit}
               />
 
+              <div className="space-y-3">
+                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                  Network
+                </label>
+                <NetworkSelector chains={chains} align="left" />
+              </div>
+
               {/* Total Amount Section */}
               <div className="space-y-3">
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
@@ -1260,6 +1374,36 @@ export default function MissionContributeModal({
                       <span className="text-gray-400 font-medium">USD</span>
                     </div>
                   </div>
+                  <div className="mt-3 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <p className="text-gray-400 text-xs sm:text-sm">
+                      <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
+                      <span className="text-white font-medium tabular-nums">
+                        {nativeBalance != null && Number(nativeBalance) >= 0
+                          ? `${Number(nativeBalance).toLocaleString('en-US', {
+                              maximumFractionDigits: 6,
+                              minimumFractionDigits: 0,
+                            })} ETH`
+                          : '—'}
+                      </span>
+                      <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
+                        on {selectedChain?.name?.replace(' One', '') ?? 'network'}
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyMaxContribution}
+                      disabled={
+                        !address ||
+                        nativeBalance == null ||
+                        Number(nativeBalance) <= 0 ||
+                        !ethUsdPrice ||
+                        isLoadingEthUsdPrice
+                      }
+                      className="self-start sm:self-auto px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide bg-white/10 hover:bg-white/15 border border-white/15 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Max
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1291,44 +1435,6 @@ export default function MissionContributeModal({
                       </p>
                       <p className="text-gray-400 text-xs">{token?.tokenSymbol || 'Tokens'}</p>
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recipient Address */}
-              <div className="space-y-3">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                  Recipient Address
-                </label>
-                <div className="flex items-center justify-between w-full gap-3">
-                  <div className="bg-gradient-to-r from-slate-800/40 to-slate-700/30 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex-1 hover:border-white/20 transition-all duration-300">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-500/30"></div>
-                        <p className="text-white font-mono text-sm tracking-wide">
-                          {address?.slice(0, 6)}...{address?.slice(-4)}
-                        </p>
-                      </div>
-                      <button
-                        className="p-2 hover:bg-white/10 rounded-lg transition-all duration-200 group"
-                        onClick={() => {
-                          navigator.clipboard.writeText(address || '')
-                          toast.success('Address copied to clipboard.', {
-                            style: toastStyle,
-                          })
-                        }}
-                      >
-                        <CopyIcon />
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <NetworkSelector
-                      chains={chains}
-                      compact={true}
-                      align="right"
-                      iconsOnly={true}
-                    />
                   </div>
                 </div>
               </div>
