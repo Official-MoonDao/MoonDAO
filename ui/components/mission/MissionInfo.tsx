@@ -136,9 +136,12 @@ export default function MissionInfo({
         </div>
       </div>
 
-      {/* Content Area */}
-      <div id="mission-info-content" className="w-full flex items-start gap-8 relative">
-        <div className="flex-1 min-w-0 pr-2">
+      {/* Content Area — lg+ matches MissionProfileHeader: 2 equal cols, gap-8 lg:gap-10 */}
+      <div
+        id="mission-info-content"
+        className="w-full relative flex flex-col gap-8 lg:gap-10 lg:grid lg:grid-cols-2 lg:items-start"
+      >
+        <div className="min-w-0 pr-2 lg:pr-0">
           {tab === 'about' && (
             <div className="w-full mb-8">
               <MissionInfoHeader
@@ -166,7 +169,7 @@ export default function MissionInfo({
                 }}
               />
               {mission?.projectId != null && mission?.projectId !== '' && (
-                <div className="xl:hidden mt-10 pt-8 border-t border-white/[0.08] space-y-3">
+                <div className="lg:hidden mt-10 pt-8 border-t border-white/[0.08] space-y-3">
                   <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">
                     Recent contributions
                   </h3>
@@ -216,26 +219,24 @@ export default function MissionInfo({
             </div>
           )}
         </div>
-        <div className="hidden xl:block min-w-[350px] lg:w-[400px] pt-[47px] self-start">
-          <div className="pl-8 border-l border-white/[0.06]">
-            <MissionPayRedeem
-              ruleset={ruleset}
-              stage={stage}
-              mission={mission}
-              teamNFT={teamNFT}
-              token={token}
-              deadline={deadline}
-              primaryTerminalAddress={primaryTerminalAddress}
-              jbTokensContract={jbTokensContract}
-              jbControllerContract={jbControllerContract}
-              refreshTotalFunding={refreshTotalFunding}
-              onOpenModal={() => {
-                setContributeModalEnabled(true)
-              }}
-              usdInput={usdInput || ''}
-              setUsdInput={setUsdInput}
-            />
-          </div>
+        <div className="hidden lg:block min-w-0 w-full pt-[47px] self-start">
+          <MissionPayRedeem
+            ruleset={ruleset}
+            stage={stage}
+            mission={mission}
+            teamNFT={teamNFT}
+            token={token}
+            deadline={deadline}
+            primaryTerminalAddress={primaryTerminalAddress}
+            jbTokensContract={jbTokensContract}
+            jbControllerContract={jbControllerContract}
+            refreshTotalFunding={refreshTotalFunding}
+            onOpenModal={() => {
+              setContributeModalEnabled(true)
+            }}
+            usdInput={usdInput || ''}
+            setUsdInput={setUsdInput}
+          />
         </div>
       </div>
     </div>

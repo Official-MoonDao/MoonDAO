@@ -428,13 +428,13 @@ export default function MissionProfile({
             {/* Mobile Pay/Redeem Panel */}
             <div
               ref={payRedeemContainerRef}
-              className="flex z-20 xl:hidden w-full px-5 md:px-8 lg:px-12"
+              className="flex z-20 lg:hidden w-full justify-center px-5 md:px-8 lg:px-12"
             >
               {primaryTerminalAddress &&
               primaryTerminalAddress !== '0x0000000000000000000000000000000000000000' ? (
                 <div
                   id="mission-pay-redeem-container"
-                  className="w-full max-w-2xl mx-auto mt-6 md:mt-4 rounded-2xl"
+                  className="w-full max-w-[1200px] mt-6 md:mt-4 rounded-2xl"
                 >
                   <MissionPayRedeem
                     mission={mission}
