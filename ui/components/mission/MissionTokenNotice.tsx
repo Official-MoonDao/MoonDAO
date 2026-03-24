@@ -7,22 +7,44 @@ export default function MissionTokenNotice() {
   return (
     <div className="bg-black/20 border border-white/10 rounded-lg overflow-hidden">
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
         className="relative p-4 cursor-pointer hover:bg-black/30 transition-all duration-200"
         onClick={() => setExpanded(!expanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setExpanded(!expanded)
+          }
+        }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-            <p className="text-white font-medium">
-              {expanded
-                ? 'Important Notice'
-                : 'Please read this notice before continuing'}
-            </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse shrink-0 mt-2" />
+            <div className="min-w-0">
+              {expanded ? (
+                <p className="text-white font-medium">Important notice</p>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-400 leading-relaxed">
+                    <span className="text-white font-medium">Important note: </span>
+                    mission funds sit with the team&apos;s multisig—not MoonDAO—Launchpad
+                    tokens aren&apos;t investments and carry real regulatory and market
+                    risk.
+                  </p>
+                  <p className="text-xs text-indigo-400 mt-2.5 font-medium">
+                    Tap or click to expand the full notice
+                  </p>
+                </>
+              )}
+            </div>
           </div>
           <ChevronDownIcon
-            className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+            className={`w-5 h-5 text-gray-400 shrink-0 mt-1 transition-transform duration-200 ${
               expanded ? 'rotate-180' : ''
             }`}
+            aria-hidden
           />
         </div>
       </div>

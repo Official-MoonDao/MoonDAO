@@ -135,6 +135,15 @@ export default function MissionContributeModal({
     [isOverviewMission]
   )
 
+  const newsletterOptInCheckboxLabel = useMemo(
+    () => (
+      <span className="text-sm text-gray-300 leading-relaxed">
+        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
+      </span>
+    ),
+    []
+  )
+
   const account = useActiveAccount()
   // In test mode (Cypress), use mock address from window if available
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
@@ -1486,8 +1495,9 @@ export default function MissionContributeModal({
                       Email (optional)
                     </label>
                     <p className="text-gray-400 text-xs leading-relaxed -mt-1">
-                      We&apos;ll send a short thank-you note. Subscribe below if you want MoonDAO
-                      updates.
+                      We will use this email to send you relevant updates about the mission and
+                      contact you for any reward tiers you are eligible for. Thank you for
+                      contributing!
                     </p>
                     <input
                       id="contribution-contributor-email-direct"
@@ -1502,18 +1512,13 @@ export default function MissionContributeModal({
                         if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
                       }}
                     />
-                    <label className="flex gap-3 items-start cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        disabled={!contributorEmail.trim()}
-                        checked={newsletterOptIn}
-                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-white/30 bg-black/40 text-blue-500 focus:ring-blue-500/40 disabled:opacity-40 disabled:cursor-not-allowed"
-                      />
-                      <span className="text-sm text-gray-300 leading-relaxed group-disabled:opacity-50">
-                        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
-                      </span>
-                    </label>
+                    <ConditionCheckbox
+                      id="contribution-newsletter-opt-in-direct"
+                      label={newsletterOptInCheckboxLabel}
+                      agreedToCondition={newsletterOptIn}
+                      setAgreedToCondition={setNewsletterOptIn}
+                      disabled={!contributorEmail.trim()}
+                    />
                   </div>
                   {/* Payment Breakdown */}
                   {ethUsdPrice && usdInput && (
@@ -1649,8 +1654,9 @@ export default function MissionContributeModal({
                       Email (optional)
                     </label>
                     <p className="text-gray-400 text-xs leading-relaxed -mt-1">
-                      We&apos;ll send a short thank-you note. Subscribe below if you want MoonDAO
-                      updates.
+                      We will use this email to send you relevant updates about the mission and
+                      contact you for any reward tiers you are eligible for. Thank you for
+                      contributing!
                     </p>
                     <input
                       id="contribution-contributor-email-onramp"
@@ -1665,18 +1671,13 @@ export default function MissionContributeModal({
                         if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
                       }}
                     />
-                    <label className="flex gap-3 items-start cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        disabled={!contributorEmail.trim()}
-                        checked={newsletterOptIn}
-                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-white/30 bg-black/40 text-blue-500 focus:ring-blue-500/40 disabled:opacity-40 disabled:cursor-not-allowed"
-                      />
-                      <span className="text-sm text-gray-300 leading-relaxed">
-                        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
-                      </span>
-                    </label>
+                    <ConditionCheckbox
+                      id="contribution-newsletter-opt-in-onramp"
+                      label={newsletterOptInCheckboxLabel}
+                      agreedToCondition={newsletterOptIn}
+                      setAgreedToCondition={setNewsletterOptIn}
+                      disabled={!contributorEmail.trim()}
+                    />
                   </div>
 
                   {/* Show balance breakdown if user has some ETH */}
