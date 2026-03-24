@@ -36,10 +36,16 @@ const TextSkeleton = ({
 function jbSubgraphVolumeToBigIntWei(volume: unknown): bigint {
   if (volume == null || volume === '') return BigInt(0)
   try {
-    const s =
-      typeof volume === 'bigint'
-        ? volume.toString()
-        : String(volume).trim().split(/[.eE]/)[0]
+    if (typeof volume === 'bigint') {
+      return volume
+    }
+    if (typeof volume === 'number') {
+      if (!Number.isFinite(volume)) return BigInt(0)
+      const truncated = Math.trunc(volume)
+      if (!Number.isSafeInteger(truncated) || truncated < 0) return BigInt(0)
+      return BigInt(truncated)
+    }
+    const s = String(volume).trim()
     if (!/^\d+$/.test(s)) return BigInt(0)
     return BigInt(s)
   } catch {
