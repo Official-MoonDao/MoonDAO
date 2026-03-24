@@ -336,6 +336,7 @@ export default function MissionProfile({
         sendPayouts={sendPayouts}
         deployLiquidityPool={deployLiquidityPool}
         totalFunding={totalFunding}
+        subgraphVolume={subgraphData?.volume}
         isLoadingTotalFunding={isLoadingTotalFunding}
         setMissionMetadataModalEnabled={setMissionMetadataModalEnabled}
         setDeployTokenModalEnabled={setDeployTokenModalEnabled}

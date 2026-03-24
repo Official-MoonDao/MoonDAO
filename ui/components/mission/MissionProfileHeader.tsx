@@ -2,9 +2,11 @@ import { PencilIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import {
   getMissionMinimumUsdGoal,
+  getMissionOffChainCommittedUsd,
   MISSION_FUNDING_MILESTONES_USD,
   MISSION_MINIMUM_GOAL_TOOLTIP,
 } from 'const/missionMilestones'
+import { formatUnits } from 'ethers/lib/utils'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
@@ -29,6 +31,26 @@ const TextSkeleton = ({
   width: string
   height?: string
 }) => <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
+
+/** Juicebox subgraph `volume` is string | number; cumulative pay-in wei. */
+function jbSubgraphVolumeToBigIntWei(volume: unknown): bigint {
+  if (volume == null || volume === '') return BigInt(0)
+  try {
+    const s =
+      typeof volume === 'bigint'
+        ? volume.toString()
+        : String(volume).trim().split(/[.eE]/)[0]
+    if (!/^\d+$/.test(s)) return BigInt(0)
+    return BigInt(s)
+  } catch {
+    return BigInt(0)
+  }
+}
+
+function weiBigintToEthNumber(wei: bigint): number {
+  if (wei === BigInt(0)) return 0
+  return parseFloat(formatUnits(wei.toString(), 18))
+}
 
 function exactClosingTooltipText(deadline: number | undefined): string {
   if (deadline == null || deadline === 0) {
@@ -68,6 +90,8 @@ interface MissionProfileHeaderProps {
   sendPayouts: () => void
   deployLiquidityPool: () => void
   totalFunding: bigint
+  /** Subgraph cumulative native volume (wei); terminal balance alone can read 0 after payouts. */
+  subgraphVolume?: unknown
   isLoadingTotalFunding: boolean
   setMissionMetadataModalEnabled?: (enabled: boolean) => void
   setDeployTokenModalEnabled?: (enabled: boolean) => void
@@ -95,6 +119,7 @@ const MissionProfileHeader = React.memo(
     sendPayouts,
     deployLiquidityPool,
     totalFunding,
+    subgraphVolume,
     isLoadingTotalFunding,
     setMissionMetadataModalEnabled,
     setDeployTokenModalEnabled,
@@ -104,12 +129,17 @@ const MissionProfileHeader = React.memo(
     const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
     const minUsdGoal = getMissionMinimumUsdGoal(mission?.id)
+    const offChainCommittedUsd = getMissionOffChainCommittedUsd(mission?.id)
+    const terminalWei = totalFunding ?? BigInt(0)
+    const subgraphWei = jbSubgraphVolumeToBigIntWei(subgraphVolume)
+    const onChainRaisedWei = terminalWei >= subgraphWei ? terminalWei : subgraphWei
+    const onChainEthRaised = weiBigintToEthNumber(onChainRaisedWei)
 
     const milestoneBar = useMemo(() => {
       const steps =
         mission?.id != null ? MISSION_FUNDING_MILESTONES_USD[mission.id] : undefined
       if (!steps?.length || !ethPrice || ethPrice <= 0 || isLoadingTotalFunding) return null
-      const raisedUsd = (Number(totalFunding || 0) / 1e18) * ethPrice
+      const raisedUsd = onChainEthRaised * ethPrice + offChainCommittedUsd
       const seg = milestoneSegmentProgress(raisedUsd, steps)
       const caption = seg.allMilestonesComplete
         ? 'All milestones below are unlocked. Funding continues toward the full campaign goal.'
@@ -117,7 +147,13 @@ const MissionProfileHeader = React.memo(
             Math.max(0, seg.segmentEndUsd - raisedUsd)
           )} to go`
       return { seg, raisedUsd, steps, caption }
-    }, [mission?.id, ethPrice, isLoadingTotalFunding, totalFunding])
+    }, [
+      mission?.id,
+      ethPrice,
+      isLoadingTotalFunding,
+      onChainEthRaised,
+      offChainCommittedUsd,
+    ])
 
     return (
       <div className="w-full bg-[#090d21] relative overflow-hidden">
@@ -224,7 +260,7 @@ const MissionProfileHeader = React.memo(
                         <TextSkeleton width="w-24" height="h-8" />
                       ) : (
                         <span className="text-3xl font-GoodTimes text-white">
-                          {`$${Math.round((Number(totalFunding || 0) / 1e18 || 0) * ethPrice).toLocaleString()}`}
+                          {`$${Math.round(onChainEthRaised * ethPrice + offChainCommittedUsd).toLocaleString()}`}
                         </span>
                       )}
                       <div className="flex items-center gap-1">
@@ -236,7 +272,9 @@ const MissionProfileHeader = React.memo(
                           text={
                             isLoadingTotalFunding
                               ? 'Loading...'
-                              : `${truncateTokenValue(Number(totalFunding || 0) / 1e18 || 0, 'ETH').toLocaleString()} ETH has been raised. The USD equivalent fluctuates based on the current price of Ethereum.`
+                              : offChainCommittedUsd > 0
+                              ? `The total includes both on-chain and off-chain committed funds. On-chain: ${truncateTokenValue(onChainEthRaised, 'ETH')} ETH (about $${Math.round(onChainEthRaised * ethPrice).toLocaleString()} at the current ETH price). Off-chain committed: $${offChainCommittedUsd.toLocaleString()}.`
+                              : `${truncateTokenValue(onChainEthRaised, 'ETH').toLocaleString()} ETH has been raised. The USD equivalent fluctuates based on the current price of Ethereum.`
                           }
                           buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
                         >
@@ -311,7 +349,7 @@ const MissionProfileHeader = React.memo(
                 <div className="mb-4">
                   <MissionFundingProgressBar
                     fundingGoal={fundingGoal}
-                    volume={Number(totalFunding || 0) / 1e18}
+                    volume={onChainEthRaised}
                     compact={true}
                     progressOverride={
                       milestoneBar ? milestoneBar.seg.progressPercent : undefined

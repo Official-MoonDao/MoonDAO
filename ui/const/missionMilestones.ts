@@ -12,6 +12,19 @@ export const MISSION_FUNDING_MILESTONES_USD: Record<number, MissionFundingMilest
   ],
 }
 
+/** USD pledged off-chain but counted toward campaign “raised” in the UI (mission id → USD). */
+export const MISSION_OFF_CHAIN_COMMITTED_USD: Partial<Record<number, number>> = {
+  4: 100_000,
+}
+
+export function getMissionOffChainCommittedUsd(missionId: unknown): number {
+  if (missionId === undefined || missionId === null) return 0
+  const id = Number(missionId)
+  if (!Number.isFinite(id)) return 0
+  const v = MISSION_OFF_CHAIN_COMMITTED_USD[id]
+  return typeof v === 'number' && Number.isFinite(v) ? v : 0
+}
+
 /** First USD milestone = minimum goal shown in UI for that mission (e.g. mission 4 milestone 1). */
 export function getMissionMinimumUsdGoal(missionId: unknown): number | undefined {
   if (missionId === undefined || missionId === null) return undefined
