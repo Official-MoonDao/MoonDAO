@@ -121,17 +121,6 @@ const MissionProfileHeader = React.memo(
 
     return (
       <div className="w-full bg-[#090d21] relative overflow-hidden">
-        {/* Edit Button for Managers */}
-        {isManager && setMissionMetadataModalEnabled && (
-          <button
-            className="absolute top-5 right-6 z-20 p-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-xl transition-all duration-200 border border-white/10 hover:border-white/20"
-            onClick={() => setMissionMetadataModalEnabled(true)}
-            title="Edit Mission"
-          >
-            <PencilIcon width={18} height={18} className="text-white/70 hover:text-white" />
-          </button>
-        )}
-
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent pointer-events-none" />
 
@@ -178,14 +167,25 @@ const MissionProfileHeader = React.memo(
             <div className="flex flex-col justify-center min-w-0 mt-1 lg:mt-0 space-y-4">
               {/* Title & Tagline */}
               <div className="space-y-2">
-                {mission?.metadata?.name && (
-                  <MissionSingleLineTitle
-                    text={mission.metadata.name}
-                    minPx={22}
-                    maxPx={42}
-                    data-testid="mission-profile-title"
-                  />
-                )}
+                <div className="flex items-start gap-2">
+                  {mission?.metadata?.name && (
+                    <MissionSingleLineTitle
+                      text={mission.metadata.name}
+                      minPx={22}
+                      maxPx={42}
+                      data-testid="mission-profile-title"
+                    />
+                  )}
+                  {isManager && setMissionMetadataModalEnabled && (
+                    <button
+                      className="shrink-0 mt-1 p-2 bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-xl transition-all duration-200 border border-white/10 hover:border-white/20"
+                      onClick={() => setMissionMetadataModalEnabled(true)}
+                      title="Edit Mission"
+                    >
+                      <PencilIcon width={16} height={16} className="text-white/70 hover:text-white" />
+                    </button>
+                  )}
+                </div>
                 {mission?.metadata?.tagline && (
                   <p className="text-base sm:text-lg text-gray-400 leading-relaxed max-w-2xl">
                     {mission.metadata.tagline}
