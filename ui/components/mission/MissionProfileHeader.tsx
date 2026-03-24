@@ -172,18 +172,20 @@ const MissionProfileHeader = React.memo(
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent pointer-events-none" />
 
         <div className="relative z-10 w-full px-5 md:px-8 lg:px-12 pt-6 pb-4 lg:pt-8 lg:pb-6">
-          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start lg:items-center max-w-[1200px] mx-auto">
-            {/* Mission image — full grid cell width at every breakpoint (no mobile max-w shrink) */}
-            <div className="w-full min-w-0">
-              <div className="relative group w-full">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start lg:items-stretch max-w-[1200px] mx-auto">
+            {/* Mission image — square on mobile; on lg stretches to match copy column height (object-cover) */}
+            <div className="w-full min-w-0 lg:h-full lg:min-h-0 flex flex-col">
+              <div className="relative group w-full flex-1 min-h-0">
                 {mission?.metadata?.logoUri ? (
-                  <div className="relative aspect-square w-full rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+                  <div className="relative aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
                     <IPFSRenderer
                       src={mission?.metadata?.logoUri}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                      fillContainer
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                       height={640}
                       width={640}
                       alt="Mission Image"
+                      sizes="(max-width: 1024px) 100vw, 560px"
                     />
                     {teamNFT?.metadata?.image && (
                       <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
@@ -198,7 +200,7 @@ const MissionProfileHeader = React.memo(
                     )}
                   </div>
                 ) : (
-                  <div className="aspect-square w-full rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl">
+                  <div className="aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl">
                     <div className="text-center px-4">
                       <div className="w-12 h-12 mx-auto mb-3 bg-indigo-500/20 rounded-xl flex items-center justify-center">
                         <Image src="/assets/icon-star-blue.svg" alt="Mission" width={24} height={24} />
@@ -211,7 +213,7 @@ const MissionProfileHeader = React.memo(
             </div>
 
             {/* Mission copy + funding (same column width as image on lg) */}
-            <div className="flex flex-col justify-center min-w-0 mt-1 lg:mt-0 space-y-4">
+            <div className="flex flex-col justify-center lg:justify-start min-w-0 mt-1 lg:mt-0 lg:h-full lg:min-h-0 space-y-4">
               {/* Title & Tagline */}
               <div className="space-y-2">
                 {mission?.metadata?.name && (
