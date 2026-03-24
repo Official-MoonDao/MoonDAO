@@ -1,6 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { getAccessToken, useWallets } from '@privy-io/react-auth'
+import { getAccessToken } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
@@ -37,11 +37,7 @@ import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import { formatContributionOutput } from '@/lib/mission'
-import {
-  fetchNativeBalanceWei,
-  pickChainWithMaxNativeBalance,
-  switchPrivyWalletToChainIfNeeded,
-} from '@/lib/mission/contributeModalDefaultChain'
+import { fetchNativeBalanceWei, pickChainWithMaxNativeBalance } from '@/lib/mission/contributeModalDefaultChain'
 import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
 import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -109,13 +105,8 @@ export default function MissionContributeModal({
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
 
-  const { wallets } = useWallets()
   const selectedChainIdRef = useRef(selectedChain.id)
   selectedChainIdRef.current = selectedChain.id
-  const walletsRef = useRef(wallets)
-  walletsRef.current = wallets
-  const selectedWalletRef = useRef(selectedWallet)
-  selectedWalletRef.current = selectedWallet
   const contributeModalDefaultChainAppliedRef = useRef(false)
 
   const [input, setInput] = useState('')
@@ -179,7 +170,11 @@ export default function MissionContributeModal({
     forwardClient,
   })
 
-  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
+  const { nativeBalance, walletChain: nativeBalanceChain, refetch: refetchNativeBalance } =
+    useNativeBalance()
+  const walletConnectedChainSlug = nativeBalanceChain
+    ? getChainSlug(nativeBalanceChain)
+    : chainSlug
   const { effectiveGasPrice } = useGasPrice(selectedChain)
 
   useEffect(() => {
@@ -188,7 +183,6 @@ export default function MissionContributeModal({
       return
     }
     if (!address || contributeModalDefaultChainAppliedRef.current) return
-    if (wallets.length === 0) return
 
     const startedChainId = selectedChainIdRef.current
     let cancelled = false
@@ -206,19 +200,12 @@ export default function MissionContributeModal({
       const best = pickChainWithMaxNativeBalance(entries, chains)
       setSelectedChain(best)
       contributeModalDefaultChainAppliedRef.current = true
-
-      await switchPrivyWalletToChainIfNeeded(
-        walletsRef.current[selectedWalletRef.current],
-        best
-      )
-
-      refetchNativeBalance()
     })()
 
     return () => {
       cancelled = true
     }
-  }, [modalEnabled, address, wallets.length, chains, setSelectedChain, refetchNativeBalance])
+  }, [modalEnabled, address, chains, setSelectedChain])
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -651,8 +638,8 @@ export default function MissionContributeModal({
     const balanceEth = Number(nativeBalance)
     const maxUsd = computeContributionMaxUsd({
       balanceEth,
-      selectedChainId: selectedChain?.id ?? 0,
-      chainSlug,
+      selectedChainId: nativeBalanceChain?.id ?? selectedChain?.id ?? 0,
+      chainSlug: walletConnectedChainSlug,
       defaultChainSlug,
       ethUsdPrice,
     })
@@ -662,9 +649,10 @@ export default function MissionContributeModal({
     ethUsdPrice,
     nativeBalance,
     address,
-    chainSlug,
-    defaultChainSlug,
+    walletConnectedChainSlug,
+    nativeBalanceChain?.id,
     selectedChain?.id,
+    defaultChainSlug,
     formatInputWithCommas,
     setUsdInput,
   ])
@@ -1349,7 +1337,7 @@ export default function MissionContributeModal({
                           : '—'}
                       </span>
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
-                        on {selectedChain?.name?.replace(' One', '') ?? 'network'}
+                        on {nativeBalanceChain?.name?.replace(' One', '') ?? 'network'}
                       </span>
                     </p>
                     <button

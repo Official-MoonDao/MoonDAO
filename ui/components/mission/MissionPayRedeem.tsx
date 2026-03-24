@@ -63,7 +63,7 @@ function MissionPayRedeemContent({
   isLoadingContributedEth,
   ethUsdPrice,
   nativeBalance,
-  selectedChain,
+  nativeBalanceChain,
   applyMaxContribution,
 }: any) {
   const isRefundable = Number(stage) === 3
@@ -141,7 +141,7 @@ function MissionPayRedeemContent({
                           : '—'}
                       </span>
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
-                        on {selectedChain?.name?.replace(' One', '') ?? 'network'}
+                        on {nativeBalanceChain?.name?.replace(' One', '') ?? 'network'}
                       </span>
                     </p>
                     <button
@@ -421,7 +421,12 @@ function MissionPayRedeemComponent({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
+  const { nativeBalance, walletChain: nativeBalanceChain, refetch: refetchNativeBalance } =
+    useNativeBalance()
+  /** Slug for the chain the wallet is actually on (matches `nativeBalance`). */
+  const walletConnectedChainSlug = nativeBalanceChain
+    ? getChainSlug(nativeBalanceChain)
+    : chainSlug
 
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
@@ -515,8 +520,8 @@ function MissionPayRedeemComponent({
     const balanceEth = Number(nativeBalance)
     const maxUsd = computeContributionMaxUsd({
       balanceEth,
-      selectedChainId: selectedChain?.id ?? 0,
-      chainSlug,
+      selectedChainId: nativeBalanceChain?.id ?? selectedChain?.id ?? 0,
+      chainSlug: walletConnectedChainSlug,
       defaultChainSlug,
       ethUsdPrice,
     })
@@ -526,9 +531,10 @@ function MissionPayRedeemComponent({
     ethUsdPrice,
     nativeBalance,
     address,
-    chainSlug,
-    defaultChainSlug,
+    walletConnectedChainSlug,
+    nativeBalanceChain?.id,
     selectedChain?.id,
+    defaultChainSlug,
     formatInputWithCommas,
     setUsdInput,
   ])
@@ -886,7 +892,7 @@ function MissionPayRedeemComponent({
                 isLoadingContributedEth={isLoadingContributedEth}
                 ethUsdPrice={ethUsdPrice}
                 nativeBalance={nativeBalance}
-                selectedChain={selectedChain}
+                nativeBalanceChain={nativeBalanceChain}
                 applyMaxContribution={applyMaxContribution}
               />
             </div>

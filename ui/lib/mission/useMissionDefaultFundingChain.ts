@@ -1,20 +1,14 @@
-import { useWallets } from '@privy-io/react-auth'
 import { useContext, useEffect, useRef } from 'react'
-import {
-  fetchNativeBalanceWei,
-  pickChainWithMaxNativeBalance,
-  switchPrivyWalletToChainIfNeeded,
-} from '@/lib/mission/contributeModalDefaultChain'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { fetchNativeBalanceWei, pickChainWithMaxNativeBalance } from '@/lib/mission/contributeModalDefaultChain'
 import type { Chain } from '@/lib/rpc/chains'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 
 /**
  * Pick Arbitrum / Base / Ethereum (or Sepolia / Optimism Sepolia on testnet) with the largest
- * native balance for `address`, sync chain context, then switch the Privy wallet once Privy
- * wallets are ready. Runs from the mission profile so it applies even when only the header
- * contribute button is mounted (no full pay card).
+ * native balance for `address` and set `selectedChain` in context only.
+ *
+ * Does **not** call `wallet.switchChain` (avoids background races with `useNativeBalance` and
+ * multi-tab). The user switches via `PrivyWeb3Button` (“Switch Network”) before contributing.
  */
 export function useMissionDefaultFundingChain({
   enabled,
@@ -26,16 +20,9 @@ export function useMissionDefaultFundingChain({
   chains: Chain[]
 }) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
-  const { refetch: refetchNativeBalance } = useNativeBalance()
 
   const selectedChainIdRef = useRef(selectedChain.id)
   selectedChainIdRef.current = selectedChain.id
-  const walletsRef = useRef(wallets)
-  walletsRef.current = wallets
-  const selectedWalletRef = useRef(selectedWallet)
-  selectedWalletRef.current = selectedWallet
 
   const appliedForAddressRef = useRef<string | null>(null)
 
@@ -48,8 +35,6 @@ export function useMissionDefaultFundingChain({
     }
 
     if (chains.length === 0) return
-
-    if (wallets.length === 0) return
 
     if (appliedForAddressRef.current === address) return
 
@@ -69,13 +54,6 @@ export function useMissionDefaultFundingChain({
       const best = pickChainWithMaxNativeBalance(entries, chains)
       setSelectedChain(best)
       appliedForAddressRef.current = address
-
-      await switchPrivyWalletToChainIfNeeded(
-        walletsRef.current[selectedWalletRef.current],
-        best
-      )
-
-      refetchNativeBalance()
     })()
 
     return () => {
@@ -86,7 +64,5 @@ export function useMissionDefaultFundingChain({
     address,
     chains,
     setSelectedChain,
-    refetchNativeBalance,
-    wallets.length,
   ])
 }
