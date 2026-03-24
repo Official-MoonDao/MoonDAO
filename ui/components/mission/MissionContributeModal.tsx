@@ -56,7 +56,6 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { MissionContributeAutoTriggeringView } from './MissionContributeAutoTriggeringView'
 import { MissionContributeModalHeader } from './MissionContributeModalHeader'
 import { MissionContributeStatusNotices } from './MissionContributeStatusNotices'
-import MissionActivityList from './MissionActivityList'
 import MissionTokenNotice from './MissionTokenNotice'
 import { PaymentBreakdown } from './PaymentBreakdown'
 
@@ -1700,21 +1699,6 @@ export default function MissionContributeModal({
                   >
                     Close
                   </button>
-                </div>
-              )}
-
-              {mission?.projectId != null && mission?.projectId !== '' && (
-                <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
-                  <h3 className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                    Recent contributions
-                  </h3>
-                  <div className="max-h-[min(420px,50vh)] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
-                    <MissionActivityList
-                      selectedChain={selectedChain}
-                      tokenSymbol={token?.tokenSymbol}
-                      projectId={mission?.projectId}
-                    />
-                  </div>
                 </div>
               )}
             </>

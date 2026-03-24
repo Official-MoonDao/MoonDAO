@@ -4,7 +4,7 @@ import { DEFAULT_CHAIN_V5, JB_NATIVE_TOKEN_ADDRESS } from 'const/config'
 import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useMemo } from 'react'
+import React from 'react'
 import { useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction, simulateTransaction } from 'thirdweb'
@@ -24,6 +24,8 @@ import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import AcceptedPaymentMethods from '../privy/AcceptedPaymentMethods'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import MissionActivityList from './MissionActivityList'
+import MissionContributorTiersPanel from './MissionContributorTiersPanel'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
 
 function formatContributedEth(eth: number): string {
@@ -33,6 +35,7 @@ function formatContributedEth(eth: number): string {
 }
 
 function MissionPayRedeemContent({
+  mission,
   token,
   output,
   redeem,
@@ -178,11 +181,12 @@ function MissionPayRedeemContent({
                 isDisabled={isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0}
               />
               <p className="pt-2.5 pb-1 text-xs text-gray-500">{`Sign In · Fund · Contribute`}</p>
+              <div className="w-full flex justify-center pt-1">
+                <AcceptedPaymentMethods />
+              </div>
             </div>
 
-            <div className="w-full space-y-2">
-              <AcceptedPaymentMethods />
-            </div>
+            <MissionContributorTiersPanel missionId={mission?.id} />
             {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
               <PrivyWeb3Button
                 requiredChain={DEFAULT_CHAIN_V5}
@@ -304,6 +308,21 @@ function MissionPayRedeemContent({
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {mission?.projectId != null && mission?.projectId !== '' && (
+        <div className="px-5 pb-5 pt-2 border-t border-white/[0.08] space-y-3">
+          <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">
+            Recent contributions
+          </h3>
+          <div className="max-h-[min(1600px,calc(100dvh-5.5rem))] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
+            <MissionActivityList
+              selectedChain={DEFAULT_CHAIN_V5}
+              tokenSymbol={token?.tokenSymbol}
+              projectId={mission?.projectId}
+            />
+          </div>
         </div>
       )}
     </div>
@@ -775,6 +794,7 @@ function MissionPayRedeemComponent({
           ) : (
             <div className="mt-2">
               <MissionPayRedeemContent
+                mission={mission}
                 token={token}
                 output={output}
                 redeem={redeemMissionToken}

@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import MissionActivityList from './MissionActivityList'
 import MissionPayRedeem from './MissionPayRedeem'
@@ -73,78 +73,10 @@ export default function MissionInfo({
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
-  const stickyRef = useRef<HTMLDivElement>(null)
 
   const [tab, setTab] = useState<MissionInfoTabType>(
     (router.query.tab as MissionInfoTabType) || 'about'
   )
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const stickyElement = stickyRef.current
-      if (!stickyElement) return
-
-      const parentElement = document.getElementById('mission-info-content')
-      if (!parentElement) return
-
-      const stickyWrapper = stickyElement.parentElement
-      if (!stickyWrapper) return
-
-      // Use the scroll container to get scroll position
-      const scrollContainer =
-        document.getElementById('main-container') || document.documentElement
-      const scrollTop =
-        scrollContainer === document.documentElement
-          ? window.scrollY
-          : scrollContainer.scrollTop
-
-      const parentRect = parentElement.getBoundingClientRect()
-      const stickyHeight = stickyElement.getBoundingClientRect().height
-
-      const stickyPoint = 75
-
-      // Calculate parent's top relative to the document (not viewport)
-      const parentTopAbsolute = parentRect.top + scrollTop
-      const parentHeight = parentRect.height
-
-      // Where the sticky element should start sticking
-      const stickStart = parentTopAbsolute - stickyPoint
-      // Where it should stop (so it doesn't go past the parent bottom)
-      const stickEnd = parentTopAbsolute + parentHeight - stickyHeight - stickyPoint
-
-      if (scrollTop <= stickStart) {
-        // Haven't scrolled enough — stay at natural position
-        stickyElement.style.position = 'relative'
-        stickyElement.style.top = '0'
-        stickyElement.style.width = '100%'
-      } else if (scrollTop <= stickEnd) {
-        // In the sticky zone — follow scroll using absolute within parent
-        const offset = scrollTop - parentTopAbsolute + stickyPoint
-        stickyElement.style.position = 'absolute'
-        stickyElement.style.top = `${offset}px`
-        stickyElement.style.width = `${stickyWrapper.offsetWidth}px`
-      } else {
-        // Past the end — pin to bottom of parent
-        stickyElement.style.position = 'absolute'
-        stickyElement.style.top = `${parentHeight - stickyHeight}px`
-        stickyElement.style.width = `${stickyWrapper.offsetWidth}px`
-      }
-    }
-
-    // Listen on both possible scroll containers
-    const mainContainer = document.getElementById('main-container')
-    window.addEventListener('scroll', handleScroll, true)
-    mainContainer?.addEventListener('scroll', handleScroll)
-    window.addEventListener('resize', handleScroll)
-
-    handleScroll()
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll, true)
-      mainContainer?.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('resize', handleScroll)
-    }
-  }, [])
 
   useEffect(() => {
     if (router.query.tab) {
@@ -268,8 +200,8 @@ export default function MissionInfo({
             </div>
           )}
         </div>
-        <div className="hidden xl:block min-w-[350px] lg:w-[400px] pt-[47px]">
-          <div ref={stickyRef} className="pl-8 border-l border-white/[0.06]">
+        <div className="hidden xl:block min-w-[350px] lg:w-[400px] pt-[47px] self-start">
+          <div className="pl-8 border-l border-white/[0.06]">
             <MissionPayRedeem
               ruleset={ruleset}
               stage={stage}
