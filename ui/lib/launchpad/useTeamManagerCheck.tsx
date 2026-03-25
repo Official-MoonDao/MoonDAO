@@ -18,25 +18,31 @@ export function useTeamManagerCheck(
       setIsLoading(true)
       setUserTeamsAsManager(undefined)
 
-      const teamChecks = await Promise.all(
-        userTeams.map(async (hat: UserTeam) => {
-          if (!hat?.teamId || !hat.hats?.[0]?.id) return { hat, isManager: false }
+      try {
+        const teamChecks = await Promise.all(
+          userTeams.map(async (hat: UserTeam) => {
+            if (!hat?.teamId || !hat.hats?.[0]?.id) return { hat, isManager: false }
 
-          const managerHatId: any = await readContract({
-            contract: teamContract,
-            method: 'teamManagerHat' as string,
-            params: [hat.teamId],
+            const managerHatId: any = await readContract({
+              contract: teamContract,
+              method: 'teamManagerHat' as string,
+              params: [hat.teamId],
+            })
+
+            const isManager = hatIdDecimalToHex(managerHatId) === hat.hats?.[0].id
+
+            return { hat, isManager }
           })
+        )
 
-          const isManager = hatIdDecimalToHex(managerHatId) === hat.hats?.[0].id
+        const teamsAsManager = teamChecks.filter(({ isManager }) => isManager).map(({ hat }) => hat)
 
-          return { hat, isManager }
-        })
-      )
-
-      const teamsAsManager = teamChecks.filter(({ isManager }) => isManager).map(({ hat }) => hat)
-
-      setUserTeamsAsManager(teamsAsManager)
+        setUserTeamsAsManager(teamsAsManager)
+      } catch (err) {
+        // TODO: revert — temporarily treat all teams as manager teams when Hats is down
+        console.warn('Hats Protocol check failed, falling back to all user teams:', err)
+        setUserTeamsAsManager(userTeams)
+      }
       setIsLoading(false)
     }
     if (teamContract && userTeams && address && !userTeamsLoading) {

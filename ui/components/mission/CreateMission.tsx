@@ -547,12 +547,9 @@ export default function CreateMission({
                   description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential contributors and compel them to contribute.
 "
                   action={() => {
-                    if (!userTeamsAsManager || userTeamsAsManager.length === 0) {
-                      return toast.error('Please create a team or join one as a manager.', {
-                        style: toastStyle,
-                      })
-                    } else if (selectedTeamId === undefined) {
-                      return toast.error('Please select a team.', {
+                    // TODO: revert — temporarily bypassed userTeamsAsManager check while Sepolia Hats is down
+                    if (selectedTeamId === undefined) {
+                      return toast.error('Please enter or select a team ID.', {
                         style: toastStyle,
                       })
                     }
@@ -589,9 +586,20 @@ export default function CreateMission({
                         <span className="text-white">Loading your teams...</span>
                       </div>
                     ) : !userTeamsAsManager || userTeamsAsManager.length === 0 ? (
-                      <StandardButton className="gradient-2" hoverEffect={false} link="/team">
-                        Create a Team
-                      </StandardButton>
+                      // TODO: revert — temporary manual team ID input while Sepolia Hats is down
+                      <div className="flex items-center gap-3">
+                        <label className="text-white text-sm">Team ID (Hats unavailable):</label>
+                        <input
+                          type="number"
+                          className="bg-dark-cool border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm w-24"
+                          placeholder="e.g. 1"
+                          value={selectedTeamId ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setSelectedTeamId(val ? Number(val) : undefined)
+                          }}
+                        />
+                      </div>
                     ) : (
                       <></>
                     )}
