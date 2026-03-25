@@ -33,7 +33,6 @@ import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
-import { useMissionParticipantVolume } from '@/lib/juicebox/useMissionParticipantVolume'
 import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
@@ -135,6 +134,15 @@ export default function MissionContributeModal({
     [isOverviewMission]
   )
 
+  const newsletterCheckboxLabel = useMemo(
+    () => (
+      <p className="text-sm text-gray-300 leading-relaxed">
+        Add me to the MoonDAO newsletter. You can unsubscribe anytime.
+      </p>
+    ),
+    []
+  )
+
   const account = useActiveAccount()
   // In test mode (Cypress), use mock address from window if available
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
@@ -155,11 +163,6 @@ export default function MissionContributeModal({
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
 
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
-
-  const { volumeWei: modalContributedWei, isLoading: isLoadingModalContributed } =
-    useMissionParticipantVolume(mission?.projectId, address)
-  const modalMissionContributedEth =
-    modalContributedWei != null ? Number(modalContributedWei) / 1e18 : null
 
   const [coinbaseEthReceive, setCoinbaseEthReceive] = useState<number | null>(null)
   const [coinbasePaymentSubtotal, setCoinbasePaymentSubtotal] = useState<number>()
@@ -822,13 +825,7 @@ export default function MissionContributeModal({
     }
 
     const emailTrim = contributorEmail.trim()
-    if (newsletterOptIn && !isValidContributorEmail(emailTrim)) {
-      toast.error('Enter a valid email to join the newsletter.', {
-        style: toastStyle,
-      })
-      return
-    }
-    if (emailTrim && !isValidContributorEmail(emailTrim)) {
+    if (!isValidContributorEmail(emailTrim)) {
       toast.error('Please enter a valid email address.', {
         style: toastStyle,
       })
@@ -917,12 +914,8 @@ export default function MissionContributeModal({
           accessToken: accessToken,
           txChainSlug: defaultChainSlug,
           projectId: mission?.projectId,
-          ...(emailTrim
-            ? {
-                contributorEmail: emailTrim,
-                newsletterOptIn: newsletterOptIn && isValidContributorEmail(emailTrim),
-              }
-            : {}),
+          contributorEmail: emailTrim,
+          newsletterOptIn,
         }),
       })
       const contributionNotificationData = await contributionNotification.json()
@@ -1487,43 +1480,6 @@ export default function MissionContributeModal({
                       maxLength={100}
                     />
                   </div>
-                  <div className="space-y-3 bg-slate-800/20 border border-white/10 rounded-xl p-4">
-                    <label
-                      htmlFor="contribution-contributor-email-direct"
-                      className="text-gray-300 font-medium text-sm uppercase tracking-wider"
-                    >
-                      Email (optional)
-                    </label>
-                    <p className="text-gray-400 text-xs leading-relaxed -mt-1">
-                      We&apos;ll send a short thank-you note. Subscribe below if you want MoonDAO
-                      updates.
-                    </p>
-                    <input
-                      id="contribution-contributor-email-direct"
-                      type="email"
-                      autoComplete="email"
-                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
-                      placeholder="you@example.com"
-                      value={contributorEmail}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        setContributorEmail(v)
-                        if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
-                      }}
-                    />
-                    <label className="flex gap-3 items-start cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        disabled={!contributorEmail.trim()}
-                        checked={newsletterOptIn}
-                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-white/30 bg-black/40 text-blue-500 focus:ring-blue-500/40 disabled:opacity-40 disabled:cursor-not-allowed"
-                      />
-                      <span className="text-sm text-gray-300 leading-relaxed group-disabled:opacity-50">
-                        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
-                      </span>
-                    </label>
-                  </div>
                   {/* Payment Breakdown */}
                   {ethUsdPrice && usdInput && (
                     <PaymentBreakdown
@@ -1546,10 +1502,45 @@ export default function MissionContributeModal({
                       coinbaseEthReceive={coinbaseEthReceive}
                       isAdjustedForMinimum={isAdjustedForMinimum}
                       coinbaseEthInsufficient={coinbaseEthInsufficient}
-                      missionContributedEth={modalMissionContributedEth}
-                      missionContributedLoading={isLoadingModalContributed}
                     />
                   )}
+
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <label
+                        htmlFor="contribution-contributor-email-direct"
+                        className="text-gray-300 font-medium text-sm uppercase tracking-wider"
+                      >
+                        Email
+                      </label>
+                      <p className="text-sm text-gray-300 leading-relaxed mt-2">
+                        We will use this email to send you relevant updates about the mission and
+                        contact you for any reward tiers you are eligible for. Thank you for
+                        contributing!
+                      </p>
+                    </div>
+                    <input
+                      id="contribution-contributor-email-direct"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
+                      placeholder="you@example.com"
+                      value={contributorEmail}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setContributorEmail(v)
+                        if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
+                      }}
+                    />
+                    <ConditionCheckbox
+                      id="contribution-newsletter-checkbox-direct"
+                      label={newsletterCheckboxLabel}
+                      agreedToCondition={newsletterOptIn}
+                      setAgreedToCondition={setNewsletterOptIn}
+                      disabled={!isValidContributorEmail(contributorEmail.trim())}
+                    />
+                  </div>
 
                   {/* LayerZero Limit Warning */}
                   {layerZeroLimitExceeded && (
@@ -1610,6 +1601,7 @@ export default function MissionContributeModal({
                       action={buyMissionToken}
                       isDisabled={
                         !agreedToCondition ||
+                        !isValidContributorEmail(contributorEmail.trim()) ||
                         !usdInput ||
                         parseFloat((usdInput as string).replace(/,/g, '')) <= 0 ||
                         !chainSlugs.includes(chainSlug) ||
@@ -1650,44 +1642,6 @@ export default function MissionContributeModal({
                     />
                   </div>
 
-                  <div className="space-y-3 bg-slate-800/20 border border-white/10 rounded-xl p-4">
-                    <label
-                      htmlFor="contribution-contributor-email-onramp"
-                      className="text-gray-300 font-medium text-sm uppercase tracking-wider"
-                    >
-                      Email (optional)
-                    </label>
-                    <p className="text-gray-400 text-xs leading-relaxed -mt-1">
-                      We&apos;ll send a short thank-you note. Subscribe below if you want MoonDAO
-                      updates.
-                    </p>
-                    <input
-                      id="contribution-contributor-email-onramp"
-                      type="email"
-                      autoComplete="email"
-                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
-                      placeholder="you@example.com"
-                      value={contributorEmail}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        setContributorEmail(v)
-                        if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
-                      }}
-                    />
-                    <label className="flex gap-3 items-start cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        disabled={!contributorEmail.trim()}
-                        checked={newsletterOptIn}
-                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-white/30 bg-black/40 text-blue-500 focus:ring-blue-500/40 disabled:opacity-40 disabled:cursor-not-allowed"
-                      />
-                      <span className="text-sm text-gray-300 leading-relaxed">
-                        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
-                      </span>
-                    </label>
-                  </div>
-
                   {/* Show balance breakdown if user has some ETH */}
                   {usdInput && ethUsdPrice && (
                     <PaymentBreakdown
@@ -1710,12 +1664,50 @@ export default function MissionContributeModal({
                       coinbaseEthInsufficient={coinbaseEthInsufficient}
                       coinbaseTotalFees={coinbaseTotalFees}
                       coinbasePaymentTotal={coinbasePaymentTotal}
-                      missionContributedEth={modalMissionContributedEth}
-                      missionContributedLoading={isLoadingModalContributed}
                     />
                   )}
 
-                  {usdInput && ethDeficit > 0 && agreedToCondition && (
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <label
+                        htmlFor="contribution-contributor-email-onramp"
+                        className="text-gray-300 font-medium text-sm uppercase tracking-wider"
+                      >
+                        Email
+                      </label>
+                      <p className="text-sm text-gray-300 leading-relaxed mt-2">
+                        We will use this email to send you relevant updates about the mission and
+                        contact you for any reward tiers you are eligible for. Thank you for
+                        contributing!
+                      </p>
+                    </div>
+                    <input
+                      id="contribution-contributor-email-onramp"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
+                      placeholder="you@example.com"
+                      value={contributorEmail}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setContributorEmail(v)
+                        if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
+                      }}
+                    />
+                    <ConditionCheckbox
+                      id="contribution-newsletter-checkbox-onramp"
+                      label={newsletterCheckboxLabel}
+                      agreedToCondition={newsletterOptIn}
+                      setAgreedToCondition={setNewsletterOptIn}
+                      disabled={!isValidContributorEmail(contributorEmail.trim())}
+                    />
+                  </div>
+
+                  {usdInput &&
+                    ethDeficit > 0 &&
+                    agreedToCondition &&
+                    isValidContributorEmail(contributorEmail.trim()) && (
                     <CBOnramp
                       address={address || ''}
                       selectedChain={selectedChain}
@@ -1732,9 +1724,8 @@ export default function MissionContributeModal({
                           selectedWallet: selectedWallet,
                           missionId: mission?.id?.toString(),
                           context: mission?.id?.toString(),
-                          contributorEmail: contributorEmail.trim() || undefined,
-                          newsletterOptIn:
-                            newsletterOptIn && isValidContributorEmail(contributorEmail.trim()),
+                          contributorEmail: contributorEmail.trim(),
+                          newsletterOptIn,
                         })
                       }}
                       redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
@@ -1749,6 +1740,17 @@ export default function MissionContributeModal({
                       </p>
                     </div>
                   )}
+
+                  {usdInput &&
+                    ethDeficit > 0 &&
+                    agreedToCondition &&
+                    !isValidContributorEmail(contributorEmail.trim()) && (
+                      <div className="bg-orange-500/10 backdrop-blur-sm border border-orange-500/30 rounded-xl p-4">
+                        <p className="text-orange-300 text-sm">
+                          Please enter a valid email address to continue with your purchase.
+                        </p>
+                      </div>
+                    )}
 
                   {usdInput && (
                     <>

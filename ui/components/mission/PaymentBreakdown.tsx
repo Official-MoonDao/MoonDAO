@@ -21,9 +21,6 @@ type PaymentBreakdownProps = {
   showTotalToBuy?: boolean
   coinbaseTotalFees?: number
   coinbasePaymentTotal?: number
-  /** ETH paid into this Juicebox project by the connected wallet (subgraph volume). */
-  missionContributedEth?: number | null
-  missionContributedLoading?: boolean
 }
 
 export function PaymentBreakdown({
@@ -47,8 +44,6 @@ export function PaymentBreakdown({
   showTotalToBuy = false,
   coinbaseTotalFees,
   coinbasePaymentTotal,
-  missionContributedEth,
-  missionContributedLoading,
 }: PaymentBreakdownProps) {
   return (
     <div className="bg-gray-500/5 border border-gray-500/20 rounded-lg p-4">
@@ -130,34 +125,6 @@ export function PaymentBreakdown({
                 ${((nativeBalance || 0) * ethUsdPrice).toFixed(2)} USD
               </p>
             </div>
-
-            {(missionContributedLoading ||
-              (missionContributedEth != null && missionContributedEth > 1e-12)) && (
-              <div className="flex items-center justify-between text-sm pt-1">
-                <p className="text-blue-300">You contributed (this mission)</p>
-                {missionContributedLoading ? (
-                  <LoadingSpinner className="scale-50" />
-                ) : missionContributedEth != null ? (
-                  <div className="text-right">
-                    <p className="text-blue-400 font-medium">
-                      Ξ{' '}
-                      {missionContributedEth.toLocaleString('en-US', {
-                        maximumFractionDigits: 6,
-                      })}{' '}
-                      ETH
-                    </p>
-                    <p className="text-blue-300 text-xs">
-                      ~$
-                      {(missionContributedEth * ethUsdPrice).toLocaleString('en-US', {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2,
-                      })}{' '}
-                      USD
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            )}
 
             {/* Divider */}
             <div className="border-t border-gray-500/30 my-2"></div>
