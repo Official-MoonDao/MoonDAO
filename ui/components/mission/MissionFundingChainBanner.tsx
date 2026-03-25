@@ -35,7 +35,7 @@ export default function MissionFundingChainBanner({
   recommendedChain,
   fundingChainBalances,
 }: MissionFundingChainBannerProps) {
-  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
@@ -150,13 +150,12 @@ export default function MissionFundingChainBanner({
                 one of the mission funding networks.
               </>
             )}{' '}
-            Use the button to set the app network and switch your wallet, or pick another network in
-            the selector.
+            Use the button to switch your wallet; when you contribute, the app will match this
+            network for payment. You can also pick another network in the selector.
           </p>
           <StandardButton
             className="mt-3 gradient-2 rounded-full text-sm px-5 py-2.5"
             onClick={async () => {
-              setSelectedChain(recommendedChain!)
               await switchWalletTo(recommendedChain!)
             }}
           >

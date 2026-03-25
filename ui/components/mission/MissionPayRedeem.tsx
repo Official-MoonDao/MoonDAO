@@ -438,7 +438,7 @@ export type MissionPayRedeemProps = {
   forwardClient?: any
   refreshTotalFunding?: () => void
   ruleset: JBRuleset
-  onOpenModal?: (usdInput: string) => void
+  onOpenModal?: (usdInput: string) => void | Promise<void>
   onlyButton?: boolean
   visibleButton?: boolean
   buttonMode?: 'fixed' | 'standard'
@@ -478,7 +478,7 @@ function MissionPayRedeemComponent({
   fundingChainBalances = null,
   recommendedFundingChain = null,
 }: MissionPayRedeemProps) {
-  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -570,31 +570,25 @@ function MissionPayRedeemComponent({
   }, [wallets, selectedWallet, recommendedFundingChain])
 
   const requestOpenContributeModal = useCallback(
-    (usd: string) => {
+    async (usd: string) => {
       if (shouldPromptSwitchBeforeContribute) {
         pendingContributeUsdRef.current = usd
         setRichestSwitchModalOpen(true)
         return
       }
-      onOpenModal?.(usd)
+      await onOpenModal?.(usd)
     },
     [shouldPromptSwitchBeforeContribute, onOpenModal]
   )
 
   const handleConfirmSwitchAndContribute = useCallback(async () => {
     if (!recommendedFundingChain) return
-    setSelectedChain(recommendedFundingChain)
     const ok = await performWalletSwitchToRichest()
     if (ok) {
       setRichestSwitchModalOpen(false)
-      onOpenModal?.(pendingContributeUsdRef.current)
+      await onOpenModal?.(pendingContributeUsdRef.current)
     }
-  }, [
-    recommendedFundingChain,
-    setSelectedChain,
-    performWalletSwitchToRichest,
-    onOpenModal,
-  ])
+  }, [recommendedFundingChain, performWalletSwitchToRichest, onOpenModal])
 
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)

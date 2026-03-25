@@ -68,7 +68,7 @@ export default function MissionInfo({
   deadline,
   refreshTotalFunding,
   ruleset,
-  setContributeModalEnabled,
+  openContributeModal,
   setUsdInput,
   usdInput,
   missionDefaultFundingChainEnabled = false,
@@ -246,9 +246,7 @@ export default function MissionInfo({
             jbTokensContract={jbTokensContract}
             jbControllerContract={jbControllerContract}
             refreshTotalFunding={refreshTotalFunding}
-            onOpenModal={() => {
-              setContributeModalEnabled(true)
-            }}
+            onOpenModal={openContributeModal}
             usdInput={usdInput || ''}
             setUsdInput={setUsdInput}
             fundingCompareEnabled={fundingCompareEnabled}

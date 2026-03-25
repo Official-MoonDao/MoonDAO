@@ -1,6 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { getAccessToken } from '@privy-io/react-auth'
+import { getAccessToken, useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
@@ -22,6 +22,7 @@ import React, {
   useMemo,
   useContext,
   useEffect,
+  useLayoutEffect,
   useState,
   useCallback,
   useRef,
@@ -48,6 +49,7 @@ import { fetchNativeBalanceWei } from '@/lib/mission/contributeModalDefaultChain
 import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
 import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import type { Chain } from '@/lib/rpc/chains'
 import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -80,6 +82,10 @@ type MissionContributeModalProps = {
   ruleset: JBRuleset
   usdInput: string
   setUsdInput: (usdInput: string) => void
+  /** From mission page funding compare; when modal opens, app chain follows richest funding chain. */
+  fundingChainCompareEnabled?: boolean
+  fundingPickReady?: boolean
+  recommendedFundingChain?: Chain | null
 }
 
 export default function MissionContributeModal({
@@ -93,11 +99,14 @@ export default function MissionContributeModal({
   ruleset,
   usdInput,
   setUsdInput,
+  fundingChainCompareEnabled = false,
+  fundingPickReady = false,
+  recommendedFundingChain = null,
 }: MissionContributeModalProps) {
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
+  const { wallets } = useWallets()
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
-  const chainSlug = getChainSlug(selectedChain)
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
@@ -108,6 +117,39 @@ export default function MissionContributeModal({
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
 
   const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'
+
+  /**
+   * Canonical chain for pay UI + RPC balance + gas (recommended when set, else app context).
+   * Avoids fetching/displaying Arbitrum first while global `selectedChain` is still catching up.
+   */
+  const fundingDisplayChain = useMemo(() => {
+    if (!modalEnabled || !recommendedFundingChain) return null
+    return chains.find((c) => c.id === recommendedFundingChain.id) ?? recommendedFundingChain
+  }, [modalEnabled, recommendedFundingChain, chains])
+
+  const payChain = useMemo(
+    () => fundingDisplayChain ?? selectedChain,
+    [fundingDisplayChain, selectedChain]
+  )
+
+  const chainSlug = getChainSlug(payChain)
+
+  /** Keep global context aligned with `recommendedFundingChain` while modal is open (layout + post-paint). */
+  const syncContextToRecommendedFunding = useCallback(() => {
+    if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') return
+    if (!modalEnabled || !recommendedFundingChain) return
+    const target =
+      chains.find((c) => c.id === recommendedFundingChain.id) ?? recommendedFundingChain
+    setSelectedChain((prev) => (prev.id === target.id ? prev : target))
+  }, [modalEnabled, recommendedFundingChain, chains, setSelectedChain])
+
+  useLayoutEffect(() => {
+    syncContextToRecommendedFunding()
+  }, [syncContextToRecommendedFunding, selectedChain.id])
+
+  useEffect(() => {
+    syncContextToRecommendedFunding()
+  }, [syncContextToRecommendedFunding, selectedChain.id])
 
   const contributionTermsCheckboxLabel = useMemo(
     () => (
@@ -208,19 +250,19 @@ export default function MissionContributeModal({
 
   const crossChainPayContract = useContract({
     address: MISSION_CROSS_CHAIN_PAY_ADDRESS,
-    chain: selectedChain,
+    chain: payChain,
     abi: MISSION_CROSS_CHAIN_PAY_ABI.abi as any,
     forwardClient,
   })
 
   const { nativeBalance, walletChain: nativeBalanceChain, refetch: refetchNativeBalance } =
     useNativeBalance()
-  const walletOnSelectedChain = useMemo(
-    () => nativeBalanceChain != null && nativeBalanceChain.id === selectedChain.id,
-    [nativeBalanceChain, selectedChain.id]
+  const walletOnPayChain = useMemo(
+    () => nativeBalanceChain != null && nativeBalanceChain.id === payChain.id,
+    [nativeBalanceChain, payChain.id]
   )
 
-  /** Balance on `selectedChain` (funding network). RPC when wallet is elsewhere — matches auto-picked chain. */
+  /** Balance on `payChain` (funding network). RPC when wallet is elsewhere. */
   const [rpcFundingChainWei, setRpcFundingChainWei] = useState<bigint | null>(null)
   const [isLoadingRpcFundingBalance, setIsLoadingRpcFundingBalance] = useState(false)
 
@@ -230,7 +272,7 @@ export default function MissionContributeModal({
       setIsLoadingRpcFundingBalance(false)
       return
     }
-    if (walletOnSelectedChain) {
+    if (walletOnPayChain) {
       setRpcFundingChainWei(null)
       setIsLoadingRpcFundingBalance(false)
       return
@@ -238,7 +280,7 @@ export default function MissionContributeModal({
     let cancelled = false
     setIsLoadingRpcFundingBalance(true)
     setRpcFundingChainWei(null)
-    fetchNativeBalanceWei(selectedChain, address).then((wei) => {
+    fetchNativeBalanceWei(payChain, address).then((wei) => {
       if (cancelled) return
       setRpcFundingChainWei(wei)
       setIsLoadingRpcFundingBalance(false)
@@ -246,18 +288,18 @@ export default function MissionContributeModal({
     return () => {
       cancelled = true
     }
-  }, [modalEnabled, address, selectedChain, walletOnSelectedChain])
+  }, [modalEnabled, address, payChain, walletOnPayChain])
 
   const fundingBalanceEth = useMemo(() => {
     if (!address) return null
-    if (walletOnSelectedChain) {
+    if (walletOnPayChain) {
       return nativeBalance == null ? null : Number(nativeBalance)
     }
     if (isLoadingRpcFundingBalance) return null
     return rpcFundingChainWei !== null ? Number(rpcFundingChainWei) / 1e18 : null
   }, [
     address,
-    walletOnSelectedChain,
+    walletOnPayChain,
     nativeBalance,
     isLoadingRpcFundingBalance,
     rpcFundingChainWei,
@@ -265,21 +307,19 @@ export default function MissionContributeModal({
 
   const fundingBalanceResolved = useMemo(() => {
     if (!address) return false
-    if (walletOnSelectedChain) {
+    if (walletOnPayChain) {
       return nativeBalance != null
     }
     return !isLoadingRpcFundingBalance && rpcFundingChainWei !== null
   }, [
     address,
-    walletOnSelectedChain,
+    walletOnPayChain,
     nativeBalance,
     isLoadingRpcFundingBalance,
     rpcFundingChainWei,
   ])
 
-  const fundingChainSlug = getChainSlug(selectedChain)
-
-  const { effectiveGasPrice } = useGasPrice(selectedChain)
+  const { effectiveGasPrice } = useGasPrice(payChain)
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -458,7 +498,7 @@ export default function MissionContributeModal({
       return
     }
 
-    if (!selectedChain?.id || !mission?.projectId) {
+    if (!payChain?.id || !mission?.projectId) {
       console.warn('Missing required data for gas estimation')
       if (!stale()) setIsLoadingGasEstimate(false)
       return
@@ -567,7 +607,7 @@ export default function MissionContributeModal({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chainId: selectedChain.id,
+              chainId: payChain.id,
               from: address,
               to: MISSION_CROSS_CHAIN_PAY_ADDRESS,
               data: txData,
@@ -637,7 +677,7 @@ export default function MissionContributeModal({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chainId: selectedChain.id,
+              chainId: DEFAULT_CHAIN_V5.id,
               from: address,
               to: primaryTerminalAddress,
               data: txData,
@@ -703,7 +743,7 @@ export default function MissionContributeModal({
     output,
     message,
     primaryTerminalAddress,
-    selectedChain,
+    payChain,
     ethUsdPrice,
     usdInput,
   ])
@@ -751,7 +791,7 @@ export default function MissionContributeModal({
 
   const showFundingBalanceWait = Boolean(
     address &&
-      !walletOnSelectedChain &&
+      !walletOnPayChain &&
       isLoadingRpcFundingBalance &&
       requiredEth > 0
   )
@@ -761,8 +801,8 @@ export default function MissionContributeModal({
     const balanceEth = fundingBalanceEth
     const maxUsd = computeContributionMaxUsd({
       balanceEth,
-      selectedChainId: selectedChain.id,
-      chainSlug: fundingChainSlug,
+      selectedChainId: payChain.id,
+      chainSlug,
       defaultChainSlug,
       ethUsdPrice,
     })
@@ -772,8 +812,8 @@ export default function MissionContributeModal({
     ethUsdPrice,
     fundingBalanceEth,
     address,
-    fundingChainSlug,
-    selectedChain.id,
+    chainSlug,
+    payChain.id,
     defaultChainSlug,
     formatInputWithCommas,
     setUsdInput,
@@ -1153,7 +1193,7 @@ export default function MissionContributeModal({
         gasEstimateDebounceRef.current = null
       }
     }
-  }, [usdInput, input, selectedChain, estimateContributionGas])
+  }, [usdInput, input, payChain, estimateContributionGas])
 
   // Use the onramp auto-transaction hook for handling post-onramp flow
   useOnrampAutoTransaction({
@@ -1415,7 +1455,11 @@ export default function MissionContributeModal({
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                   Network
                 </label>
-                <NetworkSelector chains={chains} align="left" />
+                <NetworkSelector
+                  chains={chains}
+                  align="left"
+                  displayChain={fundingDisplayChain ?? undefined}
+                />
               </div>
 
               {/* Contribution amount — primary input */}
@@ -1466,13 +1510,13 @@ export default function MissionContributeModal({
                       <span className="text-white font-medium tabular-nums">
                         {fundingBalanceResolved && fundingBalanceEth != null
                           ? `${formatEthFiveSigFigs(fundingBalanceEth)} ETH`
-                          : isLoadingRpcFundingBalance && !walletOnSelectedChain
+                          : isLoadingRpcFundingBalance && !walletOnPayChain
                           ? '…'
                           : '—'}
                       </span>
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
-                        on {(selectedChain.name ?? 'network').replace(' One', '')}
-                        {!walletOnSelectedChain && fundingBalanceResolved ? (
+                        on {(payChain.name ?? 'network').replace(' One', '')}
+                        {!walletOnPayChain && fundingBalanceResolved ? (
                           <span className="text-cyan-400/90"> — switch wallet to this network to pay</span>
                         ) : null}
                       </span>
@@ -1571,7 +1615,7 @@ export default function MissionContributeModal({
                 <div className="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
                   <LoadingSpinner width="w-8" height="h-8" />
                   <p className="text-sm text-center max-w-sm">
-                    Checking your ETH balance on {selectedChain.name ?? 'this network'}…
+                    Checking your ETH balance on {(payChain.name ?? 'this network').replace(' One', '')}…
                   </p>
                 </div>
               ) : hasEnoughBalance ? (
@@ -1833,7 +1877,7 @@ export default function MissionContributeModal({
                     <CBOnramp
                       fullWidth
                       address={address || ''}
-                      selectedChain={selectedChain}
+                      selectedChain={payChain}
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
                       onQuoteCalculated={handleCoinbaseQuote}

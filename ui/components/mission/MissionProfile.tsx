@@ -23,7 +23,8 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useWindowSize } from 'react-use'
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { getContract } from 'thirdweb'
@@ -32,11 +33,22 @@ import { useActiveAccount } from 'thirdweb/react'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { useDeadlineTracking } from '@/lib/mission/useDeadlineTracking'
+import {
+  fetchNativeBalanceWei,
+  pickChainWithMaxNativeBalance,
+} from '@/lib/mission/contributeModalDefaultChain'
 import { useMissionDefaultFundingChain } from '@/lib/mission/useMissionDefaultFundingChain'
 import { useManagerActions } from '@/lib/mission/useManagerActions'
 import useMissionData from '@/lib/mission/useMissionData'
 import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
-import { arbitrum, base, ethereum, optimismSepolia, sepolia } from '@/lib/rpc/chains'
+import {
+  type Chain,
+  arbitrum,
+  base,
+  ethereum,
+  optimismSepolia,
+  sepolia,
+} from '@/lib/rpc/chains'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -45,6 +57,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { useElementVisibility } from '@/lib/utils/hooks/useElementVisibility'
 import { getAttribute } from '@/lib/utils/nft'
+import Modal from '@/components/layout/Modal'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
@@ -108,7 +121,7 @@ export default function MissionProfile({
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const router = useRouter()
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
 
   const walletAddress = account?.address
 
@@ -122,6 +135,10 @@ export default function MissionProfile({
     setIsMounted(true)
   }, [])
 
+  const [payChainGate, setPayChainGate] = useState<{
+    target: Chain
+    nextUsd?: string
+  } | null>(null)
   const [teamNFT, setTeamNFT] = useState<any>(_teamNFT)
   const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
@@ -153,6 +170,49 @@ export default function MissionProfile({
     contributeModalEnabled,
     setContributeModalEnabled,
   } = useOnrampFlow(router, chainSlugs)
+
+  /**
+   * Contribute: re-fetch balances at click time, pick richest chain. If app network ≠ that chain,
+   * show a gate first (no contribute modal) until the user confirms switching the app network.
+   */
+  const handleOpenContributeModal = useCallback(
+    async (nextUsdInput?: string) => {
+      if (process.env.NEXT_PUBLIC_TEST_ENV !== 'true') {
+        const canResolveRichest =
+          !!walletAddress &&
+          mission?.projectId != null &&
+          Number(_stage) !== 4
+        if (canResolveRichest && walletAddress) {
+          const entries = await Promise.all(
+            chains.map(async (chain) => ({
+              chain,
+              wei: await fetchNativeBalanceWei(chain, walletAddress),
+            }))
+          )
+          const richest = pickChainWithMaxNativeBalance(entries, chains)
+          const target = chains.find((c) => c.id === richest.id) ?? richest
+          if (target.id !== selectedChain.id) {
+            setPayChainGate({ target, nextUsd: nextUsdInput })
+            return
+          }
+        }
+      }
+
+      if (nextUsdInput !== undefined) {
+        setUsdInput(nextUsdInput)
+      }
+      setContributeModalEnabled(true)
+    },
+    [
+      walletAddress,
+      mission?.projectId,
+      _stage,
+      chains,
+      selectedChain.id,
+      setUsdInput,
+      setContributeModalEnabled,
+    ]
+  )
 
   const { isVisible: isPayRedeemContainerVisible } = useElementVisibility(payRedeemContainerRef, {
     visibilityThreshold: 0.75,
@@ -377,9 +437,7 @@ export default function MissionProfile({
               jbTokensContract={jbTokensContract}
               refreshTotalFunding={refreshTotalFunding}
               ruleset={ruleset}
-              onOpenModal={() => {
-                setContributeModalEnabled(true)
-              }}
+              onOpenModal={handleOpenContributeModal}
               usdInput={usdInput || ''}
               setUsdInput={setUsdInput}
               fundingCompareEnabled={fundingChainCompareEnabled}
@@ -426,9 +484,7 @@ export default function MissionProfile({
             jbTokensContract={jbTokensContract}
             refreshTotalFunding={refreshTotalFunding}
             ruleset={ruleset}
-            onOpenModal={() => {
-              setContributeModalEnabled(true)
-            }}
+            onOpenModal={handleOpenContributeModal}
             usdInput={usdInput || ''}
             setUsdInput={setUsdInput}
             fundingCompareEnabled={fundingChainCompareEnabled}
@@ -471,9 +527,7 @@ export default function MissionProfile({
                     jbTokensContract={jbTokensContract}
                     refreshTotalFunding={refreshTotalFunding}
                     ruleset={ruleset}
-                    onOpenModal={() => {
-                      setContributeModalEnabled(true)
-                    }}
+                    onOpenModal={handleOpenContributeModal}
                     usdInput={usdInput || ''}
                     setUsdInput={setUsdInput}
                     fundingCompareEnabled={fundingChainCompareEnabled}
@@ -512,7 +566,7 @@ export default function MissionProfile({
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}
-                  setContributeModalEnabled={setContributeModalEnabled}
+                  openContributeModal={handleOpenContributeModal}
                   usdInput={usdInput || ''}
                   setUsdInput={setUsdInput}
                   missionDefaultFundingChainEnabled={missionDefaultFundingChainEnabled}
@@ -639,6 +693,58 @@ export default function MissionProfile({
         </ContentLayout>
       </Container>
 
+      {payChainGate != null && (
+        <Modal
+          id="mission-pay-chain-alignment-gate"
+          setEnabled={(open) => {
+            if (!open) setPayChainGate(null)
+          }}
+          title="Switch app network"
+          size="sm"
+        >
+          <div className="p-6 space-y-4">
+            <p className="text-gray-300 text-sm leading-relaxed">
+              Your largest mission funding balance is on{' '}
+              <span className="font-semibold text-white">
+                {(payChainGate.target.name ?? 'network').replace(' One', '')}
+              </span>
+              , but the app network is set to{' '}
+              <span className="font-semibold text-white">
+                {(selectedChain.name ?? 'network').replace(' One', '')}
+              </span>
+              . Switch the app to that network before opening Contribute.
+            </p>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+              <button
+                type="button"
+                className="px-4 py-2.5 rounded-lg text-sm text-gray-300 border border-white/15 hover:bg-white/5"
+                onClick={() => setPayChainGate(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold gradient-2 text-white"
+                onClick={() => {
+                  const g = payChainGate
+                  if (!g) return
+                  flushSync(() => {
+                    setSelectedChain(g.target)
+                  })
+                  if (g.nextUsd !== undefined) {
+                    setUsdInput(g.nextUsd)
+                  }
+                  setPayChainGate(null)
+                  setContributeModalEnabled(true)
+                }}
+              >
+                {`Switch to ${(payChainGate.target.name ?? 'network').replace(' One', '')} and continue`}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Single modal instance for all contribute buttons */}
       <MissionContributeModal
         mission={mission}
@@ -651,6 +757,9 @@ export default function MissionProfile({
         ruleset={ruleset}
         usdInput={usdInput || ''}
         setUsdInput={setUsdInput}
+        fundingChainCompareEnabled={fundingChainCompareEnabled}
+        fundingPickReady={fundingPickReady}
+        recommendedFundingChain={recommendedChain}
       />
     </>
   )

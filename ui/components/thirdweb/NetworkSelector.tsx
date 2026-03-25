@@ -74,6 +74,11 @@ type NetworkSelectorProps = {
   compact?: boolean
   chains?: any[]
   align?: string
+  /**
+   * Closed trigger shows this chain (icon + name) instead of global `selectedChain`.
+   * Context is still updated when the user picks a network from the dropdown.
+   */
+  displayChain?: any | null
 }
 
 export default function NetworkSelector({
@@ -81,8 +86,10 @@ export default function NetworkSelector({
   compact = false,
   chains,
   align = 'right',
+  displayChain = null,
 }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const shownChain = displayChain ?? selectedChain
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [dropdown, setDropdown] = useState(false)
@@ -185,14 +192,14 @@ export default function NetworkSelector({
       >
         <Image
           className="h-6 w-6"
-          src={`/icons/networks/${getChainSlug(selectedChain)}.svg`}
+          src={`/icons/networks/${getChainSlug(shownChain)}.svg`}
           width={24}
           height={24}
-          alt={selectedChain.name || ''}
+          alt={shownChain.name || ''}
         />
         {!iconsOnly && (
           <span className="text-white text-sm font-medium flex-1">
-            {selectedChain.name}
+            {shownChain.name}
           </span>
         )}
         {!iconsOnly && (
