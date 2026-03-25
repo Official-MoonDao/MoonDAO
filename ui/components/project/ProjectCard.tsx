@@ -339,13 +339,12 @@ const ProjectCardContent = memo(
     }, [])
 
     // Set character limits that better match the new card height
-    const [characterLimit, setCharacterLimit] = useState(380)
+    const [characterLimit, setCharacterLimit] = useState(600)
 
     useEffect(() => {
       const handleResize = () => {
         if (typeof window !== 'undefined') {
-          // Adjust limits for the new 280px height with better spacing
-          setCharacterLimit(window.innerWidth >= 1024 ? 420 : 380)
+          setCharacterLimit(window.innerWidth >= 1024 ? 700 : 600)
         }
       }
 
@@ -375,7 +374,7 @@ const ProjectCardContent = memo(
         className={`p-3 sm:p-6 pb-3 sm:pb-4 flex flex-col gap-2 sm:gap-3 relative w-full transition-all duration-300 bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl ${
           isExpanded 
             ? 'h-auto' 
-            : 'h-auto min-h-[180px] hover:scale-[1.02]'
+            : 'h-full min-h-[180px] hover:scale-[1.02]'
         } ${onToggleExpand ? 'cursor-pointer' : ''}`}
       >
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
@@ -493,8 +492,8 @@ const ProjectCardContent = memo(
             </div>
           ) : (
             // Collapsed view with truncated description
-            <div className="description-container overflow-hidden max-h-[80px] pr-2">
-              <p className="text-green-100 text-sm leading-relaxed line-clamp-4">
+            <div className="description-container overflow-hidden pr-2">
+              <p className="text-green-100 text-sm leading-relaxed">
                 {project.description?.length > characterLimit
                   ? `${project.description.substring(0, characterLimit)}...`
                   : project.description || 'No description available'}
@@ -593,7 +592,7 @@ export default function ProjectCard({
   if (!project) return null
 
   return (
-    <>
+    <div className="h-full">
       {distribute || IS_SENATE_VOTE ? (
         <ProjectCardContent
           project={project}
@@ -609,7 +608,7 @@ export default function ProjectCard({
           onToggleExpand={() => setIsExpanded(!isExpanded)}
         />
       ) : (
-        <Link href={`/project/${project?.MDP}`} passHref>
+        <Link href={`/project/${project?.MDP}`} passHref className="h-full">
           <ProjectCardContent
             project={project}
             userHasVotingPower={userHasVotingPower}
@@ -619,6 +618,6 @@ export default function ProjectCard({
           />
         </Link>
       )}
-    </>
+    </div>
   )
 }
