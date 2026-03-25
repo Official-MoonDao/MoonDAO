@@ -76,6 +76,8 @@ export default function MissionInfo({
   fundingPickReady = false,
   fundingChains = [],
   recommendedChain = null,
+  fundingChainBalances = null,
+  fundingCompareEnabled = false,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -231,6 +233,7 @@ export default function MissionInfo({
             chains={fundingChains}
             fundingPickReady={fundingPickReady}
             recommendedChain={recommendedChain}
+            fundingChainBalances={fundingChainBalances}
           />
           <MissionPayRedeem
             ruleset={ruleset}
@@ -248,6 +251,10 @@ export default function MissionInfo({
             }}
             usdInput={usdInput || ''}
             setUsdInput={setUsdInput}
+            fundingCompareEnabled={fundingCompareEnabled}
+            fundingPickReady={fundingPickReady}
+            fundingChainBalances={fundingChainBalances}
+            recommendedFundingChain={recommendedChain}
           />
         </div>
       </div>

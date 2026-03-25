@@ -137,11 +137,12 @@ export default function MissionProfile({
   const fundingChainCompareEnabled =
     !!walletAddress && mission?.projectId != null && Number(_stage) !== 4
 
-  const { fundingPickReady, recommendedChain } = useMissionDefaultFundingChain({
-    enabled: fundingChainCompareEnabled,
-    address: walletAddress,
-    chains,
-  })
+  const { fundingPickReady, recommendedChain, fundingChainBalances } =
+    useMissionDefaultFundingChain({
+      enabled: fundingChainCompareEnabled,
+      address: walletAddress,
+      chains,
+    })
 
   const chainSlug = getChainSlug(selectedChain)
 
@@ -381,6 +382,10 @@ export default function MissionProfile({
               }}
               usdInput={usdInput || ''}
               setUsdInput={setUsdInput}
+              fundingCompareEnabled={fundingChainCompareEnabled}
+              fundingPickReady={fundingPickReady}
+              fundingChainBalances={fundingChainBalances}
+              recommendedFundingChain={recommendedChain}
               onlyButton
               visibleButton={windowWidth > 0 && windowWidth > 768}
               buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
@@ -426,6 +431,10 @@ export default function MissionProfile({
             }}
             usdInput={usdInput || ''}
             setUsdInput={setUsdInput}
+            fundingCompareEnabled={fundingChainCompareEnabled}
+            fundingPickReady={fundingPickReady}
+            fundingChainBalances={fundingChainBalances}
+            recommendedFundingChain={recommendedChain}
             isPayRedeemContainerVisible={isPayRedeemContainerVisible}
             deadlinePassed={deadlinePassed}
           />
@@ -449,6 +458,7 @@ export default function MissionProfile({
                     chains={chains}
                     fundingPickReady={fundingPickReady}
                     recommendedChain={recommendedChain}
+                    fundingChainBalances={fundingChainBalances}
                   />
                   <MissionPayRedeem
                     mission={mission}
@@ -466,6 +476,10 @@ export default function MissionProfile({
                     }}
                     usdInput={usdInput || ''}
                     setUsdInput={setUsdInput}
+                    fundingCompareEnabled={fundingChainCompareEnabled}
+                    fundingPickReady={fundingPickReady}
+                    fundingChainBalances={fundingChainBalances}
+                    recommendedFundingChain={recommendedChain}
                     hideRecentContributions
                   />
                 </div>
@@ -506,6 +520,8 @@ export default function MissionProfile({
                   fundingPickReady={fundingPickReady}
                   fundingChains={chains}
                   recommendedChain={recommendedChain}
+                  fundingChainBalances={fundingChainBalances}
+                  fundingCompareEnabled={fundingChainCompareEnabled}
                 />
               </div>
             </div>

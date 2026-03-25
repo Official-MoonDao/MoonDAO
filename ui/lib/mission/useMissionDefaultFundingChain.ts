@@ -4,14 +4,22 @@ import { useEffect, useState } from 'react'
 import { fetchNativeBalanceWei, pickChainWithMaxNativeBalance } from '@/lib/mission/contributeModalDefaultChain'
 import type { Chain } from '@/lib/rpc/chains'
 
+export type FundingChainBalanceEntry = {
+  chain: Chain
+  wei: bigint
+}
+
 type FundingPickState = {
   pickReady: boolean
   recommendedChain: Chain | null
+  /** `null` while loading or idle; populated when `pickReady` */
+  chainBalances: FundingChainBalanceEntry[] | null
 }
 
 const initialPick: FundingPickState = {
   pickReady: false,
   recommendedChain: null,
+  chainBalances: null,
 }
 
 /**
@@ -29,7 +37,11 @@ export function useMissionDefaultFundingChain({
   enabled: boolean
   address: string | undefined
   chains: Chain[]
-}): { fundingPickReady: boolean; recommendedChain: Chain | null } {
+}): {
+  fundingPickReady: boolean
+  recommendedChain: Chain | null
+  fundingChainBalances: FundingChainBalanceEntry[] | null
+} {
   const [pick, setPick] = useState<FundingPickState>(initialPick)
 
   useEffect(() => {
@@ -48,7 +60,7 @@ export function useMissionDefaultFundingChain({
       return
     }
 
-    setPick({ pickReady: false, recommendedChain: null })
+    setPick({ pickReady: false, recommendedChain: null, chainBalances: null })
     let cancelled = false
 
     ;(async () => {
@@ -61,7 +73,7 @@ export function useMissionDefaultFundingChain({
       if (cancelled) return
 
       const best = pickChainWithMaxNativeBalance(entries, chains)
-      setPick({ pickReady: true, recommendedChain: best })
+      setPick({ pickReady: true, recommendedChain: best, chainBalances: entries })
     })()
 
     return () => {
@@ -72,5 +84,6 @@ export function useMissionDefaultFundingChain({
   return {
     fundingPickReady: pick.pickReady,
     recommendedChain: pick.recommendedChain,
+    fundingChainBalances: pick.chainBalances,
   }
 }
