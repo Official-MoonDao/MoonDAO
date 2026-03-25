@@ -151,6 +151,8 @@ export default function MissionActivityList({
       while (res.hasNextPage) {
         res = await fetchNextPage()
       }
+    } catch (error) {
+      console.error('Failed to load all project events', error)
     } finally {
       setIsLoadingAll(false)
     }
