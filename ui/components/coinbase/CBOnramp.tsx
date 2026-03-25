@@ -6,6 +6,10 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { arbitrum } from '@/lib/rpc/chains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import {
+  LARGE_ONRAMP_FIAT_THRESHOLD_USD,
+  LargeAmountExchangeOnrampNotice,
+} from './LargeAmountExchangeOnrampNotice'
 
 interface CBOnrampProps {
   address: string
@@ -22,6 +26,8 @@ interface CBOnrampProps {
     paymentTotal: number,
     totalFees: number
   ) => void
+  /** When true, stretches to parent width (e.g. embedded in contribute modal). */
+  fullWidth?: boolean
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
@@ -37,7 +43,10 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   isWaitingForGasEstimate = false,
   allowAmountInput = false,
   onQuoteCalculated,
+  fullWidth = false,
 }) => {
+  const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
+
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -466,7 +475,10 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   // Error state
   if (error) {
     return (
-      <div data-testid="cbonramp-modal-content" className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-red-900/30 to-purple-900/20 backdrop-blur-xl border border-red-500/20 rounded-2xl shadow-2xl text-white overflow-hidden">
+      <div
+        data-testid="cbonramp-modal-content"
+        className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-red-900/30 to-purple-900/20 backdrop-blur-xl border border-red-500/20 rounded-2xl shadow-2xl text-white overflow-hidden`}
+      >
         {/* Header with close button */}
         <div className="flex items-center justify-between p-6 border-b border-red-500/20">
           <div className="flex items-center space-x-3">
@@ -521,7 +533,10 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
   // Ready state - no loading spinner on component mount
   return (
-    <div data-testid="cbonramp-modal-content" className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden">
+    <div
+      data-testid="cbonramp-modal-content"
+      className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
@@ -655,6 +670,11 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             </div>
           </div>
         )}
+
+        {quoteData?.purchaseAmount &&
+          quoteData.purchaseAmount > LARGE_ONRAMP_FIAT_THRESHOLD_USD && (
+            <LargeAmountExchangeOnrampNotice walletAddress={address} />
+          )}
 
         {/* Purchase button */}
         <PrivyWeb3Button

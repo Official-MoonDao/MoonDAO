@@ -1570,6 +1570,11 @@ export default function MissionContributeModal({
 
                   {/* Terms Checkbox */}
                   <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                        Terms and Conditions
+                      </p>
+                    </div>
                     <MissionTokenNotice />
                     <ConditionCheckbox
                       id="contribution-terms-checkbox"
@@ -1617,6 +1622,11 @@ export default function MissionContributeModal({
                 <div className="space-y-5">
                   {/* Terms Checkbox - Required before onramp */}
                   <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                        Terms and Conditions
+                      </p>
+                    </div>
                     <MissionTokenNotice />
                     <ConditionCheckbox
                       id="pre-contribution-terms-checkbox"
@@ -1709,6 +1719,7 @@ export default function MissionContributeModal({
                     agreedToCondition &&
                     isValidContributorEmail(contributorEmail.trim()) && (
                     <CBOnramp
+                      fullWidth
                       address={address || ''}
                       selectedChain={selectedChain}
                       ethAmount={adjustedEthDeficit}
@@ -1751,27 +1762,6 @@ export default function MissionContributeModal({
                         </p>
                       </div>
                     )}
-
-                  {usdInput && (
-                    <>
-                      {parseFloat(usdInput.replace(/,/g, '')) > 5000 && (
-                        <div className="bg-orange-500/10 backdrop-blur-sm border border-orange-500/20 rounded-xl p-4">
-                          <p className="text-orange-300 text-sm leading-relaxed">
-                            <span className="font-semibold">Large Amount:</span> Coinbase has
-                            purchase limits around $5,000-$7,500. For larger contributions, please
-                            contact{' '}
-                            <a
-                              href="mailto:info@moondao.com"
-                              className="text-orange-200 underline underline-offset-2 hover:text-orange-100"
-                            >
-                              info@moondao.com
-                            </a>{' '}
-                            about wire transfer options.
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
 
                   <button
                     type="button"

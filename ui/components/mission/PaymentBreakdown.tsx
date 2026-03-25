@@ -45,22 +45,51 @@ export function PaymentBreakdown({
   coinbaseTotalFees,
   coinbasePaymentTotal,
 }: PaymentBreakdownProps) {
+  const contributionUsd = parseFloat(usdInput.replace(/,/g, '')) || 0
+
+  const hasCrossChainRow = chainSlug !== defaultChainSlug && !layerZeroLimitExceeded
+  const crossChainReady =
+    hasCrossChainRow && !isLoadingGasEstimate && layerZeroFeeDisplay.usd !== '0.00'
+  const crossChainFeeUsd = crossChainReady ? parseFloat(layerZeroFeeDisplay.usd) || 0 : 0
+
+  const hasGasRow = showEstimatedGas
+  const gasReady = hasGasRow && !isLoadingGasEstimate && gasCostDisplay.eth !== '0.0000'
+  const gasFeeUsd = gasReady ? parseFloat(gasCostDisplay.usd) || 0 : 0
+
+  const coinbaseFeesUsd = coinbaseTotalFees ?? 0
+
+  const totalUsd = contributionUsd + crossChainFeeUsd + gasFeeUsd + coinbaseFeesUsd
+
+  const totalAmountPending =
+    isLoadingGasEstimate && (hasCrossChainRow || hasGasRow)
+
+  const showOnchainFeesDisclaimer = crossChainFeeUsd > 0 || gasFeeUsd > 0
+
+  const nativeBal = nativeBalance ?? 0
+  const hasEthDeficit = requiredEth > nativeBal
+
+  const rowLabelClass = 'text-sm text-gray-300 leading-relaxed'
+
   return (
     <div className="bg-gray-500/5 border border-gray-500/20 rounded-lg p-4">
-      <p className="text-white text-sm font-semibold mb-3">Payment Breakdown</p>
+      <p className="text-gray-300 font-medium text-sm uppercase tracking-wider mb-3">
+        Payment Breakdown
+      </p>
       <div className="space-y-2">
         {/* Contribution */}
-        <div className="flex items-center justify-between text-sm">
-          <p className="text-gray-300">Contribution</p>
-          <p className="text-white">${usdInput} USD</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className={rowLabelClass}>Contribution</p>
+          <p className="text-sm text-gray-300 leading-relaxed text-right tabular-nums">
+            ${usdInput} USD
+          </p>
         </div>
 
         {/* Cross-Chain Fee */}
         {chainSlug !== defaultChainSlug && !layerZeroLimitExceeded && (
-          <div className="flex items-center justify-between text-sm">
-            <p className="text-orange-300">Cross-Chain Fee</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className={rowLabelClass}>Cross-Chain Fee</p>
             {!isLoadingGasEstimate && layerZeroFeeDisplay.usd !== '0.00' ? (
-              <p className="text-orange-400 font-medium">
+              <p className="text-sm text-gray-300 leading-relaxed text-right tabular-nums">
                 ~${layerZeroFeeDisplay.usd} USD
               </p>
             ) : (
@@ -71,10 +100,12 @@ export function PaymentBreakdown({
 
         {/* Gas Fee */}
         {showEstimatedGas && (
-          <div className="flex items-center justify-between text-sm">
-            <p className="text-gray-300">Gas Fee</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className={rowLabelClass}>Gas Fee</p>
             {!isLoadingGasEstimate && gasCostDisplay.eth !== '0.0000' ? (
-              <p className="text-gray-400">~${gasCostDisplay.usd} USD</p>
+              <p className="text-sm text-gray-300 leading-relaxed text-right tabular-nums">
+                ~${gasCostDisplay.usd} USD
+              </p>
             ) : (
               <LoadingSpinner className="scale-50" />
             )}
@@ -83,70 +114,66 @@ export function PaymentBreakdown({
 
         {/* Coinbase Fees */}
         {coinbaseTotalFees && (
-          <div className="flex items-center justify-between text-sm">
-            <p className="text-gray-300">Coinbase Fees</p>
-            <p className="text-gray-400">
+          <div className="flex items-center justify-between gap-3">
+            <p className={rowLabelClass}>Coinbase Fees</p>
+            <p className="text-sm text-gray-300 leading-relaxed text-right tabular-nums">
               ~${coinbaseTotalFees.toFixed(2)} USD
             </p>
           </div>
         )}
 
-        {!showCurrentBalance && !showTotalToBuy && (
+        {!showTotalToBuy && (
           <>
-            {/* Divider */}
             <div className="border-t border-gray-500/30 my-2"></div>
-
-            {/* Total Required - for users with enough balance */}
-            {requiredEth > 0 && (
-              <div className="flex items-center justify-between">
-                <p className="text-white text-base font-semibold">
-                  Total Required
-                </p>
-                <div className="text-right">
-                  <p className="text-blue-400 text-base font-bold">
-                    ~${(requiredEth * ethUsdPrice).toFixed(2)} USD
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                Total:
+              </p>
+              <div className="text-right">
+                {totalAmountPending ? (
+                  <LoadingSpinner className="scale-50 ml-auto" />
+                ) : (
+                  <p className="text-sm text-gray-300 leading-relaxed font-medium tabular-nums">
+                    ~${totalUsd.toFixed(2)} USD
                   </p>
-                  <p className="text-blue-300 text-xs">
-                    ~{requiredEth.toFixed(6)} ETH
-                  </p>
-                </div>
+                )}
               </div>
+            </div>
+            {showOnchainFeesDisclaimer && (
+              <p className="text-sm text-gray-300 leading-relaxed">
+                Onchain fees are not collected by MoonDAO.
+              </p>
             )}
           </>
         )}
 
         {/* For users with some balance who need to buy more */}
-        {showCurrentBalance && (
+        {showCurrentBalance && hasEthDeficit && (
           <>
-            {/* Current Balance */}
-            <div className="flex items-center justify-between text-sm">
-              <p className="text-blue-300">Current Balance</p>
-              <p className="text-blue-400">
-                ${((nativeBalance || 0) * ethUsdPrice).toFixed(2)} USD
+            <div className="flex items-center justify-between gap-3">
+              <p className={rowLabelClass}>Current Balance</p>
+              <p className="text-sm text-gray-300 leading-relaxed text-right tabular-nums">
+                ${(nativeBal * ethUsdPrice).toFixed(2)} USD
               </p>
             </div>
 
-            {/* Divider */}
             <div className="border-t border-gray-500/30 my-2"></div>
 
             {/* Need to Buy */}
-            {showNeedToBuy && requiredEth > (nativeBalance || 0) && (
-              <div className="flex items-center justify-between">
-                <p className="text-white text-base font-semibold">
+            {showNeedToBuy && requiredEth > nativeBal && (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                   Need to Pay
                 </p>
                 <div className="text-right">
-                  <p className="text-green-400 text-base font-bold">
+                  <p className="text-sm text-gray-300 leading-relaxed font-medium tabular-nums">
                     $
                     {coinbasePaymentTotal
                       ? coinbasePaymentTotal.toFixed(2)
-                      : (
-                          requiredEth * ethUsdPrice -
-                          (nativeBalance || 0) * ethUsdPrice
-                        ).toFixed(2)}{' '}
+                      : (requiredEth * ethUsdPrice - nativeBal * ethUsdPrice).toFixed(2)}{' '}
                     USD
                   </p>
-                  <p className="text-green-300 text-xs">
+                  <p className="text-sm text-gray-300 leading-relaxed tabular-nums">
                     {coinbaseEthReceive ? (
                       <>
                         You'll receive at least {coinbaseEthReceive.toFixed(8)}{' '}
@@ -156,8 +183,7 @@ export function PaymentBreakdown({
                       <>
                         ~
                         {(
-                          (requiredEth * ethUsdPrice -
-                            (nativeBalance || 0) * ethUsdPrice) /
+                          (requiredEth * ethUsdPrice - nativeBal * ethUsdPrice) /
                           ethUsdPrice
                         ).toFixed(6)}{' '}
                         ETH
@@ -177,17 +203,19 @@ export function PaymentBreakdown({
             <div className="border-t border-gray-500/30 my-2"></div>
 
             {/* Total to Buy */}
-            <div className="flex items-center justify-between">
-              <p className="text-white text-base font-semibold">Total to Buy</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                Total to Buy
+              </p>
               <div className="text-right">
-                <p className="text-green-400 text-base font-bold">
+                <p className="text-sm text-gray-300 leading-relaxed font-medium tabular-nums">
                   ~$
                   {requiredEth && ethUsdPrice
                     ? (requiredEth * ethUsdPrice).toFixed(2)
                     : '0.00'}{' '}
                   USD
                 </p>
-                <p className="text-green-300 text-xs">
+                <p className="text-sm text-gray-300 leading-relaxed tabular-nums">
                   ~{requiredEth ? requiredEth.toFixed(6) : '0.000000'} ETH
                 </p>
               </div>
@@ -197,7 +225,7 @@ export function PaymentBreakdown({
 
         {/* Minimum adjustment notice */}
         {isAdjustedForMinimum && (
-          <p className="text-blue-300 text-xs pt-2">
+          <p className="text-sm text-gray-300 leading-relaxed pt-2">
             * Adjusted to Coinbase's $2 minimum. Extra ETH can be used for
             future transactions.
           </p>
@@ -207,7 +235,7 @@ export function PaymentBreakdown({
         {showTotalToBuy &&
           parseFloat(usdInput.replace(/,/g, '')) < 2 &&
           !isAdjustedForMinimum && (
-            <p className="text-blue-300 text-xs pt-2">
+            <p className="text-sm text-gray-300 leading-relaxed pt-2">
               * Adjusted to Coinbase's $2 minimum. Extra ETH can be used for
               future transactions.
             </p>
