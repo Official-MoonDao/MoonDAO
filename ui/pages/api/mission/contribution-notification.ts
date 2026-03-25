@@ -3,6 +3,10 @@ import JBV5TerminalStore from 'const/abis/JBV5TerminalStore.json'
 import PayHookABI from 'const/abis/LaunchPadPayHook.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import {
+  getMissionOffChainCommittedUsd,
+  MISSION_FUNDING_MILESTONES_USD,
+} from 'const/missionMilestones'
+import {
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   GENERAL_CHANNEL_ID,
@@ -18,8 +22,7 @@ import {
 } from 'const/config'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { BigNumber, ethers } from 'ethers'
-import { authMiddleware } from 'middleware/authMiddleware'
-import withMiddleware from 'middleware/withMiddleware'
+import { secureHeaders } from 'middleware/secureHeaders'
 import { getContract, readContract, waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getETHPrice } from '@/lib/etherscan'
@@ -34,6 +37,10 @@ import {
   subscribeContributorToNewsletter,
 } from '@/lib/contribution/contributionFollowUp'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
+import {
+  formatUsdCompact,
+  milestoneSegmentProgress,
+} from '@/lib/mission/milestoneProgress'
 import { formatNumberWithCommasAndDecimals } from '@/lib/utils/numbers'
 
 const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -75,6 +82,11 @@ async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' })
   }
+
+  secureHeaders(res)
+
+  /** Set once we `usedTransactions.add` so catch can release on unexpected errors (e.g. Discord fetch). */
+  let contributionTxConsumed: string | null = null
 
   try {
     const data =
@@ -147,9 +159,6 @@ async function handler(req: any, res: any) {
       })
     }
 
-    // Mark transaction as used to prevent replay attacks
-    usedTransactions.add(txHash)
-
     // Find the Pay event emitted by the JBV5 terminal to verify and extract contribution details.
     // This works for both same-chain and cross-chain (LayerZero) contributions,
     // where txReceipt.to may be a LayerZero endpoint rather than the terminal itself.
@@ -219,13 +228,21 @@ async function handler(req: any, res: any) {
     }
     const mission = missionRows[0]
 
+    if (usedTransactions.has(txHash)) {
+      return res.status(400).json({
+        message:
+          'This transaction has already been processed for contribution notification',
+      })
+    }
+    usedTransactions.add(txHash)
+    contributionTxConsumed = txHash
+
     const missionFundingGoal =
       parseFloat(mission.fundingGoal.toString()) / 1e18
 
-    //Mission total raised
+    // Mission total raised (on-chain terminal store; matches useTotalFunding)
     let missionTotalRaised = 0
     let missionTotalRaisedUSD = 0
-    let percentOfGoalRaised = 0
     try {
       const missionBalance = await readContract({
         contract: jbTerminalStoreContract,
@@ -252,11 +269,45 @@ async function handler(req: any, res: any) {
         (parseFloat(missionBalance.toString()) / 1e18 || 0) +
         (parseFloat(missionUsedPayoutLimit.toString()) / 1e18 || 0)
       missionTotalRaisedUSD = missionTotalRaised * ethPrice
-      percentOfGoalRaised =
-        (missionTotalRaised / missionFundingGoal) * 100
     } catch (err: any) {
       console.error('Failed to fetch mission balance:', err.message)
     }
+
+    const offChainCommittedUsd = getMissionOffChainCommittedUsd(mission.id)
+    const raisedUsdCombined = missionTotalRaisedUSD + offChainCommittedUsd
+    const milestoneSteps = MISSION_FUNDING_MILESTONES_USD[mission.id] ?? []
+    let progressLine = ''
+    if (milestoneSteps.length > 0) {
+      const seg = milestoneSegmentProgress(raisedUsdCombined, milestoneSteps)
+      if (seg.allMilestonesComplete) {
+        progressLine = `**Progress toward milestones**: 100% (all USD milestones reached; funding continues toward the full campaign goal)`
+      } else {
+        const pct =
+          seg.progressPercent < 1
+            ? seg.progressPercent.toFixed(2)
+            : seg.progressPercent.toFixed(0)
+        const toGo = formatUsdCompact(
+          Math.max(0, seg.segmentEndUsd - raisedUsdCombined)
+        )
+        progressLine = `**Progress toward ${formatUsdCompact(
+          seg.segmentEndUsd
+        )} milestone**: ${pct}% (${toGo} to go)`
+      }
+    } else {
+      const percentOfGoalRaised =
+        missionFundingGoal > 0 && ethPrice > 0
+          ? (raisedUsdCombined / (missionFundingGoal * ethPrice)) * 100
+          : 0
+      const pctStr =
+        percentOfGoalRaised < 1
+          ? percentOfGoalRaised.toFixed(4)
+          : percentOfGoalRaised.toFixed(0)
+      progressLine = `**Progress to goal**: ${pctStr}%`
+    }
+
+    const totalRaisedBlock = `**Total raised**: $${formatNumberWithCommasAndDecimals(
+      raisedUsdCombined
+    )}`
 
     //Mission metadata
     let missionMetadata: any = { name: `Mission #${mission.id}` }
@@ -323,16 +374,7 @@ async function handler(req: any, res: any) {
             contributionAmountETH >= 1 ? 3 : 5
           )} ETH ($${formatNumberWithCommasAndDecimals(
             contributionAmountUSD
-          )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}/mission/${mission.id})`}** mission!\n\n**Total Raised**: ${formatNumberWithCommasAndDecimals(
-            missionTotalRaised,
-            missionTotalRaised >= 1 ? 3 : 5
-          )} ETH ($${formatNumberWithCommasAndDecimals(
-            missionTotalRaisedUSD
-          )})\n**Progress to Goal**: ${
-            percentOfGoalRaised < 1
-              ? percentOfGoalRaised.toFixed(4)
-              : percentOfGoalRaised.toFixed(0)
-          }%\n${
+          )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}/mission/${mission.id})`}** mission!\n\n${totalRaisedBlock}\n${progressLine}\n${
             missionDeadline !== null && missionDeadline !== undefined
               ? `**Deadline**: <t:${missionDeadline.toString()}:R>`
               : ''
@@ -347,7 +389,42 @@ async function handler(req: any, res: any) {
       }
     }
 
-    const response = await fetch(
+    const emailTrim =
+      typeof contributorEmail === 'string' ? contributorEmail.trim() : ''
+    const wantsNewsletter = newsletterOptIn === true
+
+    const sendThankYouAndNewsletter = async () => {
+      if (!isValidContributorEmail(emailTrim)) {
+        if (emailTrim.length > 0) {
+          console.warn(
+            '[contribution-email] skipped: contributorEmail failed validation'
+          )
+        }
+        return
+      }
+      try {
+        // Must be awaited: serverless runtimes often freeze the isolate as soon as the HTTP
+        // response is sent, which aborts fire-and-forget SMTP before it completes.
+        await sendContributionThankYouEmail(emailTrim)
+      } catch (err: any) {
+        console.error(
+          'Contribution thank-you email failed:',
+          err?.message || err
+        )
+      }
+      if (wantsNewsletter) {
+        try {
+          await subscribeContributorToNewsletter(emailTrim)
+        } catch (err: any) {
+          console.error(
+            'Contribution newsletter subscribe failed:',
+            err?.message || err
+          )
+        }
+      }
+    }
+
+    const discordPromise = fetch(
       `https://discord.com/api/v10/channels/${NOTIFICATION_CHANNEL_ID}/messages`,
       {
         method: 'POST',
@@ -359,39 +436,32 @@ async function handler(req: any, res: any) {
       }
     )
 
+    const [response] = await Promise.all([
+      discordPromise,
+      sendThankYouAndNewsletter(),
+    ])
+
     if (!response.ok) {
       usedTransactions.delete(txHash)
+      const discordErrBody = await response.text()
+      console.error(
+        'Discord API contribution notification failed:',
+        response.status,
+        discordErrBody
+      )
       throw new Error('Failed to send message to Discord')
     }
 
-    const emailTrim =
-      typeof contributorEmail === 'string' ? contributorEmail.trim() : ''
-    const wantsNewsletter = newsletterOptIn === true
-
-    if (isValidContributorEmail(emailTrim)) {
-      // Fire-and-forget: don't block the response on follow-up delivery.
-      sendContributionThankYouEmail(emailTrim).catch((err: any) => {
-        console.error(
-          'Contribution thank-you email failed:',
-          err?.message || err
-        )
-      })
-      if (wantsNewsletter) {
-        subscribeContributorToNewsletter(emailTrim).catch((err: any) => {
-          console.error(
-            'Contribution newsletter subscribe failed:',
-            err?.message || err
-          )
-        })
-      }
-    }
-
+    contributionTxConsumed = null
     return res.status(200).json({ success: true })
   } catch (err: any) {
+    if (contributionTxConsumed) {
+      usedTransactions.delete(contributionTxConsumed)
+    }
     console.error('Contribution notification error:', err)
     return res.status(400).json({
       message: err.message || 'Failed to send contribution notification',
     })
   }
 }
-export default withMiddleware(handler, authMiddleware)
+export default handler

@@ -590,6 +590,11 @@ function MissionPayRedeemComponent({
     }
   }, [recommendedFundingChain, performWalletSwitchToRichest, onOpenModal])
 
+  const handleContinueWithoutSwitchingWallet = useCallback(() => {
+    setRichestSwitchModalOpen(false)
+    void onOpenModal?.(pendingContributeUsdRef.current)
+  }, [onOpenModal])
+
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
   const [redeemAmount, setRedeemAmount] = useState(0)
@@ -1005,6 +1010,9 @@ function MissionPayRedeemComponent({
   const richestTargetName = recommendedFundingChain
     ? (recommendedFundingChain.name ?? 'network').replace(' One', '')
     : ''
+  const walletCurrentNetworkLabel = nativeBalanceChain
+    ? (nativeBalanceChain.name ?? 'network').replace(' One', '')
+    : 'current network'
 
   return (
     <>
@@ -1017,19 +1025,27 @@ function MissionPayRedeemComponent({
         >
           <p className="text-gray-300 text-sm leading-relaxed mb-4">
             You have more ETH on <span className="font-semibold text-white">{richestTargetName}</span>{' '}
-            than on your wallet&apos;s current network. Switch to {richestTargetName} to continue to
-            contribute.
+            than on <span className="font-semibold text-white">{walletCurrentNetworkLabel}</span>. Switch
+            to {richestTargetName} to pay from that balance, or stay on {walletCurrentNetworkLabel} and
+            continue if you prefer.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
             <button
               type="button"
-              className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white border border-white/15 hover:bg-white/5 transition-colors"
+              className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white border border-white/15 hover:bg-white/5 transition-colors sm:order-1"
               onClick={() => setRichestSwitchModalOpen(false)}
             >
               Cancel
             </button>
+            <button
+              type="button"
+              className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white border border-white/15 hover:bg-white/5 transition-colors sm:order-2"
+              onClick={handleContinueWithoutSwitchingWallet}
+            >
+              {`Stay on ${walletCurrentNetworkLabel} and continue`}
+            </button>
             <StandardButton
-              className="gradient-2 rounded-lg text-sm px-5 py-2.5"
+              className="gradient-2 rounded-lg text-sm px-5 py-2.5 sm:order-3"
               onClick={() => void handleConfirmSwitchAndContribute()}
             >
               {`Switch to ${richestTargetName}`}

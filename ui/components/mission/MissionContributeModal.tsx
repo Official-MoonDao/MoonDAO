@@ -86,6 +86,11 @@ type MissionContributeModalProps = {
   fundingChainCompareEnabled?: boolean
   fundingPickReady?: boolean
   recommendedFundingChain?: Chain | null
+  /**
+   * Set to true immediately before opening the modal when the user chose to keep the current app
+   * network (e.g. “stay on Arbitrum”) instead of switching to the richest funding chain.
+   */
+  stayOnSelectedAppChainRef?: React.MutableRefObject<boolean>
 }
 
 export default function MissionContributeModal({
@@ -102,6 +107,7 @@ export default function MissionContributeModal({
   fundingChainCompareEnabled = false,
   fundingPickReady = false,
   recommendedFundingChain = null,
+  stayOnSelectedAppChainRef,
 }: MissionContributeModalProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
@@ -121,10 +127,6 @@ export default function MissionContributeModal({
   /** User picked a network in this modal; stop auto-reverting context to the richest funding chain. */
   const [userChosePayChainInModal, setUserChosePayChainInModal] = useState(false)
 
-  useEffect(() => {
-    if (!modalEnabled) setUserChosePayChainInModal(false)
-  }, [modalEnabled])
-
   /**
    * Recommended funding chain for initial sync / display when context lags behind RPC pick.
    * After the user changes network in the modal, `selectedChain` and `payChain` follow that choice.
@@ -137,10 +139,23 @@ export default function MissionContributeModal({
   const payChain = useMemo(() => {
     if (!modalEnabled) return selectedChain
     if (userChosePayChainInModal) return selectedChain
+    if (stayOnSelectedAppChainRef?.current) return selectedChain
     return fundingDisplayChain ?? selectedChain
-  }, [modalEnabled, userChosePayChainInModal, fundingDisplayChain, selectedChain])
+  }, [
+    modalEnabled,
+    userChosePayChainInModal,
+    fundingDisplayChain,
+    selectedChain,
+    stayOnSelectedAppChainRef,
+  ])
 
-  const chainSlug = getChainSlug(payChain)
+  /** Stable `Chain` reference for RPC hooks (avoids refetch when context swaps object identity). */
+  const payChainStable = useMemo(
+    () => chains.find((c) => c.id === payChain.id) ?? payChain,
+    [chains, payChain]
+  )
+
+  const chainSlug = getChainSlug(payChainStable)
 
   /**
    * One-shot / recommended updates only — not on every `selectedChain` change, so explicit
@@ -162,8 +177,17 @@ export default function MissionContributeModal({
   ])
 
   useLayoutEffect(() => {
+    if (!modalEnabled) {
+      setUserChosePayChainInModal(false)
+      return
+    }
+    if (stayOnSelectedAppChainRef?.current) {
+      stayOnSelectedAppChainRef.current = false
+      setUserChosePayChainInModal(true)
+      return
+    }
     syncContextToRecommendedFunding()
-  }, [syncContextToRecommendedFunding])
+  }, [modalEnabled, stayOnSelectedAppChainRef, syncContextToRecommendedFunding])
 
   const contributionTermsCheckboxLabel = useMemo(
     () => (
@@ -222,6 +246,8 @@ export default function MissionContributeModal({
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
   const gasEstimateSeqRef = useRef(0)
   const gasEstimateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** When set, we already finished estimating for this key — do not re-run RPC quote/gas for peripheral updates. */
+  const lastSuccessfulEstimateKeyRef = useRef<string | null>(null)
 
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
 
@@ -264,7 +290,7 @@ export default function MissionContributeModal({
 
   const crossChainPayContract = useContract({
     address: MISSION_CROSS_CHAIN_PAY_ADDRESS,
-    chain: payChain,
+    chain: payChainStable,
     abi: MISSION_CROSS_CHAIN_PAY_ABI.abi as any,
     forwardClient,
   })
@@ -294,7 +320,7 @@ export default function MissionContributeModal({
     let cancelled = false
     setIsLoadingRpcFundingBalance(true)
     setRpcFundingChainWei(null)
-    fetchNativeBalanceWei(payChain, address).then((wei) => {
+    fetchNativeBalanceWei(payChainStable, address).then((wei) => {
       if (cancelled) return
       setRpcFundingChainWei(wei)
       setIsLoadingRpcFundingBalance(false)
@@ -302,7 +328,7 @@ export default function MissionContributeModal({
     return () => {
       cancelled = true
     }
-  }, [modalEnabled, address, payChain, walletOnPayChain])
+  }, [modalEnabled, address, payChainStable, walletOnPayChain])
 
   const fundingBalanceEth = useMemo(() => {
     if (!address) return null
@@ -333,7 +359,7 @@ export default function MissionContributeModal({
     rpcFundingChainWei,
   ])
 
-  const { effectiveGasPrice } = useGasPrice(payChain)
+  const { effectiveGasPrice } = useGasPrice(payChainStable)
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -361,6 +387,20 @@ export default function MissionContributeModal({
     const eth = Number(numericValue) / ethUsdPrice
     return formatEthFiveSigFigs(eth)
   }, [usdInput, ethUsdPrice])
+
+  /**
+   * ETH sent for the contribution / token quote. Uses the same USD÷price as the UI, not the
+   * `input` string (which is rounded to 6 decimals and can disagree with "You contribute").
+   */
+  const paymentEthAmount = useMemo(() => {
+    const clean = usdInput ? usdInput.replace(/,/g, '') : ''
+    const usd = parseFloat(clean)
+    if (ethUsdPrice && usdInput && Number.isFinite(usd) && usd > 0) {
+      return usd / ethUsdPrice
+    }
+    const fromInput = parseFloat(input) || 0
+    return Number.isFinite(fromInput) && fromInput > 0 ? fromInput : 0
+  }, [usdInput, ethUsdPrice, input])
 
   // Format input with commas in real-time
   const formatInputWithCommas = useCallback((value: string) => {
@@ -469,7 +509,7 @@ export default function MissionContributeModal({
   }, [estimatedGas, effectiveGasPrice, ethUsdPrice])
 
   // Helper function to safely convert a number to wei (BigInt)
-  const toWei = (value: number): bigint => {
+  const toWei = useCallback((value: number): bigint => {
     if (!isFinite(value) || isNaN(value) || value < 0) {
       return BigInt(0)
     }
@@ -488,21 +528,28 @@ export default function MissionContributeModal({
     const decWei = BigInt(decimalDigits)
 
     return intWei + decWei
-  }
+  }, [])
 
   const RPC_FETCH_TIMEOUT_MS = 25_000
   const LAYERZERO_QUOTE_TIMEOUT_MS = 25_000
 
+  const estimateContributionGasRef = useRef<
+    (seq: number, estimateInputKey: string) => Promise<void>
+  >(async () => {})
+
   // Estimate gas for the contribution transaction
-  const estimateContributionGas = useCallback(async (seq: number) => {
+  const estimateContributionGas = useCallback(async (seq: number, estimateInputKey: string) => {
     const stale = () => seq !== gasEstimateSeqRef.current
+    const commitEstimate = () => {
+      if (!stale()) lastSuccessfulEstimateKeyRef.current = estimateInputKey
+    }
 
     if (!account || !address) {
       if (!stale()) setIsLoadingGasEstimate(false)
       return
     }
 
-    const inputValue = parseFloat(input) || 0
+    const inputValue = paymentEthAmount
     if (inputValue <= 0 || !isFinite(inputValue)) {
       if (!stale()) {
         setEstimatedGas(BigInt(0))
@@ -512,7 +559,7 @@ export default function MissionContributeModal({
       return
     }
 
-    if (!payChain?.id || !mission?.projectId) {
+    if (!payChainStable?.id || !mission?.projectId) {
       console.warn('Missing required data for gas estimation')
       if (!stale()) setIsLoadingGasEstimate(false)
       return
@@ -532,6 +579,7 @@ export default function MissionContributeModal({
         const ethAmount = usdValue / ethUsdPrice
         if (ethAmount > LAYERZERO_MAX_CONTRIBUTION_ETH) {
           if (!stale()) {
+            commitEstimate()
             setCrossChainQuote(BigInt(Math.floor(0.25 * 1e18)))
             setEstimatedGas(applyGasBuffer(BigInt(300000), true))
             setIsLoadingGasEstimate(false)
@@ -621,7 +669,7 @@ export default function MissionContributeModal({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chainId: payChain.id,
+              chainId: payChainStable.id,
               from: address,
               to: MISSION_CROSS_CHAIN_PAY_ADDRESS,
               data: txData,
@@ -733,6 +781,7 @@ export default function MissionContributeModal({
 
       const bufferPercent = isCrossChain ? 180 : 130
       const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
+      commitEstimate()
       setEstimatedGas(gasWithBuffer)
       setIsLoadingGasEstimate(false)
     } catch (error) {
@@ -741,6 +790,7 @@ export default function MissionContributeModal({
         error instanceof Error ? error.message : error
       )
       if (!stale()) {
+        commitEstimate()
         setEstimatedGas(applyGasBuffer(BigInt(isCrossChain ? 300000 : 180000), isCrossChain))
         setIsLoadingGasEstimate(false)
       }
@@ -750,17 +800,20 @@ export default function MissionContributeModal({
     address,
     primaryTerminalContract,
     crossChainPayContract,
-    input,
     chainSlug,
     defaultChainSlug,
     mission?.projectId,
     output,
     message,
     primaryTerminalAddress,
-    payChain,
+    payChainStable,
     ethUsdPrice,
     usdInput,
+    paymentEthAmount,
+    toWei,
   ])
+
+  estimateContributionGasRef.current = estimateContributionGas
 
   // Calculate required ETH amount
   // Add a small safety buffer (3-5%) to ensure users have enough after onramp
@@ -899,8 +952,7 @@ export default function MissionContributeModal({
 
   const getQuote = useCallback(async () => {
     try {
-      const inputValue = parseFloat(input) || 0
-      if (inputValue <= 0) {
+      if (paymentEthAmount <= 0) {
         setOutput(0)
         return
       }
@@ -910,13 +962,13 @@ export default function MissionContributeModal({
         return
       }
 
-      const tokensReceived = calculateTokensFromPayment(toWei(inputValue), ruleset)
+      const tokensReceived = calculateTokensFromPayment(toWei(paymentEthAmount), ruleset)
       setOutput(+tokensReceived)
     } catch (error) {
       console.error('Error calculating quote:', error)
       setOutput(0)
     }
-  }, [input, ruleset])
+  }, [paymentEthAmount, ruleset, toWei])
 
   const buyMissionToken = useCallback(async () => {
     if (!account || !address) {
@@ -941,7 +993,7 @@ export default function MissionContributeModal({
       return
     }
 
-    const inputValue = parseFloat(input) || 0
+    const inputValue = paymentEthAmount
     const usdValue = parseFloat(usdInput.replace(/,/g, '')) || 0
 
     if (usdInput && usdValue <= 0) {
@@ -1044,22 +1096,43 @@ export default function MissionContributeModal({
 
       const accessToken = await getAccessToken()
 
-      const contributionNotification: any = await fetch('/api/mission/contribution-notification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          txHash: receipt.transactionHash,
-          accessToken: accessToken,
-          txChainSlug: defaultChainSlug,
-          projectId: mission?.projectId,
-          contributorEmail: emailTrim,
-          newsletterOptIn,
-        }),
-      })
-      const contributionNotificationData = await contributionNotification.json()
+      // Same-chain and cross-chain both settle with a Juicebox Pay on `DEFAULT_CHAIN_V5`; we always
+      // notify using that destination tx hash and `defaultChainSlug` (not the LayerZero source tx).
+      const notificationBody = {
+        txHash: receipt.transactionHash,
+        accessToken: accessToken,
+        txChainSlug: defaultChainSlug,
+        projectId: mission?.projectId,
+        contributorEmail: emailTrim,
+        newsletterOptIn,
+      }
 
-      if (contributionNotificationData?.message) {
-        console.log(contributionNotificationData.message)
+      let contributionNotificationData: { message?: string; success?: boolean } = {}
+      const maxNotificationAttempts = 5
+      for (let attempt = 0; attempt < maxNotificationAttempts; attempt++) {
+        const contributionNotification = await fetch('/api/mission/contribution-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(notificationBody),
+        })
+        contributionNotificationData = await contributionNotification.json()
+
+        if (contributionNotification.ok) {
+          break
+        }
+
+        const msg = contributionNotificationData?.message || ''
+        const retryable =
+          msg.includes('No Pay event found') || msg.includes('Transaction not found')
+        if (retryable && attempt < maxNotificationAttempts - 1) {
+          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+          continue
+        }
+        break
+      }
+
+      if (!contributionNotificationData?.success && contributionNotificationData?.message) {
+        console.warn('Contribution notification:', contributionNotificationData.message)
       }
 
       setInput('0')
@@ -1132,7 +1205,7 @@ export default function MissionContributeModal({
     account,
     primaryTerminalContract,
     mission,
-    input,
+    paymentEthAmount,
     address,
     output,
     message,
@@ -1153,16 +1226,17 @@ export default function MissionContributeModal({
     contributorEmail,
     newsletterOptIn,
     isOverviewMission,
+    toWei,
   ])
 
-  // Calculate quote when input changes
+  // Calculate quote when payment amount or ruleset changes (aligned with USD → ETH, not rounded `input`)
   useEffect(() => {
-    if (parseFloat(input) > 0 && ruleset && ruleset[0] && ruleset[1]) {
+    if (paymentEthAmount > 0 && ruleset && ruleset[0] && ruleset[1]) {
       getQuote()
-    } else if (input === '0' || input === '') {
+    } else if (paymentEthAmount <= 0) {
       setOutput(0)
     }
-  }, [input, getQuote, ruleset])
+  }, [paymentEthAmount, getQuote, ruleset])
 
   // Update ETH input when USD changes
   useEffect(() => {
@@ -1174,8 +1248,18 @@ export default function MissionContributeModal({
     }
   }, [usdInput, ethUsdPrice])
 
-  // Estimate gas on input change (debounced; seq ref drops stale async results)
+  // Estimate gas on meaningful input change only (debounced). Ref + key cache avoids re-quote on eth price / contract identity churn.
   useEffect(() => {
+    if (!modalEnabled) {
+      lastSuccessfulEstimateKeyRef.current = null
+      if (gasEstimateDebounceRef.current) {
+        clearTimeout(gasEstimateDebounceRef.current)
+        gasEstimateDebounceRef.current = null
+      }
+      gasEstimateSeqRef.current += 1
+      return
+    }
+
     if (gasEstimateDebounceRef.current) {
       clearTimeout(gasEstimateDebounceRef.current)
       gasEstimateDebounceRef.current = null
@@ -1184,11 +1268,19 @@ export default function MissionContributeModal({
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
     const usdValue = parseFloat(cleanUsdInput)
 
-    if (!(usdValue > 0 && input && parseFloat(input) > 0)) {
+    if (!(usdValue > 0 && paymentEthAmount > 0)) {
       gasEstimateSeqRef.current += 1
       setIsLoadingGasEstimate(false)
       setEstimatedGas(BigInt(0))
       setCrossChainQuote(BigInt(0))
+      lastSuccessfulEstimateKeyRef.current = null
+      return
+    }
+
+    const estimateInputKey = `${payChainStable.id}:${chainSlug}:${defaultChainSlug}:${cleanUsdInput}:${paymentEthAmount}:${output}:${message}`
+
+    if (lastSuccessfulEstimateKeyRef.current === estimateInputKey) {
+      setIsLoadingGasEstimate(false)
       return
     }
 
@@ -1198,7 +1290,7 @@ export default function MissionContributeModal({
     gasEstimateDebounceRef.current = setTimeout(() => {
       gasEstimateDebounceRef.current = null
       if (runSeq !== gasEstimateSeqRef.current) return
-      void estimateContributionGas(runSeq)
+      void estimateContributionGasRef.current(runSeq, estimateInputKey)
     }, 600)
 
     return () => {
@@ -1207,7 +1299,16 @@ export default function MissionContributeModal({
         gasEstimateDebounceRef.current = null
       }
     }
-  }, [usdInput, input, payChain, estimateContributionGas])
+  }, [
+    modalEnabled,
+    usdInput,
+    paymentEthAmount,
+    payChainStable.id,
+    chainSlug,
+    defaultChainSlug,
+    output,
+    message,
+  ])
 
   // Use the onramp auto-transaction hook for handling post-onramp flow
   useOnrampAutoTransaction({

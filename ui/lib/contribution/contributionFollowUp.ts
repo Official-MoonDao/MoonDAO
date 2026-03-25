@@ -1,5 +1,8 @@
 import { CK_NEWSLETTER_FORM_ID } from 'const/config'
-import { opEmail, transporter } from '@/lib/nodemailer/nodemailer'
+import {
+  createMoonDaoGmailTransport,
+  opEmail,
+} from '@/lib/nodemailer/nodemailer'
 
 export async function subscribeContributorToNewsletter(email: string): Promise<void> {
   const apiKey = process.env.CONVERT_KIT_API_KEY
@@ -40,19 +43,19 @@ All the best,
 Frank`
 
 export async function sendContributionThankYouEmail(toEmail: string): Promise<void> {
-  if (!process.env.NODEMAILER_PASSWORD) {
-    console.warn('sendContributionThankYouEmail: NODEMAILER_PASSWORD not set')
-    return
-  }
-
-  await transporter.sendMail({
+  const transport = createMoonDaoGmailTransport()
+  const to = toEmail.trim()
+  const info = await transport.sendMail({
     from: opEmail,
-    to: toEmail.trim(),
+    to,
     subject: 'Thank you for supporting Send Frank to Space',
     text: CONTRIBUTION_THANK_YOU_BODY,
     html: `<!DOCTYPE html><html><head><meta charset="utf-8"/></head><body style="margin:0;padding:24px;font-family:system-ui,-apple-system,sans-serif;line-height:1.6;color:#111;">
 <div style="white-space:pre-wrap;max-width:40rem;">${escapeHtml(CONTRIBUTION_THANK_YOU_BODY)}</div>
 </body></html>`,
+  })
+  console.info('[contribution-email] thank-you sent', {
+    messageId: info.messageId,
   })
 }
 

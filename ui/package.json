@@ -19,7 +19,8 @@
     "cy:run-ct:warp": "bash scripts/test-parallel.sh 8",
     "test:voting-author-restriction": "ts-node -r tsconfig-paths/register scripts/test-voting-author-restriction.ts",
     "test:cypress-unit": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-cypress-unit.json",
-    "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts"
+    "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts",
+    "verify:mail": "node scripts/verify-nodemailer.cjs"
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.3.3",

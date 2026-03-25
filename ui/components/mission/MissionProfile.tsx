@@ -139,6 +139,8 @@ export default function MissionProfile({
     target: Chain
     nextUsd?: string
   } | null>(null)
+  /** Signals MissionContributeModal to keep pay chain on current app network (user declined richest-chain switch). */
+  const stayOnSelectedAppChainForContributeRef = useRef(false)
   const [teamNFT, setTeamNFT] = useState<any>(_teamNFT)
   const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
@@ -712,19 +714,36 @@ export default function MissionProfile({
               <span className="font-semibold text-white">
                 {(selectedChain.name ?? 'network').replace(' One', '')}
               </span>
-              . Switch the app to that network before opening Contribute.
+              . Switch the app to use that balance, or stay on your current app network and contribute
+              from there.
             </p>
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
               <button
                 type="button"
-                className="px-4 py-2.5 rounded-lg text-sm text-gray-300 border border-white/15 hover:bg-white/5"
+                className="px-4 py-2.5 rounded-lg text-sm text-gray-300 border border-white/15 hover:bg-white/5 sm:order-1"
                 onClick={() => setPayChainGate(null)}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                className="px-4 py-2.5 rounded-lg text-sm font-semibold gradient-2 text-white"
+                className="px-4 py-2.5 rounded-lg text-sm text-gray-300 border border-white/15 hover:bg-white/5 sm:order-2"
+                onClick={() => {
+                  const g = payChainGate
+                  if (!g) return
+                  stayOnSelectedAppChainForContributeRef.current = true
+                  if (g.nextUsd !== undefined) {
+                    setUsdInput(g.nextUsd)
+                  }
+                  setPayChainGate(null)
+                  setContributeModalEnabled(true)
+                }}
+              >
+                {`Stay on ${(selectedChain.name ?? 'network').replace(' One', '')} and continue`}
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold gradient-2 text-white sm:order-3"
                 onClick={() => {
                   const g = payChainGate
                   if (!g) return
@@ -760,6 +779,7 @@ export default function MissionProfile({
         fundingChainCompareEnabled={fundingChainCompareEnabled}
         fundingPickReady={fundingPickReady}
         recommendedFundingChain={recommendedChain}
+        stayOnSelectedAppChainRef={stayOnSelectedAppChainForContributeRef}
       />
     </>
   )
