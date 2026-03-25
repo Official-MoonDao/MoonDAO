@@ -79,6 +79,8 @@ type NetworkSelectorProps = {
    * Context is still updated when the user picks a network from the dropdown.
    */
   displayChain?: any | null
+  /** Called after the user picks a network from the dropdown (not for programmatic context updates). */
+  onUserSelectChain?: (chain: any) => void
 }
 
 export default function NetworkSelector({
@@ -87,6 +89,7 @@ export default function NetworkSelector({
   chains,
   align = 'right',
   displayChain = null,
+  onUserSelectChain,
 }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const shownChain = displayChain ?? selectedChain
@@ -97,6 +100,7 @@ export default function NetworkSelector({
 
   async function selectChain(chain: any) {
     setSelectedChain(chain)
+    onUserSelectChain?.(chain)
     setDropdown(false)
 
     // Switch the wallet to the selected network when connected

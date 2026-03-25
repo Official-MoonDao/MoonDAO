@@ -118,38 +118,52 @@ export default function MissionContributeModal({
 
   const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'
 
+  /** User picked a network in this modal; stop auto-reverting context to the richest funding chain. */
+  const [userChosePayChainInModal, setUserChosePayChainInModal] = useState(false)
+
+  useEffect(() => {
+    if (!modalEnabled) setUserChosePayChainInModal(false)
+  }, [modalEnabled])
+
   /**
-   * Canonical chain for pay UI + RPC balance + gas (recommended when set, else app context).
-   * Avoids fetching/displaying Arbitrum first while global `selectedChain` is still catching up.
+   * Recommended funding chain for initial sync / display when context lags behind RPC pick.
+   * After the user changes network in the modal, `selectedChain` and `payChain` follow that choice.
    */
   const fundingDisplayChain = useMemo(() => {
     if (!modalEnabled || !recommendedFundingChain) return null
     return chains.find((c) => c.id === recommendedFundingChain.id) ?? recommendedFundingChain
   }, [modalEnabled, recommendedFundingChain, chains])
 
-  const payChain = useMemo(
-    () => fundingDisplayChain ?? selectedChain,
-    [fundingDisplayChain, selectedChain]
-  )
+  const payChain = useMemo(() => {
+    if (!modalEnabled) return selectedChain
+    if (userChosePayChainInModal) return selectedChain
+    return fundingDisplayChain ?? selectedChain
+  }, [modalEnabled, userChosePayChainInModal, fundingDisplayChain, selectedChain])
 
   const chainSlug = getChainSlug(payChain)
 
-  /** Keep global context aligned with `recommendedFundingChain` while modal is open (layout + post-paint). */
+  /**
+   * One-shot / recommended updates only — not on every `selectedChain` change, so explicit
+   * NetworkSelector picks are not overwritten.
+   */
   const syncContextToRecommendedFunding = useCallback(() => {
     if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') return
     if (!modalEnabled || !recommendedFundingChain) return
+    if (userChosePayChainInModal) return
     const target =
       chains.find((c) => c.id === recommendedFundingChain.id) ?? recommendedFundingChain
     setSelectedChain((prev) => (prev.id === target.id ? prev : target))
-  }, [modalEnabled, recommendedFundingChain, chains, setSelectedChain])
+  }, [
+    modalEnabled,
+    recommendedFundingChain,
+    chains,
+    setSelectedChain,
+    userChosePayChainInModal,
+  ])
 
   useLayoutEffect(() => {
     syncContextToRecommendedFunding()
-  }, [syncContextToRecommendedFunding, selectedChain.id])
-
-  useEffect(() => {
-    syncContextToRecommendedFunding()
-  }, [syncContextToRecommendedFunding, selectedChain.id])
+  }, [syncContextToRecommendedFunding])
 
   const contributionTermsCheckboxLabel = useMemo(
     () => (
@@ -1458,7 +1472,14 @@ export default function MissionContributeModal({
                 <NetworkSelector
                   chains={chains}
                   align="left"
-                  displayChain={fundingDisplayChain ?? undefined}
+                  displayChain={
+                    !userChosePayChainInModal &&
+                    fundingDisplayChain != null &&
+                    selectedChain.id !== fundingDisplayChain.id
+                      ? fundingDisplayChain
+                      : undefined
+                  }
+                  onUserSelectChain={() => setUserChosePayChainInModal(true)}
                 />
               </div>
 
