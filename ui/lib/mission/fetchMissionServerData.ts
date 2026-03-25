@@ -154,33 +154,50 @@ export async function fetchMissionContracts(
     chain: chain,
   })
 
+  const zeroAddr = '0x0000000000000000000000000000000000000000'
+
   const [metadataURI, stage, payHookAddress, tokenAddress, primaryTerminalAddress, ruleset] =
     await Promise.all([
       readContract({
         contract: jbControllerContract,
         method: 'uriOf' as string,
         params: [projectId],
+      }).catch((err) => {
+        console.warn(
+          `[fetchMissionContracts] uriOf failed (projectId=${projectId}):`,
+          err
+        )
+        return ''
       }),
       readContract({
         contract: missionCreatorContract,
         method: 'stage' as string,
         params: [tokenId],
+      }).catch((err) => {
+        console.warn(`[fetchMissionContracts] stage failed (tokenId=${tokenId}):`, err)
+        return BigInt(0)
       }),
       readContract({
         contract: missionCreatorContract,
         method: 'missionIdToPayHook' as string,
         params: [tokenId],
-      }).catch(() => '0x0000000000000000000000000000000000000000'),
+      }).catch(() => zeroAddr),
       readContract({
         contract: jbTokensContract,
         method: 'tokenOf' as string,
         params: [projectId],
+      }).catch((err) => {
+        console.warn(
+          `[fetchMissionContracts] tokenOf failed (projectId=${projectId}):`,
+          err
+        )
+        return zeroAddr
       }),
       readContract({
         contract: jbDirectoryContract,
         method: 'primaryTerminalOf' as string,
         params: [projectId, JB_NATIVE_TOKEN_ADDRESS],
-      }).catch(() => '0x0000000000000000000000000000000000000000'),
+      }).catch(() => zeroAddr),
       readContract({
         contract: jbControllerContract,
         method: 'currentRulesetOf' as string,
