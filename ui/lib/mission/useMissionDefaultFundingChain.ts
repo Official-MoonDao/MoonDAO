@@ -1,14 +1,25 @@
-import { useContext, useEffect, useRef } from 'react'
+'use client'
+
+import { useEffect, useState } from 'react'
 import { fetchNativeBalanceWei, pickChainWithMaxNativeBalance } from '@/lib/mission/contributeModalDefaultChain'
 import type { Chain } from '@/lib/rpc/chains'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+
+type FundingPickState = {
+  pickReady: boolean
+  recommendedChain: Chain | null
+}
+
+const initialPick: FundingPickState = {
+  pickReady: false,
+  recommendedChain: null,
+}
 
 /**
- * Pick Arbitrum / Base / Ethereum (or Sepolia / Optimism Sepolia on testnet) with the largest
- * native balance for `address` and set `selectedChain` in context only.
+ * Compare native balance on Arbitrum / Base / Ethereum (or testnet equivalents) and remember which
+ * chain holds the most ETH — **without** changing `selectedChain`. The app defaults to Arbitrum
+ * (`DEFAULT_CHAIN_V5`); the mission banner can suggest switching when another chain has more.
  *
- * Does **not** call `wallet.switchChain` (avoids background races with `useNativeBalance` and
- * multi-tab). The user switches via `PrivyWeb3Button` (“Switch Network”) before contributing.
+ * Single useState keeps hook layout minimal (avoids dispatcher issues when parent hook counts vary).
  */
 export function useMissionDefaultFundingChain({
   enabled,
@@ -18,27 +29,26 @@ export function useMissionDefaultFundingChain({
   enabled: boolean
   address: string | undefined
   chains: Chain[]
-}) {
-  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
-
-  const selectedChainIdRef = useRef(selectedChain.id)
-  selectedChainIdRef.current = selectedChain.id
-
-  const appliedForAddressRef = useRef<string | null>(null)
+}): { fundingPickReady: boolean; recommendedChain: Chain | null } {
+  const [pick, setPick] = useState<FundingPickState>(initialPick)
 
   useEffect(() => {
-    if (!enabled) return
-
-    if (!address) {
-      appliedForAddressRef.current = null
+    if (!enabled) {
+      setPick(initialPick)
       return
     }
 
-    if (chains.length === 0) return
+    if (!address) {
+      setPick(initialPick)
+      return
+    }
 
-    if (appliedForAddressRef.current === address) return
+    if (chains.length === 0) {
+      setPick(initialPick)
+      return
+    }
 
-    const startedChainId = selectedChainIdRef.current
+    setPick({ pickReady: false, recommendedChain: null })
     let cancelled = false
 
     ;(async () => {
@@ -49,20 +59,18 @@ export function useMissionDefaultFundingChain({
         })
       )
       if (cancelled) return
-      if (selectedChainIdRef.current !== startedChainId) return
 
       const best = pickChainWithMaxNativeBalance(entries, chains)
-      setSelectedChain(best)
-      appliedForAddressRef.current = address
+      setPick({ pickReady: true, recommendedChain: best })
     })()
 
     return () => {
       cancelled = true
     }
-  }, [
-    enabled,
-    address,
-    chains,
-    setSelectedChain,
-  ])
+  }, [enabled, address, chains])
+
+  return {
+    fundingPickReady: pick.pickReady,
+    recommendedChain: pick.recommendedChain,
+  }
 }

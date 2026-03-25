@@ -18,7 +18,14 @@ import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useMemo, useContext, useEffect, useState, useCallback, useRef } from 'react'
+import React, {
+  useMemo,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -37,7 +44,7 @@ import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import { formatContributionOutput } from '@/lib/mission'
-import { fetchNativeBalanceWei, pickChainWithMaxNativeBalance } from '@/lib/mission/contributeModalDefaultChain'
+import { fetchNativeBalanceWei } from '@/lib/mission/contributeModalDefaultChain'
 import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
 import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -87,7 +94,7 @@ export default function MissionContributeModal({
   usdInput,
   setUsdInput,
 }: MissionContributeModalProps) {
-  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const chainSlug = getChainSlug(selectedChain)
@@ -148,10 +155,6 @@ export default function MissionContributeModal({
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
 
-  const selectedChainIdRef = useRef(selectedChain.id)
-  selectedChainIdRef.current = selectedChain.id
-  const contributeModalDefaultChainAppliedRef = useRef(false)
-
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState(() => {
@@ -161,6 +164,8 @@ export default function MissionContributeModal({
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
+  const gasEstimateSeqRef = useRef(0)
+  const gasEstimateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
 
@@ -210,40 +215,71 @@ export default function MissionContributeModal({
 
   const { nativeBalance, walletChain: nativeBalanceChain, refetch: refetchNativeBalance } =
     useNativeBalance()
-  const walletConnectedChainSlug = nativeBalanceChain
-    ? getChainSlug(nativeBalanceChain)
-    : chainSlug
-  const { effectiveGasPrice } = useGasPrice(selectedChain)
+  const walletOnSelectedChain = useMemo(
+    () => nativeBalanceChain != null && nativeBalanceChain.id === selectedChain.id,
+    [nativeBalanceChain, selectedChain.id]
+  )
+
+  /** Balance on `selectedChain` (funding network). RPC when wallet is elsewhere — matches auto-picked chain. */
+  const [rpcFundingChainWei, setRpcFundingChainWei] = useState<bigint | null>(null)
+  const [isLoadingRpcFundingBalance, setIsLoadingRpcFundingBalance] = useState(false)
 
   useEffect(() => {
-    if (!modalEnabled) {
-      contributeModalDefaultChainAppliedRef.current = false
+    if (!modalEnabled || !address) {
+      setRpcFundingChainWei(null)
+      setIsLoadingRpcFundingBalance(false)
       return
     }
-    if (!address || contributeModalDefaultChainAppliedRef.current) return
-
-    const startedChainId = selectedChainIdRef.current
+    if (walletOnSelectedChain) {
+      setRpcFundingChainWei(null)
+      setIsLoadingRpcFundingBalance(false)
+      return
+    }
     let cancelled = false
-
-    ;(async () => {
-      const entries = await Promise.all(
-        chains.map(async (chain) => {
-          const wei = await fetchNativeBalanceWei(chain, address)
-          return { chain, wei }
-        })
-      )
+    setIsLoadingRpcFundingBalance(true)
+    setRpcFundingChainWei(null)
+    fetchNativeBalanceWei(selectedChain, address).then((wei) => {
       if (cancelled) return
-      if (selectedChainIdRef.current !== startedChainId) return
-
-      const best = pickChainWithMaxNativeBalance(entries, chains)
-      setSelectedChain(best)
-      contributeModalDefaultChainAppliedRef.current = true
-    })()
-
+      setRpcFundingChainWei(wei)
+      setIsLoadingRpcFundingBalance(false)
+    })
     return () => {
       cancelled = true
     }
-  }, [modalEnabled, address, chains, setSelectedChain])
+  }, [modalEnabled, address, selectedChain, walletOnSelectedChain])
+
+  const fundingBalanceEth = useMemo(() => {
+    if (!address) return null
+    if (walletOnSelectedChain) {
+      return nativeBalance == null ? null : Number(nativeBalance)
+    }
+    if (isLoadingRpcFundingBalance) return null
+    return rpcFundingChainWei !== null ? Number(rpcFundingChainWei) / 1e18 : null
+  }, [
+    address,
+    walletOnSelectedChain,
+    nativeBalance,
+    isLoadingRpcFundingBalance,
+    rpcFundingChainWei,
+  ])
+
+  const fundingBalanceResolved = useMemo(() => {
+    if (!address) return false
+    if (walletOnSelectedChain) {
+      return nativeBalance != null
+    }
+    return !isLoadingRpcFundingBalance && rpcFundingChainWei !== null
+  }, [
+    address,
+    walletOnSelectedChain,
+    nativeBalance,
+    isLoadingRpcFundingBalance,
+    rpcFundingChainWei,
+  ])
+
+  const fundingChainSlug = getChainSlug(selectedChain)
+
+  const { effectiveGasPrice } = useGasPrice(selectedChain)
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -400,23 +436,40 @@ export default function MissionContributeModal({
     return intWei + decWei
   }
 
+  const RPC_FETCH_TIMEOUT_MS = 25_000
+  const LAYERZERO_QUOTE_TIMEOUT_MS = 25_000
+
   // Estimate gas for the contribution transaction
-  const estimateContributionGas = useCallback(async () => {
-    if (!account || !address) return
+  const estimateContributionGas = useCallback(async (seq: number) => {
+    const stale = () => seq !== gasEstimateSeqRef.current
+
+    if (!account || !address) {
+      if (!stale()) setIsLoadingGasEstimate(false)
+      return
+    }
 
     const inputValue = parseFloat(input) || 0
     if (inputValue <= 0 || !isFinite(inputValue)) {
-      setEstimatedGas(BigInt(0))
-      setCrossChainQuote(BigInt(0))
+      if (!stale()) {
+        setEstimatedGas(BigInt(0))
+        setCrossChainQuote(BigInt(0))
+        setIsLoadingGasEstimate(false)
+      }
       return
     }
 
     if (!selectedChain?.id || !mission?.projectId) {
       console.warn('Missing required data for gas estimation')
+      if (!stale()) setIsLoadingGasEstimate(false)
       return
     }
 
     const isCrossChain = chainSlug !== defaultChainSlug
+
+    const applyGasBuffer = (rawGas: bigint, cross: boolean) => {
+      const bufferPercent = cross ? 180 : 130
+      return (rawGas * BigInt(bufferPercent)) / BigInt(100)
+    }
 
     if (isCrossChain && (chainSlug === 'ethereum' || chainSlug === 'base') && ethUsdPrice) {
       const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
@@ -424,20 +477,22 @@ export default function MissionContributeModal({
       if (usdValue > 0) {
         const ethAmount = usdValue / ethUsdPrice
         if (ethAmount > LAYERZERO_MAX_CONTRIBUTION_ETH) {
-          setCrossChainQuote(BigInt(Math.floor(0.25 * 1e18)))
-          setEstimatedGas(BigInt(300000))
-          setIsLoadingGasEstimate(false)
+          if (!stale()) {
+            setCrossChainQuote(BigInt(Math.floor(0.25 * 1e18)))
+            setEstimatedGas(applyGasBuffer(BigInt(300000), true))
+            setIsLoadingGasEstimate(false)
+          }
           return
         }
       }
     }
 
     if (isCrossChain && !crossChainPayContract) {
-      setIsLoadingGasEstimate(false)
+      if (!stale()) setIsLoadingGasEstimate(false)
       return
     }
     if (!isCrossChain && !primaryTerminalContract) {
-      setIsLoadingGasEstimate(false)
+      if (!stale()) setIsLoadingGasEstimate(false)
       return
     }
 
@@ -446,7 +501,11 @@ export default function MissionContributeModal({
 
       if (isCrossChain) {
         if (!output || output <= 0) {
-          setIsLoadingGasEstimate(true)
+          if (!stale()) {
+            setCrossChainQuote(BigInt(0))
+            setEstimatedGas(applyGasBuffer(BigInt(300000), true))
+            setIsLoadingGasEstimate(false)
+          }
           return
         }
 
@@ -455,25 +514,35 @@ export default function MissionContributeModal({
           const inputValueWei = toWei(inputValue)
           const outputTokens = toWei(output)
 
-          quoteCrossChainPay = await readContract({
-            contract: crossChainPayContract,
-            method: 'quoteCrossChainPay' as string,
-            params: [
-              LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
-              inputValueWei,
-              mission?.projectId,
-              address || ZERO_ADDRESS,
-              outputTokens,
-              message,
-              '0x00',
-            ],
-          })
+          quoteCrossChainPay = await Promise.race([
+            readContract({
+              contract: crossChainPayContract,
+              method: 'quoteCrossChainPay' as string,
+              params: [
+                LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+                inputValueWei,
+                mission?.projectId,
+                address || ZERO_ADDRESS,
+                outputTokens,
+                message,
+                '0x00',
+              ],
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () => reject(new Error('quoteCrossChainPay timeout')),
+                LAYERZERO_QUOTE_TIMEOUT_MS
+              )
+            ),
+          ])
 
-          setCrossChainQuote(BigInt(quoteCrossChainPay))
+          if (!stale()) setCrossChainQuote(BigInt(quoteCrossChainPay))
         } catch (quoteError: any) {
           console.error('❌ LayerZero quote failed:', quoteError)
           throw quoteError
         }
+
+        if (stale()) return
 
         const transaction = prepareContractCall({
           contract: crossChainPayContract,
@@ -504,6 +573,7 @@ export default function MissionContributeModal({
               data: txData,
               value: `0x${BigInt(quoteCrossChainPay).toString(16)}`,
             }),
+            signal: AbortSignal.timeout(RPC_FETCH_TIMEOUT_MS),
           })
 
           if (!estimateResponse.ok) {
@@ -534,10 +604,13 @@ export default function MissionContributeModal({
           gasEstimate = BigInt(300000)
         }
       } else {
-        setCrossChainQuote(BigInt(0))
+        if (!stale()) setCrossChainQuote(BigInt(0))
 
         if (!output || output <= 0) {
-          setIsLoadingGasEstimate(true)
+          if (!stale()) {
+            setEstimatedGas(applyGasBuffer(BigInt(180000), false))
+            setIsLoadingGasEstimate(false)
+          }
           return
         }
 
@@ -570,6 +643,7 @@ export default function MissionContributeModal({
               data: txData,
               value: `0x${toWei(inputValue).toString(16)}`,
             }),
+            signal: AbortSignal.timeout(RPC_FETCH_TIMEOUT_MS),
           })
 
           if (!estimateResponse.ok) {
@@ -601,6 +675,8 @@ export default function MissionContributeModal({
         }
       }
 
+      if (stale()) return
+
       const bufferPercent = isCrossChain ? 180 : 130
       const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
       setEstimatedGas(gasWithBuffer)
@@ -610,8 +686,10 @@ export default function MissionContributeModal({
         `Error estimating gas for ${chainSlug}:`,
         error instanceof Error ? error.message : error
       )
-      setEstimatedGas(BigInt(300000))
-      setIsLoadingGasEstimate(false)
+      if (!stale()) {
+        setEstimatedGas(applyGasBuffer(BigInt(isCrossChain ? 300000 : 180000), isCrossChain))
+        setIsLoadingGasEstimate(false)
+      }
     }
   }, [
     account,
@@ -667,17 +745,24 @@ export default function MissionContributeModal({
   ])
 
   const hasEnoughBalance = useMemo(() => {
-    const hasEnough = nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
-    return hasEnough
-  }, [nativeBalance, requiredEth])
+    if (!fundingBalanceResolved || fundingBalanceEth === null) return false
+    return fundingBalanceEth >= requiredEth && requiredEth > 0
+  }, [fundingBalanceResolved, fundingBalanceEth, requiredEth])
+
+  const showFundingBalanceWait = Boolean(
+    address &&
+      !walletOnSelectedChain &&
+      isLoadingRpcFundingBalance &&
+      requiredEth > 0
+  )
 
   const applyMaxContribution = useCallback(() => {
-    if (!ethUsdPrice || nativeBalance == null || !address) return
-    const balanceEth = Number(nativeBalance)
+    if (!ethUsdPrice || fundingBalanceEth == null || !address) return
+    const balanceEth = fundingBalanceEth
     const maxUsd = computeContributionMaxUsd({
       balanceEth,
-      selectedChainId: nativeBalanceChain?.id ?? selectedChain?.id ?? 0,
-      chainSlug: walletConnectedChainSlug,
+      selectedChainId: selectedChain.id,
+      chainSlug: fundingChainSlug,
       defaultChainSlug,
       ethUsdPrice,
     })
@@ -685,11 +770,10 @@ export default function MissionContributeModal({
     setUsdInput(formatInputWithCommas(maxUsd.toFixed(2)))
   }, [
     ethUsdPrice,
-    nativeBalance,
+    fundingBalanceEth,
     address,
-    walletConnectedChainSlug,
-    nativeBalanceChain?.id,
-    selectedChain?.id,
+    fundingChainSlug,
+    selectedChain.id,
     defaultChainSlug,
     formatInputWithCommas,
     setUsdInput,
@@ -721,10 +805,10 @@ export default function MissionContributeModal({
 
   // Calculate how much ETH the user needs to buy
   const ethDeficit = useMemo(() => {
-    if (!nativeBalance || !requiredEth) return 0
+    if (fundingBalanceEth === null || !requiredEth) return 0
 
-    return Math.max(0, requiredEth - Number(nativeBalance))
-  }, [nativeBalance, requiredEth])
+    return Math.max(0, requiredEth - fundingBalanceEth)
+  }, [fundingBalanceEth, requiredEth])
 
   // Calculate USD equivalent
   const usdDeficit = useMemo(() => {
@@ -1036,26 +1120,39 @@ export default function MissionContributeModal({
     }
   }, [usdInput, ethUsdPrice])
 
-  // Estimate gas on input change
+  // Estimate gas on input change (debounced; seq ref drops stale async results)
   useEffect(() => {
+    if (gasEstimateDebounceRef.current) {
+      clearTimeout(gasEstimateDebounceRef.current)
+      gasEstimateDebounceRef.current = null
+    }
+
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
     const usdValue = parseFloat(cleanUsdInput)
 
-    if (usdValue > 0 && input && parseFloat(input) > 0) {
-      setIsLoadingGasEstimate(true)
+    if (!(usdValue > 0 && input && parseFloat(input) > 0)) {
+      gasEstimateSeqRef.current += 1
+      setIsLoadingGasEstimate(false)
+      setEstimatedGas(BigInt(0))
+      setCrossChainQuote(BigInt(0))
+      return
     }
 
-    const timeoutId = setTimeout(() => {
-      if (usdValue > 0 && input && parseFloat(input) > 0) {
-        estimateContributionGas()
-      } else {
-        setIsLoadingGasEstimate(false)
-        setEstimatedGas(BigInt(0))
-        setCrossChainQuote(BigInt(0))
-      }
-    }, 2000)
+    setIsLoadingGasEstimate(true)
+    const runSeq = ++gasEstimateSeqRef.current
 
-    return () => clearTimeout(timeoutId)
+    gasEstimateDebounceRef.current = setTimeout(() => {
+      gasEstimateDebounceRef.current = null
+      if (runSeq !== gasEstimateSeqRef.current) return
+      void estimateContributionGas(runSeq)
+    }, 600)
+
+    return () => {
+      if (gasEstimateDebounceRef.current) {
+        clearTimeout(gasEstimateDebounceRef.current)
+        gasEstimateDebounceRef.current = null
+      }
+    }
   }, [usdInput, input, selectedChain, estimateContributionGas])
 
   // Use the onramp auto-transaction hook for handling post-onramp flow
@@ -1179,13 +1276,13 @@ export default function MissionContributeModal({
       setCoinbasePaymentTotal(paymentTotal)
       setCoinbaseTotalFees(totalFees)
 
-      const currentBalance = nativeBalance ? Number(nativeBalance) : 0
+      const currentBalance = fundingBalanceEth ?? 0
       const totalAfterPurchase = ethAmount + currentBalance
       const isInsufficient = totalAfterPurchase < requiredEth
 
       setCoinbaseEthInsufficient(isInsufficient)
     },
-    [nativeBalance, requiredEth]
+    [fundingBalanceEth, requiredEth]
   )
 
   // Clear Coinbase fee state when user no longer needs onramp
@@ -1217,6 +1314,9 @@ export default function MissionContributeModal({
     setCoinbasePaymentTotal(undefined)
     setCoinbaseTotalFees(undefined)
     setCoinbaseEthInsufficient(false)
+
+    setRpcFundingChainWei(null)
+    setIsLoadingRpcFundingBalance(false)
 
     clearOnrampJWT()
     setContributorEmail('')
@@ -1364,12 +1464,17 @@ export default function MissionContributeModal({
                     <p className="text-gray-400 text-xs sm:text-sm">
                       <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
                       <span className="text-white font-medium tabular-nums">
-                        {nativeBalance != null && Number(nativeBalance) >= 0
-                          ? `${formatEthFiveSigFigs(Number(nativeBalance))} ETH`
+                        {fundingBalanceResolved && fundingBalanceEth != null
+                          ? `${formatEthFiveSigFigs(fundingBalanceEth)} ETH`
+                          : isLoadingRpcFundingBalance && !walletOnSelectedChain
+                          ? '…'
                           : '—'}
                       </span>
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
-                        on {nativeBalanceChain?.name?.replace(' One', '') ?? 'network'}
+                        on {(selectedChain.name ?? 'network').replace(' One', '')}
+                        {!walletOnSelectedChain && fundingBalanceResolved ? (
+                          <span className="text-cyan-400/90"> — switch wallet to this network to pay</span>
+                        ) : null}
                       </span>
                     </p>
                     <button
@@ -1377,8 +1482,8 @@ export default function MissionContributeModal({
                       onClick={applyMaxContribution}
                       disabled={
                         !address ||
-                        nativeBalance == null ||
-                        Number(nativeBalance) <= 0 ||
+                        fundingBalanceEth == null ||
+                        fundingBalanceEth <= 0 ||
                         !ethUsdPrice ||
                         isLoadingEthUsdPrice
                       }
@@ -1462,6 +1567,13 @@ export default function MissionContributeModal({
                     </div>
                   </div>
                 </div>
+              ) : showFundingBalanceWait ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
+                  <LoadingSpinner width="w-8" height="h-8" />
+                  <p className="text-sm text-center max-w-sm">
+                    Checking your ETH balance on {selectedChain.name ?? 'this network'}…
+                  </p>
+                </div>
               ) : hasEnoughBalance ? (
                 // User has enough balance
                 <>
@@ -1493,7 +1605,7 @@ export default function MissionContributeModal({
                       gasCostDisplay={gasCostDisplay}
                       requiredEth={requiredEth}
                       ethUsdPrice={ethUsdPrice}
-                      nativeBalance={nativeBalance}
+                      nativeBalance={fundingBalanceEth ?? undefined}
                       showCurrentBalance={true}
                       showNeedToBuy={true}
                       coinbasePaymentSubtotal={coinbasePaymentSubtotal}
@@ -1542,6 +1654,22 @@ export default function MissionContributeModal({
                     />
                   </div>
 
+                  {/* Terms Checkbox */}
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                        Terms and Conditions
+                      </p>
+                    </div>
+                    <MissionTokenNotice />
+                    <ConditionCheckbox
+                      id="contribution-terms-checkbox"
+                      label={contributionTermsCheckboxLabel}
+                      agreedToCondition={agreedToCondition}
+                      setAgreedToCondition={setAgreedToCondition}
+                    />
+                  </div>
+
                   {/* LayerZero Limit Warning */}
                   {layerZeroLimitExceeded && (
                     <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl p-5">
@@ -1567,22 +1695,6 @@ export default function MissionContributeModal({
                       </p>
                     </div>
                   )}
-
-                  {/* Terms Checkbox */}
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
-                    <div>
-                      <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                        Terms and Conditions
-                      </p>
-                    </div>
-                    <MissionTokenNotice />
-                    <ConditionCheckbox
-                      id="contribution-terms-checkbox"
-                      label={contributionTermsCheckboxLabel}
-                      agreedToCondition={agreedToCondition}
-                      setAgreedToCondition={setAgreedToCondition}
-                    />
-                  </div>
 
                   {/* Action Buttons */}
                   <div className="flex flex-col md:flex-row gap-4 pt-6">
@@ -1620,22 +1732,6 @@ export default function MissionContributeModal({
               ) : (
                 // User needs more ETH - show CBOnramp
                 <div className="space-y-5">
-                  {/* Terms Checkbox - Required before onramp */}
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
-                    <div>
-                      <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                        Terms and Conditions
-                      </p>
-                    </div>
-                    <MissionTokenNotice />
-                    <ConditionCheckbox
-                      id="pre-contribution-terms-checkbox"
-                      label={contributionTermsCheckboxLabel}
-                      agreedToCondition={agreedToCondition}
-                      setAgreedToCondition={setAgreedToCondition}
-                    />
-                  </div>
-
                   {/* Message Input */}
                   <div className="space-y-3">
                     <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
@@ -1665,7 +1761,7 @@ export default function MissionContributeModal({
                       gasCostDisplay={gasCostDisplay}
                       requiredEth={requiredEth}
                       ethUsdPrice={ethUsdPrice}
-                      nativeBalance={nativeBalance}
+                      nativeBalance={fundingBalanceEth ?? undefined}
                       showCurrentBalance={true}
                       showNeedToBuy={true}
                       coinbasePaymentSubtotal={coinbasePaymentSubtotal}
@@ -1711,6 +1807,22 @@ export default function MissionContributeModal({
                       agreedToCondition={newsletterOptIn}
                       setAgreedToCondition={setNewsletterOptIn}
                       disabled={!isValidContributorEmail(contributorEmail.trim())}
+                    />
+                  </div>
+
+                  {/* Terms Checkbox - Required before onramp */}
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                        Terms and Conditions
+                      </p>
+                    </div>
+                    <MissionTokenNotice />
+                    <ConditionCheckbox
+                      id="pre-contribution-terms-checkbox"
+                      label={contributionTermsCheckboxLabel}
+                      agreedToCondition={agreedToCondition}
+                      setAgreedToCondition={setAgreedToCondition}
                     />
                   </div>
 

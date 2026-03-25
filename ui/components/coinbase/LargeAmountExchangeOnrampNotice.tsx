@@ -1,11 +1,5 @@
 import toast from 'react-hot-toast'
-
-const EXCHANGES = [
-  { label: 'Coinbase', href: 'https://www.coinbase.com' },
-  { label: 'Binance', href: 'https://www.binance.com' },
-  { label: 'Gemini', href: 'https://www.gemini.com' },
-  { label: 'Kraken', href: 'https://www.kraken.com' },
-] as const
+import { POPULAR_CRYPTO_EXCHANGES } from './popularCryptoExchanges'
 
 export const LARGE_ONRAMP_FIAT_THRESHOLD_USD = 5000
 
@@ -61,7 +55,7 @@ export function LargeAmountExchangeOnrampNotice({
         </div>
       ) : null}
       <ul className="text-sm text-sky-100/90 space-y-1.5 mb-3">
-        {EXCHANGES.map(({ label, href }) => (
+        {POPULAR_CRYPTO_EXCHANGES.map(({ label, href }) => (
           <li key={href}>
             <a
               href={href}

@@ -51,6 +51,7 @@ import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionContributeModal from '@/components/mission/MissionContributeModal'
 import MissionDeployTokenModal from '@/components/mission/MissionDeployTokenModal'
+import MissionFundingChainBanner from '@/components/mission/MissionFundingChainBanner'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionJuiceboxFooter from '@/components/mission/MissionJuiceboxFooter'
 import MissionMetadataModal from '@/components/mission/MissionMetadataModal'
@@ -121,6 +122,10 @@ export default function MissionProfile({
     setIsMounted(true)
   }, [])
 
+  const [teamNFT, setTeamNFT] = useState<any>(_teamNFT)
+  const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] = useState(false)
+  const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
+
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains = useMemo(
     () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, base, ethereum]),
@@ -128,11 +133,17 @@ export default function MissionProfile({
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
 
-  const chainSlug = getChainSlug(selectedChain)
+  /** Props-based so this hook can run before useMissionData / useContract (stable hook order). */
+  const fundingChainCompareEnabled =
+    !!walletAddress && mission?.projectId != null && Number(_stage) !== 4
 
-  const [teamNFT, setTeamNFT] = useState<any>(_teamNFT)
-  const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] = useState(false)
-  const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
+  const { fundingPickReady, recommendedChain } = useMissionDefaultFundingChain({
+    enabled: fundingChainCompareEnabled,
+    address: walletAddress,
+    chains,
+  })
+
+  const chainSlug = getChainSlug(selectedChain)
 
   // Use custom hooks for extracted logic
   const {
@@ -227,11 +238,8 @@ export default function MissionProfile({
     primaryTerminalAddress !== '0x0000000000000000000000000000000000000000' &&
     Number(stage) !== 4
 
-  useMissionDefaultFundingChain({
-    enabled: missionDefaultFundingChainEnabled,
-    address: walletAddress,
-    chains,
-  })
+  const fundingBannerEnabled =
+    fundingChainCompareEnabled || missionDefaultFundingChainEnabled
 
   // Use deadline tracking hook
   const { duration, deadlinePassed, refundPeriodPassed } = useDeadlineTracking(
@@ -436,6 +444,12 @@ export default function MissionProfile({
                   id="mission-pay-redeem-container"
                   className="w-full max-w-[1200px] mt-6 md:mt-4 rounded-2xl"
                 >
+                  <MissionFundingChainBanner
+                    enabled={fundingBannerEnabled}
+                    chains={chains}
+                    fundingPickReady={fundingPickReady}
+                    recommendedChain={recommendedChain}
+                  />
                   <MissionPayRedeem
                     mission={mission}
                     teamNFT={teamNFT}
@@ -487,6 +501,11 @@ export default function MissionProfile({
                   setContributeModalEnabled={setContributeModalEnabled}
                   usdInput={usdInput || ''}
                   setUsdInput={setUsdInput}
+                  missionDefaultFundingChainEnabled={missionDefaultFundingChainEnabled}
+                  fundingBannerEnabled={fundingBannerEnabled}
+                  fundingPickReady={fundingPickReady}
+                  fundingChains={chains}
+                  recommendedChain={recommendedChain}
                 />
               </div>
             </div>
