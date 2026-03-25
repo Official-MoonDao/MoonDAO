@@ -46,8 +46,19 @@ function jbSubgraphVolumeToBigIntWei(volume: unknown): bigint {
       return BigInt(truncated)
     }
     const s = String(volume).trim()
-    if (!/^\d+$/.test(s)) return BigInt(0)
-    return BigInt(s)
+    // Accept plain non-negative integer strings and simple scientific notation like "1e21" or "10E3".
+    const match = /^(\d+)(?:[eE]([+-]?\d+))?$/.exec(s)
+    if (!match) return BigInt(0)
+    const intPart = match[1]
+    const expPart = match[2]
+    if (!expPart) {
+      return BigInt(intPart)
+    }
+    const exp = Number(expPart)
+    // Only support non-negative integer exponents; anything else is treated as invalid.
+    if (!Number.isInteger(exp) || exp < 0) return BigInt(0)
+    const zeros = '0'.repeat(exp)
+    return BigInt(intPart + zeros)
   } catch {
     return BigInt(0)
   }
