@@ -45,6 +45,10 @@ const sepoliaConfig = require(`../../contracts/deployments/sepolia`) as Deployme
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
 
+const arbitrumSepoliaMission = arbitrumSepoliaConfig as DeploymentConfig & {
+  missionTableLandName?: string
+}
+
 const baseSepoliaConfig = require('../../contracts/deployments/base-sepolia') as DeploymentConfig
 
 export const TEST_CHAIN =
@@ -321,16 +325,26 @@ export const FEATURED_MISSION =
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,
   sepolia: sepoliaConfig.MissionTable,
+  ...(arbitrumSepoliaMission.MissionTable
+    ? { 'arbitrum-sepolia': arbitrumSepoliaMission.MissionTable }
+    : {}),
 }
 
 export const MISSION_TABLE_NAMES: Index = {
   arbitrum: 'MissionTable_42161_151',
   sepolia: 'MissionTable_11155111_2026',
+  ...(arbitrumSepoliaMission.missionTableLandName
+    ? { 'arbitrum-sepolia': arbitrumSepoliaMission.missionTableLandName }
+    : {}),
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionCreator,
   sepolia: sepoliaConfig.MissionCreator,
+  ...(arbitrumSepoliaMission.MissionCreator &&
+  arbitrumSepoliaMission.MissionCreator !== '0x0000000000000000000000000000000000000000'
+    ? { 'arbitrum-sepolia': arbitrumSepoliaMission.MissionCreator }
+    : {}),
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {

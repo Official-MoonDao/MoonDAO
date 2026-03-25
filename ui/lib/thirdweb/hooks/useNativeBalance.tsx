@@ -7,7 +7,7 @@ import { Chain } from '@/lib/rpc/chains'
 export function useNativeBalance() {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
-  const [nativeBalance, setNativeBalance] = useState<any>()
+  const [nativeBalance, setNativeBalance] = useState<number | undefined>()
   const [walletChain, setWalletChain] = useState<Chain | undefined>()
 
   const getNativeBalance = useCallback(async () => {
@@ -38,13 +38,14 @@ export function useNativeBalance() {
       // Fetch balance - do all async operations before updating state
       const provider = await wallet.getEthersProvider()
       const balance = await provider.getBalance(wallet.address)
-      const formattedBalance = Number(+balance?.toString() / 10 ** 18).toFixed(7)
+      const balanceEth = balance ? Number(balance.toString()) / 10 ** 18 : 0
+      const balanceNumber = Number(balanceEth.toFixed(7))
 
       // Only update state after all operations succeed to ensure atomicity
       // This prevents mismatches where walletChain shows "MATIC" but nativeBalance
       // contains a stale ETH value from a previous fetch
       setWalletChain(chain)
-      setNativeBalance(formattedBalance)
+      setNativeBalance(balanceNumber)
     } catch (error: any) {
       console.warn('Failed to fetch native balance:', error.message)
       // Don't update state on error - keep previous consistent values
