@@ -131,18 +131,13 @@ export default function PastProjects({ projects }: PastProjectProps) {
             ?.slice((pageIdx - 1) * 9, pageIdx * 9)
             .map((project: any, I: number) => {
               return (
-                <div
-                  key={`project-card-${I}`}
-                  className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
-                >
-                  <ProjectCard
+                <ProjectCard
                     key={`project-card-${I}`}
                     project={project}
                     projectContract={projectContract}
                     hatsContract={hatsContract}
                     isVotingPeriod={false}
                   />
-                </div>
               )
             })
         ) : (
