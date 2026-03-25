@@ -135,15 +135,6 @@ export default function MissionContributeModal({
     [isOverviewMission]
   )
 
-  const newsletterOptInCheckboxLabel = useMemo(
-    () => (
-      <span className="text-sm text-gray-300 leading-relaxed">
-        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
-      </span>
-    ),
-    []
-  )
-
   const account = useActiveAccount()
   // In test mode (Cypress), use mock address from window if available
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
@@ -1334,15 +1325,18 @@ export default function MissionContributeModal({
                 <NetworkSelector chains={chains} align="left" />
               </div>
 
-              {/* Total Amount Section */}
+              {/* Contribution amount — primary input */}
               <div className="space-y-3">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                  Total Amount
+                <label
+                  htmlFor="payment-input"
+                  className="text-white font-semibold text-sm uppercase tracking-wider"
+                >
+                  You contribute
                 </label>
-                <div className="bg-gradient-to-r from-slate-800/40 to-slate-700/30 backdrop-blur-sm border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all duration-300">
+                <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/30 rounded-xl p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-white/10">
+                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-white/15">
                         <Image
                           src="/coins/ETH.svg"
                           alt="ETH"
@@ -1355,21 +1349,22 @@ export default function MissionContributeModal({
                         <p className="font-semibold text-white text-lg">
                           {calculateEthAmount()}
                         </p>
-                        <p className="text-gray-400 text-xs">ETH</p>
+                        <p className="text-gray-500 text-xs">ETH (estimated)</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-400 text-lg">$</span>
+                    <div className="flex items-center gap-2 rounded-xl px-3 py-2 border border-white/15 bg-black/50 shadow-inner">
+                      <span className="text-cyan-200/80 text-lg font-bold shrink-0">$</span>
                       <input
                         id="payment-input"
                         type="text"
-                        className="bg-black/40 border border-white/10 rounded-xl p-3 text-white text-right w-28 text-lg font-medium placeholder-gray-500 hover:bg-black/50 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        inputMode="decimal"
+                        className="min-w-0 w-24 sm:w-28 bg-transparent border-none outline-none text-white text-right text-lg font-bold placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-gray-400 font-medium">USD</span>
+                      <span className="text-gray-300 text-lg font-bold shrink-0">USD</span>
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1402,15 +1397,15 @@ export default function MissionContributeModal({
                 </div>
               </div>
 
-              {/* Token Receive Section */}
+              {/* Token quote — read-only output (not a second input) */}
               <div className="space-y-3">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                  You Receive
-                </label>
-                <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/30 transition-all duration-300">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg shadow-purple-500/10">
+                <p className="text-gray-500 font-medium text-sm uppercase tracking-wider">
+                  You receive
+                </p>
+                <div className="bg-slate-900/50 border border-white/[0.07] rounded-xl p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center space-x-4 min-w-0">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 shrink-0">
                         <Image
                           src={getIPFSGateway(mission?.metadata.logoUri)}
                           width={48}
@@ -1419,18 +1414,23 @@ export default function MissionContributeModal({
                           alt={`${token?.tokenSymbol || 'Token'} logo`}
                         />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-semibold text-white text-lg">{token?.tokenSymbol || 'Tokens'}</p>
                         {(() => {
                           const sym = (token?.tokenSymbol || '').trim()
                           const name = (token?.tokenName || '').trim()
                           if (!name || name.toLowerCase() === sym.toLowerCase()) return null
-                          return <p className="text-gray-400 text-xs">{name}</p>
+                          return <p className="text-gray-500 text-xs">{name}</p>
                         })()}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-white text-xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                    <div
+                      className="text-left sm:text-right border-t sm:border-t-0 border-white/[0.08] pt-3 sm:pt-0 sm:border-l sm:pl-4 sm:min-w-[10rem]"
+                      role="status"
+                      aria-live="polite"
+                      aria-label={`${token?.tokenSymbol || 'Tokens'}: ${formatContributionOutput(output)}`}
+                    >
+                      <p className="font-bold text-emerald-200/95 text-xl sm:text-2xl tabular-nums tracking-tight sm:text-right">
                         {formatContributionOutput(output)}
                       </p>
                     </div>
@@ -1495,9 +1495,8 @@ export default function MissionContributeModal({
                       Email (optional)
                     </label>
                     <p className="text-gray-400 text-xs leading-relaxed -mt-1">
-                      We will use this email to send you relevant updates about the mission and
-                      contact you for any reward tiers you are eligible for. Thank you for
-                      contributing!
+                      We&apos;ll send a short thank-you note. Subscribe below if you want MoonDAO
+                      updates.
                     </p>
                     <input
                       id="contribution-contributor-email-direct"
@@ -1512,13 +1511,18 @@ export default function MissionContributeModal({
                         if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
                       }}
                     />
-                    <ConditionCheckbox
-                      id="contribution-newsletter-opt-in-direct"
-                      label={newsletterOptInCheckboxLabel}
-                      agreedToCondition={newsletterOptIn}
-                      setAgreedToCondition={setNewsletterOptIn}
-                      disabled={!contributorEmail.trim()}
-                    />
+                    <label className="flex gap-3 items-start cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        disabled={!contributorEmail.trim()}
+                        checked={newsletterOptIn}
+                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-white/30 bg-black/40 text-blue-500 focus:ring-blue-500/40 disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                      <span className="text-sm text-gray-300 leading-relaxed group-disabled:opacity-50">
+                        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
+                      </span>
+                    </label>
                   </div>
                   {/* Payment Breakdown */}
                   {ethUsdPrice && usdInput && (
@@ -1654,9 +1658,8 @@ export default function MissionContributeModal({
                       Email (optional)
                     </label>
                     <p className="text-gray-400 text-xs leading-relaxed -mt-1">
-                      We will use this email to send you relevant updates about the mission and
-                      contact you for any reward tiers you are eligible for. Thank you for
-                      contributing!
+                      We&apos;ll send a short thank-you note. Subscribe below if you want MoonDAO
+                      updates.
                     </p>
                     <input
                       id="contribution-contributor-email-onramp"
@@ -1671,13 +1674,18 @@ export default function MissionContributeModal({
                         if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
                       }}
                     />
-                    <ConditionCheckbox
-                      id="contribution-newsletter-opt-in-onramp"
-                      label={newsletterOptInCheckboxLabel}
-                      agreedToCondition={newsletterOptIn}
-                      setAgreedToCondition={setNewsletterOptIn}
-                      disabled={!contributorEmail.trim()}
-                    />
+                    <label className="flex gap-3 items-start cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        disabled={!contributorEmail.trim()}
+                        checked={newsletterOptIn}
+                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-white/30 bg-black/40 text-blue-500 focus:ring-blue-500/40 disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                      <span className="text-sm text-gray-300 leading-relaxed">
+                        Add me to the MoonDAO newsletter (optional). You can unsubscribe anytime.
+                      </span>
+                    </label>
                   </div>
 
                   {/* Show balance breakdown if user has some ETH */}

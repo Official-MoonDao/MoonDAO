@@ -1,4 +1,3 @@
-import { ArrowDownIcon } from '@heroicons/react/20/solid'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import { DEFAULT_CHAIN_V5, JB_NATIVE_TOKEN_ADDRESS } from 'const/config'
 import { JBRuleset } from 'juice-sdk-core'
@@ -92,17 +91,20 @@ function MissionPayRedeemContent({
       ) : (
         !isRefundable && (
           <div id="mission-pay-container" className="p-5 flex flex-col">
-            {/* You contribute */}
+            {/* You contribute — primary input; darker card so it reads as the main action */}
             <div className="space-y-2">
-              <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
+              <label
+                htmlFor="usd-contribution-input"
+                className="text-white font-semibold text-xs uppercase tracking-wider"
+              >
                 You contribute
               </label>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 min-w-0">
+              <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/40 rounded-xl p-4 min-w-0">
                 <div className="flex flex-col gap-4 min-w-0">
                   {/* ETH ↔ USD: side-by-side from md up, stacked on small screens */}
                   <div className="flex flex-col md:flex-row md:items-center gap-4 min-w-0">
                     <div className="flex items-center gap-3 min-w-0 md:flex-1">
-                      <div className="w-9 h-9 shrink-0 bg-slate-700 rounded-full flex items-center justify-center ring-1 ring-white/10">
+                      <div className="w-9 h-9 shrink-0 bg-slate-800 rounded-full flex items-center justify-center ring-1 ring-white/15">
                         <Image
                           src="/coins/ETH.svg"
                           alt="ETH"
@@ -114,22 +116,23 @@ function MissionPayRedeemContent({
                         <p className="font-bold text-white text-lg leading-tight break-all sm:break-normal">
                           {calculateEthAmount()}
                         </p>
-                        <p className="text-gray-500 text-xs">ETH</p>
+                        <p className="text-gray-500 text-xs">ETH (estimated)</p>
                       </div>
                     </div>
 
-                    <div className="flex min-w-0 w-full md:flex-1 items-center gap-2 rounded-lg px-3 py-2.5 border border-white/[0.06] bg-white/[0.04]">
-                      <span className="text-gray-400 font-medium shrink-0">$</span>
+                    <div className="flex min-w-0 w-full md:flex-1 items-center gap-2 rounded-lg px-3 py-2.5 border border-white/15 bg-black/50 shadow-inner">
+                      <span className="text-cyan-200/80 text-lg font-bold shrink-0">$</span>
                       <input
                         id="usd-contribution-input"
                         type="text"
-                        className="min-w-0 flex-1 bg-transparent border-none outline-none text-lg font-bold text-white text-right placeholder-gray-500 focus:placeholder-gray-400 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        inputMode="decimal"
+                        className="min-w-0 flex-1 bg-transparent border-none outline-none text-lg font-bold text-white text-right placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 ring-0 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-white text-sm font-medium shrink-0">USD</span>
+                      <span className="text-gray-300 text-lg font-bold shrink-0">USD</span>
                     </div>
                   </div>
 
@@ -164,19 +167,12 @@ function MissionPayRedeemContent({
               </div>
             </div>
 
-            {/* Connecting element */}
-            <div className="mt-4 flex justify-center">
-              <div className="flex items-center justify-center w-7 h-7 bg-white/[0.04] rounded-lg border border-white/[0.06]">
-                <ArrowDownIcon className="w-3.5 h-3.5 text-gray-500" />
-              </div>
-            </div>
-
-            {/* You receive */}
-            <div className="mt-[-10px] space-y-2">
-              <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
+            {/* You receive — read-only quote; avoid bordered “field” so it doesn’t mirror the USD input */}
+            <div className="mt-4 space-y-2">
+              <p className="text-gray-500 font-medium text-xs uppercase tracking-wider">
                 You receive
-              </label>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 min-w-0">
+              </p>
+              <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 min-w-0">
                 <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between min-w-0">
                   <div className="flex items-center gap-3 min-w-0 w-full md:w-auto md:flex-1">
                     <div className="w-9 h-9 shrink-0 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
@@ -197,15 +193,18 @@ function MissionPayRedeemContent({
                       })()}
                     </div>
                   </div>
-                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06] w-full md:w-1/2">
-                    <div className="flex items-center justify-end gap-2">
-                      <p
-                        id="token-output"
-                        className="w-full bg-transparent border-none outline-none text-lg font-bold text-white text-right w-16 placeholder-gray-500 focus:placeholder-gray-400 transition-colors duration-200"
-                      >
-                        {formatContributionOutput(output)}
-                      </p>
-                    </div>
+                  <div
+                    className="w-full md:w-auto md:min-w-[10rem] md:text-right border-l-0 md:border-l border-t md:border-t-0 border-white/[0.08] pt-3 md:pt-0 md:pl-4"
+                    role="status"
+                    aria-live="polite"
+                    aria-label={`${token?.tokenSymbol || 'Tokens'}: ${formatContributionOutput(output)}`}
+                  >
+                    <p
+                      id="token-output"
+                      className="text-xl md:text-2xl font-bold text-emerald-200/95 tabular-nums tracking-tight text-right"
+                    >
+                      {formatContributionOutput(output)}
+                    </p>
                   </div>
                 </div>
               </div>

@@ -12,13 +12,7 @@ export default function MissionContributorTiersPanel({ missionId }: MissionContr
 
   return (
     <div className="mt-4 pt-4 border-t border-white/[0.08] space-y-3">
-      <div>
-        <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">Support tiers</h3>
-        <p className="text-gray-500 text-[11px] mt-1 leading-relaxed">
-          Perks apply when you contribute at or above each level. The team will follow up to coordinate
-          fulfillment where applicable.
-        </p>
-      </div>
+      <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">Support tiers</h3>
       <ul className="flex flex-col gap-3 w-full list-none m-0 p-0">
         {tiers.map((tier) => (
           <li

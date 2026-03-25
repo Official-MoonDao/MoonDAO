@@ -1,21 +1,17 @@
-import { useId } from 'react'
-
 export default function ConditionCheckbox({
-  id: idProp,
+  id,
   label,
   agreedToCondition,
   setAgreedToCondition,
   disabled = false,
 }: any) {
-  const autoId = useId()
-  const id = idProp ?? autoId
-
   return (
     <div className="flex gap-2 items-center">
       <label
         className={`relative flex items-center p-3 rounded-full ${
           disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
         }`}
+        htmlFor="link"
       >
         <input
           id={id}
@@ -49,7 +45,7 @@ export default function ConditionCheckbox({
         className={`font-light text-gray-700 select-none max-w-[550px] ${
           disabled ? 'cursor-not-allowed opacity-50' : ''
         }`}
-        htmlFor={id}
+        htmlFor="link"
       >
         <p className="dark:text-white">{label}</p>
       </label>
