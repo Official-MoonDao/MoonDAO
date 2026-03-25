@@ -530,7 +530,26 @@ function MissionPayRedeemComponent({
       ethUsdPrice,
     })
     if (maxUsd == null || maxUsd <= 0) return
-    setUsdInput(formatInputWithCommas(maxUsd.toFixed(2)))
+
+    // Enforce the same constraints as the USD input:
+    // - At most 7 integer digits
+    // - At most 15 total characters (input maxLength)
+    const MAX_INTEGER_DIGITS = 7
+    const MAX_TOTAL_LENGTH = 15
+
+    // Numeric cap to 7 integer digits (e.g. 9,999,999.99)
+    const maxAllowedNumeric = Number(`${'9'.repeat(MAX_INTEGER_DIGITS)}.99`)
+    const clampedUsd = Math.min(maxUsd, maxAllowedNumeric)
+
+    // Format to two decimals and apply comma formatting
+    let formatted = formatInputWithCommas(clampedUsd.toFixed(2))
+
+    // Ensure we don't exceed the input's maxLength
+    if (formatted.length > MAX_TOTAL_LENGTH) {
+      formatted = formatted.slice(0, MAX_TOTAL_LENGTH)
+    }
+
+    setUsdInput(formatted)
   }, [
     ethUsdPrice,
     nativeBalance,
