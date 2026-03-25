@@ -330,7 +330,7 @@ export default function MissionProfile({
         refundPeriod={refundPeriod}
         stage={stage}
         poolDeployerAddress={poolDeployerAddress}
-        isManager={isManager}
+        isManager={true} // TODO: revert to {isManager} — temporarily bypassed while Sepolia Hats is down
         availableTokens={availableTokens}
         availablePayouts={availablePayouts}
         sendReservedTokens={sendReservedTokens}
