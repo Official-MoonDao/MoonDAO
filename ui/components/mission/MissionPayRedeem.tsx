@@ -426,8 +426,7 @@ function MissionPayRedeemComponent({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { nativeBalance, walletChain: nativeBalanceChain, refetch: refetchNativeBalance } =
-    useNativeBalance()
+  const { nativeBalance, walletChain: nativeBalanceChain } = useNativeBalance()
   /** Slug for the chain the wallet is actually on (matches `nativeBalance`). */
   const walletConnectedChainSlug = nativeBalanceChain
     ? getChainSlug(nativeBalanceChain)
