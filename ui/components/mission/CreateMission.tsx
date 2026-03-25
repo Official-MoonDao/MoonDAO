@@ -258,12 +258,14 @@ export default function CreateMission({
   const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] = useState(false)
 
   const [teamRequirementModalEnabled, setTeamRequirementModalEnabled] = useState(
-    !userTeamsAsManagerLoading && userTeamsAsManager && userTeamsAsManager?.[0] === undefined
+    false // TODO: revert — temporarily bypassed while Sepolia Hats is down
+    // !userTeamsAsManagerLoading && userTeamsAsManager && userTeamsAsManager?.[0] === undefined
   )
 
   useEffect(() => {
-    if (userTeams && !userTeamsAsManagerLoading)
-      setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
+    // TODO: revert — temporarily bypassed while Sepolia Hats is down
+    // if (userTeams && !userTeamsAsManagerLoading)
+    //   setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
   }, [userTeams, userTeamsAsManager, userTeamsAsManagerLoading])
 
   const { data: fundingGoalInETH, isLoading: fundingGoalInETHIsLoading } = useETHPrice(
