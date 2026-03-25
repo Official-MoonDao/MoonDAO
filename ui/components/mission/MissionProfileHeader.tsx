@@ -42,8 +42,11 @@ function jbSubgraphVolumeToBigIntWei(volume: unknown): bigint {
     if (typeof volume === 'number') {
       if (!Number.isFinite(volume)) return BigInt(0)
       const truncated = Math.trunc(volume)
-      if (!Number.isSafeInteger(truncated) || truncated < 0) return BigInt(0)
-      return BigInt(truncated)
+      if (Number.isSafeInteger(truncated) && truncated >= 0) {
+        return BigInt(truncated)
+      }
+      // For non-safe or otherwise unsuitable numbers (e.g. 1e21), fall through and
+      // reuse the scientific-notation string parsing on String(volume) below.
     }
     const s = String(volume).trim()
     // Accept plain non-negative integer strings and simple scientific notation like "1e21" or "10E3".
