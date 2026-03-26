@@ -1829,37 +1829,37 @@ export default function MissionContributeModal({
                   You contribute
                 </label>
                 <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/30 rounded-xl p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-white/15">
+                  <div className="flex items-center justify-between gap-2 sm:gap-4">
+                    <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 shrink">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 flex items-center justify-center border border-white/15 shrink-0">
                         <Image
                           src="/coins/ETH.svg"
                           alt="ETH"
                           width={24}
                           height={24}
-                          className="w-6 h-6"
+                          className="w-5 h-5 sm:w-6 sm:h-6"
                         />
                       </div>
-                      <div>
-                        <p className="font-semibold text-white text-lg">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-white text-base sm:text-lg truncate">
                           {calculateEthAmount()}
                         </p>
                         <p className="text-gray-500 text-xs">ETH (estimated)</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-xl px-3 py-2 border border-white/15 bg-black/50 shadow-inner">
-                      <span className="text-cyan-200/80 text-lg font-bold shrink-0">$</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl px-2 sm:px-3 py-2 border border-white/15 bg-black/50 shadow-inner shrink-0">
+                      <span className="text-cyan-200/80 text-base sm:text-lg font-bold shrink-0">$</span>
                       <input
                         id="payment-input"
                         type="text"
                         inputMode="decimal"
-                        className="min-w-0 w-24 sm:w-28 bg-transparent border-none outline-none text-white text-right text-lg font-bold placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="min-w-0 w-16 sm:w-28 bg-transparent border-none outline-none text-white text-right text-base sm:text-lg font-bold placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-gray-300 text-lg font-bold shrink-0">USD</span>
+                      <span className="text-gray-300 text-base sm:text-lg font-bold shrink-0">USD</span>
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
