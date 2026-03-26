@@ -43,7 +43,7 @@ export default function CookieBanner() {
           </Link>
           .
         </p>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-center gap-2 w-full sm:w-auto sm:justify-start shrink-0">
           <button
             className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-gray-300 hover:bg-white/10 transition-colors"
             onClick={() => setCookieConsent(false)}
