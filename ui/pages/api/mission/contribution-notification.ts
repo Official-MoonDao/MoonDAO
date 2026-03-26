@@ -367,7 +367,9 @@ async function handler(req: any, res: any) {
             contributionAmountETH >= 1 ? 3 : 5
           )} ETH ($${formatNumberWithCommasAndDecimals(
             contributionAmountUSD
-          )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}/mission/${mission.id})`}** mission!\n\n${totalRaisedBlock}\n${progressLine}\n${
+          )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}/mission/${mission.id})`}** mission!${
+            decodedPay.memo ? `\n> ${decodedPay.memo}` : ''
+          }\n\n${totalRaisedBlock}\n${progressLine}\n${
             missionDeadline !== null && missionDeadline !== undefined
               ? `**Deadline**: <t:${missionDeadline.toString()}:R>`
               : ''

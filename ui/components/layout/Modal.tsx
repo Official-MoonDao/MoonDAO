@@ -73,7 +73,7 @@ export default function Modal({
             <div>{children}</div>
           </div>
         ) : (
-          <div className="mt-12 pb-12 w-full flex justify-center px-4">
+          <div className="mt-12 pb-12 w-full flex justify-center px-2 sm:px-4">
             <div className={contentClassName}>
               {showCloseButton && !title && (
                 <button
@@ -102,7 +102,7 @@ export default function Modal({
                   )}
                 </div>
               )}
-              <div className={title || showCloseButton ? 'p-6' : ''}>{children}</div>
+              <div className={title || showCloseButton ? 'p-4 sm:p-6' : ''}>{children}</div>
             </div>
           </div>
         )}

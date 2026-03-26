@@ -36,3 +36,29 @@ export function getMissionMinimumUsdGoal(missionId: unknown): number | undefined
 
 export const MISSION_MINIMUM_GOAL_TOOLTIP =
   'This is our minimum goal, if we raise beyond this amount we will expand our ambition to other flight profiles. If we do not achieve our minimum goal refunds will be made available.'
+
+/**
+ * Token symbol overrides for missions where the on-chain ERC20 hasn't been deployed via
+ * Juicebox yet but the intended symbol is known (e.g. mission 4 / Overview Flight → OVERVIEW).
+ */
+export const MISSION_TOKEN_SYMBOL_OVERRIDES: Partial<Record<number, string>> = {
+  4: 'OVERVIEW',
+}
+
+export function getMissionTokenSymbol(
+  missionId: unknown,
+  onChainSymbol: string | undefined | null
+): string | undefined {
+  const normalizedOnChainSymbol =
+    typeof onChainSymbol === 'string' ? onChainSymbol.trim() : undefined
+  if (normalizedOnChainSymbol) return normalizedOnChainSymbol
+
+  if (missionId === undefined || missionId === null) return undefined
+  const id = Number(missionId)
+  if (!Number.isFinite(id)) return undefined
+
+  const override = MISSION_TOKEN_SYMBOL_OVERRIDES[id]
+  const normalizedOverride =
+    typeof override === 'string' ? override.trim() : undefined
+  return normalizedOverride || undefined
+}

@@ -64,7 +64,6 @@ import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionContributeModal from '@/components/mission/MissionContributeModal'
 import MissionDeployTokenModal from '@/components/mission/MissionDeployTokenModal'
-import MissionFundingChainBanner from '@/components/mission/MissionFundingChainBanner'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionJuiceboxFooter from '@/components/mission/MissionJuiceboxFooter'
 import MissionMetadataModal from '@/components/mission/MissionMetadataModal'
@@ -72,7 +71,6 @@ import MissionMobileContributeButton from '@/components/mission/MissionMobileCon
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import MissionTeamSection from '@/components/mission/MissionTeamSection'
-import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import { TwitterIcon } from '@/components/assets'
 import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
@@ -193,7 +191,8 @@ export default function MissionProfile({
           )
           const richest = pickChainWithMaxNativeBalance(entries, chains)
           const target = chains.find((c) => c.id === richest.id) ?? richest
-          if (target.id !== selectedChain.id) {
+          const skipAlignmentGate = target.id === ethereum.id
+          if (target.id !== selectedChain.id && !skipAlignmentGate) {
             setPayChainGate({ target, nextUsd: nextUsdInput })
             return
           }
@@ -230,19 +229,19 @@ export default function MissionProfile({
   const hatsContract = useContract({
     address: HATS_ADDRESS,
     abi: HatsABI,
-    chain: selectedChain,
+    chain: CHAIN,
   })
 
   const teamContract = useContract({
-    address: TEAM_ADDRESSES[chainSlug],
+    address: TEAM_ADDRESSES[CHAIN_SLUG],
     abi: TeamABI as any,
-    chain: selectedChain,
+    chain: CHAIN,
   })
 
   const citizenContract = useContract({
-    address: CITIZEN_ADDRESSES[chainSlug],
+    address: CITIZEN_ADDRESSES[CHAIN_SLUG],
     abi: CitizenABI as any,
-    chain: selectedChain,
+    chain: CHAIN,
   })
 
   const jbTerminalContract = useContract({
@@ -511,13 +510,6 @@ export default function MissionProfile({
                   id="mission-pay-redeem-container"
                   className="w-full max-w-[1200px] mt-6 md:mt-4 rounded-2xl"
                 >
-                  <MissionFundingChainBanner
-                    enabled={fundingBannerEnabled}
-                    chains={chains}
-                    fundingPickReady={fundingPickReady}
-                    recommendedChain={recommendedChain}
-                    fundingChainBalances={fundingChainBalances}
-                  />
                   <MissionPayRedeem
                     mission={mission}
                     teamNFT={teamNFT}
@@ -571,10 +563,7 @@ export default function MissionProfile({
                   openContributeModal={handleOpenContributeModal}
                   usdInput={usdInput || ''}
                   setUsdInput={setUsdInput}
-                  missionDefaultFundingChainEnabled={missionDefaultFundingChainEnabled}
-                  fundingBannerEnabled={fundingBannerEnabled}
                   fundingPickReady={fundingPickReady}
-                  fundingChains={chains}
                   recommendedChain={recommendedChain}
                   fundingChainBalances={fundingChainBalances}
                   fundingCompareEnabled={fundingChainCompareEnabled}
@@ -626,8 +615,7 @@ export default function MissionProfile({
                     )}
                   </div>
                 </div>
-                <SlidingCardMenu>
-                  <div className="flex gap-4"></div>
+                <div className="px-6 md:px-8 pb-6">
                   {teamHats?.[0]?.id && (
                     <TeamMembers
                       hats={teamHats}
@@ -635,7 +623,7 @@ export default function MissionProfile({
                       citizenContract={citizenContract}
                     />
                   )}
-                </SlidingCardMenu>
+                </div>
               </div>
             </div>
             {/* Support Candidates Card - only for mission 4 (Overview flight on Arbitrum) */}
@@ -777,8 +765,10 @@ export default function MissionProfile({
         usdInput={usdInput || ''}
         setUsdInput={setUsdInput}
         fundingChainCompareEnabled={fundingChainCompareEnabled}
+        fundingBannerEnabled={fundingBannerEnabled}
         fundingPickReady={fundingPickReady}
         recommendedFundingChain={recommendedChain}
+        fundingChainBalances={fundingChainBalances}
         stayOnSelectedAppChainRef={stayOnSelectedAppChainForContributeRef}
       />
     </>

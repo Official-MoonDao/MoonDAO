@@ -17,6 +17,8 @@ type MissionFundingChainBannerProps = {
   recommendedChain: Chain | null
   /** Per-chain wei from the same fetch as `recommendedChain`; used to avoid nudging when all balances are zero. */
   fundingChainBalances: FundingChainBalanceEntry[] | null
+  /** When set, shows a “Close” control that calls this (e.g. hide the tip for the rest of the session). */
+  onDismiss?: () => void
 }
 
 /**
@@ -34,6 +36,7 @@ export default function MissionFundingChainBanner({
   fundingPickReady,
   recommendedChain,
   fundingChainBalances,
+  onDismiss,
 }: MissionFundingChainBannerProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -136,31 +139,30 @@ export default function MissionFundingChainBanner({
       {suggestSwitchToRichestChain ? (
         <>
           <p className="text-sm text-gray-200 leading-relaxed">
-            You hold the most mission funding ETH on{' '}
-            <span className="font-semibold text-cyan-200">{targetName}</span>
-            {walletOnFundingList ? (
-              <>
-                , but your wallet is on{' '}
-                <span className="font-medium text-gray-100">{walletNetworkLabel}</span>.
-              </>
-            ) : (
-              <>
-                . Your wallet is on{' '}
-                <span className="font-medium text-gray-100">{walletNetworkLabel}</span>, which is not
-                one of the mission funding networks.
-              </>
-            )}{' '}
-            Use the button to switch your wallet; when you contribute, the app will match this
-            network for payment. You can also pick another network in the selector.
+            You hold the most ETH on{' '}
+            <span className="font-semibold text-cyan-200">{targetName}</span>. Switch to{' '}
+            <span className="font-semibold text-cyan-200">{targetName}</span> if you&apos;d like to
+            contribute on that network.
           </p>
-          <StandardButton
-            className="mt-3 gradient-2 rounded-full text-sm px-5 py-2.5"
-            onClick={async () => {
-              await switchWalletTo(recommendedChain!)
-            }}
-          >
-            {`Pay from ${targetName}`}
-          </StandardButton>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <StandardButton
+              className="gradient-2 rounded-full text-sm px-5 py-2.5"
+              onClick={async () => {
+                await switchWalletTo(recommendedChain!)
+              }}
+            >
+              {`Pay from ${targetName}`}
+            </StandardButton>
+            {onDismiss != null && (
+              <button
+                type="button"
+                className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                onClick={onDismiss}
+              >
+                Close
+              </button>
+            )}
+          </div>
         </>
       ) : (
         <>
@@ -173,12 +175,23 @@ export default function MissionFundingChainBanner({
             <span className="font-medium text-gray-100">{walletNetworkLabel}</span>. Switch your
             wallet to match, or change the network in the selector.
           </p>
-          <StandardButton
-            className="mt-3 gradient-2 rounded-full text-sm px-5 py-2.5"
-            onClick={() => switchWalletTo(selectedChain)}
-          >
-            {`Switch wallet to ${(selectedChain.name ?? 'network').replace(' One', '')}`}
-          </StandardButton>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <StandardButton
+              className="gradient-2 rounded-full text-sm px-5 py-2.5"
+              onClick={() => switchWalletTo(selectedChain)}
+            >
+              {`Switch wallet to ${(selectedChain.name ?? 'network').replace(' One', '')}`}
+            </StandardButton>
+            {onDismiss != null && (
+              <button
+                type="button"
+                className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                onClick={onDismiss}
+              >
+                Close
+              </button>
+            )}
+          </div>
         </>
       )}
     </div>

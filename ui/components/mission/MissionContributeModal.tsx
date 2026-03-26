@@ -18,6 +18,7 @@ import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { flushSync } from 'react-dom'
 import React, {
   useMemo,
   useContext,
@@ -30,7 +31,7 @@ import React, {
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
-  sendAndConfirmTransaction,
+  sendTransaction,
   ZERO_ADDRESS,
   readContract,
   waitForReceipt,
@@ -49,15 +50,18 @@ import { waitForCrossChainPayReceipt } from '@/lib/mission/waitForCrossChainPayR
 import { fetchNativeBalanceWei } from '@/lib/mission/contributeModalDefaultChain'
 import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
 import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
+import type { FundingChainBalanceEntry } from '@/lib/mission/useMissionDefaultFundingChain'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import type { Chain } from '@/lib/rpc/chains'
 import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import StandardButton from '@/components/layout/StandardButton'
 import Modal from '@/components/layout/Modal'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CBOnramp } from '../coinbase/CBOnramp'
@@ -68,6 +72,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { MissionContributeAutoTriggeringView } from './MissionContributeAutoTriggeringView'
 import { MissionContributeModalHeader } from './MissionContributeModalHeader'
 import { MissionContributeStatusNotices } from './MissionContributeStatusNotices'
+import MissionFundingChainBanner from './MissionFundingChainBanner'
 import MissionTokenNotice from './MissionTokenNotice'
 import { PaymentBreakdown } from './PaymentBreakdown'
 
@@ -85,8 +90,10 @@ type MissionContributeModalProps = {
   setUsdInput: (usdInput: string) => void
   /** From mission page funding compare; when modal opens, app chain follows richest funding chain. */
   fundingChainCompareEnabled?: boolean
+  fundingBannerEnabled?: boolean
   fundingPickReady?: boolean
   recommendedFundingChain?: Chain | null
+  fundingChainBalances?: FundingChainBalanceEntry[] | null
   /**
    * Set to true immediately before opening the modal when the user chose to keep the current app
    * network (e.g. “stay on Arbitrum”) instead of switching to the richest funding chain.
@@ -106,8 +113,10 @@ export default function MissionContributeModal({
   usdInput,
   setUsdInput,
   fundingChainCompareEnabled = false,
+  fundingBannerEnabled = false,
   fundingPickReady = false,
   recommendedFundingChain = null,
+  fundingChainBalances = null,
   stayOnSelectedAppChainRef,
 }: MissionContributeModalProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
@@ -127,6 +136,17 @@ export default function MissionContributeModal({
 
   /** User picked a network in this modal; stop auto-reverting context to the richest funding chain. */
   const [userChosePayChainInModal, setUserChosePayChainInModal] = useState(false)
+
+  const [fundingChainBannerDismissed, setFundingChainBannerDismissed] = useState(false)
+  const [payChainWalletNoticeDismissed, setPayChainWalletNoticeDismissed] = useState(false)
+  const prevModalEnabledRef = useRef(false)
+  useEffect(() => {
+    if (modalEnabled && !prevModalEnabledRef.current) {
+      setFundingChainBannerDismissed(false)
+      setPayChainWalletNoticeDismissed(false)
+    }
+    prevModalEnabledRef.current = modalEnabled
+  }, [modalEnabled])
 
   /**
    * Recommended funding chain for initial sync / display when context lags behind RPC pick.
@@ -245,6 +265,9 @@ export default function MissionContributeModal({
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
+  const [contributeButtonPhase, setContributeButtonPhase] = useState<
+    'idle' | 'wallet' | 'confirm'
+  >('idle')
   const gasEstimateSeqRef = useRef(0)
   const gasEstimateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /** When set, we already finished estimating for this key — do not re-run RPC quote/gas for peripheral updates. */
@@ -363,6 +386,44 @@ export default function MissionContributeModal({
     isLoadingRpcFundingBalance,
     rpcFundingChainWei,
   ])
+
+  /** Same idea as the balance-line hint: `useNativeBalance` wallet chain vs payment chain. */
+  const showPayChainWalletMismatch = useMemo(
+    () =>
+      process.env.NEXT_PUBLIC_TEST_ENV !== 'true' &&
+      !!address &&
+      fundingBalanceResolved &&
+      !walletOnPayChain &&
+      chains.some((c) => c.id === payChainStable.id),
+    [address, fundingBalanceResolved, walletOnPayChain, chains, payChainStable.id]
+  )
+
+  const switchWalletToPayChain = useCallback(async (): Promise<boolean> => {
+    const target = chains.find((c) => c.id === payChainStable.id) ?? payChainStable
+    const wallet = wallets?.[selectedWallet]
+    if (!wallet || typeof wallet.switchChain !== 'function') return false
+    try {
+      await wallet.switchChain(target.id)
+      return true
+    } catch (err: any) {
+      if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
+        const ok = await addNetworkToWallet(target)
+        if (ok) {
+          try {
+            await wallet.switchChain(target.id)
+            return true
+          } catch {
+            return false
+          }
+        }
+      } else if (err?.code !== 4001) {
+        toast.error('Failed to switch network. Please try again.', {
+          style: toastStyle,
+        })
+      }
+      return false
+    }
+  }, [chains, payChainStable, wallets, selectedWallet])
 
   const { effectiveGasPrice } = useGasPrice(payChainStable)
 
@@ -1034,7 +1095,17 @@ export default function MissionContributeModal({
     // Reset rejection state when attempting a new transaction
     setTransactionRejected(false)
 
+    // If wallet is on a different chain than the selected pay network, switch first
+    if (!walletOnPayChain) {
+      const switched = await switchWalletToPayChain()
+      if (!switched) {
+        return
+      }
+      await refetchNativeBalance()
+    }
+
     try {
+      flushSync(() => setContributeButtonPhase('wallet'))
       let receipt: any
       if (chainSlug !== defaultChainSlug) {
         const quoteCrossChainPay: any = await readContract({
@@ -1065,19 +1136,126 @@ export default function MissionContributeModal({
           value: BigInt(quoteCrossChainPay),
         })
 
-        const originReceipt: any = await sendAndConfirmTransaction({
+        const submittedOrigin = await sendTransaction({
           transaction,
           account,
         })
-        toast.success('Payment recieved! Please wait a minute or two for settlement.', {
-          style: toastStyle,
-        })
-        receipt = await waitForCrossChainPayReceipt({
-          client,
-          srcChainId: isTestnet ? 19999 : 1,
-          originTxHash: originReceipt.transactionHash,
-          destinationChain: DEFAULT_CHAIN_V5,
-        })
+        flushSync(() => setContributeButtonPhase('confirm'))
+        const originReceipt: any = await waitForReceipt(submittedOrigin)
+
+        toast.success(
+          'Payment successfully sent! Onchain settlement and confirmation may take a few minutes. No further action is needed!',
+          { style: toastStyle, duration: 10000 }
+        )
+
+        setInput('0')
+        setUsdInput('0')
+        if (isOverviewMission) {
+          setShowBackPrompt(true)
+        } else {
+          setModalEnabled?.(false)
+        }
+        if (router?.query?.onrampSuccess === 'true') {
+          const { onrampSuccess: _, ...restQuery } = router.query
+          router.replace(
+            {
+              pathname: router.pathname,
+              query: restQuery,
+            },
+            undefined,
+            { shallow: true }
+          )
+        }
+
+        void (async () => {
+          try {
+            const destReceipt = await waitForCrossChainPayReceipt({
+              client,
+              srcChainId: payChainStable.id,
+              originTxHash: originReceipt.transactionHash,
+              destinationChain: DEFAULT_CHAIN_V5,
+            })
+            const accessTokenCross = await getAccessToken()
+            const notificationBodyCross = {
+              txHash: destReceipt.transactionHash,
+              accessToken: accessTokenCross,
+              txChainSlug: defaultChainSlug,
+              projectId: mission?.projectId,
+              contributorEmail: emailTrim,
+              newsletterOptIn,
+            }
+            let contributionNotificationDataCross: { message?: string; success?: boolean } = {}
+            const maxNotificationAttemptsCross = 5
+            for (let attempt = 0; attempt < maxNotificationAttemptsCross; attempt++) {
+              const contributionNotification = await fetch('/api/mission/contribution-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(notificationBodyCross),
+              })
+              contributionNotificationDataCross = await contributionNotification.json()
+              if (contributionNotification.ok) {
+                break
+              }
+              const msg = contributionNotificationDataCross?.message || ''
+              const retryable =
+                msg.includes('No Pay event found') || msg.includes('Transaction not found')
+              if (retryable && attempt < maxNotificationAttemptsCross - 1) {
+                await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+                continue
+              }
+              break
+            }
+            if (!contributionNotificationDataCross?.success) {
+              if (contributionNotificationDataCross?.message) {
+                console.warn(
+                  'Contribution notification:',
+                  contributionNotificationDataCross.message
+                )
+              }
+              toast.error(
+                'Your payment was sent, but we could not confirm final settlement. If you do not receive an email soon, contact support with your transaction hash.',
+                { style: toastStyle, duration: 12000 }
+              )
+              return
+            }
+
+            toast.success('Your contribution has settled—check your email for confirmation.', {
+              style: toastStyle,
+              duration: 8000,
+            })
+
+            if (!isCitizen) {
+              try {
+                const eligibilityRes = await fetch(`/api/mission/freeMint?address=${address}`)
+                const eligibilityData = await eligibilityRes.json()
+                if (eligibilityData?.data?.eligible) {
+                  toast.success(
+                    <div>
+                      <Link href={'/citizen?freeMint=true'}>
+                        Mission token purchased! Click to claim free citizenship!
+                      </Link>
+                    </div>,
+                    {
+                      style: toastStyle,
+                    }
+                  )
+                }
+              } catch (err) {
+                console.error('Error checking free mint eligibility:', err)
+              }
+            } else {
+              refreshMissionData()
+            }
+          } catch (err) {
+            console.error('Cross-chain settlement follow-up failed:', err)
+            toast.error(
+              'Your payment was sent, but we could not confirm bridging. Check LayerZero scan or contact support with your transaction hash.',
+              { style: toastStyle, duration: 12000 }
+            )
+          }
+        })()
+
+        return
       } else {
         const transaction = prepareContractCall({
           contract: primaryTerminalContract,
@@ -1094,10 +1272,12 @@ export default function MissionContributeModal({
           value: toWei(inputValue),
         })
 
-        receipt = await sendAndConfirmTransaction({
+        const submittedPay = await sendTransaction({
           transaction,
           account,
         })
+        flushSync(() => setContributeButtonPhase('confirm'))
+        receipt = await waitForReceipt(submittedPay)
       }
 
       const accessToken = await getAccessToken()
@@ -1206,6 +1386,8 @@ export default function MissionContributeModal({
         style: toastStyle,
       })
       throw error
+    } finally {
+      setContributeButtonPhase('idle')
     }
   }, [
     account,
@@ -1221,7 +1403,7 @@ export default function MissionContributeModal({
     agreedToCondition,
     defaultChainSlug,
     crossChainPayContract,
-    isTestnet,
+    payChainStable,
     isLoadingEthUsdPrice,
     ethUsdPrice,
     usdInput,
@@ -1233,6 +1415,9 @@ export default function MissionContributeModal({
     newsletterOptIn,
     isOverviewMission,
     toWei,
+    walletOnPayChain,
+    switchWalletToPayChain,
+    refetchNativeBalance,
   ])
 
   // Calculate quote when payment amount or ruleset changes (aligned with USD → ETH, not rounded `input`)
@@ -1511,7 +1696,7 @@ export default function MissionContributeModal({
       size="xl"
       showCloseButton={false}
     >
-      <div className="p-8 bg-gradient-to-br from-gray-900/95 via-blue-900/20 to-purple-900/15 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl">
+      <div className="p-4 sm:p-8 bg-gradient-to-br from-gray-900/95 via-blue-900/20 to-purple-900/15 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl">
         <MissionContributeModalHeader
           missionName={mission?.metadata?.name}
           onClose={handleModalClose}
@@ -1573,6 +1758,50 @@ export default function MissionContributeModal({
                 ethDeficit={ethDeficit}
               />
 
+              {!payChainWalletNoticeDismissed && showPayChainWalletMismatch && (
+                <div className="mb-4 rounded-xl border border-cyan-500/35 bg-gradient-to-r from-cyan-950/50 to-slate-900/60 px-4 py-3.5">
+                  <p className="text-sm text-gray-200 leading-relaxed">
+                    Your wallet is on{' '}
+                    <span className="font-semibold text-cyan-200">
+                      {(nativeBalanceChain?.name ?? 'another network').replace(' One', '')}
+                    </span>
+                    , but this payment uses{' '}
+                    <span className="font-semibold text-cyan-200">
+                      {(payChainStable.name ?? 'network').replace(' One', '')}
+                    </span>
+                    . Use the button to switch your wallet, or pick another network in the selector.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <StandardButton
+                      className="gradient-2 rounded-full text-sm px-5 py-2.5"
+                      onClick={() => void switchWalletToPayChain()}
+                    >
+                      {`Switch wallet to ${(payChainStable.name ?? 'network').replace(' One', '')}`}
+                    </StandardButton>
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                      onClick={() => setPayChainWalletNoticeDismissed(true)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!fundingChainBannerDismissed &&
+                (walletOnPayChain ||
+                  (payChainWalletNoticeDismissed && showPayChainWalletMismatch)) && (
+                  <MissionFundingChainBanner
+                    enabled={fundingBannerEnabled}
+                    chains={chains}
+                    fundingPickReady={fundingPickReady}
+                    recommendedChain={recommendedFundingChain}
+                    fundingChainBalances={fundingChainBalances}
+                    onDismiss={() => setFundingChainBannerDismissed(true)}
+                  />
+                )}
+
               <div className="space-y-3">
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                   Network
@@ -1599,38 +1828,38 @@ export default function MissionContributeModal({
                 >
                   You contribute
                 </label>
-                <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/30 rounded-xl p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-white/15">
+                <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/30 rounded-xl p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-2 sm:gap-4">
+                    <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 shrink">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 flex items-center justify-center border border-white/15 shrink-0">
                         <Image
                           src="/coins/ETH.svg"
                           alt="ETH"
                           width={24}
                           height={24}
-                          className="w-6 h-6"
+                          className="w-5 h-5 sm:w-6 sm:h-6"
                         />
                       </div>
-                      <div>
-                        <p className="font-semibold text-white text-lg">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-white text-base sm:text-lg truncate">
                           {calculateEthAmount()}
                         </p>
                         <p className="text-gray-500 text-xs">ETH (estimated)</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-xl px-3 py-2 border border-white/15 bg-black/50 shadow-inner">
-                      <span className="text-cyan-200/80 text-lg font-bold shrink-0">$</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl px-2 sm:px-3 py-2 border border-white/15 bg-black/50 shadow-inner shrink-0">
+                      <span className="text-cyan-200/80 text-base sm:text-lg font-bold shrink-0">$</span>
                       <input
                         id="payment-input"
                         type="text"
                         inputMode="decimal"
-                        className="min-w-0 w-24 sm:w-28 bg-transparent border-none outline-none text-white text-right text-lg font-bold placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="min-w-0 w-16 sm:w-28 bg-transparent border-none outline-none text-white text-right text-base sm:text-lg font-bold placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-gray-300 text-lg font-bold shrink-0">USD</span>
+                      <span className="text-gray-300 text-base sm:text-lg font-bold shrink-0">USD</span>
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1675,10 +1904,10 @@ export default function MissionContributeModal({
                 <p className="text-gray-500 font-medium text-sm uppercase tracking-wider">
                   You receive
                 </p>
-                <div className="bg-slate-900/50 border border-white/[0.07] rounded-xl p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex items-center space-x-4 min-w-0">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 shrink-0">
+                <div className="bg-slate-900/50 border border-white/[0.07] rounded-xl p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-white/10 shrink-0">
                         <Image
                           src={getIPFSGateway(mission?.metadata.logoUri)}
                           width={48}
@@ -1715,9 +1944,9 @@ export default function MissionContributeModal({
               {layerZeroLimitExceeded ? (
                 // LayerZero limit exceeded
                 <div className="space-y-6 pt-2">
-                  <div className="bg-gradient-to-r from-blue-500/15 to-purple-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500/30 to-purple-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
+                  <div className="bg-gradient-to-r from-blue-500/15 to-purple-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-4 sm:p-6">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500/30 to-purple-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
                         <span className="text-2xl">💡</span>
                       </div>
                       <div className="flex-1">
@@ -1798,7 +2027,7 @@ export default function MissionContributeModal({
                     />
                   )}
 
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <label
                         htmlFor="contribution-contributor-email-direct"
@@ -1836,7 +2065,7 @@ export default function MissionContributeModal({
                   </div>
 
                   {/* Terms Checkbox */}
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                         Terms and Conditions
@@ -1853,7 +2082,7 @@ export default function MissionContributeModal({
 
                   {/* LayerZero Limit Warning */}
                   {layerZeroLimitExceeded && (
-                    <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl p-5">
+                    <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl p-3 sm:p-5">
                       <p className="text-red-300 text-sm font-semibold mb-2">
                         Contribution Limit Exceeded
                       </p>
@@ -1893,6 +2122,13 @@ export default function MissionContributeModal({
                           : !chainSlugs.includes(chainSlug)
                           ? `Switch Network`
                           : `Contribute $${formattedUsdInput || '0'} USD`
+                      }
+                      loadingLabel={
+                        contributeButtonPhase === 'confirm'
+                          ? 'Awaiting Confirmation. Please wait.'
+                          : contributeButtonPhase === 'wallet'
+                          ? 'Sending Transaction to Wallet. Please wait.'
+                          : undefined
                       }
                       id="contribute-button"
                       className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-700 disabled:to-gray-600 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
@@ -1960,7 +2196,7 @@ export default function MissionContributeModal({
                     />
                   )}
 
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <label
                         htmlFor="contribution-contributor-email-onramp"
@@ -1998,7 +2234,7 @@ export default function MissionContributeModal({
                   </div>
 
                   {/* Terms Checkbox - Required before onramp */}
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                         Terms and Conditions
