@@ -1,5 +1,5 @@
 // Page Metadata
-import { DEPLOYED_ORIGIN } from 'const/config'
+import { DEPLOYED_ORIGIN, IPFS_GATEWAY } from 'const/config'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 
@@ -7,6 +7,24 @@ const defaultTitle = "MoonDAO: The Internet's Space Program"
 const defaultDescription =
   'Join MoonDAO and be part of the future of space exploration. Learn more about our mission and how you can get involved.'
 const defaultImage = 'https://ipfs.io/ipfs/QmXY1axN4tQGV7CQBFtoE4hMZM3TRGMqqg5DD5LG3dz1dA'
+
+function normalizeOgImageUrl(image: string): string {
+  if (!image) return defaultImage
+
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return image
+  }
+
+  if (image.startsWith('ipfs://')) {
+    return `${IPFS_GATEWAY}${image.replace('ipfs://', '')}`
+  }
+
+  if (image.startsWith('/')) {
+    return `${DEPLOYED_ORIGIN}${image}`
+  }
+
+  return `${IPFS_GATEWAY}${image}`
+}
 
 type WebsiteHeadProps = {
   title?: string
@@ -31,6 +49,7 @@ export default function WebsiteHead({
 }: WebsiteHeadProps) {
   const router = useRouter()
   const canonicalUrl = `${DEPLOYED_ORIGIN}${router.asPath}`
+  const ogImage = normalizeOgImageUrl(image)
 
   const truncatedDescription =
     description.length > 160 ? description.substring(0, 160) + '...' : description
@@ -65,7 +84,7 @@ export default function WebsiteHead({
         key="meta-ogtitle"
       />
       <meta property="og:description" content={truncatedDescription} key="meta-ogdesc" />
-      <meta property="og:image" content={image} key="meta-ogimage" />
+      <meta property="og:image" content={ogImage} key="meta-ogimage" />
       <meta property="og:image:alt" content={title} key="meta-ogimagealt" />
       <meta property="og:type" content="website" key="meta-ogweb" />
       <meta property="og:url" content={canonicalUrl || 'https://moondao.com/'} key="meta-ogurl" />
@@ -79,7 +98,7 @@ export default function WebsiteHead({
         key="meta-twtitle"
       />
       <meta name="twitter:description" content={truncatedDescription} key="meta-twdesc" />
-      <meta name="twitter:image" content={image} key="meta-twimage" />
+      <meta name="twitter:image" content={ogImage} key="meta-twimage" />
       <meta name="twitter:image:alt" content={title} key="meta-twimagealt" />
       <meta name="twitter:card" content="summary_large_image" key="meta-twcard" />
       <meta name="twitter:site" content="@OfficialMoonDAO" key="meta-twsite" />
