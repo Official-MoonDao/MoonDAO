@@ -1696,7 +1696,7 @@ export default function MissionContributeModal({
       size="xl"
       showCloseButton={false}
     >
-      <div className="p-8 bg-gradient-to-br from-gray-900/95 via-blue-900/20 to-purple-900/15 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl">
+      <div className="p-4 sm:p-8 bg-gradient-to-br from-gray-900/95 via-blue-900/20 to-purple-900/15 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl">
         <MissionContributeModalHeader
           missionName={mission?.metadata?.name}
           onClose={handleModalClose}
@@ -1828,7 +1828,7 @@ export default function MissionContributeModal({
                 >
                   You contribute
                 </label>
-                <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/30 rounded-xl p-4">
+                <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/30 rounded-xl p-3 sm:p-4">
                   <div className="flex items-center justify-between gap-2 sm:gap-4">
                     <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 shrink">
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 flex items-center justify-center border border-white/15 shrink-0">
@@ -1904,10 +1904,10 @@ export default function MissionContributeModal({
                 <p className="text-gray-500 font-medium text-sm uppercase tracking-wider">
                   You receive
                 </p>
-                <div className="bg-slate-900/50 border border-white/[0.07] rounded-xl p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex items-center space-x-4 min-w-0">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 shrink-0">
+                <div className="bg-slate-900/50 border border-white/[0.07] rounded-xl p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-white/10 shrink-0">
                         <Image
                           src={getIPFSGateway(mission?.metadata.logoUri)}
                           width={48}
@@ -1944,9 +1944,9 @@ export default function MissionContributeModal({
               {layerZeroLimitExceeded ? (
                 // LayerZero limit exceeded
                 <div className="space-y-6 pt-2">
-                  <div className="bg-gradient-to-r from-blue-500/15 to-purple-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500/30 to-purple-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
+                  <div className="bg-gradient-to-r from-blue-500/15 to-purple-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-4 sm:p-6">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500/30 to-purple-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
                         <span className="text-2xl">💡</span>
                       </div>
                       <div className="flex-1">
@@ -2027,7 +2027,7 @@ export default function MissionContributeModal({
                     />
                   )}
 
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <label
                         htmlFor="contribution-contributor-email-direct"
@@ -2065,7 +2065,7 @@ export default function MissionContributeModal({
                   </div>
 
                   {/* Terms Checkbox */}
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                         Terms and Conditions
@@ -2082,7 +2082,7 @@ export default function MissionContributeModal({
 
                   {/* LayerZero Limit Warning */}
                   {layerZeroLimitExceeded && (
-                    <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl p-5">
+                    <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl p-3 sm:p-5">
                       <p className="text-red-300 text-sm font-semibold mb-2">
                         Contribution Limit Exceeded
                       </p>
@@ -2196,7 +2196,7 @@ export default function MissionContributeModal({
                     />
                   )}
 
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <label
                         htmlFor="contribution-contributor-email-onramp"
@@ -2234,7 +2234,7 @@ export default function MissionContributeModal({
                   </div>
 
                   {/* Terms Checkbox - Required before onramp */}
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                         Terms and Conditions
