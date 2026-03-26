@@ -532,10 +532,10 @@ export default function MissionProfile({
             </div>
             {/* Support Candidates Card - only for mission 4 (Overview flight on Arbitrum) */}
             {(mission?.id === 4 || String(mission?.id) === '4') && (
-              <div className="w-full px-[5vw] flex justify-center">
+              <div className="w-full px-5 md:px-8 lg:px-12 mt-4 md:mt-6 flex justify-center">
                 <Link
                   href={`/overview-vote?from=mission&missionId=${mission?.id ?? ''}`}
-                  className="w-full max-w-[1200px] block bg-gradient-to-r from-indigo-900/30 via-purple-900/20 to-blue-900/20 border border-indigo-500/20 hover:border-indigo-500/40 rounded-[2vw] p-4 sm:p-6 transition-all duration-300 group"
+                  className="w-full max-w-[1200px] block bg-gradient-to-r from-indigo-900/30 via-purple-900/20 to-blue-900/20 border border-indigo-500/20 hover:border-indigo-500/40 rounded-2xl p-4 sm:p-6 transition-all duration-300 group"
                 >
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
