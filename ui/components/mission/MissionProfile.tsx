@@ -71,7 +71,6 @@ import MissionMobileContributeButton from '@/components/mission/MissionMobileCon
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import MissionTeamSection from '@/components/mission/MissionTeamSection'
-import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import { TwitterIcon } from '@/components/assets'
 import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
@@ -230,19 +229,19 @@ export default function MissionProfile({
   const hatsContract = useContract({
     address: HATS_ADDRESS,
     abi: HatsABI,
-    chain: selectedChain,
+    chain: CHAIN,
   })
 
   const teamContract = useContract({
-    address: TEAM_ADDRESSES[chainSlug],
+    address: TEAM_ADDRESSES[CHAIN_SLUG],
     abi: TeamABI as any,
-    chain: selectedChain,
+    chain: CHAIN,
   })
 
   const citizenContract = useContract({
-    address: CITIZEN_ADDRESSES[chainSlug],
+    address: CITIZEN_ADDRESSES[CHAIN_SLUG],
     abi: CitizenABI as any,
-    chain: selectedChain,
+    chain: CHAIN,
   })
 
   const jbTerminalContract = useContract({
@@ -616,8 +615,7 @@ export default function MissionProfile({
                     )}
                   </div>
                 </div>
-                <SlidingCardMenu>
-                  <div className="flex gap-4"></div>
+                <div className="px-6 md:px-8 pb-6">
                   {teamHats?.[0]?.id && (
                     <TeamMembers
                       hats={teamHats}
@@ -625,7 +623,7 @@ export default function MissionProfile({
                       citizenContract={citizenContract}
                     />
                   )}
-                </SlidingCardMenu>
+                </div>
               </div>
             </div>
             {/* Support Candidates Card - only for mission 4 (Overview flight on Arbitrum) */}
