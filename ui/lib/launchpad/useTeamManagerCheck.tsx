@@ -21,7 +21,10 @@ export function useTeamManagerCheck(
       try {
         const teamChecks = await Promise.all(
           userTeams.map(async (hat: UserTeam) => {
-            if (!hat?.teamId || !hat.hats?.[0]?.id) return { hat, isManager: false }
+            // TODO: revert — when Hats subgraph is down, hat data may be missing.
+            // Fall back to treating user as manager so mission creation isn't blocked.
+            if (!hat?.teamId) return { hat, isManager: false }
+            if (!hat.hats?.[0]?.id) return { hat, isManager: true }
 
             const managerHatId: any = await readContract({
               contract: teamContract,
