@@ -140,10 +140,10 @@ export default function MissionInfo({
         </div>
       </div>
 
-      {/* Content Area — lg+ matches MissionProfileHeader: 2 equal cols, gap-8 lg:gap-10 */}
+      {/* Content Area — lg+ matches MissionProfileHeader: 3fr/2fr cols, gap-8 lg:gap-10 */}
       <div
         id="mission-info-content"
-        className="w-full relative flex flex-col gap-8 lg:gap-10 lg:grid lg:grid-cols-2 lg:items-start"
+        className="w-full relative flex flex-col gap-8 lg:gap-10 lg:grid lg:grid-cols-[3fr_2fr] lg:items-start"
       >
         <div className="min-w-0 pr-2 lg:pr-0">
           {tab === 'about' && (

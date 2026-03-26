@@ -181,7 +181,7 @@ const MissionProfileHeader = React.memo(
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent pointer-events-none" />
 
         <div className="relative z-10 w-full px-5 md:px-8 lg:px-12 pt-6 pb-4 lg:pt-8 lg:pb-6">
-          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start lg:items-stretch max-w-[1200px] mx-auto">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-10 items-start lg:items-stretch max-w-[1200px] mx-auto">
             {/* Mission image — square on mobile; on lg stretches to match copy column height (object-cover) */}
             <div className="w-full min-w-0 lg:h-full lg:min-h-0 flex flex-col">
               <div className="relative group w-full flex-1 min-h-0">
