@@ -64,7 +64,6 @@ import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionContributeModal from '@/components/mission/MissionContributeModal'
 import MissionDeployTokenModal from '@/components/mission/MissionDeployTokenModal'
-import MissionFundingChainBanner from '@/components/mission/MissionFundingChainBanner'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionJuiceboxFooter from '@/components/mission/MissionJuiceboxFooter'
 import MissionMetadataModal from '@/components/mission/MissionMetadataModal'
@@ -193,7 +192,8 @@ export default function MissionProfile({
           )
           const richest = pickChainWithMaxNativeBalance(entries, chains)
           const target = chains.find((c) => c.id === richest.id) ?? richest
-          if (target.id !== selectedChain.id) {
+          const skipAlignmentGate = target.id === ethereum.id
+          if (target.id !== selectedChain.id && !skipAlignmentGate) {
             setPayChainGate({ target, nextUsd: nextUsdInput })
             return
           }
@@ -511,13 +511,6 @@ export default function MissionProfile({
                   id="mission-pay-redeem-container"
                   className="w-full max-w-[1200px] mt-6 md:mt-4 rounded-2xl"
                 >
-                  <MissionFundingChainBanner
-                    enabled={fundingBannerEnabled}
-                    chains={chains}
-                    fundingPickReady={fundingPickReady}
-                    recommendedChain={recommendedChain}
-                    fundingChainBalances={fundingChainBalances}
-                  />
                   <MissionPayRedeem
                     mission={mission}
                     teamNFT={teamNFT}
@@ -571,10 +564,7 @@ export default function MissionProfile({
                   openContributeModal={handleOpenContributeModal}
                   usdInput={usdInput || ''}
                   setUsdInput={setUsdInput}
-                  missionDefaultFundingChainEnabled={missionDefaultFundingChainEnabled}
-                  fundingBannerEnabled={fundingBannerEnabled}
                   fundingPickReady={fundingPickReady}
-                  fundingChains={chains}
                   recommendedChain={recommendedChain}
                   fundingChainBalances={fundingChainBalances}
                   fundingCompareEnabled={fundingChainCompareEnabled}
@@ -777,8 +767,10 @@ export default function MissionProfile({
         usdInput={usdInput || ''}
         setUsdInput={setUsdInput}
         fundingChainCompareEnabled={fundingChainCompareEnabled}
+        fundingBannerEnabled={fundingBannerEnabled}
         fundingPickReady={fundingPickReady}
         recommendedFundingChain={recommendedChain}
+        fundingChainBalances={fundingChainBalances}
         stayOnSelectedAppChainRef={stayOnSelectedAppChainForContributeRef}
       />
     </>

@@ -50,15 +50,18 @@ import { waitForCrossChainPayReceipt } from '@/lib/mission/waitForCrossChainPayR
 import { fetchNativeBalanceWei } from '@/lib/mission/contributeModalDefaultChain'
 import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
 import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
+import type { FundingChainBalanceEntry } from '@/lib/mission/useMissionDefaultFundingChain'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import type { Chain } from '@/lib/rpc/chains'
 import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import StandardButton from '@/components/layout/StandardButton'
 import Modal from '@/components/layout/Modal'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CBOnramp } from '../coinbase/CBOnramp'
@@ -69,6 +72,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { MissionContributeAutoTriggeringView } from './MissionContributeAutoTriggeringView'
 import { MissionContributeModalHeader } from './MissionContributeModalHeader'
 import { MissionContributeStatusNotices } from './MissionContributeStatusNotices'
+import MissionFundingChainBanner from './MissionFundingChainBanner'
 import MissionTokenNotice from './MissionTokenNotice'
 import { PaymentBreakdown } from './PaymentBreakdown'
 
@@ -86,8 +90,10 @@ type MissionContributeModalProps = {
   setUsdInput: (usdInput: string) => void
   /** From mission page funding compare; when modal opens, app chain follows richest funding chain. */
   fundingChainCompareEnabled?: boolean
+  fundingBannerEnabled?: boolean
   fundingPickReady?: boolean
   recommendedFundingChain?: Chain | null
+  fundingChainBalances?: FundingChainBalanceEntry[] | null
   /**
    * Set to true immediately before opening the modal when the user chose to keep the current app
    * network (e.g. “stay on Arbitrum”) instead of switching to the richest funding chain.
@@ -107,8 +113,10 @@ export default function MissionContributeModal({
   usdInput,
   setUsdInput,
   fundingChainCompareEnabled = false,
+  fundingBannerEnabled = false,
   fundingPickReady = false,
   recommendedFundingChain = null,
+  fundingChainBalances = null,
   stayOnSelectedAppChainRef,
 }: MissionContributeModalProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
@@ -128,6 +136,17 @@ export default function MissionContributeModal({
 
   /** User picked a network in this modal; stop auto-reverting context to the richest funding chain. */
   const [userChosePayChainInModal, setUserChosePayChainInModal] = useState(false)
+
+  const [fundingChainBannerDismissed, setFundingChainBannerDismissed] = useState(false)
+  const [payChainWalletNoticeDismissed, setPayChainWalletNoticeDismissed] = useState(false)
+  const prevModalEnabledRef = useRef(false)
+  useEffect(() => {
+    if (modalEnabled && !prevModalEnabledRef.current) {
+      setFundingChainBannerDismissed(false)
+      setPayChainWalletNoticeDismissed(false)
+    }
+    prevModalEnabledRef.current = modalEnabled
+  }, [modalEnabled])
 
   /**
    * Recommended funding chain for initial sync / display when context lags behind RPC pick.
@@ -367,6 +386,44 @@ export default function MissionContributeModal({
     isLoadingRpcFundingBalance,
     rpcFundingChainWei,
   ])
+
+  /** Same idea as the balance-line hint: `useNativeBalance` wallet chain vs payment chain. */
+  const showPayChainWalletMismatch = useMemo(
+    () =>
+      process.env.NEXT_PUBLIC_TEST_ENV !== 'true' &&
+      !!address &&
+      fundingBalanceResolved &&
+      !walletOnPayChain &&
+      chains.some((c) => c.id === payChainStable.id),
+    [address, fundingBalanceResolved, walletOnPayChain, chains, payChainStable.id]
+  )
+
+  const switchWalletToPayChain = useCallback(async (): Promise<boolean> => {
+    const target = chains.find((c) => c.id === payChainStable.id) ?? payChainStable
+    const wallet = wallets?.[selectedWallet]
+    if (!wallet || typeof wallet.switchChain !== 'function') return false
+    try {
+      await wallet.switchChain(target.id)
+      return true
+    } catch (err: any) {
+      if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
+        const ok = await addNetworkToWallet(target)
+        if (ok) {
+          try {
+            await wallet.switchChain(target.id)
+            return true
+          } catch {
+            return false
+          }
+        }
+      } else if (err?.code !== 4001) {
+        toast.error('Failed to switch network. Please try again.', {
+          style: toastStyle,
+        })
+      }
+      return false
+    }
+  }, [chains, payChainStable, wallets, selectedWallet])
 
   const { effectiveGasPrice } = useGasPrice(payChainStable)
 
@@ -1038,6 +1095,15 @@ export default function MissionContributeModal({
     // Reset rejection state when attempting a new transaction
     setTransactionRejected(false)
 
+    // If wallet is on a different chain than the selected pay network, switch first
+    if (!walletOnPayChain) {
+      const switched = await switchWalletToPayChain()
+      if (!switched) {
+        return
+      }
+      await refetchNativeBalance()
+    }
+
     try {
       flushSync(() => setContributeButtonPhase('wallet'))
       let receipt: any
@@ -1349,6 +1415,9 @@ export default function MissionContributeModal({
     newsletterOptIn,
     isOverviewMission,
     toWei,
+    walletOnPayChain,
+    switchWalletToPayChain,
+    refetchNativeBalance,
   ])
 
   // Calculate quote when payment amount or ruleset changes (aligned with USD → ETH, not rounded `input`)
@@ -1688,6 +1757,50 @@ export default function MissionContributeModal({
                 hasEnoughBalance={hasEnoughBalance}
                 ethDeficit={ethDeficit}
               />
+
+              {!payChainWalletNoticeDismissed && showPayChainWalletMismatch && (
+                <div className="mb-4 rounded-xl border border-cyan-500/35 bg-gradient-to-r from-cyan-950/50 to-slate-900/60 px-4 py-3.5">
+                  <p className="text-sm text-gray-200 leading-relaxed">
+                    Your wallet is on{' '}
+                    <span className="font-semibold text-cyan-200">
+                      {(nativeBalanceChain?.name ?? 'another network').replace(' One', '')}
+                    </span>
+                    , but this payment uses{' '}
+                    <span className="font-semibold text-cyan-200">
+                      {(payChainStable.name ?? 'network').replace(' One', '')}
+                    </span>
+                    . Use the button to switch your wallet, or pick another network in the selector.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <StandardButton
+                      className="gradient-2 rounded-full text-sm px-5 py-2.5"
+                      onClick={() => void switchWalletToPayChain()}
+                    >
+                      {`Switch wallet to ${(payChainStable.name ?? 'network').replace(' One', '')}`}
+                    </StandardButton>
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                      onClick={() => setPayChainWalletNoticeDismissed(true)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!fundingChainBannerDismissed &&
+                (walletOnPayChain ||
+                  (payChainWalletNoticeDismissed && showPayChainWalletMismatch)) && (
+                  <MissionFundingChainBanner
+                    enabled={fundingBannerEnabled}
+                    chains={chains}
+                    fundingPickReady={fundingPickReady}
+                    recommendedChain={recommendedFundingChain}
+                    fundingChainBalances={fundingChainBalances}
+                    onDismiss={() => setFundingChainBannerDismissed(true)}
+                  />
+                )}
 
               <div className="space-y-3">
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">

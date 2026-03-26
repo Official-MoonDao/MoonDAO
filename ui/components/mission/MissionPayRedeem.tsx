@@ -1,10 +1,9 @@
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import { DEFAULT_CHAIN_V5, JB_NATIVE_TOKEN_ADDRESS } from 'const/config'
 import { JBRuleset } from 'juice-sdk-core'
-import { useWallets } from '@privy-io/react-auth'
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { formatUnits } from 'ethers/lib/utils'
 import { prepareContractCall, sendAndConfirmTransaction, simulateTransaction } from 'thirdweb'
@@ -20,9 +19,7 @@ import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxU
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import type { FundingChainBalanceEntry } from '@/lib/mission/useMissionDefaultFundingChain'
 import type { Chain } from '@/lib/rpc/chains'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
@@ -36,7 +33,6 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionActivityList from './MissionActivityList'
 import MissionContributorTiersPanel from './MissionContributorTiersPanel'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
-import StandardButton from '@/components/layout/StandardButton'
 
 /**
  * User holds more ETH on the recommended funding chain than on the chain their wallet is using
@@ -480,8 +476,6 @@ function MissionPayRedeemComponent({
   recommendedFundingChain = null,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const chainSlug = getChainSlug(selectedChain)
 
@@ -531,70 +525,12 @@ function MissionPayRedeemComponent({
     nativeBalanceChain,
   ])
 
-  const shouldPromptSwitchBeforeContribute = Boolean(
-    fundingCompareEnabled &&
-      fundingPickReady &&
-      recommendedFundingChain &&
-      richestVersusWallet &&
-      nativeBalanceChain?.id !== recommendedFundingChain.id
-  )
-
-  const [richestSwitchModalOpen, setRichestSwitchModalOpen] = useState(false)
-  const pendingContributeUsdRef = useRef('')
-
-  const performWalletSwitchToRichest = useCallback(async (): Promise<boolean> => {
-    const target = recommendedFundingChain
-    if (!target) return false
-    const wallet = wallets?.[selectedWallet]
-    if (!wallet || typeof wallet.switchChain !== 'function') return false
-    try {
-      await wallet.switchChain(target.id)
-      return true
-    } catch (err: any) {
-      if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
-        const ok = await addNetworkToWallet(target)
-        if (ok) {
-          try {
-            await wallet.switchChain(target.id)
-            return true
-          } catch {
-            return false
-          }
-        }
-      } else if (err?.code !== 4001) {
-        toast.error('Failed to switch network. Please try again.', {
-          style: toastStyle,
-        })
-      }
-      return false
-    }
-  }, [wallets, selectedWallet, recommendedFundingChain])
-
   const requestOpenContributeModal = useCallback(
     async (usd: string) => {
-      if (shouldPromptSwitchBeforeContribute) {
-        pendingContributeUsdRef.current = usd
-        setRichestSwitchModalOpen(true)
-        return
-      }
       await onOpenModal?.(usd)
     },
-    [shouldPromptSwitchBeforeContribute, onOpenModal]
+    [onOpenModal]
   )
-
-  const handleConfirmSwitchAndContribute = useCallback(async () => {
-    if (!recommendedFundingChain) return
-    const ok = await performWalletSwitchToRichest()
-    if (ok) {
-      setRichestSwitchModalOpen(false)
-      await onOpenModal?.(pendingContributeUsdRef.current)
-    }
-  }, [recommendedFundingChain, performWalletSwitchToRichest, onOpenModal])
-
-  const handleContinueWithoutSwitchingWallet = useCallback(() => {
-    setRichestSwitchModalOpen(false)
-    void onOpenModal?.(pendingContributeUsdRef.current)
-  }, [onOpenModal])
 
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
@@ -1008,52 +944,8 @@ function MissionPayRedeemComponent({
 
   if (Number(stage) === 4) return null
 
-  const richestTargetName = recommendedFundingChain
-    ? (recommendedFundingChain.name ?? 'network').replace(' One', '')
-    : ''
-  const walletCurrentNetworkLabel = nativeBalanceChain
-    ? (nativeBalanceChain.name ?? 'network').replace(' One', '')
-    : 'current network'
-
   return (
     <>
-      {richestSwitchModalOpen && recommendedFundingChain && (
-        <Modal
-          id="mission-richest-chain-contribute"
-          setEnabled={setRichestSwitchModalOpen}
-          title="Switch network"
-          size="sm"
-        >
-          <p className="text-gray-300 text-sm leading-relaxed mb-4">
-            You have more ETH on <span className="font-semibold text-white">{richestTargetName}</span>{' '}
-            than on <span className="font-semibold text-white">{walletCurrentNetworkLabel}</span>. Switch
-            to {richestTargetName} to pay from that balance, or stay on {walletCurrentNetworkLabel} and
-            continue if you prefer.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
-            <button
-              type="button"
-              className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white border border-white/15 hover:bg-white/5 transition-colors sm:order-1"
-              onClick={() => setRichestSwitchModalOpen(false)}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white border border-white/15 hover:bg-white/5 transition-colors sm:order-2"
-              onClick={handleContinueWithoutSwitchingWallet}
-            >
-              {`Stay on ${walletCurrentNetworkLabel} and continue`}
-            </button>
-            <StandardButton
-              className="gradient-2 rounded-lg text-sm px-5 py-2.5 sm:order-3"
-              onClick={() => void handleConfirmSwitchAndContribute()}
-            >
-              {`Switch to ${richestTargetName}`}
-            </StandardButton>
-          </div>
-        </Modal>
-      )}
       {!onlyModal && (
         <>
           {onlyButton && buttonMode === 'fixed' ? (

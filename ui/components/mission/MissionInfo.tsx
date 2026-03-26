@@ -3,7 +3,6 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import MissionActivityList from './MissionActivityList'
-import MissionFundingChainBanner from './MissionFundingChainBanner'
 import MissionPayRedeem from './MissionPayRedeem'
 import MissionSocialLinks from './MissionSocialLinks'
 import MissionTimelineChart from './MissionTimelineChart'
@@ -71,10 +70,7 @@ export default function MissionInfo({
   openContributeModal,
   setUsdInput,
   usdInput,
-  missionDefaultFundingChainEnabled = false,
-  fundingBannerEnabled = false,
   fundingPickReady = false,
-  fundingChains = [],
   recommendedChain = null,
   fundingChainBalances = null,
   fundingCompareEnabled = false,
@@ -228,13 +224,6 @@ export default function MissionInfo({
           )}
         </div>
         <div className="hidden lg:block min-w-0 w-full pt-[47px] self-start">
-          <MissionFundingChainBanner
-            enabled={fundingBannerEnabled}
-            chains={fundingChains}
-            fundingPickReady={fundingPickReady}
-            recommendedChain={recommendedChain}
-            fundingChainBalances={fundingChainBalances}
-          />
           <MissionPayRedeem
             ruleset={ruleset}
             stage={stage}
