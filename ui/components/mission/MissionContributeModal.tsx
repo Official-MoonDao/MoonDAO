@@ -1,6 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { getAccessToken, useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
+import { formatUnits } from 'ethers/lib/utils'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import {
@@ -295,8 +296,11 @@ export default function MissionContributeModal({
     forwardClient,
   })
 
-  const { nativeBalance, walletChain: nativeBalanceChain, refetch: refetchNativeBalance } =
-    useNativeBalance()
+  const {
+    nativeBalanceWei,
+    walletChain: nativeBalanceChain,
+    refetch: refetchNativeBalance,
+  } = useNativeBalance()
   const walletOnPayChain = useMemo(
     () => nativeBalanceChain != null && nativeBalanceChain.id === payChain.id,
     [nativeBalanceChain, payChain.id]
@@ -330,17 +334,18 @@ export default function MissionContributeModal({
     }
   }, [modalEnabled, address, payChainStable, walletOnPayChain])
 
-  const fundingBalanceEth = useMemo(() => {
+  /** Native balance on `payChain` (wei). Exact on-chain value — use for comparisons, not `Number(wei)`. */
+  const fundingBalanceWei = useMemo(() => {
     if (!address) return null
     if (walletOnPayChain) {
-      return nativeBalance == null ? null : Number(nativeBalance)
+      return nativeBalanceWei === undefined ? null : nativeBalanceWei
     }
     if (isLoadingRpcFundingBalance) return null
-    return rpcFundingChainWei !== null ? Number(rpcFundingChainWei) / 1e18 : null
+    return rpcFundingChainWei
   }, [
     address,
     walletOnPayChain,
-    nativeBalance,
+    nativeBalanceWei,
     isLoadingRpcFundingBalance,
     rpcFundingChainWei,
   ])
@@ -348,13 +353,13 @@ export default function MissionContributeModal({
   const fundingBalanceResolved = useMemo(() => {
     if (!address) return false
     if (walletOnPayChain) {
-      return nativeBalance != null
+      return nativeBalanceWei !== undefined
     }
     return !isLoadingRpcFundingBalance && rpcFundingChainWei !== null
   }, [
     address,
     walletOnPayChain,
-    nativeBalance,
+    nativeBalanceWei,
     isLoadingRpcFundingBalance,
     rpcFundingChainWei,
   ])
@@ -815,31 +820,30 @@ export default function MissionContributeModal({
 
   estimateContributionGasRef.current = estimateContributionGas
 
-  // Calculate required ETH amount
-  // Add a small safety buffer (3-5%) to ensure users have enough after onramp
-  const requiredEth = useMemo(() => {
+  // Required total (tx value + buffered gas) in wei for exact balance checks; ETH number for display only.
+  const requiredWei = useMemo(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
     const isCrossChain = chainSlug !== defaultChainSlug
 
-    let transactionValueEth: number
+    let transactionWei: bigint
     if (isCrossChain && crossChainQuote > BigInt(0) && !layerZeroLimitExceeded) {
-      transactionValueEth = Number(crossChainQuote) / 1e18
+      transactionWei = crossChainQuote
     } else {
-      transactionValueEth = usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
+      const usdNum = Number(cleanUsdInput)
+      if (usdInput && ethUsdPrice && Number.isFinite(usdNum) && usdNum > 0) {
+        const ethFloat = usdNum / ethUsdPrice
+        transactionWei = BigInt(Math.ceil(ethFloat * 1e18))
+      } else {
+        transactionWei = BigInt(0)
+      }
     }
 
-    // Calculate base gas cost (estimatedGas already has buffers, effectiveGasPrice is baseFee+priorityFee)
-    const baseGasCostWei = effectiveGasPrice ? estimatedGas * effectiveGasPrice : BigInt(0)
-
-    // Add small safety buffer (3%) for requiredEth to account for base fee fluctuations
-    // This ensures users have enough after onramp, but is much smaller than previous estimates
-    const safetyBuffer = BigInt(103) // 3%
+    const baseGasCostWei =
+      effectiveGasPrice && estimatedGas ? estimatedGas * effectiveGasPrice : BigInt(0)
+    const safetyBuffer = BigInt(103) // 3% on gas for base-fee drift
     const gasCostWei = (baseGasCostWei * safetyBuffer) / BigInt(100)
-    const gasCostEth = Number(gasCostWei) / 1e18
 
-    const total = transactionValueEth + gasCostEth
-
-    return total
+    return transactionWei + gasCostWei
   }, [
     usdInput,
     ethUsdPrice,
@@ -851,23 +855,27 @@ export default function MissionContributeModal({
     layerZeroLimitExceeded,
   ])
 
+  const requiredEth = useMemo(
+    () => parseFloat(formatUnits(requiredWei.toString(), 18)),
+    [requiredWei]
+  )
+
   const hasEnoughBalance = useMemo(() => {
-    if (!fundingBalanceResolved || fundingBalanceEth === null) return false
-    return fundingBalanceEth >= requiredEth && requiredEth > 0
-  }, [fundingBalanceResolved, fundingBalanceEth, requiredEth])
+    if (!fundingBalanceResolved || fundingBalanceWei === null) return false
+    return requiredWei > BigInt(0) && fundingBalanceWei >= requiredWei
+  }, [fundingBalanceResolved, fundingBalanceWei, requiredWei])
 
   const showFundingBalanceWait = Boolean(
     address &&
       !walletOnPayChain &&
       isLoadingRpcFundingBalance &&
-      requiredEth > 0
+      requiredWei > BigInt(0)
   )
 
   const applyMaxContribution = useCallback(() => {
-    if (!ethUsdPrice || fundingBalanceEth == null || !address) return
-    const balanceEth = fundingBalanceEth
+    if (!ethUsdPrice || fundingBalanceWei === null || !address) return
     const maxUsd = computeContributionMaxUsd({
-      balanceEth,
+      balanceWei: fundingBalanceWei,
       selectedChainId: payChain.id,
       chainSlug,
       defaultChainSlug,
@@ -877,7 +885,7 @@ export default function MissionContributeModal({
     setUsdInput(formatInputWithCommas(maxUsd.toFixed(2)))
   }, [
     ethUsdPrice,
-    fundingBalanceEth,
+    fundingBalanceWei,
     address,
     chainSlug,
     payChain.id,
@@ -912,10 +920,11 @@ export default function MissionContributeModal({
 
   // Calculate how much ETH the user needs to buy
   const ethDeficit = useMemo(() => {
-    if (fundingBalanceEth === null || !requiredEth) return 0
-
-    return Math.max(0, requiredEth - fundingBalanceEth)
-  }, [fundingBalanceEth, requiredEth])
+    if (fundingBalanceWei === null || requiredWei === BigInt(0)) return 0
+    if (fundingBalanceWei >= requiredWei) return 0
+    const deficitWei = requiredWei - fundingBalanceWei
+    return parseFloat(formatUnits(deficitWei.toString(), 18))
+  }, [fundingBalanceWei, requiredWei])
 
   // Calculate USD equivalent
   const usdDeficit = useMemo(() => {
@@ -1428,13 +1437,14 @@ export default function MissionContributeModal({
       setCoinbasePaymentTotal(paymentTotal)
       setCoinbaseTotalFees(totalFees)
 
-      const currentBalance = fundingBalanceEth ?? 0
-      const totalAfterPurchase = ethAmount + currentBalance
-      const isInsufficient = totalAfterPurchase < requiredEth
+      const topUpWei = BigInt(Math.ceil(ethAmount * 1e18))
+      const currentWei = fundingBalanceWei ?? BigInt(0)
+      const totalAfterWei = currentWei + topUpWei
+      const isInsufficient = totalAfterWei < requiredWei
 
       setCoinbaseEthInsufficient(isInsufficient)
     },
-    [fundingBalanceEth, requiredEth]
+    [fundingBalanceWei, requiredWei]
   )
 
   // Clear Coinbase fee state when user no longer needs onramp
@@ -1627,8 +1637,10 @@ export default function MissionContributeModal({
                     <p className="text-gray-400 text-xs sm:text-sm">
                       <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
                       <span className="text-white font-medium tabular-nums">
-                        {fundingBalanceResolved && fundingBalanceEth != null
-                          ? `${formatEthFiveSigFigs(fundingBalanceEth)} ETH`
+                        {fundingBalanceResolved && fundingBalanceWei != null
+                          ? `${formatEthFiveSigFigs(
+                              parseFloat(formatUnits(fundingBalanceWei.toString(), 18))
+                            )} ETH`
                           : isLoadingRpcFundingBalance && !walletOnPayChain
                           ? '…'
                           : '—'}
@@ -1645,8 +1657,8 @@ export default function MissionContributeModal({
                       onClick={applyMaxContribution}
                       disabled={
                         !address ||
-                        fundingBalanceEth == null ||
-                        fundingBalanceEth <= 0 ||
+                        fundingBalanceWei == null ||
+                        fundingBalanceWei <= BigInt(0) ||
                         !ethUsdPrice ||
                         isLoadingEthUsdPrice
                       }
@@ -1767,8 +1779,14 @@ export default function MissionContributeModal({
                       showEstimatedGas={showEstimatedGas as boolean}
                       gasCostDisplay={gasCostDisplay}
                       requiredEth={requiredEth}
+                      requiredWei={requiredWei}
                       ethUsdPrice={ethUsdPrice}
-                      nativeBalance={fundingBalanceEth ?? undefined}
+                      nativeBalance={
+                        fundingBalanceWei != null
+                          ? parseFloat(formatUnits(fundingBalanceWei.toString(), 18))
+                          : undefined
+                      }
+                      nativeBalanceWei={fundingBalanceWei}
                       showCurrentBalance={true}
                       showNeedToBuy={true}
                       coinbasePaymentSubtotal={coinbasePaymentSubtotal}
@@ -1923,8 +1941,14 @@ export default function MissionContributeModal({
                       showEstimatedGas={showEstimatedGas as boolean}
                       gasCostDisplay={gasCostDisplay}
                       requiredEth={requiredEth}
+                      requiredWei={requiredWei}
                       ethUsdPrice={ethUsdPrice}
-                      nativeBalance={fundingBalanceEth ?? undefined}
+                      nativeBalance={
+                        fundingBalanceWei != null
+                          ? parseFloat(formatUnits(fundingBalanceWei.toString(), 18))
+                          : undefined
+                      }
+                      nativeBalanceWei={fundingBalanceWei}
                       showCurrentBalance={true}
                       showNeedToBuy={true}
                       coinbasePaymentSubtotal={coinbasePaymentSubtotal}

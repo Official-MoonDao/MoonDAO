@@ -1,3 +1,4 @@
+import { formatUnits } from 'ethers/lib/utils'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type PaymentBreakdownProps = {
@@ -10,8 +11,11 @@ type PaymentBreakdownProps = {
   showEstimatedGas: boolean
   gasCostDisplay: { eth: string; usd: string }
   requiredEth: number
+  /** When set with `nativeBalanceWei`, deficit math uses exact wei (avoids float threshold bugs). */
+  requiredWei?: bigint | null
   ethUsdPrice: number
   nativeBalance?: number | null
+  nativeBalanceWei?: bigint | null
   showCurrentBalance?: boolean
   showNeedToBuy?: boolean
   coinbasePaymentSubtotal?: number
@@ -33,8 +37,10 @@ export function PaymentBreakdown({
   showEstimatedGas,
   gasCostDisplay,
   requiredEth,
+  requiredWei = null,
   ethUsdPrice,
   nativeBalance,
+  nativeBalanceWei = null,
   showCurrentBalance = false,
   showNeedToBuy = false,
   coinbaseEthReceive,
@@ -64,18 +70,34 @@ export function PaymentBreakdown({
   const showOnchainFeesDisclaimer = crossChainFeeUsd > 0 || gasFeeUsd > 0
 
   const nativeBal = nativeBalance ?? 0
-  const hasEthDeficit = requiredEth > nativeBal
+  const useWeiFunding =
+    nativeBalanceWei != null &&
+    requiredWei != null &&
+    nativeBalanceWei >= BigInt(0) &&
+    requiredWei >= BigInt(0)
+  const hasEthDeficit = useWeiFunding
+    ? nativeBalanceWei < requiredWei
+    : requiredEth > nativeBal
+
+  const nativeBalEthForDisplay = useWeiFunding
+    ? parseFloat(formatUnits(nativeBalanceWei.toString(), 18))
+    : nativeBal
+
+  const deficitEth =
+    useWeiFunding && nativeBalanceWei < requiredWei
+      ? parseFloat(formatUnits((requiredWei - nativeBalanceWei).toString(), 18))
+      : Math.max(0, requiredEth - nativeBal)
 
   const fundingMode = (showCurrentBalance && hasEthDeficit) || showTotalToBuy
 
   const needToPayUsd = coinbasePaymentTotal
     ? coinbasePaymentTotal.toFixed(2)
-    : (requiredEth * ethUsdPrice - nativeBal * ethUsdPrice).toFixed(2)
+    : (deficitEth * ethUsdPrice).toFixed(2)
 
   const needToPayEthEstimate =
     coinbaseEthReceive != null
       ? coinbaseEthReceive.toFixed(8)
-      : ((requiredEth * ethUsdPrice - nativeBal * ethUsdPrice) / ethUsdPrice).toFixed(6)
+      : deficitEth.toFixed(6)
 
   const rowLabelClass = fundingMode
     ? 'text-sm text-gray-400 leading-relaxed'
@@ -203,7 +225,7 @@ export function PaymentBreakdown({
               <div className="flex items-center justify-between gap-3">
                 <p className={rowLabelClass}>Current Balance</p>
                 <p className="text-sm text-gray-300 leading-relaxed text-right tabular-nums">
-                  ${(nativeBal * ethUsdPrice).toFixed(2)} USD
+                  ${(nativeBalEthForDisplay * ethUsdPrice).toFixed(2)} USD
                 </p>
               </div>
               <div className="border-t border-gray-500/30 my-2" />
@@ -218,16 +240,16 @@ export function PaymentBreakdown({
               </div>
               <div className="text-right">
                 <p className="text-white font-medium tabular-nums">
-                  ${(nativeBal * ethUsdPrice).toFixed(2)}
+                  ${(nativeBalEthForDisplay * ethUsdPrice).toFixed(2)}
                 </p>
                 <p className="text-gray-500 text-xs tabular-nums mt-0.5">
-                  {nativeBal.toFixed(6)} ETH
+                  {nativeBalEthForDisplay.toFixed(6)} ETH
                 </p>
               </div>
             </div>
           )}
 
-          {showNeedToBuy && requiredEth > nativeBal && (
+          {showNeedToBuy && hasEthDeficit && (
             <>
               {!fundingMode && (
                 <div className="flex items-center justify-between gap-3">
