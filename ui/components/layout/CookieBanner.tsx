@@ -31,8 +31,8 @@ export default function CookieBanner() {
   if (cookieConsent != null) return null
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[999]">
-      <div className="flex items-center gap-3 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-3 shadow-2xl text-white whitespace-nowrap">
+    <div className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-[999]">
+      <div className="flex flex-wrap items-center gap-3 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-3 shadow-2xl text-white sm:whitespace-nowrap">
         <p className="text-xs text-gray-300 leading-relaxed">
           {`We use cookies for analytics and personalization. `}
           <Link
