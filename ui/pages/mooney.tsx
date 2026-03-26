@@ -1,5 +1,6 @@
 import { ScaleIcon, ShieldCheckIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import Head from 'next/head'
+import Link from 'next/link'
 import React, { useContext } from 'react'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import WebsiteHead from '../components/layout/Head'
@@ -94,12 +95,12 @@ export default function Mooney() {
                 >
                   Buy MOONEY
                 </a>
-                <a
+                <Link
                   href="/lock"
                   className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
                   Lock & Vote
-                </a>
+                </Link>
               </>
             }
           />
