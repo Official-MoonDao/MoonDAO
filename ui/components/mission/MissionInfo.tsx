@@ -182,7 +182,7 @@ export default function MissionInfo({
                   </p>
                   <button
                     type="button"
-                    onClick={openContributeModal}
+                    onClick={() => openContributeModal()}
                     className="mt-1 px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-semibold text-base transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
                   >
                     Contribute Now
