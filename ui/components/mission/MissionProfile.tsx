@@ -60,7 +60,6 @@ import MissionTeamSection from '@/components/mission/MissionTeamSection'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import { TwitterIcon } from '@/components/assets'
-import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 
 const CHAIN = DEFAULT_CHAIN_V5
 const CHAIN_SLUG = getChainSlug(CHAIN)
@@ -559,31 +558,10 @@ export default function MissionProfile({
                 </Link>
               </div>
             )}
-            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
-              <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 py-4">
-                <div className="flex items-center relative rounded-tl-[20px] rounded-bl-[5vmax] p-4">
-                  <div
-                    className="pl-4 pr-8 flex overflow-x-auto overflow-y-hidden"
-                    style={{
-                      msOverflowStyle: 'none',
-                      WebkitOverflowScrolling: 'touch',
-                    }}
-                  >
-                    <div className="group-hover:scale-[1.05] transition-all duration-200">
-                      <JuiceboxLogoWhite />
-                    </div>
-                    <span className="text-sm text-gray-400 group-hover:text-white transition-colors duration-200">
-                      View on Juicebox
-                    </span>
-                    {isManager && (
-                      <span className="text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                        (Edit Project)
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <MissionJuiceboxFooter
+              projectId={mission?.projectId ?? 0}
+              isManager={isManager}
+            />
           </div>
         </ContentLayout>
       </Container>
