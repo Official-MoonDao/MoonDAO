@@ -85,7 +85,7 @@ async function handler(req: any, res: any) {
 
   secureHeaders(res)
 
-  /** Set once we `usedTransactions.add` so catch can release on unexpected errors (e.g. Discord fetch). */
+  /** Set when txHash is reserved in `usedTransactions` so catch can release on unexpected errors. */
   let contributionTxConsumed: string | null = null
 
   try {
@@ -116,14 +116,6 @@ async function handler(req: any, res: any) {
     const { walletAddresses } = privyUserData
     if (walletAddresses.length === 0) {
       return res.status(400).json({ message: 'No wallet addresses found' })
-    }
-
-    // Check if transaction has already been used
-    if (usedTransactions.has(txHash)) {
-      return res.status(400).json({
-        message:
-          'This transaction has already been processed for contribution notification',
-      })
     }
 
     // Verify transaction exists and is valid
@@ -228,6 +220,7 @@ async function handler(req: any, res: any) {
     }
     const mission = missionRows[0]
 
+    // Reserve txHash once inputs are validated so concurrent/duplicate calls skip expensive work below.
     if (usedTransactions.has(txHash)) {
       return res.status(400).json({
         message:

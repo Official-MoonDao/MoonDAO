@@ -1,5 +1,4 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
-import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import { getAccessToken, useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
@@ -45,6 +44,7 @@ import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import { formatContributionOutput } from '@/lib/mission'
+import { waitForCrossChainPayReceipt } from '@/lib/mission/waitForCrossChainPayReceipt'
 import { fetchNativeBalanceWei } from '@/lib/mission/contributeModalDefaultChain'
 import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
 import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
@@ -1063,14 +1063,11 @@ export default function MissionContributeModal({
         toast.success('Payment recieved! Please wait a minute or two for settlement.', {
           style: toastStyle,
         })
-        const destinationMessage = await waitForMessageReceived(
-          isTestnet ? 19999 : 1,
-          originReceipt.transactionHash
-        )
-        receipt = await waitForReceipt({
-          client: client,
-          chain: DEFAULT_CHAIN_V5,
-          transactionHash: destinationMessage.dstTxHash as `0x${string}`,
+        receipt = await waitForCrossChainPayReceipt({
+          client,
+          srcChainId: isTestnet ? 19999 : 1,
+          originTxHash: originReceipt.transactionHash,
+          destinationChain: DEFAULT_CHAIN_V5,
         })
       } else {
         const transaction = prepareContractCall({
