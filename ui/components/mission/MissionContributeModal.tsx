@@ -18,6 +18,7 @@ import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { flushSync } from 'react-dom'
 import React, {
   useMemo,
   useContext,
@@ -30,7 +31,7 @@ import React, {
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
-  sendAndConfirmTransaction,
+  sendTransaction,
   ZERO_ADDRESS,
   readContract,
   waitForReceipt,
@@ -245,6 +246,9 @@ export default function MissionContributeModal({
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
+  const [contributeButtonPhase, setContributeButtonPhase] = useState<
+    'idle' | 'wallet' | 'confirm'
+  >('idle')
   const gasEstimateSeqRef = useRef(0)
   const gasEstimateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /** When set, we already finished estimating for this key — do not re-run RPC quote/gas for peripheral updates. */
@@ -1035,6 +1039,7 @@ export default function MissionContributeModal({
     setTransactionRejected(false)
 
     try {
+      flushSync(() => setContributeButtonPhase('wallet'))
       let receipt: any
       if (chainSlug !== defaultChainSlug) {
         const quoteCrossChainPay: any = await readContract({
@@ -1065,19 +1070,126 @@ export default function MissionContributeModal({
           value: BigInt(quoteCrossChainPay),
         })
 
-        const originReceipt: any = await sendAndConfirmTransaction({
+        const submittedOrigin = await sendTransaction({
           transaction,
           account,
         })
-        toast.success('Payment recieved! Please wait a minute or two for settlement.', {
-          style: toastStyle,
-        })
-        receipt = await waitForCrossChainPayReceipt({
-          client,
-          srcChainId: isTestnet ? 19999 : 1,
-          originTxHash: originReceipt.transactionHash,
-          destinationChain: DEFAULT_CHAIN_V5,
-        })
+        flushSync(() => setContributeButtonPhase('confirm'))
+        const originReceipt: any = await waitForReceipt(submittedOrigin)
+
+        toast.success(
+          'Payment successfully sent! Onchain settlement and confirmation may take a few minutes. No further action is needed!',
+          { style: toastStyle, duration: 10000 }
+        )
+
+        setInput('0')
+        setUsdInput('0')
+        if (isOverviewMission) {
+          setShowBackPrompt(true)
+        } else {
+          setModalEnabled?.(false)
+        }
+        if (router?.query?.onrampSuccess === 'true') {
+          const { onrampSuccess: _, ...restQuery } = router.query
+          router.replace(
+            {
+              pathname: router.pathname,
+              query: restQuery,
+            },
+            undefined,
+            { shallow: true }
+          )
+        }
+
+        void (async () => {
+          try {
+            const destReceipt = await waitForCrossChainPayReceipt({
+              client,
+              srcChainId: payChainStable.id,
+              originTxHash: originReceipt.transactionHash,
+              destinationChain: DEFAULT_CHAIN_V5,
+            })
+            const accessTokenCross = await getAccessToken()
+            const notificationBodyCross = {
+              txHash: destReceipt.transactionHash,
+              accessToken: accessTokenCross,
+              txChainSlug: defaultChainSlug,
+              projectId: mission?.projectId,
+              contributorEmail: emailTrim,
+              newsletterOptIn,
+            }
+            let contributionNotificationDataCross: { message?: string; success?: boolean } = {}
+            const maxNotificationAttemptsCross = 5
+            for (let attempt = 0; attempt < maxNotificationAttemptsCross; attempt++) {
+              const contributionNotification = await fetch('/api/mission/contribution-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(notificationBodyCross),
+              })
+              contributionNotificationDataCross = await contributionNotification.json()
+              if (contributionNotification.ok) {
+                break
+              }
+              const msg = contributionNotificationDataCross?.message || ''
+              const retryable =
+                msg.includes('No Pay event found') || msg.includes('Transaction not found')
+              if (retryable && attempt < maxNotificationAttemptsCross - 1) {
+                await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+                continue
+              }
+              break
+            }
+            if (!contributionNotificationDataCross?.success) {
+              if (contributionNotificationDataCross?.message) {
+                console.warn(
+                  'Contribution notification:',
+                  contributionNotificationDataCross.message
+                )
+              }
+              toast.error(
+                'Your payment was sent, but we could not confirm final settlement. If you do not receive an email soon, contact support with your transaction hash.',
+                { style: toastStyle, duration: 12000 }
+              )
+              return
+            }
+
+            toast.success('Your contribution has settled—check your email for confirmation.', {
+              style: toastStyle,
+              duration: 8000,
+            })
+
+            if (!isCitizen) {
+              try {
+                const eligibilityRes = await fetch(`/api/mission/freeMint?address=${address}`)
+                const eligibilityData = await eligibilityRes.json()
+                if (eligibilityData?.data?.eligible) {
+                  toast.success(
+                    <div>
+                      <Link href={'/citizen?freeMint=true'}>
+                        Mission token purchased! Click to claim free citizenship!
+                      </Link>
+                    </div>,
+                    {
+                      style: toastStyle,
+                    }
+                  )
+                }
+              } catch (err) {
+                console.error('Error checking free mint eligibility:', err)
+              }
+            } else {
+              refreshMissionData()
+            }
+          } catch (err) {
+            console.error('Cross-chain settlement follow-up failed:', err)
+            toast.error(
+              'Your payment was sent, but we could not confirm bridging. Check LayerZero scan or contact support with your transaction hash.',
+              { style: toastStyle, duration: 12000 }
+            )
+          }
+        })()
+
+        return
       } else {
         const transaction = prepareContractCall({
           contract: primaryTerminalContract,
@@ -1094,10 +1206,12 @@ export default function MissionContributeModal({
           value: toWei(inputValue),
         })
 
-        receipt = await sendAndConfirmTransaction({
+        const submittedPay = await sendTransaction({
           transaction,
           account,
         })
+        flushSync(() => setContributeButtonPhase('confirm'))
+        receipt = await waitForReceipt(submittedPay)
       }
 
       const accessToken = await getAccessToken()
@@ -1206,6 +1320,8 @@ export default function MissionContributeModal({
         style: toastStyle,
       })
       throw error
+    } finally {
+      setContributeButtonPhase('idle')
     }
   }, [
     account,
@@ -1221,7 +1337,7 @@ export default function MissionContributeModal({
     agreedToCondition,
     defaultChainSlug,
     crossChainPayContract,
-    isTestnet,
+    payChainStable,
     isLoadingEthUsdPrice,
     ethUsdPrice,
     usdInput,
@@ -1893,6 +2009,13 @@ export default function MissionContributeModal({
                           : !chainSlugs.includes(chainSlug)
                           ? `Switch Network`
                           : `Contribute $${formattedUsdInput || '0'} USD`
+                      }
+                      loadingLabel={
+                        contributeButtonPhase === 'confirm'
+                          ? 'Awaiting Confirmation. Please wait.'
+                          : contributeButtonPhase === 'wallet'
+                          ? 'Sending Transaction To Wallet'
+                          : undefined
                       }
                       id="contribute-button"
                       className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-700 disabled:to-gray-600 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
