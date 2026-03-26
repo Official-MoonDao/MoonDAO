@@ -95,7 +95,7 @@ export default function Mooney() {
                   Buy MOONEY
                 </a>
                 <a
-                  href="#buy"
+                  href="/lock"
                   className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
                   Lock & Vote
