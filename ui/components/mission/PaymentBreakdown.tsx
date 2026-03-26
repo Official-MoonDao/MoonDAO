@@ -1,3 +1,4 @@
+import { formatUnits } from 'ethers/lib/utils'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type PaymentBreakdownProps = {
@@ -10,8 +11,11 @@ type PaymentBreakdownProps = {
   showEstimatedGas: boolean
   gasCostDisplay: { eth: string; usd: string }
   requiredEth: number
+  /** When set with `nativeBalanceWei`, deficit math uses exact wei (avoids float threshold bugs). */
+  requiredWei?: bigint | null
   ethUsdPrice: number
   nativeBalance?: number | null
+  nativeBalanceWei?: bigint | null
   showCurrentBalance?: boolean
   showNeedToBuy?: boolean
   coinbasePaymentSubtotal?: number
@@ -21,9 +25,6 @@ type PaymentBreakdownProps = {
   showTotalToBuy?: boolean
   coinbaseTotalFees?: number
   coinbasePaymentTotal?: number
-  /** ETH paid into this Juicebox project by the connected wallet (subgraph volume). */
-  missionContributedEth?: number | null
-  missionContributedLoading?: boolean
 }
 
 export function PaymentBreakdown({
@@ -36,38 +37,110 @@ export function PaymentBreakdown({
   showEstimatedGas,
   gasCostDisplay,
   requiredEth,
+  requiredWei = null,
   ethUsdPrice,
   nativeBalance,
+  nativeBalanceWei = null,
   showCurrentBalance = false,
   showNeedToBuy = false,
-  coinbasePaymentSubtotal,
   coinbaseEthReceive,
   isAdjustedForMinimum = false,
   coinbaseEthInsufficient = false,
   showTotalToBuy = false,
   coinbaseTotalFees,
   coinbasePaymentTotal,
-  missionContributedEth,
-  missionContributedLoading,
 }: PaymentBreakdownProps) {
+  const contributionUsd = parseFloat(usdInput.replace(/,/g, '')) || 0
+
+  const hasCrossChainRow = chainSlug !== defaultChainSlug && !layerZeroLimitExceeded
+  const crossChainReady =
+    hasCrossChainRow && !isLoadingGasEstimate && layerZeroFeeDisplay.usd !== '0.00'
+  const crossChainFeeUsd = crossChainReady ? parseFloat(layerZeroFeeDisplay.usd) || 0 : 0
+
+  const hasGasRow = showEstimatedGas
+  const gasReady = hasGasRow && !isLoadingGasEstimate && gasCostDisplay.eth !== '0.0000'
+  const gasFeeUsd = gasReady ? parseFloat(gasCostDisplay.usd) || 0 : 0
+
+  const coinbaseFeesUsd = coinbaseTotalFees ?? 0
+
+  const totalUsd = contributionUsd + crossChainFeeUsd + gasFeeUsd + coinbaseFeesUsd
+
+  const totalAmountPending = isLoadingGasEstimate && (hasCrossChainRow || hasGasRow)
+
+  const showOnchainFeesDisclaimer = crossChainFeeUsd > 0 || gasFeeUsd > 0
+
+  const nativeBal = nativeBalance ?? 0
+  const useWeiFunding =
+    nativeBalanceWei != null &&
+    requiredWei != null &&
+    nativeBalanceWei >= BigInt(0) &&
+    requiredWei >= BigInt(0)
+  const hasEthDeficit = useWeiFunding
+    ? nativeBalanceWei < requiredWei
+    : requiredEth > nativeBal
+
+  const nativeBalEthForDisplay = useWeiFunding
+    ? parseFloat(formatUnits(nativeBalanceWei.toString(), 18))
+    : nativeBal
+
+  const deficitEth =
+    useWeiFunding && nativeBalanceWei < requiredWei
+      ? parseFloat(formatUnits((requiredWei - nativeBalanceWei).toString(), 18))
+      : Math.max(0, requiredEth - nativeBal)
+
+  const fundingMode = (showCurrentBalance && hasEthDeficit) || showTotalToBuy
+
+  const needToPayUsd = coinbasePaymentTotal
+    ? coinbasePaymentTotal.toFixed(2)
+    : (deficitEth * ethUsdPrice).toFixed(2)
+
+  const needToPayEthEstimate =
+    coinbaseEthReceive != null
+      ? coinbaseEthReceive.toFixed(8)
+      : deficitEth.toFixed(6)
+
+  const rowLabelClass = fundingMode
+    ? 'text-sm text-gray-400 leading-relaxed'
+    : 'text-sm text-gray-300 leading-relaxed'
+
+  const rowValueClass = fundingMode
+    ? 'text-sm text-white/95 leading-relaxed text-right tabular-nums'
+    : 'text-sm text-gray-300 leading-relaxed text-right tabular-nums'
+
+  const shellClass = fundingMode
+    ? 'rounded-xl border border-cyan-500/25 bg-slate-950/90 ring-1 ring-cyan-500/10 shadow-lg shadow-black/30 p-5'
+    : 'bg-gray-500/5 border border-gray-500/20 rounded-lg p-4'
+
+  const costsInsetClass = fundingMode
+    ? 'rounded-lg bg-black/30 border border-white/[0.06] p-3.5 space-y-2.5'
+    : ''
+
   return (
-    <div className="bg-gray-500/5 border border-gray-500/20 rounded-lg p-4">
-      <p className="text-white text-sm font-semibold mb-3">Payment Breakdown</p>
-      <div className="space-y-2">
+    <div className={shellClass}>
+      <div className={fundingMode ? 'mb-4' : 'mb-3'}>
+        <p className="text-white font-semibold text-sm uppercase tracking-wider">
+          Payment Breakdown
+        </p>
+        {fundingMode && (
+          <p className="text-gray-500 text-xs mt-1.5 leading-relaxed">
+            Estimated costs for this contribution, then how much to add so your wallet can cover it.
+          </p>
+        )}
+      </div>
+
+      <div className={fundingMode ? `${costsInsetClass} space-y-2.5` : 'space-y-2'}>
         {/* Contribution */}
-        <div className="flex items-center justify-between text-sm">
-          <p className="text-gray-300">Contribution</p>
-          <p className="text-white">${usdInput} USD</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className={rowLabelClass}>Contribution</p>
+          <p className={rowValueClass}>${usdInput} USD</p>
         </div>
 
         {/* Cross-Chain Fee */}
         {chainSlug !== defaultChainSlug && !layerZeroLimitExceeded && (
-          <div className="flex items-center justify-between text-sm">
-            <p className="text-orange-300">Cross-Chain Fee</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className={rowLabelClass}>Cross-chain fee</p>
             {!isLoadingGasEstimate && layerZeroFeeDisplay.usd !== '0.00' ? (
-              <p className="text-orange-400 font-medium">
-                ~${layerZeroFeeDisplay.usd} USD
-              </p>
+              <p className={rowValueClass}>~${layerZeroFeeDisplay.usd} USD</p>
             ) : (
               <LoadingSpinner className="scale-50" />
             )}
@@ -76,10 +149,10 @@ export function PaymentBreakdown({
 
         {/* Gas Fee */}
         {showEstimatedGas && (
-          <div className="flex items-center justify-between text-sm">
-            <p className="text-gray-300">Gas Fee</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className={rowLabelClass}>Gas fee</p>
             {!isLoadingGasEstimate && gasCostDisplay.eth !== '0.0000' ? (
-              <p className="text-gray-400">~${gasCostDisplay.usd} USD</p>
+              <p className={rowValueClass}>~${gasCostDisplay.usd} USD</p>
             ) : (
               <LoadingSpinner className="scale-50" />
             )}
@@ -87,165 +160,231 @@ export function PaymentBreakdown({
         )}
 
         {/* Coinbase Fees */}
-        {coinbaseTotalFees && (
-          <div className="flex items-center justify-between text-sm">
-            <p className="text-gray-300">Coinbase Fees</p>
-            <p className="text-gray-400">
-              ~${coinbaseTotalFees.toFixed(2)} USD
-            </p>
+        {coinbaseTotalFees ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className={rowLabelClass}>Coinbase fees (est.)</p>
+            <p className={rowValueClass}>~${coinbaseTotalFees.toFixed(2)} USD</p>
           </div>
-        )}
+        ) : null}
 
-        {!showCurrentBalance && !showTotalToBuy && (
+        {!showTotalToBuy && (
           <>
-            {/* Divider */}
-            <div className="border-t border-gray-500/30 my-2"></div>
-
-            {/* Total Required - for users with enough balance */}
-            {requiredEth > 0 && (
-              <div className="flex items-center justify-between">
-                <p className="text-white text-base font-semibold">
-                  Total Required
-                </p>
-                <div className="text-right">
-                  <p className="text-blue-400 text-base font-bold">
-                    ~${(requiredEth * ethUsdPrice).toFixed(2)} USD
+            <div
+              className={
+                fundingMode
+                  ? 'border-t border-white/10 pt-2.5 mt-0.5'
+                  : 'border-t border-gray-500/30 my-2'
+              }
+            />
+            <div className="flex items-center justify-between gap-3">
+              <p
+                className={
+                  fundingMode
+                    ? 'text-gray-300 font-medium text-xs uppercase tracking-wider'
+                    : 'text-gray-300 font-medium text-sm uppercase tracking-wider'
+                }
+              >
+                Est. total (USD)
+              </p>
+              <div className="text-right">
+                {totalAmountPending ? (
+                  <LoadingSpinner className="scale-50 ml-auto" />
+                ) : (
+                  <p
+                    className={
+                      fundingMode
+                        ? 'text-base text-white font-semibold tabular-nums'
+                        : 'text-sm text-gray-300 leading-relaxed font-medium tabular-nums'
+                    }
+                  >
+                    ~${totalUsd.toFixed(2)}
                   </p>
-                  <p className="text-blue-300 text-xs">
-                    ~{requiredEth.toFixed(6)} ETH
-                  </p>
-                </div>
+                )}
               </div>
+            </div>
+            {showOnchainFeesDisclaimer && (
+              <p
+                className={
+                  fundingMode
+                    ? 'text-xs text-gray-500 leading-relaxed pt-1'
+                    : 'text-sm text-gray-300 leading-relaxed'
+                }
+              >
+                Onchain fees are not collected by MoonDAO.
+              </p>
             )}
           </>
         )}
+      </div>
 
-        {/* For users with some balance who need to buy more */}
-        {showCurrentBalance && (
-          <>
-            {/* Current Balance */}
-            <div className="flex items-center justify-between text-sm">
-              <p className="text-blue-300">Current Balance</p>
-              <p className="text-blue-400">
-                ${((nativeBalance || 0) * ethUsdPrice).toFixed(2)} USD
-              </p>
+      {/* For users with some balance who need to buy more */}
+      {showCurrentBalance && hasEthDeficit && (
+        <div className={fundingMode ? 'mt-5 pt-5 border-t border-white/10 space-y-4' : 'mt-2'}>
+          {!fundingMode && (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <p className={rowLabelClass}>Current Balance</p>
+                <p className="text-sm text-gray-300 leading-relaxed text-right tabular-nums">
+                  ${(nativeBalEthForDisplay * ethUsdPrice).toFixed(2)} USD
+                </p>
+              </div>
+              <div className="border-t border-gray-500/30 my-2" />
+            </>
+          )}
+
+          {fundingMode && (
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <div>
+                <p className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Your wallet</p>
+                <p className="text-gray-300">Available now</p>
+              </div>
+              <div className="text-right">
+                <p className="text-white font-medium tabular-nums">
+                  ${(nativeBalEthForDisplay * ethUsdPrice).toFixed(2)}
+                </p>
+                <p className="text-gray-500 text-xs tabular-nums mt-0.5">
+                  {nativeBalEthForDisplay.toFixed(6)} ETH
+                </p>
+              </div>
             </div>
+          )}
 
-            {(missionContributedLoading ||
-              (missionContributedEth != null && missionContributedEth > 1e-12)) && (
-              <div className="flex items-center justify-between text-sm pt-1">
-                <p className="text-blue-300">You contributed (this mission)</p>
-                {missionContributedLoading ? (
-                  <LoadingSpinner className="scale-50" />
-                ) : missionContributedEth != null ? (
+          {showNeedToBuy && hasEthDeficit && (
+            <>
+              {!fundingMode && (
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                    Need to Pay
+                  </p>
                   <div className="text-right">
-                    <p className="text-blue-400 font-medium">
-                      Ξ{' '}
-                      {missionContributedEth.toLocaleString('en-US', {
-                        maximumFractionDigits: 6,
-                      })}{' '}
-                      ETH
+                    <p className="text-sm text-gray-300 leading-relaxed font-medium tabular-nums">
+                      ${needToPayUsd} USD
                     </p>
-                    <p className="text-blue-300 text-xs">
-                      ~$
-                      {(missionContributedEth * ethUsdPrice).toLocaleString('en-US', {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2,
-                      })}{' '}
-                      USD
+                    <p className="text-sm text-gray-300 leading-relaxed tabular-nums">
+                      {coinbaseEthReceive != null ? (
+                        <>You&apos;ll receive at least {coinbaseEthReceive.toFixed(8)} ETH</>
+                      ) : (
+                        <>~{needToPayEthEstimate} ETH</>
+                      )}
                     </p>
                   </div>
-                ) : null}
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* Divider */}
-            <div className="border-t border-gray-500/30 my-2"></div>
+              {fundingMode && (
+                <div className="rounded-xl bg-gradient-to-br from-blue-600/25 via-violet-600/15 to-slate-900/50 border border-blue-500/35 p-4 shadow-inner shadow-black/20">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-200/90 mb-2">
+                    Add via Coinbase (below)
+                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-4">
+                    <p className="text-2xl sm:text-3xl font-bold text-white tabular-nums tracking-tight">
+                      ${needToPayUsd}
+                      <span className="text-lg font-semibold text-gray-400 ml-1.5">USD</span>
+                    </p>
+                    <p className="text-sm text-cyan-100/90 tabular-nums sm:text-right">
+                      {coinbaseEthReceive != null ? (
+                        <>At least {coinbaseEthReceive.toFixed(8)} ETH</>
+                      ) : (
+                        <>~{needToPayEthEstimate} ETH</>
+                      )}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+                    Quote updates as fees load. You&apos;ll complete purchase in the Fund step.
+                  </p>
+                  {coinbaseEthInsufficient && (
+                    <p className="text-xs text-amber-200/90 mt-2 leading-relaxed border-t border-amber-500/20 pt-2">
+                      This purchase may still leave you slightly short of the full amount needed for
+                      gas—try adding a small buffer or retry after the quote refreshes.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
-            {/* Need to Buy */}
-            {showNeedToBuy && requiredEth > (nativeBalance || 0) && (
-              <div className="flex items-center justify-between">
-                <p className="text-white text-base font-semibold">
-                  Need to Pay
-                </p>
+      {/* For users with no balance */}
+      {showTotalToBuy && (
+        <div className={fundingMode ? 'mt-5 pt-5 border-t border-white/10' : ''}>
+          <div
+            className={
+              fundingMode
+                ? 'rounded-xl bg-gradient-to-br from-blue-600/25 via-violet-600/15 to-slate-900/50 border border-blue-500/35 p-4 shadow-inner shadow-black/20'
+                : ''
+            }
+          >
+            {!fundingMode && <div className="border-t border-gray-500/30 my-2" />}
+            <div className="flex items-center justify-between gap-3">
+              <p
+                className={
+                  fundingMode
+                    ? 'text-[11px] font-semibold uppercase tracking-wider text-blue-200/90'
+                    : 'text-gray-300 font-medium text-sm uppercase tracking-wider'
+                }
+              >
+                {fundingMode ? 'Total to purchase' : 'Total to Buy'}
+              </p>
+              {!fundingMode && (
                 <div className="text-right">
-                  <p className="text-green-400 text-base font-bold">
-                    $
-                    {coinbasePaymentTotal
-                      ? coinbasePaymentTotal.toFixed(2)
-                      : (
-                          requiredEth * ethUsdPrice -
-                          (nativeBalance || 0) * ethUsdPrice
-                        ).toFixed(2)}{' '}
+                  <p className="text-sm text-gray-300 leading-relaxed font-medium tabular-nums">
+                    ~$
+                    {requiredEth && ethUsdPrice
+                      ? (requiredEth * ethUsdPrice).toFixed(2)
+                      : '0.00'}{' '}
                     USD
                   </p>
-                  <p className="text-green-300 text-xs">
-                    {coinbaseEthReceive ? (
-                      <>
-                        You'll receive at least {coinbaseEthReceive.toFixed(8)}{' '}
-                        ETH
-                      </>
-                    ) : (
-                      <>
-                        ~
-                        {(
-                          (requiredEth * ethUsdPrice -
-                            (nativeBalance || 0) * ethUsdPrice) /
-                          ethUsdPrice
-                        ).toFixed(6)}{' '}
-                        ETH
-                      </>
-                    )}
+                  <p className="text-sm text-gray-300 leading-relaxed tabular-nums">
+                    ~{requiredEth ? requiredEth.toFixed(6) : '0.000000'} ETH
                   </p>
                 </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* For users with no balance */}
-        {showTotalToBuy && (
-          <>
-            {/* Divider */}
-            <div className="border-t border-gray-500/30 my-2"></div>
-
-            {/* Total to Buy */}
-            <div className="flex items-center justify-between">
-              <p className="text-white text-base font-semibold">Total to Buy</p>
-              <div className="text-right">
-                <p className="text-green-400 text-base font-bold">
-                  ~$
+              )}
+            </div>
+            {fundingMode && (
+              <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 sm:gap-4 mt-2">
+                <p className="text-2xl sm:text-3xl font-bold text-white tabular-nums tracking-tight">
+                  ~
                   {requiredEth && ethUsdPrice
                     ? (requiredEth * ethUsdPrice).toFixed(2)
-                    : '0.00'}{' '}
-                  USD
+                    : '0.00'}
+                  <span className="text-lg font-semibold text-gray-400 ml-1.5">USD</span>
                 </p>
-                <p className="text-green-300 text-xs">
+                <p className="text-sm text-cyan-100/90 tabular-nums sm:text-right">
                   ~{requiredEth ? requiredEth.toFixed(6) : '0.000000'} ETH
                 </p>
               </div>
-            </div>
-          </>
-        )}
+            )}
+          </div>
+        </div>
+      )}
 
-        {/* Minimum adjustment notice */}
-        {isAdjustedForMinimum && (
-          <p className="text-blue-300 text-xs pt-2">
-            * Adjusted to Coinbase's $2 minimum. Extra ETH can be used for
-            future transactions.
+      {/* Minimum adjustment notice */}
+      {isAdjustedForMinimum && (
+        <p
+          className={
+            fundingMode
+              ? 'text-xs text-gray-500 leading-relaxed pt-4'
+              : 'text-sm text-gray-300 leading-relaxed pt-2'
+          }
+        >
+          * Adjusted to Coinbase&apos;s $2 minimum. Extra ETH can be used for future transactions.
+        </p>
+      )}
+
+      {showTotalToBuy &&
+        parseFloat(usdInput.replace(/,/g, '')) < 2 &&
+        !isAdjustedForMinimum && (
+          <p
+            className={
+              fundingMode
+                ? 'text-xs text-gray-500 leading-relaxed pt-2'
+                : 'text-sm text-gray-300 leading-relaxed pt-2'
+            }
+          >
+            * Adjusted to Coinbase&apos;s $2 minimum. Extra ETH can be used for future transactions.
           </p>
         )}
-
-        {/* For minimum purchase with no balance */}
-        {showTotalToBuy &&
-          parseFloat(usdInput.replace(/,/g, '')) < 2 &&
-          !isAdjustedForMinimum && (
-            <p className="text-blue-300 text-xs pt-2">
-              * Adjusted to Coinbase's $2 minimum. Extra ETH can be used for
-              future transactions.
-            </p>
-          )}
-      </div>
     </div>
   )
 }

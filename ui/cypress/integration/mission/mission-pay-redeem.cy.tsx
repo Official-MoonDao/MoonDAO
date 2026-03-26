@@ -110,7 +110,7 @@ describe('MissionPayRedeem Component', () => {
 
     cy.get('#mission-pay-redeem-container').should('exist')
     cy.get('#mission-pay-container').should('exist')
-    cy.contains('You pay').should('be.visible')
+    cy.contains('You contribute').should('be.visible')
     cy.contains('You receive').should('be.visible')
     cy.get('#usd-contribution-input').should('exist')
     cy.get('#open-contribute-modal').should('contain', 'Contribute')

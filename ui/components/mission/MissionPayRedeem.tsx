@@ -1,12 +1,12 @@
-import { ArrowDownIcon } from '@heroicons/react/20/solid'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import { DEFAULT_CHAIN_V5, JB_NATIVE_TOKEN_ADDRESS } from 'const/config'
 import { JBRuleset } from 'juice-sdk-core'
+import { useWallets } from '@privy-io/react-auth'
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useMemo } from 'react'
-import { useEffect, useState, useCallback } from 'react'
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+import { formatUnits } from 'ethers/lib/utils'
 import { prepareContractCall, sendAndConfirmTransaction, simulateTransaction } from 'thirdweb'
 import { TransactionReceipt } from 'thirdweb/dist/types/transaction/types'
 import { useActiveAccount } from 'thirdweb/react'
@@ -15,8 +15,17 @@ import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import { useMissionParticipantVolume } from '@/lib/juicebox/useMissionParticipantVolume'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatContributionOutput } from '@/lib/mission'
+import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
+import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+import type { FundingChainBalanceEntry } from '@/lib/mission/useMissionDefaultFundingChain'
+import type { Chain } from '@/lib/rpc/chains'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import MissionTokenSwapV4 from '@/components/uniswap/MissionTokenSwapV4'
@@ -24,7 +33,50 @@ import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import AcceptedPaymentMethods from '../privy/AcceptedPaymentMethods'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import MissionActivityList from './MissionActivityList'
+import MissionContributorTiersPanel from './MissionContributorTiersPanel'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
+import StandardButton from '@/components/layout/StandardButton'
+
+/**
+ * User holds more ETH on the recommended funding chain than on the chain their wallet is using
+ * (mission-chain RPC balance when on Ethereum/Base/Arbitrum; otherwise live native balance).
+ */
+function getRichestVersusConnectedWallet(args: {
+  fundingPickReady: boolean
+  fundingChainBalances: FundingChainBalanceEntry[] | null
+  recommendedFundingChain: Chain | null
+  walletChainId: number | undefined
+  nativeBalanceWei: bigint | undefined
+}): { richestWei: bigint; richestEthFormatted: string; richestChain: Chain } | null {
+  const {
+    fundingPickReady,
+    fundingChainBalances,
+    recommendedFundingChain,
+    walletChainId,
+    nativeBalanceWei,
+  } = args
+  if (!fundingPickReady || !fundingChainBalances?.length || !recommendedFundingChain) return null
+  if (walletChainId == null) return null
+
+  const recEntry = fundingChainBalances.find((e) => e.chain.id === recommendedFundingChain.id)
+  if (!recEntry) return null
+  const recommendedWei = recEntry.wei
+
+  const walletEntry = fundingChainBalances.find((e) => e.chain.id === walletChainId)
+  if (walletEntry) {
+    if (recommendedWei <= walletEntry.wei) return null
+  } else {
+    if (nativeBalanceWei == null) return null
+    if (recommendedWei <= nativeBalanceWei) return null
+  }
+
+  return {
+    richestWei: recommendedWei,
+    richestEthFormatted: formatUnits(recommendedWei.toString(), 18),
+    richestChain: recommendedFundingChain,
+  }
+}
 
 function formatContributedEth(eth: number): string {
   if (!Number.isFinite(eth) || eth <= 0) return '0'
@@ -33,6 +85,7 @@ function formatContributedEth(eth: number): string {
 }
 
 function MissionPayRedeemContent({
+  mission,
   token,
   output,
   redeem,
@@ -55,6 +108,10 @@ function MissionPayRedeemContent({
   contributedEthWei,
   isLoadingContributedEth,
   ethUsdPrice,
+  applyMaxContribution,
+  hideRecentContributions = false,
+  contributionBalanceEth,
+  contributionBalanceChain,
 }: any) {
   const isRefundable = Number(stage) === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
@@ -74,71 +131,102 @@ function MissionPayRedeemContent({
   return (
     <div
       id="mission-pay-redeem-container"
-      className="bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] rounded-2xl w-full flex flex-col gap-4 xl:items-stretch shadow-2xl"
+      className="bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] rounded-2xl w-full flex flex-col gap-4 lg:items-stretch shadow-2xl"
     >
       {shouldShowSwapOnly ? (
         <MissionTokenSwapV4 token={token} />
       ) : (
         !isRefundable && (
           <div id="mission-pay-container" className="p-5 flex flex-col">
-            {/* You pay */}
+            {/* You contribute — primary input; darker card so it reads as the main action */}
             <div className="space-y-2">
-              <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
-                You pay
+              <label
+                htmlFor="usd-contribution-input"
+                className="text-white font-semibold text-xs uppercase tracking-wider"
+              >
+                You contribute
               </label>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center ring-1 ring-white/10">
-                      <Image
-                        src="/coins/ETH.svg"
-                        alt="ETH"
-                        width={18}
-                        height={18}
-                      />
+              <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/40 rounded-xl p-4 min-w-0">
+                <div className="flex flex-col gap-4 min-w-0">
+                  {/* ETH ↔ USD: side-by-side from md up, stacked on small screens */}
+                  <div className="flex flex-col md:flex-row md:items-center gap-4 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 md:flex-1">
+                      <div className="w-9 h-9 shrink-0 bg-slate-800 rounded-full flex items-center justify-center ring-1 ring-white/15">
+                        <Image
+                          src="/coins/ETH.svg"
+                          alt="ETH"
+                          width={18}
+                          height={18}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-white text-lg leading-tight break-all sm:break-normal">
+                          {calculateEthAmount()}
+                        </p>
+                        <p className="text-gray-500 text-xs">ETH (estimated)</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-white text-lg leading-tight">
-                        {calculateEthAmount()} ETH
-                      </p>
-                      <p className="text-gray-500 text-xs">Ethereum</p>
-                    </div>
-                  </div>
-                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06] w-full md:w-1/2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-400 font-medium">$</span>
+
+                    <div className="flex min-w-0 w-full md:flex-1 items-center gap-2 rounded-lg px-3 py-2.5 border border-white/15 bg-black/50 shadow-inner">
+                      <span className="text-cyan-200/80 text-lg font-bold shrink-0">$</span>
                       <input
                         id="usd-contribution-input"
                         type="text"
-                        className="w-full bg-transparent border-none outline-none text-lg font-bold text-white text-right w-16 placeholder-gray-500 focus:placeholder-gray-400 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        inputMode="decimal"
+                        className="min-w-0 flex-1 bg-transparent border-none outline-none text-lg font-bold text-white text-right placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 ring-0 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-white text-sm font-medium">USD</span>
+                      <span className="text-gray-300 text-lg font-bold shrink-0">USD</span>
                     </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/[0.08] min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-gray-400 text-xs sm:text-sm leading-relaxed break-words min-w-0">
+                      <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
+                      <span className="text-white font-medium tabular-nums">
+                        {contributionBalanceEth != null &&
+                        Number.isFinite(contributionBalanceEth) &&
+                        contributionBalanceEth >= 0
+                          ? `${formatEthFiveSigFigs(Number(contributionBalanceEth))} ETH`
+                          : '—'}
+                      </span>
+                      <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
+                        on{' '}
+                        {contributionBalanceChain?.name?.replace(' One', '') ?? 'network'}
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyMaxContribution}
+                      disabled={
+                        !address ||
+                        contributionBalanceEth == null ||
+                        !Number.isFinite(Number(contributionBalanceEth)) ||
+                        Number(contributionBalanceEth) <= 0 ||
+                        !ethUsdPrice ||
+                        isLoadingEthUsdPrice
+                      }
+                      className="shrink-0 self-start sm:self-auto px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide bg-white/10 hover:bg-white/15 border border-white/15 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Max
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Connecting element */}
-            <div className="mt-4 flex justify-center">
-              <div className="flex items-center justify-center w-7 h-7 bg-white/[0.04] rounded-lg border border-white/[0.06]">
-                <ArrowDownIcon className="w-3.5 h-3.5 text-gray-500" />
-              </div>
-            </div>
-
-            {/* You receive */}
-            <div className="mt-[-10px] space-y-2">
-              <label className="text-gray-500 font-medium text-xs uppercase tracking-wider">
+            {/* You receive — read-only quote; avoid bordered “field” so it doesn’t mirror the USD input */}
+            <div className="mt-4 space-y-2">
+              <p className="text-gray-500 font-medium text-xs uppercase tracking-wider">
                 You receive
-              </label>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
+              </p>
+              <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 min-w-0">
+                <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 w-full md:w-auto md:flex-1">
+                    <div className="w-9 h-9 shrink-0 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
                       <Image
                         src="/assets/icon-star.svg"
                         alt="Token"
@@ -146,20 +234,28 @@ function MissionPayRedeemContent({
                         height={16}
                       />
                     </div>
-                    <div>
+                    <div className="min-w-0 text-left">
                       <p className="font-bold text-white text-lg leading-tight">{token?.tokenSymbol || 'Tokens'}</p>
-                      <p className="text-gray-500 text-xs">{token?.tokenName || 'Mission Tokens'}</p>
+                      {(() => {
+                        const sym = (token?.tokenSymbol || '').trim()
+                        const name = (token?.tokenName || '').trim()
+                        if (!name || name.toLowerCase() === sym.toLowerCase()) return null
+                        return <p className="text-gray-500 text-xs">{name}</p>
+                      })()}
                     </div>
                   </div>
-                  <div className="bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06] w-full md:w-1/2">
-                    <div className="flex items-center justify-end gap-2">
-                      <p
-                        id="token-output"
-                        className="w-full bg-transparent border-none outline-none text-lg font-bold text-white text-right w-16 placeholder-gray-500 focus:placeholder-gray-400 transition-colors duration-200"
-                      >
-                        {formatContributionOutput(output)}
-                      </p>
-                    </div>
+                  <div
+                    className="w-full md:w-auto md:min-w-[10rem] md:text-right border-l-0 md:border-l border-t md:border-t-0 border-white/[0.08] pt-3 md:pt-0 md:pl-4"
+                    role="status"
+                    aria-live="polite"
+                    aria-label={`${token?.tokenSymbol || 'Tokens'}: ${formatContributionOutput(output)}`}
+                  >
+                    <p
+                      id="token-output"
+                      className="text-xl md:text-2xl font-bold text-emerald-200/95 tabular-nums tracking-tight text-right"
+                    >
+                      {formatContributionOutput(output)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -178,11 +274,12 @@ function MissionPayRedeemContent({
                 isDisabled={isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0}
               />
               <p className="pt-2.5 pb-1 text-xs text-gray-500">{`Sign In · Fund · Contribute`}</p>
+              <div className="w-full flex justify-center pt-1">
+                <AcceptedPaymentMethods />
+              </div>
             </div>
 
-            <div className="w-full space-y-2">
-              <AcceptedPaymentMethods />
-            </div>
+            <MissionContributorTiersPanel missionId={mission?.id} />
             {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
               <PrivyWeb3Button
                 requiredChain={DEFAULT_CHAIN_V5}
@@ -306,6 +403,23 @@ function MissionPayRedeemContent({
           )}
         </div>
       )}
+
+      {!hideRecentContributions &&
+        mission?.projectId != null &&
+        mission?.projectId !== '' && (
+          <div className="px-5 pb-5 pt-2 border-t border-white/[0.08] space-y-3">
+            <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">
+              Recent contributions
+            </h3>
+            <div className="max-h-[calc(100dvh-5rem)] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
+              <MissionActivityList
+                selectedChain={DEFAULT_CHAIN_V5}
+                tokenSymbol={token?.tokenSymbol}
+                projectId={mission?.projectId}
+              />
+            </div>
+          </div>
+        )}
     </div>
   )
 }
@@ -325,11 +439,18 @@ export type MissionPayRedeemProps = {
   forwardClient?: any
   refreshTotalFunding?: () => void
   ruleset: JBRuleset
-  onOpenModal?: (usdInput: string) => void
+  onOpenModal?: (usdInput: string) => void | Promise<void>
   onlyButton?: boolean
   visibleButton?: boolean
   buttonMode?: 'fixed' | 'standard'
   buttonClassName?: string
+  /** Hide “Recent contributions” (e.g. shown under About on mobile instead). */
+  hideRecentContributions?: boolean
+  /** Mission page: compare ETH on funding chains via RPC (no wallet switch). */
+  fundingCompareEnabled?: boolean
+  fundingPickReady?: boolean
+  fundingChainBalances?: FundingChainBalanceEntry[] | null
+  recommendedFundingChain?: Chain | null
 }
 
 function MissionPayRedeemComponent({
@@ -352,9 +473,128 @@ function MissionPayRedeemComponent({
   visibleButton = true,
   buttonMode = 'standard',
   buttonClassName = '',
+  hideRecentContributions = false,
+  fundingCompareEnabled = false,
+  fundingPickReady = false,
+  fundingChainBalances = null,
+  recommendedFundingChain = null,
 }: MissionPayRedeemProps) {
+  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const { wallets } = useWallets()
+  const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+  const chainSlug = getChainSlug(selectedChain)
+
   const account = useActiveAccount()
   const address = account?.address
+
+  const { nativeBalance, nativeBalanceWei, walletChain: nativeBalanceChain } = useNativeBalance()
+  /** Slug for the chain the wallet is actually on (matches `nativeBalance`). */
+  const walletConnectedChainSlug = nativeBalanceChain
+    ? getChainSlug(nativeBalanceChain)
+    : chainSlug
+
+  const richestVersusWallet = useMemo(
+    () =>
+      getRichestVersusConnectedWallet({
+        fundingPickReady,
+        fundingChainBalances,
+        recommendedFundingChain,
+        walletChainId: nativeBalanceChain?.id,
+        nativeBalanceWei,
+      }),
+    [
+      fundingPickReady,
+      fundingChainBalances,
+      recommendedFundingChain,
+      nativeBalanceChain?.id,
+      nativeBalanceWei,
+    ]
+  )
+
+  const contributionBalance = useMemo(() => {
+    if (!address) {
+      return { eth: undefined as number | undefined, chain: undefined as Chain | undefined }
+    }
+    if (fundingCompareEnabled && richestVersusWallet) {
+      return {
+        eth: parseFloat(richestVersusWallet.richestEthFormatted),
+        chain: richestVersusWallet.richestChain,
+      }
+    }
+    return { eth: nativeBalance ?? undefined, chain: nativeBalanceChain }
+  }, [
+    address,
+    fundingCompareEnabled,
+    richestVersusWallet,
+    nativeBalance,
+    nativeBalanceChain,
+  ])
+
+  const shouldPromptSwitchBeforeContribute = Boolean(
+    fundingCompareEnabled &&
+      fundingPickReady &&
+      recommendedFundingChain &&
+      richestVersusWallet &&
+      nativeBalanceChain?.id !== recommendedFundingChain.id
+  )
+
+  const [richestSwitchModalOpen, setRichestSwitchModalOpen] = useState(false)
+  const pendingContributeUsdRef = useRef('')
+
+  const performWalletSwitchToRichest = useCallback(async (): Promise<boolean> => {
+    const target = recommendedFundingChain
+    if (!target) return false
+    const wallet = wallets?.[selectedWallet]
+    if (!wallet || typeof wallet.switchChain !== 'function') return false
+    try {
+      await wallet.switchChain(target.id)
+      return true
+    } catch (err: any) {
+      if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
+        const ok = await addNetworkToWallet(target)
+        if (ok) {
+          try {
+            await wallet.switchChain(target.id)
+            return true
+          } catch {
+            return false
+          }
+        }
+      } else if (err?.code !== 4001) {
+        toast.error('Failed to switch network. Please try again.', {
+          style: toastStyle,
+        })
+      }
+      return false
+    }
+  }, [wallets, selectedWallet, recommendedFundingChain])
+
+  const requestOpenContributeModal = useCallback(
+    async (usd: string) => {
+      if (shouldPromptSwitchBeforeContribute) {
+        pendingContributeUsdRef.current = usd
+        setRichestSwitchModalOpen(true)
+        return
+      }
+      await onOpenModal?.(usd)
+    },
+    [shouldPromptSwitchBeforeContribute, onOpenModal]
+  )
+
+  const handleConfirmSwitchAndContribute = useCallback(async () => {
+    if (!recommendedFundingChain) return
+    const ok = await performWalletSwitchToRichest()
+    if (ok) {
+      setRichestSwitchModalOpen(false)
+      await onOpenModal?.(pendingContributeUsdRef.current)
+    }
+  }, [recommendedFundingChain, performWalletSwitchToRichest, onOpenModal])
+
+  const handleContinueWithoutSwitchingWallet = useCallback(() => {
+    setRichestSwitchModalOpen(false)
+    void onOpenModal?.(pendingContributeUsdRef.current)
+  }, [onOpenModal])
 
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
@@ -407,23 +647,20 @@ function MissionPayRedeemComponent({
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
-    if (!usdInput) return '0.0000'
+    if (!usdInput) return '0'
     const numericValue = usdInput.replace(/,/g, '')
 
     if (!usdInput || isNaN(Number(numericValue))) {
-      return '0.0000'
+      return '0'
     }
     if (isLoadingEthUsdPrice) {
       return <LoadingSpinner className="scale-50" />
     }
     if (!ethUsdPrice) {
-      return '0.0000'
+      return '0'
     }
-    const ethAmount = (Number(numericValue) / ethUsdPrice).toFixed(4)
-    return parseFloat(ethAmount).toLocaleString('en-US', {
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 4,
-    })
+    const eth = Number(numericValue) / ethUsdPrice
+    return formatEthFiveSigFigs(eth)
   }, [usdInput, ethUsdPrice, isLoadingEthUsdPrice])
 
   // Format input with commas in real-time
@@ -445,6 +682,51 @@ function MissionPayRedeemComponent({
 
     return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger
   }, [])
+
+  const applyMaxContribution = useCallback(() => {
+    if (!ethUsdPrice || contributionBalance.eth == null || !address) return
+    const balanceEth = Number(contributionBalance.eth)
+    const chainForMax = contributionBalance.chain ?? nativeBalanceChain
+    const maxUsd = computeContributionMaxUsd({
+      balanceEth,
+      selectedChainId: chainForMax?.id ?? selectedChain?.id ?? 0,
+      chainSlug: chainForMax ? getChainSlug(chainForMax) : walletConnectedChainSlug,
+      defaultChainSlug,
+      ethUsdPrice,
+    })
+    if (maxUsd == null || maxUsd <= 0) return
+
+    // Enforce the same constraints as the USD input:
+    // - At most 7 integer digits
+    // - At most 15 total characters (input maxLength)
+    const MAX_INTEGER_DIGITS = 7
+    const MAX_TOTAL_LENGTH = 15
+
+    // Numeric cap to 7 integer digits (e.g. 9,999,999.99)
+    const maxAllowedNumeric = Number(`${'9'.repeat(MAX_INTEGER_DIGITS)}.99`)
+    const clampedUsd = Math.min(maxUsd, maxAllowedNumeric)
+
+    // Format to two decimals and apply comma formatting
+    let formatted = formatInputWithCommas(clampedUsd.toFixed(2))
+
+    // Ensure we don't exceed the input's maxLength
+    if (formatted.length > MAX_TOTAL_LENGTH) {
+      formatted = formatted.slice(0, MAX_TOTAL_LENGTH)
+    }
+
+    setUsdInput(formatted)
+  }, [
+    ethUsdPrice,
+    contributionBalance.eth,
+    contributionBalance.chain,
+    address,
+    walletConnectedChainSlug,
+    nativeBalanceChain,
+    selectedChain?.id,
+    defaultChainSlug,
+    formatInputWithCommas,
+    setUsdInput,
+  ])
 
   // Format token amount with commas
   const formatTokenAmount = useCallback((value: number, decimals: number = 2) => {
@@ -726,8 +1008,52 @@ function MissionPayRedeemComponent({
 
   if (Number(stage) === 4) return null
 
+  const richestTargetName = recommendedFundingChain
+    ? (recommendedFundingChain.name ?? 'network').replace(' One', '')
+    : ''
+  const walletCurrentNetworkLabel = nativeBalanceChain
+    ? (nativeBalanceChain.name ?? 'network').replace(' One', '')
+    : 'current network'
+
   return (
     <>
+      {richestSwitchModalOpen && recommendedFundingChain && (
+        <Modal
+          id="mission-richest-chain-contribute"
+          setEnabled={setRichestSwitchModalOpen}
+          title="Switch network"
+          size="sm"
+        >
+          <p className="text-gray-300 text-sm leading-relaxed mb-4">
+            You have more ETH on <span className="font-semibold text-white">{richestTargetName}</span>{' '}
+            than on <span className="font-semibold text-white">{walletCurrentNetworkLabel}</span>. Switch
+            to {richestTargetName} to pay from that balance, or stay on {walletCurrentNetworkLabel} and
+            continue if you prefer.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
+            <button
+              type="button"
+              className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white border border-white/15 hover:bg-white/5 transition-colors sm:order-1"
+              onClick={() => setRichestSwitchModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white border border-white/15 hover:bg-white/5 transition-colors sm:order-2"
+              onClick={handleContinueWithoutSwitchingWallet}
+            >
+              {`Stay on ${walletCurrentNetworkLabel} and continue`}
+            </button>
+            <StandardButton
+              className="gradient-2 rounded-lg text-sm px-5 py-2.5 sm:order-3"
+              onClick={() => void handleConfirmSwitchAndContribute()}
+            >
+              {`Switch to ${richestTargetName}`}
+            </StandardButton>
+          </div>
+        </Modal>
+      )}
       {!onlyModal && (
         <>
           {onlyButton && buttonMode === 'fixed' ? (
@@ -748,7 +1074,7 @@ function MissionPayRedeemComponent({
                   }
                   id="open-contribute-modal"
                   className={`rounded-full gradient-2 rounded-full w-[80vw] py-1 ${buttonClassName}`}
-                  action={() => onOpenModal?.(usdInput)}
+                  action={() => requestOpenContributeModal(usdInput)}
                   isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
                   showSignInLabel={false}
                 />
@@ -767,7 +1093,7 @@ function MissionPayRedeemComponent({
                 className={
                   buttonClassName ? buttonClassName : 'rounded-full gradient-2 rounded-full'
                 }
-                action={() => onOpenModal?.(usdInput)}
+                action={() => requestOpenContributeModal(usdInput)}
                 isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
                 showSignInLabel={false}
               />
@@ -775,10 +1101,11 @@ function MissionPayRedeemComponent({
           ) : (
             <div className="mt-2">
               <MissionPayRedeemContent
+                mission={mission}
                 token={token}
                 output={output}
                 redeem={redeemMissionToken}
-                onOpenModal={onOpenModal}
+                onOpenModal={requestOpenContributeModal}
                 tokenBalance={tokenBalance}
                 tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
                 claimTokenCredit={claimTokenCredit}
@@ -797,6 +1124,10 @@ function MissionPayRedeemComponent({
                 contributedEthWei={contributedEthWei}
                 isLoadingContributedEth={isLoadingContributedEth}
                 ethUsdPrice={ethUsdPrice}
+                applyMaxContribution={applyMaxContribution}
+                hideRecentContributions={hideRecentContributions}
+                contributionBalanceEth={contributionBalance.eth}
+                contributionBalanceChain={contributionBalance.chain}
               />
             </div>
           )}

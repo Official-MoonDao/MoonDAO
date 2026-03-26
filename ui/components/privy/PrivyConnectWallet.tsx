@@ -32,7 +32,8 @@ import {
   arbitrumSepolia,
   optimismSepolia,
 } from '@/lib/rpc/chains'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import Modal from '../layout/Modal'
@@ -577,7 +578,6 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
 
   const [enabled, setEnabled] = useState(false)
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
-  const [previousChain, setPreviousChain] = useState(selectedChain)
 
   const { nativeBalance } = useNativeBalance()
 
@@ -878,9 +878,47 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
       }
     } else {
       setNetworkMismatch(false)
-      setPreviousChain(selectedChain)
     }
   }, [walletChainId, selectedChain, selectedWallet, wallets])
+
+  const walletChainKnown = getChainById(walletChainId)
+  const walletNetworkLabel = (
+    walletChainKnown?.name ?? `Chain ${walletChainId}`
+  ).replace(' One', '')
+  const appNetworkLabel = (selectedChain.name ?? 'network').replace(' One', '')
+
+  const alignAppToWalletChain = useCallback(() => {
+    const c = getChainById(walletChainId)
+    if (!c) return
+    setSelectedChain(c)
+    setNetworkMismatch(false)
+  }, [walletChainId, setSelectedChain])
+
+  const switchWalletToAppChain = useCallback(async () => {
+    const w = wallets[selectedWallet]
+    if (!w || typeof w.switchChain !== 'function') {
+      toast.error('Could not switch network in your wallet.')
+      return
+    }
+    try {
+      await w.switchChain(selectedChain.id)
+      setNetworkMismatch(false)
+    } catch (err: any) {
+      if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
+        const ok = await addNetworkToWallet(selectedChain)
+        if (ok) {
+          try {
+            await w.switchChain(selectedChain.id)
+            setNetworkMismatch(false)
+          } catch {
+            /* user rejected */
+          }
+        }
+      } else if (err?.code !== 4001) {
+        toast.error('Failed to switch network. Please try again.')
+      }
+    }
+  }, [wallets, selectedWallet, selectedChain])
 
   //detect outside click
   function handleClickOutside({ target }: any) {
@@ -1057,40 +1095,44 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                         <p className="text-red-300 font-semibold">Network Mismatch</p>
                       </div>
                       <button
+                        type="button"
                         className="p-1.5 hover:bg-red-500/20 rounded-lg transition-all duration-200 group"
-                        onClick={() => {
-                          // Revert to previous chain
-                          setSelectedChain(previousChain)
-                          setNetworkMismatch(false)
-                        }}
+                        onClick={() => setNetworkMismatch(false)}
+                        aria-label="Dismiss"
                       >
                         <XMarkIcon className="w-4 h-4 text-red-400 group-hover:text-red-300 transition-colors" />
                       </button>
                     </div>
                     <p className="text-gray-300 text-sm mb-4">
-                      Your wallet is not connected to {selectedChain.name}. Switch networks in your
-                      wallet or revert to {previousChain.name}.
+                      Your wallet is on <span className="font-medium text-white">{walletNetworkLabel}</span>
+                      , but the app is set to{' '}
+                      <span className="font-medium text-white">{appNetworkLabel}</span>. Match the app to
+                      your wallet, or switch your wallet to the app network.
                     </p>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      {walletChainKnown ? (
+                        <button
+                          type="button"
+                          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2.5 px-4 rounded-lg font-medium hover:from-emerald-500 hover:to-teal-500 transition-all duration-200 shadow-lg"
+                          onClick={() => alignAppToWalletChain()}
+                        >
+                          Use {walletNetworkLabel}
+                        </button>
+                      ) : null}
                       <button
-                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white py-2.5 px-4 rounded-lg font-medium hover:from-red-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
-                        onClick={() => {
-                          wallets[selectedWallet].switchChain(selectedChain.id)
-                        }}
+                        type="button"
+                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white py-2.5 px-4 rounded-lg font-medium hover:from-red-600 hover:to-pink-600 transition-all duration-200 shadow-lg"
+                        onClick={() => void switchWalletToAppChain()}
                       >
-                        Switch to {selectedChain.name}
-                      </button>
-                      <button
-                        className="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 text-white py-2.5 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
-                        onClick={() => {
-                          // Revert to previous chain
-                          setSelectedChain(previousChain)
-                          setNetworkMismatch(false)
-                        }}
-                      >
-                        Revert to {previousChain.name}
+                        Switch wallet to {appNetworkLabel}
                       </button>
                     </div>
+                    {!walletChainKnown ? (
+                      <p className="text-gray-500 text-xs mt-3">
+                        This wallet network is not in the MoonDAO network list. Switch your wallet to{' '}
+                        {appNetworkLabel} to continue.
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="space-y-4 mb-6">

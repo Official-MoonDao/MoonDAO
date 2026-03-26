@@ -2,7 +2,7 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import {
   zeroGMailOptions,
-  transporter,
+  getMoonDaoGmailTransport,
 } from '../../../lib/nodemailer/nodemailer'
 
 const CONTACT_MESSAGE_FIELDS: any = {
@@ -49,7 +49,7 @@ const handler = async (req: any, res: any) => {
     }
 
     try {
-      await transporter.sendMail({
+      await getMoonDaoGmailTransport().sendMail({
         ...zeroGMailOptions,
         ...generateEmailContent(data),
         subject: 'MoonDAO | Zero G Contact Message',

@@ -2,9 +2,11 @@ import { PencilIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import {
   getMissionMinimumUsdGoal,
+  getMissionOffChainCommittedUsd,
   MISSION_FUNDING_MILESTONES_USD,
   MISSION_MINIMUM_GOAL_TOOLTIP,
 } from 'const/missionMilestones'
+import { formatUnits } from 'ethers/lib/utils'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
@@ -29,6 +31,46 @@ const TextSkeleton = ({
   width: string
   height?: string
 }) => <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
+
+/** Juicebox subgraph `volume` is string | number; cumulative pay-in wei. */
+function jbSubgraphVolumeToBigIntWei(volume: unknown): bigint {
+  if (volume == null || volume === '') return BigInt(0)
+  try {
+    if (typeof volume === 'bigint') {
+      return volume
+    }
+    if (typeof volume === 'number') {
+      if (!Number.isFinite(volume)) return BigInt(0)
+      const truncated = Math.trunc(volume)
+      if (Number.isSafeInteger(truncated) && truncated >= 0) {
+        return BigInt(truncated)
+      }
+      // For non-safe or otherwise unsuitable numbers (e.g. 1e21), fall through and
+      // reuse the scientific-notation string parsing on String(volume) below.
+    }
+    const s = String(volume).trim()
+    // Accept plain non-negative integer strings and simple scientific notation like "1e21" or "10E3".
+    const match = /^(\d+)(?:[eE]([+-]?\d+))?$/.exec(s)
+    if (!match) return BigInt(0)
+    const intPart = match[1]
+    const expPart = match[2]
+    if (!expPart) {
+      return BigInt(intPart)
+    }
+    const exp = Number(expPart)
+    // Only support non-negative integer exponents; anything else is treated as invalid.
+    if (!Number.isInteger(exp) || exp < 0) return BigInt(0)
+    const zeros = '0'.repeat(exp)
+    return BigInt(intPart + zeros)
+  } catch {
+    return BigInt(0)
+  }
+}
+
+function weiBigintToEthNumber(wei: bigint): number {
+  if (wei === BigInt(0)) return 0
+  return parseFloat(formatUnits(wei.toString(), 18))
+}
 
 function exactClosingTooltipText(deadline: number | undefined): string {
   if (deadline == null || deadline === 0) {
@@ -68,6 +110,8 @@ interface MissionProfileHeaderProps {
   sendPayouts: () => void
   deployLiquidityPool: () => void
   totalFunding: bigint
+  /** Subgraph cumulative native volume (wei); terminal balance alone can read 0 after payouts. */
+  subgraphVolume?: unknown
   isLoadingTotalFunding: boolean
   setMissionMetadataModalEnabled?: (enabled: boolean) => void
   setDeployTokenModalEnabled?: (enabled: boolean) => void
@@ -95,6 +139,7 @@ const MissionProfileHeader = React.memo(
     sendPayouts,
     deployLiquidityPool,
     totalFunding,
+    subgraphVolume,
     isLoadingTotalFunding,
     setMissionMetadataModalEnabled,
     setDeployTokenModalEnabled,
@@ -104,12 +149,17 @@ const MissionProfileHeader = React.memo(
     const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
     const minUsdGoal = getMissionMinimumUsdGoal(mission?.id)
+    const offChainCommittedUsd = getMissionOffChainCommittedUsd(mission?.id)
+    const terminalWei = totalFunding ?? BigInt(0)
+    const subgraphWei = jbSubgraphVolumeToBigIntWei(subgraphVolume)
+    const onChainRaisedWei = terminalWei >= subgraphWei ? terminalWei : subgraphWei
+    const onChainEthRaised = weiBigintToEthNumber(onChainRaisedWei)
 
     const milestoneBar = useMemo(() => {
       const steps =
         mission?.id != null ? MISSION_FUNDING_MILESTONES_USD[mission.id] : undefined
       if (!steps?.length || !ethPrice || ethPrice <= 0 || isLoadingTotalFunding) return null
-      const raisedUsd = (Number(totalFunding || 0) / 1e18) * ethPrice
+      const raisedUsd = onChainEthRaised * ethPrice + offChainCommittedUsd
       const seg = milestoneSegmentProgress(raisedUsd, steps)
       const caption = seg.allMilestonesComplete
         ? 'All milestones below are unlocked. Funding continues toward the full campaign goal.'
@@ -117,7 +167,13 @@ const MissionProfileHeader = React.memo(
             Math.max(0, seg.segmentEndUsd - raisedUsd)
           )} to go`
       return { seg, raisedUsd, steps, caption }
-    }, [mission?.id, ethPrice, isLoadingTotalFunding, totalFunding])
+    }, [
+      mission?.id,
+      ethPrice,
+      isLoadingTotalFunding,
+      onChainEthRaised,
+      offChainCommittedUsd,
+    ])
 
     return (
       <div className="w-full bg-[#090d21] relative overflow-hidden">
@@ -125,18 +181,20 @@ const MissionProfileHeader = React.memo(
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent pointer-events-none" />
 
         <div className="relative z-10 w-full px-5 md:px-8 lg:px-12 pt-6 pb-4 lg:pt-8 lg:pb-6">
-          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start lg:items-center max-w-[1200px] mx-auto">
-            {/* Mission image — full grid cell width at every breakpoint (no mobile max-w shrink) */}
-            <div className="w-full min-w-0">
-              <div className="relative group w-full">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start lg:items-stretch max-w-[1200px] mx-auto">
+            {/* Mission image — square on mobile; on lg stretches to match copy column height (object-cover) */}
+            <div className="w-full min-w-0 lg:h-full lg:min-h-0 flex flex-col">
+              <div className="relative group w-full flex-1 min-h-0">
                 {mission?.metadata?.logoUri ? (
-                  <div className="relative aspect-square w-full rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+                  <div className="relative aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
                     <IPFSRenderer
                       src={mission?.metadata?.logoUri}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                      fillContainer
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                       height={640}
                       width={640}
                       alt="Mission Image"
+                      sizes="(max-width: 1024px) 100vw, 560px"
                     />
                     {teamNFT?.metadata?.image && (
                       <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
@@ -151,7 +209,7 @@ const MissionProfileHeader = React.memo(
                     )}
                   </div>
                 ) : (
-                  <div className="aspect-square w-full rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl">
+                  <div className="aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl">
                     <div className="text-center px-4">
                       <div className="w-12 h-12 mx-auto mb-3 bg-indigo-500/20 rounded-xl flex items-center justify-center">
                         <Image src="/assets/icon-star-blue.svg" alt="Mission" width={24} height={24} />
@@ -164,7 +222,7 @@ const MissionProfileHeader = React.memo(
             </div>
 
             {/* Mission copy + funding (same column width as image on lg) */}
-            <div className="flex flex-col justify-center min-w-0 mt-1 lg:mt-0 space-y-4">
+            <div className="flex flex-col justify-center lg:justify-start min-w-0 mt-1 lg:mt-0 lg:h-full lg:min-h-0 space-y-4">
               {/* Title & Tagline */}
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
@@ -224,7 +282,7 @@ const MissionProfileHeader = React.memo(
                         <TextSkeleton width="w-24" height="h-8" />
                       ) : (
                         <span className="text-3xl font-GoodTimes text-white">
-                          {`$${Math.round((Number(totalFunding || 0) / 1e18 || 0) * ethPrice).toLocaleString()}`}
+                          {`$${Math.round(onChainEthRaised * ethPrice + offChainCommittedUsd).toLocaleString()}`}
                         </span>
                       )}
                       <div className="flex items-center gap-1">
@@ -236,7 +294,9 @@ const MissionProfileHeader = React.memo(
                           text={
                             isLoadingTotalFunding
                               ? 'Loading...'
-                              : `${truncateTokenValue(Number(totalFunding || 0) / 1e18 || 0, 'ETH').toLocaleString()} ETH has been raised. The USD equivalent fluctuates based on the current price of Ethereum.`
+                              : offChainCommittedUsd > 0
+                              ? `The total includes both on-chain and off-chain committed funds. On-chain: ${truncateTokenValue(onChainEthRaised, 'ETH')} ETH (about $${Math.round(onChainEthRaised * ethPrice).toLocaleString()} at the current ETH price). Off-chain committed: $${offChainCommittedUsd.toLocaleString()}.`
+                              : `${truncateTokenValue(onChainEthRaised, 'ETH').toLocaleString()} ETH has been raised. The USD equivalent fluctuates based on the current price of Ethereum.`
                           }
                           buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
                         >
@@ -311,7 +371,7 @@ const MissionProfileHeader = React.memo(
                 <div className="mb-4">
                   <MissionFundingProgressBar
                     fundingGoal={fundingGoal}
-                    volume={Number(totalFunding || 0) / 1e18}
+                    volume={onChainEthRaised}
                     compact={true}
                     progressOverride={
                       milestoneBar ? milestoneBar.seg.progressPercent : undefined

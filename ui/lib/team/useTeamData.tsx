@@ -157,14 +157,43 @@ export function useTeamData(
 
   useEffect(() => {
     async function getHatTreeId() {
-      const hatTreeId = await readContract({
-        contract: hatsContract,
-        method: 'getTopHatDomain' as string,
-        params: [adminHatId],
-      })
-      setHatTreeId(hatTreeId)
+      if (
+        !hatsContract?.address ||
+        !hatsContract?.chain?.id ||
+        adminHatId == null ||
+        adminHatId === ''
+      ) {
+        return
+      }
+
+      let hatIdParam: bigint
+      try {
+        hatIdParam =
+          typeof adminHatId === 'bigint'
+            ? adminHatId
+            : BigInt(adminHatId as string | number)
+      } catch {
+        return
+      }
+      if (hatIdParam === 0n) {
+        return
+      }
+
+      try {
+        const id = await readContract({
+          contract: hatsContract,
+          method: 'getTopHatDomain' as string,
+          params: [hatIdParam],
+        })
+        setHatTreeId(id)
+      } catch (err) {
+        console.error('getTopHatDomain failed:', err)
+      }
     }
-    if (hatsContract && adminHatId) getHatTreeId()
+
+    if (hatsContract && adminHatId != null && adminHatId !== '') {
+      void getHatTreeId()
+    }
   }, [adminHatId, hatsContract])
 
   // Optional: Fetch activity data
