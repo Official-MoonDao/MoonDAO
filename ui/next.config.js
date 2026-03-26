@@ -387,6 +387,11 @@ module.exports = withBundleAnalyzer(
             destination: 'https://drive.google.com/drive/folders/1_Nwjqwq8oHfp0irBcBKyyRjL3KcGRqC5?usp=drive_link',
             permanent: false,
           },
+          {
+            source: '/events',
+            destination: '/info',
+            permanent: true,
+          },
           // Citizen specific referral redirects
           {
             source: '/anthrofuturism',
