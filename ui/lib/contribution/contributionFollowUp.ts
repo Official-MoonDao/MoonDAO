@@ -1,8 +1,5 @@
 import { CK_NEWSLETTER_FORM_ID } from 'const/config'
-import {
-  createMoonDaoGmailTransport,
-  opEmail,
-} from '@/lib/nodemailer/nodemailer'
+import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
 
 export async function subscribeContributorToNewsletter(email: string): Promise<void> {
   const apiKey = process.env.CONVERT_KIT_API_KEY
@@ -43,9 +40,8 @@ All the best,
 Frank`
 
 export async function sendContributionThankYouEmail(toEmail: string): Promise<void> {
-  const transport = createMoonDaoGmailTransport()
   const to = toEmail.trim()
-  const info = await transport.sendMail({
+  const info = await getMoonDaoGmailTransport().sendMail({
     from: opEmail,
     to,
     subject: 'Thank you for supporting Send Frank to Space',

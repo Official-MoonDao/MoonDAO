@@ -30,13 +30,17 @@ export function createMoonDaoGmailTransport(): Transporter {
   })
 }
 
-export const transporter: Transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.NODEMAILER_USER?.trim() || opEmail,
-    pass: process.env.NODEMAILER_PASSWORD,
-  },
-})
+let moonDaoGmailTransport: Transporter | null = null
+
+/**
+ * Lazily builds and reuses one Gmail transporter per process so env is read on first use, not at import.
+ */
+export function getMoonDaoGmailTransport(): Transporter {
+  if (!moonDaoGmailTransport) {
+    moonDaoGmailTransport = createMoonDaoGmailTransport()
+  }
+  return moonDaoGmailTransport
+}
 
 export const zeroGMailOptions = {
   from: opEmail,
