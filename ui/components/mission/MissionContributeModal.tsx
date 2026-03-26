@@ -1140,8 +1140,6 @@ export default function MissionContributeModal({
           transaction,
           account,
         })
-        flushSync(() => setContributeButtonPhase('confirm'))
-        const originReceipt: any = await waitForReceipt(submittedOrigin)
 
         toast.success(
           'Payment successfully sent! Onchain settlement and confirmation may take a few minutes. No further action is needed!',
@@ -1169,6 +1167,7 @@ export default function MissionContributeModal({
 
         void (async () => {
           try {
+            const originReceipt: any = await waitForReceipt(submittedOrigin)
             const destReceipt = await waitForCrossChainPayReceipt({
               client,
               srcChainId: payChainStable.id,
