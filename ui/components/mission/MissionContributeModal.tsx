@@ -2014,7 +2014,7 @@ export default function MissionContributeModal({
                         contributeButtonPhase === 'confirm'
                           ? 'Awaiting Confirmation. Please wait.'
                           : contributeButtonPhase === 'wallet'
-                          ? 'Sending Transaction To Wallet'
+                          ? 'Sending Transaction to Wallet. Please wait.'
                           : undefined
                       }
                       id="contribute-button"
