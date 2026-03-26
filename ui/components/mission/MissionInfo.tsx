@@ -173,17 +173,32 @@ export default function MissionInfo({
                 }}
               />
               {mission?.projectId != null && mission?.projectId !== '' && (
+                <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-purple-500/5 p-6 text-center">
+                  <h3 className="text-lg font-semibold text-white">
+                    Ready to support this mission?
+                  </h3>
+                  <p className="text-sm text-gray-400 max-w-md">
+                    Your contribution helps fund the future of space exploration. Every bit counts.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={openContributeModal}
+                    className="mt-1 px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-semibold text-base transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
+                  >
+                    Contribute Now
+                  </button>
+                </div>
+              )}
+              {mission?.projectId != null && mission?.projectId !== '' && (
                 <div className="lg:hidden mt-10 pt-8 border-t border-white/[0.08] space-y-3">
                   <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">
                     Recent contributions
                   </h3>
-                  <div className="max-h-[calc(100dvh-5rem)] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
-                    <MissionActivityList
-                      selectedChain={selectedChain}
-                      tokenSymbol={token?.tokenSymbol}
-                      projectId={mission?.projectId}
-                    />
-                  </div>
+                  <MissionActivityList
+                    selectedChain={selectedChain}
+                    tokenSymbol={token?.tokenSymbol}
+                    projectId={mission?.projectId}
+                  />
                 </div>
               )}
             </div>
@@ -204,13 +219,11 @@ export default function MissionInfo({
                   setRange={setRange}
                 />
               </div>
-              <div className="max-h-[calc(100dvh-22rem)] min-h-[12rem] overflow-y-auto overflow-x-hidden pr-1 -mr-1">
-                <MissionActivityList
-                  selectedChain={selectedChain}
-                  tokenSymbol={token?.tokenSymbol}
-                  projectId={mission?.projectId}
-                />
-              </div>
+              <MissionActivityList
+                selectedChain={selectedChain}
+                tokenSymbol={token?.tokenSymbol}
+                projectId={mission?.projectId}
+              />
             </div>
           )}
           {tab === 'tokenomics' && (

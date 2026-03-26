@@ -409,13 +409,11 @@ function MissionPayRedeemContent({
             <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">
               Recent contributions
             </h3>
-            <div className="max-h-[calc(100dvh-5rem)] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
-              <MissionActivityList
-                selectedChain={DEFAULT_CHAIN_V5}
-                tokenSymbol={resolvedSymbol}
-                projectId={mission?.projectId}
-              />
-            </div>
+            <MissionActivityList
+              selectedChain={DEFAULT_CHAIN_V5}
+              tokenSymbol={resolvedSymbol}
+              projectId={mission?.projectId}
+            />
           </div>
         )}
     </div>
