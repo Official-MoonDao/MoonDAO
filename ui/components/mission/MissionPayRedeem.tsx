@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+import { formatUnits } from 'ethers/lib/utils'
 import { prepareContractCall, sendAndConfirmTransaction, simulateTransaction } from 'thirdweb'
 import { TransactionReceipt } from 'thirdweb/dist/types/transaction/types'
 import { useActiveAccount } from 'thirdweb/react'
@@ -46,14 +47,14 @@ function getRichestVersusConnectedWallet(args: {
   fundingChainBalances: FundingChainBalanceEntry[] | null
   recommendedFundingChain: Chain | null
   walletChainId: number | undefined
-  nativeBalance: number | undefined
-}): { richestEth: number; richestChain: Chain } | null {
+  nativeBalanceWei: bigint | undefined
+}): { richestWei: bigint; richestEthFormatted: string; richestChain: Chain } | null {
   const {
     fundingPickReady,
     fundingChainBalances,
     recommendedFundingChain,
     walletChainId,
-    nativeBalance,
+    nativeBalanceWei,
   } = args
   if (!fundingPickReady || !fundingChainBalances?.length || !recommendedFundingChain) return null
   if (walletChainId == null) return null
@@ -66,13 +67,13 @@ function getRichestVersusConnectedWallet(args: {
   if (walletEntry) {
     if (recommendedWei <= walletEntry.wei) return null
   } else {
-    if (nativeBalance == null) return null
-    const recEth = Number(recommendedWei) / 1e18
-    if (!(recEth > nativeBalance)) return null
+    if (nativeBalanceWei == null) return null
+    if (recommendedWei <= nativeBalanceWei) return null
   }
 
   return {
-    richestEth: Number(recommendedWei) / 1e18,
+    richestWei: recommendedWei,
+    richestEthFormatted: formatUnits(recommendedWei.toString(), 18),
     richestChain: recommendedFundingChain,
   }
 }
@@ -487,7 +488,7 @@ function MissionPayRedeemComponent({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { nativeBalance, walletChain: nativeBalanceChain } = useNativeBalance()
+  const { nativeBalance, nativeBalanceWei, walletChain: nativeBalanceChain } = useNativeBalance()
   /** Slug for the chain the wallet is actually on (matches `nativeBalance`). */
   const walletConnectedChainSlug = nativeBalanceChain
     ? getChainSlug(nativeBalanceChain)
@@ -500,14 +501,14 @@ function MissionPayRedeemComponent({
         fundingChainBalances,
         recommendedFundingChain,
         walletChainId: nativeBalanceChain?.id,
-        nativeBalance,
+        nativeBalanceWei,
       }),
     [
       fundingPickReady,
       fundingChainBalances,
       recommendedFundingChain,
       nativeBalanceChain?.id,
-      nativeBalance,
+      nativeBalanceWei,
     ]
   )
 
@@ -517,7 +518,7 @@ function MissionPayRedeemComponent({
     }
     if (fundingCompareEnabled && richestVersusWallet) {
       return {
-        eth: richestVersusWallet.richestEth,
+        eth: parseFloat(richestVersusWallet.richestEthFormatted),
         chain: richestVersusWallet.richestChain,
       }
     }

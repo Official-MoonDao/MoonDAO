@@ -8,6 +8,8 @@ export function useNativeBalance() {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [nativeBalance, setNativeBalance] = useState<number | undefined>()
+  /** Exact on-chain wei; prefer for comparisons. `nativeBalance` may lose precision as number ETH. */
+  const [nativeBalanceWei, setNativeBalanceWei] = useState<bigint | undefined>()
   const [walletChain, setWalletChain] = useState<Chain | undefined>()
 
   const getNativeBalance = useCallback(async () => {
@@ -16,6 +18,7 @@ export function useNativeBalance() {
       // Clear stale data when wallet is disconnected
       setWalletChain(undefined)
       setNativeBalance(undefined)
+      setNativeBalanceWei(undefined)
       return
     }
 
@@ -38,13 +41,15 @@ export function useNativeBalance() {
       // Fetch balance - do all async operations before updating state
       const provider = await wallet.getEthersProvider()
       const balance = await provider.getBalance(wallet.address)
-      const balanceEth = balance ? Number(balance.toString()) / 10 ** 18 : 0
+      const wei = BigInt(balance.toString())
+      const balanceEth = Number(wei) / 10 ** 18
       const balanceNumber = Number(balanceEth.toFixed(7))
 
       // Only update state after all operations succeed to ensure atomicity
       // This prevents mismatches where walletChain shows "MATIC" but nativeBalance
       // contains a stale ETH value from a previous fetch
       setWalletChain(chain)
+      setNativeBalanceWei(wei)
       setNativeBalance(balanceNumber)
     } catch (error: any) {
       console.warn('Failed to fetch native balance:', error.message)
@@ -60,5 +65,5 @@ export function useNativeBalance() {
     return () => clearInterval(interval)
   }, [getNativeBalance])
 
-  return { nativeBalance, walletChain, refetch: getNativeBalance }
+  return { nativeBalance, nativeBalanceWei, walletChain, refetch: getNativeBalance }
 }
