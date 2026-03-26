@@ -1,5 +1,9 @@
+import { rateLimit } from 'middleware/rateLimit'
+import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { arbitrum, base, ethereum, optimismSepolia, sepolia } from '@/lib/rpc/chains'
+
+const RPC_TIMEOUT_MS = 20_000
 
 type Body = { address?: string; chainId?: number | string }
 
@@ -56,7 +60,7 @@ function rpcUrlsForChain(chainId: number): string[] {
 /**
  * Server-side eth_getBalance so the browser does not depend on Thirdweb client id or Infura CORS.
  */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
@@ -88,6 +92,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           method: 'eth_getBalance',
           params: [address.toLowerCase(), 'latest'],
         }),
+        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
       })
       if (!r.ok) continue
       const json = (await r.json()) as { result?: string; error?: { message?: string } }
@@ -102,3 +107,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   return res.status(502).json({ error: 'All RPC endpoints failed' })
 }
+
+export default withMiddleware(handler, rateLimit)
