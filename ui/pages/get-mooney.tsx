@@ -21,7 +21,7 @@ export default function GetMooney() {
         <SpaceBackground />
         <div className="min-h-screen text-white w-full relative z-10">
           {/* Get MOONEY Section - Compact for above-the-fold */}
-          <section className="py-4 sm:py-6 px-4 sm:px-6 w-full min-h-[100dvh] flex flex-col justify-center">
+          <section className="pt-10 sm:pt-16 pb-4 sm:pb-6 px-4 sm:px-6 w-full min-h-[100dvh] flex flex-col">
             <div className="max-w-2xl mx-auto w-full">
               <div className="mb-3 sm:mb-4">
                 <h1 className="text-2xl sm:text-3xl font-bold font-GoodTimes text-white mb-1 sm:mb-2">
@@ -43,13 +43,13 @@ export default function GetMooney() {
                 <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
                   <Link
                     href="/lock"
-                    className="flex-1 min-w-[140px] sm:min-w-0 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white py-2.5 sm:py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 transform hover:scale-105 text-center"
+                    className="flex-1 min-w-[140px] sm:min-w-0 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2.5 sm:py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 transform hover:scale-105 text-center"
                   >
                     Lock for Voting Power
                   </Link>
                   <Link
                     href="/projects"
-                    className="flex-1 min-w-[140px] sm:min-w-0 bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white py-2.5 sm:py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 transform hover:scale-105 text-center"
+                    className="flex-1 min-w-[140px] sm:min-w-0 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white py-2.5 sm:py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 transform hover:scale-105 text-center"
                   >
                     View Governance
                   </Link>

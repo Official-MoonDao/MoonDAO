@@ -22,26 +22,26 @@ const DEFAULT_BUTTONS: ActionButton[] = [
   {
     label: 'Get MOONEY',
     href: '#buy',
-    gradientFrom: 'from-blue-500',
+    gradientFrom: 'from-blue-600',
     gradientTo: 'to-purple-600',
-    hoverFrom: 'hover:from-blue-600',
+    hoverFrom: 'hover:from-blue-700',
     hoverTo: 'hover:to-purple-700',
   },
   {
     label: 'Lock Tokens',
     href: '/lock',
-    gradientFrom: 'from-purple-500',
-    gradientTo: 'to-pink-600',
-    hoverFrom: 'hover:from-purple-600',
-    hoverTo: 'hover:to-pink-700',
+    gradientFrom: 'from-blue-600',
+    gradientTo: 'to-purple-600',
+    hoverFrom: 'hover:from-blue-700',
+    hoverTo: 'hover:to-purple-700',
   },
   {
     label: 'View Proposals',
     href: '/projects',
-    gradientFrom: 'from-green-500',
-    gradientTo: 'to-teal-600',
-    hoverFrom: 'hover:from-green-600',
-    hoverTo: 'hover:to-teal-700',
+    gradientFrom: 'from-indigo-600',
+    gradientTo: 'to-violet-600',
+    hoverFrom: 'hover:from-indigo-700',
+    hoverTo: 'hover:to-violet-700',
   },
 ]
 
@@ -62,11 +62,7 @@ export default function CallToActionSection({
                 <a
                   key={index}
                   href={button.href}
-                  className={`bg-gradient-to-r ${button.gradientFrom} ${button.gradientTo} ${
-                    button.hoverFrom || ''
-                  } ${
-                    button.hoverTo || ''
-                  } text-white py-3 px-8 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg flex items-center gap-2 justify-center`}
+                  className={`bg-gradient-to-r ${button.gradientFrom} ${button.gradientTo} ${button.hoverFrom || ''} ${button.hoverTo || ''} text-white py-3 px-8 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg flex items-center gap-2 justify-center`}
                 >
                   {button.label} <ArrowRightIcon className="w-5 h-5" />
                 </a>
@@ -77,11 +73,7 @@ export default function CallToActionSection({
               <Link
                 key={index}
                 href={button.href}
-                className={`bg-gradient-to-r ${button.gradientFrom} ${button.gradientTo} ${
-                  button.hoverFrom || ''
-                } ${
-                  button.hoverTo || ''
-                } text-white py-3 px-8 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg flex items-center gap-2 justify-center`}
+                className={`bg-gradient-to-r ${button.gradientFrom} ${button.gradientTo} ${button.hoverFrom || ''} ${button.hoverTo || ''} text-white py-3 px-8 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg flex items-center gap-2 justify-center`}
               >
                 {button.label} <ArrowRightIcon className="w-5 h-5" />
               </Link>

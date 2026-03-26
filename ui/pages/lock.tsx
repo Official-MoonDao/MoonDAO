@@ -213,24 +213,24 @@ export default function Lock() {
         <SpaceBackground />
         <div className="min-h-screen text-white w-full relative z-10">
           {/* Lock MOONEY Section */}
-          <section className="py-12 px-6 w-full min-h-screen">
-            <div className="max-w-4xl mx-auto w-full">
-              <div className="mb-8 max-w-xl mx-auto text-left">
-                <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
+          <section className="pt-10 sm:pt-16 pb-4 sm:pb-6 px-4 sm:px-6 w-full min-h-[100dvh] flex flex-col">
+            <div className="max-w-2xl mx-auto w-full">
+              <div className="mb-3 sm:mb-4">
+                <h1 className="text-2xl sm:text-3xl font-bold font-GoodTimes text-white mb-1 sm:mb-2">
                   Lock MOONEY
                 </h1>
-                <p className="text-lg text-gray-300">
+                <p className="text-sm sm:text-base text-gray-300">
                   Lock MOONEY to receive vMOONEY and gain voting power in MoonDAO governance.
                 </p>
               </div>
 
               {/* vMOONEY Withdraw Section */}
-              <div className="mb-8 max-w-xl mx-auto">
+              <div className="mb-4 sm:mb-6">
                 <RetroactiveRewards />
               </div>
 
               {/* Lock Data Display */}
-              <div className="mb-8 max-w-xl mx-auto">
+              <div className="mb-4 sm:mb-6">
                 <LockData
                   hasLock={hasLock}
                   VMOONEYBalance={VMOONEYBalance}
@@ -241,7 +241,7 @@ export default function Lock() {
               </div>
 
               {/* Main Lock Interface - Preserve existing complex logic */}
-              <div className="max-w-xl mx-auto mb-12">
+              <div className="mb-4 sm:mb-6">
                 <div className="w-full mt-6">
                   <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
                     {!hasExpired ? (
@@ -729,13 +729,13 @@ export default function Lock() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <Link
                       href="/get-mooney"
-                      className="block bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 text-center"
+                      className="block bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 text-center"
                     >
                       Buy More MOONEY
                     </Link>
                     <Link
                       href="/projects"
-                      className="block bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 text-center"
+                      className="block bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 text-center"
                     >
                       Vote on Proposals
                     </Link>
