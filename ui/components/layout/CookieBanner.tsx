@@ -32,7 +32,7 @@ export default function CookieBanner() {
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[999]">
-      <div className="flex items-center gap-3 bg-dark-cool border border-white/10 rounded-xl px-4 py-3 shadow-lg text-white whitespace-nowrap">
+      <div className="flex items-center gap-3 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-3 shadow-2xl text-white whitespace-nowrap">
         <p className="text-xs text-gray-300 leading-relaxed">
           {`We use cookies for analytics and personalization. `}
           <Link
@@ -51,7 +51,7 @@ export default function CookieBanner() {
             Decline
           </button>
           <button
-            className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all duration-200"
             onClick={() => setCookieConsent(true)}
           >
             Accept
