@@ -1,5 +1,6 @@
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import { DEFAULT_CHAIN_V5, JB_NATIVE_TOKEN_ADDRESS } from 'const/config'
+import { getMissionTokenSymbol } from 'const/missionMilestones'
 import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -109,6 +110,7 @@ function MissionPayRedeemContent({
   contributionBalanceEth,
   contributionBalanceChain,
 }: any) {
+  const resolvedSymbol = getMissionTokenSymbol(mission?.id, token?.tokenSymbol)
   const isRefundable = Number(stage) === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
   const shouldShowSwapOnly = deadlineHasPassed && Number(stage) === 2
@@ -133,7 +135,7 @@ function MissionPayRedeemContent({
         <MissionTokenSwapV4 token={token} />
       ) : (
         !isRefundable && (
-          <div id="mission-pay-container" className="p-5 flex flex-col">
+          <div id="mission-pay-container" className="p-4 sm:p-5 flex flex-col">
             {/* You contribute — primary input; darker card so it reads as the main action */}
             <div className="space-y-2">
               <label
@@ -142,7 +144,7 @@ function MissionPayRedeemContent({
               >
                 You contribute
               </label>
-              <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/40 rounded-xl p-4 min-w-0">
+              <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/40 rounded-xl p-3 sm:p-4 min-w-0">
                 <div className="flex flex-col gap-4 min-w-0">
                   {/* ETH ↔ USD: side-by-side from md up, stacked on small screens */}
                   <div className="flex flex-col md:flex-row md:items-center gap-4 min-w-0">
@@ -215,49 +217,49 @@ function MissionPayRedeemContent({
             </div>
 
             {/* You receive — read-only quote; avoid bordered “field” so it doesn’t mirror the USD input */}
-            <div className="mt-4 space-y-2">
+            <div className="mt-3 space-y-2">
               <p className="text-gray-500 font-medium text-xs uppercase tracking-wider">
                 You receive
               </p>
-              <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 min-w-0">
-                <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between min-w-0">
-                  <div className="flex items-center gap-3 min-w-0 w-full md:w-auto md:flex-1">
-                    <div className="w-9 h-9 shrink-0 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
-                      <Image
-                        src="/assets/icon-star.svg"
-                        alt="Token"
-                        width={16}
-                        height={16}
-                      />
-                    </div>
-                    <div className="min-w-0 text-left">
-                      <p className="font-bold text-white text-lg leading-tight">{token?.tokenSymbol || 'Tokens'}</p>
-                      {(() => {
-                        const sym = (token?.tokenSymbol || '').trim()
-                        const name = (token?.tokenName || '').trim()
-                        if (!name || name.toLowerCase() === sym.toLowerCase()) return null
-                        return <p className="text-gray-500 text-xs">{name}</p>
-                      })()}
-                    </div>
+              <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-3 sm:p-4 min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 bg-gradient-to-br from-orange-500/20 to-amber-600/20 rounded-full flex items-center justify-center ring-1 ring-orange-500/20">
+                    <Image
+                      src="/assets/icon-star.svg"
+                      alt="Token"
+                      width={16}
+                      height={16}
+                    />
                   </div>
-                  <div
-                    className="w-full md:w-auto md:min-w-[10rem] md:text-right border-l-0 md:border-l border-t md:border-t-0 border-white/[0.08] pt-3 md:pt-0 md:pl-4"
-                    role="status"
-                    aria-live="polite"
-                    aria-label={`${token?.tokenSymbol || 'Tokens'}: ${formatContributionOutput(output)}`}
-                  >
-                    <p
-                      id="token-output"
-                      className="text-xl md:text-2xl font-bold text-emerald-200/95 tabular-nums tracking-tight text-right"
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="flex items-baseline gap-1.5 flex-wrap"
+                      role="status"
+                      aria-live="polite"
+                      aria-label={`${resolvedSymbol || 'tokens'}: ${formatContributionOutput(output)}`}
                     >
-                      {formatContributionOutput(output)}
-                    </p>
+                      <p
+                        id="token-output"
+                        className="text-lg sm:text-xl font-bold text-emerald-200/95 tabular-nums tracking-tight"
+                      >
+                        {formatContributionOutput(output)}
+                      </p>
+                      <p className="font-bold text-white/70 text-sm leading-tight">
+                        {resolvedSymbol ? `$${resolvedSymbol}` : 'tokens'}
+                      </p>
+                    </div>
+                    {(() => {
+                      const sym = (resolvedSymbol || '').trim()
+                      const name = (token?.tokenName || '').trim()
+                      if (!name || name.toLowerCase() === sym.toLowerCase()) return null
+                      return <p className="text-gray-500 text-xs mt-0.5">{name}</p>
+                    })()}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center mt-2">
+            <div className="flex flex-col items-center justify-center mt-3">
               <PrivyWeb3Button
                 label={
                   isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
@@ -269,19 +271,19 @@ function MissionPayRedeemContent({
                 action={() => onOpenModal?.(usdInput)}
                 isDisabled={isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0}
               />
-              <p className="pt-2.5 pb-1 text-xs text-gray-500">{`Sign In · Fund · Contribute`}</p>
-              <div className="w-full flex justify-center pt-1">
+              <p className="pt-2 pb-0.5 text-xs text-gray-500">{`Sign In · Fund · Contribute`}</p>
+              <div className="w-full flex justify-center pt-0.5">
                 <AcceptedPaymentMethods />
               </div>
             </div>
 
             <MissionContributorTiersPanel missionId={mission?.id} />
-            {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
+            {resolvedSymbol && +tokenCredit?.toString() > 0 && (
               <PrivyWeb3Button
                 requiredChain={DEFAULT_CHAIN_V5}
                 id="claim-button"
                 label={`Claim ${formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $${
-                  token?.tokenSymbol
+                  resolvedSymbol
                 }`}
                 className="rounded-xl gradient-2 w-full py-2 font-medium"
                 action={claimTokenCredit}
@@ -338,7 +340,7 @@ function MissionPayRedeemContent({
                     <span className="font-semibold text-white text-lg">
                       {formatTokenAmount(tokenBalance, 2)}
                     </span>
-                    <span className="text-gray-400 text-sm font-medium">${token?.tokenSymbol}</span>
+                    <span className="text-gray-400 text-sm font-medium">${resolvedSymbol}</span>
                     {token?.tokenSupply > 0 && (
                       <span className="text-gray-600 text-xs">
                         (
@@ -362,13 +364,13 @@ function MissionPayRedeemContent({
                 <p className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">Supply</p>
                 <p className="font-semibold text-white text-sm">
                   {formatTokenAmount(+token?.tokenSupply.toString() / 1e18, 2)}{' '}
-                  <span className="text-gray-400 text-xs">${token?.tokenSymbol}</span>
+                  <span className="text-gray-400 text-xs">${resolvedSymbol}</span>
                 </p>
               </div>
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
                 <MissionTokenExchangeRates
                   currentStage={currentStage}
-                  tokenSymbol={token?.tokenSymbol}
+                  tokenSymbol={resolvedSymbol}
                 />
               </div>
             </div>
@@ -410,7 +412,7 @@ function MissionPayRedeemContent({
             <div className="max-h-[calc(100dvh-5rem)] overflow-y-auto overflow-x-hidden flex flex-col gap-0 pr-1 -mr-1">
               <MissionActivityList
                 selectedChain={DEFAULT_CHAIN_V5}
-                tokenSymbol={token?.tokenSymbol}
+                tokenSymbol={resolvedSymbol}
                 projectId={mission?.projectId}
               />
             </div>

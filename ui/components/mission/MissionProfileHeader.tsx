@@ -273,20 +273,20 @@ const MissionProfileHeader = React.memo(
               )}
 
               {/* Funding Card */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/[0.06] w-full">
+              <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-white/[0.06] w-full overflow-hidden">
                 {/* Amount Raised + CTA Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-                  <div>
+                  <div className="min-w-0 w-full sm:w-auto">
                     <div className="flex items-baseline gap-2 flex-wrap">
                       {isLoadingTotalFunding || !ethPrice || ethPrice <= 0 ? (
                         <TextSkeleton width="w-24" height="h-8" />
                       ) : (
-                        <span className="text-3xl font-GoodTimes text-white">
+                        <span className="text-2xl sm:text-3xl font-GoodTimes text-white">
                           {`$${Math.round(onChainEthRaised * ethPrice + offChainCommittedUsd).toLocaleString()}`}
                         </span>
                       )}
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm font-medium text-indigo-400 uppercase tracking-wider">
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <span className="text-xs sm:text-sm font-medium text-indigo-400 uppercase tracking-wider">
                           raised
                         </span>
                         <Tooltip
@@ -390,24 +390,26 @@ const MissionProfileHeader = React.memo(
                 {/* Stats Row */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {/* Goal */}
-                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Image src="/assets/launchpad/target.svg" alt="Goal" width={14} height={14} className="opacity-60" />
-                      <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium">Goal</span>
-                      <Tooltip
-                        compact
-                        text={
-                          minUsdGoal != null
-                            ? MISSION_MINIMUM_GOAL_TOOLTIP
-                            : 'This is an all-or-nothing mission. Refunds are available if the goal is not met.'
-                        }
-                        buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
-                      >
-                        ?
-                      </Tooltip>
+                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
+                      <Image src="/assets/launchpad/target.svg" alt="Goal" width={14} height={14} className="opacity-60 flex-shrink-0" />
+                      <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">Goal</span>
+                      <span className="flex-shrink-0">
+                        <Tooltip
+                          compact
+                          text={
+                            minUsdGoal != null
+                              ? MISSION_MINIMUM_GOAL_TOOLTIP
+                              : 'This is an all-or-nothing mission. Refunds are available if the goal is not met.'
+                          }
+                          buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                        >
+                          ?
+                        </Tooltip>
+                      </span>
                     </div>
                     {minUsdGoal != null ? (
-                      <p className="text-white font-GoodTimes text-sm">
+                      <p className="text-white font-GoodTimes text-[11px] sm:text-sm truncate">
                         ${minUsdGoal.toLocaleString('en-US')}
                       </p>
                     ) : (
@@ -419,7 +421,7 @@ const MissionProfileHeader = React.memo(
                         }
                         wrap
                       >
-                        <p className="text-white font-GoodTimes text-sm">
+                        <p className="text-white font-GoodTimes text-[11px] sm:text-sm truncate">
                           {+(fundingGoal / 1e18).toFixed(3)} ETH
                         </p>
                       </Tooltip>
@@ -427,10 +429,10 @@ const MissionProfileHeader = React.memo(
                   </div>
 
                   {/* Deadline */}
-                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Image src="/assets/launchpad/clock.svg" alt="Deadline" width={14} height={14} className="opacity-60" />
-                      <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium">
+                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
+                      <Image src="/assets/launchpad/clock.svg" alt="Deadline" width={14} height={14} className="opacity-60 flex-shrink-0" />
+                      <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
                         {refundPeriodPassed || Number(stage) === 3
                           ? 'Status'
                           : deadlinePassed
@@ -438,16 +440,18 @@ const MissionProfileHeader = React.memo(
                           : 'Deadline'}
                       </span>
                       {deadline != null && deadline > 0 ? (
-                        <Tooltip
-                          text={exactClosingTooltipText(deadline)}
-                          compact
-                          buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
-                        >
-                          ?
-                        </Tooltip>
+                        <span className="flex-shrink-0">
+                          <Tooltip
+                            text={exactClosingTooltipText(deadline)}
+                            compact
+                            buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                          >
+                            ?
+                          </Tooltip>
+                        </span>
                       ) : null}
                     </div>
-                    <p className="text-white font-GoodTimes text-xs sm:text-sm break-words">
+                    <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
                       {refundPeriodPassed || deadlinePassed
                         ? deadlinePassed
                           ? `${new Date(deadline || 0).toLocaleDateString('en-US', {
@@ -463,14 +467,14 @@ const MissionProfileHeader = React.memo(
                   </div>
 
                   {/* Contributions */}
-                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
+                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
                       <Image src="/assets/icon-backers.svg" alt="Contributions" width={14} height={14} className="opacity-60 flex-shrink-0" />
                       <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
                         Contributions
                       </span>
                     </div>
-                    <p className="text-white font-GoodTimes text-sm">
+                    <p className="text-white font-GoodTimes text-[11px] sm:text-sm">
                       {paymentsCount || 0}
                     </p>
                   </div>
