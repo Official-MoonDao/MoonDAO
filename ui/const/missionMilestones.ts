@@ -48,10 +48,17 @@ export const MISSION_TOKEN_SYMBOL_OVERRIDES: Partial<Record<number, string>> = {
 export function getMissionTokenSymbol(
   missionId: unknown,
   onChainSymbol: string | undefined | null
-): string {
-  if (onChainSymbol) return onChainSymbol
-  if (missionId === undefined || missionId === null) return ''
+): string | undefined {
+  const normalizedOnChainSymbol =
+    typeof onChainSymbol === 'string' ? onChainSymbol.trim() : undefined
+  if (normalizedOnChainSymbol) return normalizedOnChainSymbol
+
+  if (missionId === undefined || missionId === null) return undefined
   const id = Number(missionId)
-  if (!Number.isFinite(id)) return ''
-  return MISSION_TOKEN_SYMBOL_OVERRIDES[id] ?? ''
+  if (!Number.isFinite(id)) return undefined
+
+  const override = MISSION_TOKEN_SYMBOL_OVERRIDES[id]
+  const normalizedOverride =
+    typeof override === 'string' ? override.trim() : undefined
+  return normalizedOverride || undefined
 }
