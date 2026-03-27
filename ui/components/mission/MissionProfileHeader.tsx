@@ -176,7 +176,7 @@ const MissionProfileHeader = React.memo(
     ])
 
     return (
-      <div className="w-full bg-[#090d21] relative overflow-hidden">
+      <div className="w-full bg-[#090d21] relative">
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent pointer-events-none" />
 
@@ -273,7 +273,7 @@ const MissionProfileHeader = React.memo(
               )}
 
               {/* Funding Card */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-white/[0.06] w-full overflow-hidden">
+              <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-white/[0.06] w-full">
                 {/* Amount Raised + CTA Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                   <div className="min-w-0 w-full sm:w-auto">
@@ -390,7 +390,7 @@ const MissionProfileHeader = React.memo(
                 {/* Stats Row */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {/* Goal */}
-                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0 overflow-hidden">
+                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
                     <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
                       <Image src="/assets/launchpad/target.svg" alt="Goal" width={14} height={14} className="opacity-60 flex-shrink-0" />
                       <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">Goal</span>
@@ -429,7 +429,7 @@ const MissionProfileHeader = React.memo(
                   </div>
 
                   {/* Deadline */}
-                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0 overflow-hidden">
+                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
                     <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
                       <Image src="/assets/launchpad/clock.svg" alt="Deadline" width={14} height={14} className="opacity-60 flex-shrink-0" />
                       <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
@@ -467,7 +467,7 @@ const MissionProfileHeader = React.memo(
                   </div>
 
                   {/* Contributions */}
-                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0 overflow-hidden">
+                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
                     <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
                       <Image src="/assets/icon-backers.svg" alt="Contributions" width={14} height={14} className="opacity-60 flex-shrink-0" />
                       <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
