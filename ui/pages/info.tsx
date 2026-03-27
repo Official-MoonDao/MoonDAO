@@ -82,15 +82,6 @@ const infoCards = [
       'Learn about how MoonDAO operates, how you can contribute or propose a project, read about our mission and vision, and more.',
   },
   {
-    icon: '/assets/icon-events.svg',
-    iconAlt: 'Events',
-    header: 'Our Events',
-    link: '/events',
-    hovertext: 'Attend an Event',
-    paragraph:
-      'Get started by attending one of our upcoming online events to find out how you can contribute to our plans by helping out on a project.',
-  },
-  {
     icon: '/assets/icon-analytics.svg',
     iconAlt: 'MoonDAO Treasury',
     header: 'Treasury',
