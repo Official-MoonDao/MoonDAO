@@ -73,7 +73,6 @@ import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import MissionTeamSection from '@/components/mission/MissionTeamSection'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import { TwitterIcon } from '@/components/assets'
-import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 
 const CHAIN = DEFAULT_CHAIN_V5
 const CHAIN_SLUG = getChainSlug(CHAIN)
@@ -628,10 +627,10 @@ export default function MissionProfile({
             </div>
             {/* Support Candidates Card - only for mission 4 (Overview flight on Arbitrum) */}
             {(mission?.id === 4 || String(mission?.id) === '4') && (
-              <div className="w-full px-[5vw] flex justify-center">
+              <div className="w-full px-5 md:px-8 lg:px-12 mt-4 md:mt-6 flex justify-center">
                 <Link
                   href={`/overview-vote?from=mission&missionId=${mission?.id ?? ''}`}
-                  className="w-full max-w-[1200px] block bg-gradient-to-r from-indigo-900/30 via-purple-900/20 to-blue-900/20 border border-indigo-500/20 hover:border-indigo-500/40 rounded-[2vw] p-4 sm:p-6 transition-all duration-300 group"
+                  className="w-full max-w-[1200px] block bg-gradient-to-r from-indigo-900/30 via-purple-900/20 to-blue-900/20 border border-indigo-500/20 hover:border-indigo-500/40 rounded-2xl p-4 sm:p-6 transition-all duration-300 group"
                 >
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -654,31 +653,10 @@ export default function MissionProfile({
                 </Link>
               </div>
             )}
-            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
-              <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 py-4">
-                <div className="flex items-center relative rounded-tl-[20px] rounded-bl-[5vmax] p-4">
-                  <div
-                    className="pl-4 pr-8 flex overflow-x-auto overflow-y-hidden"
-                    style={{
-                      msOverflowStyle: 'none',
-                      WebkitOverflowScrolling: 'touch',
-                    }}
-                  >
-                    <div className="group-hover:scale-[1.05] transition-all duration-200">
-                      <JuiceboxLogoWhite />
-                    </div>
-                    <span className="text-sm text-gray-400 group-hover:text-white transition-colors duration-200">
-                      View on Juicebox
-                    </span>
-                    {isManager && (
-                      <span className="text-xs text-gray-500 group-hover:text-gray-300 transition-colors">
-                        (Edit Project)
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <MissionJuiceboxFooter
+              projectId={mission?.projectId ?? 0}
+              isManager={isManager}
+            />
           </div>
         </ContentLayout>
       </Container>
