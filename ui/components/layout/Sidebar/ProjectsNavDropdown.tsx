@@ -160,23 +160,30 @@ function ProjectNavItem({
   onNavigate?: () => void
 }) {
   const [name, setName] = useState<string | null>(null)
+  const [mdp, setMdp] = useState<string | null>(null)
   const tableName = PROJECT_TABLE_NAMES[chainSlug]
   const numericId = parseInt(projectId, 10)
   const statement =
     tableName && !isNaN(numericId)
-      ? `SELECT name FROM ${tableName} WHERE id = ${numericId} OR MDP = ${numericId} LIMIT 1`
+      ? `SELECT name, MDP FROM ${tableName} WHERE id = ${numericId} LIMIT 1`
       : null
   const { data: rows } = useTablelandQuery(statement)
 
   useEffect(() => {
     if (rows && rows[0]) {
-      setName((rows[0] as any).name || `Project #${projectId}`)
+      const row = rows[0] as any
+      setName(row.name || `Project #${projectId}`)
+      if (row.MDP != null) {
+        setMdp(String(row.MDP))
+      }
     }
   }, [rows, projectId])
 
+  const href = mdp ? `/project/${mdp}` : `/project/${projectId}`
+
   return (
     <Link
-      href={`/project/${projectId}`}
+      href={href}
       className={baseClass}
       onClick={onNavigate}
     >
