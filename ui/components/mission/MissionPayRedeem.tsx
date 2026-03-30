@@ -31,6 +31,7 @@ function MissionPayRedeemContent({
   redeem,
   onOpenModal,
   tokenBalance,
+  jbTokenBalance,
   currentStage,
   stage,
   deadline,
@@ -48,10 +49,7 @@ function MissionPayRedeemContent({
   const isRefundable = Number(stage) === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
   const shouldShowSwapOnly = deadlineHasPassed && Number(stage) === 2
-
-  if (isRefundable && (!tokenCredit || tokenCredit <= 0) && (!tokenBalance || tokenBalance <= 0)) {
-    return null
-  }
+  const hasTokensToRedeem = (jbTokenBalance && jbTokenBalance > 0) || (tokenCredit && tokenCredit > 0) || tokenBalance > 0
 
   return (
     <div
@@ -221,26 +219,34 @@ function MissionPayRedeemContent({
           )}
 
           {/* Refund Section */}
-          {isRefundable && (tokenBalance > 0 || tokenCredit > 0) && (
+          {isRefundable && (
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
-              <PrivyWeb3Button
-                requiredChain={DEFAULT_CHAIN_V5}
-                id="redeem-button"
-                className="w-full rounded-xl py-2.5 gradient-2 font-medium"
-                label={
-                  isLoadingRedeemAmount ? (
-                    <LoadingSpinner />
-                  ) : (
-                    `Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`
-                  )
-                }
-                isDisabled={isLoadingRedeemAmount}
-                action={redeem}
-                noPadding
-              />
-              <p className="text-xs text-gray-500 text-center leading-relaxed">
-                This mission did not reach its funding goal. You can claim your refund here.
-              </p>
+              {hasTokensToRedeem ? (
+                <>
+                  <PrivyWeb3Button
+                    requiredChain={DEFAULT_CHAIN_V5}
+                    id="redeem-button"
+                    className="w-full rounded-xl py-2.5 gradient-2 font-medium"
+                    label={
+                      isLoadingRedeemAmount ? (
+                        <LoadingSpinner />
+                      ) : (
+                        `Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`
+                      )
+                    }
+                    isDisabled={isLoadingRedeemAmount}
+                    action={redeem}
+                    noPadding
+                  />
+                  <p className="text-xs text-gray-500 text-center leading-relaxed">
+                    This mission did not reach its funding goal. You can claim your refund here.
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-gray-400 text-center leading-relaxed">
+                  This mission did not reach its funding goal. Sign in to check if you have tokens to redeem.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -692,6 +698,31 @@ function MissionPayRedeemComponent({
               </div>
             </Modal>
           ) : onlyButton && buttonMode === 'standard' ? (
+            Number(stage) === 3 ? (
+              <div className="mt-2 w-72">
+                <MissionPayRedeemContent
+                  token={token}
+                  output={output}
+                  redeem={redeemMissionToken}
+                  onOpenModal={onOpenModal}
+                  tokenBalance={tokenBalance}
+                  jbTokenBalance={jbTokenBalance}
+                  tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
+                  claimTokenCredit={claimTokenCredit}
+                  currentStage={currentStage}
+                  stage={stage}
+                  deadline={deadline}
+                  handleUsdInputChange={handleUsdInputChange}
+                  calculateEthAmount={calculateEthAmount}
+                  formatTokenAmount={formatTokenAmount}
+                  redeemAmount={redeemAmount}
+                  isLoadingRedeemAmount={isLoadingRedeemAmount}
+                  isLoadingEthUsdPrice={isLoadingEthUsdPrice}
+                  setUsdInput={setUsdInput}
+                  usdInput={usdInput}
+                />
+              </div>
+            ) : (
             <div
               className={`${
                 visibleButton ? 'opacity-100' : 'opacity-0 hidden'
@@ -708,6 +739,7 @@ function MissionPayRedeemComponent({
                 showSignInLabel={false}
               />
             </div>
+            )
           ) : (
             <div className="mt-2">
               <MissionPayRedeemContent
@@ -716,6 +748,7 @@ function MissionPayRedeemComponent({
                 redeem={redeemMissionToken}
                 onOpenModal={onOpenModal}
                 tokenBalance={tokenBalance}
+                jbTokenBalance={jbTokenBalance}
                 tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
                 claimTokenCredit={claimTokenCredit}
                 currentStage={currentStage}

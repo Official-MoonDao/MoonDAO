@@ -71,11 +71,56 @@ export default function useMissionData({
         params: [mission.id],
       })
 
-      setStage(+s.toString() as MissionStage)
+      let computedStage = +s.toString() as MissionStage
+
+      // If MissionCreator returns stage 4 (closed), check whether the active
+      // ruleset has a different dataHook (a manually-queued refund ruleset).
+      // If so, read stage() from that hook — it may return 3 (refundable).
+      if (computedStage === 4 && jbControllerContract && mission?.projectId) {
+        try {
+          const ruleset: any = await readContract({
+            contract: jbControllerContract,
+            method: 'currentRulesetOf' as string,
+            params: [mission.projectId],
+          })
+          const activeDataHook = ruleset?.[1]?.dataHook
+          const originalPayHook: any = await readContract({
+            contract: missionCreatorContract,
+            method: 'missionIdToPayHook' as string,
+            params: [mission.id],
+          }).catch(() => null)
+
+          if (
+            activeDataHook &&
+            activeDataHook !== '0x0000000000000000000000000000000000000000' &&
+            originalPayHook &&
+            activeDataHook.toLowerCase() !== originalPayHook.toString().toLowerCase()
+          ) {
+            const activePayHookContract = getContract({
+              client,
+              address: activeDataHook,
+              chain: selectedChain,
+              abi: LaunchPadPayHookABI.abi as any,
+            })
+            // Need a terminal address for stage() — reuse _primaryTerminalAddress
+            const terminalAddress = _primaryTerminalAddress || '0x0000000000000000000000000000000000000000'
+            const activeStage: any = await readContract({
+              contract: activePayHookContract,
+              method: 'stage' as string,
+              params: [terminalAddress, mission.projectId],
+            })
+            computedStage = +activeStage.toString() as MissionStage
+          }
+        } catch (err) {
+          // ignore, keep computedStage = 4
+        }
+      }
+
+      setStage(computedStage)
     } catch (error) {
       console.error('Error fetching stage for mission:', mission.id, error)
     }
-  }, [missionCreatorContract, mission?.id])
+  }, [missionCreatorContract, jbControllerContract, mission?.id, mission?.projectId, selectedChain, _primaryTerminalAddress])
 
   // Fetch funding goal from tableland
   const fundingStatement =

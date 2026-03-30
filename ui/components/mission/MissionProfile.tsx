@@ -411,7 +411,7 @@ export default function MissionProfile({
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center w-full"
           >
-            {/* Mobile Pay/Redeem Panel */}
+            {/* Pay/Redeem Panel - mobile only */}
             <div
               ref={payRedeemContainerRef}
               className="flex z-20 xl:hidden w-full px-5 md:px-8 lg:px-12"
