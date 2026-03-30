@@ -6,7 +6,6 @@ import {
   MISSION_FUNDING_MILESTONES_USD,
   MISSION_MINIMUM_GOAL_TOOLTIP,
 } from 'const/missionMilestones'
-import { formatUnits } from 'ethers/lib/utils'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
@@ -19,6 +18,10 @@ import StandardButton from '../layout/StandardButton'
 import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { formatUsdCompact, milestoneSegmentProgress } from '@/lib/mission/milestoneProgress'
+import {
+  jbSubgraphVolumeToBigIntWei,
+  weiBigintToEthNumber,
+} from '@/lib/mission/useMissionRaisedProgress'
 import MissionFundingMilestonesList from './MissionFundingMilestonesList'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
 import MissionSingleLineTitle from './MissionSingleLineTitle'
@@ -32,45 +35,6 @@ const TextSkeleton = ({
   height?: string
 }) => <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
 
-/** Juicebox subgraph `volume` is string | number; cumulative pay-in wei. */
-function jbSubgraphVolumeToBigIntWei(volume: unknown): bigint {
-  if (volume == null || volume === '') return BigInt(0)
-  try {
-    if (typeof volume === 'bigint') {
-      return volume
-    }
-    if (typeof volume === 'number') {
-      if (!Number.isFinite(volume)) return BigInt(0)
-      const truncated = Math.trunc(volume)
-      if (Number.isSafeInteger(truncated) && truncated >= 0) {
-        return BigInt(truncated)
-      }
-      // For non-safe or otherwise unsuitable numbers (e.g. 1e21), fall through and
-      // reuse the scientific-notation string parsing on String(volume) below.
-    }
-    const s = String(volume).trim()
-    // Accept plain non-negative integer strings and simple scientific notation like "1e21" or "10E3".
-    const match = /^(\d+)(?:[eE]([+-]?\d+))?$/.exec(s)
-    if (!match) return BigInt(0)
-    const intPart = match[1]
-    const expPart = match[2]
-    if (!expPart) {
-      return BigInt(intPart)
-    }
-    const exp = Number(expPart)
-    // Only support non-negative integer exponents; anything else is treated as invalid.
-    if (!Number.isInteger(exp) || exp < 0) return BigInt(0)
-    const zeros = '0'.repeat(exp)
-    return BigInt(intPart + zeros)
-  } catch {
-    return BigInt(0)
-  }
-}
-
-function weiBigintToEthNumber(wei: bigint): number {
-  if (wei === BigInt(0)) return 0
-  return parseFloat(formatUnits(wei.toString(), 18))
-}
 
 function exactClosingTooltipText(deadline: number | undefined): string {
   if (deadline == null || deadline === 0) {
