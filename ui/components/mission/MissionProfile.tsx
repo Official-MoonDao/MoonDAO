@@ -342,7 +342,7 @@ export default function MissionProfile({
         setDeployTokenModalEnabled={setDeployTokenModalEnabled}
         token={token}
         contributeButton={
-          !deadlinePassed && (
+          !deadlinePassed && Number(stage) !== 3 && (
             <MissionPayRedeem
               mission={mission}
               teamNFT={teamNFT}

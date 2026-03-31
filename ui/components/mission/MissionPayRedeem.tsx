@@ -32,6 +32,7 @@ function MissionPayRedeemContent({
   onOpenModal,
   tokenBalance,
   jbTokenBalance,
+  address,
   currentStage,
   stage,
   deadline,
@@ -43,6 +44,7 @@ function MissionPayRedeemContent({
   redeemAmount,
   isLoadingRedeemAmount,
   isLoadingEthUsdPrice,
+  isLoadingBalances,
   usdInput,
   setUsdInput,
 }: any) {
@@ -242,6 +244,14 @@ function MissionPayRedeemContent({
                     This mission did not reach its funding goal. You can claim your refund here.
                   </p>
                 </>
+              ) : address && isLoadingBalances ? (
+                <div className="flex items-center justify-center py-2">
+                  <LoadingSpinner />
+                </div>
+              ) : address ? (
+                <p className="text-xs text-gray-400 text-center leading-relaxed">
+                  You have no tokens to redeem for this mission.
+                </p>
               ) : (
                 <p className="text-xs text-gray-400 text-center leading-relaxed">
                   This mission did not reach its funding goal. Sign in to check if you have tokens to redeem.
@@ -324,19 +334,21 @@ function MissionPayRedeemComponent({
 
   const [tokenBalanceRefresh, setTokenBalanceRefresh] = useState(0)
 
-  const { data: tokenCredit } = useRead({
+  const { data: tokenCredit, isLoading: isLoadingTokenCredit } = useRead({
     contract: jbTokensContract,
     method: 'creditBalanceOf' as string,
     params: [address, mission?.projectId],
     deps: [tokenBalanceRefresh],
   })
 
-  const { data: jbTokenBalance } = useRead({
+  const { data: jbTokenBalance, isLoading: isLoadingJbTokenBalance } = useRead({
     contract: jbTokensContract,
     method: 'totalBalanceOf' as string,
     params: [address, mission?.projectId],
     deps: [tokenBalanceRefresh],
   })
+
+  const isLoadingBalances = isLoadingTokenCredit || isLoadingJbTokenBalance
 
   const refreshTokenBalances = useCallback(() => {
     setTokenBalanceRefresh((prev) => prev + 1)
@@ -698,31 +710,7 @@ function MissionPayRedeemComponent({
               </div>
             </Modal>
           ) : onlyButton && buttonMode === 'standard' ? (
-            Number(stage) === 3 ? (
-              <div className="mt-2 w-72">
-                <MissionPayRedeemContent
-                  token={token}
-                  output={output}
-                  redeem={redeemMissionToken}
-                  onOpenModal={onOpenModal}
-                  tokenBalance={tokenBalance}
-                  jbTokenBalance={jbTokenBalance}
-                  tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
-                  claimTokenCredit={claimTokenCredit}
-                  currentStage={currentStage}
-                  stage={stage}
-                  deadline={deadline}
-                  handleUsdInputChange={handleUsdInputChange}
-                  calculateEthAmount={calculateEthAmount}
-                  formatTokenAmount={formatTokenAmount}
-                  redeemAmount={redeemAmount}
-                  isLoadingRedeemAmount={isLoadingRedeemAmount}
-                  isLoadingEthUsdPrice={isLoadingEthUsdPrice}
-                  setUsdInput={setUsdInput}
-                  usdInput={usdInput}
-                />
-              </div>
-            ) : (
+            Number(stage) === 3 ? null : (
             <div
               className={`${
                 visibleButton ? 'opacity-100' : 'opacity-0 hidden'
@@ -749,6 +737,7 @@ function MissionPayRedeemComponent({
                 onOpenModal={onOpenModal}
                 tokenBalance={tokenBalance}
                 jbTokenBalance={jbTokenBalance}
+                address={address}
                 tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
                 claimTokenCredit={claimTokenCredit}
                 currentStage={currentStage}
@@ -760,6 +749,7 @@ function MissionPayRedeemComponent({
                 redeemAmount={redeemAmount}
                 isLoadingRedeemAmount={isLoadingRedeemAmount}
                 isLoadingEthUsdPrice={isLoadingEthUsdPrice}
+                isLoadingBalances={isLoadingBalances}
                 setUsdInput={setUsdInput}
                 usdInput={usdInput}
               />

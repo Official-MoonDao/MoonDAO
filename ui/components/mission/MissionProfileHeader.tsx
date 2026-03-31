@@ -206,7 +206,7 @@ const MissionProfileHeader = React.memo(
                     {/* Manager Actions */}
                     {account && isManager && (
                       <div className="flex flex-wrap gap-2">
-                        {deadlinePassed && (
+                        {deadlinePassed && Number(stage) !== 3 && (
                           <>
                             <PrivyWeb3Button
                               requiredChain={DEFAULT_CHAIN_V5}
