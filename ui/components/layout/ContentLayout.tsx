@@ -147,7 +147,7 @@ const ContentLayout: React.FC<ContentProps> = ({
       </section>
 
       {children && (
-        <section id="main-section-container" className="relative">
+        <section id="main-section-container" className="relative z-20">
           <div
             id="main-section"
             className={`
@@ -276,7 +276,7 @@ const ContentLayout: React.FC<ContentProps> = ({
         </section>
       )}
 
-      {preFooter && <section id="preFooter-container-element">{preFooter}</section>}
+      {preFooter && <section id="preFooter-container-element" className="relative z-10">{preFooter}</section>}
     </div>
   )
 }
