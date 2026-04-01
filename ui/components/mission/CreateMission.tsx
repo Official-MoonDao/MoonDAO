@@ -278,6 +278,7 @@ export default function CreateMission({
       if (!account) throw new Error('Please connect your wallet')
       if (!missionLogoUri) throw new Error('Please upload a mission image')
       if (!fundingGoalInETH || +fundingGoalInETH <= 0) throw new Error('Funding goal is not set')
+      if (selectedTeamId === undefined) throw new Error('Please select a team')
 
       // Calculate deadline timestamp
       let deadlineTimestamp: number

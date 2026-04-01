@@ -89,7 +89,6 @@ function MissionPayRedeemContent({
   onOpenModal,
   tokenBalance,
   jbTokenBalance,
-  address,
   currentStage,
   stage,
   deadline,
@@ -127,21 +126,22 @@ function MissionPayRedeemContent({
 
   const hasTokensToRedeem = useMemo(() => {
     try {
+      const zero = BigInt(0)
       const jbBalanceBigInt =
         jbTokenBalance === undefined || jbTokenBalance === null
-          ? 0n
+          ? zero
           : typeof jbTokenBalance === 'bigint'
           ? jbTokenBalance
           : BigInt(jbTokenBalance)
 
       const tokenCreditBigInt =
         tokenCredit === undefined || tokenCredit === null
-          ? 0n
+          ? zero
           : typeof tokenCredit === 'bigint'
           ? tokenCredit
           : BigInt(tokenCredit)
 
-      return jbBalanceBigInt > 0n || tokenCreditBigInt > 0n
+      return jbBalanceBigInt > zero || tokenCreditBigInt > zero
     } catch {
       return false
     }
@@ -395,7 +395,7 @@ function MissionPayRedeemContent({
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
                 <MissionTokenExchangeRates
                   currentStage={currentStage}
-                  tokenSymbol={resolvedSymbol}
+                  tokenSymbol={resolvedSymbol ?? ''}
                 />
               </div>
             </div>
@@ -452,7 +452,7 @@ function MissionPayRedeemContent({
             </h3>
             <MissionActivityList
               selectedChain={DEFAULT_CHAIN_V5}
-              tokenSymbol={resolvedSymbol}
+              tokenSymbol={resolvedSymbol ?? ''}
               projectId={mission?.projectId}
             />
           </div>
@@ -1045,7 +1045,6 @@ function MissionPayRedeemComponent({
                 onOpenModal={requestOpenContributeModal}
                 tokenBalance={tokenBalance}
                 jbTokenBalance={jbTokenBalance}
-                address={address}
                 tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
                 claimTokenCredit={claimTokenCredit}
                 currentStage={currentStage}
