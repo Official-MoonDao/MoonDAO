@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import toast from 'react-hot-toast'
 import { isImageBlank } from '@/lib/utils/images'
 import { fitImage, cropImage } from '@/lib/utils/images'
@@ -31,6 +31,8 @@ export default function FileInput({
   acceptText = '',
   tooltip,
 }: FileInputProps) {
+  const reactId = useId()
+  const inputId = id || `file-upload-${reactId}`
   const [fileName, setFileName] = useState(
     uri ? uri : file?.name || ''
   )
@@ -60,9 +62,26 @@ export default function FileInput({
       e.preventDefault()
       setIsDragOver(false)
       const droppedFile = e.dataTransfer.files[0]
-      if (droppedFile) processFile(droppedFile)
+      if (!droppedFile) return
+
+      // Validate file type against accept prop
+      const acceptedTypes = accept.split(',').map((t) => t.trim())
+      const fileType = droppedFile.type
+      const fileExt = '.' + droppedFile.name.split('.').pop()?.toLowerCase()
+      const isAccepted = acceptedTypes.some((a) => {
+        if (a === '*' || a === '*/*') return true
+        if (a.endsWith('/*')) return fileType.startsWith(a.replace('/*', '/'))
+        if (a.startsWith('.')) return fileExt === a.toLowerCase()
+        return fileType === a
+      })
+
+      if (!isAccepted) {
+        return toast.error('Unsupported file type. Please use an accepted format.')
+      }
+
+      processFile(droppedFile)
     },
-    [processFile]
+    [processFile, accept]
   )
 
   return (
@@ -81,10 +100,10 @@ export default function FileInput({
           if (file) processFile(file)
         }}
         className="hidden"
-        id="file-upload"
+        id={inputId}
       />
       <label
-        htmlFor="file-upload"
+        htmlFor={inputId}
         onDragOver={(e) => {
           e.preventDefault()
           setIsDragOver(true)

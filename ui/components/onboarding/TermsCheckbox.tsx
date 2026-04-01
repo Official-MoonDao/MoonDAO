@@ -25,7 +25,7 @@ export function TermsCheckbox({
           id="terms"
         />
         <div
-          className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
+          className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-slate-900 ${
             checked
               ? 'bg-indigo-500 border-indigo-500'
               : 'border-slate-500 bg-transparent'

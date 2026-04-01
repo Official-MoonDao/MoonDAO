@@ -48,24 +48,6 @@ export function ImageGenerator({
     }
   }, [isGenerating, generating, onGenerationStateChange])
 
-  const handleAutoCrop = useCallback(async () => {
-    if (!inputImage || isReCropping) return
-
-    try {
-      const croppedFile = await cropImageWithCoordinates(
-        inputImage,
-        cropArea.x,
-        cropArea.y,
-        cropArea.size
-      )
-      setCroppedImage(croppedFile)
-      return croppedFile
-    } catch (error) {
-      console.error('Error auto-cropping image:', error)
-      return null
-    }
-  }, [inputImage, cropArea.x, cropArea.y, cropArea.size, isReCropping])
-
   const handleGenerateImage = useCallback(async () => {
     if (!inputImage) return
 

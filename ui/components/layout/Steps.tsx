@@ -31,6 +31,8 @@ export function Steps({
                 if (isClickable) setStep(i)
               }}
               disabled={!isClickable}
+              aria-label={step}
+              aria-current={isActive ? 'step' : undefined}
               className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 w-full justify-center ${
                 isActive
                   ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'

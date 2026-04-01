@@ -34,7 +34,7 @@ export function DataOverview({
                 isMobile ? '' : 'max-w-[60%] text-right'
               } break-words`}
             >
-              {data[key] || '—'}
+              {data[key] ?? '—'}
             </span>
           </div>
         ))}

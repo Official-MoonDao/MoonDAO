@@ -13,7 +13,8 @@ describe('<Steps />', () => {
       />
     )
     cy.get('#test-steps').should('exist')
-    cy.get('li').should('have.length', 3)
-    cy.get('button').should('have.class', 'step')
+    cy.get('#test-steps button').should('have.length', 3)
+    cy.get('#test-steps button').first().should('have.attr', 'aria-current', 'step')
+    cy.get('#test-steps button').first().should('contain.text', 'Step 1')
   })
 })
