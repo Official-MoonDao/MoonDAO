@@ -101,14 +101,20 @@ const TopNavBar = ({
             {navigation.map((item, i) => {
               if (!item) return null
               const hasDropdown = item.children || item.dynamicChildren
+              const isNetworkTeams =
+                router.pathname === '/network' && router.query.tab === 'teams'
               const isActive =
-                router.pathname === item.href ||
-                item.children?.some((child: any) => router.pathname === child.href) ||
+                (!isNetworkTeams && router.pathname === item.href) ||
+                (!isNetworkTeams &&
+                  item.children?.some(
+                    (child: any) => router.pathname === child.href
+                  )) ||
                 (item.dynamicChildren === 'Teams' &&
                   (router.pathname.startsWith('/team') ||
                     router.pathname === '/join' ||
                     router.pathname === '/jobs' ||
-                    router.pathname === '/marketplace')) ||
+                    router.pathname === '/marketplace' ||
+                    isNetworkTeams)) ||
                 (item.dynamicChildren === 'Projects' &&
                   (router.pathname.startsWith('/project') ||
                     router.pathname === '/projects' ||
@@ -159,50 +165,56 @@ const TopNavBar = ({
                     </NavLink>
                   )}
 
-                  {hasDropdown && openDropdown === item.name && (
+                  {hasDropdown && (
                     <>
+                      {openDropdown === item.name && (
+                        <div
+                          className="absolute top-full left-0 right-0 w-full -mt-1 h-48 z-40"
+                          onMouseEnter={() => handleDropdownEnter(item.name)}
+                          aria-hidden="true"
+                        />
+                      )}
                       <div
-                        className="absolute top-full left-0 right-0 w-full -mt-1 h-48 z-40"
-                        onMouseEnter={() => handleDropdownEnter(item.name)}
-                        aria-hidden="true"
-                      />
-                      <div 
-                        className="absolute top-full left-0 right-0 z-50 pt-2 -mt-2"
+                        className={`absolute top-full left-0 right-0 z-50 pt-2 -mt-2 ${
+                          openDropdown === item.name
+                            ? ''
+                            : 'hidden pointer-events-none'
+                        }`}
                         onMouseEnter={() => handleDropdownEnter(item.name)}
                         onMouseLeave={handleDropdownLeave}
                       >
-                      <div className="min-w-56 w-full bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 px-2 rounded-xl">
-                        {item.dynamicChildren === 'Teams' ? (
-                          <TeamsNavDropdown variant="desktop" />
-                        ) : item.dynamicChildren === 'Projects' ? (
-                          <ProjectsNavDropdown variant="desktop" />
-                        ) : (
-                          item.children?.map((child: any, j: number) => {
-                            if (!child.href) {
+                        <div className="min-w-56 w-full bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 px-2 rounded-xl">
+                          {item.dynamicChildren === 'Teams' ? (
+                            <TeamsNavDropdown variant="desktop" />
+                          ) : item.dynamicChildren === 'Projects' ? (
+                            <ProjectsNavDropdown variant="desktop" />
+                          ) : openDropdown === item.name ? (
+                            item.children?.map((child: any, j: number) => {
+                              if (!child.href) {
+                                return (
+                                  <div key={j} className="px-3 py-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                    {child.name}
+                                  </div>
+                                )
+                              }
+                              const isChildActive = router.pathname === child.href
                               return (
-                                <div key={j} className="px-3 py-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                <NavLink
+                                  key={j}
+                                  href={child.href}
+                                  className={`block w-full text-left px-3 py-2 text-sm transition-all duration-200 rounded-lg ${
+                                    isChildActive
+                                      ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
+                                      : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
+                                  }`}
+                                >
                                   {child.name}
-                                </div>
+                                </NavLink>
                               )
-                            }
-                            const isChildActive = router.pathname === child.href
-                            return (
-                              <NavLink
-                                key={j}
-                                href={child.href}
-                                className={`block w-full text-left px-3 py-2 text-sm transition-all duration-200 rounded-lg ${
-                                  isChildActive
-                                    ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
-                                    : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
-                                }`}
-                              >
-                                {child.name}
-                              </NavLink>
-                            )
-                          })
-                        )}
+                            })
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
                     </>
                   )}
                 </div>

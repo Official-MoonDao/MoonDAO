@@ -104,6 +104,8 @@ export async function handler(
     })
   }
 
+  const RPC_TIMEOUT_MS = 20_000
+
   try {
     let response = await fetch(rpcUrl, {
       method: 'POST',
@@ -121,6 +123,7 @@ export async function handler(
         ],
         id: 1,
       }),
+      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
     })
 
     if (!response.ok) {

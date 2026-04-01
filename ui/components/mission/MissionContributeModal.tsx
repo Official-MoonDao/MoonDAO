@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
-import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { getAccessToken } from '@privy-io/react-auth'
+import { getAccessToken, useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
+import { formatUnits } from 'ethers/lib/utils'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import {
@@ -12,16 +12,26 @@ import {
   DEPLOYED_ORIGIN,
   LAYERZERO_MAX_CONTRIBUTION_ETH,
   LAYERZERO_MAX_ETH,
+  OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL,
 } from 'const/config'
 import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useMemo, useContext, useEffect, useState, useCallback, useRef } from 'react'
+import { flushSync } from 'react-dom'
+import React, {
+  useMemo,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useCallback,
+  useRef,
+} from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
-  sendAndConfirmTransaction,
+  sendTransaction,
   ZERO_ADDRESS,
   readContract,
   waitForReceipt,
@@ -34,18 +44,26 @@ import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import { formatContributionOutput } from '@/lib/mission'
+import { waitForCrossChainPayReceipt } from '@/lib/mission/waitForCrossChainPayReceipt'
+import { fetchNativeBalanceWei } from '@/lib/mission/contributeModalDefaultChain'
+import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
+import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
+import type { FundingChainBalanceEntry } from '@/lib/mission/useMissionDefaultFundingChain'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import type { Chain } from '@/lib/rpc/chains'
 import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import StandardButton from '@/components/layout/StandardButton'
 import Modal from '@/components/layout/Modal'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
-import { CopyIcon } from '../assets'
 import { CBOnramp } from '../coinbase/CBOnramp'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -54,6 +72,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { MissionContributeAutoTriggeringView } from './MissionContributeAutoTriggeringView'
 import { MissionContributeModalHeader } from './MissionContributeModalHeader'
 import { MissionContributeStatusNotices } from './MissionContributeStatusNotices'
+import MissionFundingChainBanner from './MissionFundingChainBanner'
 import MissionTokenNotice from './MissionTokenNotice'
 import { PaymentBreakdown } from './PaymentBreakdown'
 
@@ -69,6 +88,17 @@ type MissionContributeModalProps = {
   ruleset: JBRuleset
   usdInput: string
   setUsdInput: (usdInput: string) => void
+  /** From mission page funding compare; when modal opens, app chain follows richest funding chain. */
+  fundingChainCompareEnabled?: boolean
+  fundingBannerEnabled?: boolean
+  fundingPickReady?: boolean
+  recommendedFundingChain?: Chain | null
+  fundingChainBalances?: FundingChainBalanceEntry[] | null
+  /**
+   * Set to true immediately before opening the modal when the user chose to keep the current app
+   * network (e.g. “stay on Arbitrum”) instead of switching to the richest funding chain.
+   */
+  stayOnSelectedAppChainRef?: React.MutableRefObject<boolean>
 }
 
 export default function MissionContributeModal({
@@ -82,11 +112,17 @@ export default function MissionContributeModal({
   ruleset,
   usdInput,
   setUsdInput,
+  fundingChainCompareEnabled = false,
+  fundingBannerEnabled = false,
+  fundingPickReady = false,
+  recommendedFundingChain = null,
+  fundingChainBalances = null,
+  stayOnSelectedAppChainRef,
 }: MissionContributeModalProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
+  const { wallets } = useWallets()
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
-  const chainSlug = getChainSlug(selectedChain)
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
@@ -95,6 +131,125 @@ export default function MissionContributeModal({
     [isTestnet]
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
+
+  const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'
+
+  /** User picked a network in this modal; stop auto-reverting context to the richest funding chain. */
+  const [userChosePayChainInModal, setUserChosePayChainInModal] = useState(false)
+
+  const [fundingChainBannerDismissed, setFundingChainBannerDismissed] = useState(false)
+  const [payChainWalletNoticeDismissed, setPayChainWalletNoticeDismissed] = useState(false)
+  const prevModalEnabledRef = useRef(false)
+  useEffect(() => {
+    if (modalEnabled && !prevModalEnabledRef.current) {
+      setFundingChainBannerDismissed(false)
+      setPayChainWalletNoticeDismissed(false)
+    }
+    prevModalEnabledRef.current = modalEnabled
+  }, [modalEnabled])
+
+  /**
+   * Recommended funding chain for initial sync / display when context lags behind RPC pick.
+   * After the user changes network in the modal, `selectedChain` and `payChain` follow that choice.
+   */
+  const fundingDisplayChain = useMemo(() => {
+    if (!modalEnabled || !recommendedFundingChain) return null
+    return chains.find((c) => c.id === recommendedFundingChain.id) ?? recommendedFundingChain
+  }, [modalEnabled, recommendedFundingChain, chains])
+
+  const payChain = useMemo(() => {
+    if (!modalEnabled) return selectedChain
+    if (userChosePayChainInModal) return selectedChain
+    if (stayOnSelectedAppChainRef?.current) return selectedChain
+    return fundingDisplayChain ?? selectedChain
+  }, [
+    modalEnabled,
+    userChosePayChainInModal,
+    fundingDisplayChain,
+    selectedChain,
+    stayOnSelectedAppChainRef,
+  ])
+
+  /** Stable `Chain` reference for RPC hooks (avoids refetch when context swaps object identity). */
+  const payChainStable = useMemo(
+    () => chains.find((c) => c.id === payChain.id) ?? payChain,
+    [chains, payChain]
+  )
+
+  const chainSlug = getChainSlug(payChainStable)
+
+  /**
+   * One-shot / recommended updates only — not on every `selectedChain` change, so explicit
+   * NetworkSelector picks are not overwritten.
+   */
+  const syncContextToRecommendedFunding = useCallback(() => {
+    if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') return
+    if (!modalEnabled || !recommendedFundingChain) return
+    if (userChosePayChainInModal) return
+    const target =
+      chains.find((c) => c.id === recommendedFundingChain.id) ?? recommendedFundingChain
+    setSelectedChain((prev) => (prev.id === target.id ? prev : target))
+  }, [
+    modalEnabled,
+    recommendedFundingChain,
+    chains,
+    setSelectedChain,
+    userChosePayChainInModal,
+  ])
+
+  useLayoutEffect(() => {
+    if (!modalEnabled) {
+      setUserChosePayChainInModal(false)
+      return
+    }
+    if (stayOnSelectedAppChainRef?.current) {
+      stayOnSelectedAppChainRef.current = false
+      setUserChosePayChainInModal(true)
+      return
+    }
+    syncContextToRecommendedFunding()
+  }, [modalEnabled, stayOnSelectedAppChainRef, syncContextToRecommendedFunding])
+
+  const contributionTermsCheckboxLabel = useMemo(
+    () => (
+      <p className="text-sm text-gray-300 leading-relaxed">
+        {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
+        <Link
+          href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          risks
+        </Link>
+        {` associated with participation in the MoonDAO Launchpad.`}
+        {isOverviewMission ? (
+          <>
+            {` I have read and agree to the `}
+            <Link
+              href={OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL}
+              className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Overview Flight Terms and Conditions
+            </Link>
+            {`.`}
+          </>
+        ) : null}
+      </p>
+    ),
+    [isOverviewMission]
+  )
+
+  const newsletterCheckboxLabel = useMemo(
+    () => (
+      <p className="text-sm text-gray-300 leading-relaxed">
+        Add me to the MoonDAO newsletter. You can unsubscribe anytime.
+      </p>
+    ),
+    []
+  )
 
   const account = useActiveAccount()
   // In test mode (Cypress), use mock address from window if available
@@ -110,6 +265,13 @@ export default function MissionContributeModal({
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
+  const [contributeButtonPhase, setContributeButtonPhase] = useState<
+    'idle' | 'wallet' | 'confirm'
+  >('idle')
+  const gasEstimateSeqRef = useRef(0)
+  const gasEstimateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** When set, we already finished estimating for this key — do not re-run RPC quote/gas for peripheral updates. */
+  const lastSuccessfulEstimateKeyRef = useRef<string | null>(null)
 
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
 
@@ -129,6 +291,8 @@ export default function MissionContributeModal({
   } = useOnrampJWT()
 
   const [showBackPrompt, setShowBackPrompt] = useState(false)
+  const [contributorEmail, setContributorEmail] = useState('')
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false)
   const [agreedToCondition, setAgreedToCondition] = useState(() => {
     return router?.query?.agreed === 'true'
   })
@@ -150,13 +314,118 @@ export default function MissionContributeModal({
 
   const crossChainPayContract = useContract({
     address: MISSION_CROSS_CHAIN_PAY_ADDRESS,
-    chain: selectedChain,
+    chain: payChainStable,
     abi: MISSION_CROSS_CHAIN_PAY_ABI.abi as any,
     forwardClient,
   })
 
-  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
-  const { effectiveGasPrice } = useGasPrice(selectedChain)
+  const {
+    nativeBalanceWei,
+    walletChain: nativeBalanceChain,
+    refetch: refetchNativeBalance,
+  } = useNativeBalance()
+  const walletOnPayChain = useMemo(
+    () => nativeBalanceChain != null && nativeBalanceChain.id === payChain.id,
+    [nativeBalanceChain, payChain.id]
+  )
+
+  /** Balance on `payChain` (funding network). RPC when wallet is elsewhere. */
+  const [rpcFundingChainWei, setRpcFundingChainWei] = useState<bigint | null>(null)
+  const [isLoadingRpcFundingBalance, setIsLoadingRpcFundingBalance] = useState(false)
+
+  useEffect(() => {
+    if (!modalEnabled || !address) {
+      setRpcFundingChainWei(null)
+      setIsLoadingRpcFundingBalance(false)
+      return
+    }
+    if (walletOnPayChain) {
+      setRpcFundingChainWei(null)
+      setIsLoadingRpcFundingBalance(false)
+      return
+    }
+    let cancelled = false
+    setIsLoadingRpcFundingBalance(true)
+    setRpcFundingChainWei(null)
+    fetchNativeBalanceWei(payChainStable, address).then((wei) => {
+      if (cancelled) return
+      setRpcFundingChainWei(wei)
+      setIsLoadingRpcFundingBalance(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [modalEnabled, address, payChainStable, walletOnPayChain])
+
+  /** Native balance on `payChain` (wei). Exact on-chain value — use for comparisons, not `Number(wei)`. */
+  const fundingBalanceWei = useMemo(() => {
+    if (!address) return null
+    if (walletOnPayChain) {
+      return nativeBalanceWei === undefined ? null : nativeBalanceWei
+    }
+    if (isLoadingRpcFundingBalance) return null
+    return rpcFundingChainWei
+  }, [
+    address,
+    walletOnPayChain,
+    nativeBalanceWei,
+    isLoadingRpcFundingBalance,
+    rpcFundingChainWei,
+  ])
+
+  const fundingBalanceResolved = useMemo(() => {
+    if (!address) return false
+    if (walletOnPayChain) {
+      return nativeBalanceWei !== undefined
+    }
+    return !isLoadingRpcFundingBalance && rpcFundingChainWei !== null
+  }, [
+    address,
+    walletOnPayChain,
+    nativeBalanceWei,
+    isLoadingRpcFundingBalance,
+    rpcFundingChainWei,
+  ])
+
+  /** Same idea as the balance-line hint: `useNativeBalance` wallet chain vs payment chain. */
+  const showPayChainWalletMismatch = useMemo(
+    () =>
+      process.env.NEXT_PUBLIC_TEST_ENV !== 'true' &&
+      !!address &&
+      fundingBalanceResolved &&
+      !walletOnPayChain &&
+      chains.some((c) => c.id === payChainStable.id),
+    [address, fundingBalanceResolved, walletOnPayChain, chains, payChainStable.id]
+  )
+
+  const switchWalletToPayChain = useCallback(async (): Promise<boolean> => {
+    const target = chains.find((c) => c.id === payChainStable.id) ?? payChainStable
+    const wallet = wallets?.[selectedWallet]
+    if (!wallet || typeof wallet.switchChain !== 'function') return false
+    try {
+      await wallet.switchChain(target.id)
+      return true
+    } catch (err: any) {
+      if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
+        const ok = await addNetworkToWallet(target)
+        if (ok) {
+          try {
+            await wallet.switchChain(target.id)
+            return true
+          } catch {
+            return false
+          }
+        }
+      } else if (err?.code !== 4001) {
+        toast.error('Failed to switch network. Please try again.', {
+          style: toastStyle,
+        })
+      }
+      return false
+    }
+  }, [chains, payChainStable, wallets, selectedWallet])
+
+  const { effectiveGasPrice } = useGasPrice(payChainStable)
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -176,17 +445,28 @@ export default function MissionContributeModal({
     const numericValue = usdInput.replace(/,/g, '')
 
     if (!usdInput || isNaN(Number(numericValue))) {
-      return '0.0000'
+      return '0'
     }
     if (!ethUsdPrice) {
-      return '0.0000'
+      return '0'
     }
-    const ethAmount = (Number(numericValue) / ethUsdPrice).toFixed(4)
-    return parseFloat(ethAmount).toLocaleString('en-US', {
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 4,
-    })
+    const eth = Number(numericValue) / ethUsdPrice
+    return formatEthFiveSigFigs(eth)
   }, [usdInput, ethUsdPrice])
+
+  /**
+   * ETH sent for the contribution / token quote. Uses the same USD÷price as the UI, not the
+   * `input` string (which is rounded to 6 decimals and can disagree with "You contribute").
+   */
+  const paymentEthAmount = useMemo(() => {
+    const clean = usdInput ? usdInput.replace(/,/g, '') : ''
+    const usd = parseFloat(clean)
+    if (ethUsdPrice && usdInput && Number.isFinite(usd) && usd > 0) {
+      return usd / ethUsdPrice
+    }
+    const fromInput = parseFloat(input) || 0
+    return Number.isFinite(fromInput) && fromInput > 0 ? fromInput : 0
+  }, [usdInput, ethUsdPrice, input])
 
   // Format input with commas in real-time
   const formatInputWithCommas = useCallback((value: string) => {
@@ -295,7 +575,7 @@ export default function MissionContributeModal({
   }, [estimatedGas, effectiveGasPrice, ethUsdPrice])
 
   // Helper function to safely convert a number to wei (BigInt)
-  const toWei = (value: number): bigint => {
+  const toWei = useCallback((value: number): bigint => {
     if (!isFinite(value) || isNaN(value) || value < 0) {
       return BigInt(0)
     }
@@ -314,25 +594,49 @@ export default function MissionContributeModal({
     const decWei = BigInt(decimalDigits)
 
     return intWei + decWei
-  }
+  }, [])
+
+  const RPC_FETCH_TIMEOUT_MS = 25_000
+  const LAYERZERO_QUOTE_TIMEOUT_MS = 25_000
+
+  const estimateContributionGasRef = useRef<
+    (seq: number, estimateInputKey: string) => Promise<void>
+  >(async () => {})
 
   // Estimate gas for the contribution transaction
-  const estimateContributionGas = useCallback(async () => {
-    if (!account || !address) return
+  const estimateContributionGas = useCallback(async (seq: number, estimateInputKey: string) => {
+    const stale = () => seq !== gasEstimateSeqRef.current
+    const commitEstimate = () => {
+      if (!stale()) lastSuccessfulEstimateKeyRef.current = estimateInputKey
+    }
 
-    const inputValue = parseFloat(input) || 0
-    if (inputValue <= 0 || !isFinite(inputValue)) {
-      setEstimatedGas(BigInt(0))
-      setCrossChainQuote(BigInt(0))
+    if (!account || !address) {
+      if (!stale()) setIsLoadingGasEstimate(false)
       return
     }
 
-    if (!selectedChain?.id || !mission?.projectId) {
+    const inputValue = paymentEthAmount
+    if (inputValue <= 0 || !isFinite(inputValue)) {
+      if (!stale()) {
+        setEstimatedGas(BigInt(0))
+        setCrossChainQuote(BigInt(0))
+        setIsLoadingGasEstimate(false)
+      }
+      return
+    }
+
+    if (!payChainStable?.id || !mission?.projectId) {
       console.warn('Missing required data for gas estimation')
+      if (!stale()) setIsLoadingGasEstimate(false)
       return
     }
 
     const isCrossChain = chainSlug !== defaultChainSlug
+
+    const applyGasBuffer = (rawGas: bigint, cross: boolean) => {
+      const bufferPercent = cross ? 180 : 130
+      return (rawGas * BigInt(bufferPercent)) / BigInt(100)
+    }
 
     if (isCrossChain && (chainSlug === 'ethereum' || chainSlug === 'base') && ethUsdPrice) {
       const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
@@ -340,20 +644,23 @@ export default function MissionContributeModal({
       if (usdValue > 0) {
         const ethAmount = usdValue / ethUsdPrice
         if (ethAmount > LAYERZERO_MAX_CONTRIBUTION_ETH) {
-          setCrossChainQuote(BigInt(Math.floor(0.25 * 1e18)))
-          setEstimatedGas(BigInt(300000))
-          setIsLoadingGasEstimate(false)
+          if (!stale()) {
+            commitEstimate()
+            setCrossChainQuote(BigInt(Math.floor(0.25 * 1e18)))
+            setEstimatedGas(applyGasBuffer(BigInt(300000), true))
+            setIsLoadingGasEstimate(false)
+          }
           return
         }
       }
     }
 
     if (isCrossChain && !crossChainPayContract) {
-      setIsLoadingGasEstimate(false)
+      if (!stale()) setIsLoadingGasEstimate(false)
       return
     }
     if (!isCrossChain && !primaryTerminalContract) {
-      setIsLoadingGasEstimate(false)
+      if (!stale()) setIsLoadingGasEstimate(false)
       return
     }
 
@@ -362,7 +669,11 @@ export default function MissionContributeModal({
 
       if (isCrossChain) {
         if (!output || output <= 0) {
-          setIsLoadingGasEstimate(true)
+          if (!stale()) {
+            setCrossChainQuote(BigInt(0))
+            setEstimatedGas(applyGasBuffer(BigInt(300000), true))
+            setIsLoadingGasEstimate(false)
+          }
           return
         }
 
@@ -371,25 +682,35 @@ export default function MissionContributeModal({
           const inputValueWei = toWei(inputValue)
           const outputTokens = toWei(output)
 
-          quoteCrossChainPay = await readContract({
-            contract: crossChainPayContract,
-            method: 'quoteCrossChainPay' as string,
-            params: [
-              LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
-              inputValueWei,
-              mission?.projectId,
-              address || ZERO_ADDRESS,
-              outputTokens,
-              message,
-              '0x00',
-            ],
-          })
+          quoteCrossChainPay = await Promise.race([
+            readContract({
+              contract: crossChainPayContract,
+              method: 'quoteCrossChainPay' as string,
+              params: [
+                LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+                inputValueWei,
+                mission?.projectId,
+                address || ZERO_ADDRESS,
+                outputTokens,
+                message,
+                '0x00',
+              ],
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () => reject(new Error('quoteCrossChainPay timeout')),
+                LAYERZERO_QUOTE_TIMEOUT_MS
+              )
+            ),
+          ])
 
-          setCrossChainQuote(BigInt(quoteCrossChainPay))
+          if (!stale()) setCrossChainQuote(BigInt(quoteCrossChainPay))
         } catch (quoteError: any) {
           console.error('❌ LayerZero quote failed:', quoteError)
           throw quoteError
         }
+
+        if (stale()) return
 
         const transaction = prepareContractCall({
           contract: crossChainPayContract,
@@ -414,12 +735,13 @@ export default function MissionContributeModal({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chainId: selectedChain.id,
+              chainId: payChainStable.id,
               from: address,
               to: MISSION_CROSS_CHAIN_PAY_ADDRESS,
               data: txData,
               value: `0x${BigInt(quoteCrossChainPay).toString(16)}`,
             }),
+            signal: AbortSignal.timeout(RPC_FETCH_TIMEOUT_MS),
           })
 
           if (!estimateResponse.ok) {
@@ -450,10 +772,13 @@ export default function MissionContributeModal({
           gasEstimate = BigInt(300000)
         }
       } else {
-        setCrossChainQuote(BigInt(0))
+        if (!stale()) setCrossChainQuote(BigInt(0))
 
         if (!output || output <= 0) {
-          setIsLoadingGasEstimate(true)
+          if (!stale()) {
+            setEstimatedGas(applyGasBuffer(BigInt(180000), false))
+            setIsLoadingGasEstimate(false)
+          }
           return
         }
 
@@ -480,12 +805,13 @@ export default function MissionContributeModal({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chainId: selectedChain.id,
+              chainId: DEFAULT_CHAIN_V5.id,
               from: address,
               to: primaryTerminalAddress,
               data: txData,
               value: `0x${toWei(inputValue).toString(16)}`,
             }),
+            signal: AbortSignal.timeout(RPC_FETCH_TIMEOUT_MS),
           })
 
           if (!estimateResponse.ok) {
@@ -517,8 +843,11 @@ export default function MissionContributeModal({
         }
       }
 
+      if (stale()) return
+
       const bufferPercent = isCrossChain ? 180 : 130
       const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
+      commitEstimate()
       setEstimatedGas(gasWithBuffer)
       setIsLoadingGasEstimate(false)
     } catch (error) {
@@ -526,51 +855,56 @@ export default function MissionContributeModal({
         `Error estimating gas for ${chainSlug}:`,
         error instanceof Error ? error.message : error
       )
-      setEstimatedGas(BigInt(300000))
-      setIsLoadingGasEstimate(false)
+      if (!stale()) {
+        commitEstimate()
+        setEstimatedGas(applyGasBuffer(BigInt(isCrossChain ? 300000 : 180000), isCrossChain))
+        setIsLoadingGasEstimate(false)
+      }
     }
   }, [
     account,
     address,
     primaryTerminalContract,
     crossChainPayContract,
-    input,
     chainSlug,
     defaultChainSlug,
     mission?.projectId,
     output,
     message,
     primaryTerminalAddress,
-    selectedChain,
+    payChainStable,
     ethUsdPrice,
     usdInput,
+    paymentEthAmount,
+    toWei,
   ])
 
-  // Calculate required ETH amount
-  // Add a small safety buffer (3-5%) to ensure users have enough after onramp
-  const requiredEth = useMemo(() => {
+  estimateContributionGasRef.current = estimateContributionGas
+
+  // Required total (tx value + buffered gas) in wei for exact balance checks; ETH number for display only.
+  const requiredWei = useMemo(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
     const isCrossChain = chainSlug !== defaultChainSlug
 
-    let transactionValueEth: number
+    let transactionWei: bigint
     if (isCrossChain && crossChainQuote > BigInt(0) && !layerZeroLimitExceeded) {
-      transactionValueEth = Number(crossChainQuote) / 1e18
+      transactionWei = crossChainQuote
     } else {
-      transactionValueEth = usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
+      const usdNum = Number(cleanUsdInput)
+      if (usdInput && ethUsdPrice && Number.isFinite(usdNum) && usdNum > 0) {
+        const ethFloat = usdNum / ethUsdPrice
+        transactionWei = BigInt(Math.ceil(ethFloat * 1e18))
+      } else {
+        transactionWei = BigInt(0)
+      }
     }
 
-    // Calculate base gas cost (estimatedGas already has buffers, effectiveGasPrice is baseFee+priorityFee)
-    const baseGasCostWei = effectiveGasPrice ? estimatedGas * effectiveGasPrice : BigInt(0)
-
-    // Add small safety buffer (3%) for requiredEth to account for base fee fluctuations
-    // This ensures users have enough after onramp, but is much smaller than previous estimates
-    const safetyBuffer = BigInt(103) // 3%
+    const baseGasCostWei =
+      effectiveGasPrice && estimatedGas ? estimatedGas * effectiveGasPrice : BigInt(0)
+    const safetyBuffer = BigInt(103) // 3% on gas for base-fee drift
     const gasCostWei = (baseGasCostWei * safetyBuffer) / BigInt(100)
-    const gasCostEth = Number(gasCostWei) / 1e18
 
-    const total = transactionValueEth + gasCostEth
-
-    return total
+    return transactionWei + gasCostWei
   }, [
     usdInput,
     ethUsdPrice,
@@ -582,10 +916,44 @@ export default function MissionContributeModal({
     layerZeroLimitExceeded,
   ])
 
+  const requiredEth = useMemo(
+    () => parseFloat(formatUnits(requiredWei.toString(), 18)),
+    [requiredWei]
+  )
+
   const hasEnoughBalance = useMemo(() => {
-    const hasEnough = nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
-    return hasEnough
-  }, [nativeBalance, requiredEth])
+    if (!fundingBalanceResolved || fundingBalanceWei === null) return false
+    return requiredWei > BigInt(0) && fundingBalanceWei >= requiredWei
+  }, [fundingBalanceResolved, fundingBalanceWei, requiredWei])
+
+  const showFundingBalanceWait = Boolean(
+    address &&
+      !walletOnPayChain &&
+      isLoadingRpcFundingBalance &&
+      requiredWei > BigInt(0)
+  )
+
+  const applyMaxContribution = useCallback(() => {
+    if (!ethUsdPrice || fundingBalanceWei === null || !address) return
+    const maxUsd = computeContributionMaxUsd({
+      balanceWei: fundingBalanceWei,
+      selectedChainId: payChain.id,
+      chainSlug,
+      defaultChainSlug,
+      ethUsdPrice,
+    })
+    if (maxUsd == null || maxUsd <= 0) return
+    setUsdInput(formatInputWithCommas(maxUsd.toFixed(2)))
+  }, [
+    ethUsdPrice,
+    fundingBalanceWei,
+    address,
+    chainSlug,
+    payChain.id,
+    defaultChainSlug,
+    formatInputWithCommas,
+    setUsdInput,
+  ])
 
   // Calculate LayerZero cross-chain fee
   const layerZeroFeeDisplay = useMemo(() => {
@@ -613,10 +981,11 @@ export default function MissionContributeModal({
 
   // Calculate how much ETH the user needs to buy
   const ethDeficit = useMemo(() => {
-    if (!nativeBalance || !requiredEth) return 0
-
-    return Math.max(0, requiredEth - Number(nativeBalance))
-  }, [nativeBalance, requiredEth])
+    if (fundingBalanceWei === null || requiredWei === BigInt(0)) return 0
+    if (fundingBalanceWei >= requiredWei) return 0
+    const deficitWei = requiredWei - fundingBalanceWei
+    return parseFloat(formatUnits(deficitWei.toString(), 18))
+  }, [fundingBalanceWei, requiredWei])
 
   // Calculate USD equivalent
   const usdDeficit = useMemo(() => {
@@ -653,8 +1022,7 @@ export default function MissionContributeModal({
 
   const getQuote = useCallback(async () => {
     try {
-      const inputValue = parseFloat(input) || 0
-      if (inputValue <= 0) {
+      if (paymentEthAmount <= 0) {
         setOutput(0)
         return
       }
@@ -664,13 +1032,13 @@ export default function MissionContributeModal({
         return
       }
 
-      const tokensReceived = calculateTokensFromPayment(toWei(inputValue), ruleset)
+      const tokensReceived = calculateTokensFromPayment(toWei(paymentEthAmount), ruleset)
       setOutput(+tokensReceived)
     } catch (error) {
       console.error('Error calculating quote:', error)
       setOutput(0)
     }
-  }, [input, ruleset])
+  }, [paymentEthAmount, ruleset, toWei])
 
   const buyMissionToken = useCallback(async () => {
     if (!account || !address) {
@@ -695,7 +1063,7 @@ export default function MissionContributeModal({
       return
     }
 
-    const inputValue = parseFloat(input) || 0
+    const inputValue = paymentEthAmount
     const usdValue = parseFloat(usdInput.replace(/,/g, '')) || 0
 
     if (usdInput && usdValue <= 0) {
@@ -716,10 +1084,28 @@ export default function MissionContributeModal({
       })
     }
 
+    const emailTrim = contributorEmail.trim()
+    if (!isValidContributorEmail(emailTrim)) {
+      toast.error('Please enter a valid email address.', {
+        style: toastStyle,
+      })
+      return
+    }
+
     // Reset rejection state when attempting a new transaction
     setTransactionRejected(false)
 
+    // If wallet is on a different chain than the selected pay network, switch first
+    if (!walletOnPayChain) {
+      const switched = await switchWalletToPayChain()
+      if (!switched) {
+        return
+      }
+      await refetchNativeBalance()
+    }
+
     try {
+      flushSync(() => setContributeButtonPhase('wallet'))
       let receipt: any
       if (chainSlug !== defaultChainSlug) {
         const quoteCrossChainPay: any = await readContract({
@@ -750,22 +1136,125 @@ export default function MissionContributeModal({
           value: BigInt(quoteCrossChainPay),
         })
 
-        const originReceipt: any = await sendAndConfirmTransaction({
+        const submittedOrigin = await sendTransaction({
           transaction,
           account,
         })
-        toast.success('Payment recieved! Please wait a minute or two for settlement.', {
-          style: toastStyle,
-        })
-        const destinationMessage = await waitForMessageReceived(
-          isTestnet ? 19999 : 1,
-          originReceipt.transactionHash
+
+        toast.success(
+          'Payment successfully sent! Onchain settlement and confirmation may take a few minutes. No further action is needed!',
+          { style: toastStyle, duration: 10000 }
         )
-        receipt = await waitForReceipt({
-          client: client,
-          chain: DEFAULT_CHAIN_V5,
-          transactionHash: destinationMessage.dstTxHash as `0x${string}`,
-        })
+
+        setInput('0')
+        setUsdInput('0')
+        if (isOverviewMission) {
+          setShowBackPrompt(true)
+        } else {
+          setModalEnabled?.(false)
+        }
+        if (router?.query?.onrampSuccess === 'true') {
+          const { onrampSuccess: _, ...restQuery } = router.query
+          router.replace(
+            {
+              pathname: router.pathname,
+              query: restQuery,
+            },
+            undefined,
+            { shallow: true }
+          )
+        }
+
+        void (async () => {
+          try {
+            const originReceipt: any = await waitForReceipt(submittedOrigin)
+            const destReceipt = await waitForCrossChainPayReceipt({
+              client,
+              srcChainId: payChainStable.id,
+              originTxHash: originReceipt.transactionHash,
+              destinationChain: DEFAULT_CHAIN_V5,
+            })
+            const accessTokenCross = await getAccessToken()
+            const notificationBodyCross = {
+              txHash: destReceipt.transactionHash,
+              accessToken: accessTokenCross,
+              txChainSlug: defaultChainSlug,
+              projectId: mission?.projectId,
+              contributorEmail: emailTrim,
+              newsletterOptIn,
+            }
+            let contributionNotificationDataCross: { message?: string; success?: boolean } = {}
+            const maxNotificationAttemptsCross = 5
+            for (let attempt = 0; attempt < maxNotificationAttemptsCross; attempt++) {
+              const contributionNotification = await fetch('/api/mission/contribution-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(notificationBodyCross),
+              })
+              contributionNotificationDataCross = await contributionNotification.json()
+              if (contributionNotification.ok) {
+                break
+              }
+              const msg = contributionNotificationDataCross?.message || ''
+              const retryable =
+                msg.includes('No Pay event found') || msg.includes('Transaction not found')
+              if (retryable && attempt < maxNotificationAttemptsCross - 1) {
+                await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+                continue
+              }
+              break
+            }
+            if (!contributionNotificationDataCross?.success) {
+              if (contributionNotificationDataCross?.message) {
+                console.warn(
+                  'Contribution notification:',
+                  contributionNotificationDataCross.message
+                )
+              }
+              toast.error(
+                'Your payment was sent, but we could not confirm final settlement. If you do not receive an email soon, contact support with your transaction hash.',
+                { style: toastStyle, duration: 12000 }
+              )
+              return
+            }
+
+            toast.success('Your contribution has settled—check your email for confirmation.', {
+              style: toastStyle,
+              duration: 8000,
+            })
+
+            if (!isCitizen) {
+              try {
+                const eligibilityRes = await fetch(`/api/mission/freeMint?address=${address}`)
+                const eligibilityData = await eligibilityRes.json()
+                if (eligibilityData?.data?.eligible) {
+                  toast.success(
+                    <div>
+                      <Link href={'/citizen?freeMint=true'}>
+                        Mission token purchased! Click to claim free citizenship!
+                      </Link>
+                    </div>,
+                    {
+                      style: toastStyle,
+                    }
+                  )
+                }
+              } catch (err) {
+                console.error('Error checking free mint eligibility:', err)
+              }
+            } else {
+              refreshMissionData()
+            }
+          } catch (err) {
+            console.error('Cross-chain settlement follow-up failed:', err)
+            toast.error(
+              'Your payment was sent, but we could not confirm bridging. Check LayerZero scan or contact support with your transaction hash.',
+              { style: toastStyle, duration: 12000 }
+            )
+          }
+        })()
+
+        return
       } else {
         const transaction = prepareContractCall({
           contract: primaryTerminalContract,
@@ -782,35 +1271,59 @@ export default function MissionContributeModal({
           value: toWei(inputValue),
         })
 
-        receipt = await sendAndConfirmTransaction({
+        const submittedPay = await sendTransaction({
           transaction,
           account,
         })
+        flushSync(() => setContributeButtonPhase('confirm'))
+        receipt = await waitForReceipt(submittedPay)
       }
 
       const accessToken = await getAccessToken()
 
-      const contributionNotification: any = await fetch('/api/mission/contribution-notification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          txHash: receipt.transactionHash,
-          accessToken: accessToken,
-          txChainSlug: defaultChainSlug,
-          projectId: mission?.projectId,
-        }),
-      })
-      const contributionNotificationData = await contributionNotification.json()
+      // Same-chain and cross-chain both settle with a Juicebox Pay on `DEFAULT_CHAIN_V5`; we always
+      // notify using that destination tx hash and `defaultChainSlug` (not the LayerZero source tx).
+      const notificationBody = {
+        txHash: receipt.transactionHash,
+        accessToken: accessToken,
+        txChainSlug: defaultChainSlug,
+        projectId: mission?.projectId,
+        contributorEmail: emailTrim,
+        newsletterOptIn,
+      }
 
-      if (contributionNotificationData?.message) {
-        console.log(contributionNotificationData.message)
+      let contributionNotificationData: { message?: string; success?: boolean } = {}
+      const maxNotificationAttempts = 5
+      for (let attempt = 0; attempt < maxNotificationAttempts; attempt++) {
+        const contributionNotification = await fetch('/api/mission/contribution-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(notificationBody),
+        })
+        contributionNotificationData = await contributionNotification.json()
+
+        if (contributionNotification.ok) {
+          break
+        }
+
+        const msg = contributionNotificationData?.message || ''
+        const retryable =
+          msg.includes('No Pay event found') || msg.includes('Transaction not found')
+        if (retryable && attempt < maxNotificationAttempts - 1) {
+          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+          continue
+        }
+        break
+      }
+
+      if (!contributionNotificationData?.success && contributionNotificationData?.message) {
+        console.warn('Contribution notification:', contributionNotificationData.message)
       }
 
       setInput('0')
       setUsdInput('0')
 
       // Show back-a-candidate prompt only for mission 4 (Overview flight on Arbitrum)
-      const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'
       if (isOverviewMission) {
         setShowBackPrompt(true)
       } else {
@@ -872,12 +1385,14 @@ export default function MissionContributeModal({
         style: toastStyle,
       })
       throw error
+    } finally {
+      setContributeButtonPhase('idle')
     }
   }, [
     account,
     primaryTerminalContract,
     mission,
-    input,
+    paymentEthAmount,
     address,
     output,
     message,
@@ -887,7 +1402,7 @@ export default function MissionContributeModal({
     agreedToCondition,
     defaultChainSlug,
     crossChainPayContract,
-    isTestnet,
+    payChainStable,
     isLoadingEthUsdPrice,
     ethUsdPrice,
     usdInput,
@@ -895,16 +1410,23 @@ export default function MissionContributeModal({
     isCitizen,
     router,
     setUsdInput,
+    contributorEmail,
+    newsletterOptIn,
+    isOverviewMission,
+    toWei,
+    walletOnPayChain,
+    switchWalletToPayChain,
+    refetchNativeBalance,
   ])
 
-  // Calculate quote when input changes
+  // Calculate quote when payment amount or ruleset changes (aligned with USD → ETH, not rounded `input`)
   useEffect(() => {
-    if (parseFloat(input) > 0 && ruleset && ruleset[0] && ruleset[1]) {
+    if (paymentEthAmount > 0 && ruleset && ruleset[0] && ruleset[1]) {
       getQuote()
-    } else if (input === '0' || input === '') {
+    } else if (paymentEthAmount <= 0) {
       setOutput(0)
     }
-  }, [input, getQuote, ruleset])
+  }, [paymentEthAmount, getQuote, ruleset])
 
   // Update ETH input when USD changes
   useEffect(() => {
@@ -916,27 +1438,67 @@ export default function MissionContributeModal({
     }
   }, [usdInput, ethUsdPrice])
 
-  // Estimate gas on input change
+  // Estimate gas on meaningful input change only (debounced). Ref + key cache avoids re-quote on eth price / contract identity churn.
   useEffect(() => {
+    if (!modalEnabled) {
+      lastSuccessfulEstimateKeyRef.current = null
+      if (gasEstimateDebounceRef.current) {
+        clearTimeout(gasEstimateDebounceRef.current)
+        gasEstimateDebounceRef.current = null
+      }
+      gasEstimateSeqRef.current += 1
+      return
+    }
+
+    if (gasEstimateDebounceRef.current) {
+      clearTimeout(gasEstimateDebounceRef.current)
+      gasEstimateDebounceRef.current = null
+    }
+
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
     const usdValue = parseFloat(cleanUsdInput)
 
-    if (usdValue > 0 && input && parseFloat(input) > 0) {
-      setIsLoadingGasEstimate(true)
+    if (!(usdValue > 0 && paymentEthAmount > 0)) {
+      gasEstimateSeqRef.current += 1
+      setIsLoadingGasEstimate(false)
+      setEstimatedGas(BigInt(0))
+      setCrossChainQuote(BigInt(0))
+      lastSuccessfulEstimateKeyRef.current = null
+      return
     }
 
-    const timeoutId = setTimeout(() => {
-      if (usdValue > 0 && input && parseFloat(input) > 0) {
-        estimateContributionGas()
-      } else {
-        setIsLoadingGasEstimate(false)
-        setEstimatedGas(BigInt(0))
-        setCrossChainQuote(BigInt(0))
-      }
-    }, 2000)
+    const estimateInputKey = `${payChainStable.id}:${chainSlug}:${defaultChainSlug}:${cleanUsdInput}:${paymentEthAmount}:${output}:${message}`
 
-    return () => clearTimeout(timeoutId)
-  }, [usdInput, input, selectedChain, estimateContributionGas])
+    if (lastSuccessfulEstimateKeyRef.current === estimateInputKey) {
+      setIsLoadingGasEstimate(false)
+      return
+    }
+
+    setIsLoadingGasEstimate(true)
+    const runSeq = ++gasEstimateSeqRef.current
+
+    gasEstimateDebounceRef.current = setTimeout(() => {
+      gasEstimateDebounceRef.current = null
+      if (runSeq !== gasEstimateSeqRef.current) return
+      void estimateContributionGasRef.current(runSeq, estimateInputKey)
+    }, 600)
+
+    return () => {
+      if (gasEstimateDebounceRef.current) {
+        clearTimeout(gasEstimateDebounceRef.current)
+        gasEstimateDebounceRef.current = null
+      }
+    }
+  }, [
+    modalEnabled,
+    usdInput,
+    paymentEthAmount,
+    payChainStable.id,
+    chainSlug,
+    defaultChainSlug,
+    output,
+    message,
+  ])
 
   // Use the onramp auto-transaction hook for handling post-onramp flow
   useOnrampAutoTransaction({
@@ -956,14 +1518,21 @@ export default function MissionContributeModal({
       }
     },
     onFormRestore: (restored: any) => {
-      if (restored?.usdAmount) {
-        setUsdInput(restored.usdAmount)
+      const fd = restored?.formData ?? restored
+      if (fd?.usdAmount) {
+        setUsdInput(fd.usdAmount)
       }
-      if (typeof restored?.agreed === 'boolean') {
-        setAgreedToCondition(restored.agreed)
+      if (typeof fd?.agreed === 'boolean') {
+        setAgreedToCondition(fd.agreed)
       }
-      if (restored?.message) {
-        setMessage(restored.message)
+      if (fd?.message) {
+        setMessage(fd.message)
+      }
+      if (typeof fd?.contributorEmail === 'string') {
+        setContributorEmail(fd.contributorEmail)
+      }
+      if (typeof fd?.newsletterOptIn === 'boolean') {
+        setNewsletterOptIn(fd.newsletterOptIn)
       }
       setIsAutoTriggering(true)
     },
@@ -971,8 +1540,9 @@ export default function MissionContributeModal({
       return !!hasEnoughBalance
     },
     shouldProceed: (restored: any) => {
-      const agreed = restored?.agreed ?? agreedToCondition
-      const amount = restored?.usdAmount || usdInput
+      const fd = restored?.formData ?? restored
+      const agreed = fd?.agreed ?? agreedToCondition
+      const amount = fd?.usdAmount || usdInput
       return agreed && amount && parseFloat(amount.replace(/,/g, '')) > 0
     },
     restoreCache: () => {
@@ -985,17 +1555,22 @@ export default function MissionContributeModal({
         if (parts.length !== 3) return null
         const payload = JSON.parse(atob(parts[1]))
         return {
-          usdAmount: payload.usdAmount,
-          agreed: payload.agreed,
-          message: payload.message,
-          selectedWallet: payload.selectedWallet,
-          chainSlug: payload.chainSlug,
+          formData: {
+            usdAmount: payload.usdAmount,
+            agreed: payload.agreed,
+            message: payload.message,
+            selectedWallet: payload.selectedWallet,
+            chainSlug: payload.chainSlug,
+            contributorEmail: payload.contributorEmail,
+            newsletterOptIn: payload.newsletterOptIn,
+          },
         }
       } catch {
         return null
       }
     },
-    getChainSlugFromCache: (restored: any) => restored?.chainSlug,
+    getChainSlugFromCache: (restored: any) =>
+      restored?.formData?.chainSlug ?? restored?.chainSlug,
     setSelectedWallet,
     waitForReady: () => {
       return !isLoadingGasEstimate && estimatedGas > BigInt(0) && effectiveGasPrice > BigInt(0)
@@ -1046,13 +1621,14 @@ export default function MissionContributeModal({
       setCoinbasePaymentTotal(paymentTotal)
       setCoinbaseTotalFees(totalFees)
 
-      const currentBalance = nativeBalance ? Number(nativeBalance) : 0
-      const totalAfterPurchase = ethAmount + currentBalance
-      const isInsufficient = totalAfterPurchase < requiredEth
+      const topUpWei = BigInt(Math.ceil(ethAmount * 1e18))
+      const currentWei = fundingBalanceWei ?? BigInt(0)
+      const totalAfterWei = currentWei + topUpWei
+      const isInsufficient = totalAfterWei < requiredWei
 
       setCoinbaseEthInsufficient(isInsufficient)
     },
-    [nativeBalance, requiredEth]
+    [fundingBalanceWei, requiredWei]
   )
 
   // Clear Coinbase fee state when user no longer needs onramp
@@ -1085,7 +1661,12 @@ export default function MissionContributeModal({
     setCoinbaseTotalFees(undefined)
     setCoinbaseEthInsufficient(false)
 
+    setRpcFundingChainWei(null)
+    setIsLoadingRpcFundingBalance(false)
+
     clearOnrampJWT()
+    setContributorEmail('')
+    setNewsletterOptIn(false)
 
     // Clean up onramp URL params when modal closes
     if (router?.query?.onrampSuccess === 'true') {
@@ -1114,7 +1695,7 @@ export default function MissionContributeModal({
       size="xl"
       showCloseButton={false}
     >
-      <div className="p-8 bg-gradient-to-br from-gray-900/95 via-blue-900/20 to-purple-900/15 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl">
+      <div className="p-4 sm:p-8 bg-gradient-to-br from-gray-900/95 via-blue-900/20 to-purple-900/15 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl">
         <MissionContributeModalHeader
           missionName={mission?.metadata?.name}
           onClose={handleModalClose}
@@ -1176,56 +1757,156 @@ export default function MissionContributeModal({
                 ethDeficit={ethDeficit}
               />
 
-              {/* Total Amount Section */}
+              {!payChainWalletNoticeDismissed && showPayChainWalletMismatch && (
+                <div className="mb-4 rounded-xl border border-cyan-500/35 bg-gradient-to-r from-cyan-950/50 to-slate-900/60 px-4 py-3.5">
+                  <p className="text-sm text-gray-200 leading-relaxed">
+                    Your wallet is on{' '}
+                    <span className="font-semibold text-cyan-200">
+                      {(nativeBalanceChain?.name ?? 'another network').replace(' One', '')}
+                    </span>
+                    , but this payment uses{' '}
+                    <span className="font-semibold text-cyan-200">
+                      {(payChainStable.name ?? 'network').replace(' One', '')}
+                    </span>
+                    . Use the button to switch your wallet, or pick another network in the selector.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <StandardButton
+                      className="gradient-2 rounded-full text-sm px-5 py-2.5"
+                      onClick={() => void switchWalletToPayChain()}
+                    >
+                      {`Switch wallet to ${(payChainStable.name ?? 'network').replace(' One', '')}`}
+                    </StandardButton>
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                      onClick={() => setPayChainWalletNoticeDismissed(true)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!fundingChainBannerDismissed &&
+                (walletOnPayChain ||
+                  (payChainWalletNoticeDismissed && showPayChainWalletMismatch)) && (
+                  <MissionFundingChainBanner
+                    enabled={fundingBannerEnabled}
+                    chains={chains}
+                    fundingPickReady={fundingPickReady}
+                    recommendedChain={recommendedFundingChain}
+                    fundingChainBalances={fundingChainBalances}
+                    onDismiss={() => setFundingChainBannerDismissed(true)}
+                  />
+                )}
+
               <div className="space-y-3">
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                  Total Amount
+                  Network
                 </label>
-                <div className="bg-gradient-to-r from-slate-800/40 to-slate-700/30 backdrop-blur-sm border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all duration-300">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-white/10">
+                <NetworkSelector
+                  chains={chains}
+                  align="left"
+                  displayChain={
+                    !userChosePayChainInModal &&
+                    fundingDisplayChain != null &&
+                    selectedChain.id !== fundingDisplayChain.id
+                      ? fundingDisplayChain
+                      : undefined
+                  }
+                  onUserSelectChain={() => setUserChosePayChainInModal(true)}
+                />
+              </div>
+
+              {/* Contribution amount — primary input */}
+              <div className="space-y-3">
+                <label
+                  htmlFor="payment-input"
+                  className="text-white font-semibold text-sm uppercase tracking-wider"
+                >
+                  You contribute
+                </label>
+                <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/30 rounded-xl p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-2 sm:gap-4">
+                    <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 shrink">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 flex items-center justify-center border border-white/15 shrink-0">
                         <Image
                           src="/coins/ETH.svg"
                           alt="ETH"
                           width={24}
                           height={24}
-                          className="w-6 h-6"
+                          className="w-5 h-5 sm:w-6 sm:h-6"
                         />
                       </div>
-                      <div>
-                        <p className="font-semibold text-white text-lg">
-                          {calculateEthAmount()} ETH
+                      <div className="min-w-0">
+                        <p className="font-semibold text-white text-base sm:text-lg truncate">
+                          {calculateEthAmount()}
                         </p>
-                        <p className="text-gray-400 text-xs">Ethereum</p>
+                        <p className="text-gray-500 text-xs">ETH (estimated)</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-400 text-lg">$</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl px-2 sm:px-3 py-2 border border-white/15 bg-black/50 shadow-inner shrink-0">
+                      <span className="text-cyan-200/80 text-base sm:text-lg font-bold shrink-0">$</span>
                       <input
                         id="payment-input"
                         type="text"
-                        className="bg-black/40 border border-white/10 rounded-xl p-3 text-white text-right w-28 text-lg font-medium placeholder-gray-500 hover:bg-black/50 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        inputMode="decimal"
+                        className="min-w-0 w-16 sm:w-28 bg-transparent border-none outline-none text-white text-right text-base sm:text-lg font-bold placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-gray-400 font-medium">USD</span>
+                      <span className="text-gray-300 text-base sm:text-lg font-bold shrink-0">USD</span>
                     </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <p className="text-gray-400 text-xs sm:text-sm">
+                      <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
+                      <span className="text-white font-medium tabular-nums">
+                        {fundingBalanceResolved && fundingBalanceWei != null
+                          ? `${formatEthFiveSigFigs(
+                              parseFloat(formatUnits(fundingBalanceWei.toString(), 18))
+                            )} ETH`
+                          : isLoadingRpcFundingBalance && !walletOnPayChain
+                          ? '…'
+                          : '—'}
+                      </span>
+                      <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
+                        on {(payChain.name ?? 'network').replace(' One', '')}
+                        {!walletOnPayChain && fundingBalanceResolved ? (
+                          <span className="text-cyan-400/90"> — switch wallet to this network to pay</span>
+                        ) : null}
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyMaxContribution}
+                      disabled={
+                        !address ||
+                        fundingBalanceWei == null ||
+                        fundingBalanceWei <= BigInt(0) ||
+                        !ethUsdPrice ||
+                        isLoadingEthUsdPrice
+                      }
+                      className="self-start sm:self-auto px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide bg-white/10 hover:bg-white/15 border border-white/15 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Max
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Token Receive Section */}
+              {/* Token quote — read-only output (not a second input) */}
               <div className="space-y-3">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                  You Receive
-                </label>
-                <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/30 transition-all duration-300">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg shadow-purple-500/10">
+                <p className="text-gray-500 font-medium text-sm uppercase tracking-wider">
+                  You receive
+                </p>
+                <div className="bg-slate-900/50 border border-white/[0.07] rounded-xl p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-white/10 shrink-0">
                         <Image
                           src={getIPFSGateway(mission?.metadata.logoUri)}
                           width={48}
@@ -1234,55 +1915,26 @@ export default function MissionContributeModal({
                           alt={`${token?.tokenSymbol || 'Token'} logo`}
                         />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-semibold text-white text-lg">{token?.tokenSymbol || 'Tokens'}</p>
-                        <p className="text-gray-400 text-xs">{token?.tokenName || 'Mission Tokens'}</p>
+                        {(() => {
+                          const sym = (token?.tokenSymbol || '').trim()
+                          const name = (token?.tokenName || '').trim()
+                          if (!name || name.toLowerCase() === sym.toLowerCase()) return null
+                          return <p className="text-gray-500 text-xs">{name}</p>
+                        })()}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-white text-xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                    <div
+                      className="text-left sm:text-right border-t sm:border-t-0 border-white/[0.08] pt-3 sm:pt-0 sm:border-l sm:pl-4 sm:min-w-[10rem]"
+                      role="status"
+                      aria-live="polite"
+                      aria-label={`${token?.tokenSymbol || 'Tokens'}: ${formatContributionOutput(output)}`}
+                    >
+                      <p className="font-bold text-emerald-200/95 text-xl sm:text-2xl tabular-nums tracking-tight sm:text-right">
                         {formatContributionOutput(output)}
                       </p>
-                      <p className="text-gray-400 text-xs">{token?.tokenSymbol || 'Tokens'}</p>
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recipient Address */}
-              <div className="space-y-3">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                  Recipient Address
-                </label>
-                <div className="flex items-center justify-between w-full gap-3">
-                  <div className="bg-gradient-to-r from-slate-800/40 to-slate-700/30 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex-1 hover:border-white/20 transition-all duration-300">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-500/30"></div>
-                        <p className="text-white font-mono text-sm tracking-wide">
-                          {address?.slice(0, 6)}...{address?.slice(-4)}
-                        </p>
-                      </div>
-                      <button
-                        className="p-2 hover:bg-white/10 rounded-lg transition-all duration-200 group"
-                        onClick={() => {
-                          navigator.clipboard.writeText(address || '')
-                          toast.success('Address copied to clipboard.', {
-                            style: toastStyle,
-                          })
-                        }}
-                      >
-                        <CopyIcon />
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <NetworkSelector
-                      chains={chains}
-                      compact={true}
-                      align="right"
-                      iconsOnly={true}
-                    />
                   </div>
                 </div>
               </div>
@@ -1291,9 +1943,9 @@ export default function MissionContributeModal({
               {layerZeroLimitExceeded ? (
                 // LayerZero limit exceeded
                 <div className="space-y-6 pt-2">
-                  <div className="bg-gradient-to-r from-blue-500/15 to-purple-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500/30 to-purple-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
+                  <div className="bg-gradient-to-r from-blue-500/15 to-purple-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-4 sm:p-6">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500/30 to-purple-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
                         <span className="text-2xl">💡</span>
                       </div>
                       <div className="flex-1">
@@ -1317,6 +1969,13 @@ export default function MissionContributeModal({
                       </div>
                     </div>
                   </div>
+                </div>
+              ) : showFundingBalanceWait ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
+                  <LoadingSpinner width="w-8" height="h-8" />
+                  <p className="text-sm text-center max-w-sm">
+                    Checking your ETH balance on {(payChain.name ?? 'this network').replace(' One', '')}…
+                  </p>
                 </div>
               ) : hasEnoughBalance ? (
                 // User has enough balance
@@ -1348,8 +2007,14 @@ export default function MissionContributeModal({
                       showEstimatedGas={showEstimatedGas as boolean}
                       gasCostDisplay={gasCostDisplay}
                       requiredEth={requiredEth}
+                      requiredWei={requiredWei}
                       ethUsdPrice={ethUsdPrice}
-                      nativeBalance={nativeBalance}
+                      nativeBalance={
+                        fundingBalanceWei != null
+                          ? parseFloat(formatUnits(fundingBalanceWei.toString(), 18))
+                          : undefined
+                      }
+                      nativeBalanceWei={fundingBalanceWei}
                       showCurrentBalance={true}
                       showNeedToBuy={true}
                       coinbasePaymentSubtotal={coinbasePaymentSubtotal}
@@ -1361,9 +2026,62 @@ export default function MissionContributeModal({
                     />
                   )}
 
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <label
+                        htmlFor="contribution-contributor-email-direct"
+                        className="text-gray-300 font-medium text-sm uppercase tracking-wider"
+                      >
+                        Email
+                      </label>
+                      <p className="text-sm text-gray-300 leading-relaxed mt-2">
+                        We will use this email to send you relevant updates about the mission and
+                        contact you for any reward tiers you are eligible for. Thank you for
+                        contributing!
+                      </p>
+                    </div>
+                    <input
+                      id="contribution-contributor-email-direct"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
+                      placeholder="you@example.com"
+                      value={contributorEmail}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setContributorEmail(v)
+                        if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
+                      }}
+                    />
+                    <ConditionCheckbox
+                      id="contribution-newsletter-checkbox-direct"
+                      label={newsletterCheckboxLabel}
+                      agreedToCondition={newsletterOptIn}
+                      setAgreedToCondition={setNewsletterOptIn}
+                      disabled={!isValidContributorEmail(contributorEmail.trim())}
+                    />
+                  </div>
+
+                  {/* Terms Checkbox */}
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                        Terms and Conditions
+                      </p>
+                    </div>
+                    <MissionTokenNotice />
+                    <ConditionCheckbox
+                      id="contribution-terms-checkbox"
+                      label={contributionTermsCheckboxLabel}
+                      agreedToCondition={agreedToCondition}
+                      setAgreedToCondition={setAgreedToCondition}
+                    />
+                  </div>
+
                   {/* LayerZero Limit Warning */}
                   {layerZeroLimitExceeded && (
-                    <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl p-5">
+                    <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl p-3 sm:p-5">
                       <p className="text-red-300 text-sm font-semibold mb-2">
                         Contribution Limit Exceeded
                       </p>
@@ -1387,30 +2105,6 @@ export default function MissionContributeModal({
                     </div>
                   )}
 
-                  {/* Terms Checkbox */}
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
-                    <MissionTokenNotice />
-                    <ConditionCheckbox
-                      id="contribution-terms-checkbox"
-                      label={
-                        <p className="text-sm text-gray-300 leading-relaxed">
-                          {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
-                          <Link
-                            href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
-                            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            risks
-                          </Link>
-                          {` associated with participation in the MoonDAO Launchpad.`}
-                        </p>
-                      }
-                      agreedToCondition={agreedToCondition}
-                      setAgreedToCondition={setAgreedToCondition}
-                    />
-                  </div>
-
                   {/* Action Buttons */}
                   <div className="flex flex-col md:flex-row gap-4 pt-6">
                     <button
@@ -1428,11 +2122,19 @@ export default function MissionContributeModal({
                           ? `Switch Network`
                           : `Contribute $${formattedUsdInput || '0'} USD`
                       }
+                      loadingLabel={
+                        contributeButtonPhase === 'confirm'
+                          ? 'Awaiting Confirmation. Please wait.'
+                          : contributeButtonPhase === 'wallet'
+                          ? 'Sending Transaction to Wallet. Please wait.'
+                          : undefined
+                      }
                       id="contribute-button"
                       className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-700 disabled:to-gray-600 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                       action={buyMissionToken}
                       isDisabled={
                         !agreedToCondition ||
+                        !isValidContributorEmail(contributorEmail.trim()) ||
                         !usdInput ||
                         parseFloat((usdInput as string).replace(/,/g, '')) <= 0 ||
                         !chainSlugs.includes(chainSlug) ||
@@ -1446,30 +2148,6 @@ export default function MissionContributeModal({
               ) : (
                 // User needs more ETH - show CBOnramp
                 <div className="space-y-5">
-                  {/* Terms Checkbox - Required before onramp */}
-                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
-                    <MissionTokenNotice />
-                    <ConditionCheckbox
-                      id="pre-contribution-terms-checkbox"
-                      label={
-                        <p className="text-sm text-gray-300 leading-relaxed">
-                          {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
-                          <Link
-                            href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
-                            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            risks
-                          </Link>
-                          {` associated with participation in the MoonDAO Launchpad.`}
-                        </p>
-                      }
-                      agreedToCondition={agreedToCondition}
-                      setAgreedToCondition={setAgreedToCondition}
-                    />
-                  </div>
-
                   {/* Message Input */}
                   <div className="space-y-3">
                     <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
@@ -1498,8 +2176,14 @@ export default function MissionContributeModal({
                       showEstimatedGas={showEstimatedGas as boolean}
                       gasCostDisplay={gasCostDisplay}
                       requiredEth={requiredEth}
+                      requiredWei={requiredWei}
                       ethUsdPrice={ethUsdPrice}
-                      nativeBalance={nativeBalance}
+                      nativeBalance={
+                        fundingBalanceWei != null
+                          ? parseFloat(formatUnits(fundingBalanceWei.toString(), 18))
+                          : undefined
+                      }
+                      nativeBalanceWei={fundingBalanceWei}
                       showCurrentBalance={true}
                       showNeedToBuy={true}
                       coinbasePaymentSubtotal={coinbasePaymentSubtotal}
@@ -1511,10 +2195,67 @@ export default function MissionContributeModal({
                     />
                   )}
 
-                  {usdInput && ethDeficit > 0 && agreedToCondition && (
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <label
+                        htmlFor="contribution-contributor-email-onramp"
+                        className="text-gray-300 font-medium text-sm uppercase tracking-wider"
+                      >
+                        Email
+                      </label>
+                      <p className="text-sm text-gray-300 leading-relaxed mt-2">
+                        We will use this email to send you relevant updates about the mission and
+                        contact you for any reward tiers you are eligible for. Thank you for
+                        contributing!
+                      </p>
+                    </div>
+                    <input
+                      id="contribution-contributor-email-onramp"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
+                      placeholder="you@example.com"
+                      value={contributorEmail}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setContributorEmail(v)
+                        if (!v.trim() && newsletterOptIn) setNewsletterOptIn(false)
+                      }}
+                    />
+                    <ConditionCheckbox
+                      id="contribution-newsletter-checkbox-onramp"
+                      label={newsletterCheckboxLabel}
+                      agreedToCondition={newsletterOptIn}
+                      setAgreedToCondition={setNewsletterOptIn}
+                      disabled={!isValidContributorEmail(contributorEmail.trim())}
+                    />
+                  </div>
+
+                  {/* Terms Checkbox - Required before onramp */}
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
+                    <div>
+                      <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                        Terms and Conditions
+                      </p>
+                    </div>
+                    <MissionTokenNotice />
+                    <ConditionCheckbox
+                      id="pre-contribution-terms-checkbox"
+                      label={contributionTermsCheckboxLabel}
+                      agreedToCondition={agreedToCondition}
+                      setAgreedToCondition={setAgreedToCondition}
+                    />
+                  </div>
+
+                  {usdInput &&
+                    ethDeficit > 0 &&
+                    agreedToCondition &&
+                    isValidContributorEmail(contributorEmail.trim()) && (
                     <CBOnramp
+                      fullWidth
                       address={address || ''}
-                      selectedChain={selectedChain}
+                      selectedChain={payChain}
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
                       onQuoteCalculated={handleCoinbaseQuote}
@@ -1528,6 +2269,8 @@ export default function MissionContributeModal({
                           selectedWallet: selectedWallet,
                           missionId: mission?.id?.toString(),
                           context: mission?.id?.toString(),
+                          contributorEmail: contributorEmail.trim(),
+                          newsletterOptIn,
                         })
                       }}
                       redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
@@ -1543,26 +2286,16 @@ export default function MissionContributeModal({
                     </div>
                   )}
 
-                  {usdInput && (
-                    <>
-                      {parseFloat(usdInput.replace(/,/g, '')) > 5000 && (
-                        <div className="bg-orange-500/10 backdrop-blur-sm border border-orange-500/20 rounded-xl p-4">
-                          <p className="text-orange-300 text-sm leading-relaxed">
-                            <span className="font-semibold">Large Amount:</span> Coinbase has
-                            purchase limits around $5,000-$7,500. For larger contributions, please
-                            contact{' '}
-                            <a
-                              href="mailto:info@moondao.com"
-                              className="text-orange-200 underline underline-offset-2 hover:text-orange-100"
-                            >
-                              info@moondao.com
-                            </a>{' '}
-                            about wire transfer options.
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
+                  {usdInput &&
+                    ethDeficit > 0 &&
+                    agreedToCondition &&
+                    !isValidContributorEmail(contributorEmail.trim()) && (
+                      <div className="bg-orange-500/10 backdrop-blur-sm border border-orange-500/30 rounded-xl p-4">
+                        <p className="text-orange-300 text-sm">
+                          Please enter a valid email address to continue with your purchase.
+                        </p>
+                      </div>
+                    )}
 
                   <button
                     type="button"

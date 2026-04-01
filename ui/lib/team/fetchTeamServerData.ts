@@ -94,7 +94,10 @@ export async function fetchTeamNFTAndHats(
 
       if (hat?.subHats) {
         const subHatsLevel1 = hat.subHats
-        const subHatsLevel2 = subHatsLevel1?.map((hat: any) => hat.subHats).flat()
+        const subHatsLevel2 = subHatsLevel1
+          ?.map((hat: any) => hat.subHats)
+          .flat()
+          .filter(Boolean)
         teamHats = subHatsLevel1.concat(subHatsLevel2)
       }
     }

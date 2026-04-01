@@ -264,14 +264,17 @@ jobs:
 
           # Wait for Local binary to establish connection (poll log instead of fixed sleep)
           echo "Waiting for BrowserStack Local connection..."
-          for i in {1..60}; do
+          for i in {1..90}; do
             if [ -f ../bs-local.log ] && grep -q "You can now access your local server" ../bs-local.log 2>/dev/null; then
-              echo "✓ BrowserStack Local connected (after ${i}s)"
+              echo "✓ BrowserStack Local connected (after $((i * 2))s)"
               break
             fi
-            if [ $i -eq 60 ]; then
-              echo "⚠ BrowserStack Local log check timed out after 60 attempts, continuing anyway"
-              break
+            if [ $i -eq 90 ]; then
+              echo "❌ BrowserStack Local did not report ready within 180s — aborting (avoids flaky remote runs against a bad tunnel)"
+              if [ -f ../bs-local.log ]; then
+                tail -80 ../bs-local.log || true
+              fi
+              exit 1
             fi
             sleep 2
           done
@@ -292,35 +295,63 @@ jobs:
             fi
           fi
 
-          # Verify connection by checking log for success message
+          # Verify connection by checking log for success message (required; loop above should guarantee this)
           if [ -f ../bs-local.log ] && grep -q "You can now access your local server" ../bs-local.log 2>/dev/null; then
             echo "✓ BrowserStack Local connected successfully"
           else
-            echo "⚠ BrowserStack Local may not be fully connected, but continuing..."
+            echo "❌ BrowserStack Local log missing success line after wait loop"
             if [ -f ../bs-local.log ]; then
-              tail -20 ../bs-local.log || true
+              tail -80 ../bs-local.log || true
             fi
+            exit 1
           fi
 
           # Run tests with BrowserStack local tunnel
-          # Use timeout to prevent hanging (60 minutes max)
+          # Retry on transient BrowserStack API failures (504, connection errors)
           echo "Starting BrowserStack Cypress tests..."
-          set +e  # Don't exit on error, we'll handle it
-          timeout 3600 bash -c "
-            export BROWSERSTACK_LOCAL=true
-            export BROWSERSTACK_LOCAL_IDENTIFIER=\"${BS_LOCAL_IDENTIFIER}\"
-            browserstack-cypress run --force-upload --verbose
-          "
-          TEST_EXIT_CODE=$?
-          set -e  # Re-enable exit on error
+          MAX_RETRIES=3
+          RETRY_DELAY=30
+          TEST_EXIT_CODE=1
 
-          if [ $TEST_EXIT_CODE -eq 124 ]; then
-            echo "❌ BrowserStack tests timed out after 60 minutes"
-          elif [ $TEST_EXIT_CODE -ne 0 ]; then
-            echo "❌ BrowserStack tests failed with exit code: $TEST_EXIT_CODE"
-          else
-            echo "✓ BrowserStack tests completed successfully"
-          fi
+          for attempt in $(seq 1 $MAX_RETRIES); do
+            echo "--- BrowserStack run attempt $attempt/$MAX_RETRIES ---"
+
+            set +e
+            BS_OUTPUT=$(timeout 3600 bash -c "
+              export BROWSERSTACK_LOCAL=true
+              export BROWSERSTACK_LOCAL_IDENTIFIER=\"${BS_LOCAL_IDENTIFIER}\"
+              browserstack-cypress run --force-upload --verbose 2>&1
+            ")
+            TEST_EXIT_CODE=$?
+            set -e
+
+            echo "$BS_OUTPUT"
+
+            if [ $TEST_EXIT_CODE -eq 0 ]; then
+              echo "✓ BrowserStack tests completed successfully"
+              break
+            fi
+
+            if [ $TEST_EXIT_CODE -eq 124 ]; then
+              echo "❌ BrowserStack tests timed out after 60 minutes"
+              break
+            fi
+
+            # Check if the failure is a transient BrowserStack API/infra issue
+            if echo "$BS_OUTPUT" | grep -qiE "Gateway Timeout|502 Bad Gateway|503 Service|ECONNRESET|ETIMEDOUT|ECONNREFUSED|Build creation failed|socket hang up|network error|rate limit"; then
+              if [ $attempt -lt $MAX_RETRIES ]; then
+                WAIT_TIME=$((RETRY_DELAY * attempt))
+                echo "⚠ Transient BrowserStack API error detected. Retrying in ${WAIT_TIME}s..."
+                sleep $WAIT_TIME
+                continue
+              else
+                echo "❌ BrowserStack API failed after $MAX_RETRIES attempts"
+              fi
+            else
+              echo "❌ BrowserStack tests failed with exit code: $TEST_EXIT_CODE (not a transient error, skipping retries)"
+              break
+            fi
+          done
 
           # Clean up (trap will handle this, but explicit cleanup for better error visibility)
           cleanup

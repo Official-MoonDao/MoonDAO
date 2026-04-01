@@ -139,4 +139,4 @@ The refund window stays open for `refundPeriod` seconds (default: 28 days = 2,41
 
 **Stage still shows 4 after activation** — hard reload the mission page (SSR cache). If it persists, check that the new ruleset is actually active with `currentRulesetOf`.
 
-**Redeem button not visible** — user must be signed in with a wallet that holds tokens for the project. The button only appears when `tokenBalance > 0 || tokenCredit > 0`.
+**Redeem button not visible** — the user must be signed in with a wallet that holds tokens for the project. When not signed in, the refund section shows a sign-in prompt. The Redeem button is only enabled/visible when `jbTokenBalance > 0 || tokenCredit > 0`.

@@ -10,14 +10,12 @@ describe('<CookieBanner />', () => {
 
   it('Renders when cookie consent is null', () => {
     cy.mount(<CookieBanner />)
-    cy.contains('We use cookies to enhance your experience').should(
-      'be.visible'
-    )
+    cy.contains('We use cookies for analytics and personalization').should('be.visible')
   })
 
-  it('Updates localStorage and calls gtag when Allow Cookies is clicked', () => {
+  it('Updates localStorage and calls gtag when Accept is clicked', () => {
     cy.mount(<CookieBanner />)
-    cy.contains('button', 'Allow Cookies').click()
+    cy.contains('button', 'Accept').click()
     cy.get('@gtagStub').should('have.been.calledWith', 'consent', 'update', {
       analytics_storage: 'granted',
     })
@@ -44,5 +42,16 @@ describe('<CookieBanner />', () => {
       'href',
       '/privacy-policy'
     )
+  })
+
+  it('Dismisses and declines when the X button is clicked', () => {
+    cy.mount(<CookieBanner />)
+    cy.get('[aria-label="Close"]').click()
+    cy.get('@gtagStub').should('have.been.calledWith', 'consent', 'update', {
+      analytics_storage: 'denied',
+    })
+    cy.should(() => {
+      expect(localStorage.getItem('cookie_consent')).to.eq('false')
+    })
   })
 })

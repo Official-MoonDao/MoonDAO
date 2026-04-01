@@ -54,12 +54,7 @@ describe('Mission Contribute Onramp E2E Flow', () => {
       },
     })
 
-    // Wait for page to load
-    cy.wait(2000)
-
-    // Verify page loads successfully with JWT
-    // JWT verification may or may not be called depending on component state
-    cy.get('body').should('exist')
+    cy.get('#app-layout', { timeout: 60000 }).should('exist')
     
     // Verify JWT is stored (if verification happens, it will use this)
     cy.window().then((win) => {
@@ -76,10 +71,7 @@ describe('Mission Contribute Onramp E2E Flow', () => {
       },
     })
 
-    cy.wait(2000)
-
-    // Page should still load without JWT
-    cy.get('body').should('exist')
+    cy.get('#app-layout', { timeout: 60000 }).should('exist')
   })
 
   it('should restore form data from JWT payload', () => {
@@ -103,10 +95,7 @@ describe('Mission Contribute Onramp E2E Flow', () => {
       },
     })
 
-    cy.wait(2000)
-
-    // Verify page loads successfully with JWT
-    cy.get('body').should('exist')
+    cy.get('#app-layout', { timeout: 60000 }).should('exist')
     
     // Verify JWT is stored with correct payload data
     cy.window().then((win) => {
@@ -140,10 +129,7 @@ describe('Mission Contribute Onramp E2E Flow', () => {
       },
     })
 
-    cy.wait(2000)
-
-    // Page should still load with invalid JWT
-    cy.get('body').should('exist')
+    cy.get('#app-layout', { timeout: 60000 }).should('exist')
   })
 })
 

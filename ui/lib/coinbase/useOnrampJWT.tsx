@@ -9,6 +9,8 @@ export interface OnrampJwtPayload {
   selectedWallet?: number
   missionId?: string
   context?: string
+  contributorEmail?: string
+  newsletterOptIn?: boolean
   timestamp: number
 }
 

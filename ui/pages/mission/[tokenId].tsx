@@ -16,12 +16,16 @@ const JuiceProviders = dynamic(() => import('@/lib/juicebox/JuiceProviders'), {
 
 const CHAIN = DEFAULT_CHAIN_V5
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 type ProjectProfileProps = {
   tokenId: string
   mission: Mission
   _stage: number
-  _deadline: number | undefined
-  _refundPeriod: number | undefined
+  _deadline: number | null
+  _refundPeriod: number | null
   _primaryTerminalAddress: string
   _token?: any
   _teamNFT?: any
@@ -72,111 +76,118 @@ export default function MissionProfilePage({
 export const getServerSideProps: GetServerSideProps = async ({ params, res }) => {
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
 
-  try {
-    const tokenId: any = params?.tokenId
+  const tokenId: any = params?.tokenId
 
-    // Handle dummy mission for testing
-    if (tokenId === 'dummy') {
-      return {
-        props: {
-          mission: {
-            id: 5,
-            metadata: {
-              name: 'Dummy Mission',
-              description: 'This is a dummy mission',
-              logoUri: '/Original.png',
-            },
-            projectId: 224,
-            teamId: 1,
-          },
-          _stage: 3,
-          _deadline: Date.now() + 5 * 1000,
-          _refundPeriod: Date.now() + 60 * 1000,
-          _primaryTerminalAddress: '0x0000000000000000000000000000000000000000',
-          _token: {
-            tokenAddress: '0x0000000000000000000000000000000000000000',
-            tokenName: 'Dummy Token',
-            tokenSymbol: 'DUMMY',
-            tokenSupply: '1000000000000000000000000000',
-          },
-        },
-      }
-    }
-
-    const chain = DEFAULT_CHAIN_V5
-
-    // Validate tokenId
-    if (tokenId === undefined || isNaN(Number(tokenId))) {
-      return { notFound: true }
-    }
-
-    // Check if mission is blocked
-    if (BLOCKED_MISSIONS.has(Number(tokenId))) {
-      return { notFound: true }
-    }
-
-    // Fetch all mission server data
-    const missionData = await getMissionServerData(tokenId, chain)
-
-    if (!missionData || !missionData.missionRow) {
-      return { notFound: true }
-    }
-
-    const { missionRow, contractData, timeData } = missionData
-
-    // Fetch IPFS metadata
-    const ipfsHash = contractData.metadataURI.startsWith('ipfs://')
-      ? contractData.metadataURI.replace('ipfs://', '')
-      : contractData.metadataURI
-
-    const metadata = await fetchFromIPFSWithFallback(ipfsHash).catch((error: any) => {
-      console.warn('All IPFS gateways failed:', error)
-      return {
-        name: 'Mission Loading...',
-        description: 'Metadata is loading...',
-        logoUri: '',
-      }
-    })
-
-    // Fetch token data
-    const tokenData = await fetchTokenMetadata(contractData.tokenAddress, chain)
-
-    // Create mission object
-    const mission: any = {
-      id: missionRow.id,
-      teamId: missionRow.teamId,
-      projectId: missionRow.projectId,
-      metadata: metadata,
-    }
-
-    // Fetch team NFT and hats
-    const { teamNFT, teamHats } = await fetchTeamNFTAndHats(mission.teamId, chain)
-
-    // Format ruleset
-    const _ruleset = contractData.ruleset
-      ? [
-          { weight: +contractData.ruleset[0].weight.toString() },
-          { reservedPercent: +contractData.ruleset[1].reservedPercent.toString() },
-        ]
-      : [{ weight: 0 }, { reservedPercent: 0 }]
-
+  // Handle dummy mission for testing
+  if (tokenId === 'dummy') {
     return {
       props: {
-        mission,
-        _stage: +contractData.stage.toString(),
-        _deadline: timeData.deadline,
-        _refundPeriod: timeData.refundPeriod,
-        _primaryTerminalAddress: contractData.primaryTerminalAddress,
-        _token: tokenData,
-        _teamNFT: teamNFT ? { ...teamNFT, id: teamNFT.id.toString() } : null,
-        _teamHats: teamHats,
-        _fundingGoal: missionRow.fundingGoal,
-        _ruleset,
+        mission: {
+          id: 5,
+          metadata: {
+            name: 'Dummy Mission',
+            description: 'This is a dummy mission',
+            logoUri: '/Original.png',
+          },
+          projectId: 224,
+          teamId: 1,
+        },
+        _stage: 3,
+        _deadline: Date.now() + 5 * 1000,
+        _refundPeriod: Date.now() + 60 * 1000,
+        _primaryTerminalAddress: '0x0000000000000000000000000000000000000000',
+        _token: {
+          tokenAddress: '0x0000000000000000000000000000000000000000',
+          tokenName: 'Dummy Token',
+          tokenSymbol: 'DUMMY',
+          tokenSupply: '1000000000000000000000000000',
+        },
       },
     }
-  } catch (error: any) {
-    return {
-      notFound: true,
+  }
+
+  const chain = DEFAULT_CHAIN_V5
+
+  // Validate tokenId
+  if (tokenId === undefined || isNaN(Number(tokenId))) {
+    return { notFound: true }
+  }
+
+  // Check if mission is blocked
+  if (BLOCKED_MISSIONS.has(Number(tokenId))) {
+    return { notFound: true }
+  }
+
+  const maxAttempts = 3
+  let lastError: unknown
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const missionData = await getMissionServerData(tokenId, chain)
+
+      if (!missionData || !missionData.missionRow) {
+        return { notFound: true }
+      }
+
+      const { missionRow, contractData, timeData } = missionData
+
+      const ipfsHash = contractData.metadataURI.startsWith('ipfs://')
+        ? contractData.metadataURI.replace('ipfs://', '')
+        : contractData.metadataURI
+
+      const metadata = await fetchFromIPFSWithFallback(ipfsHash).catch((error: any) => {
+        console.warn('All IPFS gateways failed:', error)
+        return {
+          name: 'Mission Loading...',
+          description: 'Metadata is loading...',
+          logoUri: '',
+        }
+      })
+
+      const tokenData = await fetchTokenMetadata(contractData.tokenAddress, chain)
+
+      const mission: any = {
+        id: missionRow.id,
+        teamId: missionRow.teamId,
+        projectId: missionRow.projectId,
+        metadata: metadata,
+      }
+
+      const { teamNFT, teamHats } = await fetchTeamNFTAndHats(mission.teamId, chain)
+
+      const _ruleset = contractData.ruleset
+        ? [
+            { weight: +contractData.ruleset[0].weight.toString() },
+            { reservedPercent: +contractData.ruleset[1].reservedPercent.toString() },
+          ]
+        : [{ weight: 0 }, { reservedPercent: 0 }]
+
+      return {
+        props: {
+          mission,
+          _stage: +contractData.stage.toString(),
+          _deadline: timeData.deadline ?? null,
+          _refundPeriod: timeData.refundPeriod ?? null,
+          _primaryTerminalAddress: contractData.primaryTerminalAddress,
+          _token: tokenData,
+          _teamNFT: teamNFT ? { ...teamNFT, id: teamNFT.id.toString() } : null,
+          _teamHats: teamHats,
+          _fundingGoal: missionRow.fundingGoal,
+          _ruleset,
+        },
+      }
+    } catch (error) {
+      lastError = error
+      if (attempt < maxAttempts - 1) {
+        await sleep(400 * (attempt + 1))
+        continue
+      }
     }
   }
+
+  console.error(
+    `[mission/${tokenId}] getServerSideProps failed after ${maxAttempts} attempts:`,
+    lastError
+  )
+  throw lastError
 }

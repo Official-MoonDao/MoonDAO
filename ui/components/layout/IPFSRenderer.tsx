@@ -12,6 +12,8 @@ type IPFSRendererProps = {
   priority?: boolean
   sizes?: string
   loading?: 'lazy' | 'eager'
+  /** Fill a positioned parent (`relative` + bounded height); use with `object-cover` in className. */
+  fillContainer?: boolean
 }
 
 export default function IPFSRenderer({
@@ -24,6 +26,7 @@ export default function IPFSRenderer({
   priority = false,
   sizes,
   loading = 'lazy',
+  fillContainer = false,
 }: IPFSRendererProps) {
   const [imageError, setImageError] = useState(false)
   const noSrc = !src || src === ''
@@ -32,9 +35,24 @@ export default function IPFSRenderer({
   const imageSrc =
     (imageError || noSrc) && fallback ? fallback : imageError || noSrc ? '' : getIPFSGateway(src)
 
-  return (
-    <div className="relative flex w-full h-full items-center justify-center overflow-hidden">
-      {imageSrc ? (
+  const defaultSizes = fillContainer
+    ? sizes || '(max-width: 1024px) 100vw, 50vw'
+    : sizes || `(max-width: 768px) 100vw, (max-width: 1200px) 50vw, ${width}px`
+
+  const imageEl =
+    imageSrc ? (
+      fillContainer ? (
+        <Image
+          className={className}
+          src={imageSrc}
+          alt={alt}
+          fill
+          priority={priority}
+          sizes={defaultSizes}
+          loading={priority ? undefined : loading}
+          onError={() => setImageError(true)}
+        />
+      ) : (
         <Image
           className={className}
           src={imageSrc}
@@ -42,15 +60,28 @@ export default function IPFSRenderer({
           width={width}
           height={height}
           priority={priority}
-          sizes={sizes || `(max-width: 768px) 100vw, (max-width: 1200px) 50vw, ${width}px`}
+          sizes={defaultSizes}
           loading={priority ? undefined : loading}
           onError={() => setImageError(true)}
         />
-      ) : (
-        <p className="text-white text-xs text-center truncate px-1">
-          {alt}
-        </p>
-      )}
+      )
+    ) : (
+      <p className="text-white text-xs text-center truncate px-1">
+        {alt}
+      </p>
+    )
+
+  if (fillContainer) {
+    return (
+      <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+        {imageEl}
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative flex w-full h-full items-center justify-center overflow-hidden">
+      {imageEl}
     </div>
   )
 }

@@ -12,6 +12,14 @@ import useContract from '../thirdweb/hooks/useContract'
 import { projectQuery } from './subgraph'
 import useJBProjectTrendingPercentageIncrease from './useJBProjectTrendingPercentageIncrease'
 
+/** Juicebox project ids are positive uint256; null/0/invalid must not be passed to `readContract`. */
+function normalizedJuiceboxProjectId(projectId: unknown): number | null {
+  if (projectId == null || projectId === '') return null
+  const n = Number(projectId)
+  if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) return null
+  return n
+}
+
 export default function useJBProjectData({
   projectId,
   jbControllerContract,
@@ -68,11 +76,13 @@ export default function useJBProjectData({
   //Metadata
   useEffect(() => {
     async function getProjectMetadata() {
+      const jbPid = normalizedJuiceboxProjectId(projectId)
+      if (jbPid == null) return
       try {
         const metadataURI: any = await readContract({
           contract: jbControllerContract,
           method: 'uriOf' as string,
-          params: [projectId],
+          params: [jbPid],
         })
         if (!metadataURI) return
         const res = await fetch(metadataURI)
@@ -91,12 +101,21 @@ export default function useJBProjectData({
   //Ruleset, refresh if stage changes
   useEffect(() => {
     async function getProjectRuleset() {
-      const rs: any = await readContract({
-        contract: jbControllerContract,
-        method: 'currentRulesetOf' as string,
-        params: [projectId],
-      })
-      setRuleset(rs)
+      const jbPid = normalizedJuiceboxProjectId(projectId)
+      if (jbPid == null) return
+      try {
+        const rs: any = await readContract({
+          contract: jbControllerContract,
+          method: 'currentRulesetOf' as string,
+          params: [jbPid],
+        })
+        setRuleset(rs)
+      } catch (err) {
+        console.error(
+          'Failed to read Juicebox ruleset (currentRulesetOf):',
+          { projectId: jbPid, err }
+        )
+      }
     }
     if (jbControllerContract && projectId !== undefined && stage !== undefined)
       getProjectRuleset()
@@ -105,12 +124,21 @@ export default function useJBProjectData({
   //Token Address
   useEffect(() => {
     async function getProjectToken() {
-      const token: any = await readContract({
-        contract: jbTokensContract,
-        method: 'tokenOf' as string,
-        params: [projectId],
-      })
-      setToken((prev: any) => ({ ...prev, tokenAddress: token }))
+      const jbPid = normalizedJuiceboxProjectId(projectId)
+      if (jbPid == null) return
+      try {
+        const token: any = await readContract({
+          contract: jbTokensContract,
+          method: 'tokenOf' as string,
+          params: [jbPid],
+        })
+        setToken((prev: any) => ({ ...prev, tokenAddress: token }))
+      } catch (err) {
+        console.error('Failed to read Juicebox project token (tokenOf):', {
+          projectId: jbPid,
+          err,
+        })
+      }
     }
 
     if (jbTokensContract && projectId) getProjectToken()
@@ -177,24 +205,26 @@ export default function useJBProjectData({
   //Project Directory Data
   useEffect(() => {
     async function getProjectDirectoryData() {
+      const jbPid = normalizedJuiceboxProjectId(projectId)
+      if (jbPid == null) return
+
       let primaryTerminal: string = ZERO_ADDRESS
 
       while (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
         try {
-          const primaryTerminal: any = await readContract({
+          const fetched: any = await readContract({
             contract: jbDirectoryContract,
             method: 'primaryTerminalOf' as string,
-            params: [projectId, JB_NATIVE_TOKEN_ADDRESS],
+            params: [jbPid, JB_NATIVE_TOKEN_ADDRESS],
           })
 
-          if (primaryTerminal !== ZERO_ADDRESS && primaryTerminal) {
-            setPrimaryTerminalAddress(primaryTerminal)
-            return // Successfully got a valid terminal address
-          } else {
-            console.warn(
-              `Retrieved zero or invalid address for project ${projectId}, retrying...`
-            )
+          if (fetched !== ZERO_ADDRESS && fetched) {
+            setPrimaryTerminalAddress(fetched)
+            return
           }
+          console.warn(
+            `Retrieved zero or invalid address for project ${projectId} (attempt ${attempt + 1}/${maxAttempts})`
+          )
         } catch (error) {
           console.error(
             `Error getting primary terminal for project ${projectId}:`,
@@ -203,14 +233,10 @@ export default function useJBProjectData({
         }
       }
 
-      // If we've exhausted all retries and still don't have a valid address
-      if (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
-        console.error(
-          `Failed to get valid primary terminal for project ${projectId} after multiple attempts`
-        )
-      }
-
-      setPrimaryTerminalAddress(primaryTerminal)
+      console.error(
+        `Failed to get valid primary terminal for project ${projectId} after ${maxAttempts} attempts`
+      )
+      setPrimaryTerminalAddress(ZERO_ADDRESS)
     }
 
     // Only fetch if _primaryTerminalAddress was not provided

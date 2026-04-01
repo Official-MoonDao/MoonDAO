@@ -93,7 +93,9 @@ function TeamMember({
         })
 
         setNft(nft)
-      } catch (err) {}
+      } catch (err) {
+        console.warn(`Failed to fetch citizen NFT for ${address}:`, err)
+      }
       setIsLoadingNFT(false)
     }
     if (address && citizenContract) getOwnedNFT()

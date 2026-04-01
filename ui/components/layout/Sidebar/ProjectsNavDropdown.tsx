@@ -1,16 +1,20 @@
 'use client'
 
+import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import ProjectABI from 'const/abis/Project.json'
-import { PROJECT_ADDRESSES, PROJECT_TABLE_NAMES } from 'const/config'
+import {
+  DEFAULT_CHAIN_V5,
+  PROJECT_ADDRESSES,
+  PROJECT_TABLE_NAMES,
+} from 'const/config'
 import { useProjectWearer } from '@/lib/hats/useProjectWearer'
+import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-
 type ProjectsNavDropdownProps = {
   variant: 'desktop' | 'mobile'
   onNavigate?: () => void
@@ -21,23 +25,28 @@ export function ProjectsNavDropdown({
   onNavigate,
 }: ProjectsNavDropdownProps) {
   const account = useActiveAccount()
-  const address = account?.address
-  const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = selectedChain ? getChainSlug(selectedChain) : 'arbitrum'
+  const { user } = usePrivy()
+  const wearerAddresses = useMemo(
+    () => getLinkedEvmAddresses(user, account?.address),
+    [user, account?.address]
+  )
+  const membershipChain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(membershipChain)
   const projectContract = useContract({
     address: PROJECT_ADDRESSES[chainSlug],
-    chain: selectedChain,
+    chain: membershipChain,
     abi: ProjectABI as any,
   })
   const { userProjects: projects, isLoading } = useProjectWearer(
     projectContract,
-    selectedChain,
-    address
+    membershipChain,
+    wearerAddresses
   )
 
-  const isContractReady = !!projectContract && !!selectedChain
+  const isContractReady = !!projectContract && !!membershipChain
   const shouldShowLoading =
-    !!address && (!isContractReady || isLoading || projects === undefined)
+    wearerAddresses.length > 0 &&
+    (!isContractReady || isLoading || projects === undefined)
 
   const isDesktop = variant === 'desktop'
 
@@ -151,23 +160,30 @@ function ProjectNavItem({
   onNavigate?: () => void
 }) {
   const [name, setName] = useState<string | null>(null)
+  const [mdp, setMdp] = useState<string | null>(null)
   const tableName = PROJECT_TABLE_NAMES[chainSlug]
   const numericId = parseInt(projectId, 10)
   const statement =
     tableName && !isNaN(numericId)
-      ? `SELECT name FROM ${tableName} WHERE id = ${numericId} OR MDP = ${numericId} LIMIT 1`
+      ? `SELECT name, MDP FROM ${tableName} WHERE id = ${numericId} LIMIT 1`
       : null
   const { data: rows } = useTablelandQuery(statement)
 
   useEffect(() => {
     if (rows && rows[0]) {
-      setName((rows[0] as any).name || `Project #${projectId}`)
+      const row = rows[0] as any
+      setName(row.name || `Project #${projectId}`)
+      if (row.MDP != null) {
+        setMdp(String(row.MDP))
+      }
     }
   }, [rows, projectId])
 
+  const href = mdp ? `/project/${mdp}` : `/project/${projectId}`
+
   return (
     <Link
-      href={`/project/${projectId}`}
+      href={href}
       className={baseClass}
       onClick={onNavigate}
     >

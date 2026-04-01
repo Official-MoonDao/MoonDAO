@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
 import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import { formatNumberUSStyle } from '@/lib/nance'
-import { STATUS_CONFIG } from '@/lib/nance/useProposalStatus'
+import { STATUS_CONFIG, STATUS_DISPLAY_LABELS } from '@/lib/nance/useProposalStatus'
 import {
   useVotesOfProposal,
   SnapshotGraphqlProposalVotingInfo,
@@ -36,6 +36,9 @@ function ProposalPacketInfo({ proposalPacket }: { proposalPacket: ProposalPacket
     text: 'text-gray-400',
     dot: 'bg-gray-500',
   }
+  const displayLabel =
+    STATUS_DISPLAY_LABELS[proposalPacket.status as keyof typeof STATUS_DISPLAY_LABELS] ??
+    proposalPacket.status
 
   return (
     <div className="flex min-w-0 flex-col gap-x-4 sm:flex-row">
@@ -50,7 +53,7 @@ function ProposalPacketInfo({ proposalPacket }: { proposalPacket: ProposalPacket
                 <span
                   className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}
                 >
-                  {proposalPacket.status}
+                  {displayLabel}
                 </span>
               </div>
             </div>

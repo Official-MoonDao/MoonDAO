@@ -211,8 +211,8 @@ export default function CreateMission({
 
   const [stage, setStage] = useState(0)
 
-  const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>(
-    userTeamsAsManager?.[0]?.teamId
+  const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(
+    userTeamsAsManager?.[0]?.teamId ?? undefined
   )
   const [selectedTeamNFT, setSelectedTeamNFT] = useState<any>()
   const [missionCache, setMissionCache, clearMissionCache] =
@@ -258,14 +258,12 @@ export default function CreateMission({
   const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] = useState(false)
 
   const [teamRequirementModalEnabled, setTeamRequirementModalEnabled] = useState(
-    false // TODO: revert — temporarily bypassed while Sepolia Hats is down
-    // !userTeamsAsManagerLoading && userTeamsAsManager && userTeamsAsManager?.[0] === undefined
+    !userTeamsAsManagerLoading && userTeamsAsManager && userTeamsAsManager?.[0] === undefined
   )
 
   useEffect(() => {
-    // TODO: revert — temporarily bypassed while Sepolia Hats is down
-    // if (userTeams && !userTeamsAsManagerLoading)
-    //   setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
+    if (userTeams && !userTeamsAsManagerLoading)
+      setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
   }, [userTeams, userTeamsAsManager, userTeamsAsManagerLoading])
 
   const { data: fundingGoalInETH, isLoading: fundingGoalInETHIsLoading } = useETHPrice(
@@ -305,7 +303,7 @@ export default function CreateMission({
       const teamMultisig = await readContract({
         contract: teamContract,
         method: 'ownerOf' as string,
-        params: [selectedTeamId],
+        params: [BigInt(selectedTeamId)],
       })
 
       const missionMetadataBlob = new Blob(
@@ -336,7 +334,7 @@ export default function CreateMission({
         contract: missionCreatorContract,
         method: 'createMission' as string,
         params: [
-          selectedTeamId,
+          BigInt(selectedTeamId),
           teamMultisig,
           missionMetadataIpfsHash,
           ethers.utils.parseEther(String(fundingGoalInETH)),
@@ -590,13 +588,23 @@ export default function CreateMission({
                       <div className="flex items-center gap-3">
                         <label className="text-white text-sm">Team ID (Hats unavailable):</label>
                         <input
-                          type="number"
+                          type="text"
                           className="bg-dark-cool border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm w-24"
                           placeholder="e.g. 1"
                           value={selectedTeamId ?? ''}
                           onChange={(e) => {
-                            const val = e.target.value
-                            setSelectedTeamId(val ? Number(val) : undefined)
+                            const val = e.target.value.trim()
+                            if (val === '') {
+                              setSelectedTeamId(undefined)
+                              return
+                            }
+                            if (!/^\d+$/.test(val)) return
+                            try {
+                              BigInt(val) // validate it's a valid uint256
+                              setSelectedTeamId(val)
+                            } catch {
+                              // ignore invalid values
+                            }
                           }}
                         />
                       </div>

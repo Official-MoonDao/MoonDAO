@@ -34,7 +34,7 @@ describe('CBOnrampModal E2E Flow', () => {
       },
     })
 
-    cy.wait(2000)
+    cy.get('#app-layout', { timeout: 60000 }).should('exist')
 
     // Verify cache exists
     cy.window().then((win) => {
@@ -66,10 +66,7 @@ describe('CBOnrampModal E2E Flow', () => {
       },
     })
 
-    cy.wait(2000)
-
-    // Page should load successfully
-    cy.get('body').should('exist')
+    cy.get('#app-layout', { timeout: 60000 }).should('exist')
   })
 })
 

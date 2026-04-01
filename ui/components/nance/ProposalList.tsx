@@ -79,11 +79,14 @@ function ProposalListSkeleton() {
 export default function ProposalList({
   noPagination = false,
   compact = false,
+  feedCardStyle = false,
   proposalLimit = 1000,
   projects = [],
 }: {
   noPagination?: boolean
   compact?: boolean
+  /** Match dashboard newsletter row cards (rounded-xl, white/5, horizontal layout). */
+  feedCardStyle?: boolean
   proposalLimit?: number
   projects?: any[]
 }) {
@@ -122,29 +125,46 @@ export default function ProposalList({
   if (projects.length === 0) {
     return <NoResults />
   } else {
+    const feedCards = compact && feedCardStyle
+
     return (
       <>
-        <div className="rounded-bl-20px overflow-hidden md:pt-5">
-          <div className="font-[roboto] w-full">
+        <div
+          className={
+            feedCards ? '' : 'rounded-bl-20px overflow-hidden md:pt-5'
+          }
+        >
+          <div className={`w-full ${feedCards ? '' : 'font-[roboto]'}`}>
             <div
-              className={`${
-                compact
-                  ? 'p-2'
-                  : 'p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl'
-              }`}
+              className={
+                feedCards
+                  ? ''
+                  : compact
+                    ? 'p-2'
+                    : 'p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl'
+              }
             >
               <div
-                className={`grid grid-cols-1 gap-6 w-full items-stretch ${
-                  compact ? 'grid-cols-1' : 'lg:grid-cols-2'
-                }`}
+                className={
+                  feedCards
+                    ? 'flex flex-col space-y-4 w-full'
+                    : `grid grid-cols-1 gap-6 w-full items-stretch ${
+                        compact ? 'grid-cols-1' : 'lg:grid-cols-2'
+                      }`
+                }
               >
                 {projects.slice(0, itemsPerPage).map((project) => (
-                  <div
+                  <Link
                     key={project.id}
-                    className={`h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]`}
+                    href={`/project/${project.MDP ?? project.id}`}
+                    className={
+                      feedCards
+                        ? 'block bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5'
+                        : 'block h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02] cursor-pointer'
+                    }
                   >
-                    <Proposal project={project} />
-                  </div>
+                    <Proposal project={project} feedStyle={feedCards} />
+                  </Link>
                 ))}
               </div>
             </div>

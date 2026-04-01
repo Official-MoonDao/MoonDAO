@@ -24,17 +24,15 @@ const mockUserTeams: UserTeam[] = [
 function TestComponent({
   teamContract,
   userTeams,
-  address,
   userTeamsLoading,
   onResult,
 }: {
   teamContract: any
   userTeams: UserTeam[] | undefined
-  address: string | undefined
   userTeamsLoading: boolean
   onResult: (result: { userTeamsAsManager: UserTeam[]; isLoading: boolean }) => void
 }) {
-  const result = useTeamManagerCheck(teamContract, userTeams, address, userTeamsLoading)
+  const result = useTeamManagerCheck(teamContract, userTeams, userTeamsLoading)
 
   useEffect(() => {
     onResult(result)
@@ -56,7 +54,6 @@ describe('useTeamManagerCheck', () => {
         <TestComponent
           teamContract={mockTeamContract}
           userTeams={undefined}
-          address="0x123"
           userTeamsLoading={false}
           onResult={onResult}
         />
@@ -79,7 +76,6 @@ describe('useTeamManagerCheck', () => {
         <TestComponent
           teamContract={undefined}
           userTeams={mockUserTeams}
-          address="0x123"
           userTeamsLoading={false}
           onResult={onResult}
         />
@@ -97,7 +93,6 @@ describe('useTeamManagerCheck', () => {
         <TestComponent
           teamContract={mockTeamContract}
           userTeams={mockUserTeams}
-          address="0x123"
           userTeamsLoading={true}
           onResult={onResult}
         />
@@ -121,7 +116,6 @@ describe('useTeamManagerCheck', () => {
         <TestComponent
           teamContract={mockTeamContract}
           userTeams={teamsWithoutHats}
-          address="0x123"
           userTeamsLoading={false}
           onResult={onResult}
         />
@@ -145,7 +139,6 @@ describe('useTeamManagerCheck', () => {
         <TestComponent
           teamContract={mockTeamContract}
           userTeams={teamsWithoutTeamId}
-          address="0x123"
           userTeamsLoading={false}
           onResult={onResult}
         />

@@ -24,7 +24,7 @@ function MissionStat({ label, value, icon, tooltip }: MissionStatProps) {
             {label || ''}
           </p>
           {tooltip && (
-            <Tooltip text={tooltip} buttonClassName="scale-75">
+            <Tooltip text={tooltip} compact buttonClassName="scale-75">
               ?
             </Tooltip>
           )}

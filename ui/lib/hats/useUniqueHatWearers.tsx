@@ -14,6 +14,7 @@ export default function useUniqueHatWearers(hats: any) {
       const uniqueWearers: Wearer[] = []
       if (!hats || !Array.isArray(hats) || hats.length === 0) return uniqueWearers
       hats.forEach((hat: any) => {
+        if (!hat?.wearers) return
         hat.wearers.forEach((w: any) => {
           const existingWearer = uniqueWearers.find((u) => u.address === w.id)
           if (existingWearer) {

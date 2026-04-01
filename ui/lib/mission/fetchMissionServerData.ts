@@ -35,6 +35,7 @@ export type MissionContractData = {
   metadataURI: string
   stage: bigint
   payHookAddress: string
+  activePayHookAddress: string
   tokenAddress: string
   primaryTerminalAddress: string
   ruleset: any[]
@@ -49,6 +50,12 @@ export async function fetchMissionRow(
 ): Promise<MissionRow | null> {
   const chainSlug = getChainSlug(chain)
   const missionTableName = MISSION_TABLE_NAMES[chainSlug]
+  if (!missionTableName) {
+    throw new Error(
+      `No Tableland mission table configured for chain slug "${chainSlug}" (chain id ${chain.id}). ` +
+        `Add MISSION_TABLE_NAMES["${chainSlug}"] in const/config.ts, or use a chain that already has mission entries (e.g. sepolia).`
+    )
+  }
   const statement = `SELECT * FROM ${missionTableName} WHERE id = ${tokenId}`
 
   const missionRows = await queryTable(chain, statement)
@@ -104,6 +111,22 @@ export async function fetchMissionContracts(
 ): Promise<MissionContractData> {
   const chainSlug = getChainSlug(chain)
 
+  const missionCreatorAddress = MISSION_CREATOR_ADDRESSES[chainSlug]
+  if (
+    !missionCreatorAddress ||
+    missionCreatorAddress === '0x0000000000000000000000000000000000000000'
+  ) {
+    throw new Error(
+      `No MissionCreator contract configured for chain slug "${chainSlug}" (chain id ${chain.id}). ` +
+        `Add MISSION_CREATOR_ADDRESSES["${chainSlug}"] in const/config.ts (and matching Tableland config), ` +
+        `or set NEXT_PUBLIC_TEST_CHAIN to sepolia if missions are only deployed there.`
+    )
+  }
+
+  if (projectId == null || !Number.isFinite(Number(projectId))) {
+    throw new Error(`Invalid mission projectId for contract reads: ${String(projectId)}`)
+  }
+
   const jbControllerContract = getContract({
     client: serverClient,
     address: JBV5_CONTROLLER_ADDRESS,
@@ -127,10 +150,12 @@ export async function fetchMissionContracts(
 
   const missionCreatorContract = getContract({
     client: serverClient,
-    address: MISSION_CREATOR_ADDRESSES[chainSlug],
+    address: missionCreatorAddress,
     abi: MissionCreator.abi as any,
     chain: chain,
   })
+
+  const zeroAddr = '0x0000000000000000000000000000000000000000'
 
   const [metadataURI, missionCreatorStage, payHookAddress, tokenAddress, primaryTerminalAddress, ruleset] =
     await Promise.all([
@@ -138,27 +163,42 @@ export async function fetchMissionContracts(
         contract: jbControllerContract,
         method: 'uriOf' as string,
         params: [projectId],
+      }).catch((err) => {
+        console.warn(
+          `[fetchMissionContracts] uriOf failed (projectId=${projectId}):`,
+          err
+        )
+        return ''
       }),
       readContract({
         contract: missionCreatorContract,
         method: 'stage' as string,
         params: [tokenId],
+      }).catch((err) => {
+        console.warn(`[fetchMissionContracts] stage failed (tokenId=${tokenId}):`, err)
+        return BigInt(0)
       }),
       readContract({
         contract: missionCreatorContract,
         method: 'missionIdToPayHook' as string,
         params: [tokenId],
-      }).catch(() => '0x0000000000000000000000000000000000000000'),
+      }).catch(() => zeroAddr),
       readContract({
         contract: jbTokensContract,
         method: 'tokenOf' as string,
         params: [projectId],
+      }).catch((err) => {
+        console.warn(
+          `[fetchMissionContracts] tokenOf failed (projectId=${projectId}):`,
+          err
+        )
+        return zeroAddr
       }),
       readContract({
         contract: jbDirectoryContract,
         method: 'primaryTerminalOf' as string,
         params: [projectId, JB_NATIVE_TOKEN_ADDRESS],
-      }).catch(() => '0x0000000000000000000000000000000000000000'),
+      }).catch(() => zeroAddr),
       readContract({
         contract: jbControllerContract,
         method: 'currentRulesetOf' as string,

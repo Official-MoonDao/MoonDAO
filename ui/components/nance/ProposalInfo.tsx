@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import useAccount from '../../lib/nance/useAccountAddress'
-import { STATUS_CONFIG, ProposalStatus } from '@/lib/nance/useProposalStatus'
+import { STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
 import { AddressLink } from './AddressLink'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
@@ -62,6 +62,7 @@ export default function ProposalInfo({
   showTitle = true,
   showStatus = true,
   compact = false,
+  feedStyle = false,
 }: {
   proposalJSON: any
   proposalStatus: ProposalStatus
@@ -70,19 +71,27 @@ export default function ProposalInfo({
   showTitle?: boolean
   showStatus?: boolean
   compact?: boolean
+  /** Dashboard feed: match newsletter typography; no inner link (card is wrapped by Link). */
+  feedStyle?: boolean
 }) {
   const { isLinked, wallet } = useAccount()
+
+  const titleText = `MDP-${project.MDP}: ${project.name}`
 
   return (
     <div className="flex min-w-0 flex-col gap-x-4 sm:flex-row">
       <div className="min-w-0 flex-auto">
         {/* Title and Status */}
         <div className="flex items-center">
-          <div className="mr-2">
-            {showStatus && <ProposalStatusDisplay status={proposalStatus} />}
-          </div>
+          {showStatus && (
+            <div className="mr-2">
+              <ProposalStatusDisplay status={proposalStatus} />
+            </div>
+          )}
           {showTitle &&
-            (!linkDisabled ? (
+            (feedStyle ? (
+              <span className="block w-full text-left text-white font-medium">{titleText}</span>
+            ) : !linkDisabled ? (
               <Link
                 href={`/project/${project.MDP}`}
                 passHref
@@ -90,39 +99,41 @@ export default function ProposalInfo({
                 style={{ fontFamily: 'Lato' }}
               >
                 <span className="absolute inset-x-0 -top-px bottom-0" />
-                {`MDP-${project.MDP}: ${project.name}`}
+                {titleText}
               </Link>
             ) : (
               <span className="text-lg font-semibold text-white" style={{ fontFamily: 'Lato' }}>
-                {`MDP-${project.MDP}: ${project.name}`}
+                {titleText}
               </span>
             ))}
         </div>
         {/* Metadata */}
-        <div className="mt-2 flex flex-col md:flex-row items-start md:items-center gap-x-6 text-xs font-RobotoMono">
-          {/* Author */}
-          {!compact && (
-            <div className="flex items-center gap-x-1">
-              <Image
-                src={`https://cdn.stamp.fyi/avatar/${proposalJSON?.authorAddress || ZERO_ADDRESS}`}
-                alt=""
-                className="h-6 w-6 flex-none rounded-full bg-gray-50"
-                width={75}
-                height={75}
-              />
-              <div>
-                <p className="text-gray-400 font-RobotoMono">Author</p>
-                <div className="text-center text-white font-RobotoMono">
-                  <AddressLink address={proposalJSON?.authorAddress} />
+        {!feedStyle && (
+          <div className="mt-2 flex flex-col md:flex-row items-start md:items-center gap-x-6 text-xs font-RobotoMono">
+            {/* Author */}
+            {!compact && (
+              <div className="flex items-center gap-x-1">
+                <Image
+                  src={`https://cdn.stamp.fyi/avatar/${proposalJSON?.authorAddress || ZERO_ADDRESS}`}
+                  alt=""
+                  className="h-6 w-6 flex-none rounded-full bg-gray-50"
+                  width={75}
+                  height={75}
+                />
+                <div>
+                  <p className="text-gray-400 font-RobotoMono">Author</p>
+                  <div className="text-center text-white font-RobotoMono">
+                    <AddressLink address={proposalJSON?.authorAddress} />
+                  </div>
                 </div>
               </div>
+            )}
+            {/* Tokens */}
+            <div className="mt-2 md:mt-0">
+              {proposalJSON?.budget && <RequestingTokensOfProposal budget={proposalJSON?.budget} />}
             </div>
-          )}
-          {/* Tokens */}
-          <div className="mt-2 md:mt-0">
-            {proposalJSON?.budget && <RequestingTokensOfProposal budget={proposalJSON?.budget} />}
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
@@ -135,6 +146,7 @@ function ProposalStatusDisplay({ status }: { status: ProposalStatus }) {
     text: 'text-gray-400',
     dot: 'bg-gray-500',
   }
+  const displayLabel = STATUS_DISPLAY_LABELS[status] ?? status
 
   return (
     <div className="flex items-center gap-2">
@@ -145,7 +157,7 @@ function ProposalStatusDisplay({ status }: { status: ProposalStatus }) {
         <span
           className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}
         >
-          {status}
+          {displayLabel}
         </span>
       </div>
     </div>

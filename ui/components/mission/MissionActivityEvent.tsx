@@ -5,8 +5,10 @@ import {
   SparklesIcon,
   CubeIcon,
 } from '@heroicons/react/24/outline'
+import Image from 'next/image'
 import Link from 'next/link'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useENS } from '@/lib/utils/hooks/useENS'
 import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 import TimestampVersion from '../layout/TimestampVersion'
@@ -112,9 +114,29 @@ export default function MissionActivityEvent({
             {citizen && (
               <Link
                 href={`/citizen/${generatePrettyLinkWithId(citizen?.name, citizen?.id)}`}
-                className="mt-2 inline-block text-sm text-white/70 hover:text-white hover:underline transition-colors"
+                className="mt-3 flex items-center gap-3 rounded-lg p-2 -ml-2 -mr-2 hover:bg-white/[0.04] transition-colors group"
               >
-                {citizen.name}
+                <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5">
+                  {citizen.image ? (
+                    <Image
+                      src={getIPFSGateway(citizen.image)}
+                      alt=""
+                      width={40}
+                      height={40}
+                      className="h-full w-full object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs font-medium text-white/50">
+                      {(citizen.name || '?').slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-white group-hover:underline truncate">
+                    {citizen.name}
+                  </p>
+                </div>
               </Link>
             )}
             {!citizen && address && (

@@ -45,6 +45,10 @@ const sepoliaConfig = require(`../../contracts/deployments/sepolia`) as Deployme
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
 
+const arbitrumSepoliaMission = arbitrumSepoliaConfig as DeploymentConfig & {
+  missionTableLandName?: string
+}
+
 const baseSepoliaConfig = require('../../contracts/deployments/base-sepolia') as DeploymentConfig
 
 export const TEST_CHAIN =
@@ -321,16 +325,26 @@ export const FEATURED_MISSION =
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,
   sepolia: sepoliaConfig.MissionTable,
+  ...(arbitrumSepoliaMission.MissionTable
+    ? { 'arbitrum-sepolia': arbitrumSepoliaMission.MissionTable }
+    : {}),
 }
 
 export const MISSION_TABLE_NAMES: Index = {
   arbitrum: 'MissionTable_42161_151',
   sepolia: 'MissionTable_11155111_2026',
+  ...(arbitrumSepoliaMission.missionTableLandName
+    ? { 'arbitrum-sepolia': arbitrumSepoliaMission.missionTableLandName }
+    : {}),
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionCreator,
   sepolia: sepoliaConfig.MissionCreator,
+  ...(arbitrumSepoliaMission.MissionCreator &&
+  arbitrumSepoliaMission.MissionCreator !== '0x0000000000000000000000000000000000000000'
+    ? { 'arbitrum-sepolia': arbitrumSepoliaMission.MissionCreator }
+    : {}),
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
@@ -371,6 +385,8 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 export const PROJECT_HAT_TREE_IDS: Index = {
   arbitrum: '0x00000046',
   sepolia: '0x000002d9',
+  // Testnet projects tree (align with deployment); avoids filtering out every hat when slug is arbitrum-sepolia
+  'arbitrum-sepolia': '0x000002d9',
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
@@ -605,6 +621,10 @@ export const FREE_MINT_THRESHOLD = 45e15 // 0.045 ETH in wei
 export const FREE_MINT_THRESHOLD_LABEL = `${FREE_MINT_THRESHOLD / 1e18} ETH (~$100)`
 
 export const EB_TEAM_ID = '0'
+
+/** MoonDAO docs — Overview Flight mission (e.g. mission id 4). */
+export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
+  'https://docs.moondao.com/Legal/Overview-Flight/Overview-Flight-Terms-and-Conditions'
 
 // Project System Configuration
 export const PROJECT_SYSTEM_CONFIG = {

@@ -2,8 +2,9 @@ import CitizenABI from 'const/abis/Citizen.json'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamABI from 'const/abis/Team.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
-import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { BLOCKED_TEAMS, BLOCKED_CITIZENS } from 'const/whitelist'
 import {
+  DEFAULT_CHAIN_V5,
   CITIZEN_TABLE_NAMES,
   TEAM_TABLE_NAMES,
   CITIZEN_TABLE_ADDRESSES,
@@ -24,6 +25,8 @@ import {
   buildSearchClause,
   buildPaginationClause,
   calculateMaxPage,
+  buildExcludeIdsCondition,
+  appendToWhereClause,
   sortTeamsWithFeatured,
   filterBlockedTeams,
   filterBlockedCitizens,
@@ -93,8 +96,10 @@ export function useTeamsCount(
 ): { count: number; isLoading: boolean } {
   const { teamTableName } = useTableNames()
   const searchClause = buildSearchClause(search)
+  const excludeCondition = buildExcludeIdsCondition(BLOCKED_TEAMS)
+  const whereClause = appendToWhereClause(searchClause, excludeCondition)
   const statement = teamTableName
-    ? `SELECT COUNT(*) as count FROM ${teamTableName} ${searchClause}`
+    ? `SELECT COUNT(*) as count FROM ${teamTableName} ${whereClause}`
     : null
 
   const { data, isLoading } = useTablelandQuery(enabled && statement ? statement : null, {
@@ -111,8 +116,10 @@ export function useCitizensCount(
 ): { count: number; isLoading: boolean } {
   const { citizenTableName } = useTableNames()
   const searchClause = buildSearchClause(search)
+  const excludeCondition = buildExcludeIdsCondition(BLOCKED_CITIZENS)
+  const whereClause = appendToWhereClause(searchClause, excludeCondition)
   const statement = citizenTableName
-    ? `SELECT COUNT(*) as count FROM ${citizenTableName} ${searchClause}`
+    ? `SELECT COUNT(*) as count FROM ${citizenTableName} ${whereClause}`
     : null
 
   const { data, isLoading } = useTablelandQuery(enabled && statement ? statement : null, {
@@ -129,9 +136,11 @@ export function useTeams(options: UseNetworkDataOptions = {}): NetworkDataResult
   const { count, isLoading: countLoading } = useTeamsCount(search, enabled)
 
   const searchClause = buildSearchClause(search)
+  const excludeCondition = buildExcludeIdsCondition(BLOCKED_TEAMS)
+  const whereClause = appendToWhereClause(searchClause, excludeCondition)
   const paginationClause = buildPaginationClause(page, pageSize)
   const statement = teamTableName
-    ? `SELECT * FROM ${teamTableName} ${searchClause} ORDER BY id DESC ${paginationClause}`
+    ? `SELECT * FROM ${teamTableName} ${whereClause} ORDER BY id DESC ${paginationClause}`
     : null
 
   // Use initial data for pages 1-3 if available and no search
@@ -184,9 +193,11 @@ export function useCitizens(options: UseNetworkDataOptions = {}): NetworkDataRes
   const { count, isLoading: countLoading } = useCitizensCount(search, enabled)
 
   const searchClause = buildSearchClause(search)
+  const excludeCondition = buildExcludeIdsCondition(BLOCKED_CITIZENS)
+  const whereClause = appendToWhereClause(searchClause, excludeCondition)
   const paginationClause = buildPaginationClause(page, pageSize)
   const statement = citizenTableName
-    ? `SELECT * FROM ${citizenTableName} ${searchClause} ORDER BY id DESC ${paginationClause}`
+    ? `SELECT * FROM ${citizenTableName} ${whereClause} ORDER BY id DESC ${paginationClause}`
     : null
 
   // Use initial data for pages 1-3 if available and no search

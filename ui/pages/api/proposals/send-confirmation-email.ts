@@ -1,6 +1,6 @@
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
-import { transporter, opEmail } from '@/lib/nodemailer/nodemailer'
+import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
 
 const generateHTML = (proposalId: string, proposalTitle: string) => {
   const proposalUrl = `https://moondao.com/proposal/${proposalId}`
@@ -173,7 +173,7 @@ async function handler(req: any, res: any) {
     }
 
     try {
-      await transporter.sendMail({
+      await getMoonDaoGmailTransport().sendMail({
         from: opEmail,
         to: email,
         subject: `MoonDAO | Your Proposal (MDP-${proposalId}) Has Been Submitted`,

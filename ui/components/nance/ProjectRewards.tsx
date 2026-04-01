@@ -646,7 +646,7 @@ export function ProjectRewards({
                 <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                   <RewardAsset
                     name="ETH"
-                    value={ETH_BUDGET.toFixed(4)}
+                    value={ETH_BUDGET.toFixed(1)}
                     usdValue={usdBudget.toFixed(2)}
                   />
                 </div>

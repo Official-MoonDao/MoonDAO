@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import MissionActivityList from './MissionActivityList'
 import MissionPayRedeem from './MissionPayRedeem'
@@ -65,87 +65,22 @@ export default function MissionInfo({
   primaryTerminalAddress,
   stage,
   deadline,
-  citizens,
   refreshTotalFunding,
   ruleset,
-  setContributeModalEnabled,
+  openContributeModal,
   setUsdInput,
   usdInput,
+  fundingPickReady = false,
+  recommendedChain = null,
+  fundingChainBalances = null,
+  fundingCompareEnabled = false,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
-  const stickyRef = useRef<HTMLDivElement>(null)
 
   const [tab, setTab] = useState<MissionInfoTabType>(
     (router.query.tab as MissionInfoTabType) || 'about'
   )
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const stickyElement = stickyRef.current
-      if (!stickyElement) return
-
-      const parentElement = document.getElementById('mission-info-content')
-      if (!parentElement) return
-
-      const stickyWrapper = stickyElement.parentElement
-      if (!stickyWrapper) return
-
-      // Use the scroll container to get scroll position
-      const scrollContainer =
-        document.getElementById('main-container') || document.documentElement
-      const scrollTop =
-        scrollContainer === document.documentElement
-          ? window.scrollY
-          : scrollContainer.scrollTop
-
-      const parentRect = parentElement.getBoundingClientRect()
-      const stickyHeight = stickyElement.getBoundingClientRect().height
-
-      const stickyPoint = 75
-
-      // Calculate parent's top relative to the document (not viewport)
-      const parentTopAbsolute = parentRect.top + scrollTop
-      const parentHeight = parentRect.height
-
-      // Where the sticky element should start sticking
-      const stickStart = parentTopAbsolute - stickyPoint
-      // Where it should stop (so it doesn't go past the parent bottom)
-      const stickEnd = parentTopAbsolute + parentHeight - stickyHeight - stickyPoint
-
-      if (scrollTop <= stickStart) {
-        // Haven't scrolled enough — stay at natural position
-        stickyElement.style.position = 'relative'
-        stickyElement.style.top = '0'
-        stickyElement.style.width = '100%'
-      } else if (scrollTop <= stickEnd) {
-        // In the sticky zone — follow scroll using absolute within parent
-        const offset = scrollTop - parentTopAbsolute + stickyPoint
-        stickyElement.style.position = 'absolute'
-        stickyElement.style.top = `${offset}px`
-        stickyElement.style.width = `${stickyWrapper.offsetWidth}px`
-      } else {
-        // Past the end — pin to bottom of parent
-        stickyElement.style.position = 'absolute'
-        stickyElement.style.top = `${parentHeight - stickyHeight}px`
-        stickyElement.style.width = `${stickyWrapper.offsetWidth}px`
-      }
-    }
-
-    // Listen on both possible scroll containers
-    const mainContainer = document.getElementById('main-container')
-    window.addEventListener('scroll', handleScroll, true)
-    mainContainer?.addEventListener('scroll', handleScroll)
-    window.addEventListener('resize', handleScroll)
-
-    handleScroll()
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll, true)
-      mainContainer?.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('resize', handleScroll)
-    }
-  }, [])
 
   useEffect(() => {
     if (router.query.tab) {
@@ -205,9 +140,12 @@ export default function MissionInfo({
         </div>
       </div>
 
-      {/* Content Area */}
-      <div id="mission-info-content" className="w-full flex items-start gap-8 relative">
-        <div className="flex-1 min-w-0 pr-2">
+      {/* Content Area — lg+ matches MissionProfileHeader: 3fr/2fr cols, gap-8 lg:gap-10 */}
+      <div
+        id="mission-info-content"
+        className="w-full relative flex flex-col gap-8 lg:gap-10 lg:grid lg:grid-cols-[3fr_2fr] lg:items-start"
+      >
+        <div className="min-w-0 pr-2 lg:pr-0">
           {tab === 'about' && (
             <div className="w-full mb-8">
               <MissionInfoHeader
@@ -234,6 +172,35 @@ export default function MissionInfo({
                   __html: mission?.metadata?.description || '',
                 }}
               />
+              {mission?.projectId != null && mission?.projectId !== '' && (
+                <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-purple-500/5 p-6 text-center">
+                  <h3 className="text-lg font-semibold text-white">
+                    Ready to support this mission?
+                  </h3>
+                  <p className="text-sm text-gray-400 max-w-md">
+                    Your contribution helps fund the future of space exploration. Every bit counts.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openContributeModal()}
+                    className="mt-1 px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-semibold text-base transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
+                  >
+                    Contribute Now
+                  </button>
+                </div>
+              )}
+              {mission?.projectId != null && mission?.projectId !== '' && (
+                <div className="lg:hidden mt-10 pt-8 border-t border-white/[0.08] space-y-3">
+                  <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">
+                    Recent contributions
+                  </h3>
+                  <MissionActivityList
+                    selectedChain={selectedChain}
+                    tokenSymbol={token?.tokenSymbol}
+                    projectId={mission?.projectId}
+                  />
+                </div>
+              )}
             </div>
           )}
           {tab === 'activity' && (
@@ -256,7 +223,6 @@ export default function MissionInfo({
                 selectedChain={selectedChain}
                 tokenSymbol={token?.tokenSymbol}
                 projectId={mission?.projectId}
-                citizens={citizens}
               />
             </div>
           )}
@@ -270,26 +236,26 @@ export default function MissionInfo({
             </div>
           )}
         </div>
-        <div className="hidden xl:block min-w-[350px] lg:w-[400px] pt-[47px]">
-          <div ref={stickyRef} className="pl-8 border-l border-white/[0.06]">
-            <MissionPayRedeem
-              ruleset={ruleset}
-              stage={stage}
-              mission={mission}
-              teamNFT={teamNFT}
-              token={token}
-              deadline={deadline}
-              primaryTerminalAddress={primaryTerminalAddress}
-              jbTokensContract={jbTokensContract}
-              jbControllerContract={jbControllerContract}
-              refreshTotalFunding={refreshTotalFunding}
-              onOpenModal={() => {
-                setContributeModalEnabled(true)
-              }}
-              usdInput={usdInput || ''}
-              setUsdInput={setUsdInput}
-            />
-          </div>
+        <div className="hidden lg:block min-w-0 w-full pt-[47px] self-start">
+          <MissionPayRedeem
+            ruleset={ruleset}
+            stage={stage}
+            mission={mission}
+            teamNFT={teamNFT}
+            token={token}
+            deadline={deadline}
+            primaryTerminalAddress={primaryTerminalAddress}
+            jbTokensContract={jbTokensContract}
+            jbControllerContract={jbControllerContract}
+            refreshTotalFunding={refreshTotalFunding}
+            onOpenModal={openContributeModal}
+            usdInput={usdInput || ''}
+            setUsdInput={setUsdInput}
+            fundingCompareEnabled={fundingCompareEnabled}
+            fundingPickReady={fundingPickReady}
+            fundingChainBalances={fundingChainBalances}
+            recommendedFundingChain={recommendedChain}
+          />
         </div>
       </div>
     </div>

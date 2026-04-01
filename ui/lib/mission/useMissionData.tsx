@@ -37,9 +37,11 @@ export default function useMissionData({
   const chainSlug = getChainSlug(selectedChain)
   const [fundingGoal, setFundingGoal] = useState(_fundingGoal)
   const [stage, setStage] = useState<MissionStage>(_stage)
-  const [deadline, setDeadline] = useState<number | undefined>(_deadline)
+  const [deadline, setDeadline] = useState<number | undefined>(
+    _deadline ?? undefined
+  )
   const [refundPeriod, setRefundPeriod] = useState<number | undefined>(
-    _refundPeriod
+    _refundPeriod ?? undefined
   )
   const [poolDeployerAddress, setPoolDeployerAddress] = useState<string>()
 
@@ -96,20 +98,24 @@ export default function useMissionData({
             originalPayHook &&
             activeDataHook.toLowerCase() !== originalPayHook.toString().toLowerCase()
           ) {
-            const activePayHookContract = getContract({
-              client,
-              address: activeDataHook,
-              chain: selectedChain,
-              abi: LaunchPadPayHookABI.abi as any,
-            })
-            // Need a terminal address for stage() — reuse _primaryTerminalAddress
-            const terminalAddress = _primaryTerminalAddress || '0x0000000000000000000000000000000000000000'
-            const activeStage: any = await readContract({
-              contract: activePayHookContract,
-              method: 'stage' as string,
-              params: [terminalAddress, mission.projectId],
-            })
-            computedStage = +activeStage.toString() as MissionStage
+            // Only call stage() if we have a real terminal address (not zero)
+            const zeroAddr = '0x0000000000000000000000000000000000000000'
+            if (!_primaryTerminalAddress || _primaryTerminalAddress === zeroAddr) {
+              // Skip: stage() requires a valid terminal address
+            } else {
+              const activePayHookContract = getContract({
+                client,
+                address: activeDataHook,
+                chain: selectedChain,
+                abi: LaunchPadPayHookABI.abi as any,
+              })
+              const activeStage: any = await readContract({
+                contract: activePayHookContract,
+                method: 'stage' as string,
+                params: [_primaryTerminalAddress, mission.projectId],
+              })
+              computedStage = +activeStage.toString() as MissionStage
+            }
           }
         } catch (err) {
           // ignore, keep computedStage = 4
@@ -182,30 +188,49 @@ export default function useMissionData({
         return
       }
 
-      const payHookAddress: any = await readContract({
-        contract: missionCreatorContract,
-        method: 'missionIdToPayHook' as string,
-        params: [mission.id],
-      })
-      const payHookContract = getContract({
-        client,
-        address: payHookAddress,
-        chain: DEFAULT_CHAIN_V5,
-        abi: LaunchPadPayHookABI.abi as any,
-      })
-      if (payHookContract) {
-        const deadline: any = await readContract({
-          contract: payHookContract,
-          method: 'deadline' as string,
-          params: [],
+      try {
+        const payHookAddressResult: any = await readContract({
+          contract: missionCreatorContract,
+          method: 'missionIdToPayHook' as string,
+          params: [mission.id],
+        }).catch(() => null)
+
+        const payHookAddress =
+          typeof payHookAddressResult === 'string'
+            ? payHookAddressResult
+            : payHookAddressResult?.toString?.() ?? null
+
+        if (
+          !payHookAddress ||
+          payHookAddress === '0x0000000000000000000000000000000000000000'
+        ) {
+          return
+        }
+
+        const payHookContract = getContract({
+          client,
+          address: payHookAddress,
+          chain: DEFAULT_CHAIN_V5,
+          abi: LaunchPadPayHookABI.abi as any,
         })
-        const refundPeriod: any = await readContract({
-          contract: payHookContract,
-          method: 'refundPeriod' as string,
-          params: [],
-        })
-        setDeadline(+deadline.toString() * 1000) // Convert to milliseconds
-        setRefundPeriod(+refundPeriod.toString() * 1000) // Convert to milliseconds
+
+        const [deadlineResult, refundPeriodResult] = await Promise.all([
+          readContract({
+            contract: payHookContract,
+            method: 'deadline' as string,
+            params: [],
+          }),
+          readContract({
+            contract: payHookContract,
+            method: 'refundPeriod' as string,
+            params: [],
+          }),
+        ])
+
+        setDeadline(+deadlineResult.toString() * 1000) // Convert to milliseconds
+        setRefundPeriod(+refundPeriodResult.toString() * 1000) // Convert to milliseconds
+      } catch (error) {
+        console.error('Error fetching mission deadline:', error)
       }
     }
     if (missionCreatorContract && mission?.id !== undefined) {

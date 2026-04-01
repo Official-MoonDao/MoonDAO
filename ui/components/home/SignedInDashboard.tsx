@@ -14,7 +14,7 @@ import {
   PlusIcon,
   ArrowUpRightIcon,
 } from '@heroicons/react/24/outline'
-import { useFundWallet } from '@privy-io/react-auth'
+import { useFundWallet, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
@@ -39,17 +39,24 @@ import {
   ETH_BUDGET,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
+import {
+  getMissionMinimumUsdGoal,
+  MISSION_MINIMUM_GOAL_TOOLTIP,
+} from 'const/missionMilestones'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState, useEffect } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { shouldShowTeamsSection } from '@/lib/dashboard/shouldShowTeamsSection'
+import { useNewsletters } from '@/lib/home/useHomeData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import useMissionData from '@/lib/mission/useMissionData'
+import useMissionRaisedProgress from '@/lib/mission/useMissionRaisedProgress'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -68,6 +75,7 @@ import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
+import Tooltip from '@/components/layout/Tooltip'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import { SendModal } from '@/components/privy/PrivyConnectWallet'
 import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
@@ -131,6 +139,16 @@ function getTeamMetadata(team: any): string | null {
   return null
 }
 
+// Count citizens from location data (sum of citizens in each group)
+function countCitizensFromLocationData(locations: any[]): number {
+  if (!locations || locations.length === 0) return 0
+  try {
+    return locations.reduce((sum, g) => sum + (g.citizens?.length || 0), 0)
+  } catch {
+    return 0
+  }
+}
+
 // Function to count unique countries from location data
 function countUniqueCountries(locations: any[]): number {
   if (!locations || locations.length === 0) return 25
@@ -161,10 +179,10 @@ export default function SignedInDashboard({
   missions,
   featuredMissionData,
   citizensLocationData = [],
+  citizensCount = 0,
 }: any) {
   const proposals = []
   const currentProjects = []
-  console.log('projects', projects)
   for (let i = 0; i < projects.length; i++) {
     if (!BLOCKED_PROJECTS.has(projects[i].id)) {
       const activeStatus = projects[i].active
@@ -175,7 +193,6 @@ export default function SignedInDashboard({
       }
     }
   }
-  console.log('proposals', proposals)
   currentProjects.sort((a, b) => {
     if (a.eligible === b.eligible) {
       return 0
@@ -199,42 +216,16 @@ export default function SignedInDashboard({
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
-  // Client-side newsletter state (fetch on client-side)
-  const [clientNewsletters, setClientNewsletters] = useState<any[]>([])
-  const [newslettersLoading, setNewslettersLoading] = useState(false)
-
-  // Fetch newsletters on client-side
-  useEffect(() => {
-    const fetchNewsletters = async (retries = 2) => {
-      setNewslettersLoading(true)
-      try {
-        for (let attempt = 0; attempt <= retries; attempt++) {
-          const response = await fetch('/api/newsletters', {
-            cache: 'no-store',
-            headers: { Accept: 'application/json' },
-          })
-          const data = await response.json().catch(() => ({}))
-          const newsletters = data?.newsletters
-          if (Array.isArray(newsletters)) {
-            setClientNewsletters(newsletters)
-            return
-          }
-          if (attempt < retries) {
-            await new Promise((r) => setTimeout(r, 500 * (attempt + 1)))
-          }
-        }
-      } catch (error) {
-        console.warn('Newsletter fetch failed:', error)
-      } finally {
-        setNewslettersLoading(false)
-      }
-    }
-
-    fetchNewsletters()
-  }, [])
+  // Newsletter data (fetched via SWR with caching)
+  const { newsletters: clientNewsletters, isLoading: newslettersLoading } = useNewsletters()
 
   const account = useActiveAccount()
   const address = account?.address
+  const { user } = usePrivy()
+  const wearerAddresses = useMemo(
+    () => getLinkedEvmAddresses(user, account?.address),
+    [user, account?.address]
+  )
 
   // Hooks for SendModal
   const { nativeBalance } = useNativeBalance()
@@ -264,7 +255,7 @@ export default function SignedInDashboard({
   const { userTeams: teamHats, isLoading: isLoadingTeams } = useTeamWearer(
     teamContract,
     selectedChain,
-    address
+    wearerAddresses
   )
   const marketplaceTableContract = useContract({
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
@@ -346,13 +337,26 @@ export default function SignedInDashboard({
     _ruleset: featuredMissionData?._ruleset,
   })
 
+  const featuredMinUsdGoal = getMissionMinimumUsdGoal(featuredMission?.id)
+
+  const {
+    raisedUsd: featuredRaisedUsd,
+    milestoneProgressPercent: featuredMilestoneProgress,
+    milestoneCaption: featuredMilestoneCaption,
+    isLoading: isLoadingFeaturedRaised,
+  } = useMissionRaisedProgress({
+    projectId: featuredMission?.projectId,
+    missionId: featuredMission?.id,
+    subgraphVolume: featuredMissionSubgraphData?.volume,
+  })
+
   return (
     <Container>
       <div className="max-w-7xl mx-auto px-4 py-4">
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-2 lg:order-1">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-1 lg:order-1">
             {/* Your Profile */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
               <div className="flex items-center justify-between mb-4">
@@ -498,7 +502,7 @@ export default function SignedInDashboard({
           </div>
 
           {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-1 lg:order-2">
+          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-2 lg:order-2">
             {/* Activity Feed */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
@@ -632,24 +636,27 @@ export default function SignedInDashboard({
 
             {/* Active Proposals Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-4">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Latest Proposals</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
+                <h3 className="text-xl font-bold text-white whitespace-nowrap">Latest Proposals</h3>
                 <StandardButton
-                  className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
+                  className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
                   link="/projects"
                 >
                   View All
                 </StandardButton>
               </div>
 
-              <div className="flex flex-col gap-4">
-                <ProposalList noPagination compact projects={proposals.slice(0, 3)} />
-              </div>
+              <ProposalList
+                noPagination
+                compact
+                feedCardStyle
+                projects={proposals.slice(0, 3)}
+              />
             </div>
           </div>
 
           {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3 min-w-0">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-3 lg:order-3 min-w-0">
             {/* Wallet Info Card */}
             {address && (
               <WalletInfoCard
@@ -752,55 +759,53 @@ export default function SignedInDashboard({
             </StandardButton>
           </div>
 
-          <div className="bg-black/20 rounded-xl p-6 border border-blue-500/20">
+          <div className="bg-black/20 rounded-xl p-4 sm:p-5 lg:p-6 border border-blue-500/20">
             {featuredMission ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full items-stretch">
-                {/* Left Column - Mission Image */}
-                <div className="flex justify-center lg:justify-start h-full">
-                  <div className="relative w-full max-w-sm h-full">
-                    <div className="relative rounded-2xl overflow-hidden shadow-xl h-full min-h-[300px]">
-                      {featuredMission.metadata?.logoUri ? (
-                        <IPFSRenderer
-                          src={featuredMission.metadata.logoUri}
-                          alt={featuredMission.metadata.name || 'Mission'}
-                          className="w-full h-full object-cover"
-                          width={400}
-                          height={400}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 flex items-center justify-center">
-                          <RocketLaunchIcon className="w-16 h-16 text-blue-400/60" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-
-                      {/* Mission Status Badge */}
-                      <div className="absolute top-3 right-3">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                            featuredMission.projectId && featuredMission.projectId > 0
-                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                              : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                          }`}
-                        >
-                          {featuredMission.projectId && featuredMission.projectId > 0
-                            ? 'Active'
-                            : 'Completed'}
-                        </span>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 lg:gap-8 items-start">
+                {/* Mission image — full grid cell width; no max-w/mx-auto (was shrinking vs stats) */}
+                <div className="w-full min-w-0">
+                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl">
+                    {featuredMission.metadata?.logoUri ? (
+                      <IPFSRenderer
+                        src={featuredMission.metadata.logoUri}
+                        alt={featuredMission.metadata.name || 'Mission'}
+                        className="w-full h-full object-cover"
+                        width={720}
+                        height={720}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 flex items-center justify-center">
+                        <RocketLaunchIcon className="w-16 h-16 text-blue-400/60" />
                       </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+
+                    {/* Mission Status Badge */}
+                    <div className="absolute top-3 right-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
+                          featuredMission.projectId && featuredMission.projectId > 0
+                            ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                            : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                        }`}
+                      >
+                        {featuredMission.projectId && featuredMission.projectId > 0
+                          ? 'Active'
+                          : 'Completed'}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Column - Mission Info */}
-                <div className="space-y-4">
+                {/* Mission copy + funding — same width track as image */}
+                <div className="w-full min-w-0 space-y-4">
                   {/* Mission Title */}
                   <div>
                     <h4 className="font-bold text-white text-xl lg:text-2xl mb-2 leading-tight">
                       {featuredMission.metadata.name}
                     </h4>
                     {featuredMission.metadata.tagline && (
-                      <p className="text-blue-200/80 text-sm mb-3">
+                      <p className="text-blue-200/80 text-sm md:text-base mb-3 leading-relaxed">
                         {featuredMission.metadata.tagline}
                       </p>
                     )}
@@ -824,36 +829,29 @@ export default function SignedInDashboard({
                   {featuredMission.projectId && featuredMission.projectId > 0 ? (
                     <div className="space-y-4">
                       {/* Progress Bar */}
-                      {featuredMissionFundingGoal && featuredMissionFundingGoal > 0 && (
+                      {featuredMilestoneProgress != null && (
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-blue-200 text-xs font-medium">
                               Funding Progress
                             </span>
                             <span className="text-white font-bold text-sm">
-                              {Math.round(
-                                (Number(featuredMissionSubgraphData?.volume || 0) /
-                                  featuredMissionFundingGoal) *
-                                  100
-                              )}
-                              %
+                              {Math.round(featuredMilestoneProgress)}%
                             </span>
                           </div>
                           <div className="w-full bg-blue-900/30 rounded-full h-2 overflow-hidden">
                             <div
                               className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-1000"
                               style={{
-                                width: `${Math.min(
-                                  100,
-                                  Math.round(
-                                    (Number(featuredMissionSubgraphData?.volume || 0) /
-                                      featuredMissionFundingGoal) *
-                                      100
-                                  )
-                                )}%`,
+                                width: `${Math.min(100, featuredMilestoneProgress)}%`,
                               }}
                             />
                           </div>
+                          {featuredMilestoneCaption && (
+                            <p className="text-blue-200/60 text-xs">
+                              {featuredMilestoneCaption}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -866,15 +864,11 @@ export default function SignedInDashboard({
                             <span className="text-blue-200 text-xs font-medium">Raised</span>
                           </div>
                           <p className="text-white font-bold text-sm">
-                            {featuredMissionFundingGoal ? (
-                              truncateTokenValue(
-                                Number(featuredMissionSubgraphData?.volume || 0) / 1e18,
-                                'ETH'
-                              )
-                            ) : (
+                            {isLoadingFeaturedRaised || featuredRaisedUsd == null ? (
                               <LoadingSpinner width="w-4" height="h-4" />
-                            )}{' '}
-                            ETH
+                            ) : (
+                              `$${Math.round(featuredRaisedUsd).toLocaleString()}`
+                            )}
                           </p>
                         </div>
 
@@ -883,12 +877,23 @@ export default function SignedInDashboard({
                           <div className="flex items-center gap-2 mb-2">
                             <TrophyIcon className="w-4 h-4 text-blue-400" />
                             <span className="text-blue-200 text-xs font-medium">Goal</span>
+                            {featuredMinUsdGoal != null ? (
+                              <Tooltip
+                                compact
+                                text={MISSION_MINIMUM_GOAL_TOOLTIP}
+                                buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                              >
+                                ?
+                              </Tooltip>
+                            ) : null}
                           </div>
                           <p className="text-white font-bold text-sm">
-                            {featuredMissionFundingGoal
-                              ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
-                              : '0'}{' '}
-                            ETH
+                            {featuredMinUsdGoal != null
+                              ? `$${featuredMinUsdGoal.toLocaleString('en-US')}`
+                              : featuredMissionFundingGoal
+                                ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
+                                : '0'}
+                            {featuredMinUsdGoal != null ? '' : ' ETH'}
                           </p>
                         </div>
 
@@ -1168,7 +1173,9 @@ export default function SignedInDashboard({
             >
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  {citizenSubgraphData?.transfers?.length || '145'}
+                  {citizensCount ||
+                    countCitizensFromLocationData(citizensLocationData || []) ||
+                    0}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">Global Citizens</div>
               </div>
@@ -1204,7 +1211,7 @@ export default function SignedInDashboard({
             >
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  {filteredTeams?.length || '0'}
+                  {filteredTeams?.length ?? 0}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">Total Teams</div>
               </div>

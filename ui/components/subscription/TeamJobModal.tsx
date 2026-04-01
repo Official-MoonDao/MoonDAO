@@ -11,7 +11,6 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
-import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -173,8 +172,7 @@ export default function TeamJobModal({
               account,
             })
 
-            //Get job id and team id from receipt and send discord notification
-            const jobId = parseInt(receipt.logs[1].topics[1], 16).toString()
+            //Get team id from receipt and send discord notification
             const jobTeamId = parseInt(receipt.logs[1].topics[2], 16).toString()
             const team = await getNFT({
               contract: teamContract,
@@ -185,9 +183,7 @@ export default function TeamJobModal({
               'networkNotifications',
               `## [**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
-              } job](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
-                teamName
-              )}?job=${jobId}&_timestamp=123456789) <@&${DISCORD_CITIZEN_ROLE_ID}>`
+              } job](${DEPLOYED_ORIGIN}/jobs) <@&${DISCORD_CITIZEN_ROLE_ID}>`
             )
 
             setTimeout(() => {
