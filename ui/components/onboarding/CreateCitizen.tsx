@@ -1124,8 +1124,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
                   {`Welcome to the future of off-world coordination with MoonDAO.`}
                 </p> */}
-                <div className="flex flex-col items-center">
-                  <div className="relative w-[600px] h-[600px] rounded-2xl border border-slate-600/30 bg-slate-900/40 overflow-hidden">
+                <div className="flex flex-col items-center w-full">
+                  <div className="relative w-full max-w-[600px] aspect-square rounded-2xl border border-slate-600/30 bg-slate-900/40 overflow-hidden">
                     <Image
                       src={
                         citizenImage
@@ -1137,7 +1137,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       alt="citizen-image"
                       width={600}
                       height={600}
-                      className="rounded-2xl"
+                      className="rounded-2xl w-full h-full object-cover"
                     />
                     {isImageGenerating && !citizenImage && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40">
@@ -1216,7 +1216,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     setAgreedToCondition(newValue)
                   }}
                 />
-                <div className="mt-6">
+                <div className="mt-6 relative z-50 pb-4">
                   <NetworkSelector chains={chains} />
                 </div>
                 <PrivyWeb3Button
