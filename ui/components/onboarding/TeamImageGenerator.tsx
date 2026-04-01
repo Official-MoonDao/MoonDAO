@@ -39,18 +39,34 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
 
   return (
     <div className="animate-fadeIn flex flex-col gap-6">
-      {/* Upload zone — only when no image selected */}
+      {/* Upload zone + placeholder when no image selected */}
       {!inputImage && !currImage && (
-        <FileInput
-          file={inputImage}
-          setFile={setInputImage}
-          noBlankImages
-          accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
-          acceptText="PNG, JPEG, WEBP, GIF, SVG"
-        />
+        <div className="flex flex-col gap-4">
+          <FileInput
+            file={inputImage}
+            setFile={setInputImage}
+            noBlankImages
+            accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+            acceptText="PNG, JPEG, WEBP, GIF, SVG"
+          />
+          <div className="rounded-2xl border border-white/[0.08] bg-slate-900/40 overflow-hidden">
+            <div
+              id="teamPic"
+              className="w-full aspect-square max-w-[400px] mx-auto bg-[url('/moondao-team-flag.png')] bg-cover relative flex overflow-hidden"
+            >
+              <div
+                id="user-image"
+                style={{
+                  backgroundImage: `url('/assets/image-placeholder.svg')`,
+                }}
+                className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+              />
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Preview */}
+      {/* Preview when image is selected */}
       {(inputImage || currImage) && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -99,35 +115,6 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
             )}
           </div>
         </div>
-      )}
-
-      {/* Placeholder preview when nothing uploaded */}
-      {!inputImage && !currImage && (
-        <div className="rounded-2xl border border-white/[0.08] bg-slate-900/40 overflow-hidden">
-          <div
-            id="teamPic"
-            className="w-full aspect-square max-w-[400px] mx-auto bg-[url('/moondao-team-flag.png')] bg-cover relative flex overflow-hidden"
-          >
-            <div
-              id="user-image"
-              style={{
-                backgroundImage: `url('/assets/image-placeholder.svg')`,
-              }}
-              className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* If no image yet and placeholder is showing, show upload below */}
-      {!inputImage && currImage === undefined && (
-        <FileInput
-          file={inputImage}
-          setFile={setInputImage}
-          noBlankImages
-          accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
-          acceptText="PNG, JPEG, WEBP, GIF, SVG"
-        />
       )}
 
       {/* Continue */}
