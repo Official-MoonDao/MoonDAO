@@ -6,6 +6,7 @@ import {
   PROJECT_SYSTEM_CONFIG,
   NEXT_QUARTER_FUNDING_ETH,
   NEXT_QUARTER_BUDGET_ETH,
+  ETH_BUDGET,
 } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import { GetServerSideProps } from 'next'
@@ -84,6 +85,13 @@ const ProjectsOverview: React.FC<{
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
+
+  // Log budget for quarterly update (see docs/RETRO.md step 0)
+  useEffect(() => {
+    if (ethBudgetCalculated > 0) {
+      console.log(`[Q${quarter} ${year} Budget] ethBudget: ${ethBudgetCalculated.toFixed(1)} ETH, mooneyBudget: ${mooneyBudget?.toFixed(0)}`)
+    }
+  }, [ethBudgetCalculated, mooneyBudget, quarter, year])
 
   // Use hardcoded value like in RetroactiveRewards for current quarter
   const ethBudget = NEXT_QUARTER_BUDGET_ETH
