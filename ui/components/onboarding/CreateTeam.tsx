@@ -171,7 +171,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
       const totalCost = calculateCost(cost)
 
-      if (+nativeBalance < totalCost) {
+      if (+(nativeBalance ?? '0') < totalCost) {
         const roundedCost = Math.ceil(totalCost * 1000000) / 1000000
         setIsLoadingMint(false)
         return await fundWallet(address, {
@@ -409,6 +409,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                 <button
                   onClick={() => setSelectedTier(null)}
                   className="ml-4 p-2 rounded-xl hover:bg-white/5 transition-colors flex-shrink-0"
+                  aria-label="Close"
                 >
                   <XMarkIcon width={28} height={28} className="text-slate-400" />
                 </button>

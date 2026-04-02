@@ -29,7 +29,7 @@ describe('<CitizenMetadataModal /> ', () => {
   it('Renders the component and all stages', () => {
     cy.get('[data-testid="modal-title"]').contains('Edit Profile')
     cy.get('button').contains('Next: Update Profile Picture').click()
-    cy.get('button').contains('Next').click()
+    cy.get('button').contains('Continue').click()
     cy.get('button').contains('Yes, Update Email').should('exist')
     cy.get('button').contains('Skip for Now').should('exist').click()
     cy.contains('Review & Submit').should('exist')
@@ -37,7 +37,7 @@ describe('<CitizenMetadataModal /> ', () => {
 
   it('Renders form inputs with correct initial values', () => {
     cy.get('button').contains('Next: Update Profile Picture').click()
-    cy.get('button').contains('Next').click()
+    cy.get('button').contains('Continue').click()
     cy.get('button').contains('Skip for Now').click()
     cy.get('#citizen-name-input').should('have.value', nft.metadata.name)
     cy.get('#citizen-bio-input').should('have.value', nft.metadata.description)

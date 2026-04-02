@@ -26,7 +26,7 @@ describe('<CreateTeam />', () => {
   it('Should complete team onboarding flow', () => {
     //DESIGN
     cy.contains(
-      'Design your unique onchain registration by uploading your logo or image. For best results, use an image with a white or transparent background.'
+      'Upload your team logo or image. For best results, use an image with a white or transparent background.'
     ).should('exist')
     // Simulate image upload
     cy.get('input[type="file"]').attachFile('images/Original.png')

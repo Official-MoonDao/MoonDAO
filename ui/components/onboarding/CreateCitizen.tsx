@@ -683,8 +683,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       const totalCost = calculateTotalCost(cost, estimatedGas, effectiveGasPrice, isCrossChain)
 
-      if (!freeMint && +nativeBalance < totalCost) {
-        const shortfall = totalCost - +nativeBalance
+      if (!freeMint && +(nativeBalance ?? '0') < totalCost) {
+        const shortfall = totalCost - +(nativeBalance ?? '0')
         const requiredAmount = shortfall * 1.15
 
         setRequiredEthAmount(requiredAmount)
@@ -757,7 +757,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       })
       const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
       const totalCost = await calculateCost(formattedCost)
-      return +nativeBalance >= totalCost
+      return +(nativeBalance ?? '0') >= totalCost
     } catch (error) {
       console.error('Error checking balance:', error)
       return false
@@ -1020,6 +1020,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
               <button
                 onClick={() => setSelectedTier(null)}
                 className="ml-4 p-2 rounded-xl hover:bg-white/5 transition-colors flex-shrink-0"
+                aria-label="Close"
               >
                 <XMarkIcon width={28} height={28} className="text-slate-400" />
               </button>

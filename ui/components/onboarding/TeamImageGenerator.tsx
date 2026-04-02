@@ -1,12 +1,23 @@
 // Team Image Generator
 import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
 
 export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
   const [inputImage, setInputImage] = useState<File>()
+
+  const inputImageUrl = useMemo(
+    () => (inputImage ? URL.createObjectURL(inputImage) : undefined),
+    [inputImage]
+  )
+
+  useEffect(() => {
+    return () => {
+      if (inputImageUrl) URL.revokeObjectURL(inputImageUrl)
+    }
+  }, [inputImageUrl])
 
   async function submitImage() {
     if (!document.getElementById('teamPic'))
@@ -107,7 +118,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
                 <div
                   id="user-image"
                   style={{
-                    backgroundImage: `url(${URL.createObjectURL(inputImage)})`,
+                    backgroundImage: `url(${inputImageUrl})`,
                   }}
                   className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
                 />
