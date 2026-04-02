@@ -546,9 +546,12 @@ export default function CreateMission({
                   description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential contributors and compel them to contribute.
 "
                   action={() => {
-                    // TODO: revert — temporarily bypassed userTeamsAsManager check while Sepolia Hats is down
-                    if (selectedTeamId === undefined) {
-                      return toast.error('Please enter or select a team ID.', {
+                    if (!userTeamsAsManager || userTeamsAsManager.length === 0) {
+                      return toast.error('Please create a team or join one as a manager.', {
+                        style: toastStyle,
+                      })
+                    } else if (selectedTeamId === undefined) {
+                      return toast.error('Please select a team.', {
                         style: toastStyle,
                       })
                     }
@@ -585,30 +588,9 @@ export default function CreateMission({
                         <span className="text-white">Loading your teams...</span>
                       </div>
                     ) : !userTeamsAsManager || userTeamsAsManager.length === 0 ? (
-                      // TODO: revert — temporary manual team ID input while Sepolia Hats is down
-                      <div className="flex items-center gap-3">
-                        <label className="text-white text-sm">Team ID (Hats unavailable):</label>
-                        <input
-                          type="text"
-                          className="bg-dark-cool border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm w-24"
-                          placeholder="e.g. 1"
-                          value={selectedTeamId ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value.trim()
-                            if (val === '') {
-                              setSelectedTeamId(undefined)
-                              return
-                            }
-                            if (!/^\d+$/.test(val)) return
-                            try {
-                              BigInt(val) // validate it's a valid uint256
-                              setSelectedTeamId(val)
-                            } catch {
-                              // ignore invalid values
-                            }
-                          }}
-                        />
-                      </div>
+                      <StandardButton className="gradient-2" hoverEffect={false} link="/team">
+                        Create a Team
+                      </StandardButton>
                     ) : (
                       <></>
                     )}
