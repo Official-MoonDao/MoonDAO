@@ -57,16 +57,16 @@ export default function ProposalsPage({ project }: { project: Project }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                     <RewardAsset
-                      name="USD"
-                      value={`$${NEXT_QUARTER_FUNDING_USD.toLocaleString()}`}
-                      usdValue={NEXT_QUARTER_FUNDING_USD}
+                      name="USDC"
+                      value={`$${Math.round(NEXT_QUARTER_FUNDING_USD).toLocaleString()}`}
+                      usdValue={Math.round(NEXT_QUARTER_FUNDING_USD)}
                     />
                   </div>
                   <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                     <RewardAsset
-                      name="USD"
-                      value={`$${MAX_BUDGET_USD.toLocaleString()}`}
-                      usdValue={MAX_BUDGET_USD}
+                      name="USDC"
+                      value={`$${Math.round(MAX_BUDGET_USD).toLocaleString()}`}
+                      usdValue={Math.round(MAX_BUDGET_USD)}
                     />
                   </div>
                 </div>

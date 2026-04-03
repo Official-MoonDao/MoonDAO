@@ -644,7 +644,7 @@ export function ProjectRewards({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-4 px-1 sm:px-0">
                 <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                   <RewardAsset
-                    name="USD"
+                    name="USDC"
                     value={`$${USD_BUDGET.toLocaleString()}`}
                     usdValue={usdBudget.toFixed(2)}
                   />
