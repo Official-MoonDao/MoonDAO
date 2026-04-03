@@ -402,7 +402,7 @@ const ProjectCardContent = memo(
                       : project.active == PROJECT_ACTIVE
                       ? 'Active'
                       : project.active == PROJECT_PENDING
-                      ? `Budget: ${proposalJSON?.ethBudget} ETH`
+                      ? `Budget: $${proposalJSON?.usdBudget?.toLocaleString()}`
                       : 'Inactive'}
                   </span>
                 )}
@@ -437,7 +437,7 @@ const ProjectCardContent = memo(
                 mdp={project.MDP} 
                 budgetLabel={proposalJSON?.nonProjectProposal 
                   ? 'Non-project Proposal' 
-                  : `Budget: ${proposalJSON?.ethBudget} ETH`
+                  : `Budget: $${proposalJSON?.usdBudget?.toLocaleString()}`
                 }
                 onSenatorVotesChange={handleSenatorVotesChange}
               />

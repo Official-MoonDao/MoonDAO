@@ -1,11 +1,11 @@
 import {
   ARBITRUM_ASSETS_URL,
   POLYGON_ASSETS_URL,
-  MAX_BUDGET_ETH,
+  MAX_BUDGET_USD,
   BASE_ASSETS_URL,
   PROJECT_SYSTEM_CONFIG,
-  NEXT_QUARTER_FUNDING_ETH,
-  NEXT_QUARTER_BUDGET_ETH,
+  NEXT_QUARTER_BUDGET_USD,
+  USD_BUDGET,
 } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import { GetServerSideProps } from 'next'
@@ -80,14 +80,20 @@ const ProjectsOverview: React.FC<{
 
   // Calculate budget
   const {
-    ethBudget: ethBudgetCalculated,
+    usdBudget: usdBudgetCalculated,
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
 
+  // Log budget for quarterly update (see docs/RETRO.md step 0)
+  useEffect(() => {
+    if (usdBudgetCalculated > 0) {
+      console.log(`[Q${quarter} ${year} Budget] usdBudget: $${usdBudgetCalculated.toFixed(0)}, mooneyBudget: ${mooneyBudget?.toFixed(0)}`)
+    }
+  }, [usdBudgetCalculated, mooneyBudget, quarter, year])
+
   // Use hardcoded value like in RetroactiveRewards for current quarter
-  const ethBudget = NEXT_QUARTER_BUDGET_ETH
-  const usdBudget = ethBudget * ethPrice
+  const usdBudget = NEXT_QUARTER_BUDGET_USD
 
   // Calculate MOONEY USD value
   useEffect(() => {
@@ -288,26 +294,19 @@ const ProjectsOverview: React.FC<{
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-8">
-                  {/* ETH Rewards */}
-                  <div className="bg-gradient-to-br from-orange-900/20 to-yellow-900/20 rounded-2xl p-6 border border-orange-500/20">
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-yellow-500 rounded-lg flex items-center justify-center mb-4">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" />
+                  {/* Stablecoin Rewards */}
+                  <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 rounded-2xl p-6 border border-green-500/20">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center mb-4">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                       </svg>
                     </div>
-                    <h4 className="text-xl font-bold text-white mb-3">ETH Rewards</h4>
-                    <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-3 mb-3 border border-orange-400/20">
-                      <div className="text-2xl font-bold text-orange-400">
-                        {ETH_BUDGET.toFixed(1)} ETH{' '}
-                        <span className="text-lg text-orange-300">
-                          ($
-                          {usdBudget.toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                          })}
-                          )
-                        </span>
+                    <h4 className="text-xl font-bold text-white mb-3">Stablecoin Rewards</h4>
+                    <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-3 mb-3 border border-green-400/20">
+                      <div className="text-2xl font-bold text-green-400">
+                        ${USD_BUDGET.toLocaleString()}
                       </div>
-                      <div className="text-sm text-orange-300">
+                      <div className="text-sm text-green-300">
                         Available Q{quarter} {year}
                       </div>
                     </div>
@@ -315,7 +314,7 @@ const ProjectsOverview: React.FC<{
                       5% of liquid non-MOONEY assets distributed quarterly to completed projects
                       based on community evaluation.
                     </p>
-                    <p className="text-sm text-orange-400">
+                    <p className="text-sm text-green-400">
                       Paid as lump-sum within a month of quarter end
                     </p>
                   </div>
@@ -432,9 +431,9 @@ const ProjectsOverview: React.FC<{
                     </div>
                     <h4 className="text-lg font-bold text-white mb-2">Max Budget/Project</h4>
                     <p className="text-xl font-bold text-yellow-400">
-                      {MAX_BUDGET_ETH.toFixed(1)} ETH
+                      ${MAX_BUDGET_USD.toLocaleString()}
                     </p>
-                    <p className="text-sm text-yellow-300 mt-1">(20% of quarterly budget)</p>
+                    <p className="text-sm text-yellow-300 mt-1">(1/5 of quarterly budget)</p>
                   </div>
 
                   {/* Approval Timeline */}
@@ -469,14 +468,7 @@ const ProjectsOverview: React.FC<{
                       Total Quarterly Retroactive Rewards
                     </p>
                     <p className="text-3xl md:text-4xl font-bold text-white">
-                      {NEXT_QUARTER_BUDGET_ETH.toFixed(1)} ETH{' '}
-                      <span className="text-xl text-purple-300">
-                        (~$
-                        {(NEXT_QUARTER_BUDGET_ETH * ethPrice).toLocaleString(undefined, {
-                          maximumFractionDigits: 0,
-                        })}
-                        )
-                      </span>
+                      ${NEXT_QUARTER_BUDGET_USD.toLocaleString()}
                     </p>
                     <p className="text-xs text-purple-400 mt-2">
                       Plus{' '}
@@ -599,7 +591,7 @@ const ProjectsOverview: React.FC<{
             <div className="relative mx-4 mb-16">
               <DashboardActiveProjects
                 currentProjects={currentProjects}
-                ethBudget={ethBudget}
+                usdBudget={usdBudget}
                 showBudget={true}
                 maxProjects={6}
               />

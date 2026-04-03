@@ -648,14 +648,16 @@ export const PROJECT_SYSTEM_CONFIG = {
 export const IS_SENATE_VOTE = false
 export const IS_MEMBER_VOTE = false
 
-// Quarterly budget in ETH
-export const NEXT_QUARTER_BUDGET_ETH = 11.6
-export const ETH_BUDGET = NEXT_QUARTER_BUDGET_ETH
-export const COMMUNITY_CIRCLE_BUDGET_FRACTION = 0.1
-export const AVAILABLE_FOR_FUNDING_FRACTION = 0.75
-export const MAX_BUDGET_FRACTION = 0.2
-export const NEXT_QUARTER_PROJECTS_BUDGET_ETH =
-  NEXT_QUARTER_BUDGET_ETH * (1 - COMMUNITY_CIRCLE_BUDGET_FRACTION)
-export const NEXT_QUARTER_FUNDING_ETH =
-  NEXT_QUARTER_PROJECTS_BUDGET_ETH * AVAILABLE_FOR_FUNDING_FRACTION
-export const MAX_BUDGET_ETH = NEXT_QUARTER_PROJECTS_BUDGET_ETH * MAX_BUDGET_FRACTION
+// Quarterly budget in USD (stablecoins)
+// 5% of liquid non-MOONEY assets, denominated in USD
+// See: https://docs.moondao.com/Projects/Project-System#quarterly-rewards
+export const NEXT_QUARTER_BUDGET_USD = 23409
+
+// Alias used by the retroactive rewards system (ProjectRewards.tsx / getPayouts).
+// The 10% community-circle carve-out is handled inside runQuadraticVoting
+// (budgetPercentMinusCommunityFund = 90), so this stays equal to the full budget.
+export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
+
+// Per the docs: "Proposal budgets must be less than or equal to 1/5 of the
+// total quarterly rewards."
+export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)

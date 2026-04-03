@@ -5,14 +5,14 @@ import { Project } from '@/lib/project/useProjectData'
 
 type DashboardActiveProjectsProps = {
   currentProjects: Project[]
-  ethBudget?: number
+  usdBudget?: number
   showBudget?: boolean
   maxProjects?: number
 }
 
 export default function DashboardActiveProjects({
   currentProjects,
-  ethBudget,
+  usdBudget,
   showBudget = true,
   maxProjects = 6,
 }: DashboardActiveProjectsProps) {
@@ -32,10 +32,10 @@ export default function DashboardActiveProjects({
 
           {/* Stats next to title */}
           <div className="flex gap-4">
-            {showBudget && ethBudget !== undefined && (
+            {showBudget && usdBudget !== undefined && (
               <div className="bg-black/20 rounded-xl px-5 py-3 border border-green-500/20">
                 <div className="text-xl font-bold text-white">
-                  {Number(ethBudget).toFixed(1)} ETH
+                  ${Number(usdBudget).toLocaleString()}
                 </div>
                 <div className="text-green-200 text-sm">Quarterly Budget</div>
               </div>

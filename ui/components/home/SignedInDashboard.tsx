@@ -36,7 +36,7 @@ import {
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
-  ETH_BUDGET,
+  USD_BUDGET,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import {
@@ -988,7 +988,7 @@ export default function SignedInDashboard({
         {/* Active Projects Section - Full Width */}
         <DashboardActiveProjects
           currentProjects={currentProjects}
-          ethBudget={ETH_BUDGET}
+          usdBudget={USD_BUDGET}
           showBudget={true}
           maxProjects={6}
         />
