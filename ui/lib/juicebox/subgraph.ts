@@ -148,12 +148,12 @@ export function projectEventsQuery(
   `
 }
 
-/** Total native-token volume paid by `participantAddress` into `projectId` on the default JB chain. */
+/** Total native-token volume received by `beneficiaryAddress` for `projectId` on the default JB chain. */
 export function missionParticipantVolumeQuery(
   projectId: number,
-  participantAddress: string
+  beneficiaryAddress: string
 ): string | null {
-  const addr = participantAddress.toLowerCase()
+  const addr = beneficiaryAddress.toLowerCase()
   if (!/^0x[a-f0-9]{40}$/i.test(addr)) {
     return null
   }
@@ -163,17 +163,17 @@ export function missionParticipantVolumeQuery(
   }
   return `
     query {
-      participants(
-        limit: 1,
+      payEvents(
+        limit: 1000,
         where: {
-          address: "${addr}",
+          beneficiary: "${addr}",
           projectId: ${pid},
           version: ${BENDYSTRAW_JB_VERSION},
           chainId: ${DEFAULT_CHAIN_V5.id}
         }
       ) {
         items {
-          volume
+          amount
         }
       }
     }

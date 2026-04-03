@@ -17,6 +17,7 @@ import {
   JBV5_TERMINAL_ADDRESS,
   JBV5_TERMINAL_STORE_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
+  MISSION_CROSS_CHAIN_PAY_ADDRESS,
   MISSION_TABLE_NAMES,
   TEST_CHANNEL_ID,
 } from 'const/config'
@@ -95,8 +96,10 @@ async function handler(req: any, res: any) {
       return res.status(400).json({ message: 'Bad request' })
     }
 
-    const { txHash, accessToken, txChainSlug, projectId, contributorEmail, newsletterOptIn } =
-      data
+    const {
+      txHash, accessToken, txChainSlug, projectId, contributorEmail,
+      newsletterOptIn, isCrossChain, memo: clientMemo,
+    } = data
 
     if (!txHash || !accessToken || !txChainSlug) {
       return res.status(400).json({ message: 'Missing required fields' })
@@ -151,44 +154,82 @@ async function handler(req: any, res: any) {
       })
     }
 
-    // Find the Pay event emitted by the JBV5 terminal to verify and extract contribution details.
-    // This works for both same-chain and cross-chain (LayerZero) contributions,
-    // where txReceipt.to may be a LayerZero endpoint rather than the terminal itself.
-    const PAY_EVENT_SIGNATURE =
-      '0x133161f1c9161488f777ab9a26aae91d47c0d9a3fafb398960f138db02c73797'
-    const payLog = txReceipt.logs.find(
-      (log: any) =>
-        log.topics[0] === PAY_EVENT_SIGNATURE &&
-        log.address?.toLowerCase() === JBV5_TERMINAL_ADDRESS.toLowerCase()
-    )
+    let verifiedProjectId: number
+    let txValue: BigNumber
+    let contributorAddress: string
+    let memo = ''
 
-    if (!payLog) {
-      return res.status(400).json({
-        message: 'No Pay event found from JBV5 terminal in transaction',
-      })
+    if (isCrossChain) {
+      const CROSS_CHAIN_PAY_INITIATED_SIG = ethers.utils.id(
+        'CrossChainPayInitiated(uint32,uint256,uint256,address)'
+      )
+      const crossChainLog = txReceipt.logs.find(
+        (log: any) =>
+          log.topics[0] === CROSS_CHAIN_PAY_INITIATED_SIG &&
+          log.address?.toLowerCase() ===
+            MISSION_CROSS_CHAIN_PAY_ADDRESS.toLowerCase()
+      )
+
+      if (!crossChainLog) {
+        return res.status(400).json({
+          message:
+            'No CrossChainPayInitiated event found in transaction',
+        })
+      }
+
+      const crossChainInterface = new ethers.utils.Interface([
+        'event CrossChainPayInitiated(uint32 indexed dstEid, uint256 indexed projectId, uint256 amount, address beneficiary)',
+      ])
+      const decoded = crossChainInterface.decodeEventLog(
+        'CrossChainPayInitiated',
+        crossChainLog.data,
+        crossChainLog.topics
+      )
+
+      verifiedProjectId = BigNumber.from(crossChainLog.topics[2]).toNumber()
+      txValue = BigNumber.from(decoded.amount)
+      contributorAddress = decoded.beneficiary.toLowerCase()
+      memo = typeof clientMemo === 'string' ? clientMemo : ''
+    } else {
+      const PAY_EVENT_SIGNATURE =
+        '0x133161f1c9161488f777ab9a26aae91d47c0d9a3fafb398960f138db02c73797'
+      const payLog = txReceipt.logs.find(
+        (log: any) =>
+          log.topics[0] === PAY_EVENT_SIGNATURE &&
+          log.address?.toLowerCase() === JBV5_TERMINAL_ADDRESS.toLowerCase()
+      )
+
+      if (!payLog) {
+        return res.status(400).json({
+          message: 'No Pay event found from JBV5 terminal in transaction',
+        })
+      }
+
+      const payEventInterface = new ethers.utils.Interface([
+        'event Pay(uint256 indexed rulesetId, uint256 indexed rulesetCycleNumber, uint256 indexed projectId, address payer, address beneficiary, uint256 amount, uint256 newlyIssuedTokenCount, string memo, bytes metadata, address caller)',
+      ])
+      const decodedPay = payEventInterface.decodeEventLog(
+        'Pay',
+        payLog.data,
+        payLog.topics
+      )
+
+      verifiedProjectId = BigNumber.from(payLog.topics[3]).toNumber()
+      txValue = BigNumber.from(decodedPay.amount)
+      contributorAddress = decodedPay.beneficiary.toLowerCase()
+      memo = decodedPay.memo || ''
     }
-
-    const payEventInterface = new ethers.utils.Interface([
-      'event Pay(uint256 indexed rulesetId, uint256 indexed rulesetCycleNumber, uint256 indexed projectId, address payer, address beneficiary, uint256 amount, uint256 newlyIssuedTokenCount, string memo, bytes metadata, address caller)',
-    ])
-    const decodedPay = payEventInterface.decodeEventLog(
-      'Pay',
-      payLog.data,
-      payLog.topics
-    )
-
-    const verifiedProjectId = BigNumber.from(payLog.topics[3]).toNumber()
-    const txValue = BigNumber.from(decodedPay.amount)
-    const contributorAddress: string = decodedPay.beneficiary.toLowerCase()
 
     if (txValue.isZero()) {
       return res.status(400).json({ message: 'Pay event amount is zero' })
     }
 
+    const dataQueryChain = isCrossChain ? DEFAULT_CHAIN_V5 : txChain
+
     let citizen: any = null
     try {
       const citizenRows: any = await queryTable(
-        txChain,
+        dataQueryChain,
         `SELECT name, id, image, owner FROM ${
           CITIZEN_TABLE_NAMES[chainSlug]
         } WHERE owner = '${contributorAddress}'`
@@ -209,9 +250,8 @@ async function handler(req: any, res: any) {
     const contributionAmountETH = parseFloat(txValue.toString()) / 1e18
     const contributionAmountUSD = contributionAmountETH * ethPrice
 
-    //Mission table data
     const missionRows: any = await queryTable(
-      txChain,
+      dataQueryChain,
       `SELECT id, fundingGoal FROM ${MISSION_TABLE_NAMES[chainSlug]} WHERE projectId = ${verifiedProjectId}`
     )
 
@@ -368,7 +408,7 @@ async function handler(req: any, res: any) {
           )} ETH ($${formatNumberWithCommasAndDecimals(
             contributionAmountUSD
           )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}/mission/${mission.id})`}** mission!${
-            decodedPay.memo ? `\n> ${decodedPay.memo}` : ''
+            memo ? `\n> ${memo}` : ''
           }\n\n${totalRaisedBlock}\n${progressLine}\n${
             missionDeadline !== null && missionDeadline !== undefined
               ? `**Deadline**: <t:${missionDeadline.toString()}:R>`

@@ -74,45 +74,42 @@ async function getTotalPaid(address: string) {
   }
 
   const moonDAOProjectIds = await getMoonDAOProjectIds()
+  if (moonDAOProjectIds.length === 0) return BigInt(0)
 
-  // Query participants across all chains (cross-chain payments settle on Arbitrum,
-  // but we keep this broad in case of indexing differences or direct payments).
-  // We filter to only MoonDAO mission projectIds to avoid counting unrelated JB projects.
+  // Query payEvents by beneficiary instead of participants by address.
+  // Bendystraw keys Participant.volume by the payer (msg.sender of pay()),
+  // which for cross-chain contributions is the CrossChainPay contract, not
+  // the user. PayEvent.beneficiary correctly reflects the actual contributor.
   const query = `
-    query ($addr: String!, $version: Int!) {
-      participants(
+    query ($addr: String!, $projectIds: [Int!]!, $version: Int!) {
+      payEvents(
         limit: 1000,
         where: {
-          address: $addr,
+          beneficiary: $addr,
+          projectId_in: $projectIds,
           version: $version
         }
       ) {
         items {
-          address
-          projectId
-          volume
-          paymentsCount
+          amount
         }
       }
     }
   `
   const subgraphRes = await subgraphClient.query(query, {
     addr: address.toLowerCase(),
+    projectIds: moonDAOProjectIds,
     version: Number(BENDYSTRAW_JB_VERSION),
   }).toPromise()
   if (subgraphRes.error) {
     console.error('Bendystraw query error:', subgraphRes.error)
     throw new Error(subgraphRes.error.message)
   }
-  const participants = subgraphRes.data?.participants?.items || []
+  const events = subgraphRes.data?.payEvents?.items || []
 
-  // Only count volume from MoonDAO mission projects
-  const projectIdSet = new Set(moonDAOProjectIds)
-  const totalPaid = participants
-    .filter((p: any) => projectIdSet.has(Number(p.projectId)))
-    .reduce((acc: bigint, p: any) => {
-      return acc + BigInt(p.volume || '0')
-    }, BigInt(0))
+  const totalPaid = events.reduce((acc: bigint, e: any) => {
+    return acc + BigInt(e.amount || '0')
+  }, BigInt(0))
   return totalPaid
 }
 

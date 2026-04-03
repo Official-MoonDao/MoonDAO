@@ -34,7 +34,7 @@ describe('<AchievementCard />', () => {
 
     cy.mount(<AchievementCard {...numericProps} />)
 
-    cy.contains('12000').should('be.visible')
+    cy.contains('12,000').should('be.visible')
     cy.contains('holders').should('be.visible')
   })
 
