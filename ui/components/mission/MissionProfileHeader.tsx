@@ -64,6 +64,7 @@ interface MissionProfileHeaderProps {
   duration: any
   deadlinePassed: boolean
   refundPeriodPassed: boolean
+  refundPeriod: number | undefined
   stage: number
   token: any
   poolDeployerAddress: string | undefined
@@ -93,6 +94,7 @@ const MissionProfileHeader = React.memo(
     duration,
     deadlinePassed,
     refundPeriodPassed,
+    refundPeriod,
     stage,
     token,
     poolDeployerAddress,
@@ -274,7 +276,7 @@ const MissionProfileHeader = React.memo(
                     {/* Manager Actions */}
                     {account && isManager && (
                       <div className="flex flex-wrap gap-2">
-                        {deadlinePassed && (
+                        {deadlinePassed && Number(stage) !== 3 && (
                           <>
                             <PrivyWeb3Button
                               requiredChain={DEFAULT_CHAIN_V5}

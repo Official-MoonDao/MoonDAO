@@ -88,6 +88,7 @@ function MissionPayRedeemContent({
   redeem,
   onOpenModal,
   tokenBalance,
+  jbTokenBalance,
   currentStage,
   stage,
   deadline,
@@ -99,6 +100,7 @@ function MissionPayRedeemContent({
   redeemAmount,
   isLoadingRedeemAmount,
   isLoadingEthUsdPrice,
+  isLoadingBalances,
   usdInput,
   setUsdInput,
   address,
@@ -122,7 +124,30 @@ function MissionPayRedeemContent({
   const contributedUsdApprox =
     ethUsdPrice && contributedEth > 0 ? contributedEth * ethUsdPrice : null
 
-  if (isRefundable && (!tokenCredit || tokenCredit <= 0) && (!tokenBalance || tokenBalance <= 0)) {
+  const hasTokensToRedeem = useMemo(() => {
+    try {
+      const zero = BigInt(0)
+      const jbBalanceBigInt =
+        jbTokenBalance === undefined || jbTokenBalance === null
+          ? zero
+          : typeof jbTokenBalance === 'bigint'
+          ? jbTokenBalance
+          : BigInt(jbTokenBalance)
+
+      const tokenCreditBigInt =
+        tokenCredit === undefined || tokenCredit === null
+          ? zero
+          : typeof tokenCredit === 'bigint'
+          ? tokenCredit
+          : BigInt(tokenCredit)
+
+      return jbBalanceBigInt > zero || tokenCreditBigInt > zero
+    } catch {
+      return false
+    }
+  }, [jbTokenBalance, tokenCredit])
+
+  if (isRefundable && !hasTokensToRedeem && (!tokenBalance || tokenBalance <= 0)) {
     return null
   }
 
@@ -370,33 +395,49 @@ function MissionPayRedeemContent({
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
                 <MissionTokenExchangeRates
                   currentStage={currentStage}
-                  tokenSymbol={resolvedSymbol}
+                  tokenSymbol={resolvedSymbol ?? ''}
                 />
               </div>
             </div>
           )}
 
           {/* Refund Section */}
-          {isRefundable && (tokenBalance > 0 || tokenCredit > 0) && (
+          {isRefundable && (
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
-              <PrivyWeb3Button
-                requiredChain={DEFAULT_CHAIN_V5}
-                id="redeem-button"
-                className="w-full rounded-xl py-2.5 gradient-2 font-medium"
-                label={
-                  isLoadingRedeemAmount ? (
-                    <LoadingSpinner />
-                  ) : (
-                    `Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`
-                  )
-                }
-                isDisabled={isLoadingRedeemAmount}
-                action={redeem}
-                noPadding
-              />
-              <p className="text-xs text-gray-500 text-center leading-relaxed">
-                This mission did not reach its funding goal. You can claim your refund here.
-              </p>
+              {hasTokensToRedeem ? (
+                <>
+                  <PrivyWeb3Button
+                    requiredChain={DEFAULT_CHAIN_V5}
+                    id="redeem-button"
+                    className="w-full rounded-xl py-2.5 gradient-2 font-medium"
+                    label={
+                      isLoadingRedeemAmount ? (
+                        <LoadingSpinner />
+                      ) : (
+                        `Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`
+                      )
+                    }
+                    isDisabled={isLoadingRedeemAmount}
+                    action={redeem}
+                    noPadding
+                  />
+                  <p className="text-xs text-gray-500 text-center leading-relaxed">
+                    This mission did not reach its funding goal. You can claim your refund here.
+                  </p>
+                </>
+              ) : address && isLoadingBalances ? (
+                <div className="flex items-center justify-center py-2">
+                  <LoadingSpinner />
+                </div>
+              ) : address ? (
+                <p className="text-xs text-gray-400 text-center leading-relaxed">
+                  You have no tokens to redeem for this mission.
+                </p>
+              ) : (
+                <p className="text-xs text-gray-400 text-center leading-relaxed">
+                  This mission did not reach its funding goal. Sign in to check if you have tokens to redeem.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -411,7 +452,7 @@ function MissionPayRedeemContent({
             </h3>
             <MissionActivityList
               selectedChain={DEFAULT_CHAIN_V5}
-              tokenSymbol={resolvedSymbol}
+              tokenSymbol={resolvedSymbol ?? ''}
               projectId={mission?.projectId}
             />
           </div>
@@ -558,19 +599,21 @@ function MissionPayRedeemComponent({
 
   const [tokenBalanceRefresh, setTokenBalanceRefresh] = useState(0)
 
-  const { data: tokenCredit } = useRead({
+  const { data: tokenCredit, isLoading: isLoadingTokenCredit } = useRead({
     contract: jbTokensContract,
     method: 'creditBalanceOf' as string,
     params: [address, mission?.projectId],
     deps: [tokenBalanceRefresh],
   })
 
-  const { data: jbTokenBalance } = useRead({
+  const { data: jbTokenBalance, isLoading: isLoadingJbTokenBalance } = useRead({
     contract: jbTokensContract,
     method: 'totalBalanceOf' as string,
     params: [address, mission?.projectId],
     deps: [tokenBalanceRefresh],
   })
+
+  const isLoadingBalances = isLoadingTokenCredit || isLoadingJbTokenBalance
 
   const refreshTokenBalances = useCallback(() => {
     setTokenBalanceRefresh((prev) => prev + 1)
@@ -974,6 +1017,7 @@ function MissionPayRedeemComponent({
               </div>
             </Modal>
           ) : onlyButton && buttonMode === 'standard' ? (
+            Number(stage) === 3 ? null : (
             <div
               className={`${
                 visibleButton ? 'opacity-100' : 'opacity-0 hidden'
@@ -990,6 +1034,7 @@ function MissionPayRedeemComponent({
                 showSignInLabel={false}
               />
             </div>
+            )
           ) : (
             <div className="mt-2">
               <MissionPayRedeemContent
@@ -999,6 +1044,7 @@ function MissionPayRedeemComponent({
                 redeem={redeemMissionToken}
                 onOpenModal={requestOpenContributeModal}
                 tokenBalance={tokenBalance}
+                jbTokenBalance={jbTokenBalance}
                 tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
                 claimTokenCredit={claimTokenCredit}
                 currentStage={currentStage}
@@ -1010,6 +1056,7 @@ function MissionPayRedeemComponent({
                 redeemAmount={redeemAmount}
                 isLoadingRedeemAmount={isLoadingRedeemAmount}
                 isLoadingEthUsdPrice={isLoadingEthUsdPrice}
+                isLoadingBalances={isLoadingBalances}
                 setUsdInput={setUsdInput}
                 usdInput={usdInput}
                 address={address}
