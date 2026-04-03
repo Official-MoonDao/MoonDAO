@@ -410,6 +410,7 @@ export default function MissionProfile({
         duration={duration}
         deadlinePassed={deadlinePassed}
         refundPeriodPassed={refundPeriodPassed}
+        refundPeriod={refundPeriod}
         stage={stage}
         poolDeployerAddress={poolDeployerAddress}
         isManager={isManager}
@@ -425,7 +426,7 @@ export default function MissionProfile({
         setDeployTokenModalEnabled={setDeployTokenModalEnabled}
         token={token}
         contributeButton={
-          !deadlinePassed && (
+          !deadlinePassed && Number(stage) !== 3 && (
             <MissionPayRedeem
               mission={mission}
               teamNFT={teamNFT}
@@ -498,7 +499,7 @@ export default function MissionProfile({
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center w-full"
           >
-            {/* Mobile Pay/Redeem Panel */}
+            {/* Pay/Redeem Panel - mobile only */}
             <div
               ref={payRedeemContainerRef}
               className="flex z-20 lg:hidden w-full justify-center px-5 md:px-8 lg:px-12"

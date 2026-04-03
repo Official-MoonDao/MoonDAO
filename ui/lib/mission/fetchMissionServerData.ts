@@ -35,6 +35,7 @@ export type MissionContractData = {
   metadataURI: string
   stage: bigint
   payHookAddress: string
+  activePayHookAddress: string
   tokenAddress: string
   primaryTerminalAddress: string
   ruleset: any[]
@@ -156,7 +157,7 @@ export async function fetchMissionContracts(
 
   const zeroAddr = '0x0000000000000000000000000000000000000000'
 
-  const [metadataURI, stage, payHookAddress, tokenAddress, primaryTerminalAddress, ruleset] =
+  const [metadataURI, missionCreatorStage, payHookAddress, tokenAddress, primaryTerminalAddress, ruleset] =
     await Promise.all([
       readContract({
         contract: jbControllerContract,
@@ -205,10 +206,54 @@ export async function fetchMissionContracts(
       }).catch(() => null),
     ])
 
+  // If the current ruleset's dataHook differs from the original PayHook stored
+  // in MissionCreator, a new refund ruleset may have been queued. Read stage()
+  // from the active dataHook so the UI reflects the actual on-chain state.
+  let stage = missionCreatorStage
+  if (ruleset) {
+    try {
+      const activeDataHook = (ruleset as any)[1]?.dataHook
+      if (
+        activeDataHook &&
+        activeDataHook !== '0x0000000000000000000000000000000000000000' &&
+        activeDataHook.toLowerCase() !== payHookAddress.toString().toLowerCase()
+      ) {
+        const activePayHookContract = getContract({
+          client: serverClient,
+          address: activeDataHook,
+          chain: chain,
+          abi: LaunchPadPayHookABI.abi as any,
+        })
+        stage = await readContract({
+          contract: activePayHookContract,
+          method: 'stage' as string,
+          params: [primaryTerminalAddress, projectId],
+        })
+      }
+    } catch (err) {
+      console.warn('Failed to read stage from active dataHook, using MissionCreator stage:', err)
+    }
+  }
+
+  // Determine which PayHook is actually active on the current ruleset
+  let activePayHookAddress = payHookAddress
+  if (ruleset) {
+    try {
+      const activeDataHook = (ruleset as any)[1]?.dataHook
+      if (
+        activeDataHook &&
+        activeDataHook !== '0x0000000000000000000000000000000000000000'
+      ) {
+        activePayHookAddress = activeDataHook
+      }
+    } catch {}
+  }
+
   return {
     metadataURI,
     stage,
     payHookAddress,
+    activePayHookAddress,
     tokenAddress,
     primaryTerminalAddress,
     ruleset,
@@ -227,7 +272,9 @@ export async function getMissionServerData(
 
   const contractData = await fetchMissionContracts(missionRow.projectId, tokenId, chain)
 
-  const timeData = await fetchTimeData(contractData.payHookAddress, chain)
+  // Read time data from the active PayHook (may differ from original if a
+  // refund ruleset was queued)
+  const timeData = await fetchTimeData(contractData.activePayHookAddress, chain)
 
   return {
     missionRow,
