@@ -22,7 +22,7 @@ export default function AchievementCard({
       variant="launchpad"
       layout="launchpad"
       icon={icon}
-      header={`${value}\n${label}`}
+      header={label}
       paragraph={description}
       stats={{ value, subtitle: label }}
       gradientFrom={gradientFrom}
