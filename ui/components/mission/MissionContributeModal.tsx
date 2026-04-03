@@ -1141,6 +1141,46 @@ export default function MissionContributeModal({
           account,
         })
 
+        // Wait for origin chain confirmation before showing success
+        flushSync(() => setContributeButtonPhase('confirm'))
+        const originReceipt: any = await waitForReceipt(submittedOrigin)
+
+        // Send notification while the user is still in the modal
+        try {
+          const accessTokenCross = await getAccessToken()
+          const notificationBodyCross = {
+            txHash: originReceipt.transactionHash,
+            accessToken: accessTokenCross,
+            txChainSlug: chainSlug,
+            projectId: mission?.projectId,
+            contributorEmail: emailTrim,
+            newsletterOptIn,
+            isCrossChain: true,
+            memo: message,
+          }
+          const maxAttempts = 5
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const resp = await fetch('/api/mission/contribution-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(notificationBodyCross),
+            })
+            if (resp.ok) break
+            const body: any = await resp.json().catch(() => ({}))
+            const msg = body?.message || ''
+            const retryable =
+              msg.includes('CrossChainPayInitiated') || msg.includes('Transaction not found')
+            if (retryable && attempt < maxAttempts - 1) {
+              await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+              continue
+            }
+            break
+          }
+        } catch (notifyErr) {
+          console.error('Cross-chain contribution notification error:', notifyErr)
+        }
+
+        // Notification sent -- now show success and allow the user to leave
         toast.success(
           'Payment successfully sent! Onchain settlement and confirmation may take a few minutes. No further action is needed!',
           { style: toastStyle, duration: 10000 }
@@ -1165,46 +1205,9 @@ export default function MissionContributeModal({
           )
         }
 
+        // Settlement polling continues in the background (notification already sent)
         void (async () => {
           try {
-            const originReceipt: any = await waitForReceipt(submittedOrigin)
-
-            // Send notification immediately using the origin chain tx
-            try {
-              const accessTokenCross = await getAccessToken()
-              const notificationBodyCross = {
-                txHash: originReceipt.transactionHash,
-                accessToken: accessTokenCross,
-                txChainSlug: chainSlug,
-                projectId: mission?.projectId,
-                contributorEmail: emailTrim,
-                newsletterOptIn,
-                isCrossChain: true,
-                memo: message,
-              }
-              const maxAttempts = 5
-              for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                const resp = await fetch('/api/mission/contribution-notification', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(notificationBodyCross),
-                })
-                if (resp.ok) break
-                const body: any = await resp.json().catch(() => ({}))
-                const msg = body?.message || ''
-                const retryable =
-                  msg.includes('CrossChainPayInitiated') || msg.includes('Transaction not found')
-                if (retryable && attempt < maxAttempts - 1) {
-                  await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
-                  continue
-                }
-                break
-              }
-            } catch (notifyErr) {
-              console.error('Cross-chain contribution notification error:', notifyErr)
-            }
-
-            // Continue polling for settlement (free mint eligibility + UI feedback)
             const destReceipt = await waitForCrossChainPayReceipt({
               client,
               srcChainId: payChainStable.id,
@@ -1241,10 +1244,6 @@ export default function MissionContributeModal({
             }
           } catch (err) {
             console.error('Cross-chain settlement follow-up failed:', err)
-            toast.error(
-              'Your payment was sent, but we could not confirm bridging. Check LayerZero scan or contact support with your transaction hash.',
-              { style: toastStyle, duration: 12000 }
-            )
           }
         })()
 
