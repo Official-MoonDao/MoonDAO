@@ -650,13 +650,14 @@ export const IS_MEMBER_VOTE = false
 
 // Quarterly budget in USD (stablecoins)
 // 5% of liquid non-MOONEY assets, denominated in USD
-export const NEXT_QUARTER_BUDGET_USD = 23467
+// See: https://docs.moondao.com/Projects/Project-System#quarterly-rewards
+export const NEXT_QUARTER_BUDGET_USD = 23409
+
+// Alias used by the retroactive rewards system (ProjectRewards.tsx / getPayouts).
+// The 10% community-circle carve-out is handled inside runQuadraticVoting
+// (budgetPercentMinusCommunityFund = 90), so this stays equal to the full budget.
 export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
-export const COMMUNITY_CIRCLE_BUDGET_FRACTION = 0.1
-export const AVAILABLE_FOR_FUNDING_FRACTION = 0.75
-export const MAX_BUDGET_FRACTION = 0.2
-export const NEXT_QUARTER_PROJECTS_BUDGET_USD =
-  NEXT_QUARTER_BUDGET_USD * (1 - COMMUNITY_CIRCLE_BUDGET_FRACTION)
-export const NEXT_QUARTER_FUNDING_USD =
-  NEXT_QUARTER_PROJECTS_BUDGET_USD * AVAILABLE_FOR_FUNDING_FRACTION
-export const MAX_BUDGET_USD = NEXT_QUARTER_PROJECTS_BUDGET_USD * MAX_BUDGET_FRACTION
+
+// Per the docs: "Proposal budgets must be less than or equal to 1/5 of the
+// total quarterly rewards."
+export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)

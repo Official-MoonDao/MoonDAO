@@ -1,5 +1,5 @@
 import { NanceProvider } from '@nance/nance-hooks'
-import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5, NEXT_QUARTER_FUNDING_USD, MAX_BUDGET_USD } from 'const/config'
+import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5, NEXT_QUARTER_BUDGET_USD, MAX_BUDGET_USD } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import { GetServerSideProps } from 'next'
@@ -58,15 +58,15 @@ export default function ProposalsPage({ project }: { project: Project }) {
                   <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                     <RewardAsset
                       name="USDC"
-                      value={`$${Math.round(NEXT_QUARTER_FUNDING_USD).toLocaleString()}`}
-                      usdValue={Math.round(NEXT_QUARTER_FUNDING_USD)}
+                      value={`$${NEXT_QUARTER_BUDGET_USD.toLocaleString()}`}
+                      usdValue={NEXT_QUARTER_BUDGET_USD}
                     />
                   </div>
                   <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                     <RewardAsset
                       name="USDC"
-                      value={`$${Math.round(MAX_BUDGET_USD).toLocaleString()}`}
-                      usdValue={Math.round(MAX_BUDGET_USD)}
+                      value={`$${MAX_BUDGET_USD.toLocaleString()}`}
+                      usdValue={MAX_BUDGET_USD}
                     />
                   </div>
                 </div>

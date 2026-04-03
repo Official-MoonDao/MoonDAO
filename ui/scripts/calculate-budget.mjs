@@ -308,21 +308,20 @@ async function main() {
   console.log()
 
   // Budget = 5% of liquid non-MOONEY assets in USD (stablecoins)
+  // See: https://docs.moondao.com/Projects/Project-System#quarterly-rewards
   const usdBudget = Math.round(totalUSD * 0.05)
+
+  // Max per project = 1/5 of total quarterly budget (per docs)
+  const maxPerProject = Math.round(usdBudget / 5)
+
+  // Approval cap: cumulative approved budgets can't exceed 3/4 of quarterly budget
+  // (enforced in getApprovedProjects during vote tally)
+  const approvalCap = Math.round(usdBudget * 3 / 4)
 
   // MOONEY budget with geometric decay
   const MOONEY_INITIAL_BUDGET = 15_000_000
   const MOONEY_DECAY_RATE = 0.95
   const mooneyBudget = MOONEY_INITIAL_BUDGET * Math.pow(MOONEY_DECAY_RATE, NUM_QUARTERS_PAST_Q4_2022)
-
-  // Derived values
-  const communityCircleFraction = 0.1
-  const availableForFundingFraction = 0.75
-  const maxBudgetFraction = 0.2
-
-  const projectsBudgetUSD = usdBudget * (1 - communityCircleFraction)
-  const fundingUSD = projectsBudgetUSD * availableForFundingFraction
-  const maxBudgetUSD = projectsBudgetUSD * maxBudgetFraction
 
   console.log('╔═══════════════════════════════════════════════════════════════╗')
   console.log('║  Q2 2026 BUDGET RESULTS                                     ║')
@@ -333,10 +332,11 @@ async function main() {
   console.log(`║  📌 NEXT_QUARTER_BUDGET_USD:  $${usdBudget.toLocaleString()}`.padEnd(64) + '║')
   console.log(`║     (5% of liquid non-MOONEY assets)`.padEnd(64) + '║')
   console.log('║                                                              ║')
-  console.log(`║  Projects Budget (90%):       $${Math.round(projectsBudgetUSD).toLocaleString()}`.padEnd(64) + '║')
-  console.log(`║  Available for Funding (75%): $${Math.round(fundingUSD).toLocaleString()}`.padEnd(64) + '║')
-  console.log(`║  Max Single Project (20%):    $${Math.round(maxBudgetUSD).toLocaleString()}`.padEnd(64) + '║')
-  console.log(`║  Community Circle (10%):      $${Math.round(usdBudget * communityCircleFraction).toLocaleString()}`.padEnd(64) + '║')
+  console.log(`║  Max per Project (1/5):       $${maxPerProject.toLocaleString()}`.padEnd(64) + '║')
+  console.log(`║  Approval Cap (3/4):          $${approvalCap.toLocaleString()}`.padEnd(64) + '║')
+  console.log('║                                                              ║')
+  console.log(`║  Retroactive Rewards:         $${usdBudget.toLocaleString()} - project budgets`.padEnd(64) + '║')
+  console.log(`║    10% of rewards → Community Circle`.padEnd(64) + '║')
   console.log('║                                                              ║')
   console.log(`║  vMOONEY Budget:              ${mooneyBudget.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} vMOONEY`.padEnd(64) + '║')
   console.log(`║  (15M * 0.95^${NUM_QUARTERS_PAST_Q4_2022})`.padEnd(64) + '║')
