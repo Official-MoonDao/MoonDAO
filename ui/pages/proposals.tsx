@@ -1,5 +1,5 @@
 import { NanceProvider } from '@nance/nance-hooks'
-import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5, NEXT_QUARTER_FUNDING_ETH, MAX_BUDGET_ETH } from 'const/config'
+import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5, NEXT_QUARTER_FUNDING_USD, MAX_BUDGET_USD } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import { GetServerSideProps } from 'next'
@@ -57,16 +57,16 @@ export default function ProposalsPage({ project }: { project: Project }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                     <RewardAsset
-                      name="ETH"
-                      value={NEXT_QUARTER_FUNDING_ETH.toFixed(1)}
-                      usdValue={(ethPrice ?? 0) * NEXT_QUARTER_FUNDING_ETH}
+                      name="USD"
+                      value={`$${NEXT_QUARTER_FUNDING_USD.toLocaleString()}`}
+                      usdValue={NEXT_QUARTER_FUNDING_USD}
                     />
                   </div>
                   <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                     <RewardAsset
-                      name="ETH"
-                      value={MAX_BUDGET_ETH.toFixed(1)}
-                      usdValue={(ethPrice ?? 0) * MAX_BUDGET_ETH}
+                      name="USD"
+                      value={`$${MAX_BUDGET_USD.toLocaleString()}`}
+                      usdValue={MAX_BUDGET_USD}
                     />
                   </div>
                 </div>

@@ -13,13 +13,13 @@ export default function useProposalJSON(project: any) {
       const proposalResponse = await fetch(project.proposalIPFS)
       const proposal = await proposalResponse.json()
 
-      let ethBudget = 0
+      let usdBudget = 0
       if (proposal.budget) {
         proposal.budget.forEach((item: any) => {
-          ethBudget += item.token === 'ETH' ? Number(item.amount) : 0
+          usdBudget += (item.token === 'USD' || item.token === 'USDC' || item.token === 'USDT' || item.token === 'DAI') ? Number(item.amount) : 0
         })
       }
-      proposal.ethBudget = ethBudget
+      proposal.usdBudget = usdBudget
       setProposalJSON(proposal)
     }
     fetchData()

@@ -120,9 +120,9 @@ describe('voting', () => {
   it('getApprovedProjects all approved', () => {
     const projects = [1, 2]
     const outcome = { 1: 0.5, 2: 0.5 }
-    const ethBudgets = { 1: 0.1, 2: 0.1 }
-    const ethBudget = 1
-    const projectIdToApproved = getApprovedProjects(projects, outcome, ethBudgets, ethBudget)
+    const usdBudgets = { 1: 0.1, 2: 0.1 }
+    const usdBudget = 1
+    const projectIdToApproved = getApprovedProjects(projects, outcome, usdBudgets, usdBudget)
     expect(projectIdToApproved[1]).to.be.true
     expect(projectIdToApproved[2]).to.be.true
   })
@@ -130,9 +130,9 @@ describe('voting', () => {
   it('getApprovedProjects at least 3 approved', () => {
     const projects = [1, 2, 3, 4]
     const outcome = { 1: 0.5, 2: 0.25, 3: 0.25, 4: 0 }
-    const ethBudgets = { 1: 0.1, 2: 0.1, 3: 0.1, 4: 0.1 }
-    const ethBudget = 1
-    const projectIdToApproved = getApprovedProjects(projects, outcome, ethBudgets, ethBudget)
+    const usdBudgets = { 1: 0.1, 2: 0.1, 3: 0.1, 4: 0.1 }
+    const usdBudget = 1
+    const projectIdToApproved = getApprovedProjects(projects, outcome, usdBudgets, usdBudget)
     expect(projectIdToApproved[1]).to.be.true
     expect(projectIdToApproved[2]).to.be.true
     expect(projectIdToApproved[3]).to.be.true
@@ -153,7 +153,7 @@ describe('voting', () => {
       9: 0.09,
       10: 0.09,
     }
-    const ethBudgets = {
+    const usdBudgets = {
       1: 0.2,
       2: 0.2,
       3: 0.2,
@@ -165,9 +165,9 @@ describe('voting', () => {
       9: 0.2,
       10: 0.2,
     }
-    const ethBudget = 1
+    const usdBudget = 1
     // With 0.2 budget, 4 projects would be 0.8 > 0.75, so we should only approve 3
-    const projectIdToApproved = getApprovedProjects(projects, outcome, ethBudgets, ethBudget)
+    const projectIdToApproved = getApprovedProjects(projects, outcome, usdBudgets, usdBudget)
     expect(projectIdToApproved[1]).to.be.true
     expect(projectIdToApproved[2]).to.be.true
     expect(projectIdToApproved[3]).to.be.true
@@ -193,7 +193,7 @@ describe('voting', () => {
       8: 0.09,
       9: 0.09,
     }
-    const ethBudgets = {
+    const usdBudgets = {
       1: 0.1,
       2: 0.1,
       3: 0.1,
@@ -204,9 +204,9 @@ describe('voting', () => {
       8: 0.1,
       9: 0.1,
     }
-    const ethBudget = 1
+    const usdBudget = 1
     // With 0.2 budget, 4 projects would be 0.8 > 0.75, so we should only approve 3
-    const projectIdToApproved = getApprovedProjects(projects, outcome, ethBudgets, ethBudget)
+    const projectIdToApproved = getApprovedProjects(projects, outcome, usdBudgets, usdBudget)
     expect(projectIdToApproved[1]).to.be.true
     expect(projectIdToApproved[2]).to.be.true
     expect(projectIdToApproved[3]).to.be.true
