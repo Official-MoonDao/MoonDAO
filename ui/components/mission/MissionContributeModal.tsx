@@ -1168,55 +1168,49 @@ export default function MissionContributeModal({
         void (async () => {
           try {
             const originReceipt: any = await waitForReceipt(submittedOrigin)
+
+            // Send notification immediately using the origin chain tx
+            try {
+              const accessTokenCross = await getAccessToken()
+              const notificationBodyCross = {
+                txHash: originReceipt.transactionHash,
+                accessToken: accessTokenCross,
+                txChainSlug: chainSlug,
+                projectId: mission?.projectId,
+                contributorEmail: emailTrim,
+                newsletterOptIn,
+                isCrossChain: true,
+                memo: message,
+              }
+              const maxAttempts = 5
+              for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                const resp = await fetch('/api/mission/contribution-notification', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(notificationBodyCross),
+                })
+                if (resp.ok) break
+                const body: any = await resp.json().catch(() => ({}))
+                const msg = body?.message || ''
+                const retryable =
+                  msg.includes('CrossChainPayInitiated') || msg.includes('Transaction not found')
+                if (retryable && attempt < maxAttempts - 1) {
+                  await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+                  continue
+                }
+                break
+              }
+            } catch (notifyErr) {
+              console.error('Cross-chain contribution notification error:', notifyErr)
+            }
+
+            // Continue polling for settlement (free mint eligibility + UI feedback)
             const destReceipt = await waitForCrossChainPayReceipt({
               client,
               srcChainId: payChainStable.id,
               originTxHash: originReceipt.transactionHash,
               destinationChain: DEFAULT_CHAIN_V5,
             })
-            const accessTokenCross = await getAccessToken()
-            const notificationBodyCross = {
-              txHash: destReceipt.transactionHash,
-              accessToken: accessTokenCross,
-              txChainSlug: defaultChainSlug,
-              projectId: mission?.projectId,
-              contributorEmail: emailTrim,
-              newsletterOptIn,
-            }
-            let contributionNotificationDataCross: { message?: string; success?: boolean } = {}
-            const maxNotificationAttemptsCross = 5
-            for (let attempt = 0; attempt < maxNotificationAttemptsCross; attempt++) {
-              const contributionNotification = await fetch('/api/mission/contribution-notification', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(notificationBodyCross),
-              })
-              contributionNotificationDataCross = await contributionNotification.json()
-              if (contributionNotification.ok) {
-                break
-              }
-              const msg = contributionNotificationDataCross?.message || ''
-              const retryable =
-                msg.includes('No Pay event found') || msg.includes('Transaction not found')
-              if (retryable && attempt < maxNotificationAttemptsCross - 1) {
-                await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
-                continue
-              }
-              break
-            }
-            if (!contributionNotificationDataCross?.success) {
-              if (contributionNotificationDataCross?.message) {
-                console.warn(
-                  'Contribution notification:',
-                  contributionNotificationDataCross.message
-                )
-              }
-              toast.error(
-                'Your payment was sent, but we could not confirm final settlement. If you do not receive an email soon, contact support with your transaction hash.',
-                { style: toastStyle, duration: 12000 }
-              )
-              return
-            }
 
             toast.success('Your contribution has settled—check your email for confirmation.', {
               style: toastStyle,
