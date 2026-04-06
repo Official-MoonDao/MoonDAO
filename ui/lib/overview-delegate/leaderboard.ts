@@ -54,7 +54,9 @@ export function aggregateDelegations(
 
   for (const d of delegations) {
     const currentBalance = balanceMap[d.delegatorAddress] ?? 0
-    const effective = Math.min(d.storedAmount, currentBalance)
+    const effective = Number.isFinite(currentBalance)
+      ? currentBalance
+      : d.storedAmount
     if (effective <= 0) continue
 
     const key = d.delegateeAddress
