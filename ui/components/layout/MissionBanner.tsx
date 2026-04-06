@@ -49,7 +49,7 @@ export default function MissionBanner() {
 
           <div className="marquee-container overflow-hidden">
             <div className="marquee-content">
-              {[0, 1].map((i) => (
+              {[0, 1, 2, 3, 4, 5].map((i) => (
                 <span
                   key={i}
                   className="inline-flex items-center whitespace-nowrap px-6 sm:px-8 text-xs sm:text-sm"
@@ -67,7 +67,7 @@ export default function MissionBanner() {
                   </span>
                   <span className="mx-3 text-white/15">·</span>
                   <span className="text-white/50">
-                    {`Contribute ${FREE_MINT_THRESHOLD_LABEL} for a free citizenship`}
+                    {`Contribute ${FREE_MINT_THRESHOLD_LABEL} for a free citizenship.`}
                   </span>
                 </span>
               ))}
@@ -105,12 +105,12 @@ export default function MissionBanner() {
 
         .marquee-content {
           display: inline-flex;
-          animation: marquee 60s linear infinite;
+          animation: marquee 90s linear infinite;
         }
 
         @media (max-width: 640px) {
           .marquee-content {
-            animation: marquee 40s linear infinite;
+            animation: marquee 60s linear infinite;
           }
         }
 
