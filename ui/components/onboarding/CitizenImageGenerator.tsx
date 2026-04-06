@@ -432,11 +432,11 @@ export function ImageGenerator({
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-400">
               {generating
-                ? 'Generating your AI passport photo…'
+                ? 'Generating your AI photo…'
                 : inputImage && !image
                 ? 'Drag to reposition crop · Handles to resize'
                 : image
-                ? 'Your passport photo'
+                ? 'Your photo'
                 : 'Current image'}
             </p>
             {inputImage && (
@@ -449,9 +449,12 @@ export function ImageGenerator({
                   setIsReCropping(false)
                   setShowError(false)
                 }}
-                className="text-xs text-slate-500 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg transition-all duration-200"
               >
-                Change photo
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Change Photo
               </button>
             )}
           </div>
@@ -482,7 +485,7 @@ export function ImageGenerator({
                       src={generatedImageUrl}
                       fill
                       style={{ objectFit: 'contain' }}
-                      alt="Generated passport"
+                      alt="Generated photo"
                     />
                   ) : generating ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/80">
