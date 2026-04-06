@@ -617,56 +617,88 @@ export default function OverviewDelegate({
                 </p>
               ) : (
                 <div className="space-y-2 sm:space-y-3">
-                  {displayLeaderboard.slice(0, 25).map((entry, index) => {
+                  {displayLeaderboard.map((entry, index) => {
                     const citizenLink = entry.citizenName
                       ? `/citizen/${generatePrettyLinkWithId(entry.citizenName, entry.citizenId)}`
                       : `/citizen/${entry.citizenId}`
+                    const isQualifying = index < 25
+                    const isCutoffBoundary = index === 25
 
                     return (
-                      <div
-                        key={entry.delegateeAddress}
-                        className="flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 bg-black/20 border border-white/10 rounded-xl"
-                      >
-                        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-white/10 text-white font-bold text-xs sm:text-sm">
-                          {index + 1}
-                        </div>
-
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0">
-                          {entry.citizenImage ? (
-                            <IPFSRenderer
-                              src={entry.citizenImage}
-                              alt={entry.citizenName || 'Citizen'}
-                              width={40}
-                              height={40}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
-                              {entry.citizenName?.[0]?.toUpperCase() || 'C'}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <Link
-                            href={citizenLink}
-                            className="text-white text-sm sm:text-base font-medium hover:underline truncate block"
+                      <div key={entry.delegateeAddress}>
+                        {isCutoffBoundary && (
+                          <div className="flex items-center gap-3 py-3 sm:py-4 my-1">
+                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+                            <span className="text-amber-400/80 text-xs font-medium tracking-wide uppercase whitespace-nowrap">
+                              Round 2 cutoff
+                            </span>
+                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+                          </div>
+                        )}
+                        <div
+                          className={`flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl transition-opacity ${
+                            isQualifying
+                              ? 'bg-black/20 border border-white/10'
+                              : 'bg-black/10 border border-white/5 opacity-50'
+                          }`}
+                        >
+                          <div
+                            className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full font-bold text-xs sm:text-sm ${
+                              isQualifying
+                                ? 'bg-white/10 text-white'
+                                : 'bg-white/5 text-gray-500'
+                            }`}
                           >
-                            {entry.citizenName || `Citizen #${entry.citizenId}`}
-                          </Link>
-                          <p className="text-gray-400 text-xs sm:text-sm">
-                            {entry.delegatorCount} backer
-                            {entry.delegatorCount !== 1 ? 's' : ''}
-                          </p>
-                        </div>
+                            {index + 1}
+                          </div>
 
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-white text-sm sm:text-base font-semibold">
-                            {entry.totalDelegated.toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                            })}
-                          </p>
-                          <p className="text-gray-400 text-xs sm:text-sm">$OVERVIEW</p>
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0 ${isQualifying ? '' : 'grayscale'}`}>
+                            {entry.citizenImage ? (
+                              <IPFSRenderer
+                                src={entry.citizenImage}
+                                alt={entry.citizenName || 'Citizen'}
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className={`w-full h-full flex items-center justify-center font-bold text-xs sm:text-sm ${
+                                isQualifying
+                                  ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
+                                  : 'bg-gray-700 text-gray-400'
+                              }`}>
+                                {entry.citizenName?.[0]?.toUpperCase() || 'C'}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              href={citizenLink}
+                              className={`text-sm sm:text-base font-medium hover:underline truncate block ${
+                                isQualifying ? 'text-white' : 'text-gray-400'
+                              }`}
+                            >
+                              {entry.citizenName || `Citizen #${entry.citizenId}`}
+                            </Link>
+                            <p className={`text-xs sm:text-sm ${isQualifying ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {entry.delegatorCount} backer
+                              {entry.delegatorCount !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+
+                          <div className="text-right flex-shrink-0">
+                            <p className={`text-sm sm:text-base font-semibold ${
+                              isQualifying ? 'text-white' : 'text-gray-400'
+                            }`}>
+                              {entry.totalDelegated.toLocaleString(undefined, {
+                                maximumFractionDigits: 2,
+                              })}
+                            </p>
+                            <p className={`text-xs sm:text-sm ${isQualifying ? 'text-gray-400' : 'text-gray-500'}`}>
+                              $OVERVIEW
+                            </p>
+                          </div>
                         </div>
                       </div>
                     )
@@ -824,7 +856,7 @@ export async function getStaticProps() {
       }
     }
 
-    const leaderboardResult = buildLeaderboard(aggregated, citizenMap, 25)
+    const leaderboardResult = buildLeaderboard(aggregated, citizenMap)
 
     return {
       props: { leaderboard: leaderboardResult, tokenAddress },

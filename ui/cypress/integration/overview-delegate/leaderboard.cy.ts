@@ -298,7 +298,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
       expect(result[9].totalDelegated).to.equal(21)
     })
 
-    it('defaults to limit=25', () => {
+    it('returns all entries when no limit is given', () => {
       const aggregated: AggregatedEntry[] = Array.from({ length: 30 }, (_, i) => ({
         delegateeAddress: `0x${String(i).padStart(40, '0')}`,
         totalDelegated: 30 - i,
@@ -311,7 +311,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
         ])
       )
       const result = buildLeaderboard(aggregated, citizenMap)
-      expect(result).to.have.length(25)
+      expect(result).to.have.length(30)
     })
 
     it('handles empty citizen name gracefully', () => {
@@ -472,7 +472,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
       expect(result[1].citizenName).to.equal('Alice')
     })
 
-    it('limits result to 25 entries', () => {
+    it('returns all entries including new additions', () => {
       const bigLb: LeaderboardEntry[] = Array.from({ length: 25 }, (_, i) => ({
         delegateeAddress: `0x${String(i).padStart(40, '0')}`,
         citizenId: i,
@@ -491,7 +491,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
         null,
         false
       )
-      expect(result).to.have.length(25)
+      expect(result).to.have.length(26)
     })
 
     it('does not mutate the input array', () => {

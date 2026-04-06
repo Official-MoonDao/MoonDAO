@@ -77,7 +77,7 @@ export function aggregateDelegations(
 export function buildLeaderboard(
   aggregated: AggregatedEntry[],
   citizenMap: Record<string, { id: number; name: string; image?: string }>,
-  limit = 25
+  limit?: number
 ): LeaderboardEntry[] {
   const leaderboard: LeaderboardEntry[] = []
 
@@ -95,7 +95,7 @@ export function buildLeaderboard(
   }
 
   leaderboard.sort((a, b) => b.totalDelegated - a.totalDelegated)
-  return leaderboard.slice(0, limit)
+  return limit != null ? leaderboard.slice(0, limit) : leaderboard
 }
 
 export function applyOptimisticUpdate(
@@ -161,7 +161,7 @@ export function applyOptimisticUpdate(
   }
 
   optimistic.sort((a, b) => b.totalDelegated - a.totalDelegated)
-  return optimistic.slice(0, 25)
+  return optimistic
 }
 
 export function sanitizeSearchQuery(query: string): string {
