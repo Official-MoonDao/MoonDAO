@@ -641,7 +641,7 @@ export default function OverviewDelegate({
                           className={`flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl transition-opacity ${
                             isQualifying
                               ? 'bg-black/20 border border-white/10'
-                              : 'bg-black/10 border border-white/5 opacity-50'
+                              : 'bg-black/10 border border-white/5 opacity-90'
                           }`}
                         >
                           <div
