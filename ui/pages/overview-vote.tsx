@@ -487,7 +487,10 @@ export default function OverviewDelegate({
                         </p>
                       )}
                       <p className="text-gray-400 text-xs sm:text-sm">
-                        {previousDelegation.amount.toLocaleString(undefined, {
+                        {(userBalance != null && Number.isFinite(userBalance)
+                          ? userBalance
+                          : previousDelegation.amount
+                        ).toLocaleString(undefined, {
                           maximumFractionDigits: 2,
                         })}{' '}
                         $OVERVIEW delegated
