@@ -18,7 +18,6 @@ import { getAccessToken } from '@privy-io/react-auth'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { formatUnits } from 'ethers'
 import {
   applyOptimisticUpdate,
   isValidEthAddress,
@@ -800,12 +799,13 @@ export async function getStaticProps() {
         ERC20_BALANCE_OF_ABI,
         chain.id
       )
+      const divisor = 10n ** BigInt(OVERVIEW_TOKEN_DECIMALS)
       for (let i = 0; i < uniqueDelegators.length; i++) {
         const raw = balances[i]
         const wei = BigInt(raw || '0')
-        const normalized = parseFloat(
-          formatUnits(wei, OVERVIEW_TOKEN_DECIMALS)
-        )
+        const whole = wei / divisor
+        const remainder = wei % divisor
+        const normalized = Number(whole) + Number(remainder) / Number(divisor)
         balanceMap[uniqueDelegators[i].toLowerCase()] = normalized
       }
     } catch (error) {
