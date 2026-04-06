@@ -110,7 +110,7 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
   const minUsdGoal = getMissionMinimumUsdGoal(featuredMission?.id)
 
   return (
-    <section className="relative min-h-[600px] md:min-h-[700px] lg:min-h-[800px] overflow-hidden">
+    <section className="relative min-h-[600px] md:min-h-[700px] lg:min-h-[800px] overflow-x-clip">
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
