@@ -357,7 +357,7 @@ export function ImageGenerator({
     // If we're generating in background, avoid capturing a screenshot placeholder
     // which can appear blank due to cross-origin/image policies. Proceed directly.
     if (generateInBG && (generating || isGenerating)) {
-      nextStage()
+      nextStage?.()
       return
     }
 
@@ -381,7 +381,7 @@ export function ImageGenerator({
         setImage(file)
       })
     }
-    nextStage()
+    nextStage?.()
   }
 
   const handleUseCroppedImage = useCallback(async () => {
@@ -401,8 +401,7 @@ export function ImageGenerator({
       setCroppedImage(croppedFile)
       setIsReCropping(false)
 
-      // Go to the next stage
-      nextStage()
+      nextStage?.()
     } catch (error) {
       console.error('Error cropping image:', error)
     }
@@ -707,8 +706,8 @@ export function ImageGenerator({
         </div>
       )}
 
-      {/* Next / Continue */}
-      {((currImage && !inputImage) || image || (generateInBG && inputImage)) && (
+      {/* Next / Continue — hidden when nextStage is not provided */}
+      {nextStage && ((currImage && !inputImage) || image || (generateInBG && inputImage)) && (
         <button
           className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
           onClick={submitImage}
