@@ -260,7 +260,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
           isDisabled={!agreedToOnChainData}
           action={async () => {
             if (!account) return
-            if (!citizenData.name || citizenData.name.trim() === '') {
+            if (!citizenData?.name || citizenData.name.trim() === '') {
               return toast.error('Please enter a name.')
             }
 
