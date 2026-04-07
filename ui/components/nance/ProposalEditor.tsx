@@ -226,6 +226,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
           method: 'POST',
           body: JSON.stringify({
             proposalId: response.proposalId,
+            proposalTitle: proposalTitle,
             accessToken: accessToken,
             selectedWallet: selectedWallet,
           }),
