@@ -175,7 +175,7 @@ export function useTeamData(
       } catch {
         return
       }
-      if (hatIdParam === 0n) {
+      if (hatIdParam === BigInt(0)) {
         return
       }
 
@@ -242,7 +242,8 @@ export function useTeamData(
       }
     }
     getTableNames()
-  }, [fetchActivityData])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchActivityData?.jobTableContract, fetchActivityData?.marketplaceTableContract, fetchActivityData?.missionTableContract])
 
   // Build SQL statements for activity data
   const jobStatement =
@@ -323,7 +324,8 @@ export function useTeamData(
     }
 
     processMissions()
-  }, [missionRows, fetchActivityData])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [missionRows, fetchActivityData?.jbControllerContract])
 
   // Update activity loading state
   useEffect(() => {
@@ -332,22 +334,21 @@ export function useTeamData(
       return
     }
 
-    setIsLoadingActivityData(true)
-
     const allDataLoaded =
       (jobTableName ? jobData !== undefined : true) &&
       (marketplaceTableName ? listingData !== undefined : true) &&
       (missionTableName
-        ? missions.length > 0 || missionRows?.length === 0
+        ? missionRows !== undefined
         : true)
 
     if (allDataLoaded) {
       setIsLoadingActivityData(false)
+    } else {
+      setIsLoadingActivityData(true)
     }
   }, [
     jobData,
     listingData,
-    missions,
     jobTableName,
     marketplaceTableName,
     missionTableName,

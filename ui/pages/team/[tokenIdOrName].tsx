@@ -43,7 +43,7 @@ import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
@@ -165,6 +165,15 @@ function TeamDetailPageContent({
     chain: selectedChain,
   })
 
+  const fetchActivityData = useMemo(() => ({
+    teamId: tokenId,
+    selectedChain,
+    jobTableContract,
+    marketplaceTableContract,
+    missionTableContract,
+    jbControllerContract,
+  }), [tokenId, selectedChain, jobTableContract, marketplaceTableContract, missionTableContract, jbControllerContract])
+
   const {
     socials,
     isPublic,
@@ -180,14 +189,7 @@ function TeamDetailPageContent({
     listings,
     missions,
     isLoadingActivityData,
-  } = useTeamData(teamContract, hatsContract, nft, citizen, {
-    teamId: tokenId,
-    selectedChain,
-    jobTableContract,
-    marketplaceTableContract,
-    missionTableContract,
-    jbControllerContract,
-  })
+  } = useTeamData(teamContract, hatsContract, nft, citizen, fetchActivityData)
 
   const hats = useSubHats(selectedChain, adminHatId, true)
   const wearers = useUniqueHatWearers(hats)
