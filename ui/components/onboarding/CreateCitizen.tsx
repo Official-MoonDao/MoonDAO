@@ -1015,7 +1015,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 steps={['Design', 'Profile', 'Checkout']}
                 currStep={stage}
                 lastStep={lastStage}
-                setStep={setStage}
+                setStep={(step: number) => {
+                  if (step === 0 && stage !== 0) {
+                    setCitizenImage(undefined)
+                  }
+                  setStage(step)
+                }}
               />
               <button
                 onClick={() => setSelectedTier(null)}
@@ -1152,7 +1157,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     </div>
                     {(citizenImage || inputImage) && (
                       <button
-                        onClick={() => setStage(0)}
+                        onClick={() => {
+                          setCitizenImage(undefined)
+                          setStage(0)
+                        }}
                         className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
                       >
                         ← Edit Image

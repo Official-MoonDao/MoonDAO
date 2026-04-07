@@ -53,41 +53,36 @@ export default function useImageGenerator(
     }
   }
 
-  async function generateImage() {
+  async function generateImage(imageOverride?: File) {
     setIsLoading(true)
     let uploadedFilename: string | null = null
 
-    if (!inputImage) {
+    const imageToUse = imageOverride || inputImage
+    if (!imageToUse) {
       return console.error('inputImage is not defined')
     }
 
     try {
       // Upload to Google Cloud Storage
-      const { url, filename } = await uploadToGoogleStorage(inputImage)
+      const { url, filename } = await uploadToGoogleStorage(imageToUse)
       uploadedFilename = filename
 
       const accessToken = await getAccessToken()
 
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-      const jobId = await Promise.race([
-        fetch(generateApiRoute, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ url }),
-          signal: controller.signal,
-        }).then((res) => res.json()),
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error('Request timed out after 5 seconds')),
-            5000
-          )
-        ),
-      ]).finally(() => clearTimeout(timeoutId))
+      const jobId = await fetch(generateApiRoute, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ url }),
+        signal: controller.signal,
+      })
+        .then((res) => res.json())
+        .finally(() => clearTimeout(timeoutId))
 
       if (!jobId?.id) {
         throw new Error('Failed to create a comfy icu job')
@@ -103,7 +98,7 @@ export default function useImageGenerator(
         await deleteFromGoogleStorage(uploadedFilename)
       }
 
-      const fittedImage = await fitImage(inputImage, 1024, 1024)
+      const fittedImage = await fitImage(imageToUse, 1024, 1024)
       setImage(fittedImage)
       setError('Unable to generate an image, please try again later.')
     }
