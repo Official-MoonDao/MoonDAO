@@ -357,7 +357,7 @@ export function ImageGenerator({
     // If we're generating in background, avoid capturing a screenshot placeholder
     // which can appear blank due to cross-origin/image policies. Proceed directly.
     if (generateInBG && (generating || isGenerating)) {
-      nextStage()
+      nextStage?.()
       return
     }
 
@@ -381,7 +381,7 @@ export function ImageGenerator({
         setImage(file)
       })
     }
-    nextStage()
+    nextStage?.()
   }
 
   const handleUseCroppedImage = useCallback(async () => {
@@ -401,8 +401,7 @@ export function ImageGenerator({
       setCroppedImage(croppedFile)
       setIsReCropping(false)
 
-      // Go to the next stage
-      nextStage()
+      nextStage?.()
     } catch (error) {
       console.error('Error cropping image:', error)
     }
@@ -433,11 +432,11 @@ export function ImageGenerator({
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-400">
               {generating
-                ? 'Generating your AI passport photo…'
+                ? 'Generating your AI photo…'
                 : inputImage && !image
                 ? 'Drag to reposition crop · Handles to resize'
                 : image
-                ? 'Your passport photo'
+                ? 'Your photo'
                 : 'Current image'}
             </p>
             {inputImage && (
@@ -450,9 +449,12 @@ export function ImageGenerator({
                   setIsReCropping(false)
                   setShowError(false)
                 }}
-                className="text-xs text-slate-500 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg transition-all duration-200"
               >
-                Change photo
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Change Photo
               </button>
             )}
           </div>
@@ -483,7 +485,7 @@ export function ImageGenerator({
                       src={generatedImageUrl}
                       fill
                       style={{ objectFit: 'contain' }}
-                      alt="Generated passport"
+                      alt="Generated photo"
                     />
                   ) : generating ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/80">
@@ -707,8 +709,8 @@ export function ImageGenerator({
         </div>
       )}
 
-      {/* Next / Continue */}
-      {((currImage && !inputImage) || image || (generateInBG && inputImage)) && (
+      {/* Next / Continue — hidden when nextStage is not provided */}
+      {nextStage && ((currImage && !inputImage) || image || (generateInBG && inputImage)) && (
         <button
           className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
           onClick={submitImage}

@@ -119,7 +119,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
   // aggregateDelegations
   // ---------------------------------------------------------------------------
   describe('aggregateDelegations', () => {
-    it('aggregates a single delegation', () => {
+    it('uses current balance as effective delegation weight', () => {
       const delegations: ParsedDelegation[] = [
         {
           delegatorAddress: '0xd1',
@@ -130,11 +130,11 @@ describe('Overview Delegate – Leaderboard Logic', () => {
       const balanceMap = { '0xd1': 200 }
       const result = aggregateDelegations(delegations, balanceMap)
       expect(result).to.have.length(1)
-      expect(result[0].totalDelegated).to.equal(100)
+      expect(result[0].totalDelegated).to.equal(200)
       expect(result[0].delegatorCount).to.equal(1)
     })
 
-    it('caps delegation to current balance (anti-gaming)', () => {
+    it('reflects current balance even when below stored amount (anti-gaming)', () => {
       const delegations: ParsedDelegation[] = [
         {
           delegatorAddress: '0xd1',
@@ -145,6 +145,20 @@ describe('Overview Delegate – Leaderboard Logic', () => {
       const balanceMap = { '0xd1': 300 }
       const result = aggregateDelegations(delegations, balanceMap)
       expect(result[0].totalDelegated).to.equal(300)
+    })
+
+    it('reflects increased balance without re-voting', () => {
+      const delegations: ParsedDelegation[] = [
+        {
+          delegatorAddress: '0xd1',
+          delegateeAddress: '0xc1',
+          storedAmount: 100,
+        },
+      ]
+      const balanceMap = { '0xd1': 5000 }
+      const result = aggregateDelegations(delegations, balanceMap)
+      expect(result).to.have.length(1)
+      expect(result[0].totalDelegated).to.equal(5000)
     })
 
     it('excludes delegations when delegator balance is 0', () => {
@@ -181,7 +195,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
       const balanceMap = { '0xd1': 500, '0xd2': 500, '0xd3': 500 }
       const result = aggregateDelegations(delegations, balanceMap)
       expect(result).to.have.length(1)
-      expect(result[0].totalDelegated).to.equal(350)
+      expect(result[0].totalDelegated).to.equal(1500)
       expect(result[0].delegatorCount).to.equal(3)
     })
 
@@ -195,23 +209,23 @@ describe('Overview Delegate – Leaderboard Logic', () => {
       expect(result).to.have.length(2)
     })
 
-    it('handles mixed capping across delegators', () => {
+    it('uses each delegator current balance regardless of stored amount', () => {
       const delegations: ParsedDelegation[] = [
         { delegatorAddress: '0xd1', delegateeAddress: '0xc1', storedAmount: 1000 },
         { delegatorAddress: '0xd2', delegateeAddress: '0xc1', storedAmount: 500 },
       ]
       const balanceMap = { '0xd1': 200, '0xd2': 1000 }
       const result = aggregateDelegations(delegations, balanceMap)
-      expect(result[0].totalDelegated).to.equal(700)
+      expect(result[0].totalDelegated).to.equal(1200)
       expect(result[0].delegatorCount).to.equal(2)
     })
 
     it('rounds totalDelegated to 2 decimal places', () => {
       const delegations: ParsedDelegation[] = [
-        { delegatorAddress: '0xd1', delegateeAddress: '0xc1', storedAmount: 33.333 },
-        { delegatorAddress: '0xd2', delegateeAddress: '0xc1', storedAmount: 66.667 },
+        { delegatorAddress: '0xd1', delegateeAddress: '0xc1', storedAmount: 100 },
+        { delegatorAddress: '0xd2', delegateeAddress: '0xc1', storedAmount: 200 },
       ]
-      const balanceMap = { '0xd1': 1000, '0xd2': 1000 }
+      const balanceMap = { '0xd1': 33.333, '0xd2': 66.667 }
       const result = aggregateDelegations(delegations, balanceMap)
       expect(result[0].totalDelegated).to.equal(100)
     })
@@ -284,7 +298,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
       expect(result[9].totalDelegated).to.equal(21)
     })
 
-    it('defaults to limit=25', () => {
+    it('returns all entries when no limit is given', () => {
       const aggregated: AggregatedEntry[] = Array.from({ length: 30 }, (_, i) => ({
         delegateeAddress: `0x${String(i).padStart(40, '0')}`,
         totalDelegated: 30 - i,
@@ -297,7 +311,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
         ])
       )
       const result = buildLeaderboard(aggregated, citizenMap)
-      expect(result).to.have.length(25)
+      expect(result).to.have.length(30)
     })
 
     it('handles empty citizen name gracefully', () => {
@@ -458,7 +472,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
       expect(result[1].citizenName).to.equal('Alice')
     })
 
-    it('limits result to 25 entries', () => {
+    it('returns all entries including new additions', () => {
       const bigLb: LeaderboardEntry[] = Array.from({ length: 25 }, (_, i) => ({
         delegateeAddress: `0x${String(i).padStart(40, '0')}`,
         citizenId: i,
@@ -477,7 +491,7 @@ describe('Overview Delegate – Leaderboard Logic', () => {
         null,
         false
       )
-      expect(result).to.have.length(25)
+      expect(result).to.have.length(26)
     })
 
     it('does not mutate the input array', () => {
@@ -588,16 +602,16 @@ describe('Overview Delegate – Leaderboard Logic', () => {
 
       expect(leaderboard).to.have.length(3)
 
-      // Alice: d1 gives min(1000,1000)=1000, d2 gives min(500,300)=300 → 1300
+      // Alice: d1 balance=1000, d2 balance=300 → 1300
       expect(leaderboard[0].citizenName).to.equal('Alice')
       expect(leaderboard[0].totalDelegated).to.equal(1300)
       expect(leaderboard[0].delegatorCount).to.equal(2)
 
-      // Bob: d3 gives min(800,100)=100
+      // Bob: d3 balance=100
       expect(leaderboard[1].citizenName).to.equal('Bob')
       expect(leaderboard[1].totalDelegated).to.equal(100)
 
-      // Charlie: d4 gives min(200,50)=50
+      // Charlie: d4 balance=50
       expect(leaderboard[2].citizenName).to.equal('Charlie')
       expect(leaderboard[2].totalDelegated).to.equal(50)
     })
