@@ -57,16 +57,16 @@ export default function RewardAsset({ name, value, usdValue, approximateUSD }: R
   const formattedValue = formatValueForDisplay(value)
 
   return (
-    <div className="flex gap-3 items-center">
+    <div className="flex gap-2 md:gap-3 items-center">
       <Image
-        className="scale-[0.55] filter drop-shadow-lg"
+        className="scale-[0.45] md:scale-[0.55] filter drop-shadow-lg"
         src={image}
         alt={name}
         width={name === 'ETH' ? 42 : 50}
         height={name === 'ETH' ? 42 : 50}
       />
       <div className="flex flex-col min-w-0 flex-1">
-        <div className="flex gap-2 font-GoodTimes text-lg text-white">
+        <div className="flex gap-1 md:gap-2 font-GoodTimes text-sm md:text-lg text-white">
           <p className="text-white/80">{name}</p>
           {/* Show abbreviated on small screens, full on larger screens */}
           <p className="text-white font-bold whitespace-nowrap">
