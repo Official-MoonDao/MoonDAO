@@ -41,8 +41,10 @@
   },
   "homepage": "https://github.com/MitchMcQuinn/Dispatcher#readme",
   "devDependencies": {
+    "@types/node": "^25.5.2",
     "jest": "^29.7.0",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.2"
   },
   "engines": {
     "node": ">=18.0.0"

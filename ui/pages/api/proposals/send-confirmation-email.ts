@@ -3,7 +3,7 @@ import withMiddleware from 'middleware/withMiddleware'
 import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
 
 const generateHTML = (proposalId: string, proposalTitle: string) => {
-  const proposalUrl = `https://moondao.com/proposal/${proposalId}`
+  const proposalUrl = `https://moondao.com/project/${proposalId}`
   const townHallCalendar = 'https://lu.ma/moondao'
   const ideationChannel =
     'https://discord.com/channels/914720248140279868/1027658256706961509'
