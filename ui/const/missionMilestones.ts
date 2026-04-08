@@ -14,7 +14,7 @@ export const MISSION_FUNDING_MILESTONES_USD: Record<number, MissionFundingMilest
 
 /** USD pledged off-chain but counted toward campaign “raised” in the UI (mission id → USD). */
 export const MISSION_OFF_CHAIN_COMMITTED_USD: Partial<Record<number, number>> = {
-  4: 100_000,
+  4: 111_500,
 }
 
 export function getMissionOffChainCommittedUsd(missionId: unknown): number {
