@@ -1,6 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useState } from 'react'
-import { fitImage } from '../utils/images'
+import { compressImageForUpload, fitImage } from '../utils/images'
 
 export default function useImageGenerator(
   generateApiRoute: string,
@@ -68,8 +68,10 @@ export default function useImageGenerator(
     }
 
     try {
+      // Compress image to stay under Vercel's 4.5 MB payload limit
+      const compressedImage = await compressImageForUpload(imageToUse) as File
       // Upload to Google Cloud Storage
-      const { url, filename } = await uploadToGoogleStorage(imageToUse)
+      const { url, filename } = await uploadToGoogleStorage(compressedImage)
       uploadedFilename = filename
 
       const accessToken = await getAccessToken()
