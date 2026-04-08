@@ -14,21 +14,13 @@ export default function useImageGenerator(
 
   // Upload image to Google Cloud Storage
   async function uploadToGoogleStorage(
-    file: File,
-    accessToken?: string
+    file: File
   ): Promise<{ url: string; filename: string }> {
     const formData = new FormData()
     formData.append('file', file)
 
-    const headers: Record<string, string> = {}
-    if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`
-    }
-
     const response = await fetch('/api/google/storage/upload', {
       method: 'POST',
-      credentials: 'include',
-      headers,
       body: formData,
     })
 
@@ -79,11 +71,11 @@ export default function useImageGenerator(
       // Compress image to stay under Vercel's 4.5 MB payload limit
       const compressedImage = await compressImageForUpload(imageToUse) as File
 
-      const accessToken = await getAccessToken()
-
       // Upload to Google Cloud Storage
-      const { url, filename } = await uploadToGoogleStorage(compressedImage, accessToken || undefined)
+      const { url, filename } = await uploadToGoogleStorage(compressedImage)
       uploadedFilename = filename
+
+      const accessToken = await getAccessToken()
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000)
