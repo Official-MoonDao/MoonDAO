@@ -1,6 +1,4 @@
 import React from 'react'
-import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import ContributionEditor from '../components/contribution/ContributionEditor'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -8,8 +6,6 @@ import { NoticeFooter } from '../components/layout/NoticeFooter'
 
 export default function ContributionsPage() {
   const title = 'Submit Your Contribution'
-
-  useChainDefault()
 
   return (
     <>
@@ -52,7 +48,22 @@ export default function ContributionsPage() {
                   </a>.
                 </p>
               </div>
-              <ContributionEditor />
+              <div className="flex flex-col items-center gap-4 py-6">
+                <p className="text-gray-400 text-center text-sm">
+                  Click below to open the contribution submission form.
+                </p>
+                <a
+                  href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-GoodTimes text-lg rounded-xl transition-all duration-200 shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02]"
+                >
+                  Submit a Contribution
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </a>
+              </div>
             </div>
           </ContentLayout>
           <NoticeFooter 
