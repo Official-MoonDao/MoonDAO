@@ -481,8 +481,7 @@ export function ImageGenerator({
                   {image && !generating && generatedImageUrl ? (
                     <img
                       src={generatedImageUrl}
-                      fill
-                      style={{ objectFit: 'contain' }}
+                      className="absolute inset-0 w-full h-full object-contain"
                       alt="Generated photo"
                     />
                   ) : generating ? (
@@ -617,7 +616,7 @@ export function ImageGenerator({
                         </>
                       )}
                     </>
-                  )}
+                  ) : null}
                 </>
               )}
             </div>
