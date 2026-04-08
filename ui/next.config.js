@@ -389,7 +389,7 @@ module.exports = withBundleAnalyzer(
           },
           {
             source: '/events',
-            destination: '/info',
+            destination: 'https://lu.ma/moondao',
             permanent: true,
           },
           // Citizen specific referral redirects
