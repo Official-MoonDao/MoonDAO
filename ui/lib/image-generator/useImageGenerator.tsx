@@ -19,8 +19,12 @@ export default function useImageGenerator(
     const formData = new FormData()
     formData.append('file', file)
 
+    const accessToken = await getAccessToken()
     const response = await fetch('/api/google/storage/upload', {
       method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
       body: formData,
     })
 
@@ -40,10 +44,12 @@ export default function useImageGenerator(
   // Delete image from Google Cloud Storage
   async function deleteFromGoogleStorage(filename: string) {
     try {
+      const accessToken = await getAccessToken()
       await fetch('/api/google/storage/delete', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ filename }),
       })

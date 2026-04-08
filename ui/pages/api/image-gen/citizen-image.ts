@@ -2,15 +2,37 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth'
 import { v4 } from 'uuid'
 import { authOptions } from '../auth/[...nextauth]'
+import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method === 'POST') {
+    // Try NextAuth session first
+    let isAuthenticated = false
     const session = await getServerSession(req, res, authOptions)
+    if (session) {
+      isAuthenticated = true
+    }
 
-    if (!session) {
+    // Fallback: check for Privy Bearer token
+    if (!isAuthenticated) {
+      const authHeader = req.headers.authorization
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.slice(7)
+        try {
+          const verified = await verifyPrivyAuth(token)
+          if (verified) {
+            isAuthenticated = true
+          }
+        } catch (err) {
+          // Privy verification failed
+        }
+      }
+    }
+
+    if (!isAuthenticated) {
       return res.status(401).json('Unauthorized')
     }
 
