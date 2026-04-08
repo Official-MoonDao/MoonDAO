@@ -74,8 +74,8 @@ export default function useNavigation(citizen: any) {
         href: '/launch',
         children: [
           { name: 'Launchpad Explainer', href: '/launch' },
-          { name: 'Support Overview Flight', href: '/mission/4' },
-          { name: 'Fly with Frank', href: '/overview-vote' },
+          { name: 'Overview Fundraiser', href: '/mission/4' },
+          { name: 'Fly with Frank Leaderboard', href: '/overview-vote' },
         ],
       },
       {
