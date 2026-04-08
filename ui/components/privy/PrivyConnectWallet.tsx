@@ -36,6 +36,8 @@ import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
+import { OVERVIEW_TOKEN_ADDRESS } from '@/const/config'
+import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import Modal from '../layout/Modal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import { LinkAccounts } from './LinkAccounts'
@@ -586,6 +588,8 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
     loading: tokensLoading,
     error: tokensError,
   } = useWalletTokens(address, chainSlug)
+
+  const overviewBalance = useWatchTokenBalance(arbitrum, OVERVIEW_TOKEN_ADDRESS)
 
   // Helper function to map chain to Coinbase supported network
   const getNetworkName = (chain: any) => {
@@ -1169,6 +1173,33 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                             <p className="text-gray-400 text-xs">
                               {selectedNativeToken[chainSlug]}
                             </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* $OVERVIEW Balance - Always show on Arbitrum */}
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/10 transition-all duration-200 cursor-default">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
+                              <div className="w-6 h-6 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                O
+                              </div>
+                            </div>
+                            <div>
+                              <p className="font-medium text-white">OVERVIEW</p>
+                              <p className="text-gray-400 text-xs">Arbitrum</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-white">
+                              {overviewBalance != null && Number.isFinite(overviewBalance)
+                                ? overviewBalance.toLocaleString(undefined, {
+                                    maximumFractionDigits: 2,
+                                  })
+                                : '...'}
+                            </p>
+                            <p className="text-gray-400 text-xs">OVERVIEW</p>
                           </div>
                         </div>
                       </div>
