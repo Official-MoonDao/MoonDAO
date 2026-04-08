@@ -1,8 +1,10 @@
 import { Storage } from '@google-cloud/storage'
 import formidable from 'formidable'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { authMiddleware } from 'middleware/authMiddleware'
-import withMiddleware from 'middleware/withMiddleware'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '../auth/[...nextauth]'
+import { verifyPrivyAuth } from 'lib/privy/privyAuth'
+import { secureHeaders } from 'middleware/secureHeaders'
 
 export const config = {
   api: {
@@ -106,4 +108,27 @@ async function handler(
   }
 }
 
-export default withMiddleware(handler, authMiddleware)
+export default async function wrappedHandler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  secureHeaders(res)
+
+  // Try NextAuth session first
+  const session = await getServerSession(req, res, authOptions)
+  if (session) {
+    return handler(req, res)
+  }
+
+  // Fall back to Privy bearer token
+  const authHeader = req.headers.authorization
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7)
+    const claims = await verifyPrivyAuth(token)
+    if (claims) {
+      return handler(req, res)
+    }
+  }
+
+  return res.status(401).json('Unauthorized')
+}
