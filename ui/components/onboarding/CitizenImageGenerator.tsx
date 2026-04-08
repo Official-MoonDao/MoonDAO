@@ -176,7 +176,7 @@ export function ImageGenerator({
 
   // Clear error when new input image is uploaded
   useEffect(() => {
-    if (inputImage) {
+    if (inputImage && inputImageUrl) {
       setShowError(false)
       // Initialize crop area when image is uploaded
       const imgElement = new window.Image()
@@ -195,9 +195,9 @@ export function ImageGenerator({
         // Calculate displayed image size after a short delay to ensure container is rendered
         setTimeout(calculateDisplayedImageSize, 100)
       }
-      imgElement.src = URL.createObjectURL(inputImage)
+      imgElement.src = inputImageUrl
     }
-  }, [inputImage, calculateDisplayedImageSize])
+  }, [inputImage, inputImageUrl, calculateDisplayedImageSize])
 
   // Recalculate displayed image size when container size changes
   useEffect(() => {
@@ -498,11 +498,11 @@ export function ImageGenerator({
                         Creating your AI image…
                       </p>
                     </div>
-                  ) : (
+                  ) : inputImageUrl ? (
                     <>
                       <img
-                        ref={imageRef as any}
-                        src={inputImageUrl!}
+                        ref={imageRef}
+                        src={inputImageUrl}
                         className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                         alt="Uploaded photo"
                       />
