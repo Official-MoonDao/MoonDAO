@@ -1,16 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getServerSession } from 'next-auth'
 import { v4 } from 'uuid'
-import { authOptions } from '../auth/[...nextauth]'
+import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method === 'POST') {
-    const session = await getServerSession(req, res, authOptions)
+    const auth = await verifyPrivyAuth(req.headers.authorization?.replace('Bearer ', ''))
 
-    if (!session) {
+    if (!auth) {
       return res.status(401).json('Unauthorized')
     }
 
