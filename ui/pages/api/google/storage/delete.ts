@@ -1,7 +1,5 @@
 import { Storage } from '@google-cloud/storage'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { authMiddleware } from 'middleware/authMiddleware'
-import withMiddleware from 'middleware/withMiddleware'
 
 // Add error handling for credentials parsing
 let credentials: any
@@ -117,4 +115,4 @@ async function handler(
   }
 }
 
-export default withMiddleware(handler, authMiddleware)
+export default handler

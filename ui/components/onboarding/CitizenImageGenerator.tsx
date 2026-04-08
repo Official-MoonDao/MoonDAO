@@ -1,6 +1,5 @@
-import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { cropImageWithCoordinates } from '@/lib/utils/images'
 import FileInput from '../layout/FileInput'
@@ -68,13 +67,11 @@ export function ImageGenerator({
       // Store the cropped image for fallback
       setCroppedImage(croppedFile)
 
-      // Set the cropped image as the new input image for generation
-      setInputImage(croppedFile)
       setImage(null) // Clear any existing generated image
       setShowError(false)
 
-      // Generate the AI image using the cropped version
-      await generateImage() // This will set the hook's isLoading to true
+      // Generate the AI image using the cropped version (pass directly to avoid mutating inputImage)
+      await generateImage(croppedFile)
     } catch (error) {
       console.error('Error cropping or generating image:', error)
       setIsGenerating(false)
@@ -88,7 +85,6 @@ export function ImageGenerator({
     cropArea.x,
     cropArea.y,
     cropArea.size,
-    setInputImage,
     setImage,
     generateImage,
     onGenerationStateChange,
@@ -126,27 +122,29 @@ export function ImageGenerator({
   const [forceRerender, setForceRerender] = useState(0)
   const [isCroppingMode, setIsCroppingMode] = useState(true)
 
-  // Memoize object URLs to prevent re-creation on every render (causes image flashing)
-  const inputImageUrl = useMemo(
-    () => (inputImage ? URL.createObjectURL(inputImage) : null),
-    [inputImage]
-  )
-  const generatedImageUrl = useMemo(
-    () => (image ? URL.createObjectURL(image) : null),
-    [image]
-  )
+  // Manage object URLs via state so they survive re-renders and are cleaned up properly
+  const [inputImageUrl, setInputImageUrl] = useState<string | null>(null)
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
 
-  // Cleanup object URLs on unmount or when images change
   useEffect(() => {
-    return () => {
-      if (inputImageUrl) URL.revokeObjectURL(inputImageUrl)
+    if (inputImage) {
+      const url = URL.createObjectURL(inputImage)
+      setInputImageUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } else {
+      setInputImageUrl(null)
     }
-  }, [inputImageUrl])
+  }, [inputImage])
+
   useEffect(() => {
-    return () => {
-      if (generatedImageUrl) URL.revokeObjectURL(generatedImageUrl)
+    if (image) {
+      const url = URL.createObjectURL(image)
+      setGeneratedImageUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } else {
+      setGeneratedImageUrl(null)
     }
-  }, [generatedImageUrl])
+  }, [image])
 
   // Calculate displayed image dimensions and position
   const calculateDisplayedImageSize = useCallback(() => {
@@ -178,7 +176,7 @@ export function ImageGenerator({
 
   // Clear error when new input image is uploaded
   useEffect(() => {
-    if (inputImage) {
+    if (inputImage && inputImageUrl) {
       setShowError(false)
       // Initialize crop area when image is uploaded
       const imgElement = new window.Image()
@@ -197,9 +195,9 @@ export function ImageGenerator({
         // Calculate displayed image size after a short delay to ensure container is rendered
         setTimeout(calculateDisplayedImageSize, 100)
       }
-      imgElement.src = URL.createObjectURL(inputImage)
+      imgElement.src = inputImageUrl
     }
-  }, [inputImage, calculateDisplayedImageSize])
+  }, [inputImage, inputImageUrl, calculateDisplayedImageSize])
 
   // Recalculate displayed image size when container size changes
   useEffect(() => {
@@ -361,25 +359,25 @@ export function ImageGenerator({
       return
     }
 
-    if (!document.getElementById('citizenPic')) return console.error('citizenPic is not defined')
+    // If there's already a generated/cropped image, use it directly
+    if (image) {
+      nextStage()
+      return
+    }
+
+    // Otherwise, crop the input image programmatically (avoids capturing crop UI overlays)
     if (inputImage) {
-      // @ts-expect-error
-      await html2canvas(document.getElementById('citizenPic')).then((canvas) => {
-        const img = canvas.toDataURL('image/png')
-
-        //Convert from base64 to file
-        const byteString = atob(img.split(',')[1])
-        const mimeString = img.split(',')[0].split(':')[1].split(';')[0]
-        const ab = new ArrayBuffer(byteString.length)
-        const ia = new Uint8Array(ab)
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i)
-        }
-        const blob = new Blob([ab], { type: mimeString })
-        const file = new File([blob], 'citizenPic.png', { type: mimeString })
-
-        setImage(file)
-      })
+      try {
+        const croppedFile = await cropImageWithCoordinates(
+          inputImage,
+          cropArea.x,
+          cropArea.y,
+          cropArea.size
+        )
+        setImage(croppedFile)
+      } catch (error) {
+        console.error('Error cropping image:', error)
+      }
     }
     nextStage?.()
   }
@@ -481,10 +479,9 @@ export function ImageGenerator({
               {inputImage && (
                 <>
                   {image && !generating && generatedImageUrl ? (
-                    <Image
+                    <img
                       src={generatedImageUrl}
-                      fill
-                      style={{ objectFit: 'contain' }}
+                      className="absolute inset-0 w-full h-full object-contain"
                       alt="Generated photo"
                     />
                   ) : generating ? (
@@ -500,14 +497,12 @@ export function ImageGenerator({
                         Creating your AI image…
                       </p>
                     </div>
-                  ) : (
+                  ) : inputImageUrl ? (
                     <>
-                      <Image
+                      <img
                         ref={imageRef}
-                        src={inputImageUrl!}
-                        fill
-                        style={{ objectFit: 'contain' }}
-                        className="pointer-events-none"
+                        src={inputImageUrl}
+                        className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                         alt="Uploaded photo"
                       />
 
@@ -621,7 +616,7 @@ export function ImageGenerator({
                         </>
                       )}
                     </>
-                  )}
+                  ) : null}
                 </>
               )}
             </div>
@@ -692,7 +687,7 @@ export function ImageGenerator({
               setImage(null)
               setHasGeneratedImage(false)
               setShowError(false)
-              generateImage()
+              generateImage(croppedImage || undefined)
             }}
           >
             {generating ? (
