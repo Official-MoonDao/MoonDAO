@@ -1,4 +1,3 @@
-import { getProposal } from '@nance/nance-sdk'
 import {
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
@@ -9,7 +8,6 @@ import {
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
-import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import { getPrivyUserData } from '@/lib/privy'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
@@ -22,10 +20,8 @@ const NOTIFICATION_CHANNEL_ID =
     ? GENERAL_CHANNEL_ID
     : TEST_CHANNEL_ID
 
-// In-memory storage for used proposal IDs to prevent duplicate notifications
 const notifiedProposals = new Set<string>()
 
-// Clear the set every hour to prevent memory issues
 setInterval(() => {
   notifiedProposals.clear()
 }, 60 * 60 * 1000)
@@ -38,20 +34,21 @@ async function handler(req: any, res: any) {
         return res.status(400).send({ message: 'Bad request' })
       }
 
-      const { accessToken, proposalId, selectedWallet } = JSON.parse(data)
+      const { accessToken, proposalId, proposalTitle, selectedWallet } =
+        JSON.parse(data)
 
-      if (!accessToken || !proposalId) {
+      if (!accessToken || !proposalId || !proposalTitle) {
         return res.status(400).send({ message: 'Missing required fields' })
       }
 
-      // Check if proposal notification has already been sent
-      if (notifiedProposals.has(proposalId)) {
+      const proposalIdStr = String(proposalId)
+
+      if (notifiedProposals.has(proposalIdStr)) {
         return res.status(400).send({
           message: 'Notification for this proposal has already been sent',
         })
       }
 
-      // Verify the Privy access token
       const privyUserData = await getPrivyUserData(accessToken)
       if (!privyUserData) {
         return res.status(400).send({ message: 'Invalid access token' })
@@ -62,7 +59,6 @@ async function handler(req: any, res: any) {
         return res.status(400).send({ message: 'No wallet addresses found' })
       }
 
-      // Use selectedWallet index if provided, otherwise default to first wallet
       const walletIndex =
         typeof selectedWallet === 'number' && selectedWallet >= 0
           ? selectedWallet
@@ -76,39 +72,8 @@ async function handler(req: any, res: any) {
 
       const proposalAuthorAddress = walletAddresses[walletIndex]?.toLowerCase()
 
-      // Fetch proposal from Nance
-      const proposal = await getProposal(
-        { space: NANCE_SPACE_NAME, uuid: proposalId },
-        NANCE_API_URL
-      )
+      notifiedProposals.add(proposalIdStr)
 
-      if (!proposal) {
-        return res.status(400).send({
-          message: 'Proposal not found',
-        })
-      }
-
-      // Verify the proposal author matches the authenticated user
-      if (proposal.authorAddress?.toLowerCase() !== proposalAuthorAddress) {
-        return res.status(400).send({
-          message: 'Proposal author does not match authenticated user',
-        })
-      }
-
-      // Check if proposal is recent (within 10 minutes)
-      const proposalCreatedTime = new Date(proposal.createdTime).getTime()
-      const currentTime = new Date().getTime()
-      const timeDifference = currentTime - proposalCreatedTime
-      if (timeDifference > 10 * 60 * 1000) {
-        return res.status(400).send({
-          message: 'Proposal is too old. Must be within 10 minutes.',
-        })
-      }
-
-      // Mark proposal as notified
-      notifiedProposals.add(proposalId)
-
-      // Try to get citizen data for the proposal author
       let citizen: any = null
       try {
         const citizenRows: any = await queryTable(
@@ -123,7 +88,6 @@ async function handler(req: any, res: any) {
         console.log('Error fetching citizen data:', err)
       }
 
-      // Send Discord notification
       try {
         const authorDisplay = citizen?.name
           ? `[${
@@ -136,9 +100,7 @@ async function handler(req: any, res: any) {
             '...' +
             proposalAuthorAddress.slice(-4)
 
-        const content = `## **${authorDisplay}** has submitted a new proposal!\n**[${
-          proposal.title
-        }](${DEPLOYED_ORIGIN}/proposal/${proposal.proposalId?.toString()})**`
+        const content = `## **${authorDisplay}** has submitted a new proposal!\n**[${proposalTitle}](${DEPLOYED_ORIGIN}/project/${proposalIdStr})**`
 
         let messageData: any = {}
 
@@ -178,8 +140,7 @@ async function handler(req: any, res: any) {
         return res.status(200).json({ success: true })
       } catch (err: any) {
         console.log('Discord notification error:', err)
-        // Remove proposal from notified set if notification failed, allowing retry
-        notifiedProposals.delete(proposalId)
+        notifiedProposals.delete(proposalIdStr)
         return res.status(400).json({
           message: err.message,
         })

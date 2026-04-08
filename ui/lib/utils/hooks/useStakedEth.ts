@@ -33,6 +33,8 @@ export default function useStakedEth() {
   )
 
   useEffect(() => {
+    if (!contract) return
+
     async function fetchStakedEth() {
       setIsLoading(true)
       try {

@@ -40,7 +40,6 @@ import { ExpandedFooter } from '../layout/ExpandedFooter'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { DataOverview } from './DataOverview'
-import { StageContainer } from './StageContainer'
 import { ImageGenerator } from './TeamImageGenerator'
 import { TermsCheckbox } from './TermsCheckbox'
 
@@ -172,7 +171,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
       const totalCost = calculateCost(cost)
 
-      if (+nativeBalance < totalCost) {
+      if (+(nativeBalance ?? '0') < totalCost) {
         const roundedCost = Math.ceil(totalCost * 1000000) / 1000000
         setIsLoadingMint(false)
         return await fundWallet(address, {
@@ -396,11 +395,12 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           }
           description=""
         >
-          <div className="flex flex-row w-full justify-center">
-            <div className="px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 flex flex-col w-full max-w-[800px]">
-              <div className="flex p-2 pb-0 flex-row w-full justify-between items-start">
+          <div className="flex justify-center w-full px-4 md:px-0">
+            <div className="w-full max-w-[720px]">
+              {/* Header bar with steps + close */}
+              <div className="flex items-center justify-between mb-6">
                 <Steps
-                  className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
+                  className="w-full max-w-[480px]"
                   steps={['Design', 'Profile', 'Checkout']}
                   currStep={stage}
                   lastStep={lastStage}
@@ -408,137 +408,150 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                 />
                 <button
                   onClick={() => setSelectedTier(null)}
-                  className="hover:scale-110 transition-transform"
+                  className="ml-4 p-2 rounded-xl hover:bg-white/5 transition-colors flex-shrink-0"
+                  aria-label="Close"
                 >
-                  <XMarkIcon width={50} height={50} className="text-white" />
+                  <XMarkIcon width={28} height={28} className="text-slate-400" />
                 </button>
               </div>
 
-              {/* Typeform form */}
-              {stage === 0 && (
-                <StageContainer
-                  className={`mb-[350px] max-w-[600px]`}
-                  title="Design"
-                  description="Design your unique onchain registration by uploading your logo or image. For best results, use an image with a white or transparent background."
-                >
-                  <ImageGenerator
-                    setImage={setTeamImage}
-                    nextStage={() => setStage(1)}
-                    stage={stage}
-                  />
-                </StageContainer>
-              )}
-
-              {/* Upload & Create Image */}
-              {stage === 1 && (
-                <StageContainer
-                  title="Team Profile"
-                  description="Please complete your team profile by filling out the form below."
-                >
-                  <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
-                    <Widget
-                      className="w-full"
-                      id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
-                      onSubmit={submitTypeform}
-                      height={700}
+              {/* Card container */}
+              <div className="bg-gradient-to-b from-slate-800/40 to-slate-900/60 backdrop-blur-md border border-white/[0.08] rounded-2xl p-5 sm:p-8">
+                {/* Stage 0: Design */}
+                {stage === 0 && (
+                  <div className="animate-fadeIn">
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
+                      <p className="text-slate-400 text-sm leading-relaxed">
+                        Upload your team logo or image. For best results, use an image with a white
+                        or transparent background.
+                      </p>
+                    </div>
+                    <ImageGenerator
+                      setImage={setTeamImage}
+                      nextStage={() => setStage(1)}
+                      stage={stage}
                     />
                   </div>
-                </StageContainer>
-              )}
-              {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
-              {stage === 2 && (
-                <StageContainer
-                  title="Review & Mint"
-                  description="Please review your team information before finalizing your registration on the blockchain."
-                >
-                  {teamImage && (
-                    <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">Team Image Preview</h3>
-                      <div className="flex justify-start">
-                        <Image
-                          src={URL.createObjectURL(teamImage)}
-                          alt="entity-image"
-                          width={300}
-                          height={300}
-                          className="rounded-xl border border-slate-600/50"
-                        />
-                      </div>
-                    </div>
-                  )}
+                )}
 
-                  <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
+                {/* Stage 1: Team Profile */}
+                {stage === 1 && (
+                  <div className="animate-fadeIn">
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-GoodTimes text-white mb-2">Team Profile</h2>
+                      <p className="text-slate-400 text-sm">Fill out your team information below.</p>
+                    </div>
+                    <div className="w-full rounded-xl overflow-hidden border border-white/[0.06]">
+                      <Widget
+                        className="w-full"
+                        id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
+                        onSubmit={submitTypeform}
+                        height={700}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Stage 2: Review & Mint */}
+                {stage === 2 && (
+                  <div className="animate-fadeIn flex flex-col gap-8">
+                    <div>
+                      <h2 className="text-2xl font-GoodTimes text-white mb-2">Review & Mint</h2>
+                      <p className="text-slate-400 text-sm">
+                        Review your team information before registering on the blockchain.
+                      </p>
+                    </div>
+
+                    {teamImage && (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="relative w-full max-w-[320px] aspect-square rounded-2xl border border-white/[0.08] bg-slate-900/60 overflow-hidden">
+                          <Image
+                            src={URL.createObjectURL(teamImage)}
+                            alt="team-image"
+                            fill
+                            style={{ objectFit: 'cover' }}
+                            className="rounded-2xl"
+                          />
+                        </div>
+                        <button
+                          onClick={() => setStage(0)}
+                          className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
+                        >
+                          ← Edit Image
+                        </button>
+                      </div>
+                    )}
+
                     <DataOverview
                       data={teamData}
                       title="Team Overview"
                       excludeKeys={['formResponseId']}
                     />
-                  </div>
-                  <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
-                    <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                      <h2 className="font-GoodTimes text-xl mb-6 text-white">
-                        Important Information
-                      </h2>
-                      <div className="flex flex-col rounded-[20px] bg-slate-800/50 border border-slate-600/30 p-5 pb-10 md:p-5">
-                        <h3 className="font-GoodTimes text-lg mb-3 text-white">Treasury</h3>
-                        <p className="text-slate-300 leading-relaxed">
-                          A self-custodied multisignature treasury will secure your organization’s
-                          assets, allowing interaction with any smart contracts within the Ethereum
-                          ecosystem.
-                          <br />
-                          <br />
-                          You can add more signers later via your Team management portal.
+
+                    <div className="flex flex-col gap-4">
+                      <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
+                        <h3 className="font-GoodTimes text-base mb-3 text-white">Treasury</h3>
+                        <p className="text-slate-400 text-sm leading-relaxed">
+                          A self-custodied multisignature treasury will secure your organization's
+                          assets. You can add more signers later via your Team management portal.
                         </p>
                       </div>
-                      <div className="flex flex-col bg-slate-800/50 border border-slate-600/30 rounded-[20px] pb-10 p-5 mt-5">
-                        <h3 className="font-GoodTimes text-lg mb-3 text-white">Manager</h3>
-                        <p className="text-slate-300 leading-relaxed">
-                          The manager can modify your organization’s information. To begin, the
-                          currently connected wallet will act as the Manager.
-                          <br />
-                          <br />
-                          You can add a manager or members to your organization using your Team
-                          Management Portal.
+                      <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
+                        <h3 className="font-GoodTimes text-base mb-3 text-white">Manager</h3>
+                        <p className="text-slate-400 text-sm leading-relaxed">
+                          The connected wallet will act as Manager. You can add managers or members
+                          later via your Team Management Portal.
                         </p>
                       </div>
-                      <p className="mt-6 text-center text-slate-300 font-medium">
-                        Welcome to the future of on-chain, off-world coordination with MoonDAO!
-                      </p>
                     </div>
+
+                    <TermsCheckbox checked={agreedToCondition} onChange={setAgreedToCondition} />
+                    <PrivyWeb3Button
+                      id="team-checkout-button"
+                      label={isLoadingMint ? 'Creating Team...' : 'Create Team'}
+                      className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      isDisabled={!agreedToCondition || isLoadingMint || isLoadingGasEstimate}
+                      action={callMint}
+                    />
+                    {isLoadingMint && (
+                      <div className="flex flex-col items-center gap-3 py-6 px-4 bg-slate-800/30 border border-white/[0.06] rounded-2xl">
+                        <Image
+                          src="/assets/MoonDAO-Loading-Animation.svg"
+                          alt="loading"
+                          width={48}
+                          height={48}
+                          className="animate-pulse"
+                        />
+                        <p className="text-slate-300 text-sm text-center">
+                          Creating your team on the blockchain...
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <TermsCheckbox checked={agreedToCondition} onChange={setAgreedToCondition} />
-                  <PrivyWeb3Button
-                    id="team-checkout-button"
-                    label={isLoadingMint ? 'Creating Team...' : 'Create Team'}
-                    className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    isDisabled={!agreedToCondition || isLoadingMint || isLoadingGasEstimate}
-                    action={callMint}
-                  />
-                  {isLoadingMint && (
-                    <div className="mt-4 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl">
-                      <p className="text-slate-300 text-center">
-                        Creating your team on the blockchain...
-                      </p>
-                      <p className="text-slate-400 text-sm text-center mt-2">
-                        This process can take up to a minute. Please wait while the transaction is
-                        processed.
-                      </p>
-                    </div>
-                  )}
-                </StageContainer>
+                )}
+              </div>
+
+              {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+                <div className="flex justify-center gap-4 mt-4">
+                  <button
+                    id="team-back-button"
+                    className="text-xs text-slate-500 hover:text-white transition-colors"
+                    onClick={() => setStage(stage - 1)}
+                  >
+                    ← BACK
+                  </button>
+                  <button
+                    id="team-next-button"
+                    className="text-xs text-slate-500 hover:text-white transition-colors"
+                    onClick={() => setStage(stage + 1)}
+                  >
+                    NEXT →
+                  </button>
+                </div>
               )}
             </div>
           </div>
-          {/* Dev Buttons */}
-          {process.env.NEXT_PUBLIC_ENV === 'dev' && (
-            <div className="flex flex-row justify-center gap-4">
-              <button id="team-back-button" onClick={() => setStage(stage - 1)}>
-                BACK
-              </button>
-              <button id="team-next-button" onClick={() => setStage(stage + 1)}>
-                NEXT
-              </button>
-            </div>
-          )}
         </ContentLayout>
       </div>
     </Container>

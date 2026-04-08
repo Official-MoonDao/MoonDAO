@@ -1,5 +1,6 @@
 import toast from 'react-hot-toast'
 import { IPFS_GATEWAY } from '../../const/config'
+import { compressImageForUpload } from '../utils/images'
 
 interface PinResponse {
   cid: string
@@ -8,8 +9,11 @@ interface PinResponse {
 
 export async function pinBlobOrFile(blob: Blob | File, pinUrl: string = '/api/ipfs/pin'): Promise<PinResponse> {
   try {
+    // Compress images that exceed Vercel's 4.5 MB payload limit
+    const fileToUpload = await compressImageForUpload(blob)
+
     const imageFormData = new FormData()
-    imageFormData.append('file', blob)
+    imageFormData.append('file', fileToUpload)
 
     const pin = await fetch(pinUrl, {
       method: 'POST',

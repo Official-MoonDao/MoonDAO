@@ -6,6 +6,11 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { arbitrum } from '@/lib/rpc/chains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import { CoinbaseQuoteUnavailableGuide } from './CoinbaseQuoteUnavailableGuide'
+import {
+  LARGE_ONRAMP_FIAT_THRESHOLD_USD,
+  LargeAmountExchangeOnrampNotice,
+} from './LargeAmountExchangeOnrampNotice'
 
 interface CBOnrampProps {
   address: string
@@ -22,6 +27,8 @@ interface CBOnrampProps {
     paymentTotal: number,
     totalFees: number
   ) => void
+  /** When true, stretches to parent width (e.g. embedded in contribute modal). */
+  fullWidth?: boolean
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
@@ -37,10 +44,14 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   isWaitingForGasEstimate = false,
   allowAmountInput = false,
   onQuoteCalculated,
+  fullWidth = false,
 }) => {
+  const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
+
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showExchangeFundingGuide, setShowExchangeFundingGuide] = useState(false)
   const [showLimits, setShowLimits] = useState(false)
   const [hasShownLimitsForExcess, setHasShownLimitsForExcess] = useState(false)
   const [quoteData, setQuoteData] = useState<{
@@ -111,6 +122,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       }
 
       setError(null)
+      setShowExchangeFundingGuide(false)
       setIsLoadingQuote(true)
 
       try {
@@ -154,9 +166,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           })
 
           if (currentResponse.status === 400) {
-            setError(
-              `Unable to process this amount through Coinbase. Please try a smaller amount or contact info@moondao.com for alternative payment methods.`
-            )
+            setShowExchangeFundingGuide(true)
           } else {
             setError(`Unable to get quote from Coinbase. Please try again.`)
           }
@@ -407,6 +417,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     try {
       setIsLoading(true)
       setError(null)
+      setShowExchangeFundingGuide(false)
 
       // Mock mode: simulate onramp return instead of redirecting
       if (MOCK_ONRAMP) {
@@ -463,34 +474,71 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     }
   }
 
-  // Error state
-  if (error) {
+  // Error state (or Coinbase quote unavailable → exchange funding guide)
+  if (error || showExchangeFundingGuide) {
+    const isGuide = showExchangeFundingGuide
     return (
-      <div data-testid="cbonramp-modal-content" className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-red-900/30 to-purple-900/20 backdrop-blur-xl border border-red-500/20 rounded-2xl shadow-2xl text-white overflow-hidden">
+      <div
+        data-testid="cbonramp-modal-content"
+        className={`${shellWidthClass} bg-gradient-to-br from-gray-900 ${
+          isGuide ? 'via-amber-950/40' : 'via-red-900/30'
+        } to-purple-900/20 backdrop-blur-xl border ${
+          isGuide ? 'border-amber-500/25' : 'border-red-500/20'
+        } rounded-2xl shadow-2xl text-white overflow-hidden`}
+      >
         {/* Header with close button */}
-        <div className="flex items-center justify-between p-6 border-b border-red-500/20">
+        <div
+          className={`flex items-center justify-between p-6 border-b ${
+            isGuide ? 'border-amber-500/20' : 'border-red-500/20'
+          }`}
+        >
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-red-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                isGuide ? 'bg-amber-500/20' : 'bg-red-500/20'
+              }`}
+            >
+              {isGuide ? (
+                <svg
+                  className="w-6 h-6 text-amber-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-6 h-6 text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              )}
             </div>
-            <h3 className="text-lg font-semibold text-red-400">Error</h3>
+            <h3
+              className={`text-lg font-semibold ${isGuide ? 'text-amber-200' : 'text-red-400'}`}
+            >
+              {isGuide ? 'Fund another way' : 'Error'}
+            </h3>
           </div>
           <button
             data-testid="cbonramp-error-close-button"
             onClick={() => {
               setError(null)
+              setShowExchangeFundingGuide(false)
               onExit?.()
             }}
             className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
@@ -499,13 +547,21 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           </button>
         </div>
         <div className="p-6">
-          <div className="flex flex-col items-center justify-center space-y-4 min-h-[150px]">
-            <p className="text-gray-300 text-sm text-center">{error}</p>
+          <div className="flex flex-col items-stretch justify-center space-y-4 min-h-[150px]">
+            {isGuide ? (
+              <CoinbaseQuoteUnavailableGuide
+                walletAddress={address}
+                networkName={selectedChain?.name}
+              />
+            ) : (
+              <p className="text-gray-300 text-sm text-center">{error}</p>
+            )}
             {allowAmountInput && (
               <button
                 data-testid="cbonramp-error-try-again-button"
                 onClick={() => {
                   setError(null)
+                  setShowExchangeFundingGuide(false)
                   setInputAmount(0)
                 }}
                 className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
@@ -521,7 +577,10 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
   // Ready state - no loading spinner on component mount
   return (
-    <div data-testid="cbonramp-modal-content" className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden">
+    <div
+      data-testid="cbonramp-modal-content"
+      className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
@@ -655,6 +714,11 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             </div>
           </div>
         )}
+
+        {quoteData?.purchaseAmount &&
+          quoteData.purchaseAmount > LARGE_ONRAMP_FIAT_THRESHOLD_USD && (
+            <LargeAmountExchangeOnrampNotice walletAddress={address} />
+          )}
 
         {/* Purchase button */}
         <PrivyWeb3Button

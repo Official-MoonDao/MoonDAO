@@ -1,8 +1,6 @@
 import { Storage } from '@google-cloud/storage'
 import formidable from 'formidable'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { authMiddleware } from 'middleware/authMiddleware'
-import withMiddleware from 'middleware/withMiddleware'
 
 export const config = {
   api: {
@@ -106,4 +104,4 @@ async function handler(
   }
 }
 
-export default withMiddleware(handler, authMiddleware)
+export default handler

@@ -234,3 +234,86 @@ export async function cropImageWithCoordinates(
     img.src = URL.createObjectURL(file)
   })
 }
+
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024 // 4 MB (Vercel limit is 4.5 MB, leave headroom)
+const MAX_DIMENSION = 2048
+
+/**
+ * Compress an image File/Blob so it stays under Vercel's 4.5 MB payload limit.
+ * Downscales to MAX_DIMENSION and converts to JPEG at decreasing quality until
+ * the result fits. Non-image blobs are returned unchanged.
+ */
+export async function compressImageForUpload(
+  blob: Blob | File
+): Promise<Blob | File> {
+  // Only compress image types
+  if (!blob.type.startsWith('image/')) return blob
+  // Already small enough
+  if (blob.size <= MAX_UPLOAD_BYTES) return blob
+
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    const objectUrl = URL.createObjectURL(blob)
+
+    img.onload = async () => {
+      URL.revokeObjectURL(objectUrl)
+
+      // Downscale if either dimension exceeds MAX_DIMENSION
+      let { width, height } = img
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        const scale = MAX_DIMENSION / Math.max(width, height)
+        width = Math.round(width * scale)
+        height = Math.round(height * scale)
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('Unable to get canvas context'))
+        return
+      }
+      ctx.drawImage(img, 0, 0, width, height)
+
+      // Try decreasing JPEG quality until under the limit
+      const qualities = [0.85, 0.7, 0.5, 0.3]
+      for (const q of qualities) {
+        const result = await new Promise<Blob | null>((res) =>
+          canvas.toBlob((b) => res(b), 'image/jpeg', q)
+        )
+        if (result && result.size <= MAX_UPLOAD_BYTES) {
+          const name = blob instanceof File ? blob.name.replace(/\.\w+$/, '.jpg') : 'image.jpg'
+          resolve(new File([result], name, { type: 'image/jpeg' }))
+          return
+        }
+      }
+
+      // Last resort: further downscale at lowest quality
+      const smallerScale = 0.5
+      canvas.width = Math.round(width * smallerScale)
+      canvas.height = Math.round(height * smallerScale)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(
+        (result) => {
+          if (result) {
+            const name = blob instanceof File ? blob.name.replace(/\.\w+$/, '.jpg') : 'image.jpg'
+            resolve(new File([result], name, { type: 'image/jpeg' }))
+          } else {
+            reject(new Error('Failed to compress image'))
+          }
+        },
+        'image/jpeg',
+        0.3
+      )
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      // If we can't decode it as an image, just return the original
+      resolve(blob)
+    }
+
+    img.src = objectUrl
+  })
+}

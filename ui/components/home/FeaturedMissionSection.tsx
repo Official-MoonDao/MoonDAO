@@ -8,6 +8,7 @@ import {
   getMissionMinimumUsdGoal,
   MISSION_MINIMUM_GOAL_TOOLTIP,
 } from 'const/missionMilestones'
+import useMissionRaisedProgress from '@/lib/mission/useMissionRaisedProgress'
 import {
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
@@ -90,6 +91,17 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
     _ruleset: featuredMissionData?._ruleset,
   })
 
+  const {
+    raisedUsd,
+    milestoneProgressPercent,
+    milestoneCaption,
+    isLoading: isLoadingRaised,
+  } = useMissionRaisedProgress({
+    projectId: featuredMission?.projectId,
+    missionId: featuredMission?.id,
+    subgraphVolume: featuredMissionSubgraphData?.volume,
+  })
+
   if (!featuredMission) {
     console.log('No featured mission found, returning null')
     return null
@@ -98,7 +110,7 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
   const minUsdGoal = getMissionMinimumUsdGoal(featuredMission?.id)
 
   return (
-    <section className="relative min-h-[600px] md:min-h-[700px] lg:min-h-[800px] overflow-hidden">
+    <section className="relative min-h-[600px] md:min-h-[700px] lg:min-h-[800px] overflow-x-clip">
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
@@ -224,11 +236,9 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
                     </span>
                   </div>
                   <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
-                    {truncateTokenValue(
-                      Number(featuredMissionSubgraphData?.volume || 0) / 1e18,
-                      'ETH'
-                    )}{' '}
-                    ETH
+                    {isLoadingRaised || raisedUsd == null
+                      ? '...'
+                      : `$${Math.round(raisedUsd).toLocaleString()}`}
                   </p>
                 </div>
 
@@ -292,12 +302,8 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
                     Funding Progress
                   </span>
                   <span className="text-white font-bold text-sm md:text-base">
-                    {featuredMissionFundingGoal && featuredMissionFundingGoal > 0
-                      ? Math.round(
-                          (Number(featuredMissionSubgraphData?.volume || 0) /
-                            featuredMissionFundingGoal) *
-                            100
-                        )
+                    {milestoneProgressPercent != null
+                      ? Math.round(milestoneProgressPercent)
                       : 0}
                     %
                   </span>
@@ -306,19 +312,15 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
                   <div
                     className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] h-full rounded-full transition-all duration-1000"
                     style={{
-                      width: `${
-                        featuredMissionFundingGoal && featuredMissionFundingGoal > 0
-                          ? Math.min(
-                              (Number(featuredMissionSubgraphData?.volume || 0) /
-                                featuredMissionFundingGoal) *
-                                100,
-                              100
-                            )
-                          : 0
-                      }%`,
+                      width: `${Math.min(100, milestoneProgressPercent ?? 0)}%`,
                     }}
                   />
                 </div>
+                {milestoneCaption && (
+                  <p className="text-white/60 text-xs md:text-sm">
+                    {milestoneCaption}
+                  </p>
+                )}
               </div>
 
               {/* CTA Buttons */}

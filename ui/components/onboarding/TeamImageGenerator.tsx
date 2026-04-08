@@ -1,13 +1,23 @@
 // Team Image Generator
 import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
-import { StageButton } from './StageButton'
 
 export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
   const [inputImage, setInputImage] = useState<File>()
+
+  const inputImageUrl = useMemo(
+    () => (inputImage ? URL.createObjectURL(inputImage) : undefined),
+    [inputImage]
+  )
+
+  useEffect(() => {
+    return () => {
+      if (inputImageUrl) URL.revokeObjectURL(inputImageUrl)
+    }
+  }, [inputImageUrl])
 
   async function submitImage() {
     if (!document.getElementById('teamPic'))
@@ -40,63 +50,20 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
 
   return (
     <div className="animate-fadeIn flex flex-col gap-6">
-      <div className="flex items-start flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <h4 className="font-medium text-white">Upload Team Image</h4>
-          <p className="text-slate-300 text-sm">Choose an image to represent your team</p>
-        </div>
-        <FileInput
-          file={inputImage}
-          setFile={setInputImage}
-          noBlankImages
-          accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
-          acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
-        />
-      </div>
-
-      {/* Show current team  image if no user image has been uploaded */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <h4 className="font-medium text-white">Preview</h4>
-          <p className="text-slate-300 text-sm">This is how your team image will appear</p>
-        </div>
-        <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-xl border border-slate-600/30 p-4">
-          {currImage && !inputImage && (
+      {/* Upload zone + placeholder when no image selected */}
+      {!inputImage && !currImage && (
+        <div className="flex flex-col gap-4">
+          <FileInput
+            file={inputImage}
+            setFile={setInputImage}
+            noBlankImages
+            accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+            acceptText="PNG, JPEG, WEBP, GIF, SVG"
+          />
+          <div className="rounded-2xl border border-white/[0.08] bg-slate-900/40 overflow-hidden">
             <div
               id="teamPic"
-              className="w-[70vw] h-[70vw] md:w-[400px] md:h-[400px] justify-left relative flex rounded-lg overflow-hidden"
-            >
-              <IPFSRenderer
-                className="p-0 m-0 rounded-lg"
-                src={currImage}
-                width={400}
-                height={400}
-                alt="Team Image"
-              />
-            </div>
-          )}
-
-          {/* Show uploaded image if available */}
-          {inputImage && (
-            <div
-              id="teamPic"
-              className="w-[70vw] h-[70vw] md:w-[400px] md:h-[400px] bg-[url('/moondao-team-flag.png')] bg-cover justify-left relative flex rounded-lg overflow-hidden"
-            >
-              <div
-                id="user-image"
-                style={{
-                  backgroundImage: `url(${URL.createObjectURL(inputImage)})`,
-                }}
-                className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
-              ></div>
-            </div>
-          )}
-
-          {/* Show placeholder if no current image and no uploaded image */}
-          {!inputImage && !currImage && (
-            <div
-              id="teamPic"
-              className="w-[70vw] h-[70vw] md:w-[400px] md:h-[400px] bg-[url('/moondao-team-flag.png')] bg-cover justify-left relative flex rounded-lg overflow-hidden"
+              className="w-full aspect-square max-w-[400px] mx-auto bg-[url('/moondao-team-flag.png')] bg-cover relative flex overflow-hidden"
             >
               <div
                 id="user-image"
@@ -104,20 +71,74 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
                   backgroundImage: `url('/assets/image-placeholder.svg')`,
                 }}
                 className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
-              ></div>
+              />
             </div>
-          )}
+          </div>
         </div>
-      </div>
-      {currImage || inputImage ? (
+      )}
+
+      {/* Preview when image is selected */}
+      {(inputImage || currImage) && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-400">
+              {inputImage ? 'Your team image preview' : 'Current team image'}
+            </p>
+            {inputImage && (
+              <button
+                onClick={() => setInputImage(undefined)}
+                className="text-xs text-slate-500 hover:text-white transition-colors"
+              >
+                Change image
+              </button>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-white/[0.08] bg-slate-900/40 overflow-hidden">
+            {currImage && !inputImage && (
+              <div
+                id="teamPic"
+                className="w-full aspect-square max-w-[400px] mx-auto relative flex overflow-hidden"
+              >
+                <IPFSRenderer
+                  className="p-0 m-0"
+                  src={currImage}
+                  width={400}
+                  height={400}
+                  alt="Team Image"
+                />
+              </div>
+            )}
+
+            {inputImage && (
+              <div
+                id="teamPic"
+                className="w-full aspect-square max-w-[400px] mx-auto bg-[url('/moondao-team-flag.png')] bg-cover relative flex overflow-hidden"
+              >
+                <div
+                  id="user-image"
+                  style={{
+                    backgroundImage: `url(${inputImageUrl})`,
+                  }}
+                  className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Continue */}
+      {(currImage || inputImage) && (
         <button
-          className="w-full gradient-2 hover:scale-105 transition-transform rounded-2xl py-3 font-medium text-white"
+          className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
           onClick={submitImage}
         >
-          Continue with this image
+          Continue
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+          </svg>
         </button>
-      ) : (
-        <></>
       )}
     </div>
   )

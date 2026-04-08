@@ -19,8 +19,8 @@ describe('<TeamImageGenerator />', () => {
     )
   })
 
-  it('Renders the component', () => {
-    cy.get('input[type="file"]').should('exist')
+  it('Renders the component with current image', () => {
+    cy.get('#teamPic').should('exist')
   })
 
   it('Displays the current image if provided', () => {
@@ -31,6 +31,18 @@ describe('<TeamImageGenerator />', () => {
   })
 
   it('Displays the uploaded image if provided', () => {
+    // Click "Change image" to show the file input
+    cy.contains('Change image').should('not.exist')
+    // Mount without currImage so upload zone is shown
+    cy.mount(
+      <TestnetProviders>
+        <ImageGenerator
+          setImage={cy.stub()}
+          nextStage={cy.stub()}
+          stage={1}
+        />
+      </TestnetProviders>
+    )
     cy.get('input[type="file"]').attachFile('images/Original.png')
     cy.get('#user-image')
       .should('have.css', 'background-image')

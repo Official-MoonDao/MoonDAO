@@ -12,7 +12,7 @@ import {
   ARBITRUM_ASSETS_URL,
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
-  ETH_BUDGET,
+  USD_BUDGET,
   IS_SENATE_VOTE,
   IS_MEMBER_VOTE,
 } from 'const/config'
@@ -306,7 +306,7 @@ export function ProjectRewards({
   const votingPowerSumIsNonZero = _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const { walletVP: userVotingPower } = useTotalVP(userAddress || '')
   const userHasVotingPower = useMemo(() => {
-    return userAddress && userVotingPower > 0
+    return userAddress && (userVotingPower ?? 0) > 0
   }, [userVotingPower, userAddress])
 
   const isCitizenAddresses = useCitizens(chain, addresses)
@@ -373,24 +373,24 @@ export function ProjectRewards({
   }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
   const totalAllocated = _.sum(Object.values(distribution))
 
-  // The quarterly ETH budget is the value of all non-mooney tokens in the treasury
-  // converted to ETH on the first day of the quarter. This function calculates in
+  // The quarterly USD budget is the value of all non-mooney tokens in the treasury
+  // calculated in USD on the first day of the quarter. This function calculates in
   // real time. To get the budget we run this on the first day of the quarter, and
   // then hard code it below.
   const {
-    ethBudget: ethBudgetCurrent,
+    usdBudget: usdBudgetCurrent,
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
   // 2025q4
 
-  const usdBudget = ETH_BUDGET * ethPrice
+  const usdBudget = USD_BUDGET
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
 
   const {
-    addressToEthPayout,
+    addressToUsdPayout,
     addressToMooneyPayout,
-    ethPayoutCSV,
+    usdPayoutCSV,
     humanFormat,
     vMooneyAddresses,
     vMooneyAmounts,
@@ -398,7 +398,7 @@ export function ProjectRewards({
     projectIdToEstimatedPercentage,
     eligibleProjects,
     communityCircle,
-    ETH_BUDGET,
+    USD_BUDGET,
     mooneyBudget
   )
 
@@ -612,7 +612,6 @@ export function ProjectRewards({
                     <span className="text-amber-500 text-sm">Unable to check permissions</span>
                     <button
                       onClick={() => setProposalsOwnerRetryCount((c) => c + 1)}
-                      disabled={proposalsOwnerStatus === 'loading'}
                       className="px-4 py-2 bg-amber-600/80 hover:bg-amber-600 disabled:opacity-50 text-white font-RobotoMono rounded-lg transition-all duration-200 text-sm"
                     >
                       Retry
@@ -645,8 +644,8 @@ export function ProjectRewards({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-4 px-1 sm:px-0">
                 <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                   <RewardAsset
-                    name="ETH"
-                    value={ETH_BUDGET.toFixed(1)}
+                    name="USDC"
+                    value={`$${USD_BUDGET.toLocaleString()}`}
                     usdValue={usdBudget.toFixed(2)}
                   />
                 </div>
@@ -733,7 +732,7 @@ export function ProjectRewards({
                     <div className="mt-6 w-full flex flex-col items-end gap-2">
                       <div className="text-white/80 font-RobotoMono text-sm">
                         Allocated: {_.sum(Object.values(proposalDistribution))}% &nbsp;&nbsp;Voting Power:{' '}
-                        {Math.round(userVotingPower) || 0}
+                        {Math.round(userVotingPower ?? 0)}
                       </div>
                       {userHasVotingPower ? (
                         <span className="flex flex-col md:flex-row md:items-center gap-2">

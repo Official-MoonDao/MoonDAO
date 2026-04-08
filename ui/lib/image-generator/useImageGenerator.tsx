@@ -1,4 +1,3 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { useState } from 'react'
 import { fitImage } from '../utils/images'
 
@@ -9,8 +8,6 @@ export default function useImageGenerator(
 ) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>()
-
-  const { getAccessToken } = usePrivy()
 
   // Upload image to Google Cloud Storage
   async function uploadToGoogleStorage(
@@ -66,8 +63,6 @@ export default function useImageGenerator(
       const { url, filename } = await uploadToGoogleStorage(inputImage)
       uploadedFilename = filename
 
-      const accessToken = await getAccessToken()
-
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000)
 
@@ -76,7 +71,6 @@ export default function useImageGenerator(
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ url }),
           signal: controller.signal,

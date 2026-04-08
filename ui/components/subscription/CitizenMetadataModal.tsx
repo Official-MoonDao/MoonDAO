@@ -1,3 +1,4 @@
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
@@ -116,15 +117,14 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
   const account = useActiveAccount()
   const router = useRouter()
 
-  const [stage, setStage] = useState(0)
   const [inputImage, setInputImage] = useState<File>()
-  const [currCitizenImage, setCurrCitizenImage] = useState<string>(nft?.metadata?.image)
   const [newCitizenImage, setNewCitizenImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
     getAttribute(nft?.metadata?.attributes, 'formId').value
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
+  const [showEmailUpdate, setShowEmailUpdate] = useState(false)
 
   const citizenTableContract = useContract({
     chain: selectedChain,
@@ -135,7 +135,6 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
   const submitTypeform = useCallback(
     async (formResponse: any) => {
       try {
-        //get response from form
         const { formId, responseId } = formResponse
 
         await waitForResponse(formId, responseId)
@@ -153,7 +152,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
 
         if (res.ok) {
           setFormResponseId(responseId)
-          setStage(4)
+          toast.success('Email updated successfully!')
         } else {
           toast.error('Error submitting typeform, please contact support.', {
             duration: 10000,
@@ -196,75 +195,43 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
       title="Edit Profile"
       size="3xl"
     >
-      <div className="flex flex-col gap-6 items-start justify-start">
-        {stage === 0 && (
-          <>
-            <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
-              <CitizenMetadataForm
-                nft={nft}
-                citizenData={citizenData}
-                setCitizenData={setCitizenData}
-              />
-            </div>
-            <div className="flex gap-4 mt-6 w-full">
-              <button
-                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200 flex-1"
-                onClick={() => setStage(1)}
-              >
-                Next: Update Profile Picture
-              </button>
-            </div>
-          </>
-        )}
-        {stage === 1 && (
+      <div className="flex flex-col gap-8 items-start justify-start">
+        {/* Profile Picture */}
+        <div className="w-full">
+          <h2 className="text-lg font-semibold text-white mb-4">Profile Picture</h2>
           <ImageGenerator
             image={newCitizenImage}
             setImage={setNewCitizenImage}
             inputImage={inputImage}
             setInputImage={setInputImage}
-            nextStage={() => setStage(2)}
-            stage={stage}
-            currImage={currCitizenImage}
           />
-        )}
-        {stage === 1 && (
-          <DeleteProfileData
+        </div>
+
+        {/* Basic Information */}
+        <div className="w-full">
+          <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
+          <CitizenMetadataForm
             nft={nft}
-            setEnabled={setEnabled}
-            tableContract={citizenTableContract}
-            tokenId={nft.metadata.id}
-            type="citizen"
+            citizenData={citizenData}
+            setCitizenData={setCitizenData}
           />
-        )}
-        {stage === 2 && (
-          <>
-            <div className="text-center mb-6 w-full">
-              <h3 className="text-xl font-semibold text-white mb-3">Almost Done!</h3>
-              <p className="text-white/70">
-                Would you like to update your email for notifications?
-              </p>
-            </div>
-            <div className="flex gap-4 w-full">
-              <button
-                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200 flex-1"
-                onClick={() => setStage(3)}
-              >
-                Yes, Update Email
-              </button>
-              <button
-                className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all duration-200 flex-1 border border-white/20"
-                onClick={() => setStage(4)}
-              >
-                Skip for Now
-              </button>
-            </div>
-          </>
-        )}
-        {stage === 3 && (
-          <div className="w-full">
-            <h3 className="text-lg font-semibold text-white mb-4">Update Email</h3>
-            <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
+        </div>
+
+        {/* Update Email (collapsible) */}
+        <div className="w-full">
+          <button
+            onClick={() => setShowEmailUpdate(!showEmailUpdate)}
+            className="flex items-center justify-between w-full text-left py-3 px-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/[0.08] transition-colors"
+          >
+            <span className="text-sm font-medium text-white">Update Email</span>
+            {showEmailUpdate ? (
+              <ChevronUpIcon className="w-4 h-4 text-gray-400" />
+            ) : (
+              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+            )}
+          </button>
+          {showEmailUpdate && (
+            <div className="mt-3 w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
               <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
                 <Widget
                   className="w-full"
@@ -273,169 +240,168 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                   height={500}
                 />
               </div>
-              {/* Visible indicator for scroll/navigation */}
-              <div className="absolute bottom-4 right-4 bg-blue-600/90 text-white text-xs px-3 py-2 rounded-lg backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none">
-                ↕️ Scroll for more
-              </div>
             </div>
-          </div>
-        )}
-        {stage === 4 && (
-          <>
-            <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">Review & Submit</h2>
-              <CitizenMetadataForm
-                nft={nft}
-                citizenData={citizenData}
-                setCitizenData={setCitizenData}
-              />
-            </div>
-            <div className="w-full">
-              <ConditionCheckbox
-                label="I acknowledge that this info will be stored permanently onchain."
-                agreedToCondition={agreedToOnChainData}
-                setAgreedToCondition={setAgreedToOnChainData}
-              />
-            </div>
-            <PrivyWeb3Button
-              v5
-              className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              requiredChain={DEFAULT_CHAIN_V5}
-              label="Update Profile"
-              isDisabled={!agreedToOnChainData}
-              action={async () => {
-                if (!account) return
-                if (!citizenData.name || citizenData.name.trim() === '') {
-                  return toast.error('Please enter a name.')
-                }
+          )}
+        </div>
 
-                try {
-                  let imageIpfsLink
-                  const currCitizenImage = nft.metadata.image || ''
+        {/* Acknowledgment + Submit */}
+        <div className="w-full">
+          <ConditionCheckbox
+            label="I acknowledge that this info will be stored permanently onchain."
+            agreedToCondition={agreedToOnChainData}
+            setAgreedToCondition={setAgreedToOnChainData}
+          />
+        </div>
+        <PrivyWeb3Button
+          v5
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          requiredChain={DEFAULT_CHAIN_V5}
+          label="Update Profile"
+          isDisabled={!agreedToOnChainData}
+          action={async () => {
+            if (!account) return
+            if (!citizenData?.name || citizenData.name.trim() === '') {
+              return toast.error('Please enter a name.')
+            }
 
-                  if (!newCitizenImage && currCitizenImage && currCitizenImage !== '') {
-                    imageIpfsLink = currCitizenImage
-                  } else {
-                    if (!newCitizenImage) return console.error('No new image')
+            try {
+              let imageIpfsLink
+              const currCitizenImage = nft.metadata.image || ''
 
-                    const renamedCitizenImage = renameFile(
-                      newCitizenImage,
-                      `${citizenData?.name} Citizen Image`
-                    )
+              if (!newCitizenImage && currCitizenImage && currCitizenImage !== '') {
+                imageIpfsLink = currCitizenImage
+              } else {
+                if (!newCitizenImage) return console.error('No new image')
 
-                    //pin new image
-                    const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
+                const renamedCitizenImage = renameFile(
+                  newCitizenImage,
+                  `${citizenData?.name} Citizen Image`
+                )
 
-                    //unpin old image
-                    await unpinCitizenImage(nft.metadata.id)
+                const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
-                    imageIpfsLink = `ipfs://${newImageIpfsHash}`
-                  }
+                await unpinCitizenImage(nft.metadata.id)
 
-                  const oldFormResponseId = getAttribute(nft?.metadata?.attributes, 'formId')?.value
+                imageIpfsLink = `ipfs://${newImageIpfsHash}`
+              }
 
-                  if (oldFormResponseId !== formResponseId) {
-                    //delete old typeform response
-                    await deleteResponse(
-                      process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
-                      oldFormResponseId
-                    )
-                  }
+              const oldFormResponseId = getAttribute(nft?.metadata?.attributes, 'formId')?.value
 
-                  const cleanedCitizenData = cleanData(citizenData)
+              if (oldFormResponseId !== formResponseId) {
+                await deleteResponse(
+                  process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+                  oldFormResponseId
+                )
+              }
 
-                  //get location data from google's geocoder
-                  const locationDataRes = await fetch('/api/google/geocoder', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      location: cleanedCitizenData.location,
-                    }),
-                  })
-                  const { data: locationData } = await locationDataRes.json()
-                  const locationLat = locationData?.results?.[0]?.geometry?.location?.lat || -90
-                  const locationLng = locationData?.results?.[0]?.geometry?.location?.lng || 0
-                  const locationName = locationData?.results?.[0]?.formatted_address || 'Antarctica'
-                  const citizenLocationData = {
-                    lat: locationLat,
-                    lng: locationLng,
-                    name: locationName,
-                  }
-                  const cleanedLocationData = cleanData(citizenLocationData)
+              const cleanedCitizenData = cleanData(citizenData)
 
-                  const formattedCitizenTwitter = cleanedCitizenData.twitter
-                    ? addHttpsIfMissing(cleanedCitizenData.twitter)
-                    : ''
-                  const formattedCitizenInstagram = cleanedCitizenData.instagram
-                    ? addHttpsIfMissing(cleanedCitizenData.instagram)
-                    : ''
-                  const formattedCitizenLinkedin = cleanedCitizenData.linkedin
-                    ? addHttpsIfMissing(cleanedCitizenData.linkedin)
-                    : ''
-                  const formattedCitizenWebsite = cleanedCitizenData.website
-                    ? addHttpsIfMissing(cleanedCitizenData.website)
-                    : ''
-                  const formattedCitizenDiscord = cleanedCitizenData.discord
-                    ? cleanedCitizenData.discord.startsWith('@')
-                      ? cleanedCitizenData.discord.replace('@', '')
-                      : cleanedCitizenData.discord
-                    : ''
+              const locationDataRes = await fetch('/api/google/geocoder', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  location: cleanedCitizenData.location,
+                }),
+              })
+              const { data: locationData } = await locationDataRes.json()
+              const locationLat = locationData?.results?.[0]?.geometry?.location?.lat || -90
+              const locationLng = locationData?.results?.[0]?.geometry?.location?.lng || 0
+              const locationName = locationData?.results?.[0]?.formatted_address || 'Antarctica'
+              const citizenLocationData = {
+                lat: locationLat,
+                lng: locationLng,
+                name: locationName,
+              }
+              const cleanedLocationData = cleanData(citizenLocationData)
 
-                  const transaction = prepareContractCall({
-                    contract: citizenTableContract,
-                    method: 'updateTableDynamic' as string,
-                    params: [
-                      nft.metadata.id,
-                      [
-                        'name',
-                        'description',
-                        'image',
-                        'location',
-                        'discord',
-                        'twitter',
-                        'website',
-                        'instagram',
-                        'linkedin',
-                        'view',
-                        'formId',
-                      ],
-                      [
-                        cleanedCitizenData.name,
-                        cleanedCitizenData.description,
-                        imageIpfsLink,
-                        JSON.stringify(cleanedLocationData),
-                        formattedCitizenDiscord,
-                        formattedCitizenTwitter,
-                        formattedCitizenWebsite,
-                        formattedCitizenInstagram,
-                        formattedCitizenLinkedin,
-                        cleanedCitizenData.view,
-                        formResponseId,
-                      ],
-                    ],
-                  })
+              const formattedCitizenTwitter = cleanedCitizenData.twitter
+                ? addHttpsIfMissing(cleanedCitizenData.twitter)
+                : ''
+              const formattedCitizenInstagram = cleanedCitizenData.instagram
+                ? addHttpsIfMissing(cleanedCitizenData.instagram)
+                : ''
+              const formattedCitizenLinkedin = cleanedCitizenData.linkedin
+                ? addHttpsIfMissing(cleanedCitizenData.linkedin)
+                : ''
+              const formattedCitizenWebsite = cleanedCitizenData.website
+                ? addHttpsIfMissing(cleanedCitizenData.website)
+                : ''
+              const formattedCitizenDiscord = cleanedCitizenData.discord
+                ? cleanedCitizenData.discord.startsWith('@')
+                  ? cleanedCitizenData.discord.replace('@', '')
+                  : cleanedCitizenData.discord
+                : ''
 
-                  const receipt = await sendAndConfirmTransaction({
-                    transaction,
-                    account,
-                  })
+              const transaction = prepareContractCall({
+                contract: citizenTableContract,
+                method: 'updateTableDynamic' as string,
+                params: [
+                  nft.metadata.id,
+                  [
+                    'name',
+                    'description',
+                    'image',
+                    'location',
+                    'discord',
+                    'twitter',
+                    'website',
+                    'instagram',
+                    'linkedin',
+                    'view',
+                    'formId',
+                  ],
+                  [
+                    cleanedCitizenData.name,
+                    cleanedCitizenData.description,
+                    imageIpfsLink,
+                    JSON.stringify(cleanedLocationData),
+                    formattedCitizenDiscord,
+                    formattedCitizenTwitter,
+                    formattedCitizenWebsite,
+                    formattedCitizenInstagram,
+                    formattedCitizenLinkedin,
+                    cleanedCitizenData.view,
+                    formResponseId,
+                  ],
+                ],
+              })
 
-                  setEnabled(false)
+              const receipt = await sendAndConfirmTransaction({
+                transaction,
+                account,
+              })
 
-                  if (receipt) {
-                    setTimeout(() => {
-                      router.reload()
-                    }, 30000)
-                  }
-                } catch (err) {
-                  console.log(err)
-                }
-              }}
-            />
-          </>
-        )}
+              setEnabled(false)
+
+              if (receipt) {
+                setTimeout(() => {
+                  router.reload()
+                }, 30000)
+              }
+            } catch (err) {
+              console.log(err)
+            }
+          }}
+        />
+
+        {/* Danger Zone */}
+        <div className="w-full pt-6 mt-2 border-t border-red-500/20">
+          <h3 className="text-sm font-semibold text-red-400 uppercase tracking-wide mb-2">
+            Danger Zone
+          </h3>
+          <p className="text-gray-400 text-xs mb-4 leading-relaxed">
+            Deleting your profile data is permanent and cannot be undone. All information — including your name, bio, image, and social links — will be erased from the blockchain. Your citizen NFT will remain, but your profile will be blank.
+          </p>
+          <DeleteProfileData
+            nft={nft}
+            setEnabled={setEnabled}
+            tableContract={citizenTableContract}
+            tokenId={nft.metadata.id}
+            type="citizen"
+          />
+        </div>
       </div>
     </Modal>
   )

@@ -10,10 +10,10 @@ describe('<MissionBanner />', () => {
     cy.mount(<MissionBanner />)
 
     if (FEATURED_MISSION && process.env.NEXT_PUBLIC_HIDE_BANNER !== 'true') {
-      cy.get('div').contains('Featured Mission:').should('be.visible')
+      cy.get('div').contains('Featured Mission').should('be.visible')
       cy.contains('Support Mission').should('be.visible')
     } else {
-      cy.get('div').contains('Featured Mission:').should('not.exist')
+      cy.get('div').contains('Featured Mission').should('not.exist')
     }
   })
 
@@ -22,18 +22,18 @@ describe('<MissionBanner />', () => {
 
     cy.mount(<MissionBanner />)
 
-    cy.get('div').contains('Featured Mission:').should('not.exist')
+    cy.get('div').contains('Featured Mission').should('not.exist')
   })
 
   it('Can be closed by clicking the close button', () => {
     if (FEATURED_MISSION && process.env.NEXT_PUBLIC_HIDE_BANNER !== 'true') {
       cy.mount(<MissionBanner />)
 
-      cy.get('div').contains('Featured Mission:').should('be.visible')
+      cy.get('div').contains('Featured Mission').should('be.visible')
 
       cy.get('button[aria-label="Close banner"]').click()
 
-      cy.get('div').contains('Featured Mission:').should('not.exist')
+      cy.get('div').contains('Featured Mission').should('not.exist')
     } else {
       cy.log('Skipping test: Banner would not render with current config')
     }
@@ -44,11 +44,11 @@ describe('<MissionBanner />', () => {
 
     if (hideBanner) {
       cy.mount(<MissionBanner />)
-      cy.get('div').contains('Featured Mission:').should('not.exist')
+      cy.get('div').contains('Featured Mission').should('not.exist')
     } else {
       cy.mount(<MissionBanner />)
       if (FEATURED_MISSION) {
-        cy.get('div').contains('Featured Mission:').should('be.visible')
+        cy.get('div').contains('Featured Mission').should('be.visible')
       }
     }
   })
@@ -56,7 +56,7 @@ describe('<MissionBanner />', () => {
   it('Verifies FEATURED_MISSION config flag behavior', () => {
     if (FEATURED_MISSION === null) {
       cy.mount(<MissionBanner />)
-      cy.get('div').contains('Featured Mission:').should('not.exist')
+      cy.get('div').contains('Featured Mission').should('not.exist')
     } else {
       expect(FEATURED_MISSION).to.have.property('id')
       expect(FEATURED_MISSION).to.have.property('name')

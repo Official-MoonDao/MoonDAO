@@ -5,7 +5,7 @@ import {
   PROPOSALS_ADDRESSES,
   PROPOSALS_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
-  NEXT_QUARTER_BUDGET_ETH,
+  NEXT_QUARTER_BUDGET_USD,
   CITIZEN_TABLE_NAMES,
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
@@ -43,7 +43,7 @@ async function logVotingResults(
   passedProjects: any[],
   outcome: { [projectId: string]: number },
   projectIdToApproved: { [projectId: string]: boolean },
-  ethBudgets: { [projectId: string]: number },
+  usdBudgets: { [projectId: string]: number },
   votes: DistributionVote[],
   addressToQuadraticVotingPower: { [address: string]: number },
   voteAddresses: string[],
@@ -62,7 +62,7 @@ async function logVotingResults(
       percentage: percentage as number,
       projectInfo: projectIdToInfo[projectId],
       approved: projectIdToApproved[projectId],
-      budget: ethBudgets[projectId] || 0,
+      budget: usdBudgets[projectId] || 0,
     }))
 
   // Log voting results table
@@ -76,7 +76,7 @@ async function logVotingResults(
     const rank = String(index + 1).padStart(2, ' ')
     const pct = item.percentage.toFixed(2).padStart(6, ' ')
     const status = item.approved ? '✅ PASS' : '❌ FAIL'
-    const budget = `${item.budget} ETH`.padEnd(8, ' ')
+    const budget = `$${item.budget}`.padEnd(8, ' ')
     const mdp = String(item.projectInfo?.MDP || '?').padStart(3, ' ')
     const name = (item.projectInfo?.name || `Unknown (ID: ${item.projectId})`).slice(0, 34)
     console.log(`║   ${rank}  │ ${pct}% │ ${status} │ ${budget} │ ${mdp} │ ${name.padEnd(34, ' ')} ║`)
@@ -91,9 +91,9 @@ async function logVotingResults(
   console.log('╠════════════════════════════════════════════════════════════════════════════════╣')
   console.log('║                                  SUMMARY                                       ║')
   console.log('╠════════════════════════════════════════════════════════════════════════════════╣')
-  console.log(`║  ✅ Approved: ${approvedProjects.length} projects │ Total Budget: ${totalApprovedBudget.toFixed(2)} ETH`.padEnd(81, ' ') + '║')
-  console.log(`║  ❌ Rejected: ${rejectedProjects.length} projects │ Total Budget: ${totalRejectedBudget.toFixed(2)} ETH`.padEnd(81, ' ') + '║')
-  console.log(`║  📊 Quarter Budget: ${quarterBudget} ETH │ Remaining: ${(quarterBudget - totalApprovedBudget).toFixed(2)} ETH`.padEnd(81, ' ') + '║')
+  console.log(`║  ✅ Approved: ${approvedProjects.length} projects │ Total Budget: $${totalApprovedBudget.toFixed(2)}`.padEnd(81, ' ') + '║')
+  console.log(`║  ❌ Rejected: ${rejectedProjects.length} projects │ Total Budget: $${totalRejectedBudget.toFixed(2)}`.padEnd(81, ' ') + '║')
+  console.log(`║  📊 Quarter Budget: $${quarterBudget} │ Remaining: $${(quarterBudget - totalApprovedBudget).toFixed(2)}`.padEnd(81, ' ') + '║')
   console.log('╚════════════════════════════════════════════════════════════════════════════════╝\n')
 
   // Fetch citizen names for all voters
@@ -271,7 +271,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const ethBudgets = Object.fromEntries(
+  const usdBudgets = Object.fromEntries(
     await Promise.all(
       passedProjects.map(async (project: any) => {
         try {
@@ -280,7 +280,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           let budget = 0
           if (proposal.budget) {
             proposal.budget.forEach((item: any) => {
-              budget += item.token === 'ETH' ? Number(item.amount) : 0
+              budget += item.token === 'USD' || item.token === 'USDC' || item.token === 'USDT' || item.token === 'DAI' ? Number(item.amount) : 0
             })
           }
           return [project.id, budget]
@@ -292,7 +292,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     )
   )
 
-  console.log('[vote tally] ETH budgets:', ethBudgets)
+  console.log('[vote tally] USD budgets:', usdBudgets)
 
   const voteOpenTimestamp: number = Math.floor(
     getThirdThursdayOfQuarterTimestamp(quarter, year).getTime() / 1000
@@ -443,7 +443,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       outcome,
     })
   }
-  const projectIdToApproved = getApprovedProjects(passedProjects, outcome, ethBudgets, NEXT_QUARTER_BUDGET_ETH)
+  const projectIdToApproved = getApprovedProjects(passedProjects, outcome, usdBudgets, NEXT_QUARTER_BUDGET_USD)
 
   console.log('[vote tally] Approval results:', projectIdToApproved)
 
@@ -451,11 +451,11 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     passedProjects,
     outcome,
     projectIdToApproved,
-    ethBudgets,
+    usdBudgets,
     normalizedDistributions,
     addressToQuadraticVotingPower,
     voteAddresses,
-    NEXT_QUARTER_BUDGET_ETH
+    NEXT_QUARTER_BUDGET_USD
   )
 
   const account = await createHSMWallet()

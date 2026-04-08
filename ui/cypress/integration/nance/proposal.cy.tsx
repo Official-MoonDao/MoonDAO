@@ -22,7 +22,7 @@ describe('<Proposal />', () => {
       name: 'Test Proposal for Component Testing',
       proposalIPFS:
         'https://gray-main-toad-36.mypinata.cloud/ipfs/QmXCbzaCDepUpnQFhYJQ8nPcWh7acfack4ARAPWgK59dMo',
-      proposalLink: 'https://moondao.com/proposal/1',
+      proposalLink: 'https://moondao.com/project/1',
       quarter: 4,
       rewardDistribution: '',
       upfrontPayments: '',

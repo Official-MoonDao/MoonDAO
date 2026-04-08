@@ -211,8 +211,8 @@ export default function CreateMission({
 
   const [stage, setStage] = useState(0)
 
-  const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>(
-    userTeamsAsManager?.[0]?.teamId
+  const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(
+    userTeamsAsManager?.[0]?.teamId ?? undefined
   )
   const [selectedTeamNFT, setSelectedTeamNFT] = useState<any>()
   const [missionCache, setMissionCache, clearMissionCache] =
@@ -278,6 +278,7 @@ export default function CreateMission({
       if (!account) throw new Error('Please connect your wallet')
       if (!missionLogoUri) throw new Error('Please upload a mission image')
       if (!fundingGoalInETH || +fundingGoalInETH <= 0) throw new Error('Funding goal is not set')
+      if (selectedTeamId === undefined) throw new Error('Please select a team')
 
       // Calculate deadline timestamp
       let deadlineTimestamp: number
@@ -303,7 +304,7 @@ export default function CreateMission({
       const teamMultisig = await readContract({
         contract: teamContract,
         method: 'ownerOf' as string,
-        params: [selectedTeamId],
+        params: [BigInt(selectedTeamId)],
       })
 
       const missionMetadataBlob = new Blob(
@@ -334,7 +335,7 @@ export default function CreateMission({
         contract: missionCreatorContract,
         method: 'createMission' as string,
         params: [
-          selectedTeamId,
+          BigInt(selectedTeamId),
           teamMultisig,
           missionMetadataIpfsHash,
           ethers.utils.parseEther(String(fundingGoalInETH)),

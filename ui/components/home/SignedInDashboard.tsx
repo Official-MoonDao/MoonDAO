@@ -36,7 +36,7 @@ import {
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
-  ETH_BUDGET,
+  USD_BUDGET,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import {
@@ -56,6 +56,7 @@ import { useNewsletters } from '@/lib/home/useHomeData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import useMissionData from '@/lib/mission/useMissionData'
+import useMissionRaisedProgress from '@/lib/mission/useMissionRaisedProgress'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -337,6 +338,17 @@ export default function SignedInDashboard({
   })
 
   const featuredMinUsdGoal = getMissionMinimumUsdGoal(featuredMission?.id)
+
+  const {
+    raisedUsd: featuredRaisedUsd,
+    milestoneProgressPercent: featuredMilestoneProgress,
+    milestoneCaption: featuredMilestoneCaption,
+    isLoading: isLoadingFeaturedRaised,
+  } = useMissionRaisedProgress({
+    projectId: featuredMission?.projectId,
+    missionId: featuredMission?.id,
+    subgraphVolume: featuredMissionSubgraphData?.volume,
+  })
 
   return (
     <Container>
@@ -817,36 +829,29 @@ export default function SignedInDashboard({
                   {featuredMission.projectId && featuredMission.projectId > 0 ? (
                     <div className="space-y-4">
                       {/* Progress Bar */}
-                      {featuredMissionFundingGoal && featuredMissionFundingGoal > 0 && (
+                      {featuredMilestoneProgress != null && (
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-blue-200 text-xs font-medium">
                               Funding Progress
                             </span>
                             <span className="text-white font-bold text-sm">
-                              {Math.round(
-                                (Number(featuredMissionSubgraphData?.volume || 0) /
-                                  featuredMissionFundingGoal) *
-                                  100
-                              )}
-                              %
+                              {Math.round(featuredMilestoneProgress)}%
                             </span>
                           </div>
                           <div className="w-full bg-blue-900/30 rounded-full h-2 overflow-hidden">
                             <div
                               className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-1000"
                               style={{
-                                width: `${Math.min(
-                                  100,
-                                  Math.round(
-                                    (Number(featuredMissionSubgraphData?.volume || 0) /
-                                      featuredMissionFundingGoal) *
-                                      100
-                                  )
-                                )}%`,
+                                width: `${Math.min(100, featuredMilestoneProgress)}%`,
                               }}
                             />
                           </div>
+                          {featuredMilestoneCaption && (
+                            <p className="text-blue-200/60 text-xs">
+                              {featuredMilestoneCaption}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -859,15 +864,11 @@ export default function SignedInDashboard({
                             <span className="text-blue-200 text-xs font-medium">Raised</span>
                           </div>
                           <p className="text-white font-bold text-sm">
-                            {featuredMissionFundingGoal ? (
-                              truncateTokenValue(
-                                Number(featuredMissionSubgraphData?.volume || 0) / 1e18,
-                                'ETH'
-                              )
-                            ) : (
+                            {isLoadingFeaturedRaised || featuredRaisedUsd == null ? (
                               <LoadingSpinner width="w-4" height="h-4" />
-                            )}{' '}
-                            ETH
+                            ) : (
+                              `$${Math.round(featuredRaisedUsd).toLocaleString()}`
+                            )}
                           </p>
                         </div>
 
@@ -987,7 +988,7 @@ export default function SignedInDashboard({
         {/* Active Projects Section - Full Width */}
         <DashboardActiveProjects
           currentProjects={currentProjects}
-          ethBudget={ETH_BUDGET}
+          usdBudget={USD_BUDGET}
           showBudget={true}
           maxProjects={6}
         />

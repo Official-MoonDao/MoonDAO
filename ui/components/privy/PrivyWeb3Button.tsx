@@ -30,6 +30,8 @@ type PrivyWeb3BtnProps = {
   noPadding?: boolean
   noGradient?: boolean
   showSignInLabel?: boolean
+  /** When set, shown next to the spinner while the action is running (e.g. transaction steps). */
+  loadingLabel?: string
 }
 
 function Button({
@@ -75,6 +77,7 @@ export function PrivyWeb3Button({
   noPadding = false,
   noGradient = false,
   showSignInLabel = false,
+  loadingLabel,
 }: PrivyWeb3BtnProps) {
   const router = useRouter()
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
@@ -223,8 +226,11 @@ export function PrivyWeb3Button({
           noGradient={noGradient}
         >
           {isLoading ? (
-            <div className="w-full flex justify-center items-center">
+            <div className="w-full flex justify-center items-center gap-2">
               <LoadingSpinner width="w-5" height="h-5" />
+              {loadingLabel ? (
+                <span className="text-sm font-medium text-center leading-snug">{loadingLabel}</span>
+              ) : null}
             </div>
           ) : (
             'Switch Network'
@@ -263,8 +269,11 @@ export function PrivyWeb3Button({
           noGradient={noGradient}
         >
           {isLoading ? (
-            <div className="w-full flex justify-center items-center">
+            <div className="w-full flex justify-center items-center gap-2">
               <LoadingSpinner width="w-5" height="h-5" />
+              {loadingLabel ? (
+                <span className="text-sm font-medium text-center leading-snug">{loadingLabel}</span>
+              ) : null}
             </div>
           ) : (
             label

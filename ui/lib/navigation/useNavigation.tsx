@@ -24,7 +24,8 @@ export default function useNavigation(citizen: any) {
           ]
         : [{ name: 'Become a Citizen', href: '/citizen' }]),
       { name: 'Submit a Contribution', href: '/contributions' },
-      { name: 'Explore Citizens', href: '/network' },
+      { name: 'View Citizens', href: '/network?tab=citizens' },
+      { name: 'Explore the Map', href: '/map' },
     ]
 
     return [
@@ -34,7 +35,7 @@ export default function useNavigation(citizen: any) {
         icon: citizen ? HomeIcon : PlusIcon,
       },
       {
-        name: 'Citizenship',
+        name: 'Citizens',
         href: '/network',
         icon: IconOrg,
         children: citizenshipChildren,
@@ -73,8 +74,8 @@ export default function useNavigation(citizen: any) {
         href: '/launch',
         children: [
           { name: 'Launchpad Explainer', href: '/launch' },
-          { name: 'Support Overview Flight', href: '/mission/4' },
-          { name: 'Fly with Frank', href: '/overview-vote' },
+          { name: 'Overview Fundraiser', href: '/mission/4' },
+          { name: 'Fly with Frank Leaderboard', href: '/overview-vote' },
         ],
       },
       {
@@ -86,7 +87,6 @@ export default function useNavigation(citizen: any) {
           { name: 'Town Hall', href: '/townhall' },
           { name: 'Roadmap', href: '/roadmap' },
           { name: 'About', href: '/about' },
-          { name: 'Events', href: '/events' },
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
         ],

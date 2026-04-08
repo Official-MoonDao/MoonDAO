@@ -10,6 +10,7 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { ThirdwebProvider } from 'thirdweb/react'
 import { PrivyThirdwebV5Provider } from '@/lib/privy/PrivyThirdwebV5Provider'
+import { WalletChainSync } from '@/lib/privy/WalletChainSync'
 import CitizenProvider from '@/lib/citizen/CitizenProvider'
 import { reportWebVitals as reportVitals, monitorLongTasks, monitorPageVisibility, NextWebVitalsMetric } from '@/lib/performance/webVitals'
 import GTag from '../components/layout/GTag'
@@ -69,6 +70,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
             }}
           >
             <ThirdwebProvider>
+              <WalletChainSync />
               <PrivyThirdwebV5Provider selectedChain={selectedChainV5}>
                 <CitizenProvider selectedChain={selectedChainV5}>
                   <NextQueryParamProvider>

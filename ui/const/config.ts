@@ -45,6 +45,10 @@ const sepoliaConfig = require(`../../contracts/deployments/sepolia`) as Deployme
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
 
+const arbitrumSepoliaMission = arbitrumSepoliaConfig as DeploymentConfig & {
+  missionTableLandName?: string
+}
+
 const baseSepoliaConfig = require('../../contracts/deployments/base-sepolia') as DeploymentConfig
 
 export const TEST_CHAIN =
@@ -321,16 +325,26 @@ export const FEATURED_MISSION =
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,
   sepolia: sepoliaConfig.MissionTable,
+  ...(arbitrumSepoliaMission.MissionTable
+    ? { 'arbitrum-sepolia': arbitrumSepoliaMission.MissionTable }
+    : {}),
 }
 
 export const MISSION_TABLE_NAMES: Index = {
   arbitrum: 'MissionTable_42161_151',
   sepolia: 'MissionTable_11155111_2026',
+  ...(arbitrumSepoliaMission.missionTableLandName
+    ? { 'arbitrum-sepolia': arbitrumSepoliaMission.missionTableLandName }
+    : {}),
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionCreator,
   sepolia: sepoliaConfig.MissionCreator,
+  ...(arbitrumSepoliaMission.MissionCreator &&
+  arbitrumSepoliaMission.MissionCreator !== '0x0000000000000000000000000000000000000000'
+    ? { 'arbitrum-sepolia': arbitrumSepoliaMission.MissionCreator }
+    : {}),
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
@@ -608,6 +622,10 @@ export const FREE_MINT_THRESHOLD_LABEL = `${FREE_MINT_THRESHOLD / 1e18} ETH (~$1
 
 export const EB_TEAM_ID = '0'
 
+/** MoonDAO docs — Overview Flight mission (e.g. mission id 4). */
+export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
+  'https://docs.moondao.com/Legal/Overview-Flight/Overview-Flight-Terms-and-Conditions'
+
 // Project System Configuration
 export const PROJECT_SYSTEM_CONFIG = {
   // Q1 2026 deadline - second Thursday of the quarter
@@ -630,14 +648,16 @@ export const PROJECT_SYSTEM_CONFIG = {
 export const IS_SENATE_VOTE = false
 export const IS_MEMBER_VOTE = false
 
-// Quarterly budget in ETH
-export const NEXT_QUARTER_BUDGET_ETH = 11.6
-export const ETH_BUDGET = NEXT_QUARTER_BUDGET_ETH
-export const COMMUNITY_CIRCLE_BUDGET_FRACTION = 0.1
-export const AVAILABLE_FOR_FUNDING_FRACTION = 0.75
-export const MAX_BUDGET_FRACTION = 0.2
-export const NEXT_QUARTER_PROJECTS_BUDGET_ETH =
-  NEXT_QUARTER_BUDGET_ETH * (1 - COMMUNITY_CIRCLE_BUDGET_FRACTION)
-export const NEXT_QUARTER_FUNDING_ETH =
-  NEXT_QUARTER_PROJECTS_BUDGET_ETH * AVAILABLE_FOR_FUNDING_FRACTION
-export const MAX_BUDGET_ETH = NEXT_QUARTER_PROJECTS_BUDGET_ETH * MAX_BUDGET_FRACTION
+// Quarterly budget in USD (stablecoins)
+// 5% of liquid non-MOONEY assets, denominated in USD
+// See: https://docs.moondao.com/Projects/Project-System#quarterly-rewards
+export const NEXT_QUARTER_BUDGET_USD = 23409
+
+// Alias used by the retroactive rewards system (ProjectRewards.tsx / getPayouts).
+// The 10% community-circle carve-out is handled inside runQuadraticVoting
+// (budgetPercentMinusCommunityFund = 90), so this stays equal to the full budget.
+export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
+
+// Per the docs: "Proposal budgets must be less than or equal to 1/5 of the
+// total quarterly rewards."
+export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)

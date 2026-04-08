@@ -105,13 +105,6 @@ const searchMappings = [
     category: 'Learn'
   },
   {
-    keywords: ['events', 'calendar', 'meetings', 'conferences', 'workshops'],
-    title: 'Upcoming Events',
-    description: 'Join MoonDAO events and community gatherings',
-    link: '/events',
-    category: 'Learn'
-  },
-  {
     keywords: ['analytics', 'treasury', 'data', 'statistics', 'metrics', 'dashboard', 'finances', 'funds'],
     title: 'Treasury Dashboard',
     description: 'View MoonDAO treasury metrics and analytics',

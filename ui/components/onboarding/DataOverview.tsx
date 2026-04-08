@@ -14,36 +14,30 @@ export function DataOverview({
   const filteredKeys = Object.keys(data).filter((key) => !excludeKeys.includes(key))
 
   return (
-    <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-      <h3 className="font-GoodTimes text-xl mb-4 text-white">{title}</h3>
-      <div className="grid gap-4">
-        {isMobile ? (
-          filteredKeys.map((key, i) => (
-            <div
-              key={i}
-              className="flex flex-col p-4 bg-slate-800/50 rounded-lg border border-slate-600/30"
+    <div className="rounded-2xl border border-white/[0.08] overflow-hidden">
+      <div className="px-5 py-4 bg-white/[0.03] border-b border-white/[0.06]">
+        <h3 className="font-GoodTimes text-base text-white">{title}</h3>
+      </div>
+      <div className="divide-y divide-white/[0.06]">
+        {filteredKeys.map((key, i) => (
+          <div
+            key={i}
+            className={`px-5 py-3.5 flex ${
+              isMobile ? 'flex-col gap-1' : 'items-center justify-between'
+            } hover:bg-white/[0.02] transition-colors`}
+          >
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              {key}
+            </span>
+            <span
+              className={`text-sm text-slate-200 ${
+                isMobile ? '' : 'max-w-[60%] text-right'
+              } break-words`}
             >
-              <p className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-1">
-                {key}:
-              </p>
-              <p className="text-white">{data[key]}</p>
-            </div>
-          ))
-        ) : (
-          <div className="space-y-3">
-            {filteredKeys.map((key, i) => (
-              <div
-                key={i}
-                className="flex justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-600/30"
-              >
-                <span className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
-                  {key}:
-                </span>
-                <span className="text-white max-w-xs text-right">{data[key]}</span>
-              </div>
-            ))}
+              {data[key] ?? '—'}
+            </span>
           </div>
-        )}
+        ))}
       </div>
     </div>
   )

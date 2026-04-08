@@ -1,4 +1,3 @@
-import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
@@ -48,30 +47,6 @@ export function ImageGenerator({
     }
   }, [isGenerating, generating, onGenerationStateChange])
 
-  const handleAutoCrop = useCallback(async () => {
-    if (!inputImage || isReCropping) return
-
-    try {
-      const croppedFile = await cropImageWithCoordinates(
-        inputImage,
-        cropArea.x,
-        cropArea.y,
-        cropArea.size
-      )
-      setCroppedImage(croppedFile)
-      setImage(croppedFile) // Set the cropped image as the final image
-    } catch (error) {
-      console.error('Error auto-cropping image:', error)
-    }
-  }, [inputImage, cropArea.x, cropArea.y, cropArea.size, setImage, isReCropping])
-
-  // Auto-crop when input image changes (but not when re-cropping)
-  useEffect(() => {
-    if (inputImage && !croppedImage && !isReCropping && !currImage) {
-      handleAutoCrop()
-    }
-  }, [inputImage, croppedImage, handleAutoCrop, isReCropping, currImage])
-
   const handleGenerateImage = useCallback(async () => {
     if (!inputImage) return
 
@@ -92,13 +67,11 @@ export function ImageGenerator({
       // Store the cropped image for fallback
       setCroppedImage(croppedFile)
 
-      // Set the cropped image as the new input image for generation
-      setInputImage(croppedFile)
       setImage(null) // Clear any existing generated image
       setShowError(false)
 
-      // Generate the AI image using the cropped version
-      await generateImage() // This will set the hook's isLoading to true
+      // Generate the AI image using the cropped version (pass directly to avoid mutating inputImage)
+      await generateImage(croppedFile)
     } catch (error) {
       console.error('Error cropping or generating image:', error)
       setIsGenerating(false)
@@ -112,7 +85,6 @@ export function ImageGenerator({
     cropArea.x,
     cropArea.y,
     cropArea.size,
-    setInputImage,
     setImage,
     generateImage,
     onGenerationStateChange,
@@ -123,10 +95,13 @@ export function ImageGenerator({
     if (!generating) {
       if (generateError && croppedImage) {
         setImage(croppedImage)
+      } else if (!generateError && image) {
+        // AI generation succeeded — mark it
+        setHasGeneratedImage(true)
       }
       setIsGenerating(false)
     }
-  }, [generating, generateError, croppedImage, setImage])
+  }, [generating, generateError, croppedImage, setImage, image])
 
   const [hasGeneratedImage, setHasGeneratedImage] = useState(false)
   const [showError, setShowError] = useState(false)
@@ -146,6 +121,30 @@ export function ImageGenerator({
   const animationFrameRef = useRef<number>()
   const [forceRerender, setForceRerender] = useState(0)
   const [isCroppingMode, setIsCroppingMode] = useState(true)
+
+  // Manage object URLs via state so they survive re-renders and are cleaned up properly
+  const [inputImageUrl, setInputImageUrl] = useState<string | null>(null)
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (inputImage) {
+      const url = URL.createObjectURL(inputImage)
+      setInputImageUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } else {
+      setInputImageUrl(null)
+    }
+  }, [inputImage])
+
+  useEffect(() => {
+    if (image) {
+      const url = URL.createObjectURL(image)
+      setGeneratedImageUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } else {
+      setGeneratedImageUrl(null)
+    }
+  }, [image])
 
   // Calculate displayed image dimensions and position
   const calculateDisplayedImageSize = useCallback(() => {
@@ -177,7 +176,7 @@ export function ImageGenerator({
 
   // Clear error when new input image is uploaded
   useEffect(() => {
-    if (inputImage) {
+    if (inputImage && inputImageUrl) {
       setShowError(false)
       // Initialize crop area when image is uploaded
       const imgElement = new window.Image()
@@ -196,9 +195,9 @@ export function ImageGenerator({
         // Calculate displayed image size after a short delay to ensure container is rendered
         setTimeout(calculateDisplayedImageSize, 100)
       }
-      imgElement.src = URL.createObjectURL(inputImage)
+      imgElement.src = inputImageUrl
     }
-  }, [inputImage, calculateDisplayedImageSize])
+  }, [inputImage, inputImageUrl, calculateDisplayedImageSize])
 
   // Recalculate displayed image size when container size changes
   useEffect(() => {
@@ -213,13 +212,6 @@ export function ImageGenerator({
       setShowError(true)
     }
   }, [generateError])
-
-  // Track when image has been generated
-  useEffect(() => {
-    if (image && !generating) {
-      setHasGeneratedImage(true)
-    }
-  }, [image, generating])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -363,31 +355,31 @@ export function ImageGenerator({
     // If we're generating in background, avoid capturing a screenshot placeholder
     // which can appear blank due to cross-origin/image policies. Proceed directly.
     if (generateInBG && (generating || isGenerating)) {
+      nextStage?.()
+      return
+    }
+
+    // If there's already a generated/cropped image, use it directly
+    if (image) {
       nextStage()
       return
     }
 
-    if (!document.getElementById('citizenPic')) return console.error('citizenPic is not defined')
+    // Otherwise, crop the input image programmatically (avoids capturing crop UI overlays)
     if (inputImage) {
-      // @ts-expect-error
-      await html2canvas(document.getElementById('citizenPic')).then((canvas) => {
-        const img = canvas.toDataURL('image/png')
-
-        //Convert from base64 to file
-        const byteString = atob(img.split(',')[1])
-        const mimeString = img.split(',')[0].split(':')[1].split(';')[0]
-        const ab = new ArrayBuffer(byteString.length)
-        const ia = new Uint8Array(ab)
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i)
-        }
-        const blob = new Blob([ab], { type: mimeString })
-        const file = new File([blob], 'citizenPic.png', { type: mimeString })
-
-        setImage(file)
-      })
+      try {
+        const croppedFile = await cropImageWithCoordinates(
+          inputImage,
+          cropArea.x,
+          cropArea.y,
+          cropArea.size
+        )
+        setImage(croppedFile)
+      } catch (error) {
+        console.error('Error cropping image:', error)
+      }
     }
-    nextStage()
+    nextStage?.()
   }
 
   const handleUseCroppedImage = useCallback(async () => {
@@ -407,8 +399,7 @@ export function ImageGenerator({
       setCroppedImage(croppedFile)
       setIsReCropping(false)
 
-      // Go to the next stage
-      nextStage()
+      nextStage?.()
     } catch (error) {
       console.error('Error cropping image:', error)
     }
@@ -420,237 +411,263 @@ export function ImageGenerator({
   const cropOffsetY = displayedImageSize.offsetY
 
   return (
-    <div className="animate-fadeIn flex flex-col" key={forceRerender}>
-      <div className="flex items-start flex-col mt-5">
+    <div className="animate-fadeIn flex flex-col gap-6" key={forceRerender}>
+      {/* Upload zone — only show when no image yet, or allow re-upload */}
+      {!inputImage && (
         <FileInput
           file={inputImage}
           setFile={setInputImage}
           noBlankImages
           accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
-          acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
+          acceptText="PNG, JPEG, WEBP, GIF, SVG — must contain a face"
         />
-      </div>
+      )}
 
-      <div className="mt-4">
-        <h3 className="text-lg font-semibold mb-2 text-white">
-          {inputImage ? 'Crop your image' : 'Preview'}
-        </h3>
-        <p className="text-sm text-white/60 mb-4">
-          {inputImage
-            ? 'Drag the crop area to move it, or drag the handles to resize'
-            : 'Upload an image to get started'}
-        </p>
-      </div>
-
-      <div
-        id="citizenPic"
-        ref={containerRef}
-        className="relative w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left flex select-none"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        {currImage && !inputImage && (
-          <IPFSRenderer src={currImage} className="" width={600} height={600} alt="Citizen Image" />
-        )}
-        {inputImage && (
-          <>
-            {image && !generating ? (
-              <Image
-                src={URL.createObjectURL(image)}
-                fill
-                style={{ objectFit: 'contain' }}
-                className=""
-                alt={''}
-              />
-            ) : generating ? (
-              <Image
-                src={'/assets/MoonDAO-Loading-Animation.svg'}
-                fill
-                style={{ objectFit: 'contain' }}
-                className=""
-                alt={''}
-              />
-            ) : (
-              <>
-                <Image
-                  ref={imageRef}
-                  src={URL.createObjectURL(inputImage)}
-                  fill
-                  style={{ objectFit: 'contain' }}
-                  className="pointer-events-none"
-                  alt={''}
-                />
-
-                {/* Crop overlay - always show when we have input image and no final image */}
-                {displayedImageSize.width > 0 && (
-                  <>
-                    <div
-                      className="crop-area absolute border-2 border-blue-400 bg-blue-400/20 cursor-move rounded-lg"
-                      style={{
-                        left: cropArea.x * cropScale + cropOffsetX,
-                        top: cropArea.y * cropScale + cropOffsetY,
-                        width: cropArea.size * cropScale,
-                        height: cropArea.size * cropScale,
-                      }}
-                      onMouseDown={handleMouseDown}
-                    >
-                      {/* All the resize handles */}
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-blue-400 border border-white rounded-full cursor-nw-resize"
-                        data-handle="nw"
-                        style={{ top: -6, left: -6 }}
-                        onMouseDown={handleMouseDown}
-                      />
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-blue-400 border border-white rounded-full cursor-ne-resize"
-                        data-handle="ne"
-                        style={{ top: -6, right: -6 }}
-                        onMouseDown={handleMouseDown}
-                      />
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-blue-400 border border-white rounded-full cursor-sw-resize"
-                        data-handle="sw"
-                        style={{ bottom: -6, left: -6 }}
-                        onMouseDown={handleMouseDown}
-                      />
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-blue-400 border border-white rounded-full cursor-se-resize"
-                        data-handle="se"
-                        style={{ bottom: -6, right: -6 }}
-                        onMouseDown={handleMouseDown}
-                      />
-
-                      {/* Edge handles */}
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-blue-400 border border-white rounded-full cursor-n-resize"
-                        data-handle="n"
-                        style={{
-                          top: -6,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                        }}
-                        onMouseDown={handleMouseDown}
-                      />
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-blue-400 border border-white rounded-full cursor-s-resize"
-                        data-handle="s"
-                        style={{
-                          bottom: -6,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                        }}
-                        onMouseDown={handleMouseDown}
-                      />
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-blue-400 border border-white rounded-full cursor-e-resize"
-                        data-handle="e"
-                        style={{
-                          right: -6,
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                        }}
-                        onMouseDown={handleMouseDown}
-                      />
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-blue-400 border border-white rounded-full cursor-w-resize"
-                        data-handle="w"
-                        style={{
-                          left: -6,
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                        }}
-                        onMouseDown={handleMouseDown}
-                      />
-                    </div>
-
-                    {/* Dark overlay */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div
-                        className="absolute bg-black/50"
-                        style={{
-                          left: 0,
-                          top: 0,
-                          width: cropArea.x * cropScale + cropOffsetX,
-                          height: displayedImageSize.height + cropOffsetY,
-                        }}
-                      />
-                      <div
-                        className="absolute bg-black/50"
-                        style={{
-                          left: (cropArea.x + cropArea.size) * cropScale + cropOffsetX,
-                          top: 0,
-                          width:
-                            displayedImageSize.width - (cropArea.x + cropArea.size) * cropScale,
-                          height: displayedImageSize.height + cropOffsetY,
-                        }}
-                      />
-                      <div
-                        className="absolute bg-black/50"
-                        style={{
-                          left: cropArea.x * cropScale + cropOffsetX,
-                          top: 0,
-                          width: cropArea.size * cropScale,
-                          height: cropArea.y * cropScale + cropOffsetY,
-                        }}
-                      />
-                      <div
-                        className="absolute bg-black/50"
-                        style={{
-                          left: cropArea.x * cropScale + cropOffsetX,
-                          top: (cropArea.y + cropArea.size) * cropScale + cropOffsetY,
-                          width: cropArea.size * cropScale,
-                          height:
-                            displayedImageSize.height - (cropArea.y + cropArea.size) * cropScale,
-                        }}
-                      />
-                    </div>
-                  </>
-                )}
-              </>
+      {/* Image preview / crop area */}
+      {(inputImage || currImage) && (
+        <div className="flex flex-col gap-3">
+          {/* Context bar */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-400">
+              {generating
+                ? 'Generating your AI photo…'
+                : inputImage && !image
+                ? 'Drag to reposition crop · Handles to resize'
+                : image
+                ? 'Your photo'
+                : 'Current image'}
+            </p>
+            {inputImage && (
+              <button
+                onClick={() => {
+                  setInputImage(undefined)
+                  setImage(null)
+                  setCroppedImage(null)
+                  setHasGeneratedImage(false)
+                  setIsReCropping(false)
+                  setShowError(false)
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Change Photo
+              </button>
             )}
-          </>
-        )}
-      </div>
+          </div>
 
-      {showError && generateError && <p className="mt-2 ml-2 opacity-[50%]">{generateError}</p>}
+          {/* Main preview container */}
+          <div className="rounded-2xl border border-white/[0.08] bg-slate-900/40 overflow-hidden">
+            <div
+              id="citizenPic"
+              ref={containerRef}
+              className="relative w-full aspect-square max-w-[520px] mx-auto select-none"
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              {currImage && !inputImage && (
+                <IPFSRenderer
+                  src={currImage}
+                  className="rounded-none"
+                  width={600}
+                  height={600}
+                  alt="Citizen Image"
+                />
+              )}
+              {inputImage && (
+                <>
+                  {image && !generating && generatedImageUrl ? (
+                    <img
+                      src={generatedImageUrl}
+                      className="absolute inset-0 w-full h-full object-contain"
+                      alt="Generated photo"
+                    />
+                  ) : generating ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/80">
+                      <Image
+                        src="/assets/MoonDAO-Loading-Animation.svg"
+                        width={96}
+                        height={96}
+                        className="animate-pulse"
+                        alt="Generating"
+                      />
+                      <p className="text-sm text-slate-400 animate-pulse">
+                        Creating your AI image…
+                      </p>
+                    </div>
+                  ) : inputImageUrl ? (
+                    <>
+                      <img
+                        ref={imageRef}
+                        src={inputImageUrl}
+                        className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                        alt="Uploaded photo"
+                      />
 
-      {inputImage && !image && !generating ? (
-        <div className="flex gap-2 mt-6">
+                      {/* Crop overlay */}
+                      {displayedImageSize.width > 0 && (
+                        <>
+                          <div
+                            className="crop-area absolute border-2 border-indigo-400 bg-indigo-400/10 cursor-move"
+                            style={{
+                              left: cropArea.x * cropScale + cropOffsetX,
+                              top: cropArea.y * cropScale + cropOffsetY,
+                              width: cropArea.size * cropScale,
+                              height: cropArea.size * cropScale,
+                              boxShadow: '0 0 0 1px rgba(99,102,241,0.3)',
+                            }}
+                            onMouseDown={handleMouseDown}
+                          >
+                            {/* Corner handles */}
+                            {(['nw', 'ne', 'sw', 'se'] as const).map((handle) => (
+                              <div
+                                key={handle}
+                                className="resize-handle absolute w-3.5 h-3.5 bg-indigo-400 border-2 border-white rounded-full shadow-lg"
+                                data-handle={handle}
+                                style={{
+                                  top: handle.includes('n') ? -7 : undefined,
+                                  bottom: handle.includes('s') ? -7 : undefined,
+                                  left: handle.includes('w') ? -7 : undefined,
+                                  right: handle.includes('e') ? -7 : undefined,
+                                  cursor: `${handle}-resize`,
+                                }}
+                                onMouseDown={handleMouseDown}
+                              />
+                            ))}
+                            {/* Edge handles */}
+                            {(['n', 's', 'e', 'w'] as const).map((handle) => (
+                              <div
+                                key={handle}
+                                className="resize-handle absolute w-3 h-3 bg-indigo-400 border-2 border-white rounded-full shadow-lg"
+                                data-handle={handle}
+                                style={{
+                                  top:
+                                    handle === 'n'
+                                      ? -6
+                                      : handle === 's'
+                                      ? undefined
+                                      : '50%',
+                                  bottom: handle === 's' ? -6 : undefined,
+                                  left:
+                                    handle === 'w'
+                                      ? -6
+                                      : handle === 'e'
+                                      ? undefined
+                                      : '50%',
+                                  right: handle === 'e' ? -6 : undefined,
+                                  transform:
+                                    handle === 'n' || handle === 's'
+                                      ? 'translateX(-50%)'
+                                      : 'translateY(-50%)',
+                                  cursor: `${handle}-resize`,
+                                }}
+                                onMouseDown={handleMouseDown}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Dark overlay outside crop */}
+                          <div className="absolute inset-0 pointer-events-none">
+                            <div
+                              className="absolute bg-black/60"
+                              style={{
+                                left: 0,
+                                top: 0,
+                                width: cropArea.x * cropScale + cropOffsetX,
+                                height: displayedImageSize.height + cropOffsetY,
+                              }}
+                            />
+                            <div
+                              className="absolute bg-black/60"
+                              style={{
+                                left:
+                                  (cropArea.x + cropArea.size) * cropScale + cropOffsetX,
+                                top: 0,
+                                width:
+                                  displayedImageSize.width -
+                                  (cropArea.x + cropArea.size) * cropScale,
+                                height: displayedImageSize.height + cropOffsetY,
+                              }}
+                            />
+                            <div
+                              className="absolute bg-black/60"
+                              style={{
+                                left: cropArea.x * cropScale + cropOffsetX,
+                                top: 0,
+                                width: cropArea.size * cropScale,
+                                height: cropArea.y * cropScale + cropOffsetY,
+                              }}
+                            />
+                            <div
+                              className="absolute bg-black/60"
+                              style={{
+                                left: cropArea.x * cropScale + cropOffsetX,
+                                top:
+                                  (cropArea.y + cropArea.size) * cropScale + cropOffsetY,
+                                width: cropArea.size * cropScale,
+                                height:
+                                  displayedImageSize.height -
+                                  (cropArea.y + cropArea.size) * cropScale,
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Error message */}
+          {showError && generateError && (
+            <p className="text-sm text-red-400/80 px-1">{generateError}</p>
+          )}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {inputImage && !image && !generating && (
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
-            className="px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
+            className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
             onClick={handleGenerateImage}
           >
-            Generate Image
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
+            </svg>
+            Generate AI Photo
           </button>
           <button
-            className="px-8 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="flex-1 py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
             onClick={handleUseCroppedImage}
           >
             Use Cropped Image
           </button>
         </div>
-      ) : (
-        <></>
       )}
 
       {inputImage && (image || generating) && (
-        <div className="flex gap-2 mt-6">
+        <div className="flex flex-col sm:flex-row gap-3">
           {!generating && (
             <button
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-medium text-white text-sm"
               onClick={() => {
-                // Restore original image and reset to cropping mode
                 if (originalInputImage) {
                   setIsReCropping(true)
-                  setInputImage(originalInputImage) // Use the stored original image
+                  setInputImage(originalInputImage)
                   setCroppedImage(null)
                   setImage(null)
                   setHasGeneratedImage(false)
                   setShowError(false)
-
-                  // Reset the crop area to center when re-cropping
-                  // Initialize as largest possible square (full width or height)
                   const minDimension = Math.min(imageSize.width, imageSize.height)
                   setCropArea({
                     x: (imageSize.width - minDimension) / 2,
@@ -660,37 +677,44 @@ export function ImageGenerator({
                 }
               }}
             >
-              Re-crop Image
+              Re-crop
             </button>
           )}
           <button
-            className="px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
+            className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
             onClick={() => {
               setIsGenerating(true)
               setImage(null)
               setHasGeneratedImage(false)
               setShowError(false)
-              generateImage()
+              generateImage(croppedImage || undefined)
             }}
           >
-            {generating
-              ? 'Generating...'
-              : hasGeneratedImage
-              ? 'Regenerate Image'
-              : 'Generate Image'}
+            {generating ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Generating…
+              </>
+            ) : hasGeneratedImage ? (
+              'Regenerate'
+            ) : (
+              'Generate AI Photo'
+            )}
           </button>
         </div>
       )}
 
-      {(currImage && !inputImage) || image || (generateInBG && inputImage) ? (
+      {/* Next / Continue — hidden when nextStage is not provided */}
+      {nextStage && ((currImage && !inputImage) || image || (generateInBG && inputImage)) && (
         <button
-          className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
+          className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
           onClick={submitImage}
         >
-          Next
+          Continue
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+          </svg>
         </button>
-      ) : (
-        <></>
       )}
     </div>
   )

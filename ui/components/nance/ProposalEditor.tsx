@@ -226,6 +226,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
           method: 'POST',
           body: JSON.stringify({
             proposalId: response.proposalId,
+            proposalTitle: proposalTitle,
             accessToken: accessToken,
             selectedWallet: selectedWallet,
           }),
@@ -319,7 +320,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
             />
 
             {/* Google Docs Import Section - Made Prominent */}
-            <div className="mb-6 p-5 bg-gradient-to-r from-indigo-900/40 to-blue-900/40 border border-indigo-500/30 rounded-xl">
+            <div className="mb-4 md:mb-6 p-3 md:p-5 bg-gradient-to-r from-indigo-900/40 to-blue-900/40 border border-indigo-500/30 rounded-xl">
               <div className="flex flex-col gap-4">
                 <div className={`${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
                   <GoogleDocsImport 
@@ -384,7 +385,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
               <div className="px-4 py-3 border-b border-white/10 bg-black/20">
                 <h3 className="text-white font-medium">Proposal Preview</h3>
               </div>
-              <div className="p-6 min-h-[250px] max-h-[500px] overflow-y-auto">
+              <div className="p-3 md:p-6 min-h-[250px] max-h-[500px] overflow-y-auto">
                 {proposalBody ? (
                   <div className="prose prose-invert prose-sm max-w-none">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -421,7 +422,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
             )}
 
             {/* Options Row */}
-            <div className="mt-5 p-4 rounded-xl bg-black/20 border border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="mt-4 md:mt-5 p-3 md:p-4 rounded-xl bg-black/20 border border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
               <Field as="div" className="flex items-center">
                 <Switch
                   checked={nonProjectProposal}

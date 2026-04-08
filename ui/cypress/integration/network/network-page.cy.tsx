@@ -199,7 +199,7 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      cy.contains('Map', { timeout: 10000 }).should('be.visible').click()
+      cy.contains('button', 'Map', { timeout: 10000 }).should('be.visible').click()
       cy.get('#network-content').should('exist')
     })
   })

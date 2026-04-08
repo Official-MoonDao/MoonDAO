@@ -306,7 +306,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           year,
           proposalId,
           proposalIPFS, // proposal ipfs
-          'https://moondao.com/proposal/' + proposalId,
+          'https://moondao.com/project/' + proposalId,
           upfrontPayment,
           lead, // leadAddress,
           members.length > 0 ? members : [address], // members
@@ -328,7 +328,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           },
           body: JSON.stringify({
             name: `MDP-${proposalId}: ${proposalTitle}`,
-            message: { content: `https://moondao.com/proposal/${proposalId}` },
+            message: { content: `https://moondao.com/project/${proposalId}` },
           }),
         }
       )

@@ -31,11 +31,11 @@ export function useOnrampFlow(router: NextRouter, chainSlugs: string[]): UseOnra
 
   const { getStoredJWT } = useOnrampJWT()
 
-  // Handle chain switching from URL params
+  // Handle chain switching from URL params (once). Mark “read” immediately when scheduling so a later
+  // `selectedChain` change (e.g. contribute → richest) does not re-enter and stack competing timeouts.
   useEffect(() => {
     const chainToSwitchTo = router?.query?.chain as string | undefined
 
-    // Only process initial chain param once
     if (!hasReadInitialChainParam) {
       if (
         chainToSwitchTo &&
@@ -44,15 +44,14 @@ export function useOnrampFlow(router: NextRouter, chainSlugs: string[]): UseOnra
       ) {
         const targetChain = v4SlugToV5Chain(chainToSwitchTo)
         if (targetChain && setSelectedChain) {
-          setTimeout(() => {
+          setHasReadInitialChainParam(true)
+          const tid = setTimeout(() => {
             setSelectedChain(targetChain)
-            setHasReadInitialChainParam(true)
           }, 1000)
+          return () => clearTimeout(tid)
         }
-      } else {
-        // No chain to switch to or already on correct chain, mark as read immediately
-        setHasReadInitialChainParam(true)
       }
+      setHasReadInitialChainParam(true)
     }
   }, [router?.query?.chain, hasReadInitialChainParam, chainSlug, setSelectedChain, chainSlugs])
 

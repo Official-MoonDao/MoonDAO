@@ -9,7 +9,7 @@ import withMiddleware from 'middleware/withMiddleware'
 import { getContract, waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
-import { transporter, opEmail } from '@/lib/nodemailer/nodemailer'
+import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
 import { getPrivyUserData } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -247,13 +247,13 @@ async function handler(req: any, res: any) {
     }
 
     try {
-      await transporter.sendMail({
+      await getMoonDaoGmailTransport().sendMail({
         from: opEmail,
         to: teamTypeformEmail,
         ...generateVendorEmailContent(data),
         subject: 'MoonDAO | Marketplace Purchase',
       })
-      await transporter.sendMail({
+      await getMoonDaoGmailTransport().sendMail({
         from: opEmail,
         to: email,
         ...generateCitizenEmailContent(data),

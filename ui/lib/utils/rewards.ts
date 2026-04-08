@@ -318,9 +318,8 @@ export function computeRewardPercentages(
 }
 export function getBudget(tokens: any, year: number, quarter: number) {
   const numQuartersPastQ4Y2022 = (year - 2023) * 4 + quarter
-  let ethBudget = 0
-  let usdValue = 0
   let usdBudget = 0
+  let usdValue = 0
   let mooneyBudget = 0
   let ethPrice = 0
   const ethToken = tokens.find((token: any) => token.symbol === 'ETH' && token.balance > 0)
@@ -335,17 +334,13 @@ export function getBudget(tokens: any, year: number, quarter: number) {
         }
       }
     }
-    const ethValue = usdValue / ethPrice
     usdBudget = usdValue * 0.05
-    ethBudget = ethValue * 0.05
-    usdBudget = ethBudget * ethPrice
     const MOONEY_INITIAL_BUDGET = 15_000_000
     const MOONEY_DECAY_RATE = 0.95
 
     mooneyBudget = MOONEY_INITIAL_BUDGET * MOONEY_DECAY_RATE ** numQuartersPastQ4Y2022
   }
   return {
-    ethBudget,
     usdBudget,
     mooneyBudget,
     ethPrice,
@@ -380,10 +375,10 @@ export function getPayouts(
   projectIdToEstimatedPercentage: any,
   projects: any,
   communityCircle: any,
-  ethBudget: number,
+  usdBudget: number,
   mooneyBudget: number
 ) {
-  const addressToEthPayout: { [key: string]: number } = {}
+  const addressToUsdPayout: { [key: string]: number } = {}
   const addressToMooneyPayout: { [key: string]: number } = {}
 
   const COMMUNITY_CIRCLE_PERCENTAGE = 10
@@ -409,8 +404,8 @@ export function getPayouts(
       }
       const marginalPayoutProportion = (contributorPercentage / 100) * (projectPercentage / 100)
       addressToPercent[contributerAddress.toLowerCase()] += marginalPayoutProportion * 100
-      if (!(contributerAddress in addressToEthPayout)) {
-        addressToEthPayout[contributerAddress] = 0
+      if (!(contributerAddress in addressToUsdPayout)) {
+        addressToUsdPayout[contributerAddress] = 0
       }
       if (!(contributerAddress in addressToMooneyPayout)) {
         addressToMooneyPayout[contributerAddress] = 0
@@ -433,14 +428,14 @@ export function getPayouts(
       if (
         upfrontPayments &&
         ((contributerAddress in upfrontPayments &&
-          upfrontPayments[contributerAddress] > marginalPayoutProportion * ethBudget) ||
+          upfrontPayments[contributerAddress] > marginalPayoutProportion * usdBudget) ||
           (utils.getAddress(contributerAddress) in upfrontPayments &&
             upfrontPayments[utils.getAddress(contributerAddress)] >
-              marginalPayoutProportion * ethBudget))
+              marginalPayoutProportion * usdBudget))
       ) {
         continue
       }
-      addressToEthPayout[contributerAddress] += marginalPayoutProportion * ethBudget
+      addressToUsdPayout[contributerAddress] += marginalPayoutProportion * usdBudget
     }
   }
 
@@ -448,10 +443,10 @@ export function getPayouts(
   for (const [address, mooneyPayout] of Object.entries(addressToMooneyPayout)) {
     addressToPayoutProportion[address] = mooneyPayout / mooneyBudget
   }
-  const ethPayoutCSV =
+  const usdPayoutCSV =
     'token_type,token_address,receiver,amount,id\n' +
-    Object.entries(addressToEthPayout)
-      .map(([address, eth]) => `native,,${address},${eth},`)
+    Object.entries(addressToUsdPayout)
+      .map(([address, usd]) => `native,,${address},${usd},`)
       .join('\n')
   const vMooneyPayoutCSV = Object.entries(addressToMooneyPayout)
     .map(([address, mooney]) => `${address},${mooney}`)
@@ -469,21 +464,21 @@ export function getPayouts(
   const humanFormat: { [key: string]: any } = {}
   for (const [address, mooneyPayout] of Object.entries(addressToMooneyPayout)) {
     if (!(address.toLowerCase() in humanFormat)) {
-      humanFormat[address.toLowerCase()] = { vMOONEY: 0, ETH: 0 }
+      humanFormat[address.toLowerCase()] = { vMOONEY: 0, USD: 0 }
     }
     humanFormat[address.toLowerCase()]['vMOONEY'] += mooneyPayout
   }
-  for (const [address, ethPayout] of Object.entries(addressToEthPayout)) {
+  for (const [address, usdPayout] of Object.entries(addressToUsdPayout)) {
     if (!(address.toLowerCase() in humanFormat)) {
-      humanFormat[address.toLowerCase()] = { vMOONEY: 0, ETH: 0 }
+      humanFormat[address.toLowerCase()] = { vMOONEY: 0, USD: 0 }
     }
-    humanFormat[address.toLowerCase()]['ETH'] += ethPayout
+    humanFormat[address.toLowerCase()]['USD'] += usdPayout
   }
 
   return {
-    addressToEthPayout,
+    addressToUsdPayout,
     addressToMooneyPayout,
-    ethPayoutCSV,
+    usdPayoutCSV,
     vMooneyPayoutCSV,
     vMooneyAddresses,
     vMooneyAmounts,
@@ -494,12 +489,12 @@ export function getPayouts(
 export function getApprovedProjects(
   projects: any[],
   outcome: { [key: string]: number },
-  ethBudgets: { [key: string]: number },
-  ethBudget: number
+  usdBudgets: { [key: string]: number },
+  usdBudget: number
 ): { [key: string]: boolean } {
   const sortedOutcome = Object.keys(outcome)
     .map((projectId: string) => {
-      const budget = ethBudgets[projectId]
+      const budget = usdBudgets[projectId]
       return {
         projectId: projectId,
         percent: outcome[projectId] || 0,
@@ -515,7 +510,7 @@ export function getApprovedProjects(
   for (let i = 0; i < sortedOutcome.length; i++) {
     const projectId = sortedOutcome[i].projectId
     approvedBudget += sortedOutcome[i].budget
-    const approved = i < numApprovedProjects && approvedBudget <= (ethBudget * 3) / 4
+    const approved = i < numApprovedProjects && approvedBudget <= (usdBudget * 3) / 4
     projectIdToApproved[projectId] = approved
   }
   return projectIdToApproved

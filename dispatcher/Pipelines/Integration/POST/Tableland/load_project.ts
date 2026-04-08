@@ -54,7 +54,7 @@ async function getAbstract(proposalBody: string): Promise<string | null> {
       }
     );
 
-    const data = await response.json();
+    const data: any = await response.json();
     const text = data.choices?.[0]?.message?.content?.trim() || null;
     return text;
   } catch (error) {
@@ -93,7 +93,7 @@ async function getAddresses(
       }
     );
 
-    const data = await response.json();
+    const data: any = await response.json();
     const text = data.choices?.[0]?.message?.content?.trim() || "[]";
     let parsed;
     try {
@@ -162,7 +162,7 @@ export async function pinBlobOrFile(
       );
     }
 
-    const jsonData = await response.json();
+    const jsonData: any = await response.json();
     const outUrl = `${IPFS_GATEWAY}${jsonData.IpfsHash}`;
     return { cid: jsonData.IpfsHash, url: outUrl };
   } catch (error) {
@@ -196,9 +196,9 @@ async function loadProjectData() {
       throw new Error(`Tableland query failed: ${projectsRes.statusText}`);
     }
 
-    const tablelandMDPs = await projectsRes.json();
+    const tablelandMDPs = await projectsRes.json() as any[];
     console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
-    const existingMDPs = new Set(tablelandMDPs.map((row) => row.MDP));
+    const existingMDPs = new Set(tablelandMDPs.map((row: any) => row.MDP));
 
     // Get proposals from Nance
     const nextProposalId = await getNextProposalId("moondao");
@@ -359,7 +359,7 @@ async function loadProjectData() {
           year,
           proposal.proposalId,
           proposalIPFS, // proposal ipfs
-          "https://moondao.com/proposal/" + proposal.proposalId,
+          "https://moondao.com/project/" + proposal.proposalId,
           upfrontPayment,
           leads[0] || proposal.authorAddress, // leadAddress,
           members.length > 0 ? members : [proposal.authorAddress], // members

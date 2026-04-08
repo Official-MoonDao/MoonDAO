@@ -17,8 +17,11 @@ async function fetchParticipantVolume([_, projectId, address]: [
   if (!res.ok || data?.error) {
     return BigInt(0)
   }
-  const vol = data?.participants?.items?.[0]?.volume
-  return vol != null ? BigInt(vol) : BigInt(0)
+  const items = data?.payEvents?.items || []
+  return items.reduce(
+    (acc: bigint, e: any) => acc + BigInt(e.amount || '0'),
+    BigInt(0)
+  )
 }
 
 export function useMissionParticipantVolume(
