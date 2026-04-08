@@ -69,7 +69,7 @@ export default function MissionProfilePage({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ params, res }) => {
+export const getServerSideProps: GetServerSideProps = async ({ params, query, res }) => {
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
 
   try {
@@ -77,6 +77,18 @@ export const getServerSideProps: GetServerSideProps = async ({ params, res }) =>
 
     // Handle dummy mission for testing
     if (tokenId === 'dummy') {
+      // Allow overriding stage via ?stage= query param (default: 3 = refundable)
+      const stageParam = query?.stage
+      const dummyStage = stageParam ? Number(stageParam) : 3
+      const dummyDeadline =
+        dummyStage === 4
+          ? Date.now() - 86400 * 1000 // deadline in the past for closed missions
+          : Date.now() + 5 * 1000
+      const dummyRefundPeriod =
+        dummyStage === 4
+          ? Date.now() - 3600 * 1000 // refund period in the past for closed missions
+          : Date.now() + 60 * 1000
+
       return {
         props: {
           mission: {
@@ -89,9 +101,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params, res }) =>
             projectId: 224,
             teamId: 1,
           },
-          _stage: 3,
-          _deadline: Date.now() + 5 * 1000,
-          _refundPeriod: Date.now() + 60 * 1000,
+          _stage: dummyStage,
+          _deadline: dummyDeadline,
+          _refundPeriod: dummyRefundPeriod,
           _primaryTerminalAddress: '0x0000000000000000000000000000000000000000',
           _token: {
             tokenAddress: '0x0000000000000000000000000000000000000000',
@@ -99,6 +111,13 @@ export const getServerSideProps: GetServerSideProps = async ({ params, res }) =>
             tokenSymbol: 'DUMMY',
             tokenSupply: '1000000000000000000000000000',
           },
+          _teamNFT: null,
+          _teamHats: [],
+          _fundingGoal: 1000000000000000000, // 1 ETH
+          _ruleset: [
+            { weight: 1000000000000000000000000 },
+            { reservedPercent: 0 },
+          ],
         },
       }
     }
