@@ -2,7 +2,7 @@ import { Storage } from '@google-cloud/storage'
 import formidable from 'formidable'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from '../auth/[...nextauth]'
+import { authOptions } from '../../auth/[...nextauth]'
 import { verifyPrivyAuth } from 'lib/privy/privyAuth'
 import { secureHeaders } from 'middleware/secureHeaders'
 
