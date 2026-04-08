@@ -59,7 +59,7 @@ async function getAbstract(proposalBody: string): Promise<string | null> {
 }
 
 // Parse addresses out of proposal body via LLM
-async function getAddresses(proposalBody: string, patterns: string[]): Promise<string[]> {
+async function getAddresses(proposalBody: string, patterns: string[]): Promise<{ addresses: string[]; unresolved: string[] }> {
   const roleDescription = patterns.join(' or ')
   const thePrompt =
     `You are reading a DAO proposal written in markdown. There will be Team Rocketeers, and Intial Team, and Multi-sig signers. Extract the usernames and corresponding Ethereum addresses for just the ${roleDescription}.\n` +
@@ -94,6 +94,9 @@ async function getAddresses(proposalBody: string, patterns: string[]): Promise<s
         cleanText = jsonMatch[1].trim()
       }
       parsed = JSON.parse(cleanText)
+      if (!Array.isArray(parsed)) {
+        parsed = []
+      }
     } catch (e) {
       console.log('Failed to parse JSON from LLM response:', text)
       console.log('error', e)
@@ -101,11 +104,12 @@ async function getAddresses(proposalBody: string, patterns: string[]): Promise<s
     }
 
     const addresses: string[] = []
+    const unresolved: string[] = []
     const provider = new ethers.providers.JsonRpcProvider('https://eth.llamarpc.com')
 
     for (const item of parsed) {
       const username = item.username
-      const usernameWithoutAt = username.replace(/@/g, '')
+      const usernameWithoutAt = typeof username === 'string' ? username.replace(/@/g, '') : ''
       const ens = item.ens
       let address = item.address
 
@@ -126,15 +130,17 @@ async function getAddresses(proposalBody: string, patterns: string[]): Promise<s
 
       if (address && ethers.utils.isAddress(address)) {
         addresses.push(address)
-      } else if (username) {
-        console.warn(`Could not resolve address for username "${username}" (address: ${address}, ens: ${ens})`)
+      } else {
+        const label = username || ens || address || 'unknown'
+        console.warn(`Could not resolve address for "${label}" (address: ${address}, ens: ${ens})`)
+        unresolved.push(label)
       }
     }
 
-    return addresses
+    return { addresses, unresolved }
   } catch (error) {
     console.error('LLM address extraction failed:', error)
-    return []
+    return { addresses: [], unresolved: [] }
   }
 }
 
@@ -235,18 +241,24 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         proposalId = projects[0].MDP + 1
       }
 
-      let [leads, members, signers, abstractFull] = await Promise.all([
+      let [leadsResult, membersResult, signersResult, abstractFull] = await Promise.all([
         getAddresses(body, ['Team Rocketeer', 'Project Lead']),
         getAddresses(body, ['Initial Team']),
         getAddresses(body, ['Multi-sig signers']),
         getAbstract(body),
       ])
 
+      let leads = leadsResult.addresses
+      let members = membersResult.addresses
+      const signers = signersResult.addresses
+
       // Log parsed data for debugging
       console.log(`[Proposal MDP-${proposalId}] Parsed from document:`, {
         leads,
         members,
         signers,
+        unresolvedMembers: membersResult.unresolved,
+        unresolvedSigners: signersResult.unresolved,
         abstractLength: abstractFull?.length || 0,
       })
 
@@ -263,16 +275,14 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
 
       const abstractText = abstractFull?.slice(0, 1000)
 
-      const membersValid = members.map((address) => ethers.utils.isAddress(address)).every(Boolean)
-      if (!membersValid) {
+      if (membersResult.unresolved.length > 0) {
         return res.status(400).json({
-          error: `Could not resolve valid wallet addresses for all team members. Please make sure each team member in your Google Doc includes a valid Ethereum address (0x...) or a Discord username that we can resolve. Found: ${members.join(', ') || 'none'}`,
+          error: `Could not resolve valid wallet addresses for all team members. Please make sure each team member in your Google Doc includes a valid Ethereum address (0x...) or a Discord username that we can resolve. Unresolved: ${membersResult.unresolved.join(', ')}`,
         })
       }
-      const signersValid = signers.map((address) => ethers.utils.isAddress(address)).every(Boolean)
-      if (!signersValid) {
+      if (signersResult.unresolved.length > 0) {
         return res.status(400).json({
-          error: `Could not resolve valid wallet addresses for all multi-sig signers. Please make sure each signer in your Google Doc includes a valid Ethereum address (0x...) or a Discord username that we can resolve. Found: ${signers.join(', ') || 'none'}`,
+          error: `Could not resolve valid wallet addresses for all multi-sig signers. Please make sure each signer in your Google Doc includes a valid Ethereum address (0x...) or a Discord username that we can resolve. Unresolved: ${signersResult.unresolved.join(', ')}`,
         })
       }
       const abstractValid =
