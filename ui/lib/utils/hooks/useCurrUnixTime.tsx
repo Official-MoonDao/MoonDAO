@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
-//Get the current unix time at a configurable interval (default: 60 seconds)
-export default function useCurrUnixTime(intervalMs: number = 60000) {
+//Get the current unix time at a configurable interval (default: 1 second)
+export default function useCurrUnixTime(intervalMs: number = 1000) {
   const [time, setTime] = useState(Math.floor(Date.now() / 1000))
 
   useEffect(() => {
