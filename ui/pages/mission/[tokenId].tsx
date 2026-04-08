@@ -122,17 +122,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
             { reservedPercent: 0 },
           ],
         },
-        _stage: 3,
-        _deadline: Date.now() + 5 * 1000,
-        _refundPeriod: Date.now() + 60 * 1000,
-        _primaryTerminalAddress: '0x0000000000000000000000000000000000000000',
-        _token: {
-          tokenAddress: '0x0000000000000000000000000000000000000000',
-          tokenName: 'Dummy Token',
-          tokenSymbol: 'DUMMY',
-          tokenSupply: '1000000000000000000000000000',
-        },
-      },
+      }
     }
   }
 
