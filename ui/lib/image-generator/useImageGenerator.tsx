@@ -1,6 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useState } from 'react'
-import { compressImageForUpload, fitImage } from '../utils/images'
+import { fitImage } from '../utils/images'
 
 export default function useImageGenerator(
   generateApiRoute: string,
@@ -25,9 +25,7 @@ export default function useImageGenerator(
     })
 
     if (!response.ok) {
-      const errorBody = await response.text().catch(() => 'Unknown error')
-      console.error(`❌ GCS upload failed (${response.status}):`, errorBody)
-      throw new Error(`Failed to upload image to Google Storage: ${response.status} ${errorBody}`)
+      throw new Error('Failed to upload image to Google Storage')
     }
 
     const result = await response.json()
@@ -55,50 +53,49 @@ export default function useImageGenerator(
     }
   }
 
-  async function generateImage(imageOverride?: File) {
+  async function generateImage() {
     setIsLoading(true)
     let uploadedFilename: string | null = null
 
-    const imageToUse = imageOverride || inputImage
-    if (!imageToUse) {
-      setIsLoading(false)
-      setError('Please select an image before generating.')
-      console.error('inputImage is not defined')
-      return
+    if (!inputImage) {
+      return console.error('inputImage is not defined')
     }
 
     try {
-      // Compress image to stay under Vercel's 4.5 MB payload limit
-      const compressedImage = await compressImageForUpload(imageToUse) as File
-
       // Upload to Google Cloud Storage
-      const { url, filename } = await uploadToGoogleStorage(compressedImage)
+      const { url, filename } = await uploadToGoogleStorage(inputImage)
       uploadedFilename = filename
 
       const accessToken = await getAccessToken()
 
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000)
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-      const jobId = await fetch(generateApiRoute, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ url }),
-        signal: controller.signal,
-      })
-        .then((res) => res.json())
-        .finally(() => clearTimeout(timeoutId))
+      const jobId = await Promise.race([
+        fetch(generateApiRoute, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ url }),
+          signal: controller.signal,
+        }).then((res) => res.json()),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error('Request timed out after 5 seconds')),
+            5000
+          )
+        ),
+      ]).finally(() => clearTimeout(timeoutId))
 
       if (!jobId?.id) {
         throw new Error('Failed to create a comfy icu job')
       }
 
-      await checkJobStatus(jobId.id, uploadedFilename, imageToUse)
+      await checkJobStatus(jobId.id, uploadedFilename)
     } catch (err: any) {
-      console.error('❌ Image generation failed:', err?.message || err)
+      console.log(err)
       setIsLoading(false)
 
       // Clean up uploaded file on error
@@ -106,17 +103,13 @@ export default function useImageGenerator(
         await deleteFromGoogleStorage(uploadedFilename)
       }
 
-      try {
-        const fittedImage = await fitImage(imageToUse, 1024, 1024)
-        setImage(fittedImage)
-      } catch (fitErr) {
-        console.error('❌ fitImage fallback also failed:', fitErr)
-      }
+      const fittedImage = await fitImage(inputImage, 1024, 1024)
+      setImage(fittedImage)
       setError('Unable to generate an image, please try again later.')
     }
   }
 
-  const checkJobStatus = async (jobId: string, uploadedFilename: string, imageToUse: File) => {
+  const checkJobStatus = async (jobId: string, uploadedFilename: string) => {
     let jobs = await fetch(generateApiRoute).then((res) => res.json())
     let job = jobs.find((job: any) => job.id === jobId)
 
@@ -136,8 +129,8 @@ export default function useImageGenerator(
       setError(
         'Unable to generate an image, please try again with a different picture.'
       )
-      if (imageToUse) {
-        const fittedImage = await fitImage(imageToUse, 1024, 1024)
+      if (inputImage) {
+        const fittedImage = await fitImage(inputImage, 1024, 1024)
         setImage(fittedImage)
       }
       // Clean up uploaded file
@@ -149,8 +142,8 @@ export default function useImageGenerator(
       setError(
         'There was an error generating your image, please contact support.'
       )
-      if (imageToUse) {
-        const fittedImage = await fitImage(imageToUse, 1024, 1024)
+      if (inputImage) {
+        const fittedImage = await fitImage(inputImage, 1024, 1024)
         setImage(fittedImage)
       }
       // Clean up uploaded file

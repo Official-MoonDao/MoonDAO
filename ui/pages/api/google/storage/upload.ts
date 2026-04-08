@@ -1,6 +1,8 @@
 import { Storage } from '@google-cloud/storage'
 import formidable from 'formidable'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { authMiddleware } from 'middleware/authMiddleware'
+import withMiddleware from 'middleware/withMiddleware'
 
 export const config = {
   api: {
@@ -33,7 +35,7 @@ try {
   console.error('❌ GCS initialization failed:', initError)
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -103,3 +105,5 @@ export default async function handler(
       .json({ error: 'Upload failed', details: errorMessage })
   }
 }
+
+export default withMiddleware(handler, authMiddleware)
