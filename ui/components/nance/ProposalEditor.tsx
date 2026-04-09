@@ -179,6 +179,23 @@ export default function ProposalEditor({ project }: { project: Project }) {
       setSigningStatus('error')
       return
     }
+
+    if (!body.trim()) {
+      toast.error('Please import your Google Doc before submitting. The proposal body cannot be empty.', {
+        style: toastStyle,
+      })
+      setSigningStatus('error')
+      return
+    }
+
+    if (!address) {
+      toast.error('No wallet connected. Please connect your wallet to submit a proposal.', {
+        style: toastStyle,
+      })
+      setSigningStatus('error')
+      return
+    }
+
     const header = `# ${proposalTitle}\n\n`
     const fileName = `${proposalTitle.replace(/\s+/g, '-')}.md`
 
@@ -191,7 +208,23 @@ export default function ProposalEditor({ project }: { project: Project }) {
     const file = new File([fileContents], fileName, {
       type: 'application/json',
     })
-    const { url: proposalIPFS } = await pinBlobOrFile(file, '/api/ipfs/pin')
+
+    let proposalIPFS: string
+    try {
+      const pinResult = await pinBlobOrFile(file, '/api/ipfs/pin')
+      proposalIPFS = pinResult.url
+      if (!proposalIPFS) {
+        throw new Error('Empty IPFS URL returned')
+      }
+    } catch (pinError: any) {
+      console.error('Failed to pin proposal to IPFS:', pinError)
+      toast.error('Failed to upload proposal to IPFS. Please try again or check your connection.', {
+        style: toastStyle,
+      })
+      setSigningStatus('error')
+      return
+    }
+
     const res = await fetch(`/api/proposals/submit`, {
       method: 'POST',
       headers: {
@@ -354,6 +387,33 @@ export default function ProposalEditor({ project }: { project: Project }) {
               />
             </div>
 
+            {/* Connected Wallet Display */}
+            {address && (
+              <div className="mb-4 p-3 bg-green-900/20 border border-green-500/30 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-sm text-green-300 font-medium">Connected Wallet</span>
+                </div>
+                <p className="text-sm text-gray-300 mt-1 font-mono break-all">{address}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  This wallet address will be recorded as the proposal author. Make sure this is the correct wallet.
+                </p>
+              </div>
+            )}
+            {!address && authenticated && (
+              <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <span className="text-sm text-yellow-300 font-medium">No wallet detected</span>
+                </div>
+                <p className="text-xs text-yellow-200/70 mt-1">
+                  Please make sure your wallet is connected. You need a connected wallet to submit a proposal.
+                </p>
+              </div>
+            )}
+
             {/* Email Input (Optional) */}
             <div className={`mb-4 ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -378,6 +438,24 @@ export default function ProposalEditor({ project }: { project: Project }) {
               <p className="mt-2 text-xs text-gray-500">
                 Receive a confirmation email with your proposal link and next steps.
               </p>
+            </div>
+
+            {/* Team & Signers Info */}
+            <div className="mb-4 p-4 bg-indigo-900/20 border border-indigo-500/20 rounded-xl">
+              <div className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm text-indigo-200 font-medium">Team Members & Signers</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Project leads, team members, and multi-sig signers are automatically extracted from your Google Doc.
+                    Make sure your document includes Discord usernames and ETH wallet addresses (0x...) in the
+                    Team table, formatted as shown in the template (e.g. &quot;@username: eth:0x...&quot;).
+                    Names without wallet addresses may not be resolved correctly.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Proposal Preview */}
