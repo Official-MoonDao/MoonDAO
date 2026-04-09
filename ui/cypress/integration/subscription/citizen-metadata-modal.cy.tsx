@@ -110,6 +110,11 @@ describe('<CitizenMetadataModal /> ', () => {
   })
 
   it('Toggles the Update Email section', () => {
+    // Typeform embed throws when its form ID env var is missing in test
+    cy.on('uncaught:exception', (err) => {
+      if (err.message.includes('startsWith')) return false
+    })
+
     cy.get('.typeform-widget-container').should('not.exist')
 
     cy.contains('button', 'Update Email').click()

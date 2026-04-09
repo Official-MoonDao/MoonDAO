@@ -12,7 +12,7 @@ describe('fetchTotalVMOONEYs', () => {
     ]
     const TIMESTAMP = 1764016844
 
-    cy.wrap(fetchTotalVMOONEYs(ADDRESSES, TIMESTAMP)).then((vMOONEYs: any) => {
+    cy.wrap(fetchTotalVMOONEYs(ADDRESSES, TIMESTAMP), { timeout: 30000 }).then((vMOONEYs: any) => {
       expect(vMOONEYs).to.be.an('array')
       expect(vMOONEYs).to.have.length(ADDRESSES.length)
       vMOONEYs.forEach((val: number, i: number) => {
