@@ -260,7 +260,6 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
 
             {proposalPacket.voteURL && votes && votes?.proposal && (
               <div className="mt-0 md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
-                {/* Show voting results if proposal voting is closed */}
                 {votes.proposal?.state === 'closed' ? (
                   <SnapshotVotingResults
                     votingInfo={votes.proposal}

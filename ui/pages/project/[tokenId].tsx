@@ -216,7 +216,7 @@ export default function ProjectProfile({
           />
         }
       >
-        <div id="page-container" className="flex flex-col gap-6 p-6 md:p-8 max-w-[1200px]">
+        <div id="page-container" className="flex flex-col gap-6 py-6 md:py-8">
           {safeOwners.length < 5 && project.active === PROJECT_PENDING && (
             <div className="p-4 bg-yellow-900/30 border border-yellow-500/40 rounded-xl">
               <div className="flex items-start gap-3">
