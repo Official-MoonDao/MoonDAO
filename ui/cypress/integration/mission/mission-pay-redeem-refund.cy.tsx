@@ -277,7 +277,7 @@ describe('MissionPayRedeem — Refund Flow', () => {
 
       cy.get('#mission-pay-redeem-container').should('exist')
       cy.get('#mission-pay-container').should('exist')
-      cy.contains('You pay').should('be.visible')
+      cy.contains('You contribute').should('be.visible')
       cy.contains('You receive').should('be.visible')
     })
 
@@ -355,11 +355,9 @@ describe('MissionPayRedeem — Refund Flow', () => {
       setupMocksWithTokenBalance()
     })
 
-    it('should still render the contribute button at the component level (parent guards this)', () => {
-      // Note: MissionPayRedeem only returns null for stage 4.
-      // For stage 3, the parent (MissionProfile) guards this by not passing
-      // the contributeButton prop when deadlinePassed is true.
-      // At the component level, onlyButton + stage 3 still renders the button.
+    it('should NOT render the contribute button when stage is 3', () => {
+      // MissionPayRedeem returns null for onlyButton + standard + stage 3
+      // because contributions are not allowed during the refund period.
       cy.mount(
         <TestnetProviders>
           <MissionPayRedeemWrapper
@@ -372,7 +370,7 @@ describe('MissionPayRedeem — Refund Flow', () => {
         </TestnetProviders>
       )
 
-      cy.get('#open-contribute-modal').should('exist')
+      cy.get('#open-contribute-modal').should('not.exist')
     })
 
     it('should show contribute button when stage is 1', () => {
