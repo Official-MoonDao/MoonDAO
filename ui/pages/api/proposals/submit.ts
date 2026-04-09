@@ -144,6 +144,45 @@ async function getAddresses(proposalBody: string, patterns: string[]): Promise<{
   }
 }
 
+const DEFAULT_MULTISIG_SIGNERS: { label: string; addressOrEns: string }[] = [
+  { label: 'Pablo', addressOrEns: 'pmoncada.eth' },
+  { label: 'Ryan', addressOrEns: 'ryand2d.eth' },
+  { label: 'Miguel', addressOrEns: '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da' },
+  { label: 'Eiman', addressOrEns: 'eiman.eth' },
+]
+
+async function resolveDefaultSigners(authorAddress: string): Promise<string[]> {
+  const provider = new ethers.providers.JsonRpcProvider('https://eth.llamarpc.com')
+  const resolved: string[] = []
+
+  for (const signer of DEFAULT_MULTISIG_SIGNERS) {
+    try {
+      let addr = signer.addressOrEns
+      if (addr.endsWith('.eth')) {
+        const ensResolved = await provider.resolveName(addr)
+        if (!ensResolved) {
+          console.error(`Failed to resolve ENS "${addr}" for default signer ${signer.label}`)
+          continue
+        }
+        addr = ensResolved
+      }
+      if (ethers.utils.isAddress(addr)) {
+        resolved.push(addr)
+      } else {
+        console.error(`Invalid address for default signer ${signer.label}: ${addr}`)
+      }
+    } catch (error) {
+      console.error(`Error resolving default signer ${signer.label} (${signer.addressOrEns}):`, error)
+    }
+  }
+
+  if (!resolved.some((a) => a.toLowerCase() === authorAddress.toLowerCase())) {
+    resolved.push(authorAddress)
+  }
+
+  return resolved
+}
+
 interface PinResponse {
   cid: string
 }
@@ -241,24 +280,22 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         proposalId = projects[0].MDP + 1
       }
 
-      let [leadsResult, membersResult, signersResult, abstractFull] = await Promise.all([
+      let [leadsResult, membersResult, abstractFull, signers] = await Promise.all([
         getAddresses(body, ['Team Rocketeer', 'Project Lead']),
         getAddresses(body, ['Initial Team']),
-        getAddresses(body, ['Multi-sig signers']),
         getAbstract(body),
+        resolveDefaultSigners(address),
       ])
 
       let leads = leadsResult.addresses
       let members = membersResult.addresses
-      const signers = signersResult.addresses
 
       // Log parsed data for debugging
       console.log(`[Proposal MDP-${proposalId}] Parsed from document:`, {
         leads,
         members,
-        signers,
+        defaultSigners: signers,
         unresolvedMembers: membersResult.unresolved,
-        unresolvedSigners: signersResult.unresolved,
         abstractLength: abstractFull?.length || 0,
       })
 
@@ -276,14 +313,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       const abstractText = abstractFull?.slice(0, 1000)
 
       if (membersResult.unresolved.length > 0) {
-        return res.status(400).json({
-          error: `Could not resolve valid wallet addresses for all team members. Please make sure each team member in your Google Doc includes a valid Ethereum address (0x...) or a Discord username that we can resolve. Unresolved: ${membersResult.unresolved.join(', ')}`,
-        })
-      }
-      if (signersResult.unresolved.length > 0) {
-        return res.status(400).json({
-          error: `Could not resolve valid wallet addresses for all multi-sig signers. Please make sure each signer in your Google Doc includes a valid Ethereum address (0x...) or a Discord username that we can resolve. Unresolved: ${signersResult.unresolved.join(', ')}`,
-        })
+        console.warn(`[Proposal MDP-${proposalId}] Unresolved team members (proceeding anyway): ${membersResult.unresolved.join(', ')}`)
       }
       const abstractValid =
         abstractText !== undefined && abstractText !== null && abstractText !== 'null'
@@ -351,7 +381,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           upfrontPayment,
           lead, // leadAddress,
           members.length > 0 ? members : [address], // members
-          signers.length > 0 ? signers : [address], // signers,
+          signers, // default 3/5 multisig signers
         ],
       })
       const receipt = await sendAndConfirmTransaction({
