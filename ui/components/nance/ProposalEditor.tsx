@@ -449,10 +449,10 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 <div>
                   <p className="text-sm text-indigo-200 font-medium">Team Members & Signers</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Project leads, team members, and multi-sig signers are automatically extracted from your Google Doc.
-                    Make sure your document includes Discord usernames and ETH wallet addresses (0x...) in the
-                    Team table, formatted as shown in the template (e.g. &quot;@username: eth:0x...&quot;).
-                    Names without wallet addresses may not be resolved correctly.
+                    Project leads, team members, and multi-sig signers are automatically extracted from your Google Doc if available.
+                    Including Discord usernames and ETH wallet addresses (0x...) in the Team table is recommended but not required at submission time.
+                    You can finalize your team and multisig signers on your project page after submitting.
+                    Note: projects must have at least 2 multisig signers before they can be included in the member vote.
                   </p>
                 </div>
               </div>

@@ -1,7 +1,10 @@
+import Safe from '@safe-global/protocol-kit'
 import ProposalsABI from 'const/abis/Proposals.json'
+import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   PROJECT_TABLE_NAMES,
+  PROJECT_ADDRESSES,
   PROPOSALS_ADDRESSES,
   PROPOSALS_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
@@ -14,6 +17,7 @@ import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
+import { getRpcUrlForChain } from 'thirdweb/chains'
 import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
@@ -268,6 +272,54 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   if (passedProjects.length === 0) {
     return res.status(400).json({
       error: 'No projects passed temp check.',
+    })
+  }
+
+  // Filter out projects whose Safe has only 1 owner (team not properly configured)
+  const projectContract = getContract({
+    client: serverClient,
+    address: PROJECT_ADDRESSES[chainSlug],
+    abi: ProjectABI as any,
+    chain: chain,
+  })
+  const rpcUrl = getRpcUrlForChain({ client: serverClient, chain })
+  const skippedProjects: any[] = []
+
+  for (let i = passedProjects.length - 1; i >= 0; i--) {
+    const project = passedProjects[i]
+    try {
+      const safeAddress = await readContractWithRetry<string>(
+        projectContract,
+        'ownerOf',
+        [project.id],
+      )
+      const safe = await Safe.init({ provider: rpcUrl, safeAddress })
+      const owners = await safe.getOwners()
+      if (owners.length < 2) {
+        console.warn(
+          `[vote tally] Skipping project MDP-${project.MDP} "${project.name}": Safe ${safeAddress} has only ${owners.length} owner(s) (team not configured)`
+        )
+        skippedProjects.push(project)
+        passedProjects.splice(i, 1)
+      }
+    } catch (error) {
+      console.error(
+        `[vote tally] Error checking Safe owners for project MDP-${project.MDP} "${project.name}":`,
+        error
+      )
+    }
+  }
+
+  if (skippedProjects.length > 0) {
+    console.log(
+      `[vote tally] ${skippedProjects.length} project(s) excluded due to single-owner Safe: ${skippedProjects.map((p) => `MDP-${p.MDP}`).join(', ')}`
+    )
+  }
+  console.log(`[vote tally] ${passedProjects.length} projects eligible for vote after Safe owner check`)
+
+  if (passedProjects.length === 0) {
+    return res.status(400).json({
+      error: 'No projects have a properly configured multisig (2+ Safe owners required).',
     })
   }
 

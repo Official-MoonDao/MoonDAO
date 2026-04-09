@@ -217,6 +217,36 @@ export default function ProjectProfile({
         }
       >
         <div id="page-container" className="flex flex-col gap-6 p-6 md:p-8 max-w-[1200px]">
+          {safeOwners.length < 2 && project.active === PROJECT_PENDING && (
+            <div className="p-4 bg-yellow-900/30 border border-yellow-500/40 rounded-xl">
+              <div className="flex items-start gap-3">
+                <svg
+                  className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+                <div>
+                  <p className="text-sm text-yellow-200 font-medium">
+                    Multisig Setup Required
+                  </p>
+                  <p className="text-xs text-yellow-200/70 mt-1">
+                    This project&apos;s multisig currently has only {safeOwners.length} signer
+                    {safeOwners.length === 1 ? '' : 's'}. Projects must have at least 2 multisig
+                    signers to be included in the member vote. Add signers in the Treasury section
+                    below.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           {finalReportMarkdown && (
             <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
               <div className="prose prose-invert max-w-none">

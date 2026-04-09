@@ -276,14 +276,10 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       const abstractText = abstractFull?.slice(0, 1000)
 
       if (membersResult.unresolved.length > 0) {
-        return res.status(400).json({
-          error: `Could not resolve valid wallet addresses for all team members. Please make sure each team member in your Google Doc includes a valid Ethereum address (0x...) or a Discord username that we can resolve. Unresolved: ${membersResult.unresolved.join(', ')}`,
-        })
+        console.warn(`[Proposal MDP-${proposalId}] Unresolved team members (proceeding anyway): ${membersResult.unresolved.join(', ')}`)
       }
       if (signersResult.unresolved.length > 0) {
-        return res.status(400).json({
-          error: `Could not resolve valid wallet addresses for all multi-sig signers. Please make sure each signer in your Google Doc includes a valid Ethereum address (0x...) or a Discord username that we can resolve. Unresolved: ${signersResult.unresolved.join(', ')}`,
-        })
+        console.warn(`[Proposal MDP-${proposalId}] Unresolved signers (proceeding anyway): ${signersResult.unresolved.join(', ')}`)
       }
       const abstractValid =
         abstractText !== undefined && abstractText !== null && abstractText !== 'null'
