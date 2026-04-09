@@ -10,7 +10,6 @@ import {
   withDefault,
 } from 'next-query-params'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import { SnapshotGraphqlProposalVotingInfo, useVotingInfoOfProposals } from '@/lib/snapshot'
 import PaginationButtons from '@/components/layout/PaginationButtons'
@@ -90,7 +89,6 @@ export default function ProposalList({
   proposalLimit?: number
   projects?: any[]
 }) {
-  const router = useRouter()
   const [query, setQuery] = useQueryParams({
     keyword: StringParam,
     limit: withDefault(NumberParam, 10),
@@ -154,17 +152,17 @@ export default function ProposalList({
                 }
               >
                 {projects.slice(0, itemsPerPage).map((project) => (
-                  <Link
+                  <a
                     key={project.id}
                     href={`/project/${project.MDP ?? project.id}`}
                     className={
                       feedCards
-                        ? 'block bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5'
-                        : 'block h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02] cursor-pointer'
+                        ? 'block bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5 no-underline'
+                        : 'block h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02] cursor-pointer no-underline'
                     }
                   >
-                    <Proposal project={project} feedStyle={feedCards} />
-                  </Link>
+                    <Proposal project={project} feedStyle={feedCards} linkDisabled />
+                  </a>
                 ))}
               </div>
             </div>

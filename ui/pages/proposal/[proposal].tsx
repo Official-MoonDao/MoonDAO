@@ -24,12 +24,6 @@ import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 function ProposalPacketInfo({ proposalPacket }: { proposalPacket: ProposalPacket }) {
-  const { proposalIdPrefix } = proposalPacket?.proposalInfo || {}
-  const preTitleDisplay =
-    proposalIdPrefix && proposalPacket.proposalId
-      ? `${proposalIdPrefix}${proposalPacket.proposalId}: `
-      : ''
-
   const config = STATUS_CONFIG[proposalPacket.status as keyof typeof STATUS_CONFIG] || {
     bg: 'bg-gray-500/10',
     border: 'border-gray-500/30',
@@ -43,26 +37,19 @@ function ProposalPacketInfo({ proposalPacket }: { proposalPacket: ProposalPacket
   return (
     <div className="flex min-w-0 flex-col gap-x-4 sm:flex-row">
       <div className="min-w-0 flex-auto">
-        <div className="flex items-center">
-          <div className="mr-2">
-            <div className="flex items-center gap-2">
-              <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${config.bg} ${config.border} backdrop-blur-sm`}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${config.bg} ${config.border} backdrop-blur-sm`}
+            >
+              <div className={`w-2 h-2 rounded-full ${config.dot}`}></div>
+              <span
+                className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}
               >
-                <div className={`w-2 h-2 rounded-full ${config.dot}`}></div>
-                <span
-                  className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}
-                >
-                  {displayLabel}
-                </span>
-              </div>
+                {displayLabel}
+              </span>
             </div>
           </div>
-          <span className="text-lg font-semibold text-white" style={{ fontFamily: 'Lato' }}>
-            {`${preTitleDisplay}${proposalPacket.title}`}
-          </span>
-        </div>
-        <div className="mt-2 flex flex-col md:flex-row items-start md:items-center gap-x-6 text-xs font-RobotoMono">
           <div className="flex items-center gap-x-1">
             <Image
               src={`https://cdn.stamp.fyi/avatar/${proposalPacket.authorAddress || ZERO_ADDRESS}`}
@@ -72,8 +59,8 @@ function ProposalPacketInfo({ proposalPacket }: { proposalPacket: ProposalPacket
               height={75}
             />
             <div>
-              <p className="text-gray-400 font-RobotoMono">Author</p>
-              <div className="text-center text-white font-RobotoMono">
+              <p className="text-gray-400 font-RobotoMono text-xs">Author</p>
+              <div className="text-center text-white font-RobotoMono text-xs">
                 <AddressLink address={proposalPacket.authorAddress} />
               </div>
             </div>
@@ -225,6 +212,12 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
     }
   }
 
+  const { proposalIdPrefix } = proposalPacket?.proposalInfo || {}
+  const headerTitle =
+    proposalIdPrefix && proposalPacket.proposalId
+      ? `${proposalIdPrefix}${proposalPacket.proposalId}: ${proposalPacket.title}`
+      : proposalPacket.title
+
   const fetchVotes =
     proposalPacket?.voteURL !== undefined &&
     (proposalPacket?.status === 'Voting' ||
@@ -248,7 +241,7 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
     <Container>
       <WebsiteHead title={proposalPacket.title} description={description} />
       <ContentLayout
-        header={proposalPacket.title}
+        header={headerTitle}
         mode="compact"
         headerSize="max(20px, 2vw)"
         description={<ProposalPacketInfo proposalPacket={proposalPacket} />}
