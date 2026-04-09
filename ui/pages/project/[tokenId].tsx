@@ -217,7 +217,7 @@ export default function ProjectProfile({
         }
       >
         <div id="page-container" className="flex flex-col gap-6 p-6 md:p-8 max-w-[1200px]">
-          {safeOwners.length < 2 && project.active === PROJECT_PENDING && (
+          {safeOwners.length < 5 && project.active === PROJECT_PENDING && (
             <div className="p-4 bg-yellow-900/30 border border-yellow-500/40 rounded-xl">
               <div className="flex items-start gap-3">
                 <svg
@@ -238,10 +238,10 @@ export default function ProjectProfile({
                     Multisig Setup Required
                   </p>
                   <p className="text-xs text-yellow-200/70 mt-1">
-                    This project&apos;s multisig currently has only {safeOwners.length} signer
-                    {safeOwners.length === 1 ? '' : 's'}. Projects must have at least 2 multisig
-                    signers to be included in the member vote. Add signers in the Treasury section
-                    below.
+                    This project&apos;s multisig currently has {safeOwners.length} signer
+                    {safeOwners.length === 1 ? '' : 's'}. Projects must have a 3/5 multisig
+                    (5 signers with a threshold of 3) to be included in the member vote.
+                    Add signers in the Treasury section below.
                   </p>
                 </div>
               </div>

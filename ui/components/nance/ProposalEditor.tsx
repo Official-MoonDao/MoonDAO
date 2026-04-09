@@ -447,12 +447,11 @@ export default function ProposalEditor({ project }: { project: Project }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <p className="text-sm text-indigo-200 font-medium">Team Members & Signers</p>
+                  <p className="text-sm text-indigo-200 font-medium">Team Members & Multisig</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Project leads, team members, and multi-sig signers are automatically extracted from your Google Doc if available.
-                    Including Discord usernames and ETH wallet addresses (0x...) in the Team table is recommended but not required at submission time.
-                    You can finalize your team and multisig signers on your project page after submitting.
-                    Note: projects must have at least 2 multisig signers before they can be included in the member vote.
+                    Project leads and team members are automatically extracted from your Google Doc if available.
+                    Including Discord usernames and ETH wallet addresses (0x...) is recommended but not required at submission time.
+                    A default 3/5 multisig will be created for your project automatically with MoonDAO core signers and your wallet.
                   </p>
                 </div>
               </div>
