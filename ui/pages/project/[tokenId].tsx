@@ -25,7 +25,7 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { PROJECT_PENDING, PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
-import { getProposalStatus } from '@/lib/nance/useProposalStatus'
+import { getProposalStatus, STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
@@ -37,7 +37,6 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import { STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
 import CollapsibleContainer from '@/components/layout/CollapsibleContainer'
 import Container from '@/components/layout/Container'
@@ -101,8 +100,8 @@ function AuthorCitizenLink({
   const inner = (
     <div className="flex items-center gap-3 group">
       <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 flex-shrink-0">
-        <Image
-          src={avatarSrc}
+        <img
+          src={avatarSrc.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${avatarSrc.replace('ipfs://', '')}` : avatarSrc}
           alt={displayName}
           width={32}
           height={32}
@@ -397,11 +396,16 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       chain: chain,
     })
 
-    const statement = `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`
+    let projects = (
+      await queryTable(chain, `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`)
+    ).filter((p: Project) => !BLOCKED_PROJECTS.has(Number(p.id)))
 
-    const projects = (await queryTable(chain, statement)).filter(
-      (p: Project) => !BLOCKED_PROJECTS.has(Number(p.id))
-    )
+    if (!projects[0]) {
+      projects = (
+        await queryTable(chain, `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`)
+      ).filter((p: Project) => !BLOCKED_PROJECTS.has(Number(p.id)))
+    }
+
     const project = projects[0]
 
     if (!project) {
@@ -411,25 +415,32 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
 
     const mdp = project?.MDP
-    const tempCheckApproved = await readContract({
-      contract: proposalContract,
-      method: 'tempCheckApproved' as string,
-      params: [mdp],
-    })
-    const tempCheckFailed = await readContract({
-      contract: proposalContract,
-      method: 'tempCheckFailed' as string,
-      params: [mdp],
-    })
-    const tempCheckApprovedTimestamp = await readContract({
-      contract: proposalContract,
-      method: 'tempCheckApprovedTimestamp' as string,
-      params: [mdp],
-    })
+
+    let tempCheckApproved: any = false
+    let tempCheckFailed: any = false
+    let tempCheckApprovedTimestamp: any = '0'
+    try {
+      tempCheckApproved = await readContract({
+        contract: proposalContract,
+        method: 'tempCheckApproved' as string,
+        params: [mdp],
+      })
+      tempCheckFailed = await readContract({
+        contract: proposalContract,
+        method: 'tempCheckFailed' as string,
+        params: [mdp],
+      })
+      tempCheckApprovedTimestamp = await readContract({
+        contract: proposalContract,
+        method: 'tempCheckApprovedTimestamp' as string,
+        params: [mdp],
+      })
+    } catch (error) {
+      console.error(`Failed to read proposal contract for MDP ${mdp}:`, error)
+    }
+
     let proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
 
-    // If on-chain says "Temperature Check" (both tempCheck flags are false),
-    // the contract data may be stale. Cross-reference with Nance API.
     if (proposalStatus === 'Temperature Check') {
       try {
         const { NANCE_API_URL, NANCE_SPACE_NAME } = await import('@/lib/nance/constants')
@@ -461,49 +472,58 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     let votes: DistributionVote[] = []
     let voteOutcome = {}
     if (proposalJSON?.nonProjectProposal) {
-      const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
-      votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
-      const voteAddresses = votes.map((v) => v.address)
-      const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
+      try {
+        const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
+        votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+        const voteAddresses = votes.map((v) => v.address)
+        const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
 
-      // Only fetch vMOONEY if there are votes
-      if (voteAddresses.length > 0) {
-        const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
-        const addressToQuadraticVotingPower = Object.fromEntries(
-          voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
-        )
-        const SUM_TO_ONE_HUNDRED = 100
-        voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+        if (voteAddresses.length > 0) {
+          const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
+          const addressToQuadraticVotingPower = Object.fromEntries(
+            voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+          )
+          const SUM_TO_ONE_HUNDRED = 100
+          voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+        }
+      } catch (error) {
+        console.error('Error fetching votes:', error)
       }
     }
 
-    const projectContract = getContract({
-      client: serverClient,
-      address: PROJECT_ADDRESSES[chainSlug],
-      abi: ProjectABI as any,
-      chain: chain,
-    })
+    let safeAddress = ''
+    try {
+      const projectContract = getContract({
+        client: serverClient,
+        address: PROJECT_ADDRESSES[chainSlug],
+        abi: ProjectABI as any,
+        chain: chain,
+      })
 
-    const safeAddress = await readContract({
-      contract: projectContract,
-      method: 'ownerOf' as string,
-      params: [project.id],
-    })
-
-    const rpcUrl = getRpcUrlForChain({
-      client: serverClient,
-      chain: chain,
-    })
+      safeAddress = await readContract({
+        contract: projectContract,
+        method: 'ownerOf' as string,
+        params: [project.id],
+      })
+    } catch (error) {
+      console.error(`Failed to read ownerOf for project ${project.id}:`, error)
+    }
 
     let safeOwners: string[] = []
-    try {
-      const safe = await Safe.init({
-        provider: rpcUrl,
-        safeAddress: safeAddress,
-      })
-      safeOwners = await safe.getOwners()
-    } catch (error) {
-      console.error('Error initializing Safe:', error)
+    if (safeAddress) {
+      try {
+        const rpcUrl = getRpcUrlForChain({
+          client: serverClient,
+          chain: chain,
+        })
+        const safe = await Safe.init({
+          provider: rpcUrl,
+          safeAddress: safeAddress,
+        })
+        safeOwners = await safe.getOwners()
+      } catch (error) {
+        console.error('Error initializing Safe:', error)
+      }
     }
 
     return {
