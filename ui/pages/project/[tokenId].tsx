@@ -18,9 +18,10 @@ import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
+import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { PROJECT_PENDING, PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
@@ -35,11 +36,12 @@ import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
 import CollapsibleContainer from '@/components/layout/CollapsibleContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
-import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
@@ -47,14 +49,103 @@ import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import DropDownMenu from '@/components/nance/DropDownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
-import ProposalInfo from '@/components/nance/ProposalInfo'
 import ProposalVotes from '@/components/nance/ProposalVotes'
+import { TokensOfProposal } from '@/components/nance/RequestingTokensOfProposal'
 import VotingResults from '@/components/nance/VotingResults'
 import ProposalEditSection from '@/components/nance/ProposalEditSection'
 import TempCheck from '@/components/project/TempCheck'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
+
+function AuthorCitizenLink({
+  authorAddress,
+  citizenContract,
+}: {
+  authorAddress: string
+  citizenContract: any
+}) {
+  const [citizenMeta, setCitizenMeta] = useState<any>(null)
+
+  useEffect(() => {
+    async function resolve() {
+      if (!authorAddress || !citizenContract?.address) return
+      try {
+        const tokenId = await readContract({
+          contract: citizenContract,
+          method: 'getOwnedToken' as string,
+          params: [authorAddress],
+        })
+        const nft = await getNFT({
+          contract: citizenContract,
+          tokenId: BigInt(tokenId.toString()),
+        })
+        if (nft?.metadata?.name && nft.metadata.name !== 'Failed to load NFT metadata') {
+          setCitizenMeta(nft.metadata)
+        }
+      } catch {
+        // Not a citizen or contract call failed
+      }
+    }
+    resolve()
+  }, [authorAddress, citizenContract])
+
+  const displayName =
+    citizenMeta?.name || `${authorAddress.slice(0, 6)}...${authorAddress.slice(-4)}`
+  const avatarSrc =
+    citizenMeta?.image || `https://cdn.stamp.fyi/avatar/${authorAddress}`
+  const href = citizenMeta
+    ? `/citizen/${generatePrettyLinkWithId(citizenMeta.name, citizenMeta.id)}`
+    : undefined
+
+  const inner = (
+    <div className="flex items-center gap-3 group">
+      <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 flex-shrink-0">
+        <Image
+          src={avatarSrc}
+          alt={displayName}
+          width={32}
+          height={32}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <span className="text-sm text-gray-200 group-hover:text-white transition-colors">
+        {displayName}
+      </span>
+    </div>
+  )
+
+  if (href) {
+    return (
+      <Link href={href} className="no-underline">
+        {inner}
+      </Link>
+    )
+  }
+  return inner
+}
+
+function ProposalStatusBadge({ status }: { status: ProposalStatus }) {
+  const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || {
+    bg: 'bg-gray-500/10',
+    border: 'border-gray-500/30',
+    text: 'text-gray-400',
+    dot: 'bg-gray-500',
+  }
+  const displayLabel = STATUS_DISPLAY_LABELS[status] ?? status
+  return (
+    <div
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border ${config.bg} ${config.border} backdrop-blur-sm`}
+    >
+      <div className={`w-2 h-2 rounded-full ${config.dot}`} />
+      <span
+        className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}
+      >
+        {displayLabel}
+      </span>
+    </div>
+  )
+}
 
 type ProjectProfileProps = {
   tokenId: string
@@ -100,8 +191,6 @@ export default function ProjectProfile({
     chain: selectedChain,
   })
 
-  const [isExpanded, setIsExpanded] = useState(false)
-
   const {
     adminHatId,
     managerHatId,
@@ -120,61 +209,6 @@ export default function ProjectProfile({
 
   useChainDefault()
 
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded)
-  }
-  const tallyVotes = async () => {
-    const res = await fetch(`/api/proposals/nonProjectVote`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        mdp: project?.MDP,
-      }),
-    })
-    const resJson = await res.json()
-  }
-
-  //Profile Header Section
-  const ProfileHeader = (
-    <div id="orgheader-container">
-      <Frame
-        noPadding
-        bottomRight="0px"
-        bottomLeft="0px"
-        topLeft="0px"
-        topRight="0px"
-        className="z-50"
-        marginBottom="0px"
-      >
-        <div id="frame-content-container" className="w-full">
-          <div id="frame-content" className="w-full flex flex-col items-start justify-between">
-            <div
-              id="profile-description-section"
-              className="flex flex-col lg:flex-row items-start lg:items-center gap-4 px-4 md:px-0"
-            >
-              <div id="team-name-container" className="w-full">
-                <div id="profile-container" className="w-full">
-                  {project?.description ? (
-                    <p
-                      id="profile-description-container"
-                      className="mb-5 w-full lg:w-[80%] text-sm md:text-base"
-                    >
-                      {project.description || ''}
-                    </p>
-                  ) : (
-                    <></>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Frame>
-    </div>
-  )
-
   return (
     <Container>
       <Head title={project.name} description={project.description} />
@@ -182,22 +216,35 @@ export default function ProjectProfile({
         header={project.name}
         headerSize="max(20px, 3vw)"
         description={
-          <div>
-            <ProposalInfo
-              proposalJSON={proposalJSON}
-              proposalStatus={proposalStatus}
-              project={project}
-              linkDisabled
-              showTitle={false}
-              showStatus={true}
-            />
-            <div className="mt-3">
-              <ProposalEditSection
-                proposalJSON={proposalJSON}
-                projectName={project.name}
-                mdp={project.MDP}
-              />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <ProposalStatusBadge status={proposalStatus} />
+              <span className="text-sm font-mono text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+                MDP-{project.MDP}
+              </span>
+              {project.quarter && project.year && (
+                <span className="text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+                  Q{project.quarter} {project.year}
+                </span>
+              )}
+              {proposalJSON?.budget && proposalJSON.budget.length > 0 && (
+                <span className="text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+                  Requesting: <span className="text-gray-200"><TokensOfProposal budget={proposalJSON.budget} /></span>
+                </span>
+              )}
+              {proposalJSON?.authorAddress && (
+                <AuthorCitizenLink
+                  authorAddress={proposalJSON.authorAddress}
+                  citizenContract={citizenContract}
+                />
+              )}
             </div>
+
+            <ProposalEditSection
+              proposalJSON={proposalJSON}
+              projectName={project.name}
+              mdp={project.MDP}
+            />
           </div>
         }
         mainPadding
@@ -303,42 +350,13 @@ export default function ProjectProfile({
               </div>
             </SlidingCardMenu>
           </SectionCard>
-          {safeOwners.length < 5 && project.active === PROJECT_PENDING && (
-            <div className="p-4 bg-yellow-900/30 border border-yellow-500/40 rounded-xl">
-              <div className="flex items-start gap-3">
-                <svg
-                  className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-                <div>
-                  <p className="text-sm text-yellow-200 font-medium">
-                    Multisig Setup Required
-                  </p>
-                  <p className="text-xs text-yellow-200/70 mt-1">
-                    This project&apos;s multisig currently has {safeOwners.length} signer
-                    {safeOwners.length === 1 ? '' : 's'}. Projects must have a 3/5 multisig
-                    (5 signers with a threshold of 3) to be included in the member vote.
-                    Add signers in the Treasury section below.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
           <SectionCard header="Treasury" iconSrc="/assets/icon-treasury.svg">
             <TeamTreasury
               isSigner={isSigner}
               safeData={safeData}
               multisigAddress={safeAddress}
               safeOwners={safeOwners}
+              projectActive={project.active}
             />
           </SectionCard>
         </div>

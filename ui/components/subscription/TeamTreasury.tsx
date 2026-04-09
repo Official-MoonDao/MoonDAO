@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
+import { PROJECT_PENDING } from '@/lib/nance/types'
 import { useENS } from '@/lib/utils/hooks/useENS'
 import StandardButton from '../layout/StandardButton'
 import SafeBalances from '../safe/SafeBalances'
@@ -17,6 +18,7 @@ type TeamTreasuryProps = {
   safeData: any
   multisigAddress: string
   safeOwners: string[]
+  projectActive?: number
 }
 
 function SignerAddress({ address }: { address: string }) {
@@ -36,7 +38,7 @@ function SignerAddress({ address }: { address: string }) {
   )
 }
 
-export default function TeamTreasury({ isSigner, safeData, multisigAddress, safeOwners }: TeamTreasuryProps) {
+export default function TeamTreasury({ isSigner, safeData, multisigAddress, safeOwners, projectActive }: TeamTreasuryProps) {
   const account = useActiveAccount()
   const address = account?.address
   const [safeModalEnabled, setSafeModalEnabled] = useState(false)
@@ -71,6 +73,35 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress, safe
         />
       )}
       <div className="w-full flex flex-col gap-5 p-6">
+        {safeOwners.length < 5 && projectActive === PROJECT_PENDING && (
+          <div className="p-4 bg-yellow-900/30 border border-yellow-500/40 rounded-xl">
+            <div className="flex items-start gap-3">
+              <svg
+                className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              <div>
+                <p className="text-sm text-yellow-200 font-medium">
+                  Multisig Setup Required
+                </p>
+                <p className="text-xs text-yellow-200/70 mt-1">
+                  This project&apos;s multisig currently has {safeOwners.length} signer
+                  {safeOwners.length === 1 ? '' : 's'}. Projects must have a 3/5 multisig
+                  (5 signers with a threshold of 3) to be included in the member vote.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
           <div className="flex gap-5 items-center">
             <Image
