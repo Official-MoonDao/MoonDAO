@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
+import { useENS } from '@/lib/utils/hooks/useENS'
 import StandardButton from '../layout/StandardButton'
 import SafeBalances from '../safe/SafeBalances'
 import SafeModal from '../safe/SafeModal'
@@ -18,7 +19,24 @@ type TeamTreasuryProps = {
   safeOwners: string[]
 }
 
-export default function TeamTreasury({ isSigner, safeData, multisigAddress }: TeamTreasuryProps) {
+function SignerAddress({ address }: { address: string }) {
+  const { data: ens } = useENS(address)
+  return (
+    <a
+      href={`https://etherscan.io/address/${address}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+    >
+      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex-shrink-0" />
+      <span className="text-sm text-gray-300 font-mono">
+        {ens?.name || `${address.slice(0, 6)}...${address.slice(-4)}`}
+      </span>
+    </a>
+  )
+}
+
+export default function TeamTreasury({ isSigner, safeData, multisigAddress, safeOwners }: TeamTreasuryProps) {
   const account = useActiveAccount()
   const address = account?.address
   const [safeModalEnabled, setSafeModalEnabled] = useState(false)
@@ -106,6 +124,19 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress }: Te
           )}
         </div>
         <SafeBalances safeBalances={safeBalances} isLoading={isLoadingBalances} />
+
+        {safeOwners && safeOwners.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-slate-600/30">
+            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              Signers ({safeOwners.length})
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {safeOwners.map((owner) => (
+                <SignerAddress key={owner} address={owner} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {isSigner && safeData && (
           <div className="mt-4 pt-4 border-t border-slate-600/30">
