@@ -602,7 +602,7 @@ export function ProjectRewards({
           isProfile
           branded={false}
         >
-          <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6 px-0 sm:px-3 md:px-0 max-w-[1200px]">
+          <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6">
             {/* Condensed Top Section - Rewards + Create Button */}
             <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
