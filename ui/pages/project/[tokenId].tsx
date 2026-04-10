@@ -24,6 +24,7 @@ import { getRpcUrlForChain } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import { useENS } from '@/lib/utils/hooks/useENS'
 import { PROJECT_PENDING, PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
 import { getProposalStatus, STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
@@ -60,11 +61,15 @@ import TeamTreasury from '@/components/subscription/TeamTreasury'
 function AuthorCitizenLink({
   authorAddress,
   citizenContract,
+  authorName,
 }: {
   authorAddress: string
   citizenContract: any
+  authorName?: string | null
 }) {
   const [citizenMeta, setCitizenMeta] = useState<any>(null)
+  const { data: ensData } = useENS(authorAddress)
+  const shortAddress = `${authorAddress.slice(0, 6)}...${authorAddress.slice(-4)}`
 
   useEffect(() => {
     async function resolve() {
@@ -89,39 +94,46 @@ function AuthorCitizenLink({
     resolve()
   }, [authorAddress, citizenContract])
 
-  const displayName =
-    citizenMeta?.name || `${authorAddress.slice(0, 6)}...${authorAddress.slice(-4)}`
+  const displayName = citizenMeta?.name || authorName || null
+  const addressLabel = ensData?.name || shortAddress
   const avatarSrc =
     citizenMeta?.image || `https://cdn.stamp.fyi/avatar/${authorAddress}`
   const href = citizenMeta
     ? `/citizen/${generatePrettyLinkWithId(citizenMeta.name, citizenMeta.id)}`
     : undefined
 
-  const inner = (
-    <div className="flex items-center gap-3 group">
-      <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 flex-shrink-0">
-        <img
-          src={avatarSrc.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${avatarSrc.replace('ipfs://', '')}` : avatarSrc}
-          alt={displayName}
-          width={32}
-          height={32}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      <span className="text-sm text-gray-200 group-hover:text-white transition-colors">
-        {displayName}
-      </span>
+  const etherscanUrl = `https://etherscan.io/address/${authorAddress}`
+
+  return (
+    <div className="flex items-center gap-3">
+      <Link href={href || etherscanUrl} target={href ? undefined : '_blank'} rel={href ? undefined : 'noopener noreferrer'} className="no-underline">
+        <div className="flex items-center gap-3 group">
+          <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 flex-shrink-0">
+            <img
+              src={avatarSrc.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${avatarSrc.replace('ipfs://', '')}` : avatarSrc}
+              alt={displayName || addressLabel}
+              width={32}
+              height={32}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          {displayName && (
+            <span className="text-sm text-gray-200 group-hover:text-white transition-colors">
+              {displayName}
+            </span>
+          )}
+        </div>
+      </Link>
+      <Link
+        href={href || etherscanUrl}
+        target={href ? undefined : '_blank'}
+        rel={href ? undefined : 'noopener noreferrer'}
+        className="text-xs font-mono text-gray-500 hover:text-gray-300 transition-colors no-underline"
+      >
+        {addressLabel}
+      </Link>
     </div>
   )
-
-  if (href) {
-    return (
-      <Link href={href} className="no-underline">
-        {inner}
-      </Link>
-    )
-  }
-  return inner
 }
 
 function ProposalStatusBadge({ status }: { status: ProposalStatus }) {
@@ -208,6 +220,10 @@ export default function ProjectProfile({
 
   useChainDefault()
 
+  const body = proposalJSON?.body || ''
+  const submittedDate = body.match(/^Date:\s*(.+)$/m)?.[1]?.trim() || null
+  const authorName = body.match(/^Author:\s*(.+)$/m)?.[1]?.trim() || null
+
   return (
     <Container>
       <Head title={project.name} description={project.description} />
@@ -226,6 +242,11 @@ export default function ProjectProfile({
                   Q{project.quarter} {project.year}
                 </span>
               )}
+              {submittedDate && (
+                <span className="text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+                  {submittedDate}
+                </span>
+              )}
               {proposalJSON?.budget && proposalJSON.budget.length > 0 && (
                 <span className="text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
                   Requesting: <span className="text-gray-200"><TokensOfProposal budget={proposalJSON.budget} /></span>
@@ -235,6 +256,7 @@ export default function ProjectProfile({
                 <AuthorCitizenLink
                   authorAddress={proposalJSON.authorAddress}
                   citizenContract={citizenContract}
+                  authorName={authorName}
                 />
               )}
             </div>
