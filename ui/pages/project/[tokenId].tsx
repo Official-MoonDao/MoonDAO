@@ -2,7 +2,7 @@ import Safe from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
+
 import ProposalsABI from 'const/abis/Proposals.json'
 import {
   CITIZEN_ADDRESSES,
@@ -10,9 +10,10 @@ import {
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
   PROJECT_CREATOR_ADDRESSES,
-  PROJECT_TABLE_ADDRESSES,
+
   PROPOSALS_ADDRESSES,
   NON_PROJECT_PROPOSAL_TABLE_NAMES,
+  PROJECT_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -414,18 +415,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const projectTableContract = getContract({
-      client: serverClient,
-      address: PROJECT_TABLE_ADDRESSES[chainSlug],
-      abi: ProjectTableABI as any,
-      chain: chain,
-    })
-
-    const projectTableName = await readContract({
-      contract: projectTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
+    const projectTableName = PROJECT_TABLE_NAMES[chainSlug]
     const proposalContract = getContract({
       client: serverClient,
       address: PROPOSALS_ADDRESSES[chainSlug],
