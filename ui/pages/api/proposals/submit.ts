@@ -28,8 +28,35 @@ const TEST_PROPOSALS_FORUM_ID = '1446583124388741252'
 const proposalsForumId =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? PROD_PROPOSALS_FORUM_ID : TEST_PROPOSALS_FORUM_ID // proposals || test-forum
 
-// Parse abstract out of proposal body via LLM
-async function getAbstract(proposalBody: string): Promise<string | null> {
+// Extract abstract section from markdown using regex (deterministic, reliable)
+function extractAbstractFromMarkdown(body: string): string | null {
+  // Try markdown heading format: # Abstract, ## Abstract, etc.
+  const headingPattern = /^#{1,6}\s*\*{0,2}Abstract\*{0,2}\s*$/im
+  const headingMatch = headingPattern.exec(body)
+  if (headingMatch && headingMatch.index !== undefined) {
+    const rest = body.slice(headingMatch.index + headingMatch[0].length)
+    const nextHeading = rest.search(/^#{1,6}\s/m)
+    const content = nextHeading !== -1 ? rest.slice(0, nextHeading) : rest
+    const trimmed = content.trim()
+    if (trimmed) return trimmed
+  }
+
+  // Try bold/plain format: **Abstract** or just "Abstract" on its own line
+  const boldPattern = /^\*{1,2}Abstract\*{1,2}\s*$/im
+  const boldMatch = boldPattern.exec(body)
+  if (boldMatch && boldMatch.index !== undefined) {
+    const rest = body.slice(boldMatch.index + boldMatch[0].length)
+    const nextSection = rest.search(/^(?:#{1,6}\s|\*{1,2}[A-Z])/m)
+    const content = nextSection !== -1 ? rest.slice(0, nextSection) : rest
+    const trimmed = content.trim()
+    if (trimmed) return trimmed
+  }
+
+  return null
+}
+
+// Fallback: parse abstract out of proposal body via LLM
+async function getAbstractViaLLM(proposalBody: string): Promise<string | null> {
   const thePrompt =
     `You are reading a DAO proposal written in markdown. Extract the Abstract section from the proposal.\n` +
     `Return ONLY the text of the Abstract section, or null if not found.\n\n` +
@@ -58,8 +85,101 @@ async function getAbstract(proposalBody: string): Promise<string | null> {
   }
 }
 
-// Parse addresses out of proposal body via LLM
-async function getAddresses(proposalBody: string, patterns: string[]): Promise<{ addresses: string[]; unresolved: string[] }> {
+async function getAbstract(proposalBody: string): Promise<string | null> {
+  const llmResult = await getAbstractViaLLM(proposalBody)
+  if (llmResult && llmResult !== 'null') return llmResult
+
+  return extractAbstractFromMarkdown(proposalBody)
+}
+
+type ParsedIdentity = { username: string | null; address: string | null; ens: string | null }
+
+function extractAddressesFromMarkdown(body: string, patterns: string[]): ParsedIdentity[] {
+  let sectionText = ''
+
+  for (const pattern of patterns) {
+    const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+    // Table rows containing the pattern (e.g. "| Project Lead | @user 0x... |")
+    const tableRowRegex = new RegExp(`^\\|[^\\n]*${escaped}[^\\n]*$`, 'gim')
+    let match
+    while ((match = tableRowRegex.exec(body)) !== null) {
+      sectionText += ' ' + match[0]
+    }
+
+    // Heading sections: ## Project Lead / ## Initial Team etc.
+    const headingRegex = new RegExp(`^#{1,6}\\s*.*${escaped}.*$`, 'gim')
+    while ((match = headingRegex.exec(body)) !== null) {
+      const rest = body.slice(match.index + match[0].length)
+      const nextHeading = rest.search(/^#{1,6}\s/m)
+      sectionText += ' ' + (nextHeading !== -1 ? rest.slice(0, nextHeading) : rest.slice(0, 2000))
+    }
+
+    // Bold label format: **Project Lead:** content
+    const boldRegex = new RegExp(`\\*{1,2}${escaped}\\*{1,2}[:\\s]+([^\\n]+)`, 'gi')
+    while ((match = boldRegex.exec(body)) !== null) {
+      sectionText += ' ' + match[1]
+    }
+  }
+
+  if (!sectionText.trim()) return []
+
+  const results: ParsedIdentity[] = []
+  const pairedUsernames = new Set<string>()
+  const pairedAddresses = new Set<string>()
+
+  // Paired: @username: eth:0xABC... or @username 0xABC...
+  const pairRegex = /@([\w.]+)[:\s]+(?:eth:)?(0x[a-fA-F0-9]{40})/g
+  let pairMatch
+  while ((pairMatch = pairRegex.exec(sectionText)) !== null) {
+    results.push({ username: pairMatch[1], address: pairMatch[2], ens: null })
+    pairedUsernames.add(pairMatch[1])
+    pairedAddresses.add(pairMatch[2].toLowerCase())
+  }
+
+  // Paired: @username: name.eth
+  const ensPairRegex = /@([\w.]+)[:\s]+([\w-]+\.eth)/g
+  let ensPairMatch
+  while ((ensPairMatch = ensPairRegex.exec(sectionText)) !== null) {
+    if (!pairedUsernames.has(ensPairMatch[1])) {
+      results.push({ username: ensPairMatch[1], address: null, ens: ensPairMatch[2] })
+      pairedUsernames.add(ensPairMatch[1])
+    }
+  }
+
+  // Standalone ETH addresses
+  const addrRegex = /0x[a-fA-F0-9]{40}/g
+  let addrMatch
+  while ((addrMatch = addrRegex.exec(sectionText)) !== null) {
+    if (!pairedAddresses.has(addrMatch[0].toLowerCase())) {
+      results.push({ username: null, address: addrMatch[0], ens: null })
+      pairedAddresses.add(addrMatch[0].toLowerCase())
+    }
+  }
+
+  // Standalone @usernames
+  const usernameRegex = /@([\w.]+)/g
+  let usernameMatch
+  while ((usernameMatch = usernameRegex.exec(sectionText)) !== null) {
+    if (!pairedUsernames.has(usernameMatch[1])) {
+      results.push({ username: usernameMatch[1], address: null, ens: null })
+      pairedUsernames.add(usernameMatch[1])
+    }
+  }
+
+  // Standalone ENS names
+  const ensRegex = /\b([\w-]+\.eth)\b/g
+  let ensMatch
+  while ((ensMatch = ensRegex.exec(sectionText)) !== null) {
+    if (!results.some((r) => r.ens === ensMatch![1])) {
+      results.push({ username: null, address: null, ens: ensMatch[1] })
+    }
+  }
+
+  return results
+}
+
+async function extractAddressesViaLLM(proposalBody: string, patterns: string[]): Promise<ParsedIdentity[]> {
   const roleDescription = patterns.join(' or ')
   const thePrompt =
     `You are reading a DAO proposal written in markdown. There will be Team Rocketeers, and Intial Team, and Multi-sig signers. Extract the usernames and corresponding Ethereum addresses for just the ${roleDescription}.\n` +
@@ -87,7 +207,6 @@ async function getAddresses(proposalBody: string, patterns: string[]): Promise<{
     const text = data.choices?.[0]?.message?.content?.trim() || '[]'
     let parsed
     try {
-      // LLMs sometimes wrap JSON in markdown code fences, strip them
       let cleanText = text
       const jsonMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)```/)
       if (jsonMatch) {
@@ -103,45 +222,56 @@ async function getAddresses(proposalBody: string, patterns: string[]): Promise<{
       parsed = []
     }
 
-    const addresses: string[] = []
-    const unresolved: string[] = []
-    const provider = new ethers.providers.JsonRpcProvider('https://eth.llamarpc.com')
+    return parsed as ParsedIdentity[]
+  } catch (error) {
+    console.error('LLM address extraction failed:', error)
+    return []
+  }
+}
 
-    for (const item of parsed) {
-      const username = item.username
-      const usernameWithoutAt = typeof username === 'string' ? username.replace(/@/g, '') : ''
-      const ens = item.ens
-      let address = item.address
+async function resolveIdentities(parsed: ParsedIdentity[]): Promise<{ addresses: string[]; unresolved: string[] }> {
+  const addresses: string[] = []
+  const unresolved: string[] = []
+  const provider = new ethers.providers.JsonRpcProvider('https://eth.llamarpc.com')
 
-      // If no address but we have a username, try to resolve from mapping
-      if (!address && username) {
-        const mappedAddress = DISCORD_TO_ETH_ADDRESS[usernameWithoutAt]
-        if (mappedAddress && mappedAddress.trim() !== '') {
-          address = mappedAddress
-        }
+  for (const item of parsed) {
+    const username = item.username
+    const usernameWithoutAt = typeof username === 'string' ? username.replace(/@/g, '') : ''
+    const ens = item.ens
+    let address = item.address
+
+    if (!address && username) {
+      const mappedAddress = DISCORD_TO_ETH_ADDRESS[usernameWithoutAt]
+      if (mappedAddress && mappedAddress.trim() !== '') {
+        address = mappedAddress
       }
-      if (!address && ens) {
-        try {
-          address = await provider.resolveName(ens)
-        } catch (ensError) {
-          console.warn(`Failed to resolve ENS name "${ens}":`, ensError)
-        }
-      }
-
-      if (address && ethers.utils.isAddress(address)) {
-        addresses.push(address)
-      } else {
-        const label = username || ens || address || 'unknown'
-        console.warn(`Could not resolve address for "${label}" (address: ${address}, ens: ${ens})`)
-        unresolved.push(label)
+    }
+    if (!address && ens) {
+      try {
+        address = await provider.resolveName(ens)
+      } catch (ensError) {
+        console.warn(`Failed to resolve ENS name "${ens}":`, ensError)
       }
     }
 
-    return { addresses, unresolved }
-  } catch (error) {
-    console.error('LLM address extraction failed:', error)
-    return { addresses: [], unresolved: [] }
+    if (address && ethers.utils.isAddress(address)) {
+      addresses.push(address)
+    } else {
+      const label = username || ens || address || 'unknown'
+      console.warn(`Could not resolve address for "${label}" (address: ${address}, ens: ${ens})`)
+      unresolved.push(label)
+    }
   }
+
+  return { addresses, unresolved }
+}
+
+async function getAddresses(proposalBody: string, patterns: string[]): Promise<{ addresses: string[]; unresolved: string[] }> {
+  let parsed = await extractAddressesViaLLM(proposalBody, patterns)
+  if (parsed.length === 0) {
+    parsed = extractAddressesFromMarkdown(proposalBody, patterns)
+  }
+  return resolveIdentities(parsed)
 }
 
 const DEFAULT_MULTISIG_SIGNERS: { label: string; address: string }[] = [
