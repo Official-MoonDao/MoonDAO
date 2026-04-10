@@ -28,8 +28,35 @@ const TEST_PROPOSALS_FORUM_ID = '1446583124388741252'
 const proposalsForumId =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? PROD_PROPOSALS_FORUM_ID : TEST_PROPOSALS_FORUM_ID // proposals || test-forum
 
-// Parse abstract out of proposal body via LLM
-async function getAbstract(proposalBody: string): Promise<string | null> {
+// Extract abstract section from markdown using regex (deterministic, reliable)
+function extractAbstractFromMarkdown(body: string): string | null {
+  // Try markdown heading format: # Abstract, ## Abstract, etc.
+  const headingPattern = /^#{1,6}\s*\*{0,2}Abstract\*{0,2}\s*$/im
+  const headingMatch = headingPattern.exec(body)
+  if (headingMatch && headingMatch.index !== undefined) {
+    const rest = body.slice(headingMatch.index + headingMatch[0].length)
+    const nextHeading = rest.search(/^#{1,6}\s/m)
+    const content = nextHeading !== -1 ? rest.slice(0, nextHeading) : rest
+    const trimmed = content.trim()
+    if (trimmed) return trimmed
+  }
+
+  // Try bold/plain format: **Abstract** or just "Abstract" on its own line
+  const boldPattern = /^\*{1,2}Abstract\*{1,2}\s*$/im
+  const boldMatch = boldPattern.exec(body)
+  if (boldMatch && boldMatch.index !== undefined) {
+    const rest = body.slice(boldMatch.index + boldMatch[0].length)
+    const nextSection = rest.search(/^(?:#{1,6}\s|\*{1,2}[A-Z])/m)
+    const content = nextSection !== -1 ? rest.slice(0, nextSection) : rest
+    const trimmed = content.trim()
+    if (trimmed) return trimmed
+  }
+
+  return null
+}
+
+// Fallback: parse abstract out of proposal body via LLM
+async function getAbstractViaLLM(proposalBody: string): Promise<string | null> {
   const thePrompt =
     `You are reading a DAO proposal written in markdown. Extract the Abstract section from the proposal.\n` +
     `Return ONLY the text of the Abstract section, or null if not found.\n\n` +
@@ -56,6 +83,13 @@ async function getAbstract(proposalBody: string): Promise<string | null> {
     console.error('LLM abstract extraction failed:', error)
     return null
   }
+}
+
+async function getAbstract(proposalBody: string): Promise<string | null> {
+  const regexResult = extractAbstractFromMarkdown(proposalBody)
+  if (regexResult) return regexResult
+
+  return getAbstractViaLLM(proposalBody)
 }
 
 // Parse addresses out of proposal body via LLM
