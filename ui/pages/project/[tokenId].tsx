@@ -331,8 +331,11 @@ export default function ProjectProfile({
               <div className="prose prose-base prose-invert max-w-none">
                 <MarkdownWithTOC body={(() => {
                   const full = proposalJSON.body || ''
-                  const abstractIndex = full.search(/^#+ *Abstract/im)
-                  return abstractIndex > 0 ? full.slice(abstractIndex) : full
+                  const idx = full.search(/^#{1,6}\s*Abstract/im)
+                  if (idx !== -1) return full.slice(idx)
+                  const plainIdx = full.search(/^\*{0,2}Abstract\*{0,2}\s*$/im)
+                  if (plainIdx !== -1) return full.slice(plainIdx)
+                  return full
                 })()} />
               </div>
             </div>
