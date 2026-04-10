@@ -26,7 +26,7 @@ export default function SectionCard({
         <div className="flex gap-2 sm:gap-3 md:gap-5 items-center min-w-0">
           {iconSrc && <Image src={iconSrc} alt="Section icon" width={24} height={24} className="flex-shrink-0 sm:w-[30px] sm:h-[30px]" />}
           {header && (
-            <h2 className="text-white font-GoodTimes text-xl sm:text-2xl lg:text-3xl truncate">{header}</h2>
+            <h2 className="text-white font-GoodTimes text-2xl sm:text-3xl lg:text-4xl truncate">{header}</h2>
           )}
         </div>
         {action && <div className="flex-shrink-0 ml-2">{action}</div>}

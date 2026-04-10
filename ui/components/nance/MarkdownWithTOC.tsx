@@ -28,22 +28,22 @@ export default function MarkdownWithTOC({ body }: { body: string }) {
           ]}
           components={{
             h1: ({ node, ...props }) => (
-              <h1 className="group font-GoodTimes text-2xl md:text-3xl mt-8 mb-4" {...props} />
+              <h1 className="group font-GoodTimes text-xl md:text-2xl mt-8 mb-4" {...props} />
             ),
             h2: ({ node, ...props }) => (
-              <h2 className="group font-GoodTimes text-xl md:text-2xl mt-6 mb-3" {...props} />
+              <h2 className="group font-GoodTimes text-lg md:text-xl mt-6 mb-3" {...props} />
             ),
             h3: ({ node, ...props }) => (
-              <h3 className="group font-GoodTimes text-lg md:text-xl mt-5 mb-2" {...props} />
+              <h3 className="group font-GoodTimes text-base md:text-lg mt-5 mb-2" {...props} />
             ),
             h4: ({ node, ...props }) => (
-              <h4 className="group font-GoodTimes text-base md:text-lg mt-4 mb-2" {...props} />
+              <h4 className="group font-GoodTimes text-sm md:text-base mt-4 mb-2" {...props} />
             ),
             h5: ({ node, ...props }) => (
-              <h5 className="group font-GoodTimes text-sm md:text-base mt-3 mb-2" {...props} />
+              <h5 className="group font-GoodTimes text-xs md:text-sm mt-3 mb-2" {...props} />
             ),
             h6: ({ node, ...props }) => (
-              <h6 className="group font-GoodTimes text-sm md:text-base mt-3 mb-2" {...props} />
+              <h6 className="group font-GoodTimes text-xs md:text-sm mt-3 mb-2" {...props} />
             ),
             table: ({ node, ...props }) => (
               <div className="mb-6 overflow-x-auto -mx-2 md:mx-0">
