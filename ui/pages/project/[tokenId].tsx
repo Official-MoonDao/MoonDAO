@@ -223,6 +223,7 @@ export default function ProjectProfile({
       <ContentLayout
         header={project.name}
         headerSize="max(20px, 3vw)"
+        maxWidth="1050px"
         description={
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -289,6 +290,7 @@ export default function ProjectProfile({
           <SectionCard
             header="Proposal"
             iconSrc="/assets/icon-star.svg"
+            className=""
             action={
               <div className="flex gap-2 items-center">
                 {project.active == PROJECT_PENDING &&
@@ -312,9 +314,13 @@ export default function ProjectProfile({
               </div>
             }
           >
-            <div className="mt-10 mb-10">
-              <div className="prose prose-invert max-w-none">
-                <MarkdownWithTOC body={proposalJSON.body || ''} />
+            <div className="mt-10 mb-10 px-4 md:px-8 w-full">
+              <div className="prose prose-base prose-invert max-w-none">
+                <MarkdownWithTOC body={(() => {
+                  const full = proposalJSON.body || ''
+                  const abstractIndex = full.search(/^#+ *Abstract/im)
+                  return abstractIndex > 0 ? full.slice(abstractIndex) : full
+                })()} />
               </div>
             </div>
           </SectionCard>

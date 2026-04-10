@@ -18,6 +18,7 @@ interface ContentProps {
   contentwide?: boolean
   branded?: boolean
   isProfile?: boolean
+  maxWidth?: string
 }
 
 const ContentLayout: React.FC<ContentProps> = ({
@@ -36,6 +37,7 @@ const ContentLayout: React.FC<ContentProps> = ({
   contentwide = false,
   branded = true,
   isProfile = false,
+  maxWidth = '1200px',
 }) => {
   const isCompact = mode === 'compact'
 
@@ -55,9 +57,10 @@ const ContentLayout: React.FC<ContentProps> = ({
             <div
               id="content-container"
               className={`
-                                flex flex-col h-full relative max-w-[1200px] mx-auto
+                                flex flex-col h-full relative mx-auto
                                 ${isCompact ? '' : 'lg:flex-row lg:items-start'} 
                             `}
+              style={{ maxWidth }}
             >
               <div id="image-container" className="w-full h-full relative mb-10 z-10">
                 {logo ? (
@@ -131,7 +134,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                   {description && (
                     <div
                       className={`
-                                            block w-full mt-4 pt-2 pb-2 lg:max-w-[1200px]
+                                            block w-full mt-4 pt-2 pb-2
                                             ${isCompact ? 'pb-0' : 'pb-5 md:pb-20 lg:pb-15 '} 
                                             ${branded ? 'md:mt-2' : 'md:mt-20'}
                                         `}
@@ -152,7 +155,7 @@ const ContentLayout: React.FC<ContentProps> = ({
             id="main-section"
             className={`
                         relative w-full ${
-                          contentwide ? 'max-w-full' : 'max-w-[1200px]'
+                          contentwide ? 'max-w-full' : ''
                         } ${contentwide ? '' : 'mx-auto'} mt-0 
                         ${mainPadding || contentwide ? 'p-0' : 'pb-5'} 
                         ${
@@ -166,7 +169,7 @@ const ContentLayout: React.FC<ContentProps> = ({
             style={
               contentwide
                 ? { width: '100%', maxWidth: '100%' }
-                : undefined
+                : { maxWidth }
             }
           >
             <div

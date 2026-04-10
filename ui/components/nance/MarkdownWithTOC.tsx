@@ -10,7 +10,7 @@ import remarkGfm from 'remark-gfm'
 export default function MarkdownWithTOC({ body }: { body: string }) {
   return (
     <div>
-      <article className="w-full break-words text-white overflow-x-hidden">
+      <article className="w-full break-words text-white text-base overflow-x-hidden">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[
@@ -27,6 +27,9 @@ export default function MarkdownWithTOC({ body }: { body: string }) {
             rehypeRaw,
           ]}
           components={{
+            h1: ({ node, ...props }) => (
+              <h1 className="group font-GoodTimes text-2xl md:text-3xl mt-8 mb-4" {...props} />
+            ),
             h2: ({ node, ...props }) => (
               <h2 className="group font-GoodTimes text-xl md:text-2xl mt-6 mb-3" {...props} />
             ),
@@ -61,7 +64,7 @@ export default function MarkdownWithTOC({ body }: { body: string }) {
                 {...props}
               />
             ),
-            p: ({ node, ...props }) => <p className="text-white" {...props} />,
+            p: ({ node, ...props }) => <p className="text-white text-base leading-relaxed" {...props} />,
             strong: ({ node, children, ...props }) => (
               <strong className="text-white font-bold" {...props}>
                 {children}
@@ -77,21 +80,21 @@ export default function MarkdownWithTOC({ body }: { body: string }) {
             ),
             ul: ({ node, ...props }) => (
               <ul
-                className="list-disc ml-6 mb-4 text-white"
+                className="list-disc ml-6 mb-4 text-white text-base"
                 style={{ paddingLeft: '1.5rem', lineHeight: '1.8' }}
                 {...props}
               />
             ),
             ol: ({ node, ...props }) => (
               <ol
-                className="list-decimal ml-6 mb-4 text-white"
+                className="list-decimal ml-6 mb-4 text-white text-base"
                 style={{ paddingLeft: '1.5rem', lineHeight: '1.8' }}
                 {...props}
               />
             ),
             li: ({ node, ...props }) => (
               <li
-                className="text-white mb-3 leading-relaxed"
+                className="text-white text-base mb-3 leading-relaxed"
                 style={{ marginBottom: '0.75rem', display: 'list-item' }}
                 {...props}
               />
