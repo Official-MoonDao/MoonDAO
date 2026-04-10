@@ -50,7 +50,7 @@ import StandardButton from '@/components/layout/StandardButton'
 import DropDownMenu from '@/components/nance/DropDownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalVotes from '@/components/nance/ProposalVotes'
-import { TokensOfProposal } from '@/components/nance/RequestingTokensOfProposal'
+
 import VotingResults from '@/components/nance/VotingResults'
 import ProposalEditSection from '@/components/nance/ProposalEditSection'
 import TempCheck from '@/components/project/TempCheck'
@@ -217,6 +217,19 @@ export default function ProjectProfile({
   const submittedDate = body.match(/^Date:\s*(.+)$/m)?.[1]?.trim() || null
   const authorName = body.match(/^Author:\s*(.+)$/m)?.[1]?.trim() || null
 
+  const totalBudgetDisplay = (() => {
+    const match = body.match(/\*{0,2}Total\s+Budget\*{0,2}[:\s|]+(.+?)(?:\s*\||\s*$)/im)
+    if (match) return match[1].replace(/\*{1,2}/g, '').trim()
+    if (!proposalJSON?.budget || proposalJSON.budget.length === 0) return null
+    const totals: Record<string, number> = {}
+    proposalJSON.budget.forEach((item: any) => {
+      totals[item.token] = (totals[item.token] || 0) + Number(item.amount)
+    })
+    return Object.entries(totals)
+      .map(([token, amount]) => `${amount.toLocaleString()} ${token.toUpperCase()}`)
+      .join(' + ')
+  })()
+
   return (
     <Container>
       <Head title={project.name} description={project.description} />
@@ -248,9 +261,9 @@ export default function ProjectProfile({
                   {submittedDate}
                 </span>
               )}
-              {proposalJSON?.budget && proposalJSON.budget.length > 0 && (
+              {totalBudgetDisplay && (
                 <span className="inline-flex items-center h-9 text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3">
-                  Requesting: <span className="text-gray-200"><TokensOfProposal budget={proposalJSON.budget} /></span>
+                  Budget:&nbsp;<span className="text-gray-200">{totalBudgetDisplay}</span>
                 </span>
               )}
             </div>
