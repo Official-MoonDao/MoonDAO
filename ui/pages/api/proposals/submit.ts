@@ -144,43 +144,21 @@ async function getAddresses(proposalBody: string, patterns: string[]): Promise<{
   }
 }
 
-const DEFAULT_MULTISIG_SIGNERS: { label: string; addressOrEns: string }[] = [
-  { label: 'Pablo', addressOrEns: 'pmoncada.eth' },
-  { label: 'Ryan', addressOrEns: 'ryand2d.eth' },
-  { label: 'Miguel', addressOrEns: '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da' },
-  { label: 'Eiman', addressOrEns: 'eiman.eth' },
+const DEFAULT_MULTISIG_SIGNERS: { label: string; address: string }[] = [
+  { label: 'Pablo', address: '0x679d87D8640e66778c3419D164998E720D7495f6' },
+  { label: 'Ryan', address: '0xB2d3900807094D4Fe47405871B0C8AdB58E10D42' },
+  { label: 'Miguel', address: '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da' },
+  { label: 'Eiman', address: '0xe2d3aC725E6FFE2b28a9ED83bedAaf6672f2C801' },
 ]
 
-async function resolveDefaultSigners(authorAddress: string): Promise<string[]> {
-  const provider = new ethers.providers.JsonRpcProvider('https://eth.llamarpc.com')
-  const resolved: string[] = []
+function resolveDefaultSigners(authorAddress: string): string[] {
+  const signers = DEFAULT_MULTISIG_SIGNERS.map((s) => s.address)
 
-  for (const signer of DEFAULT_MULTISIG_SIGNERS) {
-    try {
-      let addr = signer.addressOrEns
-      if (addr.endsWith('.eth')) {
-        const ensResolved = await provider.resolveName(addr)
-        if (!ensResolved) {
-          console.error(`Failed to resolve ENS "${addr}" for default signer ${signer.label}`)
-          continue
-        }
-        addr = ensResolved
-      }
-      if (ethers.utils.isAddress(addr)) {
-        resolved.push(addr)
-      } else {
-        console.error(`Invalid address for default signer ${signer.label}: ${addr}`)
-      }
-    } catch (error) {
-      console.error(`Error resolving default signer ${signer.label} (${signer.addressOrEns}):`, error)
-    }
+  if (!signers.some((a) => a.toLowerCase() === authorAddress.toLowerCase())) {
+    signers.push(authorAddress)
   }
 
-  if (!resolved.some((a) => a.toLowerCase() === authorAddress.toLowerCase())) {
-    resolved.push(authorAddress)
-  }
-
-  return resolved
+  return signers
 }
 
 interface PinResponse {
@@ -280,11 +258,12 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         proposalId = projects[0].MDP + 1
       }
 
-      let [leadsResult, membersResult, abstractFull, signers] = await Promise.all([
+      const signers = resolveDefaultSigners(address)
+
+      let [leadsResult, membersResult, abstractFull] = await Promise.all([
         getAddresses(body, ['Team Rocketeer', 'Project Lead']),
         getAddresses(body, ['Initial Team']),
         getAbstract(body),
-        resolveDefaultSigners(address),
       ])
 
       let leads = leadsResult.addresses

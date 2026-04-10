@@ -2,8 +2,6 @@ import { CalendarDaysIcon } from '@heroicons/react/24/outline'
 import { add, differenceInDays, formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
-import useAccount from '../../lib/nance/useAccountAddress'
 import { STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
 import { AddressLink } from './AddressLink'
@@ -74,8 +72,6 @@ export default function ProposalInfo({
   /** Dashboard feed: match newsletter typography; no inner link (card is wrapped by Link). */
   feedStyle?: boolean
 }) {
-  const { isLinked, wallet } = useAccount()
-
   const titleText = `MDP-${project.MDP}: ${project.name}`
 
   return (

@@ -12,8 +12,10 @@ import RequestingTokensOfProposal from './RequestingTokensOfProposal'
 
 type ProposalProps = {
   project: any
-  /** Horizontal “newsletter” row on the citizen dashboard */
+  /** Horizontal "newsletter" row on the citizen dashboard */
   feedStyle?: boolean
+  /** Disable internal links (use when Proposal is already wrapped in a Link) */
+  linkDisabled?: boolean
 }
 
 function StatusDot({ config }: { config: StatusIndicatorStyle }) {
@@ -34,7 +36,7 @@ function getDescriptionPreview(body: string | undefined, maxLength = 120): strin
   return stripped.length > maxLength ? `${stripped.slice(0, maxLength)}…` : stripped
 }
 
-export default function Proposal({ project, feedStyle = false }: ProposalProps) {
+export default function Proposal({ project, feedStyle = false, linkDisabled = false }: ProposalProps) {
   const proposalStatus = (useProposalStatus(project) || project?.status) as ProposalStatus
   const proposalJSON = useProposalJSON(project) || project?.proposalJSON
   const config = getStatusIndicatorConfig(proposalStatus)
@@ -59,6 +61,7 @@ export default function Proposal({ project, feedStyle = false }: ProposalProps) 
             project={project}
             compact={true}
             feedStyle={true}
+            linkDisabled={linkDisabled}
           />
           {descriptionPreview && (
             <p className="text-gray-300 text-sm mb-2 line-clamp-2 mt-1">{descriptionPreview}</p>
@@ -97,6 +100,7 @@ export default function Proposal({ project, feedStyle = false }: ProposalProps) 
           proposalStatus={proposalStatus}
           project={project}
           compact={true}
+          linkDisabled={linkDisabled}
         />
         {descriptionPreview && (
           <p className="mt-2 text-sm text-white/60 line-clamp-2 font-RobotoMono">
