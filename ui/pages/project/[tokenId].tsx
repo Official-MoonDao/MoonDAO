@@ -108,8 +108,8 @@ function AuthorCitizenLink({
 
   return (
     <Link href={linkHref} {...linkProps} className="no-underline">
-      <div className="flex items-center gap-2 h-9 bg-white/5 border border-white/10 rounded-lg px-3 hover:bg-white/10 transition-colors group">
-        <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+      <div className="flex items-center gap-2 h-7 sm:h-9 bg-white/5 border border-white/10 rounded-lg px-2 sm:px-3 hover:bg-white/10 transition-colors group min-w-0">
+        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden flex-shrink-0">
           <img
             src={avatarSrc.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${avatarSrc.replace('ipfs://', '')}` : avatarSrc}
             alt={displayName || addressLabel}
@@ -119,11 +119,11 @@ function AuthorCitizenLink({
           />
         </div>
         {displayName && (
-          <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+          <span className="text-xs sm:text-sm text-gray-300 group-hover:text-white transition-colors truncate">
             {displayName}
           </span>
         )}
-        <span className="text-sm font-mono text-gray-500 group-hover:text-gray-300 transition-colors">
+        <span className="text-xs sm:text-sm font-mono text-gray-500 group-hover:text-gray-300 transition-colors hidden sm:inline">
           {addressLabel}
         </span>
       </div>
@@ -141,10 +141,10 @@ function ProposalStatusBadge({ status }: { status: ProposalStatus }) {
   const displayLabel = STATUS_DISPLAY_LABELS[status] ?? status
   return (
     <div
-      className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border ${config.bg} ${config.border}`}
+      className={`inline-flex items-center gap-1.5 sm:gap-2 h-7 sm:h-9 px-2 sm:px-3 rounded-lg border ${config.bg} ${config.border}`}
     >
-      <div className={`w-2 h-2 rounded-full ${config.dot}`} />
-      <span className={`text-sm font-medium ${config.text} uppercase tracking-wider`}>
+      <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${config.dot}`} />
+      <span className={`text-xs sm:text-sm font-medium ${config.text} uppercase tracking-wider`}>
         {displayLabel}
       </span>
     </div>
@@ -239,7 +239,7 @@ export default function ProjectProfile({
         maxWidth="1050px"
         description={
           <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {proposalJSON?.authorAddress && (
                 <AuthorCitizenLink
                   authorAddress={proposalJSON.authorAddress}
@@ -248,21 +248,21 @@ export default function ProjectProfile({
                 />
               )}
               <ProposalStatusBadge status={proposalStatus} />
-              <span className="inline-flex items-center h-9 text-sm font-mono text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3">
+              <span className="inline-flex items-center h-7 sm:h-9 text-xs sm:text-sm font-mono text-gray-400 bg-white/5 border border-white/10 rounded-lg px-2 sm:px-3">
                 MDP-{project.MDP}
               </span>
               {project.quarter && project.year && (
-                <span className="inline-flex items-center h-9 text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3">
+                <span className="inline-flex items-center h-7 sm:h-9 text-xs sm:text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-2 sm:px-3">
                   Q{project.quarter} {project.year}
                 </span>
               )}
               {submittedDate && (
-                <span className="inline-flex items-center h-9 text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3">
+                <span className="inline-flex items-center h-7 sm:h-9 text-xs sm:text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-2 sm:px-3">
                   {submittedDate}
                 </span>
               )}
               {totalBudgetDisplay && (
-                <span className="inline-flex items-center h-9 text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3">
+                <span className="inline-flex items-center h-7 sm:h-9 text-xs sm:text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-2 sm:px-3">
                   Budget:&nbsp;<span className="text-gray-200">{totalBudgetDisplay}</span>
                 </span>
               )}
@@ -291,7 +291,7 @@ export default function ProjectProfile({
           />
         }
       >
-        <div id="page-container" className="flex flex-col gap-6 py-6 md:py-8">
+        <div id="page-container" className="flex flex-col gap-4 sm:gap-6 py-4 sm:py-6 md:py-8">
           {finalReportMarkdown && (
             <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
               <div className="prose prose-invert max-w-none">
@@ -327,7 +327,7 @@ export default function ProjectProfile({
               </div>
             }
           >
-            <div className="mt-10 mb-10 px-4 md:px-8 w-full">
+            <div className="mt-6 mb-6 sm:mt-10 sm:mb-10 px-0 sm:px-4 md:px-8 w-full">
               <div className="prose prose-base prose-invert max-w-none">
                 <MarkdownWithTOC body={(() => {
                   const full = proposalJSON.body || ''

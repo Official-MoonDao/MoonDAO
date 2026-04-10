@@ -31,7 +31,7 @@ function SignerAddress({ address }: { address: string }) {
       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
     >
       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex-shrink-0" />
-      <span className="text-sm text-gray-300 font-mono">
+      <span className="text-xs sm:text-sm text-gray-300 font-mono truncate">
         {ens?.name || `${address.slice(0, 6)}...${address.slice(-4)}`}
       </span>
     </a>
@@ -72,7 +72,7 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress, safe
           setEnabled={setSafeSendModalEnabled}
         />
       )}
-      <div className="w-full flex flex-col gap-5 p-6">
+      <div className="w-full flex flex-col gap-4 sm:gap-5 p-0 sm:p-6">
         {safeOwners.length < 5 && projectActive === PROJECT_PENDING && (
           <div className="p-4 bg-yellow-900/30 border border-yellow-500/40 rounded-xl">
             <div className="flex items-start gap-3">
@@ -102,16 +102,18 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress, safe
             </div>
           </div>
         )}
-        <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
-          <div className="flex gap-5 items-center">
-            <Image
-              src="/assets/icon-star.svg"
-              alt="Treasury icon"
-              width={30}
-              height={30}
-              className="opacity-70"
-            />
-            <h2 className="font-GoodTimes text-2xl text-white">Treasury</h2>
+        <div className="flex flex-col gap-4 lg:flex-row lg:gap-5 lg:justify-between lg:items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 sm:items-center">
+            <div className="flex gap-3 sm:gap-5 items-center">
+              <Image
+                src="/assets/icon-star.svg"
+                alt="Treasury icon"
+                width={30}
+                height={30}
+                className="opacity-70"
+              />
+              <h2 className="font-GoodTimes text-xl sm:text-2xl text-white">Treasury</h2>
+            </div>
             {multisigAddress && (
               <div className="flex items-center gap-2">
                 <a
@@ -120,7 +122,7 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress, safe
                   }:${multisigAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                  className="text-xs sm:text-sm text-blue-400 hover:text-blue-300 transition-colors font-mono"
                 >
                   {`${multisigAddress.slice(0, 6)}...${multisigAddress.slice(-4)}`}
                 </a>

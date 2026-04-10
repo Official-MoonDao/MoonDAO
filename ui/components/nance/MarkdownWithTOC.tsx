@@ -74,21 +74,25 @@ export default function MarkdownWithTOC({ body }: { body: string }) {
             br: ({ node, ...props }) => <br {...props} />,
             a: ({ node, ...props }) => (
               <a
-                className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                className="text-blue-400 hover:text-blue-300 underline transition-colors break-words"
+                style={{ wordBreak: 'break-word' }}
                 {...props}
               />
             ),
+            img: ({ node, ...props }) => (
+              <img className="max-w-full h-auto rounded-lg" {...props} />
+            ),
             ul: ({ node, ...props }) => (
               <ul
-                className="list-disc ml-6 mb-4 text-white text-base"
-                style={{ paddingLeft: '1.5rem', lineHeight: '1.8' }}
+                className="list-disc ml-2 sm:ml-6 mb-4 text-white text-base"
+                style={{ paddingLeft: '1rem', lineHeight: '1.8' }}
                 {...props}
               />
             ),
             ol: ({ node, ...props }) => (
               <ol
-                className="list-decimal ml-6 mb-4 text-white text-base"
-                style={{ paddingLeft: '1.5rem', lineHeight: '1.8' }}
+                className="list-decimal ml-2 sm:ml-6 mb-4 text-white text-base"
+                style={{ paddingLeft: '1rem', lineHeight: '1.8' }}
                 {...props}
               />
             ),
