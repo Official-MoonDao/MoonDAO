@@ -103,36 +103,31 @@ function AuthorCitizenLink({
     : undefined
 
   const etherscanUrl = `https://etherscan.io/address/${authorAddress}`
+  const linkHref = href || etherscanUrl
+  const linkProps = href ? {} : { target: '_blank' as const, rel: 'noopener noreferrer' }
 
   return (
-    <div className="flex items-center gap-3">
-      <Link href={href || etherscanUrl} target={href ? undefined : '_blank'} rel={href ? undefined : 'noopener noreferrer'} className="no-underline">
-        <div className="flex items-center gap-3 group">
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 flex-shrink-0">
-            <img
-              src={avatarSrc.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${avatarSrc.replace('ipfs://', '')}` : avatarSrc}
-              alt={displayName || addressLabel}
-              width={32}
-              height={32}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          {displayName && (
-            <span className="text-sm text-gray-200 group-hover:text-white transition-colors">
-              {displayName}
-            </span>
-          )}
+    <Link href={linkHref} {...linkProps} className="no-underline">
+      <div className="flex items-center gap-2 h-9 bg-white/5 border border-white/10 rounded-lg px-3 hover:bg-white/10 transition-colors group">
+        <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+          <img
+            src={avatarSrc.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${avatarSrc.replace('ipfs://', '')}` : avatarSrc}
+            alt={displayName || addressLabel}
+            width={24}
+            height={24}
+            className="w-full h-full object-cover"
+          />
         </div>
-      </Link>
-      <Link
-        href={href || etherscanUrl}
-        target={href ? undefined : '_blank'}
-        rel={href ? undefined : 'noopener noreferrer'}
-        className="text-xs font-mono text-gray-500 hover:text-gray-300 transition-colors no-underline"
-      >
-        {addressLabel}
-      </Link>
-    </div>
+        {displayName && (
+          <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+            {displayName}
+          </span>
+        )}
+        <span className="text-sm font-mono text-gray-500 group-hover:text-gray-300 transition-colors">
+          {addressLabel}
+        </span>
+      </div>
+    </Link>
   )
 }
 
@@ -146,12 +141,10 @@ function ProposalStatusBadge({ status }: { status: ProposalStatus }) {
   const displayLabel = STATUS_DISPLAY_LABELS[status] ?? status
   return (
     <div
-      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border ${config.bg} ${config.border} backdrop-blur-sm`}
+      className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border ${config.bg} ${config.border}`}
     >
       <div className={`w-2 h-2 rounded-full ${config.dot}`} />
-      <span
-        className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}
-      >
+      <span className={`text-sm font-medium ${config.text} uppercase tracking-wider`}>
         {displayLabel}
       </span>
     </div>
@@ -232,32 +225,32 @@ export default function ProjectProfile({
         headerSize="max(20px, 3vw)"
         description={
           <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <ProposalStatusBadge status={proposalStatus} />
-              <span className="text-sm font-mono text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
-                MDP-{project.MDP}
-              </span>
-              {project.quarter && project.year && (
-                <span className="text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
-                  Q{project.quarter} {project.year}
-                </span>
-              )}
-              {submittedDate && (
-                <span className="text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
-                  {submittedDate}
-                </span>
-              )}
-              {proposalJSON?.budget && proposalJSON.budget.length > 0 && (
-                <span className="text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
-                  Requesting: <span className="text-gray-200"><TokensOfProposal budget={proposalJSON.budget} /></span>
-                </span>
-              )}
+            <div className="flex flex-wrap items-center gap-2">
               {proposalJSON?.authorAddress && (
                 <AuthorCitizenLink
                   authorAddress={proposalJSON.authorAddress}
                   citizenContract={citizenContract}
                   authorName={authorName}
                 />
+              )}
+              <ProposalStatusBadge status={proposalStatus} />
+              <span className="inline-flex items-center h-9 text-sm font-mono text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3">
+                MDP-{project.MDP}
+              </span>
+              {project.quarter && project.year && (
+                <span className="inline-flex items-center h-9 text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3">
+                  Q{project.quarter} {project.year}
+                </span>
+              )}
+              {submittedDate && (
+                <span className="inline-flex items-center h-9 text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3">
+                  {submittedDate}
+                </span>
+              )}
+              {proposalJSON?.budget && proposalJSON.budget.length > 0 && (
+                <span className="inline-flex items-center h-9 text-sm text-gray-400 bg-white/5 border border-white/10 rounded-lg px-3">
+                  Requesting: <span className="text-gray-200"><TokensOfProposal budget={proposalJSON.budget} /></span>
+                </span>
               )}
             </div>
 
