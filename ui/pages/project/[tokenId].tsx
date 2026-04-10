@@ -327,7 +327,7 @@ export default function ProjectProfile({
               </div>
             }
           >
-            <div className="mt-6 mb-6 sm:mt-10 sm:mb-10 px-0 sm:px-4 md:px-8 w-full">
+            <div className="mb-6 sm:mt-4 sm:mb-10 px-0 sm:px-4 md:px-8 w-full">
               <div className="prose prose-base prose-invert max-w-none">
                 <MarkdownWithTOC body={(() => {
                   const full = proposalJSON.body || ''
