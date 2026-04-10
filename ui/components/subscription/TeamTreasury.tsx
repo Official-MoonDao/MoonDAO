@@ -112,18 +112,33 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress, safe
               className="opacity-70"
             />
             <h2 className="font-GoodTimes text-2xl text-white">Treasury</h2>
-            <button
-              type="button"
-              className="text-sm text-slate-400 cursor-pointer hover:text-slate-200 transition-colors bg-transparent border-0 p-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              aria-label="Copy treasury address"
-              onClick={() => {
-                navigator.clipboard.writeText(multisigAddress)
-                toast.success('Address copied to clipboard.')
-              }}
-            >
-              {multisigAddress &&
-                `${multisigAddress.slice(0, 6)}...${multisigAddress.slice(-4)}`}
-            </button>
+            {multisigAddress && (
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://app.safe.global/home?safe=${
+                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+                  }:${multisigAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  {`${multisigAddress.slice(0, 6)}...${multisigAddress.slice(-4)}`}
+                </a>
+                <button
+                  type="button"
+                  className="text-slate-500 hover:text-slate-300 transition-colors bg-transparent border-0 p-0 cursor-pointer"
+                  aria-label="Copy treasury address"
+                  onClick={() => {
+                    navigator.clipboard.writeText(multisigAddress)
+                    toast.success('Address copied to clipboard.')
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
           {safeData && isSigner && (
             <div className="flex flex-col sm:flex-row gap-3">
