@@ -1,4 +1,3 @@
-import { COIN_ICONS } from 'const/icons'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 import { useState } from 'react'

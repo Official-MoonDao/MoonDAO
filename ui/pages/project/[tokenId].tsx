@@ -9,8 +9,6 @@ import {
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
-  PROJECT_CREATOR_ADDRESSES,
-
   PROPOSALS_ADDRESSES,
   NON_PROJECT_PROPOSAL_TABLE_NAMES,
   PROJECT_TABLE_NAMES,
@@ -26,7 +24,7 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { useENS } from '@/lib/utils/hooks/useENS'
-import { PROJECT_PENDING, PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
+import { PROJECT_PENDING } from '@/lib/nance/types'
 import { getProposalStatus, STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import useSafe from '@/lib/safe/useSafe'
@@ -34,20 +32,18 @@ import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client, { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
-import CollapsibleContainer from '@/components/layout/CollapsibleContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
-import StandardButton from '@/components/layout/StandardButton'
 import DropDownMenu from '@/components/nance/DropDownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalVotes from '@/components/nance/ProposalVotes'
@@ -86,7 +82,7 @@ function AuthorCitizenLink({
           tokenId: BigInt(tokenId.toString()),
         })
         if (nft?.metadata?.name && nft.metadata.name !== 'Failed to load NFT metadata') {
-          setCitizenMeta(nft.metadata)
+          setCitizenMeta({ ...nft.metadata, id: nft.id.toString() })
         }
       } catch {
         // Not a citizen or contract call failed
@@ -404,12 +400,13 @@ export default function ProjectProfile({
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   try {
-    const tokenId: any = params?.tokenId
+    const rawTokenId = params?.tokenId
+    const tokenId = Number.parseInt(String(rawTokenId), 10)
 
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    if (tokenId === undefined) {
+    if (Number.isNaN(tokenId)) {
       return {
         notFound: true,
       }

@@ -152,7 +152,7 @@ export default function ProposalList({
                 }
               >
                 {projects.slice(0, itemsPerPage).map((project) => (
-                  <a
+                  <Link
                     key={project.id}
                     href={`/project/${project.MDP ?? project.id}`}
                     className={
@@ -162,7 +162,7 @@ export default function ProposalList({
                     }
                   >
                     <Proposal project={project} feedStyle={feedCards} linkDisabled />
-                  </a>
+                  </Link>
                 ))}
               </div>
             </div>
