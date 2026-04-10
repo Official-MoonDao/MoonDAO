@@ -247,7 +247,6 @@ export default function ProjectProfile({
                   authorName={authorName}
                 />
               )}
-              <ProposalStatusBadge status={proposalStatus} />
               <span className="inline-flex items-center h-7 sm:h-9 text-xs sm:text-sm font-mono text-gray-400 bg-white/5 border border-white/10 rounded-lg px-2 sm:px-3">
                 MDP-{project.MDP}
               </span>
@@ -266,6 +265,7 @@ export default function ProjectProfile({
                   Budget:&nbsp;<span className="text-gray-200">{totalBudgetDisplay}</span>
                 </span>
               )}
+              <ProposalStatusBadge status={proposalStatus} />
             </div>
 
             <ProposalEditSection
