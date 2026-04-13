@@ -10,7 +10,7 @@ function parseBudgetFromSection(text: string): number {
 
   let sum = 0
   const rowPattern =
-    /\|\s*[^|]+\|\s*(?:#{0,3}\s*)?\$?([\d,]+(?:\.\d+)?)\s*(?:USDC|DAI|USD)?\s*\|/g
+    /\|\s*[^|]+\|\s*(?:#{0,3}\s*)?\$?([\d,]+(?:\.\d+)?)\s*(?:USDC|USDT|DAI|USD)?\s*\|/g
   let match
   while ((match = rowPattern.exec(text)) !== null) {
     if (/---/.test(match[0])) continue
