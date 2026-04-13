@@ -317,7 +317,7 @@ jobs:
             echo "--- BrowserStack run attempt $attempt/$MAX_RETRIES ---"
 
             set +e
-            BS_OUTPUT=$(timeout 3600 bash -c "
+            BS_OUTPUT=$(timeout 2400 bash -c "
               export BROWSERSTACK_LOCAL=true
               export BROWSERSTACK_LOCAL_IDENTIFIER=\"${BS_LOCAL_IDENTIFIER}\"
               browserstack-cypress run --force-upload --verbose 2>&1
@@ -333,7 +333,7 @@ jobs:
             fi
 
             if [ $TEST_EXIT_CODE -eq 124 ]; then
-              echo "❌ BrowserStack tests timed out after 60 minutes"
+              echo "❌ BrowserStack tests timed out after 40 minutes"
               break
             fi
 

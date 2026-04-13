@@ -116,13 +116,18 @@ describe('<CitizenMetadataModal /> ', () => {
   })
 
   it('Toggles the Update Email section', () => {
-    cy.get('.typeform-widget-container').should('not.exist')
+    // Typeform embed throws when its form ID env var is missing in test
+    cy.on('uncaught:exception', (err) => {
+      if (err.message.includes('startsWith')) return false
+    })
+
+    cy.get('[data-testid="email-update-section"]').should('not.exist')
 
     cy.contains('button', 'Update Email').click()
-    cy.get('.typeform-widget-container').should('exist')
+    cy.get('[data-testid="email-update-section"]').should('exist')
 
     cy.contains('button', 'Update Email').click()
-    cy.get('.typeform-widget-container').should('not.exist')
+    cy.get('[data-testid="email-update-section"]').should('not.exist')
   })
 
   it('Renders the Danger Zone with delete functionality', () => {

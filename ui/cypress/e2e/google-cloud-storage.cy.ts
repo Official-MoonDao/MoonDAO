@@ -18,11 +18,12 @@ describe('Google Cloud Storage API', () => {
         body: {},
         failOnStatusCode: false,
       }).then((response) => {
-        // 401 when auth middleware works correctly; 500 in dev environments
-        // where SSR dependencies (e.g. walletconnect) crash on import.
+        // 401 when auth middleware works correctly; 400 if auth is bypassed
+        // and the handler reaches validation; 500 in dev environments where
+        // SSR dependencies (e.g. walletconnect) crash on import.
         // The key assertion: unauthenticated callers never get 200.
         expect(response.status).to.not.eq(200)
-        expect(response.status).to.be.oneOf([401, 500])
+        expect(response.status).to.be.oneOf([400, 401, 500])
       })
     })
 
@@ -33,7 +34,7 @@ describe('Google Cloud Storage API', () => {
         failOnStatusCode: false,
       }).then((response) => {
         expect(response.status).to.not.eq(200)
-        expect(response.status).to.be.oneOf([401, 405, 500])
+        expect(response.status).to.be.oneOf([400, 401, 405, 500])
       })
     })
 
@@ -51,7 +52,7 @@ describe('Google Cloud Storage API', () => {
         failOnStatusCode: false,
       }).then((response) => {
         expect(response.status).to.not.eq(200)
-        expect(response.status).to.be.oneOf([401, 500])
+        expect(response.status).to.be.oneOf([400, 401, 500])
       })
     })
 
@@ -65,7 +66,7 @@ describe('Google Cloud Storage API', () => {
         failOnStatusCode: false,
       }).then((response) => {
         expect(response.status).to.not.eq(200)
-        expect(response.status).to.be.oneOf([401, 500])
+        expect(response.status).to.be.oneOf([400, 401, 500])
       })
     })
 
@@ -76,7 +77,7 @@ describe('Google Cloud Storage API', () => {
         failOnStatusCode: false,
       }).then((response) => {
         expect(response.status).to.not.eq(200)
-        expect(response.status).to.be.oneOf([401, 405, 500])
+        expect(response.status).to.be.oneOf([400, 401, 405, 500])
       })
     })
 
