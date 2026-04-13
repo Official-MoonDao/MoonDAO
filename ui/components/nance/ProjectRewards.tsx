@@ -602,7 +602,7 @@ export function ProjectRewards({
           isProfile
           branded={false}
         >
-          <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6 px-0 sm:px-3 md:px-0 max-w-[1200px]">
+          <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6">
             {/* Condensed Top Section - Rewards + Create Button */}
             <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
@@ -660,9 +660,9 @@ export function ProjectRewards({
               </div>
             </div>
 
-            {(IS_SENATE_VOTE || IS_MEMBER_VOTE) && (
+            {proposals && proposals.length > 0 && (
               <div
-                id="projects-container"
+                id="proposals-container"
                 className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-6 border-y sm:border border-white/10"
               >
                 <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
@@ -671,36 +671,41 @@ export function ProjectRewards({
                       Project Proposals
                       <span className="ml-2 text-sm font-normal text-orange-400">(Senate Vote)</span>
                     </>
-                  ) : (
+                  ) : IS_MEMBER_VOTE ? (
                     <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
                       Project Proposals
-                      {IS_MEMBER_VOTE && (
-                        <span className="ml-2 text-sm font-normal text-emerald-400">(Member Vote)</span>
-                      )}
+                      <span className="ml-2 text-sm font-normal text-emerald-400">(Member Vote)</span>
                     </Tooltip>
+                  ) : (
+                    <>
+                      Pending Proposals
+                      <span className="ml-2 text-sm font-normal text-blue-400">({proposals.length})</span>
+                    </>
                   )}
                 </h1>
-                {!IS_SENATE_VOTE && (
+                {IS_MEMBER_VOTE && !IS_SENATE_VOTE && (
                   <p className="mb-4">
-                    {IS_MEMBER_VOTE
-                      ? 'Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'
-                      : 'Distribute 100% of your voting power between eligible projects. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'}
+                    Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.
+                  </p>
+                )}
+                {!IS_SENATE_VOTE && !IS_MEMBER_VOTE && (
+                  <p className="mb-4 text-gray-400 text-sm">
+                    These proposals have been submitted and are awaiting the next voting cycle.
                   </p>
                 )}
                 <div className="flex flex-col gap-1.5 sm:gap-6">
-                  {proposals && proposals.length > 0 ? (
-                    proposals
+                  {proposals
                       .filter((project: any) => {
-                        // Senate Vote: show ALL pending proposals (keep them visible until vote is closed)
+                        // Senate Vote: show ALL pending proposals
                         if (IS_SENATE_VOTE) {
                           return true
                         }
-                        // Member Vote: show proposals in "Voting" status (passed Senate vote)
+                        // Member Vote: show proposals that passed Senate vote
                         if (IS_MEMBER_VOTE) {
                           return project.tempCheckApproved
                         }
-                        // Default: show all proposals that passed temp check (existing behavior)
-                        return project.tempCheckApproved
+                        // Default (no active vote): show all pending proposals
+                        return true
                       })
                       .map((project: any, i) => (
                         <div
@@ -712,23 +717,19 @@ export function ProjectRewards({
                             project={project}
                             projectContract={projectContract}
                             hatsContract={hatsContract}
-                            distribute={approvalVotingActive}
-                            distribution={userHasVotingPower ? proposalDistribution : undefined}
+                            distribute={approvalVotingActive && (IS_SENATE_VOTE || IS_MEMBER_VOTE)}
+                            distribution={userHasVotingPower && (IS_SENATE_VOTE || IS_MEMBER_VOTE) ? proposalDistribution : undefined}
                             handleDistributionChange={
-                              userHasVotingPower ? handleProposalDistributionChange : undefined
+                              userHasVotingPower && (IS_SENATE_VOTE || IS_MEMBER_VOTE) ? handleProposalDistributionChange : undefined
                             }
                             userHasVotingPower={userHasVotingPower}
-                            isVotingPeriod={approvalVotingActive}
+                            isVotingPeriod={approvalVotingActive && (IS_SENATE_VOTE || IS_MEMBER_VOTE)}
                             active={false}
                           />
                         </div>
                       ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-400">
-                      <p>There are no active Project Proposals.</p>
-                    </div>
-                  )}
-                  {approvalVotingActive && !IS_SENATE_VOTE && proposals && proposals.length > 0 && (
+                  }
+                  {approvalVotingActive && IS_MEMBER_VOTE && proposals && proposals.length > 0 && (
                     <div className="mt-6 w-full flex flex-col items-end gap-2">
                       <div className="text-white/80 font-RobotoMono text-sm">
                         Allocated: {_.sum(Object.values(proposalDistribution))}% &nbsp;&nbsp;Voting Power:{' '}

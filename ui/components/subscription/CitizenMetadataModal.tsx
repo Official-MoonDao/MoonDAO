@@ -231,14 +231,20 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
             )}
           </button>
           {showEmailUpdate && (
-            <div className="mt-3 w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
+            <div data-testid="email-update-section" className="mt-3 w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
               <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
-                <Widget
-                  className="w-full"
-                  id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string}
-                  onSubmit={submitTypeform}
-                  height={500}
-                />
+                {process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID ? (
+                  <Widget
+                    className="w-full"
+                    id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID}
+                    onSubmit={submitTypeform}
+                    height={500}
+                  />
+                ) : (
+                  <p className="text-sm text-gray-400 p-4">
+                    Email update form is not available.
+                  </p>
+                )}
               </div>
             </div>
           )}

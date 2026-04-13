@@ -1,5 +1,7 @@
 import { Storage } from '@google-cloud/storage'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/pages/api/auth/[...nextauth]'
 
 // Add error handling for credentials parsing
 let credentials: any
@@ -64,6 +66,12 @@ async function handler(
 ) {
   if (req.method !== 'DELETE' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  // Authentication check
+  const session = await getServerSession(req, res, authOptions)
+  if (!session?.accessToken) {
+    return res.status(401).json({ error: 'Unauthorized' })
   }
 
   // Check if storage is properly initialized

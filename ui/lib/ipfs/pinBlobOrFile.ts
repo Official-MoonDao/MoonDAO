@@ -24,7 +24,7 @@ export async function pinBlobOrFile(blob: Blob | File, pinUrl: string = '/api/ip
     if (pin.status === 401) {
       console.error('❌ Authentication failed (401)')
       toast.error('Authentication failed. Please try logging in again.', { duration: 10000 })
-      return { cid: '', url: '' }
+      return Promise.reject(new Error('Authentication failed (401). Please try logging in again.'))
     }
 
     if (!pin.ok) {

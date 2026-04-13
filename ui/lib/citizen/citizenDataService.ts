@@ -308,16 +308,6 @@ export async function fetchCitizensWithLocation(
 
     // Batch validate subscriptions using Engine API
     const citizenIds = citizens.map((c: any) => c.metadata.id)
-    const validationResults = await batchCheckSubscriptions(
-      citizenIds,
-      citizenContract.address,
-      chain.id,
-      {
-        onProgress: (completed, total) => {
-          onProgress?.('Validating subscriptions', 3, 5)
-        },
-      }
-    )
 
     onProgress?.('Processing location data', 4, 5)
 
@@ -326,12 +316,6 @@ export async function fetchCitizensWithLocation(
 
     for (const citizen of citizens) {
       const citizenId = (citizen as any).metadata.id
-      const validation = validationResults.get(citizenId)
-
-      // Skip invalid subscriptions
-      if (!validation || !validation.isValid) {
-        continue
-      }
 
       const citizenLocation = getAttribute(
         (citizen as any).metadata?.attributes as unknown as any[],

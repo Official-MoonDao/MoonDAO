@@ -69,7 +69,8 @@
       "package.json",
       "package-lock.json"
     ],
-    "headless": true
+    "headless": true,
+    "spec_timeout": 10
   },
   "connection_settings": {
     "local": true,

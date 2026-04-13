@@ -503,7 +503,7 @@ a {
 }
 
 .header-responsive {
-  font-size: max(25px, min(3vw, 60px)) !important;
+  font-size: max(28px, min(4vw, 64px)) !important;
 }
 
 .sub-header {
