@@ -696,7 +696,15 @@ export function ProjectRewards({
                 <div className="flex flex-col gap-1.5 sm:gap-6">
                   {proposals
                       .filter((project: any) => {
-                        return !project.tempCheckApproved && !project.tempCheckFailed
+                        if (IS_SENATE_VOTE) {
+                          return !project.tempCheckApproved && !project.tempCheckFailed
+                        }
+
+                        if (IS_MEMBER_VOTE) {
+                          return project.tempCheckApproved && !project.tempCheckFailed
+                        }
+
+                        return !project.tempCheckFailed
                       })
                       .map((project: any, i) => (
                         <div
