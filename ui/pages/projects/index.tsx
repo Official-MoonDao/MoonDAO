@@ -93,7 +93,7 @@ export async function getStaticProps() {
               if (!proposalJSON?.nonProjectProposal) {
                 project.tempCheckApproved = approveds[index]
                 project.tempCheckFailed = faileds[index]
-                if (!approveds[index] && !faileds[index]) {
+                if (!faileds[index]) {
                   proposals.push(project)
                 }
               }
