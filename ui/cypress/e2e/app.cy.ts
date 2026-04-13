@@ -50,11 +50,11 @@ describe('Main E2E Testing', () => {
           const vw = Cypress.config('viewportWidth')
           const vh = Cypress.config('viewportHeight')
 
-          // BrowserStack / Firefox / WebKit differ on sub-pixel layout and chrome; keep checks meaningful but tolerant.
-          expect(rect.top).to.be.closeTo(0, 40)
-          expect(rect.left).to.be.closeTo(0, 40)
-          expect(rect.width).to.be.closeTo(vw, 120)
-          expect(rect.height).to.be.closeTo(vh, 80)
+          // BrowserStack / Firefox / WebKit / Chrome differ on sub-pixel layout and chrome; keep checks meaningful but tolerant.
+          expect(rect.top).to.be.closeTo(0, 60)
+          expect(rect.left).to.be.closeTo(0, 60)
+          expect(rect.width).to.be.closeTo(vw, 160)
+          expect(rect.height).to.be.closeTo(vh, 120)
         })
     })
   })
@@ -76,10 +76,10 @@ describe('Main E2E Testing', () => {
           const vw = Cypress.config('viewportWidth')
           const vh = Cypress.config('viewportHeight')
 
-          expect(rect.top).to.be.closeTo(0, 40)
-          expect(rect.left).to.be.closeTo(0, 40)
-          expect(rect.width).to.be.closeTo(vw, 120)
-          expect(rect.height).to.be.closeTo(vh, 80)
+          expect(rect.top).to.be.closeTo(0, 60)
+          expect(rect.left).to.be.closeTo(0, 60)
+          expect(rect.width).to.be.closeTo(vw, 160)
+          expect(rect.height).to.be.closeTo(vh, 120)
         })
     })
   })

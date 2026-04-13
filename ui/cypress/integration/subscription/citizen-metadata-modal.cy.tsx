@@ -115,13 +115,13 @@ describe('<CitizenMetadataModal /> ', () => {
       if (err.message.includes('startsWith')) return false
     })
 
-    cy.get('.typeform-widget-container').should('not.exist')
+    cy.get('[data-testid="email-update-section"]').should('not.exist')
 
     cy.contains('button', 'Update Email').click()
-    cy.get('.typeform-widget-container').should('exist')
+    cy.get('[data-testid="email-update-section"]').should('exist')
 
     cy.contains('button', 'Update Email').click()
-    cy.get('.typeform-widget-container').should('not.exist')
+    cy.get('[data-testid="email-update-section"]').should('not.exist')
   })
 
   it('Renders the Danger Zone with delete functionality', () => {
