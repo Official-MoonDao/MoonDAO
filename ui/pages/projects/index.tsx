@@ -16,7 +16,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
+import { getRelativeQuarter, getSubmissionQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
 
 export default function Projects({
@@ -56,29 +56,46 @@ export async function getStaticProps() {
       chain: chain,
     })
 
+    const submissionQuarter = getSubmissionQuarter()
     const proposals: Project[] = []
     const currentProjects: Project[] = []
     const pastProjects: Project[] = []
     const { engineBatchRead } = await import('@/lib/thirdweb/engine')
-    const approveds = await engineBatchRead<string>(
-      PROPOSALS_ADDRESSES[chainSlug],
-      'tempCheckApproved',
-      projects.map((project: Project) => [project.MDP]),
-      ProposalsABI.abi,
-      chain.id
-    )
+    const mdpArgs = projects.map((project: Project) => [project.MDP])
+    const [approveds, faileds] = await Promise.all([
+      engineBatchRead<string>(
+        PROPOSALS_ADDRESSES[chainSlug],
+        'tempCheckApproved',
+        mdpArgs,
+        ProposalsABI.abi,
+        chain.id
+      ),
+      engineBatchRead<string>(
+        PROPOSALS_ADDRESSES[chainSlug],
+        'tempCheckFailed',
+        mdpArgs,
+        ProposalsABI.abi,
+        chain.id
+      ),
+    ])
 
     await Promise.all(
       projects.map(async (project: Project, index: number) => {
         if (!BLOCKED_PROJECTS.has(project.id)) {
           const activeStatus = project.active
-          if (activeStatus == PROJECT_PENDING) {
+          if (activeStatus == PROJECT_PENDING
+            && project.quarter === submissionQuarter.quarter
+            && project.year === submissionQuarter.year
+          ) {
             if (project.proposalIPFS) {
               const proposalResponse = await fetch(project.proposalIPFS)
               const proposalJSON = await proposalResponse.json()
               if (!proposalJSON?.nonProjectProposal) {
                 project.tempCheckApproved = approveds[index]
-                proposals.push(project)
+                project.tempCheckFailed = faileds[index]
+                if (!approveds[index] && !faileds[index]) {
+                  proposals.push(project)
+                }
               }
             }
           } else if (activeStatus == PROJECT_ACTIVE) {
@@ -104,7 +121,7 @@ export async function getStaticProps() {
 
     return {
       props: {
-        proposals: proposals.reverse(),
+        proposals: proposals.sort((a, b) => b.id - a.id),
         currentProjects: currentProjects.reverse(),
         pastProjects: pastProjects.reverse(),
         distributions,

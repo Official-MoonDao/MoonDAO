@@ -381,11 +381,17 @@ const ProjectCardContent = memo(
           <div className="flex-1 min-w-0 flex flex-col gap-3">
             <div className="flex flex-col gap-2">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                <Link href={`/project/${project?.MDP}`} passHref>
+                {onToggleExpand ? (
+                  <Link href={`/project/${project?.MDP}`} passHref>
+                    <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
+                      {project?.name || ''}
+                    </h1>
+                  </Link>
+                ) : (
                   <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
                     {project?.name || ''}
                   </h1>
-                </Link>
+                )}
                 {/* Only show status badge inline when NOT in Senate Vote mode */}
                 {!IS_SENATE_VOTE && (
                   <span
