@@ -262,13 +262,12 @@ export default function ProjectProfile({
                 </span>
               )}
               <ProposalStatusBadge status={proposalStatus} />
+              <ProposalEditSection
+                proposalJSON={proposalJSON}
+                projectName={project.name}
+                mdp={project.MDP}
+              />
             </div>
-
-            <ProposalEditSection
-              proposalJSON={proposalJSON}
-              projectName={project.name}
-              mdp={project.MDP}
-            />
           </div>
         }
         mainPadding

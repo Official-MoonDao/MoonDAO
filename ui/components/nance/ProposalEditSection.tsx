@@ -108,17 +108,18 @@ export default function ProposalEditSection({
   if (!isEditing) {
     return (
       <button
+        data-testid="edit-proposal-button"
         onClick={() => setIsEditing(true)}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-300 hover:text-white bg-indigo-900/30 hover:bg-indigo-900/50 border border-indigo-500/30 hover:border-indigo-500/50 rounded-lg transition-all duration-200"
+        className="inline-flex items-center gap-1.5 h-7 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm font-medium text-indigo-300 hover:text-white bg-indigo-900/30 hover:bg-indigo-900/50 border border-indigo-500/30 hover:border-indigo-500/50 rounded-lg transition-all duration-200"
       >
-        <PencilSquareIcon className="w-4 h-4" />
+        <PencilSquareIcon className="w-3.5 h-3.5" />
         Edit Proposal
       </button>
     )
   }
 
   return (
-    <div className="mt-6 p-5 bg-gradient-to-r from-indigo-900/30 to-blue-900/30 border border-indigo-500/30 rounded-xl">
+    <div data-testid="edit-proposal-panel" className="mt-6 p-5 bg-gradient-to-r from-indigo-900/30 to-blue-900/30 border border-indigo-500/30 rounded-xl w-full basis-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-white font-semibold text-lg flex items-center gap-2">
           <PencilSquareIcon className="w-5 h-5 text-indigo-400" />
