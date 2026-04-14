@@ -244,7 +244,7 @@ export default function TeamJobModal({
             <p>Expiration:</p>
             <input
               id="job-end-time-input"
-              className="p-2 rounded-sm text-black"
+              className="p-2 rounded-sm text-[#e0fff0]"
               type="date"
               min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
               value={endTime > 0 ? new Date(endTime * 1000).toISOString().split('T')[0] : 0}

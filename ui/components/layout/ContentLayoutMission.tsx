@@ -179,7 +179,7 @@ const ContentLayout: React.FC<ContentProps> = ({
           {preFooter && (
             <div
               id="spacer"
-              className={`bg-white rounded-tl-[5vmax] w-full h-[5vh] md:h-[200px] 
+              className={`bg-[#050508] rounded-tl-[5vmax] w-full h-[5vh] md:h-[200px] 
                         ${popOverEffect ? '' : 'hidden'}
                     `}
             ></div>

@@ -5,7 +5,7 @@ import Speaker from '../home/Speaker'
 
 export default function SpeakerSection() {
   return (
-    <section className="bg-white md:rounded-br-[0px] w-full flex flex-col pb-8 lg:pb-12 xl:pb-16 2xl:pb-20 3xl:pb-24">
+    <section className="bg-[#050508] border-t border-[rgba(0,255,200,0.08)] md:rounded-br-[0px] w-full flex flex-col pb-8 lg:pb-12 xl:pb-16 2xl:pb-20 3xl:pb-24">
       <div
         id="speaker-section-container"
         className="px-8 md:px-12 lg:px-16 2xl:px-24 3xl:px-32 relative flex justify-center pt-4 lg:pt-6 xl:pt-8 2xl:pt-12 3xl:pt-16 flex-1"
@@ -16,7 +16,7 @@ export default function SpeakerSection() {
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool mb-2 lg:mb-4 xl:mb-6 2xl:mb-8 3xl:mb-10 text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl 3xl:text-7xl"
+            className="header font-GoodTimes text-center text-[#00ffc8] mb-2 lg:mb-4 xl:mb-6 2xl:mb-8 3xl:mb-10 text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl 3xl:text-7xl"
           >
             Past Speakers
           </h2>

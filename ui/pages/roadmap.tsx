@@ -685,9 +685,9 @@ export default function Roadmap() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <StandardButton
-              backgroundColor="bg-white"
-              textColor="text-dark-cool"
-              borderRadius="rounded-full"
+              backgroundColor="bg-[#00ffc8]"
+              textColor="text-[#050505]"
+              borderRadius="rounded-sm"
               link="/join"
               paddingOnHover="pl-5"
             >

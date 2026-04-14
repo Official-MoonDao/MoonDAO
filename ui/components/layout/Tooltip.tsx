@@ -214,7 +214,7 @@ export default function Tooltip({
         <div
           id="tooltip-icon"
           ref={triggerRef}
-          className={`flex justify-center items-center h-6 w-6 bg-white rounded-full font-GoodTimes text-black pl-[1.5px] ${buttonClassName} ${
+          className={`flex justify-center items-center h-6 w-6 bg-[rgba(0,255,200,0.15)] rounded-full font-GoodTimes text-[#00ffc8] pl-[1.5px] border border-[rgba(0,255,200,0.3)] ${buttonClassName} ${
             !disabled && isHovered ? 'opacity-100' : 'opacity-50'
           } ${!disabled && 'cursor-pointer'}`}
           onMouseEnter={() => {
@@ -266,7 +266,7 @@ export default function Tooltip({
               compact
                 ? 'max-w-[85vw] md:max-w-[400px]'
                 : 'max-w-[85vw] md:max-w-[200px]'
-            }  bg-white text-black px-3 py-2 rounded-[1vmax] break-words pointer-events-auto`}
+            }  bg-[#0a1218] text-[#e0fff0] border border-[rgba(0,255,200,0.2)] px-3 py-2 rounded-[1vmax] break-words pointer-events-auto`}
             style={{ transform: `translateX(${contentOffset}px)` }}
           >
             <p>{text}</p>
@@ -276,7 +276,7 @@ export default function Tooltip({
               width="32"
               height="24"
               viewBox="0 0 32 24"
-              fill="white"
+              fill="#0a1218"
               className={compact ? 'scale-75' : ''}
             >
               <path

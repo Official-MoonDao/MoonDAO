@@ -17,10 +17,10 @@ interface RoundedFrameProps {
 
 export default function RoundedFrame({
     children,
-    topLeft = "20px",
-    topRight = "5vmax",
-    bottomLeft = "5vmax",
-    bottomRight = "5vmax",
+    topLeft = "2px",
+    topRight = "2px",
+    bottomLeft = "2px",
+    bottomRight = "2px",
     backgroundColor = "transparent",
     noPadding = false,
     marginTop = "0px",

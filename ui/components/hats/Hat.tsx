@@ -111,7 +111,7 @@ export function Hat({
               />
             ) : teamNFTError ? (
               <div
-                className="bg-gray-200 flex items-center justify-center text-gray-500 text-xs"
+                className="bg-[rgba(0,255,200,0.06)] flex items-center justify-center text-[#80ccb0] text-xs"
                 style={{ width: imageSize, height: imageSize }}
               >
                 Failed to load

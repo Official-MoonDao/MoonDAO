@@ -57,7 +57,7 @@ export default function GenericListbox<T extends Includes>({
             <span className="label-text">{label}</span>
           </label>
           <div className="relative mt-1">
-            <ListboxButton className="relative w-full cursor-default rounded-md bg-white dark:bg-black py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 sm:text-sm sm:leading-6">
+            <ListboxButton className="relative w-full cursor-default rounded-md bg-[rgba(0,255,200,0.04)] py-2 pl-3 pr-10 text-left text-[#e0fff0] shadow-sm ring-1 ring-inset ring-[rgba(0,255,200,0.2)] focus:outline-none focus:ring-2 focus:ring-[rgba(0,255,200,0.3)] disabled:bg-[rgba(0,255,200,0.02)] sm:text-sm sm:leading-6">
               <span className="flex items-center dark:text-white">
                 {value?.icon?.includes('https://') && (
                   <Image
@@ -85,7 +85,7 @@ export default function GenericListbox<T extends Includes>({
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-black py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+              <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-[#0a0f12] py-1 text-base shadow-lg ring-1 ring-[rgba(0,255,200,0.15)] focus:outline-none sm:text-sm">
                 {items &&
                   items.length > 0 &&
                   items.map((item) => (
@@ -94,8 +94,8 @@ export default function GenericListbox<T extends Includes>({
                       className={({ active }) =>
                         classNames(
                           active
-                            ? 'bg-indigo-600 text-white'
-                            : 'text-gray-900 dark:text-gray-500',
+                            ? 'bg-[rgba(0,255,200,0.15)] text-[#00ffc8]'
+                            : 'text-[#c0ffe0]',
                           'relative cursor-default select-none py-2 pl-3 pr-9'
                         )
                       }

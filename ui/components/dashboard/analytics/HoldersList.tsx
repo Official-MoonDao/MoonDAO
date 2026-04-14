@@ -11,7 +11,7 @@ function Box({ text }: any) {
 
 function Holders({ currentItems }: any) {
   return (
-    <div className="relative flex items-center h-full min-w-[300px] lg:min-w-[500px] flex-col gap-1 font-Montserrat text-[1vh] leading-10 text-slate-800 lg:text-[1.0vw]">
+    <div className="relative flex items-center h-full min-w-[300px] lg:min-w-[500px] flex-col gap-1 font-Montserrat text-[1vh] leading-10 text-[#d0ffe8] lg:text-[1.0vw]">
       <div className="flex w-[300px] md:w-full justify-evenly bg-gradient-to-r from-blue-800 to-blue-950 bg-clip-text text-transparent gap-1 dark:from-yellow-200 dark:to-moon-gold">
         <div className="flex justify-start w-full">
           <p className="w-1/4">ADDRESS</p>

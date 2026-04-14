@@ -16,7 +16,7 @@ export default function Checkbox({
   return (
     <div className="flex flex-col gap-2 items-start">
       <label
-        className="flex gap-4 font-light text-gray-700 select-none max-w-[550px]"
+        className="flex gap-4 font-light text-[#c0ffe0] select-none max-w-[550px]"
         htmlFor="link"
       >
         <p className="dark:text-white font-GoodTimes opacity-50">{label}</p>

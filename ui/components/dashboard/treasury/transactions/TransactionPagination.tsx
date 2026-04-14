@@ -4,8 +4,8 @@ const TransactionPagination = ({ currentPage, pageNumber, setPage, isLoaded }: a
     <button
       disabled={samePage || isLoaded}
       name={`Go to page ${pageNumber}`}
-      className={` h-[35px] w-[35px] border border-blue-600 rounded-md text-center text-xl font-semibold hover:scale-105 dark:border-indigo-100  ${
-        samePage ? "scale-125 bg-blue-600 text-white dark:bg-slate-900 dark:text-white" : "bg-white text-slate-800 dark:bg-gray-100 dark:text-slate-950"
+      className={` h-[35px] w-[35px] border rounded-md text-center text-xl font-semibold hover:scale-105 ${
+        samePage ? "scale-125 bg-[rgba(0,255,200,0.15)] text-[#00ffc8] border-[#00ffc8]" : "bg-[rgba(0,255,200,0.04)] text-[#b0ffe0] border-[rgba(0,255,200,0.2)] hover:bg-[rgba(0,255,200,0.08)]"
       }`}
       onClick={() => {
         setPage(pageNumber);

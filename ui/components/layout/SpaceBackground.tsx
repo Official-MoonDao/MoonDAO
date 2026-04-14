@@ -1,19 +1,6 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react'
 import { useAnimationFrameWithVisibility } from '@/lib/utils/hooks/usePageVisibility'
 
-interface Star {
-  x: number
-  y: number
-  size: number
-  baseOpacity: number
-  twinkleIntensity: number
-  twinkleDuration: number
-  twinkleDelay: number
-  isBright: boolean
-  colorTint: [number, number, number]
-  pulseDelay: number
-}
-
 interface ShootingStar {
   id: number
   startX: number
@@ -21,294 +8,16 @@ interface ShootingStar {
   angle: number
 }
 
-const generateStars = (
-  count: number,
-  sizeRange: [number, number],
-  seed: number = 0,
-  colorTintBase: [number, number, number] = [255, 255, 255],
-  existingStars: Star[] = []
-): Star[] => {
-  const stars: Star[] = []
-  const minDistance = 9.0
-  const minXDistance = 5.5
-  const minYDistance = 5.5
-  const rng = (n: number) => {
-    const x = Math.sin(n + seed) * 10000
-    return x - Math.floor(x)
-  }
-
-  for (let i = 0; i < count; i++) {
-    let x = rng(i * 0.1) * 100
-    let y = rng(i * 0.1 + 1000) * 100
-    let validPosition = false
-    let attempts = 0
-
-    while (!validPosition && attempts < 300) {
-      const testX = rng(i * 0.1 + attempts * 0.035) * 100
-      const testY = rng(i * 0.1 + 1000 + attempts * 0.035) * 100
-
-      const allStarsToCheck = [...stars, ...existingStars]
-      validPosition =
-        allStarsToCheck.length === 0 ||
-        allStarsToCheck.every((star) => {
-          const dx = Math.abs(testX - star.x)
-          const dy = Math.abs(testY - star.y)
-          const distance = Math.sqrt(dx * dx + dy * dy)
-
-          if (distance < minDistance) {
-            return false
-          }
-
-          if (dx < minXDistance) {
-            return false
-          }
-
-          if (dy < minYDistance) {
-            return false
-          }
-
-          return true
-        })
-
-      if (validPosition) {
-        x = testX
-        y = testY
-      }
-
-      attempts++
-    }
-
-    if (!validPosition) {
-      x = rng(i * 0.1 + 5000 + i) * 100
-      y = rng(i * 0.1 + 6000 + i) * 100
-    }
-    const rand = rng(i * 0.1 + 2000)
-
-    const isBrightStar = rand < 0.08
-    let size: number
-
-    if (isBrightStar) {
-      const brightSizeRange: [number, number] = [
-        Math.max(4, sizeRange[1] * 1.5),
-        Math.max(8, sizeRange[1] * 3),
-      ]
-      const brightRand = rng(i * 0.1 + 7000)
-      size = brightSizeRange[0] + brightRand * (brightSizeRange[1] - brightSizeRange[0])
-    } else {
-      size =
-        rand < 0.9
-          ? sizeRange[0] + rand * 0.3 * (sizeRange[1] - sizeRange[0])
-          : sizeRange[0] + (0.3 + rand * 0.7) * (sizeRange[1] - sizeRange[0])
-    }
-
-    const opacityRand = rng(i * 0.1 + 3000)
-    const baseOpacity = isBrightStar
-      ? 0.7 + opacityRand * 0.3
-      : opacityRand < 0.7
-      ? 0.3 + opacityRand * 0.4
-      : 0.7 + opacityRand * 0.3
-
-    const twinkleRand = rng(i * 0.1 + 4000)
-    const twinkleIntensity = twinkleRand < 0.85 ? 0.05 + twinkleRand * 0.1 : 0.2 + twinkleRand * 0.2
-
-    const durationRand = rng(i * 0.1 + 5000)
-    const twinkleDuration = 3 + durationRand * 5
-
-    const delayRand = rng(i * 0.1 + 6000)
-    const twinkleDelay = delayRand * 10
-
-    const pulseDelayRand = rng(i * 0.1 + 9000)
-    const pulseDelay = pulseDelayRand * 8
-
-    const colorRand = rng(i * 0.1 + 8000)
-    const colorVariation = colorRand * 0.3 - 0.15
-    const colorTint: [number, number, number] = [
-      Math.max(200, Math.min(255, colorTintBase[0] + colorVariation * 55)),
-      Math.max(200, Math.min(255, colorTintBase[1] + colorVariation * 55)),
-      Math.max(200, Math.min(255, colorTintBase[2] + colorVariation * 55)),
-    ]
-
-    stars.push({
-      x,
-      y,
-      size,
-      baseOpacity,
-      twinkleIntensity,
-      twinkleDuration,
-      twinkleDelay,
-      isBright: isBrightStar,
-      colorTint,
-      pulseDelay,
-    })
-  }
-  return stars
-}
-
 export default function SpaceBackground() {
-  // Reduce star count on mobile for better performance
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-  const starMultiplier = isMobile ? 0.5 : 1
-
-  const farStars = useMemo(
-    () => generateStars(Math.floor(100 * starMultiplier), [0.5, 1.5], 1, [200, 220, 255]),
-    [starMultiplier]
-  )
-  const midStars = useMemo(
-    () => generateStars(Math.floor(80 * starMultiplier), [1, 3], 2, [240, 245, 255], farStars),
-    [farStars, starMultiplier]
-  )
-  const nearStars = useMemo(
-    () =>
-      generateStars(
-        Math.floor(60 * starMultiplier),
-        [2, 5],
-        3,
-        [255, 250, 240],
-        [...farStars, ...midStars]
-      ),
-    [farStars, midStars, starMultiplier]
-  )
   const containerRef = useRef<HTMLDivElement>(null)
-  const baseGradientRef = useRef<HTMLDivElement>(null)
-  const farStarsRef = useRef<HTMLDivElement>(null)
-  const midStarsRef = useRef<HTMLDivElement>(null)
-  const nearStarsRef = useRef<HTMLDivElement>(null)
-  const nebulaRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const { isPageVisible, rafRef, cancelRAF } = useAnimationFrameWithVisibility()
+  const lastScrollY = useRef(0)
   const [shootingStars, setShootingStars] = useState<ShootingStar[]>([])
   const shootingStarIdRef = useRef(0)
   const typedSequenceRef = useRef('')
   const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const { isPageVisible, rafRef, cancelRAF } = useAnimationFrameWithVisibility()
-  const lastScrollY = useRef(0)
 
-  const renderStarLayer = (stars: Star[], layerName: string) => {
-    const layerRef =
-      layerName === 'far' ? farStarsRef : layerName === 'mid' ? midStarsRef : nearStarsRef
-    return (
-      <div
-        ref={layerRef}
-        className="absolute w-full"
-        style={{
-          top: '-50vh',
-          left: 0,
-          right: 0,
-          height: '200vh',
-          willChange: isPageVisible ? 'transform' : 'auto', // Remove will-change when paused
-          transition: 'transform 0.1s ease-out',
-          contain: 'layout style paint', // CSS containment for better performance
-        }}
-      >
-        {stars.map((star, index) => {
-          const minOpacity = Math.max(0, star.baseOpacity - star.twinkleIntensity)
-          const maxOpacity = Math.min(1, star.baseOpacity + star.twinkleIntensity)
-          const isSubtle = star.twinkleIntensity < 0.15
-          const animationName = isSubtle ? 'twinkle-subtle' : 'twinkle-pronounced'
-
-          const [r, g, b] = star.colorTint
-          const glowMultiplier = star.isBright ? 2.5 : star.size > 2 ? 1.8 : 1.2
-          const glowSize = star.size * glowMultiplier
-
-          const boxShadowLayers =
-            star.size > 2
-              ? `0 0 ${glowSize * 0.3}px rgba(${r},${g},${b},0.6), 0 0 ${
-                  glowSize * 0.6
-                }px rgba(${r},${g},${b},0.4), 0 0 ${glowSize}px rgba(${r},${g},${b},0.2), 0 0 ${
-                  glowSize * 1.5
-                }px rgba(${r},${g},${b},0.1)`
-              : `0 0 ${
-                  glowSize * 0.5
-                }px rgba(${r},${g},${b},0.5), 0 0 ${glowSize}px rgba(${r},${g},${b},0.3)`
-
-          const hotCoreR = Math.min(255, r + 20)
-          const hotCoreG = Math.min(255, g + 15)
-          const hotCoreB = Math.min(255, b + 10)
-          const coolEdgeR = Math.max(r - 10, r * 0.9)
-          const coolEdgeG = Math.max(g - 5, g * 0.95)
-          const coolEdgeB = Math.min(255, b + 15)
-
-          const backgroundGradient = `radial-gradient(circle, 
-            rgba(${hotCoreR},${hotCoreG},${hotCoreB},1) 0%, 
-            rgba(${hotCoreR},${hotCoreG},${hotCoreB},0.7) 2%,
-            rgba(${r},${g},${b},0.6) 8%,
-            rgba(${r},${g},${b},0.5) 15%,
-            rgba(${r},${g},${b},0.4) 25%,
-            rgba(${coolEdgeR},${coolEdgeG},${coolEdgeB},0.3) 40%,
-            rgba(${coolEdgeR},${coolEdgeG},${coolEdgeB},0.15) 60%,
-            rgba(${coolEdgeR},${coolEdgeG},${coolEdgeB},0.05) 80%,
-            transparent 100%)`
-
-          return (
-            <div
-              key={`${layerName}-${index}`}
-              className={`absolute rounded-full star-twinkle ${
-                star.isBright && star.size > 3 ? 'star-sparkle' : ''
-              }`}
-              style={
-                {
-                  left: `${star.x}%`,
-                  top: `${star.y}%`,
-                  width: `${star.size}px`,
-                  height: `${star.size}px`,
-                  background: backgroundGradient,
-                  boxShadow: boxShadowLayers,
-                  animationName: isPageVisible ? animationName : 'none',
-                  animationDuration: `${star.twinkleDuration}s`,
-                  animationTimingFunction: 'ease-in-out',
-                  animationIterationCount: 'infinite',
-                  animationDelay: `${star.twinkleDelay}s`,
-                  animationPlayState: isPageVisible ? 'running' : 'paused',
-                  transform: 'translate(-50%, -50%)',
-                  willChange: isPageVisible ? 'opacity' : 'auto',
-                  '--min-opacity': minOpacity,
-                  '--max-opacity': maxOpacity,
-                  '--star-size': `${star.size}px`,
-                } as React.CSSProperties & {
-                  '--min-opacity': number
-                  '--max-opacity': number
-                  '--star-size': string
-                }
-              }
-            >
-              {star.isBright && star.size > 3 && (
-                <>
-                  <div
-                    className="star-crosshair"
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      width: `${star.size * 2}px`,
-                      height: '1px',
-                      background: `linear-gradient(90deg, transparent, rgba(${r},${g},${b},0.6), transparent)`,
-                      transform: 'translate(-50%, -50%)',
-                      boxShadow: `0 0 ${star.size * 0.3}px rgba(${r},${g},${b},0.4)`,
-                      animationDelay: `${star.pulseDelay}s`,
-                    }}
-                  />
-                  <div
-                    className="star-crosshair"
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      width: '1px',
-                      height: `${star.size * 2}px`,
-                      background: `linear-gradient(180deg, transparent, rgba(${r},${g},${b},0.6), transparent)`,
-                      transform: 'translate(-50%, -50%)',
-                      boxShadow: `0 0 ${star.size * 0.3}px rgba(${r},${g},${b},0.4)`,
-                      animationDelay: `${star.pulseDelay + 1.5}s`,
-                    }}
-                  />
-                </>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  // Optimized scroll handler with throttling
   useEffect(() => {
     if (!isPageVisible) return
 
@@ -317,7 +26,6 @@ export default function SpaceBackground() {
 
       const scrolled = window.scrollY
 
-      // Skip update if scroll hasn't changed significantly (throttle)
       if (Math.abs(scrolled - lastScrollY.current) < 2) {
         rafRef.current = requestAnimationFrame(handleScroll)
         return
@@ -325,31 +33,9 @@ export default function SpaceBackground() {
 
       lastScrollY.current = scrolled
 
-      // Natural space parallax - forward movement through space
-      // Use transform3d for hardware acceleration
-      if (farStarsRef.current) {
-        const yPos = scrolled * 0.01
-        farStarsRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
-      }
-
-      if (midStarsRef.current) {
-        const yPos = scrolled * 0.02
-        midStarsRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
-      }
-
-      if (nearStarsRef.current) {
-        const yPos = scrolled * 0.03
-        nearStarsRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
-      }
-
-      if (nebulaRef.current) {
-        const yPos = scrolled * 0.015
-        nebulaRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
-      }
-
-      if (baseGradientRef.current) {
-        const yPos = scrolled * 0.015
-        baseGradientRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
+      if (gridRef.current) {
+        const yPos = scrolled * 0.15
+        gridRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
       }
 
       rafRef.current = requestAnimationFrame(handleScroll)
@@ -406,7 +92,6 @@ export default function SpaceBackground() {
     }, 2800)
   }
 
-  // Shooting star scheduler - only when page is visible
   useEffect(() => {
     if (!isPageVisible) return
 
@@ -427,28 +112,18 @@ export default function SpaceBackground() {
           let baseAngle = 0
 
           if (side === 0) {
-            baseX = Math.random() * 100
-            baseY = -5
-            baseAngle = 135 + Math.random() * 30
+            baseX = Math.random() * 100; baseY = -5; baseAngle = 135 + Math.random() * 30
           } else if (side === 1) {
-            baseX = 105
-            baseY = Math.random() * 100
-            baseAngle = 225 + Math.random() * 30
+            baseX = 105; baseY = Math.random() * 100; baseAngle = 225 + Math.random() * 30
           } else if (side === 2) {
-            baseX = Math.random() * 100
-            baseY = 105
-            baseAngle = 315 + Math.random() * 30
+            baseX = Math.random() * 100; baseY = 105; baseAngle = 315 + Math.random() * 30
           } else {
-            baseX = -5
-            baseY = Math.random() * 100
-            baseAngle = 45 + Math.random() * 30
+            baseX = -5; baseY = Math.random() * 100; baseAngle = 45 + Math.random() * 30
           }
 
           for (let i = 0; i < count; i++) {
             setTimeout(() => {
-              if (isPageVisible) {
-                createShootingStar(baseX, baseY, baseAngle)
-              }
+              if (isPageVisible) createShootingStar(baseX, baseY, baseAngle)
             }, i * (150 + Math.random() * 200))
           }
         } else {
@@ -478,41 +153,7 @@ export default function SpaceBackground() {
         }
 
         if (typedSequenceRef.current === 'moondao') {
-          const isShower = Math.random() < 0.08
-          const count = isShower ? 2 : 1
-
-          if (isShower) {
-            const side = Math.floor(Math.random() * 4)
-            let baseX = 0
-            let baseY = 0
-            let baseAngle = 0
-
-            if (side === 0) {
-              baseX = Math.random() * 100
-              baseY = -5
-              baseAngle = 135 + Math.random() * 30
-            } else if (side === 1) {
-              baseX = 105
-              baseY = Math.random() * 100
-              baseAngle = 225 + Math.random() * 30
-            } else if (side === 2) {
-              baseX = Math.random() * 100
-              baseY = 105
-              baseAngle = 315 + Math.random() * 30
-            } else {
-              baseX = -5
-              baseY = Math.random() * 100
-              baseAngle = 45 + Math.random() * 30
-            }
-
-            for (let i = 0; i < count; i++) {
-              setTimeout(() => {
-                createShootingStar(baseX, baseY, baseAngle)
-              }, i * (150 + Math.random() * 200))
-            }
-          } else {
-            createShootingStar()
-          }
+          createShootingStar()
           typedSequenceRef.current = ''
         } else if (typedSequenceRef.current.length >= 7) {
           typedSequenceRef.current = typedSequenceRef.current.slice(-6)
@@ -525,7 +166,6 @@ export default function SpaceBackground() {
     }
 
     window.addEventListener('keydown', handleKeyPress)
-
     return () => {
       window.removeEventListener('keydown', handleKeyPress)
       if (sequenceTimeoutRef.current) {
@@ -539,50 +179,85 @@ export default function SpaceBackground() {
       ref={containerRef}
       className="fixed inset-0 overflow-hidden pointer-events-none z-0"
       style={{
-        transformStyle: 'preserve-3d',
-        perspective: '1000px',
         width: '100vw',
         height: '100vh',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#000000',
+        backgroundColor: '#050505',
       }}
     >
-      {/* Base gradient layer - deep space fade */}
+      {/* Retro perspective grid floor */}
       <div
-        ref={baseGradientRef}
+        ref={gridRef}
         className="absolute w-full"
         style={{
-          top: '-50vh',
+          bottom: '-20vh',
           left: 0,
           right: 0,
-          height: '200vh',
-          background: `linear-gradient(
-            180deg,
-            #0f0f1e 0%,
-            #0a0a15 15%,
-            #050510 40%,
-            #020205 70%,
-            #000000 85%,
-            #000000 100%
-          )`,
+          height: '70vh',
+          perspective: '400px',
+          perspectiveOrigin: '50% 0%',
           willChange: 'transform',
           transition: 'transform 0.1s ease-out',
         }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            width: '200%',
+            height: '200%',
+            left: '-50%',
+            top: '0',
+            transform: 'rotateX(65deg)',
+            transformOrigin: 'center top',
+            backgroundImage: `
+              linear-gradient(rgba(0, 255, 200, 0.12) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0, 255, 200, 0.12) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+            maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 20%, rgba(0,0,0,1) 60%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 20%, rgba(0,0,0,1) 60%)',
+          }}
+        />
+        {/* Horizon glow line */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            right: '0',
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, rgba(0, 255, 200, 0.4) 20%, rgba(0, 229, 255, 0.6) 50%, rgba(0, 255, 200, 0.4) 80%, transparent)',
+            boxShadow: '0 0 30px rgba(0, 255, 200, 0.3), 0 0 60px rgba(0, 229, 255, 0.15)',
+          }}
+        />
+      </div>
+
+      {/* Ambient vertical grid lines (subtle, fixed) */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `
+            linear-gradient(90deg, rgba(0, 255, 200, 0.02) 1px, transparent 1px)
+          `,
+          backgroundSize: '120px 100%',
+        }}
       />
 
-      {/* Far stars layer - almost stationary, tiny stars, most numerous */}
-      {renderStarLayer(farStars, 'far')}
+      {/* Ambient horizontal scan reference lines */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `
+            linear-gradient(0deg, rgba(0, 255, 200, 0.015) 1px, transparent 1px)
+          `,
+          backgroundSize: '100% 200px',
+        }}
+      />
 
-      {/* Mid stars layer - very slow movement, small stars */}
-      {renderStarLayer(midStars, 'mid')}
-
-      {/* Near stars layer - subtle movement, slightly larger stars */}
-      {renderStarLayer(nearStars, 'near')}
-
-      {/* Shooting stars - only render when page is visible */}
+      {/* Shooting stars */}
       {isPageVisible &&
         shootingStars.map((shootingStar) => (
           <div
@@ -605,43 +280,205 @@ export default function SpaceBackground() {
           </div>
         ))}
 
-      {/* Nebula-like depth clouds - realistic emission and reflection nebulae */}
+      {/* Retro nebula - subtle colored atmospheric glow */}
       <div
-        ref={nebulaRef}
-        className="absolute w-full opacity-70"
+        className="absolute w-full h-full opacity-40"
         style={{
-          top: '-50vh',
-          left: 0,
-          right: 0,
-          height: '200vh',
           background: `
-            radial-gradient(ellipse 85% 60% at 50% 8%, rgba(24, 34, 84, 0.6) 0%, rgba(22, 30, 75, 0.32) 40%, transparent 70%),
-            radial-gradient(ellipse 70% 50% at 15% 25%, rgba(70, 52, 95, 0.5) 0%, rgba(52, 40, 72, 0.3) 50%, transparent 80%),
-            radial-gradient(ellipse 65% 45% at 85% 30%, rgba(65, 48, 90, 0.45) 0%, rgba(48, 36, 68, 0.25) 45%, transparent 75%),
-            radial-gradient(ellipse 60% 40% at 25% 65%, rgba(80, 58, 105, 0.4) 0%, rgba(58, 42, 82, 0.2) 50%, transparent 80%),
-            radial-gradient(ellipse 55% 35% at 75% 70%, rgba(58, 45, 82, 0.5) 0%, rgba(44, 34, 65, 0.3) 45%, transparent 75%),
-            radial-gradient(ellipse 50% 30% at 50% 90%, rgba(48, 36, 72, 0.6) 0%, rgba(35, 26, 58, 0.35) 50%, transparent 85%),
-            radial-gradient(ellipse 45% 25% at 40% 50%, rgba(58, 45, 80, 0.35) 0%, rgba(44, 34, 62, 0.2) 55%, transparent 80%)
+            radial-gradient(ellipse 80% 50% at 20% 20%, rgba(123, 47, 255, 0.08) 0%, transparent 70%),
+            radial-gradient(ellipse 60% 40% at 80% 30%, rgba(0, 229, 255, 0.06) 0%, transparent 60%),
+            radial-gradient(ellipse 70% 50% at 50% 80%, rgba(255, 42, 109, 0.05) 0%, transparent 70%),
+            radial-gradient(ellipse 50% 30% at 10% 70%, rgba(0, 255, 200, 0.04) 0%, transparent 60%)
           `,
-          willChange: 'transform',
-          transition: 'transform 0.1s linear',
-          filter: 'blur(0.5px)',
         }}
       />
 
-      {/* Deep space fade overlay - enhances depth perception at bottom */}
+      {/* Top fade to pure black */}
       <div
-        className="absolute inset-0 w-full h-full"
+        className="absolute top-0 left-0 right-0"
         style={{
-          background: `linear-gradient(
-            180deg,
-            transparent 0%,
-            transparent 40%,
-            rgba(0, 0, 0, 0.2) 70%,
-            rgba(0, 0, 0, 0.5) 90%,
-            rgba(0, 0, 0, 0.8) 100%
-          )`,
-          pointerEvents: 'none',
+          height: '30vh',
+          background: 'linear-gradient(180deg, #050505 0%, transparent 100%)',
+        }}
+      />
+
+      {/* ===== HUD OVERLAY ELEMENTS ===== */}
+
+      {/* Bottom-left: animated bar graph */}
+      <div
+        className="absolute hidden lg:flex items-end gap-[3px]"
+        style={{
+          bottom: '40px',
+          left: '30px',
+          height: '60px',
+          opacity: 0.25,
+        }}
+      >
+        {[6.5, 4.2, 8.1, 5.5, 7.3, 3.8, 9.0, 6.0, 4.8, 7.8, 5.2, 8.5, 3.5, 6.8, 7.0, 4.5].map((_, i) => (
+          <div
+            key={`bar-${i}`}
+            style={{
+              width: '3px',
+              backgroundColor: i % 3 === 0 ? '#ff9f1c' : '#00ffc8',
+              animation: `hud-bar-cycle${i % 3 === 0 ? '-2' : i % 3 === 1 ? '-3' : ''} ${5 + i * 0.7}s ease-in-out infinite`,
+              animationDelay: `${i * 0.3}s`,
+              borderRadius: '1px 1px 0 0',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Bottom-left: label under bars */}
+      <div
+        className="absolute hidden lg:block"
+        style={{
+          bottom: '22px',
+          left: '30px',
+          fontFamily: '"Share Tech Mono", monospace',
+          fontSize: '8px',
+          color: '#00ffc8',
+          opacity: 0.2,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          animation: 'hudBlink 6s ease-in-out infinite',
+        }}
+      >
+        SYS.TELEMETRY
+      </div>
+
+      {/* Bottom-right: waveform SVG */}
+      <svg
+        className="absolute hidden lg:block"
+        style={{
+          bottom: '35px',
+          right: '30px',
+          opacity: 0.2,
+        }}
+        width="120"
+        height="40"
+        viewBox="0 0 120 40"
+      >
+        <path
+          d="M0,20 Q5,5 10,20 T20,20 T30,20 T40,20 T50,20 T60,20 T70,20 T80,20 T90,20 T100,20 T110,20 T120,20"
+          fill="none"
+          stroke="#00ffc8"
+          strokeWidth="1"
+          style={{
+            animation: 'hud-graph-wave 6s ease-in-out infinite',
+          }}
+        />
+        <path
+          d="M0,20 Q8,12 16,20 T32,20 T48,20 T64,20 T80,20 T96,20 T112,20 T120,20"
+          fill="none"
+          stroke="#ff2a6d"
+          strokeWidth="0.5"
+          opacity="0.5"
+          style={{
+            animation: 'hud-graph-wave 8s ease-in-out infinite reverse',
+          }}
+        />
+        {/* baseline */}
+        <line x1="0" y1="20" x2="120" y2="20" stroke="#00ffc8" strokeWidth="0.3" opacity="0.3" />
+      </svg>
+
+      {/* Bottom-right: waveform label */}
+      <div
+        className="absolute hidden lg:block"
+        style={{
+          bottom: '22px',
+          right: '30px',
+          fontFamily: '"Share Tech Mono", monospace',
+          fontSize: '8px',
+          color: '#ff2a6d',
+          opacity: 0.2,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          animation: 'hudBlink 5s ease-in-out infinite',
+          animationDelay: '1s',
+        }}
+      >
+        FREQ.ANALYSIS
+      </div>
+
+      {/* Top-right: rotating ring indicator */}
+      <svg
+        className="absolute hidden xl:block"
+        style={{
+          top: '80px',
+          right: '30px',
+          opacity: 0.12,
+        }}
+        width="50"
+        height="50"
+        viewBox="0 0 50 50"
+      >
+        <circle cx="25" cy="25" r="20" fill="none" stroke="#00ffc8" strokeWidth="0.5" opacity="0.4" />
+        <circle cx="25" cy="25" r="15" fill="none" stroke="#00ffc8" strokeWidth="0.3" opacity="0.3" strokeDasharray="4 3" style={{ animation: 'hud-ring-rotate 12s linear infinite' , transformOrigin: '25px 25px' }} />
+        <circle cx="25" cy="25" r="10" fill="none" stroke="#ff9f1c" strokeWidth="0.3" opacity="0.3" strokeDasharray="2 4" style={{ animation: 'hud-ring-rotate 8s linear infinite reverse', transformOrigin: '25px 25px' }} />
+        <circle cx="25" cy="5" r="1.5" fill="#00ffc8" style={{ animation: 'hud-dot-pulse 3s ease-in-out infinite', transformOrigin: '25px 25px' }} />
+        <line x1="25" y1="15" x2="25" y2="18" stroke="#00ffc8" strokeWidth="0.5" opacity="0.5" />
+        <line x1="25" y1="32" x2="25" y2="35" stroke="#00ffc8" strokeWidth="0.5" opacity="0.5" />
+        <line x1="15" y1="25" x2="18" y2="25" stroke="#00ffc8" strokeWidth="0.5" opacity="0.5" />
+        <line x1="32" y1="25" x2="35" y2="25" stroke="#00ffc8" strokeWidth="0.5" opacity="0.5" />
+      </svg>
+
+      {/* Top-right: status readout */}
+      <div
+        className="absolute hidden xl:block"
+        style={{
+          top: '140px',
+          right: '25px',
+          fontFamily: '"Share Tech Mono", monospace',
+          fontSize: '7px',
+          color: '#00ffc8',
+          opacity: 0.15,
+          letterSpacing: '1px',
+          lineHeight: '1.8',
+          textAlign: 'right',
+        }}
+      >
+        <div style={{ animation: 'hud-number-blink 4s ease-in-out infinite' }}>AZ 127.4°</div>
+        <div style={{ animation: 'hud-number-blink 4s ease-in-out infinite', animationDelay: '0.5s' }}>EL 34.8°</div>
+        <div style={{ color: '#ff9f1c', animation: 'hud-number-blink 5s ease-in-out infinite', animationDelay: '1s' }}>RNG 384400 KM</div>
+      </div>
+
+      {/* Slow horizontal scan line that sweeps down the viewport */}
+      <div
+        className="absolute left-0 right-0"
+        style={{
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(0, 255, 200, 0.15) 20%, rgba(0, 255, 200, 0.3) 50%, rgba(0, 255, 200, 0.15) 80%, transparent 100%)',
+          boxShadow: '0 0 10px rgba(0, 255, 200, 0.1), 0 0 30px rgba(0, 255, 200, 0.05)',
+          animation: 'hud-scanline 12s linear infinite',
+        }}
+      />
+
+      {/* Corner brackets - top left */}
+      <div
+        className="absolute hidden lg:block"
+        style={{
+          top: '70px',
+          left: '20px',
+          width: '30px',
+          height: '30px',
+          borderLeft: '1px solid rgba(0, 255, 200, 0.15)',
+          borderTop: '1px solid rgba(0, 255, 200, 0.15)',
+          animation: 'hud-crosshair-pulse 6s ease-in-out infinite',
+        }}
+      />
+
+      {/* Corner brackets - bottom right */}
+      <div
+        className="absolute hidden lg:block"
+        style={{
+          bottom: '100px',
+          right: '20px',
+          width: '30px',
+          height: '30px',
+          borderRight: '1px solid rgba(0, 255, 200, 0.15)',
+          borderBottom: '1px solid rgba(0, 255, 200, 0.15)',
+          animation: 'hud-crosshair-pulse 6s ease-in-out infinite',
+          animationDelay: '3s',
         }}
       />
     </div>

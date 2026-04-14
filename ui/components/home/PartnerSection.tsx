@@ -7,7 +7,7 @@ export default function PartnerSection() {
     <>
       <section
         id="network-section-container"
-        className="flex justify-center bg-white md:rounded-br-[0vmax]"
+        className="flex justify-center bg-[#050508] border-t border-[rgba(0,255,200,0.08)] md:rounded-br-[0vmax]"
       >
         <div
           id="network-section"
@@ -15,7 +15,7 @@ export default function PartnerSection() {
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool text-2xl md:text-3xl lg:text-4xl"
+            className="header font-GoodTimes text-center text-[#00ffc8] text-2xl md:text-3xl lg:text-4xl"
           >
             Our Network
           </h2>
@@ -69,7 +69,7 @@ export default function PartnerSection() {
 
       <section
         id="featured-section-container"
-        className="flex justify-center bg-white md:rounded-tr-[0vmax]"
+        className="flex justify-center bg-[#050508] md:rounded-tr-[0vmax]"
       >
         <div
           id="feature-section"
@@ -77,7 +77,7 @@ export default function PartnerSection() {
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool text-2xl md:text-3xl lg:text-4xl"
+            className="header font-GoodTimes text-center text-[#00ffc8] text-2xl md:text-3xl lg:text-4xl"
           >
             As Featured On
           </h2>

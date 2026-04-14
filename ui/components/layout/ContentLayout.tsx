@@ -49,10 +49,19 @@ const ContentLayout: React.FC<ContentProps> = ({
             <div id="graphic-element-container" className="relative overflow-hidden">
               <div
                 id="graphic-element"
-                className="w-full h-full absolute top-0 left-0 bg-gradient-to-br from-gray-900/80 via-blue-900/40 to-purple-900/30 border-b border-white/10 rounded-b-3xl shadow-2xl"
-                style={{ contain: 'paint' }}
+                className="w-full h-full absolute top-0 left-0"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,255,200,0.03) 0%, rgba(5,5,8,0.9) 40%, rgba(10,15,18,0.8) 100%)',
+                  borderBottom: '1px solid rgba(0, 255, 200, 0.1)',
+                  contain: 'paint',
+                }}
               ></div>
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none"></div>
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(to bottom, transparent 60%, rgba(5,5,5,0.5) 100%)',
+                }}
+              ></div>
             </div>
             <div
               id="content-container"
@@ -122,12 +131,25 @@ const ContentLayout: React.FC<ContentProps> = ({
                     className={`block w-full max-w-[1200px] header-responsive leading-[1] font-GoodTimes ${
                       isCompact ? 'pt-0' : 'lg:pt-20'
                     }`}
+                    style={{
+                      color: '#00ffc8',
+                      textShadow: '0 0 20px rgba(0, 255, 200, 0.3), 0 0 40px rgba(0, 255, 200, 0.1)',
+                    }}
                   >
                     {header}
                   </div>
 
                   {subHeader && (
-                    <div id="sub-header" className="block w-full sub-header">
+                    <div
+                      id="sub-header"
+                      className="block w-full sub-header"
+                      style={{
+                        color: '#b0ffe0',
+                        fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif', fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '2px',
+                      }}
+                    >
                       {subHeader}
                     </div>
                   )}
@@ -139,7 +161,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                                             ${branded ? 'md:mt-2' : 'md:mt-20'}
                                         `}
                     >
-                      <div className="block w-full">{description}</div>
+                      <div className="block w-full" style={{ color: '#e0fff0', fontSize: '17px', lineHeight: '1.7', fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif', fontWeight: 500, letterSpacing: '0.02em' }}>{description}</div>
                     </div>
                   )}
                 </div>
@@ -233,9 +255,13 @@ const ContentLayout: React.FC<ContentProps> = ({
           {preFooter && (
             <div
               id="spacer"
-              className={`bg-gradient-to-b from-slate-900/90 to-white rounded-tl-3xl w-full h-[5vh] md:h-[200px] backdrop-blur-sm
+              className={`w-full h-[5vh] md:h-[200px]
                         ${popOverEffect ? '' : 'hidden'}
                     `}
+              style={{
+                background: 'linear-gradient(to bottom, rgba(10,15,18,0.9), rgba(5,5,5,0.5))',
+                borderTop: '1px solid rgba(0, 255, 200, 0.05)',
+              }}
             ></div>
           )}
         </section>

@@ -35,7 +35,12 @@ class WebsiteDocument extends Document {
             href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500&display=swap"
           />
 
-          <meta name="theme-color" content="#54c3ff" />
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap"
+          />
+
+          <meta name="theme-color" content="#00ffc8" />
           <link rel="icon" href="/favicon.ico" />
 
           <script

@@ -377,7 +377,7 @@ export default function Card({
                   ? `bg-gradient-to-br ${gradientFrom
                       .replace('/40', '')
                       .replace('/20', '')} ${gradientTo.replace('/60', '').replace('/20', '')}`
-                  : 'bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20'
+                  : 'bg-gradient-to-br from-[#0a0a0a] via-[#0a1218] to-[#0a0a12]'
               } ${layout === 'launchpad' ? 'rounded-full' : 'rounded-xl md:rounded-2xl'} ${
                 layout === 'launchpad' ? 'p-3 md:p-4' : 'p-2 md:p-3 lg:p-4'
               } group-hover:scale-110 transition-transform duration-300`}

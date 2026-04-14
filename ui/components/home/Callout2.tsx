@@ -64,8 +64,8 @@ export default function Callout2() {
               </div>
               <div className="max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] mx-auto lg:mx-0 flex justify-start">
                 <StandardButton
-                  backgroundColor="bg-white"
-                  textColor="text-dark-cool"
+                  backgroundColor="bg-[#00ffc8]"
+                  textColor="text-[#050505]"
                   borderRadius="rounded-tl-[10px] rounded-[2vmax]"
                   link="/get-mooney"
                   paddingOnHover="pl-5"

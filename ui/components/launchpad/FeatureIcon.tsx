@@ -43,7 +43,7 @@ export default function FeatureIcon({
         </h2>
         <p
           id="feature-icon-description"
-          className="text-[3.5vw] md:text-[max(1vw,14px)] 2xl:text-[16px] text-gray-700 md:text-gray-600 leading-relaxed"
+          className="text-[3.5vw] md:text-[max(1vw,14px)] 2xl:text-[16px] text-[#c0ffe0] md:text-[#a0ddc4] leading-relaxed"
         >
           {description}
         </p>

@@ -296,7 +296,7 @@ export function ExpandedFooter({
                 >
                   Documentation
                 </Link>
-                <span className="text-gray-600">•</span>
+                <span className="text-[#70bba0]">•</span>
                 <Link
                   href="https://news.moondao.com"
                   target="_blank"
@@ -305,7 +305,7 @@ export function ExpandedFooter({
                 >
                   Newsletter
                 </Link>
-                <span className="text-gray-600">•</span>
+                <span className="text-[#70bba0]">•</span>
                 <Link
                   href="https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet"
                   target="_blank"

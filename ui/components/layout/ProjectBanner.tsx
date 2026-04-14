@@ -100,7 +100,7 @@ export default function ProjectBanner() {
         <div className="flex-shrink-0 ml-2">
           <Link
             href={PROJECT_SYSTEM_CONFIG.submissionUrl}
-            className="inline-flex items-center px-3 sm:px-5 py-2 bg-white text-blue-900 font-semibold text-xs sm:text-sm rounded-md hover:bg-blue-50 transition-all duration-200 shadow-sm whitespace-nowrap"
+            className="inline-flex items-center px-3 sm:px-5 py-2 bg-[#00ffc8] text-[#050505] font-semibold text-xs sm:text-sm rounded-md hover:bg-[#00e5b5] transition-all duration-200 shadow-sm whitespace-nowrap"
           >
             <span className="hidden sm:inline">Submit Proposal</span>
             <span className="sm:hidden">Submit</span>
