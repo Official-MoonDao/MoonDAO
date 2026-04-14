@@ -258,12 +258,15 @@ export default function CreateMission({
   const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] = useState(false)
 
   const [teamRequirementModalEnabled, setTeamRequirementModalEnabled] = useState(
-    !userTeamsAsManagerLoading && userTeamsAsManager && userTeamsAsManager?.[0] === undefined
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' &&
+      !userTeamsAsManagerLoading && userTeamsAsManager && userTeamsAsManager?.[0] === undefined
   )
 
   useEffect(() => {
     if (userTeams && !userTeamsAsManagerLoading)
-      setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
+      setTeamRequirementModalEnabled(
+        process.env.NEXT_PUBLIC_CHAIN === 'mainnet' && userTeamsAsManager?.[0] === undefined
+      )
   }, [userTeams, userTeamsAsManager, userTeamsAsManagerLoading])
 
   const { data: fundingGoalInETH, isLoading: fundingGoalInETHIsLoading } = useETHPrice(
@@ -546,8 +549,11 @@ export default function CreateMission({
                   description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential contributors and compel them to contribute.
 "
                   action={() => {
-                    if (!userTeamsAsManager || userTeamsAsManager.length === 0) {
-                      return toast.error('Please create a team or join one as a manager.', {
+                    if (
+                      (!userTeamsAsManager || userTeamsAsManager.length === 0) &&
+                      selectedTeamId === undefined
+                    ) {
+                      return toast.error('Please create a team or enter a Team ID.', {
                         style: toastStyle,
                       })
                     } else if (selectedTeamId === undefined) {
@@ -588,9 +594,43 @@ export default function CreateMission({
                         <span className="text-white">Loading your teams...</span>
                       </div>
                     ) : !userTeamsAsManager || userTeamsAsManager.length === 0 ? (
-                      <StandardButton className="gradient-2" hoverEffect={false} link="/team">
-                        Create a Team
-                      </StandardButton>
+                      process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' ? (
+                        <div className="flex flex-col gap-2 w-full">
+                          <p className="text-yellow-400 text-sm">
+                            ⚠️ Subgraph appears to be down. Enter your Team ID manually:
+                          </p>
+                          <div className="flex gap-2 items-center">
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Team ID"
+                              className="bg-dark-cool border border-slate-600 rounded-lg px-3 py-2 text-white w-32"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = (e.target as HTMLInputElement).value.trim()
+                                  if (val) setSelectedTeamId(val)
+                                }
+                              }}
+                            />
+                            <button
+                              className="bg-moon-orange text-white px-4 py-2 rounded-lg text-sm"
+                              onClick={() => {
+                                const input = document.querySelector(
+                                  'input[placeholder="Team ID"]'
+                                ) as HTMLInputElement
+                                const val = input?.value?.trim()
+                                if (val) setSelectedTeamId(val)
+                              }}
+                            >
+                              Set Team
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <StandardButton className="gradient-2" hoverEffect={false} link="/team">
+                          Create a Team
+                        </StandardButton>
+                      )
                     ) : (
                       <></>
                     )}
