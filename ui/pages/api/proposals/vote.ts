@@ -157,10 +157,11 @@ async function logVotingResults(
 
 // Tally votes for projects and set approved projects to active
 async function POST(req: NextApiRequest, res: NextApiResponse) {
-  // Use quarter/year from request body if provided, otherwise fall back to current quarter
-  const currentQuarter = getCurrentQuarter()
-  const quarter = req.body?.quarter || currentQuarter.quarter
-  const year = req.body?.year || currentQuarter.year
+  const { quarter, year } = getCurrentQuarter()
+
+  if (!Number.isInteger(quarter) || !Number.isInteger(year) || quarter < 1 || quarter > 4 || year < 2020) {
+    return res.status(400).json({ error: 'Invalid quarter or year.' })
+  }
 
   console.log(`[vote tally] Starting tally for Q${quarter} ${year}`)
   

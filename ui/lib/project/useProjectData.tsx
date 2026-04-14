@@ -23,6 +23,7 @@ export type Project = {
   upfrontPayments: string
   year: number
   tempCheckApproved?: string
+  tempCheckFailed?: string
 }
 
 export default function useProjectData(

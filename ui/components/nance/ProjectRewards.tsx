@@ -696,16 +696,15 @@ export function ProjectRewards({
                 <div className="flex flex-col gap-1.5 sm:gap-6">
                   {proposals
                       .filter((project: any) => {
-                        // Senate Vote: show ALL pending proposals
                         if (IS_SENATE_VOTE) {
-                          return true
+                          return !project.tempCheckApproved && !project.tempCheckFailed
                         }
-                        // Member Vote: show proposals that passed Senate vote
+
                         if (IS_MEMBER_VOTE) {
-                          return project.tempCheckApproved
+                          return project.tempCheckApproved && !project.tempCheckFailed
                         }
-                        // Default (no active vote): show all pending proposals
-                        return true
+
+                        return !project.tempCheckFailed
                       })
                       .map((project: any, i) => (
                         <div

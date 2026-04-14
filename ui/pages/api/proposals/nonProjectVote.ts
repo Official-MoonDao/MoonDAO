@@ -26,7 +26,10 @@ const chainSlug = getChainSlug(chain)
 
 // Tally votes for non project proposals and set approved proposals to active
 async function POST(req: NextApiRequest, res: NextApiResponse) {
-  const { mdp } = req.body
+  const mdp = parseInt(req.body?.mdp, 10)
+  if (!Number.isInteger(mdp) || mdp <= 0) {
+    return res.status(400).json({ error: 'Invalid mdp: must be a positive integer.' })
+  }
 
   const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
   const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]

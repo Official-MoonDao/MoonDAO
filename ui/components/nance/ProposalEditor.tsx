@@ -199,9 +199,20 @@ export default function ProposalEditor({ project }: { project: Project }) {
     const header = `# ${proposalTitle}\n\n`
     const fileName = `${proposalTitle.replace(/\s+/g, '-')}.md`
 
+    const budgetItems = getValues()['budget'] as Array<{ token: string; amount: string }> | undefined
+    let totalBudgetUSDC = 0
+    if (budgetItems && Array.isArray(budgetItems)) {
+      budgetItems.forEach((item) => {
+        if (item.token === 'USD' || item.token === 'USDC' || item.token === 'USDT' || item.token === 'DAI') {
+          totalBudgetUSDC += Number(item.amount) || 0
+        }
+      })
+    }
+
     const fileContents = JSON.stringify({
       body: header + body,
-      budget: getValues()['budget'],
+      budget: budgetItems,
+      totalBudgetUSDC,
       authorAddress: address,
       nonProjectProposal: nonProjectProposal
     })
