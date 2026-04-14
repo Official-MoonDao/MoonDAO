@@ -44,7 +44,6 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
-import DropDownMenu from '@/components/nance/DropDownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalVotes from '@/components/nance/ProposalVotes'
 
@@ -320,7 +319,6 @@ export default function ProjectProfile({
                       />
                     </div>
                   )}
-                <DropDownMenu project={project} proposalStatus={proposalStatus} />
               </div>
             }
           >
