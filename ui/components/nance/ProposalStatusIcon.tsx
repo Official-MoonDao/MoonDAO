@@ -26,7 +26,7 @@ export default function ProposalStatusIcon({
           )}
           aria-hidden="true"
         />
-        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 sm:hidden">
+        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-[rgba(57,255,20,0.1)] px-2 py-1 text-xs font-medium text-[#70ff90] ring-1 ring-inset ring-[rgba(57,255,20,0.2)] sm:hidden">
           {status}
         </p>
       </>
@@ -43,7 +43,7 @@ export default function ProposalStatusIcon({
           )}
           aria-hidden="true"
         />
-        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20 sm:hidden">
+        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-[rgba(255,159,28,0.1)] px-2 py-1 text-xs font-medium text-[#ffb060] ring-1 ring-inset ring-[rgba(255,159,28,0.2)] sm:hidden">
           {status}
         </p>
       </>
@@ -61,7 +61,7 @@ export default function ProposalStatusIcon({
           )}
           aria-hidden="true"
         />
-        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20 sm:hidden">
+        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-[rgba(0,255,200,0.06)] px-2 py-1 text-xs font-medium text-[#b0ffe0] ring-1 ring-inset ring-[rgba(0,255,200,0.15)] sm:hidden">
           {displayLabel}
         </p>
       </>
@@ -78,7 +78,7 @@ export default function ProposalStatusIcon({
           )}
           aria-hidden="true"
         />
-        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20 sm:hidden">
+        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-[rgba(0,255,200,0.06)] px-2 py-1 text-xs font-medium text-[#b0ffe0] ring-1 ring-inset ring-[rgba(0,255,200,0.15)] sm:hidden">
           {status}
         </p>
       </>
@@ -95,7 +95,7 @@ export default function ProposalStatusIcon({
           )}
           aria-hidden="true"
         />
-        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20 sm:hidden">
+        <p className="mb-1 block h-6 w-fit items-center rounded-md bg-[rgba(0,255,200,0.06)] px-2 py-1 text-xs font-medium text-[#b0ffe0] ring-1 ring-inset ring-[rgba(0,255,200,0.15)] sm:hidden">
           {status}
         </p>
       </>

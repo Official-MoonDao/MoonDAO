@@ -28,13 +28,27 @@ export default function MailingList() {
           <input
             type="email"
             placeholder="Enter your email"
-            className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg sm:rounded-r-none text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all duration-200"
+            className="flex-1 px-4 py-3 backdrop-blur-sm transition-all duration-200 sm:rounded-r-none"
+            style={{
+              background: 'rgba(0, 255, 200, 0.05)',
+              border: '1px solid rgba(0, 255, 200, 0.25)',
+              color: '#e0fff0',
+              borderRadius: '2px',
+            }}
             onChange={({ target }) => setUserEmail(target.value)}
             value={userEmail}
           />
           <button
             type="submit"
-            className="px-6 py-3 bg-white text-black font-medium rounded-lg sm:rounded-l-none hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-200 whitespace-nowrap"
+            className="px-6 py-3 font-medium sm:rounded-l-none transition-all duration-200 whitespace-nowrap uppercase tracking-wider text-sm"
+            style={{
+              background: '#00ffc8',
+              color: '#050505',
+              borderRadius: '2px',
+              fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif',
+              fontWeight: 600,
+              boxShadow: '0 0 10px rgba(0, 255, 200, 0.3)',
+            }}
           >
             Learn More
           </button>

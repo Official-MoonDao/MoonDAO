@@ -16,7 +16,7 @@ export default function BrandLogo({ logo, alt, link }: LogoProps) {
             {link ? (
                 <Link 
                     href={link} 
-                    className="opacity-[50%] hover:opacity-[100%] grayscale hover:grayscale-0 transition-all duration-300"
+                    className="brand-logo-link transition-all duration-300"
                     >
                     <Image 
                         width="300" 
@@ -31,7 +31,7 @@ export default function BrandLogo({ logo, alt, link }: LogoProps) {
                     height="100" 
                     src={logo} 
                     alt={alt} 
-                    className="transition-none"  // No animation if no link
+                    className="brand-logo-static"
                 />
             )}
         </div>

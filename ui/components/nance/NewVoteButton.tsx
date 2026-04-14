@@ -61,7 +61,7 @@ export default function NewVoteButton({
       <button
         id="vote"
         className={classNames(
-          'inline-flex w-full items-center justify-center rounded-md border border-transparent bg-blue-600 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-black disabled:opacity-50',
+          'inline-flex w-full items-center justify-center rounded-md border border-[rgba(0,255,200,0.25)] bg-[rgba(0,255,200,0.15)] py-2 text-sm font-medium text-[#00ffc8] shadow-sm hover:bg-[rgba(0,255,200,0.25)] focus:outline-none focus:ring-2 focus:ring-[rgba(0,255,200,0.3)] focus:ring-offset-2 focus:ring-offset-[#050505] disabled:cursor-not-allowed disabled:bg-[rgba(0,255,200,0.05)] disabled:text-[#60aa90] disabled:opacity-50',
           isSmall ? '' : 'px-4'
         )}
         onClick={(e) => {

@@ -37,6 +37,7 @@ export default function Hero() {
           <h1
             id="header"
             className="flex flex-col font-GoodTimes leading-none text-4xl"
+            style={{ color: '#00ffc8', textShadow: '0 0 20px rgba(0, 255, 200, 0.4), 0 0 40px rgba(0, 255, 200, 0.15)' }}
           >
             <span
               style={{ fontSize: 'calc(min(4.5vmin, 30px))' }}
@@ -60,6 +61,7 @@ export default function Hero() {
           <p
             id="paragraph-content"
             className="mr-5 max-w-[350px] pb-5 pt-2 text-lg w-full md:w-[100%] md:max-w-[350px] lg:max-w-[500px] 2xl:max-w-[600px] 2xl:text-xl 3xl:max-w-[700px] 3xl:text-2xl"
+            style={{ color: '#e0fff0', lineHeight: '1.7', fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif', fontWeight: 500, fontSize: '17px', letterSpacing: '0.02em' }}
           >
             MoonDAO is an open platform to fund, collaborate, and compete on
             challenges that get us closer to a lunar settlement.
@@ -67,10 +69,10 @@ export default function Hero() {
 
           <div className="flex items-start justify-start min-h-[60px] mb-4 relative z-20">
             <StandardButton
-              backgroundColor="bg-white"
-              textColor="text-black"
-              hoverColor="bg-gray-100"
-              borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+              backgroundColor="bg-[#00ffc8]"
+              textColor="text-[#050505]"
+              hoverColor="hover:bg-[#00e5b5]"
+              borderRadius="rounded-sm"
               link="/join"
               paddingOnHover="pl-5"
             >

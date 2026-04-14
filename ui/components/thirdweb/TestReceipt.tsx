@@ -52,7 +52,7 @@ export default function TestReceipt({ transactionHash }: TestReceiptProps) {
   }
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
+    <div className="p-6 bg-[#0a0f12] border border-[rgba(0,255,200,0.15)] rounded-lg shadow-md">
       <h2
         className="text-xl font-semibold mb-4"
         data-testid="test-receipt-title"
@@ -61,9 +61,9 @@ export default function TestReceipt({ transactionHash }: TestReceiptProps) {
       </h2>
 
       <div className="mb-4">
-        <p className="text-sm text-gray-600 mb-2">Transaction Hash:</p>
+        <p className="text-sm text-[#80ccb0] mb-2">Transaction Hash:</p>
         <p
-          className="font-mono text-sm bg-gray-100 p-2 rounded"
+          className="font-mono text-sm bg-[rgba(0,255,200,0.04)] p-2 rounded text-[#e0fff0]"
           data-testid="tx-hash-display"
         >
           {transactionHash}
@@ -73,7 +73,7 @@ export default function TestReceipt({ transactionHash }: TestReceiptProps) {
       <button
         onClick={testReceipt}
         disabled={loading}
-        className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+        className="bg-[rgba(0,255,200,0.15)] text-[#00ffc8] border border-[rgba(0,255,200,0.25)] px-4 py-2 rounded-md hover:bg-[rgba(0,255,200,0.25)] disabled:bg-[rgba(0,255,200,0.05)] disabled:text-[#60aa90]"
         data-testid="fetch-receipt-button"
       >
         {loading ? 'Fetching...' : 'Fetch Receipt'}

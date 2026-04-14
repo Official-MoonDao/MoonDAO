@@ -122,11 +122,11 @@ export function MultiVotingProgressBar({
           transform: 'translateX(-50%) translateY(-100%)',
         }}
       >
-        <div className="bg-white text-black px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg border">
+        <div className="bg-[#0a1218] text-[#e0fff0] border-[rgba(0,255,200,0.2)] px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg border">
           {normalizedSegments[hoveredIndex].label}
           {/* Tooltip arrow */}
           <div className="absolute top-full left-1/2 transform -translate-x-1/2">
-            <div className="border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
+            <div className="border-l-4 border-r-4 border-t-4 border-transparent border-t-[#0a1218]"></div>
           </div>
         </div>
       </div>,

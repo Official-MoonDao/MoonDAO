@@ -13,11 +13,12 @@ const NavigationLink = ({ item, setSidebarOpen, index = 0 }: any) => {
   const hasDropdown = item.children || item.dynamicChildren
   return (
     <li
-      className={`list-none font-RobotoMono font-normal text-sm md:text-base text-white animate-slideInLeft`}
+      className={`list-none font-RobotoMono font-normal text-sm md:text-base animate-slideInLeft`}
       key={item.name}
       style={{
         animationDelay: `${index * 0.1}s`,
-        animationFillMode: 'both'
+        animationFillMode: 'both',
+        color: '#c0ffe0',
       }}
     >
       {item.external ? (
@@ -25,25 +26,46 @@ const NavigationLink = ({ item, setSidebarOpen, index = 0 }: any) => {
           href={item.href}
           target="_blank"
           rel="noopener noreferrer"
-          className={`
-             hover:bg-white/10 transition-all duration-200
-          group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 cursor-pointer`}
+          className="group flex items-center px-2 py-2 font-medium cursor-pointer transition-all duration-200 uppercase tracking-wider text-xs"
+          style={{
+            color: '#b0ffe0',
+            fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif', fontWeight: 600,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#00ffc8'
+            e.currentTarget.style.textShadow = '0 0 8px rgba(0, 255, 200, 0.4)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#b0ffe0'
+            e.currentTarget.style.textShadow = 'none'
+          }}
         >
-          <item.icon className="mr-2 h-5 w-5 flex-shrink-0 text-white" />
+          <item.icon className="mr-2 h-5 w-5 flex-shrink-0" style={{ color: 'inherit' }} />
           {t(item.name)}
         </a>
       ) : !hasDropdown ? (
         <NavLink
           href={item.href}
           onClick={() => setSidebarOpen && setSidebarOpen(false)}
-          className={`w-full text-left ${
-            router.pathname == item.href
-              ? 'bg-gradient-to-r from-blue-500/30 to-purple-500/30 text-white border border-blue-400/50 font-semibold'
-              : 'hover:bg-white/10 text-white'
-          } group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-200 cursor-pointer`}
+          className={`w-full text-left group flex items-center px-2 py-2 font-medium transition-all duration-200 cursor-pointer uppercase tracking-wider text-xs`}
+          style={{
+            fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif', fontWeight: 600,
+            ...(router.pathname == item.href
+              ? {
+                  color: '#00ffc8',
+                  textShadow: '0 0 8px rgba(0, 255, 200, 0.5)',
+                  background: 'rgba(0, 255, 200, 0.05)',
+                  borderLeft: '2px solid #00ffc8',
+                  boxShadow: 'inset 3px 0 8px rgba(0, 255, 200, 0.1)',
+                }
+              : {
+                  color: '#b0ffe0',
+                }),
+          }}
         >
           <item.icon
-            className={`mr-2 h-5 w-5 flex-shrink-0 text-white`}
+            className="mr-2 h-5 w-5 flex-shrink-0"
+            style={{ color: 'inherit' }}
           />
           {t(item.name)}
         </NavLink>
@@ -88,6 +110,8 @@ const Dropdown = ({
     (item?.children?.some((e: any) => e.href === router.pathname) ||
       item.href === router.pathname)
 
+  const isActive = isChildrenActive || isTeamsActive || isProjectsActive
+
   return (
     <Disclosure
       className="tracking-tighter"
@@ -105,11 +129,21 @@ const Dropdown = ({
       {({ open }) => (
         <>
           <Disclosure.Button
-            className={`${
-              isChildrenActive || isTeamsActive || isProjectsActive
-                ? 'bg-gradient-to-r from-blue-500/30 to-purple-500/30 text-white border border-blue-400/50 hover:scale-100 font-semibold'
-                : 'hover:bg-white/10 text-white'
-            } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-200`}
+            className="w-full group flex items-center px-2 py-2 font-medium transition-all duration-200 uppercase tracking-wider text-xs"
+            style={{
+              fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif', fontWeight: 600,
+              ...(isActive
+                ? {
+                    color: '#00ffc8',
+                    textShadow: '0 0 8px rgba(0, 255, 200, 0.5)',
+                    background: 'rgba(0, 255, 200, 0.05)',
+                    borderLeft: '2px solid #00ffc8',
+                    boxShadow: 'inset 3px 0 8px rgba(0, 255, 200, 0.1)',
+                  }
+                : {
+                    color: '#b0ffe0',
+                  }),
+            }}
           >
             <div
               className="flex"
@@ -119,12 +153,13 @@ const Dropdown = ({
                   router.push(item.href)
               }}
             >
-              <item.icon className="mr-2 h-5 w-5" aria-hidden="true" />
+              <item.icon className="mr-2 h-5 w-5" aria-hidden="true" style={{ color: 'inherit' }} />
               {item.name}
             </div>
             <span className="ml-4">
               <ChevronRightIcon
-                className={`${open && 'rotate-90'} h-5 w-5 transition-all duration-150 text-white`}
+                className={`${open && 'rotate-90'} h-5 w-5 transition-all duration-150`}
+                style={{ color: '#90ddc0' }}
                 aria-hidden="true"
               />
             </span>
@@ -158,18 +193,27 @@ const Dropdown = ({
                     return (
                       <li
                         key={subItem.name}
-                        className="list-disc marker:text-white group hover:scale-105 transition-all duration-150"
+                        className="list-none group transition-all duration-150"
                         onClick={() => setSidebarOpen && setSidebarOpen(false)}
+                        style={{ borderLeft: '1px solid rgba(0, 255, 200, 0.1)' }}
                       >
                         <NavLink
                           href={subItem.href}
                           onClick={() => setSidebarOpen && setSidebarOpen(false)}
-                          className={`w-full text-left block ${
-                            router.asPath == subItem.href ||
+                          className="w-full text-left block my-3 flex items-center transition-colors duration-200 text-xs uppercase tracking-wider"
+                          style={{
+                            fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif', fontWeight: 600,
+                            paddingLeft: '8px',
+                            ...(router.asPath == subItem.href ||
                             router.asPath == subItem.dynamicHref
-                              ? 'text-blue-300 font-semibold'
-                              : 'text-gray-300 hover:text-white'
-                          } my-3 flex items-center transition-colors duration-200`}
+                              ? {
+                                  color: '#00ffc8',
+                                  textShadow: '0 0 6px rgba(0, 255, 200, 0.3)',
+                                }
+                              : {
+                                  color: '#90ddc0',
+                                }),
+                          }}
                         >
                           {subItem.name}
                         </NavLink>
@@ -178,8 +222,9 @@ const Dropdown = ({
                   } else {
                     return (
                       <p
-                        className="relative right-[15%] text-[75%] opacity-75 text-gray-400"
+                        className="relative right-[15%] text-[75%] opacity-75"
                         key={subItem.name}
+                        style={{ color: '#ff9f1c', fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif', fontWeight: 600 }}
                       >
                         {subItem.name}
                       </p>

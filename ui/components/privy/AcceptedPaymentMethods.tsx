@@ -17,7 +17,7 @@ function PaymentMethod({
       style={{ transform: scale ? `scale(${scale})` : undefined }}
     >
       {label ? (
-        <p className=" text-black">{label}</p>
+        <p className=" text-[#e0fff0]">{label}</p>
       ) : icon ? (
         <div
           className={`relative w-full h-full flex items-center justify-center`}

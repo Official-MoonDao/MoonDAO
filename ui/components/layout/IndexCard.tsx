@@ -41,7 +41,7 @@ export default function IndexCard({
   const cardContent = (
     <span
       id="index-card-container"
-      className="group animate-fadeIn flex flex-col relative bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full h-full"
+      className="group animate-fadeIn flex flex-col relative bg-gradient-to-br from-[#0a0a0a] via-[#0a1218] to-[#0a0a12] backdrop-blur-xl border border-[rgba(0,255,200,0.12)] rounded-2xl shadow-2xl w-full h-full"
     >
       <span
         id="index-content-container"
@@ -59,6 +59,7 @@ export default function IndexCard({
               width="250"
               height="250"
               className="z-20 w-[50px] h-[50px] md:w-[80px] md:h-[80px] 2xl:w-[90px] 2xl:h-[90px] 3xl:w-[100px] 3xl:h-[100px] pb-2 md:pb-3 2xl:pb-4 3xl:pb-5"
+              style={{ filter: 'brightness(0) invert(0.85) sepia(1) saturate(3) hue-rotate(120deg)' }}
             />
           ) : (
             <></>

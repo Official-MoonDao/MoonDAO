@@ -42,9 +42,9 @@ export default function Callout1() {
                 reality.
               </p>
               <StandardButton
-                backgroundColor="bg-white"
-                textColor="text-black"
-                hoverColor="bg-gray-200"
+                backgroundColor="bg-[#00ffc8]"
+                textColor="text-[#050505]"
+                hoverColor="hover:bg-[#00e5b5]"
                 borderRadius="rounded-tl-[10px] rounded-[2vmax]"
                 link="/network"
                 paddingOnHover="pl-5"

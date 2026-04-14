@@ -366,7 +366,7 @@ export default function TeamMarketplaceListingModal({
               />
             </div>
             {isTimed && (
-              <div className="w-full flex gap-2 text-black">
+              <div className="w-full flex gap-2 text-[#e0fff0]">
                 <input
                   id="listing-start-time-input"
                   className="p-2 rounded-sm "

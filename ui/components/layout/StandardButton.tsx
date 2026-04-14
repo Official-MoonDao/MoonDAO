@@ -24,10 +24,10 @@ export default function StandardButton({
   children = 'ReactNode',
   onClick = () => {},
   disabled = false,
-  backgroundColor = 'bg-gradient-to-r from-blue-600 to-purple-600',
-  hoverColor = 'hover:from-blue-700 hover:to-purple-700',
+  backgroundColor = 'bg-gradient-to-r from-[#00aa88] to-[#007a66]',
+  hoverColor = 'hover:from-[#00cc99] hover:to-[#00aa88]',
   hoverEffect = false, // Disabled by default to remove extension effect
-  borderRadius = 'rounded-lg',
+  borderRadius = 'rounded-sm',
   link = '#',
   target = '',
   paddingOnHover = '',

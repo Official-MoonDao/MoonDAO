@@ -13,11 +13,11 @@ export default function PreFooter({ mode = 'Default' }) {
         <div id="background">
           <div
             id="background-gradient"
-            className={`w-full h-full absolute bottom-0 left-0 overflow-hidden bg-gradient-to-r from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 ${
-              mode === 'compact'
-                ? 'rounded-tr-[5vmax] rounded-tl-[5vmax] rounded-br-[5vmax] rounded-bl-[5vmax] md:rounded-tl-[20px] md:rounded-tr-[20px] md:rounded-br-[20px] md:rounded-bl-[20px]'
-                : ''
-            }`}
+            className="w-full h-full absolute bottom-0 left-0 overflow-hidden backdrop-blur-xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,255,200,0.03) 0%, rgba(5,5,8,0.95) 50%, rgba(10,15,18,0.9) 100%)',
+              border: '1px solid rgba(0, 255, 200, 0.1)',
+            }}
           ></div>
           {mode === 'Default' && (
             <div
@@ -44,7 +44,7 @@ export default function PreFooter({ mode = 'Default' }) {
                 mode === 'compact' ? 'max-w-full lg:ml-0' : 'max-w-[600px] lg:ml-[-20%]'
               }`}
             >
-              <h1 className="header font-GoodTimes leading-none flex flex-col text-white">
+              <h1 className="header font-GoodTimes leading-none flex flex-col" style={{ color: '#00ffc8', textShadow: '0 0 15px rgba(0, 255, 200, 0.3)' }}>
                 <span
                   style={{ fontSize: 'calc(max(4vmin, 30px))' }}
                   className={mode === 'compact' ? 'mt-0 md:mt-[5vmax]' : 'mt-[5vmax]'}
@@ -57,7 +57,8 @@ export default function PreFooter({ mode = 'Default' }) {
                 id="paragraph"
                 className={`w-full pt-2 pb-5 ${
                   mode === 'compact' ? 'pr-0 md:pr-5 mr-0 md:mr-5' : 'pr-0 md:pr-5 mr-5'
-                } text-white/90`}
+                } `}
+                style={{ color: '#e0fff0', fontSize: '17px', lineHeight: '1.7', fontFamily: '"Rajdhani", "Helvetica Neue", sans-serif', fontWeight: 500, letterSpacing: '0.02em' }}
               >
                 We aim to accelerate the development of a lunar base through better coordination.
                 Want to help? Learn how to contribute to our mission, even if you're new to Web3,

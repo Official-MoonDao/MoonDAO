@@ -79,7 +79,7 @@ export default function StandardDetailCard({
                         e.stopPropagation()
                         router.push('/citizen')
                       }}
-                      className="bg-light-warm px-2 py-1 rounded mr-1 text-black hover:bg-light-warm/80 transition-colors"
+                      className="bg-[#ff9f1c] px-2 py-1 rounded mr-1 text-[#050505] font-semibold hover:bg-[#ffb040] transition-colors"
                     >
                       Save 10%
                     </button>

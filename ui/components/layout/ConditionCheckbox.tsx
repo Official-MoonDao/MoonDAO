@@ -42,7 +42,7 @@ export default function ConditionCheckbox({
         </span>
       </label>
       <label
-        className={`font-light text-gray-700 select-none max-w-[550px] ${
+        className={`font-light text-[#c0ffe0] select-none max-w-[550px] ${
           disabled ? 'cursor-not-allowed opacity-50' : ''
         }`}
         htmlFor="link"

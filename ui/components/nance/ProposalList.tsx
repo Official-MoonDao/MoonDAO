@@ -22,14 +22,14 @@ function NoResults() {
       <div className="flex justify-center">
         <DocumentMagnifyingGlassIcon className="h-10 w-10 text-gray-400" />
       </div>
-      <h3 className="mt-2 text-sm font-semibold text-gray-900">
+      <h3 className="mt-2 text-sm font-semibold text-[#e0fff0]">
         No proposals satisified your requirement.
       </h3>
-      <p className="mt-1 text-sm text-gray-500">Try to search with different keyword.</p>
+      <p className="mt-1 text-sm text-[#80ccb0]">Try to search with different keyword.</p>
       <div className="mt-6">
         <Link
           href="#"
-          className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          className="inline-flex items-center rounded-md bg-[rgba(0,255,200,0.15)] px-3 py-2 text-sm font-semibold text-[#00ffc8] shadow-sm hover:bg-[rgba(0,255,200,0.25)] border border-[rgba(0,255,200,0.25)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(0,255,200,0.3)]"
           passHref
         >
           <XMarkIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />

@@ -71,7 +71,7 @@ export default function DropDownMenu({
             <EllipsisVerticalIcon className="h-7 w-7 text-indigo-600" aria-hidden="true" />
           </div>
 
-          <div className="hidden w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:inline-flex">
+          <div className="hidden w-full justify-center gap-x-1.5 rounded-md bg-[rgba(0,255,200,0.06)] px-3 py-1 text-sm font-semibold text-[#e0fff0] shadow-sm ring-1 ring-inset ring-[rgba(0,255,200,0.2)] hover:bg-[rgba(0,255,200,0.1)] sm:inline-flex">
             Options
             <ChevronDownIcon className="-mr-1 h-5 w-5 text-gray-400" aria-hidden="true" />
           </div>
@@ -85,13 +85,13 @@ export default function DropDownMenu({
           leaveFrom="transform opacity-100 scale-100"
           leaveTo="transform opacity-0 scale-95"
         >
-          <MenuItems className="absolute z-20 right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+          <MenuItems className="absolute z-20 right-0 mt-2 w-56 origin-top-right divide-y divide-[rgba(0,255,200,0.08)] rounded-md bg-[#0a0f12] shadow-lg ring-1 ring-[rgba(0,255,200,0.15)] focus:outline-none">
             <div className="px-1 py-1">
               <MenuItem>
                 {({ focus }) => (
                   <button
                     className={`${
-                      focus ? 'bg-moonBlue text-white' : 'text-gray-900'
+                      focus ? 'bg-moonBlue text-white' : 'text-[#e0fff0]'
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                     onClick={() => {
                       toast.promise(navigator.clipboard.writeText(window.location.href), {
@@ -113,7 +113,7 @@ export default function DropDownMenu({
                   {({ focus }) => (
                     <Link
                       className={`${
-                        focus ? 'bg-moon-blue text-white' : 'text-gray-900'
+                        focus ? 'bg-moon-blue text-white' : 'text-[#e0fff0]'
                       } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                       href={`/propose?tokenId=${project.id}`}
                       passHref
@@ -127,7 +127,7 @@ export default function DropDownMenu({
                   {({ focus }) => (
                     <button
                       className={`${
-                        focus ? 'bg-moon-orange text-white' : 'text-gray-900'
+                        focus ? 'bg-moon-orange text-white' : 'text-[#e0fff0]'
                       } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                       onClick={() => {
                         handleDeleteProposal()
