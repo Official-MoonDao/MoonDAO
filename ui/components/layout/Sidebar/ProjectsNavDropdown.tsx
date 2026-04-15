@@ -11,6 +11,8 @@ import {
   PROJECT_TABLE_NAMES,
 } from 'const/config'
 import { useProjectWearer } from '@/lib/hats/useProjectWearer'
+import { useUserProposals } from '@/lib/project/useUserProposals'
+import { proposalIdPrefix } from '@/lib/nance/constants'
 import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -43,10 +45,37 @@ export function ProjectsNavDropdown({
     wearerAddresses
   )
 
+  // Fetch user's authored proposals from Tableland (check all linked wallets)
+  const { proposals: userProposals, isLoading: proposalsLoading } =
+    useUserProposals(wearerAddresses)
+
   const isContractReady = !!projectContract && !!membershipChain
   const shouldShowLoading =
-    wearerAddresses.length > 0 &&
-    (!isContractReady || isLoading || projects === undefined)
+    (wearerAddresses.length > 0 &&
+      (!isContractReady || isLoading || projects === undefined)) ||
+    (wearerAddresses.length > 0 && proposalsLoading)
+
+  // Filter out proposals that already appear as projects (by MDP number)
+  const projectMDPs = useMemo(() => {
+    const set = new Set<number>()
+    projects?.forEach((p: any) => {
+      if (p.MDP != null) set.add(Number(p.MDP))
+    })
+    return set
+  }, [projects])
+
+  const extraProposals = useMemo(() => {
+    if (!userProposals) return []
+    return userProposals.filter((p) => {
+      if (p.MDP == null) return true
+      const mdp = Number(p.MDP)
+      if (!Number.isFinite(mdp)) return true
+      return !projectMDPs.has(mdp)
+    })
+  }, [userProposals, projectMDPs])
+
+  const hasItems =
+    (projects && projects.length > 0) || extraProposals.length > 0
 
   const isDesktop = variant === 'desktop'
 
@@ -86,55 +115,87 @@ export function ProjectsNavDropdown({
       {isDesktop ? (
         <div className="pt-2">
           <div className="px-4 py-2 mx-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
-            Your Projects
+            Your Projects &amp; Proposals
           </div>
           {shouldShowLoading ? (
-            wrapMobile(
-              <div className="px-4 py-2 mx-2 text-gray-400 text-sm">
-                Loading your projects...
-              </div>
-            )
-          ) : projects && projects.length > 0 ? (
-            projects.map((proj: any) =>
-              wrapMobile(
-                <ProjectNavItem
-                  key={proj.projectId}
-                  projectId={proj.projectId}
-                  chainSlug={chainSlug}
-                  baseClass={baseLinkClass}
-                  onNavigate={onNavigate}
-                />
-              )
-            )
+            <div className="px-4 py-2 mx-2 text-gray-400 text-sm">
+              Loading...
+            </div>
+          ) : hasItems ? (
+            <>
+              {projects?.map((proj: any) =>
+                wrapMobile(
+                  <ProjectNavItem
+                    key={`proj-${proj.projectId}`}
+                    projectId={proj.projectId}
+                    chainSlug={chainSlug}
+                    baseClass={baseLinkClass}
+                    onNavigate={onNavigate}
+                  />
+                )
+              )}
+              {extraProposals.slice(0, 5).map((proposal) => (
+                <Link
+                  key={`prop-${proposal.MDP}`}
+                  href={`/project/${proposal.MDP}`}
+                  className={baseLinkClass}
+                  onClick={onNavigate}
+                >
+                  <span className="truncate">
+                    {proposal.MDP
+                      ? `${proposalIdPrefix}${proposal.MDP} — `
+                      : ''}
+                    {proposal.title}
+                  </span>
+                </Link>
+              ))}
+            </>
           ) : (
-            wrapMobile(
-              <Link href="/proposals" className={baseLinkClass} onClick={onNavigate}>
-                No projects yet — propose one
-              </Link>
-            )
+            <Link href="/proposals" className={baseLinkClass} onClick={onNavigate}>
+              No projects yet — propose one
+            </Link>
           )}
         </div>
       ) : (
         <>
           <li className="my-3 text-xs text-gray-400 font-medium uppercase tracking-wider list-none">
-            Your Projects
+            Your Projects &amp; Proposals
           </li>
           {shouldShowLoading ? (
             <li className="list-disc marker:text-white group my-3 text-gray-400 text-sm">
-              Loading your projects...
+              Loading...
             </li>
-          ) : projects && projects.length > 0 ? (
-            projects.map((proj: any) =>
-              wrapMobile(
-                <ProjectNavItem
-                  key={proj.projectId}
-                  projectId={proj.projectId}
-                  chainSlug={chainSlug}
-                  baseClass={baseLinkClass}
-                  onNavigate={onNavigate}
-                />
-              )
-            )
+          ) : hasItems ? (
+            <>
+              {projects?.map((proj: any) =>
+                wrapMobile(
+                  <ProjectNavItem
+                    key={`proj-${proj.projectId}`}
+                    projectId={proj.projectId}
+                    chainSlug={chainSlug}
+                    baseClass={baseLinkClass}
+                    onNavigate={onNavigate}
+                  />
+                )
+              )}
+              {extraProposals.slice(0, 5).map((proposal) =>
+                wrapMobile(
+                  <Link
+                    key={`prop-${proposal.MDP}`}
+                    href={`/project/${proposal.MDP}`}
+                    className={baseLinkClass}
+                    onClick={onNavigate}
+                  >
+                    <span className="truncate">
+                      {proposal.MDP
+                        ? `${proposalIdPrefix}${proposal.MDP} — `
+                        : ''}
+                      {proposal.title}
+                    </span>
+                  </Link>
+                )
+              )}
+            </>
           ) : (
             wrapMobile(
               <Link href="/proposals" className={baseLinkClass} onClick={onNavigate}>
