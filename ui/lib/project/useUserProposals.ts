@@ -15,10 +15,13 @@ async function fetchUserProposals(url: string): Promise<UserProposal[]> {
   return Array.isArray(data) ? data : []
 }
 
-export function useUserProposals(authorAddress: string | undefined) {
-  const url = authorAddress
-    ? `/api/tableland/user-proposals?address=${authorAddress}`
-    : null
+export function useUserProposals(authorAddresses: string[]) {
+  const url =
+    authorAddresses.length > 0
+      ? `/api/tableland/user-proposals?address=${encodeURIComponent(
+          authorAddresses.map((a) => a.toLowerCase()).join(',')
+        )}`
+      : null
 
   const { data, isLoading, error } = useSWR(url, fetchUserProposals, {
     revalidateOnFocus: false,

@@ -11,6 +11,15 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 const authorCache = new Map<number, { author: string; name: string; active: number; ts: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
+function pruneExpiredCache() {
+  const now = Date.now()
+  for (const [key, value] of authorCache) {
+    if (now - value.ts >= CACHE_TTL) {
+      authorCache.delete(key)
+    }
+  }
+}
+
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -21,7 +30,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(400).json({ error: 'address parameter is required' })
   }
 
-  const authorLower = address.toLowerCase()
+  // Support comma-separated addresses for linked wallets
+  const authorAddresses = new Set(
+    address
+      .split(',')
+      .map((a) => a.trim().toLowerCase())
+      .filter(Boolean)
+  )
+  if (authorAddresses.size === 0) {
+    return res.status(400).json({ error: 'No valid addresses provided' })
+  }
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const tableName = PROJECT_TABLE_NAMES[chainSlug]
@@ -31,9 +49,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   // Cache response for 30s at CDN
-  setCDNCacheHeaders(res, 30, 60, 'Accept-Encoding, address')
+  setCDNCacheHeaders(res, 30, 60, 'Accept-Encoding')
 
   try {
+    pruneExpiredCache()
+
     // Fetch all projects from Tableland
     const statement = `SELECT id, MDP, name, proposalIPFS, active FROM ${tableName} ORDER BY MDP DESC`
     const projects = await queryTable(chain, statement)
@@ -51,14 +71,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       MDP: number
     }> = []
 
-    // Check each project for author match
-    const fetchPromises = projects.map(async (project: any) => {
-      const mdp = project.MDP as number
+    // Check each project for author match, processing in batches to limit concurrency
+    const BATCH_SIZE = 10
+
+    async function checkProject(project: any): Promise<typeof results[number] | null> {
+      const mdp = Number(project.MDP)
+      if (!Number.isFinite(mdp)) {
+        return null
+      }
 
       // Check cache first
       const cached = authorCache.get(mdp)
       if (cached && now - cached.ts < CACHE_TTL) {
-        if (cached.author.toLowerCase() === authorLower) {
+        if (authorAddresses.has(cached.author.toLowerCase())) {
           return {
             uuid: String(project.id),
             title: cached.name || project.name || `Project #${project.id}`,
@@ -78,7 +103,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         })
         if (!ipfsRes.ok) return null
         const data = await ipfsRes.json()
-        const ipfsAuthor = data.authorAddress || ''
+        const ipfsAuthor =
+          typeof data.authorAddress === 'string'
+            ? data.authorAddress.trim()
+            : ''
 
         // Cache the result
         authorCache.set(mdp, {
@@ -88,7 +116,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           ts: now,
         })
 
-        if (ipfsAuthor.toLowerCase() === authorLower) {
+        if (ipfsAuthor && authorAddresses.has(ipfsAuthor.toLowerCase())) {
           return {
             uuid: String(project.id),
             title: data.title || project.name || `Project #${project.id}`,
@@ -101,12 +129,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // Skip failed IPFS fetches
       }
       return null
-    })
+    }
 
-    const settled = await Promise.allSettled(fetchPromises)
-    for (const result of settled) {
-      if (result.status === 'fulfilled' && result.value) {
-        results.push(result.value)
+    for (let i = 0; i < projects.length; i += BATCH_SIZE) {
+      const batch = projects.slice(i, i + BATCH_SIZE)
+      const settled = await Promise.allSettled(batch.map(checkProject))
+      for (const result of settled) {
+        if (result.status === 'fulfilled' && result.value) {
+          results.push(result.value)
+        }
       }
     }
 

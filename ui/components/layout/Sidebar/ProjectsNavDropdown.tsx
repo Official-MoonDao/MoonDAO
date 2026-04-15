@@ -45,16 +45,15 @@ export function ProjectsNavDropdown({
     wearerAddresses
   )
 
-  // Fetch user's authored proposals from Tableland
-  const primaryAddress = account?.address
+  // Fetch user's authored proposals from Tableland (check all linked wallets)
   const { proposals: userProposals, isLoading: proposalsLoading } =
-    useUserProposals(primaryAddress)
+    useUserProposals(wearerAddresses)
 
   const isContractReady = !!projectContract && !!membershipChain
   const shouldShowLoading =
     (wearerAddresses.length > 0 &&
       (!isContractReady || isLoading || projects === undefined)) ||
-    (!!primaryAddress && proposalsLoading)
+    (wearerAddresses.length > 0 && proposalsLoading)
 
   // Filter out proposals that already appear as projects (by MDP number)
   const projectMDPs = useMemo(() => {
@@ -67,9 +66,12 @@ export function ProjectsNavDropdown({
 
   const extraProposals = useMemo(() => {
     if (!userProposals) return []
-    return userProposals.filter(
-      (p) => !p.MDP || !projectMDPs.has(p.MDP)
-    )
+    return userProposals.filter((p) => {
+      if (p.MDP == null) return true
+      const mdp = Number(p.MDP)
+      if (!Number.isFinite(mdp)) return true
+      return !projectMDPs.has(mdp)
+    })
   }, [userProposals, projectMDPs])
 
   const hasItems =
