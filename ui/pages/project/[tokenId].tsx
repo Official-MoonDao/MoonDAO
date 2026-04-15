@@ -172,49 +172,6 @@ export default function ProjectProfile({
   pending,
 }: ProjectProfileProps) {
   const router = useRouter()
-
-  // If this is a pending proposal that hasn't been indexed yet, show a loading state
-  // and auto-retry after a few seconds
-  useEffect(() => {
-    if (!pending) return
-    const timer = setTimeout(() => {
-      // Reload the page without the ?new=1 param to try fresh
-      router.replace(`/project/${tokenId}?new=1`)
-    }, 5000)
-    return () => clearTimeout(timer)
-  }, [pending, tokenId, router])
-
-  if (pending) {
-    return (
-      <Container>
-        <Head title="Proposal Submitted" />
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-          <img
-            src="/assets/MoonDAO-Loading-Animation.svg"
-            alt="Loading..."
-            className="w-20 h-20 mb-6"
-          />
-          <h1 className="text-2xl font-bold text-white mb-3 font-GoodTimes">
-            Setting Up Your Proposal...
-          </h1>
-          <p className="text-gray-300 text-lg mb-2 max-w-md">
-            Your proposal (MDP-{tokenId}) was submitted successfully and is being set up on-chain.
-          </p>
-          <p className="text-gray-500 text-sm">
-            This page will automatically refresh. It usually takes a few seconds.
-          </p>
-          <div className="mt-6 flex items-center gap-2 text-gray-400 text-sm">
-            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            Waiting for on-chain confirmation...
-          </div>
-        </div>
-      </Container>
-    )
-  }
-
   const account = useActiveAccount()
   const address = account?.address
 
@@ -255,6 +212,47 @@ export default function ProjectProfile({
   const hats = useSubHats(selectedChain, adminHatId, true)
 
   useChainDefault()
+
+  // If this is a pending proposal that hasn't been indexed yet, show a loading state
+  // and auto-retry after a few seconds
+  useEffect(() => {
+    if (!pending) return
+    const timer = setTimeout(() => {
+      router.replace(`/project/${tokenId}?new=1`)
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [pending, tokenId, router])
+
+  if (pending) {
+    return (
+      <Container>
+        <Head title="Proposal Submitted" />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+          <img
+            src="/assets/MoonDAO-Loading-Animation.svg"
+            alt="Loading..."
+            className="w-20 h-20 mb-6"
+          />
+          <h1 className="text-2xl font-bold text-white mb-3 font-GoodTimes">
+            Setting Up Your Proposal...
+          </h1>
+          <p className="text-gray-300 text-lg mb-2 max-w-md">
+            Your proposal (MDP-{tokenId}) was submitted successfully and is being set up on-chain.
+          </p>
+          <p className="text-gray-500 text-sm">
+            This page will automatically refresh. It usually takes a few seconds.
+          </p>
+          <div className="mt-6 flex items-center gap-2 text-gray-400 text-sm">
+            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Waiting for on-chain confirmation...
+          </div>
+        </div>
+      </Container>
+    )
+  }
 
   const body = proposalJSON?.body || ''
   const submittedDate = body.match(/^Date:\s*(.+)$/m)?.[1]?.trim() || null
@@ -497,7 +495,14 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
         return {
           props: {
             pending: true,
-            tokenId,
+            tokenId: String(tokenId),
+            project: {} as any,
+            safeAddress: '',
+            safeOwners: [],
+            votes: [],
+            proposalStatus: 'Discussion',
+            proposalJSON: {},
+            voteOutcome: {},
           },
         }
       }

@@ -612,7 +612,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
             if (submittedProposalId) {
               router.push(`/project/${submittedProposalId}?new=1`)
             }
-          }}}
+          }}
         />
       )}
     </>
