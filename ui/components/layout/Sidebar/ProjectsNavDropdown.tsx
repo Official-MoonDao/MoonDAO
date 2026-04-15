@@ -11,7 +11,7 @@ import {
   PROJECT_TABLE_NAMES,
 } from 'const/config'
 import { useProjectWearer } from '@/lib/hats/useProjectWearer'
-import { useUserProposals } from '@/lib/nance/useUserProposals'
+import { useUserProposals } from '@/lib/project/useUserProposals'
 import { proposalIdPrefix } from '@/lib/nance/constants'
 import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -45,7 +45,7 @@ export function ProjectsNavDropdown({
     wearerAddresses
   )
 
-  // Fetch user's proposals from Nance
+  // Fetch user's authored proposals from Tableland
   const primaryAddress = account?.address
   const { proposals: userProposals, isLoading: proposalsLoading } =
     useUserProposals(primaryAddress)
@@ -68,7 +68,7 @@ export function ProjectsNavDropdown({
   const extraProposals = useMemo(() => {
     if (!userProposals) return []
     return userProposals.filter(
-      (p) => !p.proposalId || !projectMDPs.has(p.proposalId)
+      (p) => !p.MDP || !projectMDPs.has(p.MDP)
     )
   }, [userProposals, projectMDPs])
 
@@ -134,14 +134,14 @@ export function ProjectsNavDropdown({
               )}
               {extraProposals.slice(0, 5).map((proposal) => (
                 <Link
-                  key={`prop-${proposal.uuid}`}
-                  href={`/proposal/${proposal.uuid}`}
+                  key={`prop-${proposal.MDP}`}
+                  href={`/project/${proposal.MDP}`}
                   className={baseLinkClass}
                   onClick={onNavigate}
                 >
                   <span className="truncate">
-                    {proposal.proposalId
-                      ? `${proposalIdPrefix}${proposal.proposalId} — `
+                    {proposal.MDP
+                      ? `${proposalIdPrefix}${proposal.MDP} — `
                       : ''}
                     {proposal.title}
                   </span>
@@ -179,14 +179,14 @@ export function ProjectsNavDropdown({
               {extraProposals.slice(0, 5).map((proposal) =>
                 wrapMobile(
                   <Link
-                    key={`prop-${proposal.uuid}`}
-                    href={`/proposal/${proposal.uuid}`}
+                    key={`prop-${proposal.MDP}`}
+                    href={`/project/${proposal.MDP}`}
                     className={baseLinkClass}
                     onClick={onNavigate}
                   >
                     <span className="truncate">
-                      {proposal.proposalId
-                        ? `${proposalIdPrefix}${proposal.proposalId} — `
+                      {proposal.MDP
+                        ? `${proposalIdPrefix}${proposal.MDP} — `
                         : ''}
                       {proposal.title}
                     </span>
