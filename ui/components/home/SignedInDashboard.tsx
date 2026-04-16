@@ -38,7 +38,7 @@ import {
   TEAM_ADDRESSES,
   USD_BUDGET,
 } from 'const/config'
-import { BLOCKED_PROJECTS } from 'const/whitelist'
+import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import {
   getMissionMinimumUsdGoal,
   MISSION_MINIMUM_GOAL_TOOLTIP,
@@ -184,7 +184,7 @@ export default function SignedInDashboard({
   const proposals = []
   const currentProjects = []
   for (let i = 0; i < projects.length; i++) {
-    if (!BLOCKED_PROJECTS.has(projects[i].id)) {
+    if (!BLOCKED_PROJECTS.has(projects[i].id) && !BLOCKED_MDPS.has(projects[i].MDP)) {
       const activeStatus = projects[i].active
       if (activeStatus == PROJECT_PENDING) {
         proposals.push(projects[i])

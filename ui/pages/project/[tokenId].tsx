@@ -13,7 +13,7 @@ import {
   NON_PROJECT_PROPOSAL_TABLE_NAMES,
   PROJECT_TABLE_NAMES,
 } from 'const/config'
-import { BLOCKED_PROJECTS } from 'const/whitelist'
+import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -400,12 +400,18 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
 
       let projects = (
         await queryTable(chain, `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`)
-      ).filter((p: Project) => !BLOCKED_PROJECTS.has(Number(p.id)))
+      ).filter(
+        (p: Project) =>
+          !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP))
+      )
 
       if (!projects[0]) {
         projects = (
           await queryTable(chain, `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`)
-        ).filter((p: Project) => !BLOCKED_PROJECTS.has(Number(p.id)))
+        ).filter(
+          (p: Project) =>
+            !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP))
+        )
       }
 
       if (projects[0]) {

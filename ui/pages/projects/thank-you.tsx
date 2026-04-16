@@ -5,7 +5,7 @@ import {
   DISTRIBUTION_TABLE_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
-import { BLOCKED_PROJECTS } from 'const/whitelist'
+import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
@@ -131,7 +131,10 @@ export async function getStaticProps() {
 
     const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter} AND eligible != 0`
     const projects = await queryTable(chain, projectStatement)
-    const filteredProjects = projects.filter((project: any) => !BLOCKED_PROJECTS.has(project?.id))
+    const filteredProjects = projects.filter(
+      (project: any) =>
+        !BLOCKED_PROJECTS.has(project?.id) && !BLOCKED_MDPS.has(project?.MDP)
+    )
 
     const distributionTableContract = getContract({
       client: serverClient,

@@ -4,7 +4,7 @@ import {
   PROJECT_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
 } from 'const/config'
-import { BLOCKED_PROJECTS } from 'const/whitelist'
+import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { gql, GraphQLClient } from 'graphql-request'
 import { GetStaticProps } from 'next'
 import { useState } from 'react'
@@ -243,7 +243,7 @@ export const getStaticProps: GetStaticProps = async () => {
 
     await Promise.all(
       projects.map(async (project: Project, index: number) => {
-        if (BLOCKED_PROJECTS.has(project.id)) return
+        if (BLOCKED_PROJECTS.has(project.id) || BLOCKED_MDPS.has(project.MDP)) return
 
         if (!project.proposalIPFS) return
 
