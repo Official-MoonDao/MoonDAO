@@ -699,7 +699,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       if (!newImageIpfsHash) {
         setIsLoadingMint(false)
-        return toast.error('Image upload to IPFS failed. Try a smaller file.')
+        return toast.error('Image upload to IPFS failed. Please try again.')
       }
 
       // Execute mint based on type
