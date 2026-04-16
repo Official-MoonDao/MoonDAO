@@ -49,6 +49,7 @@ contract ProposalsTest is Test {
         proposals.voteTempCheck(0, true);
         vm.prank(user3);
         proposals.voteTempCheck(0, true);
+        proposals.tallyVotes(0);
         assertEq(proposals.tempCheckApproved(0), true);
     }
     function testTempCheckFails() public {
@@ -59,6 +60,7 @@ contract ProposalsTest is Test {
         proposals.voteTempCheck(0, false);
         vm.prank(user3);
         proposals.voteTempCheck(0, false);
+        proposals.tallyVotes(0);
         assertEq(proposals.tempCheckFailed(0), true);
     }
     function testTableOperations() public {
