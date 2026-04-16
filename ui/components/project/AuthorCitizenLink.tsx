@@ -56,8 +56,11 @@ export default function AuthorCitizenLink({
     ? `/citizen/${generatePrettyLinkWithId(citizenMeta.name, citizenMeta.id)}`
     : undefined
 
-  const etherscanUrl = `https://etherscan.io/address/${authorAddress}`
-  const linkHref = href || etherscanUrl
+  const explorerBaseUrl =
+    citizenContract?.chain?.blockExplorers?.[0]?.url?.replace(/\/$/, '') ||
+    'https://arbiscan.io'
+  const explorerAddressUrl = `${explorerBaseUrl}/address/${authorAddress}`
+  const linkHref = href || explorerAddressUrl
   const linkProps = href
     ? {}
     : { target: '_blank' as const, rel: 'noopener noreferrer' }
