@@ -21,10 +21,8 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import { useENS } from '@/lib/utils/hooks/useENS'
 import { PROJECT_PENDING } from '@/lib/nance/types'
 import { getProposalStatus, STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
@@ -37,7 +35,6 @@ import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
-import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -50,83 +47,11 @@ import ProposalVotes from '@/components/nance/ProposalVotes'
 
 import VotingResults from '@/components/nance/VotingResults'
 import ProposalEditSection from '@/components/nance/ProposalEditSection'
+import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
 import TempCheck from '@/components/project/TempCheck'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
-
-function AuthorCitizenLink({
-  authorAddress,
-  citizenContract,
-  authorName,
-}: {
-  authorAddress: string
-  citizenContract: any
-  authorName?: string | null
-}) {
-  const [citizenMeta, setCitizenMeta] = useState<any>(null)
-  const { data: ensData } = useENS(authorAddress)
-  const shortAddress = `${authorAddress.slice(0, 6)}...${authorAddress.slice(-4)}`
-
-  useEffect(() => {
-    async function resolve() {
-      if (!authorAddress || !citizenContract?.address) return
-      try {
-        const tokenId = await readContract({
-          contract: citizenContract,
-          method: 'getOwnedToken' as string,
-          params: [authorAddress],
-        })
-        const nft = await getNFT({
-          contract: citizenContract,
-          tokenId: BigInt(tokenId.toString()),
-        })
-        if (nft?.metadata?.name && nft.metadata.name !== 'Failed to load NFT metadata') {
-          setCitizenMeta({ ...nft.metadata, id: nft.id.toString() })
-        }
-      } catch {
-        // Not a citizen or contract call failed
-      }
-    }
-    resolve()
-  }, [authorAddress, citizenContract])
-
-  const displayName = citizenMeta?.name || authorName || null
-  const addressLabel = ensData?.name || shortAddress
-  const avatarSrc =
-    citizenMeta?.image || `https://cdn.stamp.fyi/avatar/${authorAddress}`
-  const href = citizenMeta
-    ? `/citizen/${generatePrettyLinkWithId(citizenMeta.name, citizenMeta.id)}`
-    : undefined
-
-  const etherscanUrl = `https://etherscan.io/address/${authorAddress}`
-  const linkHref = href || etherscanUrl
-  const linkProps = href ? {} : { target: '_blank' as const, rel: 'noopener noreferrer' }
-
-  return (
-    <Link href={linkHref} {...linkProps} className="no-underline">
-      <div className="flex items-center gap-2 h-7 sm:h-9 bg-white/5 border border-white/10 rounded-lg px-2 sm:px-3 hover:bg-white/10 transition-colors group min-w-0">
-        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden flex-shrink-0">
-          <img
-            src={avatarSrc.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${avatarSrc.replace('ipfs://', '')}` : avatarSrc}
-            alt={displayName || addressLabel}
-            width={24}
-            height={24}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        {displayName && (
-          <span className="text-xs sm:text-sm text-gray-300 group-hover:text-white transition-colors truncate">
-            {displayName}
-          </span>
-        )}
-        <span className="text-xs sm:text-sm font-mono text-gray-500 group-hover:text-gray-300 transition-colors hidden sm:inline">
-          {addressLabel}
-        </span>
-      </div>
-    </Link>
-  )
-}
 
 function ProposalStatusBadge({ status }: { status: ProposalStatus }) {
   const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || {
