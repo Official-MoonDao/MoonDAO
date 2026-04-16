@@ -72,5 +72,5 @@ export function getProjectDisplayName(
   const bodyTitle = extractTitleFromBody(proposalJSON?.body)
   if (bodyTitle && !isUntitledLike(bodyTitle)) return bodyTitle
 
-  return rawName || UNTITLED_FALLBACK
+  return rawName && !isUntitledLike(rawName) ? rawName : UNTITLED_FALLBACK
 }
