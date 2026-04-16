@@ -462,9 +462,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
       chain: chain,
     })
 
-    // If this is a newly submitted proposal, retry a few times to allow Tableland to index
+    // If this is a newly submitted or updated proposal, retry a few times to allow Tableland to index
     const isNewSubmission = pageQuery?.new === '1'
-    const maxRetries = isNewSubmission ? 4 : 1
+    const isUpdated = pageQuery?.updated === '1'
+    const maxRetries = (isNewSubmission || isUpdated) ? 4 : 1
     const retryDelay = 3000 // 3 seconds between retries
 
     let project: Project | undefined
