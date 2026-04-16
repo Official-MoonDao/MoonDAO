@@ -100,7 +100,11 @@ export default function DeleteProfileData({
         })
       }
 
-      if (!transaction || !account) return
+      if (!transaction || !account) {
+        console.error('Delete failed: transaction or account is missing', { transaction: !!transaction, account: !!account, tableContract: !!tableContract })
+        toast.error('Unable to prepare delete transaction. Please try again.')
+        return
+      }
 
       const receipt = await sendAndConfirmTransaction({
         transaction,
@@ -117,8 +121,9 @@ export default function DeleteProfileData({
         setEnabled(false)
         router.reload()
       }, 15000)
-    } catch (err) {
-      console.log(err)
+    } catch (err: any) {
+      console.error('Delete profile error:', err)
+      toast.error(err?.message || 'Failed to delete profile data.')
     }
     setIsLoading(false)
   }
