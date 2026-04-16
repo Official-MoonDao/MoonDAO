@@ -2,8 +2,14 @@
 import { trimActionsFromBody } from '@nance/nance-sdk'
 import { usePrivy } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
+import CitizenABI from 'const/abis/Citizen.json'
 import ProposalsABI from 'const/abis/Proposals.json'
-import { DEFAULT_CHAIN_V5, PROPOSALS_ADDRESSES, IS_SENATE_VOTE } from 'const/config'
+import {
+  CITIZEN_ADDRESSES,
+  DEFAULT_CHAIN_V5,
+  PROPOSALS_ADDRESSES,
+  IS_SENATE_VOTE,
+} from 'const/config'
 import Link from 'next/link'
 import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction, readContract } from 'thirdweb'
@@ -12,6 +18,7 @@ import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
+import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import useProposalData from '@/lib/project/useProposalData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -21,6 +28,7 @@ import { normalizeJsonString } from '@/lib/utils/rewards'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
@@ -318,6 +326,7 @@ const ProjectCardContent = memo(
     active,
     isExpanded,
     onToggleExpand,
+    citizenContract,
   }: any) => {
     const proposalJSON = useProposalJSON(project)
     const account = useActiveAccount()
@@ -328,6 +337,16 @@ const ProjectCardContent = memo(
     )
     const description =
       project && project.MDP < 13 ? project.description : project?.description || ''
+
+    const authorName = useMemo(() => {
+      const body = proposalJSON?.body || ''
+      return body.match(/^Author:\s*(.+)$/m)?.[1]?.trim() || null
+    }, [proposalJSON?.body])
+
+    const displayName = useMemo(
+      () => getProjectDisplayName(project, proposalJSON),
+      [project, proposalJSON]
+    )
 
     // State for senator votes (passed up from SenateVoteButtons)
     const [senatorVotes, setSenatorVotes] = useState<any[]>([])
@@ -381,17 +400,42 @@ const ProjectCardContent = memo(
           <div className="flex-1 min-w-0 flex flex-col gap-3">
             <div className="flex flex-col gap-2">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                {onToggleExpand ? (
-                  <Link href={`/project/${project?.MDP}`} passHref>
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {project?.MDP !== undefined && project?.MDP !== null && (
+                      <span
+                        data-testid="project-mdp-number"
+                        className="w-fit px-2 py-0.5 rounded-md text-[11px] font-semibold font-mono tracking-wider uppercase bg-moon-indigo/30 text-moon-gold border border-moon-gold/30"
+                      >
+                        MDP-{project.MDP}
+                      </span>
+                    )}
+                    {proposalJSON?.authorAddress && (
+                      <div
+                        data-testid="project-author"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <AuthorCitizenLink
+                          authorAddress={proposalJSON.authorAddress}
+                          citizenContract={citizenContract}
+                          authorName={authorName}
+                          compact
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {onToggleExpand ? (
+                    <Link href={`/project/${project?.MDP}`} passHref>
+                      <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
+                        {displayName}
+                      </h1>
+                    </Link>
+                  ) : (
                     <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
-                      {project?.name || ''}
+                      {displayName}
                     </h1>
-                  </Link>
-                ) : (
-                  <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
-                    {project?.name || ''}
-                  </h1>
-                )}
+                  )}
+                </div>
                 {/* Only show status badge inline when NOT in Senate Vote mode */}
                 {!IS_SENATE_VOTE && (
                   <span
@@ -547,6 +591,12 @@ export default function ProjectCard({
   const { authenticated } = usePrivy()
 
   const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
+  const citizenContract = useContract({
+    address: CITIZEN_ADDRESSES[chainSlug],
+    abi: CitizenABI as any,
+    chain: selectedChain,
+  })
   const hats = useSubHats(selectedChain, adminHatId, !!project?.eligible)
   const wearers = useUniqueHatWearers(hats)
 
@@ -612,6 +662,7 @@ export default function ProjectCard({
           active={active}
           isExpanded={isExpanded}
           onToggleExpand={() => setIsExpanded(!isExpanded)}
+          citizenContract={citizenContract}
         />
       ) : (
         <Link href={`/project/${project?.MDP}`} passHref className="h-full">
@@ -621,6 +672,7 @@ export default function ProjectCard({
             isVotingPeriod={isVotingPeriod}
             active={active}
             isExpanded={false}
+            citizenContract={citizenContract}
           />
         </Link>
       )}

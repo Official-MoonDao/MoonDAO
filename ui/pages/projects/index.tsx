@@ -6,7 +6,7 @@ import {
   PROPOSALS_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
 } from 'const/config'
-import { BLOCKED_PROJECTS } from 'const/whitelist'
+import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
@@ -81,7 +81,7 @@ export async function getStaticProps() {
 
     await Promise.all(
       projects.map(async (project: Project, index: number) => {
-        if (!BLOCKED_PROJECTS.has(project.id)) {
+        if (!BLOCKED_PROJECTS.has(project.id) && !BLOCKED_MDPS.has(project.MDP)) {
           const activeStatus = project.active
           if (activeStatus == PROJECT_PENDING
             && project.quarter === submissionQuarter.quarter

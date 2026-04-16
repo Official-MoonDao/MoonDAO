@@ -19,6 +19,7 @@ import {
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import _ from 'lodash'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
@@ -88,6 +89,7 @@ export function ProjectRewards({
   const [rewardVotingActive, setRewardVotingActive] = useState(false)
   const [approvalVotingActive, setApprovalVotingActive] = useState(false)
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
+  const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
   const { quarter: submissionQuarter, year: submissionYear } = getSubmissionQuarter()
 
   const [edit, setEdit] = useState(false)
@@ -603,10 +605,219 @@ export function ProjectRewards({
           branded={false}
         >
           <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6">
+            {/* Project System Intro */}
+            <div className="bg-black/20 rounded-none sm:rounded-xl px-3 py-4 sm:p-5 border-y sm:border border-white/10">
+              <div className="flex flex-col gap-4">
+                <h2 className="font-GoodTimes text-white text-base sm:text-lg">
+                  The Project System
+                </h2>
+                <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                  Each quarter, contributors submit project proposals that go through a Senate
+                  Vote for approval and a Member Vote for prioritization. Approved projects are
+                  funded upfront, and once complete, submit a final report to earn retroactive
+                  rewards based on community voting.
+                </p>
+
+                {/* Phase Timeline */}
+                {(() => {
+                  const phases = [
+                    {
+                      id: 'submit',
+                      label: 'Submit',
+                      subtitle: 'Proposal',
+                      active: !IS_SENATE_VOTE && !IS_MEMBER_VOTE,
+                      icon: (
+                        <svg
+                          className="w-4 h-4 sm:w-5 sm:h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3zM5 19h14"
+                          />
+                        </svg>
+                      ),
+                    },
+                    {
+                      id: 'senate',
+                      label: 'Senate',
+                      subtitle: 'Review',
+                      active: IS_SENATE_VOTE,
+                      icon: (
+                        <svg
+                          className="w-4 h-4 sm:w-5 sm:h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 3l8 4v5c0 4.418-3.582 8-8 9-4.418-1-8-4.582-8-9V7l8-4z"
+                          />
+                        </svg>
+                      ),
+                    },
+                    {
+                      id: 'member',
+                      label: 'Member',
+                      subtitle: 'Vote',
+                      active: IS_MEMBER_VOTE,
+                      icon: (
+                        <svg
+                          className="w-4 h-4 sm:w-5 sm:h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      ),
+                    },
+                    {
+                      id: 'build',
+                      label: 'Build',
+                      subtitle: 'Execute',
+                      active: false,
+                      icon: (
+                        <svg
+                          className="w-4 h-4 sm:w-5 sm:h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                      ),
+                    },
+                    {
+                      id: 'retro',
+                      label: 'Retroactive',
+                      subtitle: 'Rewards',
+                      active: IS_MEMBER_VOTE && rewardVotingActive,
+                      icon: (
+                        <svg
+                          className="w-4 h-4 sm:w-5 sm:h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      ),
+                    },
+                  ]
+
+                  return (
+                    <div className="w-full pt-3 pb-1">
+                      <div className="flex items-start justify-between gap-1 sm:gap-2">
+                        {phases.map((phase, idx) => (
+                          <div
+                            key={phase.id}
+                            className="flex items-start flex-1 min-w-0"
+                          >
+                            <div className="flex flex-col items-center flex-1 min-w-0">
+                              <div className="relative">
+                                <div
+                                  className={`w-8 h-8 sm:w-11 sm:h-11 rounded-full flex items-center justify-center border-2 transition-all ${
+                                    phase.active
+                                      ? 'bg-gradient-to-br from-blue-500 to-purple-600 border-white/40 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]'
+                                      : 'bg-white/5 border-white/15 text-gray-500'
+                                  }`}
+                                >
+                                  {phase.icon}
+                                </div>
+                                {phase.active && (
+                                  <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-2 flex flex-col items-center w-full px-0.5">
+                                <span
+                                  className={`text-[10px] sm:text-xs font-RobotoMono font-semibold uppercase tracking-wider leading-tight text-center truncate max-w-full ${
+                                    phase.active ? 'text-white' : 'text-gray-500'
+                                  }`}
+                                >
+                                  {phase.label}
+                                </span>
+                                <span
+                                  className={`hidden sm:inline text-[10px] sm:text-xs leading-tight text-center truncate max-w-full ${
+                                    phase.active ? 'text-blue-300' : 'text-gray-600'
+                                  }`}
+                                >
+                                  {phase.subtitle}
+                                </span>
+                                {phase.active && (
+                                  <span className="mt-1 px-1.5 py-0.5 rounded-sm text-[9px] font-RobotoMono font-bold uppercase tracking-wider bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                                    Now
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {idx < phases.length - 1 && (
+                              <div
+                                className={`h-0.5 flex-shrink-0 w-3 sm:w-auto sm:flex-1 mt-[16px] sm:mt-[22px] mx-0.5 sm:mx-1 rounded-full ${
+                                  phase.active || phases[idx + 1].active
+                                    ? 'bg-gradient-to-r from-blue-500/60 to-purple-600/60'
+                                    : 'bg-white/10'
+                                }`}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                <Link
+                  href="/project-system-docs"
+                  className="inline-flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 transition-colors w-fit"
+                >
+                  Learn how the project system works
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+
             {/* Condensed Top Section - Rewards + Create Button */}
             <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
-                <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
+                <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${currentQuarter}: ${currentYear} Rewards`}</h1>
                 {IS_SENATE_VOTE && proposalsOwnerStatus === 'error' && (
                   <div className="flex items-center gap-2">
                     <span className="text-amber-500 text-sm">Unable to check permissions</span>
