@@ -38,7 +38,7 @@ export function NewsletterSubModal({ setEnabled }: any) {
             className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg font-medium transition-all duration-200"
             onClick={async () => {
               if (!email || email.trim() === '' || !email.includes('@')) {
-                return toast.error('Please enter a valid email')
+                return toast.error('Please enter a valid email to subscribe.')
               }
               const subRes = await subscribeToNewsletter(email)
               if (subRes.ok) {

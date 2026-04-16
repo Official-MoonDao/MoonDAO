@@ -94,7 +94,7 @@ export default function MissionDeployTokenModal({
       })
       setSentTxToSafe(true)
     } catch (error) {
-      toast.error('Error deploying token', {
+      toast.error('Token deployment failed. Check gas and try again.', {
         style: toastStyle,
       })
       console.error('Error deploying token:', error)

@@ -79,7 +79,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
         account,
       })
 
-      toast.success('Joined as a competitor!', {
+      toast.success('Joined as a DePrize competitor — good luck!', {
         style: toastStyle,
       })
       setJoinModalOpen(false)
@@ -88,7 +88,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
       }, 5000)
     } catch (error) {
       console.error('Error joining as a competitor:', error)
-      toast.error('Error joining as a competitor. Please try again.', {
+      toast.error('Failed to join. Check eligibility and try again.', {
         style: toastStyle,
       })
     }

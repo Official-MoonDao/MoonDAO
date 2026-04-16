@@ -157,7 +157,7 @@ export function useXPVerifiers() {
             navigator.clipboard.writeText(
               `${window.location.origin}/citizen/?referredBy=${citizen.owner}`
             )
-            toast.success('Referral link copied to clipboard!', {
+            toast.success('Referral link copied — share it to earn MOONEY!', {
               style: toastStyle,
             })
           },

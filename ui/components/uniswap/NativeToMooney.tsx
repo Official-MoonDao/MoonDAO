@@ -313,21 +313,21 @@ export default function NativeToMooney({ selectedChain }: any) {
               }
               action={async () => {
                 const numAmount = parseFloat(amount) || 0
-                if (numAmount === 0) return toast.error('Enter an amount.')
-                if (!hasValidRoute) return toast.error('No route found.')
+                if (numAmount === 0) return toast.error('Please enter an amount greater than zero to swap.')
+                if (!hasValidRoute) return toast.error('No swap route available for this pair. Try a different amount.')
 
                 // check native balance
                 if (numAmount > +nativeBalance) {
-                  return toast.error('Insufficient balance.')
+                  return toast.error('Insufficient balance — you don\'t have enough ETH to complete this swap.')
                 }
 
                 try {
                   const minOut = (parseFloat(output) * 0.95).toString() // 5% slippage
                   await swap(amount, minOut)
-                  toast.success('Swap completed successfully!')
+                  toast.success('Swap completed! MOONEY incoming.')
                 } catch (error) {
                   console.error('Swap error:', error)
-                  toast.error('Swap failed. Please try again.')
+                  toast.error('Swap failed — transaction rejected or price slipped.')
                 }
               }}
               isDisabled={

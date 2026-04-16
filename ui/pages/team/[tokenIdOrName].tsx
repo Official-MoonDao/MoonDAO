@@ -264,7 +264,7 @@ function TeamDetailPageContent({
                           if (address === nft?.owner || isManager) setTeamMetadataModalEnabled(true)
                           else
                             return toast.error(
-                              'Connect the entity admin wallet or multisig to edit metadata.'
+                              'Connect the team admin or multisig wallet to edit.'
                             )
                         }}
                       >

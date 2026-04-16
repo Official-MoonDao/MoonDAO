@@ -221,13 +221,13 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
         action={async () => {
           const numericValue = usdInput.replace(/,/g, '')
           if (!amountIn || !numericValue || parseFloat(numericValue) <= 0)
-            return toast.error('Enter amount')
+            return toast.error('Please enter a valid amount to swap.')
           try {
             await swap(amountIn, '0')
-            toast.success('Swap submitted')
+            toast.success(`Successfully swapped for $${token?.tokenSymbol} tokens!`)
           } catch (err) {
             console.error(err)
-            toast.error('Swap failed')
+            toast.error('Swap transaction failed. Please check your balance and try again.')
           }
         }}
       />

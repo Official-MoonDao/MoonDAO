@@ -243,7 +243,7 @@ export default function TeamListing({
                   }, 25000)
                 } catch (err) {
                   console.log(err)
-                  toast.error('Error deleting listing.')
+                  toast.error('Failed to delete listing. Please try again.')
                   setIsDeleting(false)
                 }
               }}

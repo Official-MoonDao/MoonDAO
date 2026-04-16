@@ -152,7 +152,7 @@ function TeamMembers({
                         gas: 1000000,
                       })
                     }
-                    toast.success('Member removed successfully!')
+                    toast.success('Member removed and role access revoked.')
                   } catch (err) {
                     console.log(err)
                   }
@@ -268,7 +268,7 @@ function TeamManageMembersModal({
           onSubmit={async (e) => {
             e.preventDefault()
             if (!validateEthereumAddress(newMemberAddress))
-              return toast.error('Invalid address.')
+              return toast.error('Please enter a valid Ethereum address (0x...).')
 
             const iface = new ethers.utils.Interface(HatsABI)
             const txData = iface.encodeFunctionData('mintHat', [
@@ -294,7 +294,7 @@ function TeamManageMembersModal({
                   value: '0',
                   gas: 1000000,
                 })
-                toast.success('Member added successfully!')
+                toast.success('Member added and role granted!')
               }
               setNewMemberAddress('')
               setIsValidAddress(false)
@@ -305,7 +305,7 @@ function TeamManageMembersModal({
                 err.message
               ) {
                 toast.error(
-                  'The connected wallet is not a signer of the gnosis safe.'
+                  'This wallet is not a Safe signer. Connect an authorized wallet.'
                 )
               }
             }
@@ -434,7 +434,7 @@ function TeamManageMembersModal({
               ])
               setHatData({ name: '', description: '', maxSupply: 8 })
               setIsLoadingNewHat(false)
-              toast.success('Hat added successfully')
+              toast.success('New role added to the team!')
             } catch (err) {
               console.log(err)
             }

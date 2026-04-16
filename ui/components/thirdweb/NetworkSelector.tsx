@@ -116,7 +116,7 @@ export default function NetworkSelector({
             await wallet.switchChain(chain.id)
           }
         } else if (err?.code !== 4001) {
-          toast.error('Failed to switch network. Please try again.')
+          toast.error('Network switch failed. Try again or switch manually.')
         }
       }
     }

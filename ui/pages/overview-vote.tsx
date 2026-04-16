@@ -306,7 +306,7 @@ export default function OverviewDelegate({
         shapes: ['circle', 'star'],
         colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
       })
-      toast.success('Delegation submitted!', { style: toastStyle })
+      toast.success('Delegation successful! Votes assigned to selected citizen.', { style: toastStyle })
 
       const updatedLeaderboard = applyOptimisticUpdate(
         displayLeaderboard,
