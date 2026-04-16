@@ -331,7 +331,7 @@ export default function ProjectProfile({
           />
         }
       >
-        <div id="page-container" className="flex flex-col gap-4 sm:gap-6 py-4 sm:py-6 md:py-8">
+        <div id="page-container" className="flex flex-col gap-4 sm:gap-6 pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8">
           {finalReportMarkdown && (
             <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
               <div className="prose prose-invert max-w-none">
