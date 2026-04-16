@@ -109,7 +109,7 @@ const CHAIN_CONFIGS: ChainConfigMap = {
 export async function addNetworkToWallet(chain: Chain): Promise<boolean> {
   const ethereum = window?.ethereum
   if (!ethereum) {
-    toast.error('No Ethereum provider found.')
+    toast.error('No wallet detected. Please install a Web3 wallet.')
     return false
   }
 
@@ -138,7 +138,7 @@ export async function addNetworkToWallet(chain: Chain): Promise<boolean> {
     }
   } catch (error: any) {
     if (error.code === 4001) {
-      toast.error('Please add the network to continue.')
+      toast.error('Network request declined. Please approve it in your wallet.')
     }
     console.error('Error adding network:', error)
     return false

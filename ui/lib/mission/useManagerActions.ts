@@ -110,10 +110,10 @@ export function useManagerActions(
       })
 
       await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Tokens sent.')
+      toast.success('Reserved tokens distributed to recipients!')
     } catch (err: any) {
       console.error('Token distribution error:', err)
-      toast.error('No tokens to send.')
+      toast.error('Token distribution failed — no tokens available.')
     }
   }
 
@@ -147,10 +147,10 @@ export function useManagerActions(
       })
 
       await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Payouts sent.')
+      toast.success('Payouts sent to all recipients!')
     } catch (err: any) {
       console.error('Payout distribution error:', err)
-      toast.error('No payouts to send.')
+      toast.error('Payout failed — no available balance to distribute.')
     }
   }
 
@@ -172,10 +172,10 @@ export function useManagerActions(
       })
 
       await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Liquidity pool deployed.')
+      toast.success('Liquidity pool deployed and liquidity added!')
     } catch (err: any) {
       console.error('Liquidity deployment error:', err)
-      toast.error('Failed to deploy liquidity pool.')
+      toast.error('Liquidity pool deployment failed. Please try again.')
     }
   }
 

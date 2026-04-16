@@ -104,7 +104,7 @@ export default function DeleteProfileData({
       })
 
       if (receipt) {
-        toast.success('Data deleted successfully, please wait for the page to reload.', {
+        toast.success('Profile data deleted. Page will reload shortly.', {
           duration: 10000,
         })
       }

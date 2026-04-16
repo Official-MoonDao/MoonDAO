@@ -12,7 +12,7 @@ type ApplyModalProps = {
 
 export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
   const submitTypeform = useCallback(async () => {
-    toast.success('Application submitted!')
+    toast.success('Application submitted — we\'ll be in touch!')
     setEnabled(false)
   }, [setEnabled])
 

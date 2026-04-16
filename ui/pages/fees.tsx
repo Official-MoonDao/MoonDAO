@@ -277,7 +277,7 @@ export default function Fees() {
       }
       await wallets[selectedWallet].switchChain(currentChain.id)
       setSelectedChain(currentChain)
-      toast.success('Checked in!', { style: toastStyle })
+      toast.success('You\'re checked in for this week\'s reward pool! 🎉', { style: toastStyle })
       confetti({
         particleCount: 150,
         spread: 100,
@@ -288,7 +288,7 @@ export default function Fees() {
       setIsCheckedIn(true)
     } catch (error) {
       console.error('Error checking in:', error)
-      toast.error('Error checking in. Please try again.', { style: toastStyle })
+      toast.error('Check-in failed — ensure you have vMOONEY and gas.', { style: toastStyle })
     }
   }
 

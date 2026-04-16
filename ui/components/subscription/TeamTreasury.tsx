@@ -131,7 +131,7 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress, safe
                   aria-label="Copy treasury address"
                   onClick={() => {
                     navigator.clipboard.writeText(multisigAddress)
-                    toast.success('Address copied to clipboard.')
+                    toast.success('Treasury address copied to clipboard!')
                   }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

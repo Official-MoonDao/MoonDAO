@@ -275,7 +275,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                           if (isOwner) setCitizenMetadataModalEnabled(true)
                           else
                             return toast.error(
-                              'Connect the entity admin wallet or multisig to edit metadata.'
+                              'Connect the profile owner wallet to edit.'
                             )
                         }}
                       >

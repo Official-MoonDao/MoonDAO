@@ -26,8 +26,8 @@ export function ZeroGContact() {
   async function submitContactForm() {
     setIsLoading(true)
     if (!email.includes('@') || name.trim() === '')
-      return toast.error('Please fill out all required fields.')
-    if (!verified) return toast.error("Please verify you're not a robot.")
+      return toast.error('Please enter a valid email and name.')
+    if (!verified) return toast.error('Please complete the CAPTCHA to continue.')
     else {
       try {
         const res = await fetch('/api/nodemailer/zero-g-contact', {
@@ -39,10 +39,10 @@ export function ZeroGContact() {
             message,
           }),
         })
-        toast.success('Message sent!')
+        toast.success('Message sent! We\'ll get back to you soon.')
         resetContactForm()
       } catch (e: any) {
-        toast.error('Message failed to send.')
+        toast.error('Message failed to send. Please try again.')
         console.error(e)
       }
     }

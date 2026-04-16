@@ -121,7 +121,7 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
 
   const withdraw = useCallback(async () => {
     if (!account) {
-      toast.error('Please connect your wallet.', { style: toastStyle })
+      toast.error('Connect your wallet to claim retroactive rewards.', { style: toastStyle })
       return
     }
 
@@ -239,7 +239,7 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
       })
 
       if (withdrawReceipt) {
-        toast.success('Withdrawal successful!', {
+        toast.success('Retroactive rewards withdrawn to your wallet!', {
           style: toastStyle,
         })
 

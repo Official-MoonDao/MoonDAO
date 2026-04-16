@@ -196,12 +196,12 @@ export default function BuyTeamListingModal({
         const { success, message: responseMessage } = await res.json()
 
         if (success) {
-          toast.success("Successful purchase! You'll receive an email shortly.", {
+          toast.success('Purchase complete! Confirmation email on the way.', {
             duration: 10000,
           })
         } else {
           console.log(responseMessage)
-          toast.error('Something went wrong, please contact support.', {
+          toast.error('Purchase failed. Please contact support.', {
             duration: 10000,
           })
         }

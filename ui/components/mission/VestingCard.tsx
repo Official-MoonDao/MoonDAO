@@ -134,10 +134,10 @@ export default function VestingCard({
         params: [],
       })
       await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Withdrawal successful!')
+      toast.success('Vested tokens withdrawn to your wallet!')
     } catch (error) {
       console.error(error)
-      toast.error('Withdrawal failed.')
+      toast.error('Withdrawal failed — tokens may not have vested yet.')
     }
   }
 

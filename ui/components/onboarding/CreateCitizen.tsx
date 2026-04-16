@@ -699,7 +699,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       if (!newImageIpfsHash) {
         setIsLoadingMint(false)
-        return toast.error('Error pinning image to IPFS.')
+        return toast.error('Image upload to IPFS failed. Try a smaller file.')
       }
 
       // Execute mint based on type
@@ -717,7 +717,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       if (!mintedTokenId) {
         setIsLoadingMint(false)
-        return toast.error('Could not find mint event in transaction.')
+        return toast.error('Mint unverified — check your wallet or contact support.')
       }
 
       if (mintedTokenId) {

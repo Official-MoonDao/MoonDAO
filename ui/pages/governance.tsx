@@ -130,7 +130,7 @@ const Governance: React.FC = () => {
       paragraph: 'Export your embedded wallet to an external wallet.',
       onClick: () => {
         if (isClient) {
-          exportWallet().catch(() => toast.error('Please select a privy wallet to export.'))
+          exportWallet().catch(() => toast.error('No Privy wallet found. Select one before exporting.'))
         }
       },
     },

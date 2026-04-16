@@ -73,12 +73,12 @@ const ContributionEditor: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!authenticated) {
-      toast.error('Please sign in to submit a contribution!')
+      toast.error('Please sign in to submit a contribution.')
       return
     }
 
     if (getMarkdown()?.trim() === '') {
-      toast.error('Please write a contribution!')
+      toast.error('Please describe your contribution before submitting.')
       return
     }
 
@@ -137,7 +137,7 @@ const ContributionEditor: React.FC = () => {
         }**\n${getMarkdown()?.trim()}
       `
       )
-      toast.success('Contribution submitted successfully!')
+      toast.success('Contribution recorded — thank you!')
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit contribution.')
     } finally {

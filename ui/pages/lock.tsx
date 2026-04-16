@@ -616,7 +616,7 @@ export default function Lock() {
                                     allowance: increaseAmount,
                                   })
                                   approvalReceipt &&
-                                    toast.success('Successfully approved MOONEY for lock.')
+                                    toast.success('MOONEY approved — ready to lock.')
                                 }
 
                                 const lockReceipt: any = hasLock
@@ -637,8 +637,8 @@ export default function Lock() {
                                 if (lockReceipt) {
                                   toast.success(
                                     hasLock
-                                      ? 'Lock increased successfully!'
-                                      : 'Lock created successfully!'
+                                      ? 'vMOONEY lock increased — voting power updated!'
+                                      : 'MOONEY locked — you now have vMOONEY voting power!'
                                   )
                                   setRefresh((prev) => !prev)
                                 }
@@ -650,7 +650,7 @@ export default function Lock() {
                                   error.reason?.includes('VOTING_ESCROW_LOCK_TIME_TOO_BIG')
                                 ) {
                                   toast.error(
-                                    'Lock period exceeds maximum allowed time. Please reduce the lock duration.'
+                                    'Lock period exceeds the maximum of 4 years. Please select a shorter lock duration.'
                                   )
                                 } else {
                                   throw error
@@ -699,13 +699,13 @@ export default function Lock() {
                                   votingEscrowContract: vMooneyContract,
                                 })
                                 if (receipt) {
-                                  toast.success('Successfully withdrew your locked MOONEY.')
+                                  toast.success('Locked MOONEY withdrawn to your wallet.')
                                   setTimeout(() => {
                                     router.reload()
                                   }, 3000)
                                 }
                               } catch (error) {
-                                toast.error('Withdrawal failed.')
+                                toast.error('Withdrawal failed — lock may not have expired yet.')
                               }
                             }}
                           />
