@@ -180,6 +180,14 @@ export default function ProposalEditor({ project }: { project: Project }) {
       return
     }
 
+    if (proposalTitle.trim().toLowerCase() === 'untitled') {
+      toast.error('Please give your proposal a descriptive title instead of "Untitled".', {
+        style: toastStyle,
+      })
+      setSigningStatus('error')
+      return
+    }
+
     if (!body.trim()) {
       toast.error('Please import your Google Doc before submitting. The proposal body cannot be empty.', {
         style: toastStyle,

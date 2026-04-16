@@ -349,7 +349,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     const account = await createHSMWallet()
     if (req.body.proposalId) {
       // UPDATE
-      const { proposalId, proposalIPFS } = req.body
+      const { proposalId, proposalIPFS, proposalTitle } = req.body
       const projectTableContract = getContract({
         client: serverClient,
         address: PROJECT_TABLE_ADDRESSES[chainSlug],
@@ -360,15 +360,33 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
 
       const projects = await queryTable(chain, projectStatement)
       const project = projects[0]
-      const transaction = prepareContractCall({
-        contract: projectTableContract,
-        method: 'updateTableCol',
-        params: [project.id, 'proposalIPFS', proposalIPFS],
-      })
-      const receipt = await sendAndConfirmTransaction({
-        transaction,
-        account,
-      })
+
+      // Update proposalIPFS if provided
+      if (proposalIPFS && typeof proposalIPFS === 'string') {
+        const updateIPFS = prepareContractCall({
+          contract: projectTableContract,
+          method: 'updateTableCol',
+          params: [project.id, 'proposalIPFS', proposalIPFS],
+        })
+        await sendAndConfirmTransaction({
+          transaction: updateIPFS,
+          account,
+        })
+      }
+
+      // Update name if a new title was provided
+      if (proposalTitle && typeof proposalTitle === 'string') {
+        const updateName = prepareContractCall({
+          contract: projectTableContract,
+          method: 'updateTableCol',
+          params: [project.id, 'name', proposalTitle.replace(/'/g, "''")],
+        })
+        await sendAndConfirmTransaction({
+          transaction: updateName,
+          account,
+        })
+      }
+
       res.status(200).json({
         proposalId: proposalId,
       })
