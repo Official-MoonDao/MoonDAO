@@ -25,6 +25,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { PROJECT_PENDING } from '@/lib/nance/types'
 import { getProposalStatus, STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
+import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
@@ -182,6 +183,7 @@ export default function ProjectProfile({
   const body = proposalJSON?.body || ''
   const submittedDate = body.match(/^Date:\s*(.+)$/m)?.[1]?.trim() || null
   const authorName = body.match(/^Author:\s*(.+)$/m)?.[1]?.trim() || null
+  const displayName = getProjectDisplayName(project, proposalJSON)
 
   const totalBudgetDisplay = (() => {
     const match = body.match(/\*{0,2}Total\s+Budget\*{0,2}[:\s|]+(.+?)(?:\s*\||\s*$)/im)
@@ -198,9 +200,9 @@ export default function ProjectProfile({
 
   return (
     <Container>
-      <Head title={project.name} description={project.description} />
+      <Head title={displayName} description={project.description} />
       <ContentLayout
-        header={project.name}
+        header={displayName}
         headerSize="max(20px, 3vw)"
         maxWidth="1050px"
         description={

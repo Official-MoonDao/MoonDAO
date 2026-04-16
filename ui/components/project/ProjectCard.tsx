@@ -18,6 +18,7 @@ import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
+import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import useProposalData from '@/lib/project/useProposalData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -342,6 +343,11 @@ const ProjectCardContent = memo(
       return body.match(/^Author:\s*(.+)$/m)?.[1]?.trim() || null
     }, [proposalJSON?.body])
 
+    const displayName = useMemo(
+      () => getProjectDisplayName(project, proposalJSON),
+      [project, proposalJSON]
+    )
+
     // State for senator votes (passed up from SenateVoteButtons)
     const [senatorVotes, setSenatorVotes] = useState<any[]>([])
     const [senatorVotesLoading, setSenatorVotesLoading] = useState(false)
@@ -421,12 +427,12 @@ const ProjectCardContent = memo(
                   {onToggleExpand ? (
                     <Link href={`/project/${project?.MDP}`} passHref>
                       <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
-                        {project?.name || ''}
+                        {displayName}
                       </h1>
                     </Link>
                   ) : (
                     <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
-                      {project?.name || ''}
+                      {displayName}
                     </h1>
                   )}
                 </div>
