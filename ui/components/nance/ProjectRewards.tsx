@@ -95,6 +95,15 @@ export function ProjectRewards({
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
   const [originalDistribution, setOriginalDistribution] = useState<{ [key: string]: number }>({})
+
+  type ProjectTab = 'proposals' | 'active' | 'past'
+  const hasProposals = !!proposals?.length
+  const initialTab: ProjectTab = hasProposals
+    ? 'proposals'
+    : currentProjects?.length
+    ? 'active'
+    : 'past'
+  const [activeTab, setActiveTab] = useState<ProjectTab>(initialTab)
   
   // Separate state for proposal allocations
   const [proposalEdit, setProposalEdit] = useState(false)
@@ -871,10 +880,61 @@ export function ProjectRewards({
               </div>
             </div>
 
-            {proposals && proposals.length > 0 && (
+            {/* Tabs - switch between Project Proposals, Active Projects, Past Projects */}
+            {(() => {
+              const tabs: { id: ProjectTab; label: string; count: number }[] = [
+                { id: 'proposals', label: 'Project Proposals', count: proposals?.length ?? 0 },
+                { id: 'active', label: 'Active Projects', count: currentProjects?.length ?? 0 },
+                { id: 'past', label: 'Past Projects', count: pastProjects?.length ?? 0 },
+              ]
+              return (
+                <div
+                  id="projects-tabs"
+                  role="tablist"
+                  aria-label="Project sections"
+                  className="-mb-3 sm:-mb-4 px-1 sm:px-0 flex items-end gap-1 border-b border-white/10 overflow-x-auto"
+                >
+                  {tabs.map((tab) => {
+                    const isActive = activeTab === tab.id
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`group relative px-3 sm:px-5 py-2.5 sm:py-3 -mb-px text-xs sm:text-sm font-RobotoMono uppercase tracking-wider whitespace-nowrap transition-colors rounded-t-lg border border-b-0 ${
+                          isActive
+                            ? 'bg-black/40 border-white/15 text-white'
+                            : 'bg-transparent border-transparent text-gray-500 hover:text-gray-200'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{tab.label}</span>
+                          <span
+                            className={`inline-flex items-center justify-center min-w-[20px] px-1.5 h-5 rounded-full text-[10px] font-semibold ${
+                              isActive
+                                ? 'bg-blue-500/20 text-blue-200 border border-blue-400/30'
+                                : 'bg-white/5 text-gray-500 border border-white/10 group-hover:bg-white/10 group-hover:text-gray-300'
+                            }`}
+                          >
+                            {tab.count}
+                          </span>
+                        </span>
+                        {isActive && (
+                          <span className="pointer-events-none absolute left-2 right-2 -bottom-px h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full" />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+
+            {activeTab === 'proposals' && proposals && proposals.length > 0 && (
               <div
                 id="proposals-container"
-                className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-6 border-y sm:border border-white/10"
+                className="bg-black/20 rounded-none sm:rounded-b-xl px-1 py-2 sm:p-6 border-y sm:border sm:border-t-0 border-white/10"
               >
                 <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
                   {IS_SENATE_VOTE ? (
@@ -971,9 +1031,10 @@ export function ProjectRewards({
               </div>
             )}
 
+            {activeTab === 'active' && (
             <div
               id="projects-container"
-              className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-6 border-y sm:border border-white/10"
+              className="bg-black/20 rounded-none sm:rounded-b-xl px-1 py-2 sm:p-6 border-y sm:border sm:border-t-0 border-white/10"
             >
               <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">Active Projects</h1>
 
@@ -1057,9 +1118,12 @@ export function ProjectRewards({
                     ))}
               </div>
             </div>
-            <div className="bg-black/20 rounded-none sm:rounded-xl border-y sm:border border-white/10 overflow-hidden">
+            )}
+            {activeTab === 'past' && (
+            <div className="bg-black/20 rounded-none sm:rounded-b-xl border-y sm:border sm:border-t-0 border-white/10 overflow-hidden">
               <PastProjects projects={pastProjects} />
             </div>
+            )}
           </div>
         </ContentLayout>
       </Container>
