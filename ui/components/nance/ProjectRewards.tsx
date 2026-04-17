@@ -49,7 +49,7 @@ import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Tooltip from '@/components/layout/Tooltip'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-import PastProjects from '@/components/project/PastProjects'
+import PastProjects, { hasFinalReport } from '@/components/project/PastProjects'
 import ProjectCard from '@/components/project/ProjectCard'
 import RewardAsset from '@/components/project/RewardAsset'
 
@@ -882,10 +882,11 @@ export function ProjectRewards({
 
             {/* Tabs - switch between Project Proposals, Active Projects, Past Projects */}
             {(() => {
+              const pastProjectsWithReports = pastProjects?.filter(hasFinalReport) ?? []
               const tabs: { id: ProjectTab; label: string; count: number }[] = [
                 { id: 'proposals', label: 'Project Proposals', count: proposals?.length ?? 0 },
                 { id: 'active', label: 'Active Projects', count: currentProjects?.length ?? 0 },
-                { id: 'past', label: 'Past Projects', count: pastProjects?.length ?? 0 },
+                { id: 'past', label: 'Past Projects', count: pastProjectsWithReports.length },
               ]
               return (
                 <div
@@ -1120,7 +1121,7 @@ export function ProjectRewards({
             </div>
             )}
             {activeTab === 'past' && (
-            <div className="bg-black/20 rounded-none sm:rounded-b-xl border-y sm:border sm:border-t-0 border-white/10 overflow-hidden">
+            <div className="bg-black/20 rounded-none sm:rounded-b-xl border-y sm:border sm:border-t-0 border-white/10">
               <PastProjects projects={pastProjects} />
             </div>
             )}
