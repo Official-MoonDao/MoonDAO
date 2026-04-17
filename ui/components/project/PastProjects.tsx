@@ -13,39 +13,31 @@ type PastProjectProps = {
   projects: Project[]
 }
 
-type QuarterGroup = {
-  key: string
+type QuarterCount = { quarter: number; count: number }
+type YearGroup = {
   year: number
-  quarter: number
-  label: string
-  projects: Project[]
+  total: number
+  quarters: Map<number, Project[]>
 }
 
 export function hasFinalReport(p: Project): boolean {
   return Boolean(p.finalReportIPFS || p.finalReportLink)
 }
 
-function groupByQuarter(projects: Project[]): QuarterGroup[] {
-  const groups = new Map<string, QuarterGroup>()
+function buildYearIndex(projects: Project[]): YearGroup[] {
+  const byYear = new Map<number, YearGroup>()
   for (const project of projects) {
     const year = Number(project.year) || 0
     const quarter = Number(project.quarter) || 0
-    const key = `${year}-Q${quarter}`
-    if (!groups.has(key)) {
-      groups.set(key, {
-        key,
-        year,
-        quarter,
-        label: `Q${quarter} ${year}`,
-        projects: [],
-      })
+    if (!byYear.has(year)) {
+      byYear.set(year, { year, total: 0, quarters: new Map() })
     }
-    groups.get(key)!.projects.push(project)
+    const yg = byYear.get(year)!
+    yg.total += 1
+    if (!yg.quarters.has(quarter)) yg.quarters.set(quarter, [])
+    yg.quarters.get(quarter)!.push(project)
   }
-  return Array.from(groups.values()).sort((a, b) => {
-    if (b.year !== a.year) return b.year - a.year
-    return b.quarter - a.quarter
-  })
+  return Array.from(byYear.values()).sort((a, b) => b.year - a.year)
 }
 
 export default function PastProjects({ projects }: PastProjectProps) {
@@ -70,38 +62,70 @@ export default function PastProjects({ projects }: PastProjectProps) {
 
   const [input, setInput] = useState('')
 
-  // Group ALL final-report projects (so quarters reflect real data, not the search filter)
-  const groups = useMemo(
-    () => groupByQuarter(finalReportProjects),
+  const yearGroups = useMemo(
+    () => buildYearIndex(finalReportProjects),
     [finalReportProjects]
   )
 
-  const [activeKey, setActiveKey] = useState<string | null>(null)
+  const [selectedYear, setSelectedYear] = useState<number | null>(null)
+  const [selectedQuarter, setSelectedQuarter] = useState<number | null>(null)
 
+  // Initialize / heal selection when data changes
   useEffect(() => {
-    if (!groups.length) {
-      setActiveKey(null)
+    if (!yearGroups.length) {
+      setSelectedYear(null)
+      setSelectedQuarter(null)
       return
     }
-    setActiveKey((prev) => {
-      if (prev && groups.some((g) => g.key === prev)) return prev
-      return groups[0].key
+    setSelectedYear((prevYear) => {
+      const stillValid =
+        prevYear != null && yearGroups.some((yg) => yg.year === prevYear)
+      return stillValid ? prevYear : yearGroups[0].year
     })
-  }, [groups])
+  }, [yearGroups])
 
-  const activeGroup = useMemo(
-    () => groups.find((g) => g.key === activeKey) || null,
-    [groups, activeKey]
+  // When year changes, pick the most recent quarter with projects in that year
+  useEffect(() => {
+    if (selectedYear == null) {
+      setSelectedQuarter(null)
+      return
+    }
+    const yg = yearGroups.find((g) => g.year === selectedYear)
+    if (!yg) return
+    setSelectedQuarter((prevQ) => {
+      if (prevQ != null && yg.quarters.has(prevQ)) return prevQ
+      const available = Array.from(yg.quarters.keys()).sort((a, b) => b - a)
+      return available[0] ?? null
+    })
+  }, [selectedYear, yearGroups])
+
+  const activeYearGroup = useMemo(
+    () => yearGroups.find((g) => g.year === selectedYear) ?? null,
+    [yearGroups, selectedYear]
   )
 
+  const quarterCounts: QuarterCount[] = useMemo(() => {
+    if (!activeYearGroup) return []
+    return [1, 2, 3, 4].map((q) => ({
+      quarter: q,
+      count: activeYearGroup.quarters.get(q)?.length ?? 0,
+    }))
+  }, [activeYearGroup])
+
   const visibleProjects = useMemo(() => {
-    if (!activeGroup) return []
+    if (!activeYearGroup || selectedQuarter == null) return []
+    const list = activeYearGroup.quarters.get(selectedQuarter) ?? []
     const term = input.trim().toLowerCase()
-    if (!term) return activeGroup.projects
-    return activeGroup.projects.filter((p) =>
+    if (!term) return list
+    return list.filter((p) =>
       p.name?.toString().toLowerCase().includes(term)
     )
-  }, [activeGroup, input])
+  }, [activeYearGroup, selectedQuarter, input])
+
+  const activeLabel =
+    selectedYear != null && selectedQuarter != null
+      ? `Q${selectedQuarter} ${selectedYear}`
+      : null
 
   useChainDefault()
 
@@ -139,71 +163,119 @@ export default function PastProjects({ projects }: PastProjectProps) {
             type="text"
             name="search"
             placeholder={
-              activeGroup
-                ? `Search ${activeGroup.label}...`
-                : 'Search past projects...'
+              activeLabel ? `Search ${activeLabel}...` : 'Search past projects...'
             }
           />
         </div>
       </div>
 
-      {groups.length > 0 && (
-        <div
-          role="tablist"
-          aria-label="Past project quarters"
-          className="flex items-end gap-1 border-b border-white/10 overflow-x-auto"
-        >
-          {groups.map((group) => {
-            const isActive = activeKey === group.key
-            return (
-              <button
-                key={group.key}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActiveKey(group.key)}
-                className={`group relative px-3 sm:px-4 py-2 sm:py-2.5 -mb-px text-xs sm:text-sm font-RobotoMono uppercase tracking-wider whitespace-nowrap transition-colors rounded-t-lg border border-b-0 ${
-                  isActive
-                    ? 'bg-black/40 border-white/15 text-white'
-                    : 'bg-transparent border-transparent text-gray-500 hover:text-gray-200'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <span>{group.label}</span>
+      {yearGroups.length > 0 && (
+        <div className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 p-2 sm:p-3 flex flex-col gap-2 sm:gap-3">
+          {/* Year tabs */}
+          <div
+            role="tablist"
+            aria-label="Select year"
+            className="flex flex-wrap items-center gap-1.5"
+          >
+            <span className="hidden sm:inline-flex shrink-0 text-[10px] font-RobotoMono uppercase tracking-wider text-gray-500 px-1">
+              Year
+            </span>
+            {yearGroups.map((yg) => {
+              const isActive = selectedYear === yg.year
+              return (
+                <button
+                  key={yg.year}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setSelectedYear(yg.year)}
+                  className={`group inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-RobotoMono tracking-wide transition-colors border ${
+                    isActive
+                      ? 'bg-blue-500/15 border-blue-400/40 text-white'
+                      : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <span className="font-semibold">{yg.year}</span>
                   <span
-                    className={`inline-flex items-center justify-center min-w-[18px] px-1.5 h-[18px] rounded-full text-[9px] sm:text-[10px] font-semibold ${
-                      isActive
-                        ? 'bg-blue-500/20 text-blue-200 border border-blue-400/30'
-                        : 'bg-white/5 text-gray-500 border border-white/10 group-hover:bg-white/10 group-hover:text-gray-300'
+                    className={`text-[10px] ${
+                      isActive ? 'text-blue-200' : 'text-gray-500 group-hover:text-gray-300'
                     }`}
                   >
-                    {group.projects.length}
+                    {yg.total}
                   </span>
-                </span>
-                {isActive && (
-                  <span className="pointer-events-none absolute left-2 right-2 -bottom-px h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full" />
-                )}
-              </button>
-            )
-          })}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Quarter buttons (always 4, disabled when empty) */}
+          {activeYearGroup && (
+            <div
+              role="tablist"
+              aria-label={`Select quarter in ${selectedYear}`}
+              className="flex items-center gap-1.5"
+            >
+              <span className="hidden sm:inline-flex shrink-0 text-[10px] font-RobotoMono uppercase tracking-wider text-gray-500 px-1">
+                Quarter
+              </span>
+              <div className="grid grid-cols-4 gap-1.5 flex-1 sm:flex-none sm:inline-grid">
+                {quarterCounts.map(({ quarter, count }) => {
+                  const isActive = selectedQuarter === quarter
+                  const isDisabled = count === 0
+                  return (
+                    <button
+                      key={quarter}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      disabled={isDisabled}
+                      onClick={() => setSelectedQuarter(quarter)}
+                      className={`relative px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-RobotoMono tracking-wide transition-colors border min-w-[60px] sm:min-w-[72px] ${
+                        isDisabled
+                          ? 'bg-white/[0.02] border-white/5 text-gray-600 cursor-not-allowed'
+                          : isActive
+                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-600/20 border-blue-400/40 text-white shadow-sm'
+                          : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-1.5">
+                        <span className="font-semibold">Q{quarter}</span>
+                        <span
+                          className={`text-[10px] ${
+                            isDisabled
+                              ? 'text-gray-700'
+                              : isActive
+                              ? 'text-blue-200'
+                              : 'text-gray-500'
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {groups.length === 0 ? (
+      {yearGroups.length === 0 ? (
         <div className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 py-10 text-center text-gray-400">
           No past projects yet.
         </div>
       ) : visibleProjects.length === 0 ? (
         <div className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 py-10 text-center text-gray-400">
           {input
-            ? `No projects in ${activeGroup?.label} match your search.`
-            : 'No projects in this quarter.'}
+            ? `No projects in ${activeLabel} match your search.`
+            : `No projects in ${activeLabel}.`}
         </div>
       ) : (
         <div className="flex flex-col gap-1.5 sm:gap-6">
           {visibleProjects.map((project, i) => (
             <ProjectCard
-              key={`past-project-${activeKey}-${project.id}-${i}`}
+              key={`past-project-${selectedYear}-${selectedQuarter}-${project.id}-${i}`}
               project={project}
               projectContract={projectContract}
               hatsContract={hatsContract}
