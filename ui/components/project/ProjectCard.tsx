@@ -10,6 +10,7 @@ import {
   PROPOSALS_ADDRESSES,
   IS_SENATE_VOTE,
 } from 'const/config'
+import { getProposalVideoUrl } from 'const/proposalVideos'
 import Link from 'next/link'
 import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction, readContract } from 'thirdweb'
@@ -462,23 +463,41 @@ const ProjectCardContent = memo(
                 <SenatorsStatus senatorVotes={senatorVotes} isLoading={senatorVotesLoading} />
               )}
             </div>
-            {(project?.finalReportLink || project?.finalReportIPFS) && (
-              <StandardButton
-                className={`bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-fit text-sm px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
-                  distribute && 'sm:mr-4'
-                }`}
-                link={
-                  project?.finalReportIPFS ? `/project/${project.MDP}` : project?.finalReportLink
-                }
-                onClick={(e: any) => {
-                  e.stopPropagation()
-                }}
-                hoverEffect={false}
-                target={project?.finalReportIPFS ? '_self' : '_blank'}
-              >
-                <p className="text-sm font-medium">📋 Final Report</p>
-              </StandardButton>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {(project?.finalReportLink || project?.finalReportIPFS) && (
+                <StandardButton
+                  className={`bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-fit text-sm px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
+                    distribute && 'sm:mr-4'
+                  }`}
+                  link={
+                    project?.finalReportIPFS ? `/project/${project.MDP}` : project?.finalReportLink
+                  }
+                  onClick={(e: any) => {
+                    e.stopPropagation()
+                  }}
+                  hoverEffect={false}
+                  target={project?.finalReportIPFS ? '_self' : '_blank'}
+                >
+                  <p className="text-sm font-medium">📋 Final Report</p>
+                </StandardButton>
+              )}
+              {(() => {
+                const videoUrl = getProposalVideoUrl(project?.MDP)
+                if (!videoUrl) return null
+                return (
+                  <a
+                    href={videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 text-xs text-white/60 hover:text-white underline underline-offset-2 transition-colors"
+                  >
+                    <span aria-hidden>▶</span>
+                    <span>Watch presentation</span>
+                  </a>
+                )
+              })()}
+            </div>
           </div>
           {/* Senate Vote mode: show budget badge and vote buttons together on the right (desktop) or below title (mobile) */}
           {IS_SENATE_VOTE && project?.MDP && project.active === PROJECT_PENDING && (
@@ -529,7 +548,7 @@ const ProjectCardContent = memo(
             ))}
           {!distribute && isVotingPeriod && (
             <div className="flex flex-col items-start sm:items-end flex-shrink-0">
-              <p className="text-gray-400 text-sm">Ineligible</p>
+              <p className="text-gray-400 text-sm">Ongoing</p>
             </div>
           )}
         </div>
