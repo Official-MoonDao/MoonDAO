@@ -161,7 +161,7 @@ export const SENATORS_LIST: { [key: string]: Senator[] } = {
     { address: '0x529Bd2351476ba114f9D60E71A020A9F0b99f047', name: 'Anastasia' },
     { address: '0x8A7fD7F4B1A77A606DFdD229c194B1F22De868Ff', name: 'Daniel' },
     { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Jade' },
-    { address: '0x47cc4c7fef42187f9f7901838f316b033e92be05', name: 'Rina' },
+    { address: '0xEa7e0E93597B993708CbEaA6f2F0f69C66FE7916', name: 'Rina' },
   ],
   sepolia: [
     { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Test Senator 1' },
