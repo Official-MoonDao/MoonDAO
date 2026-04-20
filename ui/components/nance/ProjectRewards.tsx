@@ -101,7 +101,7 @@ export function ProjectRewards({
   const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
   const [originalDistribution, setOriginalDistribution] = useState<{ [key: string]: number }>({})
 
-  type ProjectTab = 'proposals' | 'active' | 'past'
+  type ProjectTab = 'proposals' | 'active' | 'retroactive' | 'past'
   const hasProposals = !!proposals?.length
   const initialTab: ProjectTab = hasProposals
     ? 'proposals'
@@ -439,7 +439,21 @@ export function ProjectRewards({
     : USD_BUDGET
 
   const usdBudget = USD_BUDGET
-  const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
+
+  // MOONEY budget for the *current* proposal quarter (used by the Project
+  // Proposals tab header). When the retro-cycle override is on, `quarter`
+  // shifts back to the prior quarter — that gives the correct retro pool but
+  // the wrong number for the upcoming-proposals view.
+  const { mooneyBudget: proposalsMooneyBudget } = useMemo(
+    () => getBudget(tokens, currentYear, currentQuarter),
+    [tokens, currentYear, currentQuarter]
+  )
+
+  // Cache the live MOONEY/USD price so we can convert both the retro and the
+  // proposal-cycle MOONEY budgets without firing two parallel fetches.
+  const [mooneyPriceUSD, setMooneyPriceUSD] = useState(0)
+  const mooneyBudgetUSD = mooneyBudget * mooneyPriceUSD
+  const proposalsMooneyBudgetUSD = proposalsMooneyBudget * mooneyPriceUSD
 
   const {
     addressToUsdPayout,
@@ -459,43 +473,24 @@ export function ProjectRewards({
   useEffect(() => {
     let isCancelled = false
 
-    async function getMooneyBudgetUSD() {
+    async function fetchMooneyPrice() {
       try {
-        // Skip if mooneyBudget is 0 or very small to avoid unnecessary calls
-        if (!mooneyBudget || mooneyBudget < 0.01) {
-          setMooneyBudgetUSD(0)
-          return
-        }
-
         const response = await fetch('/api/mooney/price')
-        if (!response.ok) {
-          throw new Error('Failed to fetch MOONEY price')
-        }
-
+        if (!response.ok) throw new Error('Failed to fetch MOONEY price')
         const data = await response.json()
-        const mooneyPriceUSD = data.result?.price || 0
-
-        if (!isCancelled && mooneyPriceUSD > 0) {
-          const usd = mooneyBudget * mooneyPriceUSD
-          setMooneyBudgetUSD(usd)
-        }
+        const price = data.result?.price || 0
+        if (!isCancelled && price > 0) setMooneyPriceUSD(price)
       } catch (error) {
-        console.error('Error fetching Mooney budget USD:', error)
-        if (!isCancelled) {
-          // Set a fallback value or keep the previous value
-          setMooneyBudgetUSD(0)
-        }
+        console.error('Error fetching MOONEY price:', error)
+        if (!isCancelled) setMooneyPriceUSD(0)
       }
     }
 
-    if (mooneyBudget) {
-      getMooneyBudgetUSD()
-    }
-
+    fetchMooneyPrice()
     return () => {
       isCancelled = true
     }
-  }, [mooneyBudget])
+  }, [])
 
   const handleSubmit = async (contract: any) => {
     const totalPercentage = Object.values(distribution).reduce((sum, value) => sum + value, 0)
@@ -916,67 +911,17 @@ export function ProjectRewards({
               </div>
             </div>
 
-            {/* Condensed Top Section - Rewards + Create Button */}
-            <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
-                <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${currentQuarter}: ${currentYear} Rewards`}</h1>
-                {/* Permission-check warning is suppressed for everyday users
-                    because they would never see the "Close voting" button
-                    anyway. The error is still logged to the console for the
-                    Proposals contract owner / EB to debug. */}
-                {IS_SENATE_VOTE && isProposalsContractOwner && (
-                  <button
-                    onClick={tallyVotes}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
-                  >
-                    Close voting.
-                  </button>
-                )}
-                <button
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
-                  onClick={() => router.push('/proposals')}
-                >
-                  <Image
-                    src={'/assets/plus-icon.png'}
-                    width={16}
-                    height={16}
-                    alt="Create Project"
-                  />
-                  <span className="leading-none">Create Project</span>
-                </button>
-                {/*FIXME run on cron */}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-4 px-1 sm:px-0">
-                <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
-                  <RewardAsset
-                    name={retroPrimaryAssetName}
-                    value={
-                      isEthPayoutCycle
-                        ? `${retroPrimaryBudget.toFixed(2)} ETH`
-                        : `$${retroPrimaryBudget.toLocaleString()}`
-                    }
-                    usdValue={retroPrimaryBudgetUsdValue.toFixed(2)}
-                    approximateUSD={isEthPayoutCycle}
-                  />
-                </div>
-                <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
-                  <RewardAsset
-                    name="MOONEY"
-                    value={Number(mooneyBudget.toPrecision(3)).toLocaleString()}
-                    usdValue={mooneyBudgetUSD.toFixed(2)}
-                    approximateUSD
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Tabs - switch between Project Proposals, Active Projects, Past Projects */}
             {(() => {
               const pastProjectsWithReports = pastProjects?.filter(hasFinalReport) ?? []
               const tabs: { id: ProjectTab; label: string; count: number }[] = [
                 { id: 'proposals', label: 'Project Proposals', count: proposals?.length ?? 0 },
                 { id: 'active', label: 'Active Projects', count: currentProjects?.length ?? 0 },
+                {
+                  id: 'retroactive',
+                  label: 'Retroactive Rewards',
+                  count: eligibleProjects?.length ?? 0,
+                },
                 { id: 'past', label: 'Past Projects', count: pastProjectsWithReports.length },
               ]
               return (
@@ -1023,12 +968,64 @@ export function ProjectRewards({
               )
             })()}
 
-            {activeTab === 'proposals' && proposals && proposals.length > 0 && (
+            {activeTab === 'proposals' && (
               <div
                 id="proposals-container"
                 className="bg-black/20 rounded-none sm:rounded-b-xl px-1 py-2 sm:p-6 border-y sm:border sm:border-t-0 border-white/10"
               >
-                <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
+                {/* Upcoming-quarter rewards summary. Q2 2026 proposals are
+                    funded in USDC from `USD_BUDGET`; the retroactive ETH pool
+                    lives in the Retroactive Rewards tab. */}
+                <div className="mb-4 sm:mb-6 px-1 sm:px-0">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4">
+                    <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${currentQuarter}: ${currentYear} Rewards`}</h1>
+                    {/* Permission-check warning is suppressed for everyday
+                        users because they would never see the "Close voting"
+                        button anyway. The error is still logged to the
+                        console for the Proposals contract owner / EB. */}
+                    {IS_SENATE_VOTE && isProposalsContractOwner && (
+                      <button
+                        onClick={tallyVotes}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
+                      >
+                        Close voting.
+                      </button>
+                    )}
+                    <button
+                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
+                      onClick={() => router.push('/proposals')}
+                    >
+                      <Image
+                        src={'/assets/plus-icon.png'}
+                        width={16}
+                        height={16}
+                        alt="Create Project"
+                      />
+                      <span className="leading-none">Create Project</span>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-4">
+                    <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
+                      <RewardAsset
+                        name="USDC"
+                        value={`$${USD_BUDGET.toLocaleString()}`}
+                        usdValue={USD_BUDGET.toFixed(2)}
+                      />
+                    </div>
+                    <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
+                      <RewardAsset
+                        name="MOONEY"
+                        value={Number(
+                          proposalsMooneyBudget.toPrecision(3)
+                        ).toLocaleString()}
+                        usdValue={proposalsMooneyBudgetUSD.toFixed(2)}
+                        approximateUSD
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <h2 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
                   {IS_SENATE_VOTE ? (
                     <>
                       Project Proposals
@@ -1042,10 +1039,10 @@ export function ProjectRewards({
                   ) : (
                     <>
                       Pending Proposals
-                      <span className="ml-2 text-sm font-normal text-blue-400">({proposals.length})</span>
+                      <span className="ml-2 text-sm font-normal text-blue-400">({proposals?.length ?? 0})</span>
                     </>
                   )}
-                </h1>
+                </h2>
                 {IS_MEMBER_VOTE && !IS_SENATE_VOTE && (
                   <p className="mb-4">
                     Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.
@@ -1057,7 +1054,8 @@ export function ProjectRewards({
                   </p>
                 )}
                 <div className="flex flex-col gap-1.5 sm:gap-6">
-                  {proposals
+                  {proposals && proposals.length > 0 ? (
+                    proposals
                       .filter((project: any) => {
                         if (IS_SENATE_VOTE) {
                           return !project.tempCheckApproved && !project.tempCheckFailed
@@ -1090,7 +1088,14 @@ export function ProjectRewards({
                           />
                         </div>
                       ))
-                  }
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <p>No project proposals yet for this cycle.</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Click “Create Project” above to submit one.
+                      </p>
+                    </div>
+                  )}
                   {approvalVotingActive && IS_MEMBER_VOTE && proposals && proposals.length > 0 && (
                     <div className="mt-6 w-full flex flex-col items-end gap-2">
                       <div className="text-white/80 font-RobotoMono text-sm">
@@ -1210,6 +1215,158 @@ export function ProjectRewards({
                     ))}
               </div>
             </div>
+            )}
+            {activeTab === 'retroactive' && (
+              <div
+                id="retroactive-rewards-container"
+                className="bg-black/20 rounded-none sm:rounded-b-xl px-1 py-2 sm:p-6 border-y sm:border sm:border-t-0 border-white/10"
+              >
+                <div className="px-1 sm:px-0 mb-3 sm:mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                  <div>
+                    <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl">
+                      Retroactive Rewards
+                      <span className="ml-2 text-sm font-normal text-emerald-400">
+                        Q{quarter} {year}
+                      </span>
+                    </h1>
+                    <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-prose">
+                      Projects eligible for this cycle’s retroactive rewards. The pool
+                      is split proportionally based on Citizen and Voting Member
+                      allocations.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="bg-blue-500/10 text-blue-200 border border-blue-400/30 px-3 py-1.5 rounded-full font-RobotoMono">
+                      Pool: {retroPrimaryBudget.toLocaleString(undefined, {
+                        maximumFractionDigits: 4,
+                      })}{' '}
+                      {retroPrimaryAssetName}
+                      {isEthPayoutCycle &&
+                        retroPrimaryBudgetUsdValue > 0 &&
+                        ` (~$${retroPrimaryBudgetUsdValue.toLocaleString(undefined, {
+                          maximumFractionDigits: 0,
+                        })})`}
+                    </span>
+                    <span className="bg-purple-500/10 text-purple-200 border border-purple-400/30 px-3 py-1.5 rounded-full font-RobotoMono">
+                      +{' '}
+                      {Number(mooneyBudget.toPrecision(3)).toLocaleString()} MOONEY
+                    </span>
+                  </div>
+                </div>
+
+                {eligibleProjects && eligibleProjects.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    {eligibleProjects.map((project) => {
+                      const pct = projectIdToEstimatedPercentage[project.id]
+                      const hasPct = typeof pct === 'number' && pct > 0
+                      const primaryShare = hasPct
+                        ? (pct / 100) * retroPrimaryBudget
+                        : null
+                      const mooneyShare = hasPct
+                        ? (pct / 100) * mooneyBudget
+                        : null
+                      const reportHref =
+                        project.finalReportLink ||
+                        (project.finalReportIPFS
+                          ? `https://ipfs.io/ipfs/${project.finalReportIPFS}`
+                          : null)
+                      return (
+                        <div
+                          key={project.id}
+                          className="bg-black/30 border border-white/10 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-RobotoMono text-[10px] text-gray-500 shrink-0">
+                                #{project.id}
+                              </span>
+                              <h3 className="font-GoodTimes text-white text-sm sm:text-base truncate">
+                                {project.name}
+                              </h3>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-gray-400">
+                              <span>
+                                Q{project.quarter} {project.year}
+                              </span>
+                              {reportHref ? (
+                                <a
+                                  href={reportHref}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                                >
+                                  Final report
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M14 3h7v7m0-7L10 14m-7 0v7h7"
+                                    />
+                                  </svg>
+                                </a>
+                              ) : (
+                                <span className="text-amber-400/80">
+                                  Final report missing
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 sm:gap-6 shrink-0">
+                            <div className="flex flex-col items-end min-w-[88px]">
+                              <span className="text-[10px] uppercase tracking-wider text-gray-500">
+                                {retroPrimaryAssetName}
+                              </span>
+                              <span className="font-RobotoMono text-white text-sm">
+                                {primaryShare != null
+                                  ? `${primaryShare.toLocaleString(undefined, {
+                                      maximumFractionDigits: isEthPayoutCycle ? 4 : 0,
+                                    })}`
+                                  : '—'}
+                              </span>
+                              {hasPct && (
+                                <span className="text-[10px] text-gray-500">
+                                  {pct.toFixed(1)}% of pool
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end min-w-[100px]">
+                              <span className="text-[10px] uppercase tracking-wider text-gray-500">
+                                MOONEY
+                              </span>
+                              <span className="font-RobotoMono text-purple-200 text-sm">
+                                {mooneyShare != null
+                                  ? Number(mooneyShare.toPrecision(3)).toLocaleString()
+                                  : '—'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+
+                    {!readyToRunVoting && (
+                      <p className="text-[11px] text-gray-500 mt-2 px-1 sm:px-0">
+                        Per-project amounts populate once Citizen and Voting Member
+                        distributions are submitted and tallied. Until then this lists
+                        the eligible cohort and the total pool.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <p>No projects are eligible for retroactive rewards yet.</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Operators can mark a project eligible from the panel above.
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
             {activeTab === 'past' && (
             <div className="bg-black/20 rounded-none sm:rounded-b-xl border-y sm:border sm:border-t-0 border-white/10">
