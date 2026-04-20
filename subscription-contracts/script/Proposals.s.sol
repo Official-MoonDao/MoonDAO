@@ -22,12 +22,11 @@ contract MyScript is Script, Config {
             console.log("Deployed new Senators at:", address(senators));
 
             if (block.chainid == SEP) {
-                address[] memory newSenators = new address[](5);
+                address[] memory newSenators = new address[](4);
                 newSenators[0] = 0x08B3e694caA2F1fcF8eF71095CED1326f3454B89;
                 newSenators[1] = 0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6;
                 newSenators[2] = 0x679d87D8640e66778c3419D164998E720D7495f6;
                 newSenators[3] = 0xAF6f2A7643A97b849bD9cf6d3f57e142c5BbB0DA;
-                newSenators[4] = 0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6;
                 senators.addSenators(newSenators);
             } else {
                 address[] memory newSenators = new address[](7);
