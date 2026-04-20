@@ -1136,83 +1136,31 @@ export function ProjectRewards({
               <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">Active Projects</h1>
 
               <div className="flex flex-col gap-1.5 sm:gap-6">
-                {currentProjects && currentProjects.length > 0 ? (
-                  currentProjects
-                    .filter((project: any, i) => {
-                      return project.eligible
-                    })
-                    .map((project: any, i) => (
-                      <ProjectCard
-                        key={`project-card-${i}`}
-                        project={project}
-                        projectContract={projectContract}
-                        hatsContract={hatsContract}
-                        distribute={
-                          rewardVotingActive &&
-                          project.eligible &&
-                          (project!.finalReportLink || project!.finalReportIPFS)
-                        }
-                        distribution={userHasVotingPower ? distribution : undefined}
-                        handleDistributionChange={
-                          userHasVotingPower ? handleDistributionChange : undefined
-                        }
-                        userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={rewardVotingActive}
-                        active={true}
-                      />
-                    ))
+                {ineligibleProjects && ineligibleProjects.length > 0 ? (
+                  ineligibleProjects.map((project: any, i) => (
+                    <ProjectCard
+                      key={`project-card-${i}`}
+                      project={project}
+                      projectContract={projectContract}
+                      hatsContract={hatsContract}
+                      distribute={false}
+                      userHasVotingPower={userHasVotingPower}
+                      isVotingPeriod={rewardVotingActive}
+                      active={true}
+                    />
+                  ))
                 ) : (
                   <div className="text-center py-8 text-gray-400">
-                    <p>There are no active projects.</p>
-                  </div>
-                )}
-
-                {rewardVotingActive && eligibleProjects && eligibleProjects.length > 0 && (
-                  <div className="mt-6 w-full flex justify-end">
-                    {userHasVotingPower ? (
-                      <span className="flex flex-col md:flex-row md:items-center gap-2">
-                        <PrivyWeb3Button
-                          action={() => handleSubmit(distributionTableContract)}
-                          requiredChain={chain}
-                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                          label={edit ? 'Edit Distribution' : 'Submit Distribution'}
-                        />
-                      </span>
-                    ) : (
-                      <span>
-                        <PrivyWeb3Button
-                          v5
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          label="Get Voting Power"
-                          action={() => router.push('/lock')}
-                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                        />
-                      </span>
+                    <p>No active projects in flight.</p>
+                    {eligibleProjects && eligibleProjects.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Projects eligible for retroactive rewards live in the
+                        <span className="text-gray-300"> Retroactive Rewards </span>
+                        tab.
+                      </p>
                     )}
                   </div>
                 )}
-
-                {currentProjects &&
-                  currentProjects.length > 0 &&
-                  currentProjects
-                    .filter((project: any, i) => {
-                      return !project.eligible
-                    })
-                    .map((project: any, i) => (
-                      <ProjectCard
-                        key={`project-card-${i}`}
-                        project={project}
-                        projectContract={projectContract}
-                        hatsContract={hatsContract}
-                        distribute={project.eligible}
-                        distribution={userHasVotingPower ? distribution : undefined}
-                        handleDistributionChange={
-                          userHasVotingPower ? handleDistributionChange : undefined
-                        }
-                        userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={rewardVotingActive}
-                      />
-                    ))}
               </div>
             </div>
             )}
@@ -1255,8 +1203,16 @@ export function ProjectRewards({
                 </div>
 
                 {eligibleProjects && eligibleProjects.length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    {eligibleProjects.map((project) => {
+                  <div className="flex flex-col gap-1.5 sm:gap-6">
+                    {rewardVotingActive && (
+                      <p className="text-xs sm:text-sm text-emerald-300/90 px-1 sm:px-0">
+                        Distribute 100% of your voting power across the eligible
+                        projects below — give a higher percentage to higher-impact
+                        projects, then click <em>Submit Distribution</em>.
+                      </p>
+                    )}
+
+                    {eligibleProjects.map((project, i) => {
                       const pct = projectIdToEstimatedPercentage[project.id]
                       const hasPct = typeof pct === 'number' && pct > 0
                       const primaryShare = hasPct
@@ -1265,87 +1221,50 @@ export function ProjectRewards({
                       const mooneyShare = hasPct
                         ? (pct / 100) * mooneyBudget
                         : null
-                      const reportHref =
-                        project.finalReportLink ||
-                        (project.finalReportIPFS
-                          ? `https://ipfs.io/ipfs/${project.finalReportIPFS}`
-                          : null)
                       return (
-                        <div
-                          key={project.id}
-                          className="bg-black/30 border border-white/10 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="font-RobotoMono text-[10px] text-gray-500 shrink-0">
-                                #{project.id}
+                        <div key={`retro-card-${project.id}`} className="flex flex-col gap-1">
+                          <ProjectCard
+                            project={project}
+                            projectContract={projectContract}
+                            hatsContract={hatsContract}
+                            distribute={
+                              rewardVotingActive &&
+                              (project.finalReportLink || project.finalReportIPFS)
+                            }
+                            distribution={
+                              userHasVotingPower ? distribution : undefined
+                            }
+                            handleDistributionChange={
+                              userHasVotingPower
+                                ? handleDistributionChange
+                                : undefined
+                            }
+                            userHasVotingPower={userHasVotingPower}
+                            isVotingPeriod={rewardVotingActive}
+                            active={true}
+                          />
+                          {/* Per-project share preview — only render when we
+                              have a real tally; otherwise the row is a no-op
+                              and the project card alone is plenty. */}
+                          {hasPct && (
+                            <div className="flex flex-wrap items-center justify-end gap-3 px-2 sm:px-3 pb-2 text-[11px] font-RobotoMono">
+                              <span className="text-gray-500">
+                                Estimated payout @ {pct.toFixed(1)}% of pool:
                               </span>
-                              <h3 className="font-GoodTimes text-white text-sm sm:text-base truncate">
-                                {project.name}
-                              </h3>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-gray-400">
-                              <span>
-                                Q{project.quarter} {project.year}
-                              </span>
-                              {reportHref ? (
-                                <a
-                                  href={reportHref}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
-                                >
-                                  Final report
-                                  <svg
-                                    className="w-3 h-3"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M14 3h7v7m0-7L10 14m-7 0v7h7"
-                                    />
-                                  </svg>
-                                </a>
-                              ) : (
-                                <span className="text-amber-400/80">
-                                  Final report missing
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-                            <div className="flex flex-col items-end min-w-[88px]">
-                              <span className="text-[10px] uppercase tracking-wider text-gray-500">
+                              <span className="text-white">
+                                {primaryShare!.toLocaleString(undefined, {
+                                  maximumFractionDigits: isEthPayoutCycle ? 4 : 0,
+                                })}{' '}
                                 {retroPrimaryAssetName}
                               </span>
-                              <span className="font-RobotoMono text-white text-sm">
-                                {primaryShare != null
-                                  ? `${primaryShare.toLocaleString(undefined, {
-                                      maximumFractionDigits: isEthPayoutCycle ? 4 : 0,
-                                    })}`
-                                  : '—'}
-                              </span>
-                              {hasPct && (
-                                <span className="text-[10px] text-gray-500">
-                                  {pct.toFixed(1)}% of pool
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex flex-col items-end min-w-[100px]">
-                              <span className="text-[10px] uppercase tracking-wider text-gray-500">
+                              <span className="text-purple-200">
+                                {Number(
+                                  mooneyShare!.toPrecision(3)
+                                ).toLocaleString()}{' '}
                                 MOONEY
                               </span>
-                              <span className="font-RobotoMono text-purple-200 text-sm">
-                                {mooneyShare != null
-                                  ? Number(mooneyShare.toPrecision(3)).toLocaleString()
-                                  : '—'}
-                              </span>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )
                     })}
@@ -1356,6 +1275,34 @@ export function ProjectRewards({
                         distributions are submitted and tallied. Until then this lists
                         the eligible cohort and the total pool.
                       </p>
+                    )}
+
+                    {rewardVotingActive && (
+                      <div className="mt-4 sm:mt-6 w-full flex flex-col items-end gap-2">
+                        {userHasVotingPower && (
+                          <div className="text-white/80 font-RobotoMono text-xs sm:text-sm">
+                            Allocated: {_.sum(Object.values(distribution))}%
+                            &nbsp;&nbsp;Voting Power:{' '}
+                            {Math.round(userVotingPower ?? 0)}
+                          </div>
+                        )}
+                        {userHasVotingPower ? (
+                          <PrivyWeb3Button
+                            action={() => handleSubmit(distributionTableContract)}
+                            requiredChain={chain}
+                            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                            label={edit ? 'Edit Distribution' : 'Submit Distribution'}
+                          />
+                        ) : (
+                          <PrivyWeb3Button
+                            v5
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            label="Get Voting Power"
+                            action={() => router.push('/lock')}
+                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                          />
+                        )}
+                      </div>
                     )}
                   </div>
                 ) : (
