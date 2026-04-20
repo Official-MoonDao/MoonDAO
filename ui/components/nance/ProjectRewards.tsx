@@ -635,6 +635,8 @@ export function ProjectRewards({
                       label: 'Submit',
                       subtitle: 'Proposal',
                       active: !IS_SENATE_VOTE && !IS_MEMBER_VOTE,
+                      tooltip:
+                        "Anyone can submit a project proposal through the proposal portal. Each proposal lays out the problem, the solution, the team, and a budget capped at 1/5 of the quarterly rewards. Proposals can be edited at any time leading up to the Townhall.",
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -656,6 +658,8 @@ export function ProjectRewards({
                       label: 'Senate',
                       subtitle: 'Review',
                       active: IS_SENATE_VOTE,
+                      tooltip:
+                        "After the Townhall, the Senate votes to approve or reject each proposal under the rules in the Constitution. Each Senator has one vote. Approval requires a super-majority (more than 66.6%) of Senate votes in favor, with a quorum of at least 70% of all Senators participating. Only proposals that pass advance to be funded.",
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -677,6 +681,8 @@ export function ProjectRewards({
                       label: 'Member',
                       subtitle: 'Vote',
                       active: IS_MEMBER_VOTE,
+                      tooltip:
+                        "At the quarterly Townhall, teams pitch their proposals and voting members distribute their voting power across them as percentages. The top 50% by voting power are funded, capped so the total budget stays under 3/4 of the quarterly budget. Contributors cannot vote on their own project.",
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -698,6 +704,8 @@ export function ProjectRewards({
                       label: 'Build',
                       subtitle: 'Execute',
                       active: false,
+                      tooltip:
+                        "Funded teams execute the project over the quarter, with budgets paid through the project's multisig. Leads give monthly written updates to the Senate and attend weekly Townhalls; Contributors post weekly progress in the #wdygdtw Discord channel. Missed updates and townhalls reduce retroactive rewards.",
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -719,6 +727,8 @@ export function ProjectRewards({
                       label: 'Retroactive',
                       subtitle: 'Rewards',
                       active: IS_MEMBER_VOTE && rewardVotingActive,
+                      tooltip:
+                        "At the end of the quarter, each completed project submits a Final Report with its contributor split. Citizens and Voting Members then allocate their voting power across the projects to determine retroactive ETH and vMOONEY rewards based on impact.",
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -764,13 +774,22 @@ export function ProjectRewards({
                                 )}
                               </div>
                               <div className="mt-2 flex flex-col items-center w-full px-0.5">
-                                <span
-                                  className={`text-[10px] sm:text-xs font-RobotoMono font-semibold uppercase tracking-wider leading-tight text-center truncate max-w-full ${
-                                    phase.active ? 'text-white' : 'text-gray-500'
-                                  }`}
-                                >
-                                  {phase.label}
-                                </span>
+                                <div className="flex items-center justify-center gap-1 max-w-full">
+                                  <span
+                                    className={`text-[10px] sm:text-xs font-RobotoMono font-semibold uppercase tracking-wider leading-tight text-center truncate ${
+                                      phase.active ? 'text-white' : 'text-gray-500'
+                                    }`}
+                                  >
+                                    {phase.label}
+                                  </span>
+                                  <Tooltip
+                                    compact
+                                    text={phase.tooltip}
+                                    buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 shrink-0"
+                                  >
+                                    ?
+                                  </Tooltip>
+                                </div>
                                 <span
                                   className={`hidden sm:inline text-[10px] sm:text-xs leading-tight text-center truncate max-w-full ${
                                     phase.active ? 'text-blue-300' : 'text-gray-600'
