@@ -71,6 +71,9 @@ export type ProjectRewardsProps = {
   proposalAllocations?: Distribution[]
   refreshRewards: () => void
   retroCycleOverride?: boolean
+  // When true (operator-set in MongoDB), treat IS_SENATE_VOTE as false
+  // across the projects UI even though the config constant is true.
+  senateVoteDisabled?: boolean
 }
 
 // Helper function to format large numbers for mobile display
@@ -82,6 +85,7 @@ export function ProjectRewards({
   proposalAllocations,
   refreshRewards,
   retroCycleOverride = false,
+  senateVoteDisabled: senateVoteDisabledProp = false,
 }: ProjectRewardsProps) {
   const router = useRouter()
 
@@ -93,6 +97,13 @@ export function ProjectRewards({
 
   const [rewardVotingActive, setRewardVotingActive] = useState(retroCycleOverride)
   const [approvalVotingActive, setApprovalVotingActive] = useState(false)
+  // Senate vote = config constant AND not operator-disabled. Polls the
+  // operator flag every minute so toggling it from the operator panel
+  // propagates without a refresh.
+  const [senateVoteDisabledLive, setSenateVoteDisabledLive] = useState(
+    senateVoteDisabledProp
+  )
+  const isSenateVote = IS_SENATE_VOTE && !senateVoteDisabledLive
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
   const { quarter: submissionQuarter, year: submissionYear } = getSubmissionQuarter()
@@ -126,6 +137,26 @@ export function ProjectRewards({
     }, 30000)
     return () => clearInterval(interval)
   })
+
+  // Poll the operator-set senate-vote-disabled flag.
+  useEffect(() => {
+    let cancelled = false
+    const fetchOverride = () => {
+      fetch('/api/operator/senate-vote-status')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (cancelled || !data) return
+          setSenateVoteDisabledLive(!!data.enabled)
+        })
+        .catch(() => {})
+    }
+    fetchOverride()
+    const interval = setInterval(fetchOverride, 60000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [])
 
   //Check if its the rewards cycle (or operator-forced override)
   useEffect(() => {
@@ -680,7 +711,7 @@ export function ProjectRewards({
                       id: 'submit',
                       label: 'Submit',
                       subtitle: 'Proposal',
-                      active: !IS_SENATE_VOTE && !IS_MEMBER_VOTE,
+                      active: !isSenateVote && !IS_MEMBER_VOTE,
                       tooltip:
                         "Anyone can submit a project proposal through the proposal portal. Each proposal lays out the problem, the solution, the team, and a budget capped at 1/5 of the quarterly rewards. Proposals can be edited at any time leading up to the Townhall.",
                       icon: (
@@ -726,7 +757,7 @@ export function ProjectRewards({
                       id: 'senate',
                       label: 'Senate',
                       subtitle: 'Review',
-                      active: IS_SENATE_VOTE,
+                      active: isSenateVote,
                       tooltip:
                         "After the Townhall, the Senate votes to approve or reject each proposal under the rules in the Constitution. Each Senator has one vote. Approval requires a super-majority (more than 66.6%) of Senate votes in favor, with a quorum of at least 70% of all Senators participating. Only proposals that pass the Senate advance to the Member Vote.",
                       icon: (
@@ -983,7 +1014,7 @@ export function ProjectRewards({
                         users because they would never see the "Close voting"
                         button anyway. The error is still logged to the
                         console for the Proposals contract owner / EB. */}
-                    {IS_SENATE_VOTE && isProposalsContractOwner && (
+                    {isSenateVote && isProposalsContractOwner && (
                       <button
                         onClick={tallyVotes}
                         className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
@@ -1026,7 +1057,7 @@ export function ProjectRewards({
                 </div>
 
                 <h2 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
-                  {IS_SENATE_VOTE ? (
+                  {isSenateVote ? (
                     <>
                       Project Proposals
                       <span className="ml-2 text-sm font-normal text-orange-400">(Senate Vote)</span>
@@ -1043,12 +1074,12 @@ export function ProjectRewards({
                     </>
                   )}
                 </h2>
-                {IS_MEMBER_VOTE && !IS_SENATE_VOTE && (
+                {IS_MEMBER_VOTE && !isSenateVote && (
                   <p className="mb-4">
                     Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.
                   </p>
                 )}
-                {!IS_SENATE_VOTE && !IS_MEMBER_VOTE && (
+                {!isSenateVote && !IS_MEMBER_VOTE && (
                   <p className="mb-4 text-gray-400 text-sm">
                     These proposals have been submitted and are awaiting the next voting cycle.
                   </p>
@@ -1057,7 +1088,7 @@ export function ProjectRewards({
                   {proposals && proposals.length > 0 ? (
                     proposals
                       .filter((project: any) => {
-                        if (IS_SENATE_VOTE) {
+                        if (isSenateVote) {
                           return !project.tempCheckApproved && !project.tempCheckFailed
                         }
 
@@ -1077,14 +1108,15 @@ export function ProjectRewards({
                             project={project}
                             projectContract={projectContract}
                             hatsContract={hatsContract}
-                            distribute={approvalVotingActive && (IS_SENATE_VOTE || IS_MEMBER_VOTE)}
-                            distribution={userHasVotingPower && (IS_SENATE_VOTE || IS_MEMBER_VOTE) ? proposalDistribution : undefined}
+                            distribute={approvalVotingActive && (isSenateVote || IS_MEMBER_VOTE)}
+                            distribution={userHasVotingPower && (isSenateVote || IS_MEMBER_VOTE) ? proposalDistribution : undefined}
                             handleDistributionChange={
-                              userHasVotingPower && (IS_SENATE_VOTE || IS_MEMBER_VOTE) ? handleProposalDistributionChange : undefined
+                              userHasVotingPower && (isSenateVote || IS_MEMBER_VOTE) ? handleProposalDistributionChange : undefined
                             }
                             userHasVotingPower={userHasVotingPower}
-                            isVotingPeriod={approvalVotingActive && (IS_SENATE_VOTE || IS_MEMBER_VOTE)}
+                            isVotingPeriod={approvalVotingActive && (isSenateVote || IS_MEMBER_VOTE)}
                             active={false}
+                            isSenateVote={isSenateVote}
                           />
                         </div>
                       ))
@@ -1147,6 +1179,7 @@ export function ProjectRewards({
                       userHasVotingPower={userHasVotingPower}
                       isVotingPeriod={rewardVotingActive}
                       active={true}
+                      isSenateVote={isSenateVote}
                     />
                   ))
                 ) : (
@@ -1242,6 +1275,7 @@ export function ProjectRewards({
                             userHasVotingPower={userHasVotingPower}
                             isVotingPeriod={rewardVotingActive}
                             active={true}
+                            isSenateVote={isSenateVote}
                           />
                           {/* Per-project share preview — only render when we
                               have a real tally; otherwise the row is a no-op

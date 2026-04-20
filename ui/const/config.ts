@@ -674,6 +674,8 @@ export const OPERATORS: string[] = [
 // targets `native,,address,amount` rows, which is ETH on Arbitrum).
 export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = 'ETH'
 
-// Q4 2025 retroactives: 14.15 ETH (5% of liquid non-MOONEY assets at the
-// start of the quarter, captured in commit bdabf7d5).
-export const RETRO_ETH_BUDGET = 14.15
+// Q1 2026 retroactives: 2.215 ETH.
+// The quarter's total ETH budget was 11.6, of which 90% goes to projects
+// (10.44 ETH). 8.225 ETH was paid out upfront to funded projects, so the
+// remainder for retroactive distribution is (11.6 * 0.9) - 8.225 = 2.215 ETH.
+export const RETRO_ETH_BUDGET = 2.215

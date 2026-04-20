@@ -12,6 +12,7 @@ import { getContract, readContract } from 'thirdweb'
 import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 import { getProposalStatus } from '@/lib/nance/useProposalStatus'
 import { getRetroCycleOverride } from '@/lib/operator/retroCycle'
+import { getSenateVoteOverride } from '@/lib/operator/senateVote'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -27,9 +28,11 @@ export default function Projects({
   distributions,
   proposalAllocations,
   retroCycleOverride,
+  senateVoteDisabled,
 }: ProjectRewardsProps & {
   proposalAllocations: any[]
   retroCycleOverride: boolean
+  senateVoteDisabled: boolean
 }) {
   const router = useRouter()
   useChainDefault()
@@ -41,6 +44,7 @@ export default function Projects({
       distributions={distributions}
       proposalAllocations={proposalAllocations}
       retroCycleOverride={retroCycleOverride}
+      senateVoteDisabled={senateVoteDisabled}
       refreshRewards={() => router.reload()}
     />
   )
@@ -51,7 +55,10 @@ export async function getStaticProps() {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const retroOverride = await getRetroCycleOverride()
+    const [retroOverride, senateOverride] = await Promise.all([
+      getRetroCycleOverride(),
+      getSenateVoteOverride(),
+    ])
     const { quarter, year } = getRelativeQuarter(
       isRewardsCycle(new Date(), retroOverride.enabled) ? -1 : 0
     )
@@ -136,6 +143,7 @@ export async function getStaticProps() {
         distributions,
         proposalAllocations,
         retroCycleOverride: retroOverride.enabled,
+        senateVoteDisabled: senateOverride.enabled,
       },
       revalidate: 60,
     }
@@ -149,6 +157,7 @@ export async function getStaticProps() {
         distributions: [],
         proposalAllocations: [],
         retroCycleOverride: false,
+        senateVoteDisabled: false,
       },
       revalidate: 60,
     }

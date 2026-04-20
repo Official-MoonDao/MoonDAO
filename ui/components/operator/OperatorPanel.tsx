@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import type { RetroCycleOverride } from '@/lib/operator/retroCycle'
+import type { SenateVoteOverride } from '@/lib/operator/senateVote'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
 import { Project } from '@/lib/project/useProjectData'
 import AddToRetroactivesModal from './AddToRetroactivesModal'
@@ -23,6 +24,10 @@ export default function OperatorPanel({
   const { isExecutive } = useIsExecutive()
   const [override, setOverride] = useState<RetroCycleOverride | null>(null)
   const [overrideLoading, setOverrideLoading] = useState(false)
+  const [senateOverride, setSenateOverride] = useState<SenateVoteOverride | null>(
+    null
+  )
+  const [senateOverrideLoading, setSenateOverrideLoading] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [modalProject, setModalProject] = useState<Project | null>(null)
 
@@ -46,6 +51,12 @@ export default function OperatorPanel({
         if (!cancelled) setOverride(data)
       })
       .catch((err) => console.warn('retro-cycle-status fetch failed:', err))
+    fetch('/api/operator/senate-vote-status')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setSenateOverride(data)
+      })
+      .catch((err) => console.warn('senate-vote-status fetch failed:', err))
     return () => {
       cancelled = true
     }
@@ -74,6 +85,37 @@ export default function OperatorPanel({
       toast.error(err?.message || 'Failed to start cycle.', { style: toastStyle })
     } finally {
       setOverrideLoading(false)
+    }
+  }
+
+  const setSenateVote = async (enabled: boolean) => {
+    setSenateOverrideLoading(true)
+    try {
+      const res = await fetch('/api/operator/set-senate-vote', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enabled,
+          note: enabled
+            ? 'Senate vote disabled from operator panel'
+            : 'Senate vote re-enabled from operator panel',
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error || 'Failed to update senate vote flag')
+      setSenateOverride(json)
+      toast.success(
+        enabled ? 'Senate vote turned OFF.' : 'Senate vote re-enabled.',
+        { style: toastStyle }
+      )
+      onAfterChange?.()
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update senate vote flag.', {
+        style: toastStyle,
+      })
+    } finally {
+      setSenateOverrideLoading(false)
     }
   }
 
@@ -118,7 +160,7 @@ export default function OperatorPanel({
             HSM owner wallet.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {override?.enabled ? (
             <span className="inline-flex items-center gap-2 text-xs bg-green-500/10 text-green-300 border border-green-400/30 px-3 py-1.5 rounded-full">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -127,6 +169,16 @@ export default function OperatorPanel({
           ) : (
             <span className="inline-flex items-center gap-2 text-xs bg-white/5 text-gray-400 border border-white/10 px-3 py-1.5 rounded-full">
               Retro cycle override: off
+            </span>
+          )}
+          {senateOverride?.enabled ? (
+            <span className="inline-flex items-center gap-2 text-xs bg-orange-500/10 text-orange-300 border border-orange-400/30 px-3 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+              Senate vote: OFF (overridden)
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 text-xs bg-white/5 text-gray-400 border border-white/10 px-3 py-1.5 rounded-full">
+              Senate vote: follows config
             </span>
           )}
         </div>
@@ -215,6 +267,44 @@ export default function OperatorPanel({
               Open
             </button>
           </div>
+        </div>
+
+        {/* Senate Vote toggle — operator can end the senate phase without a deploy */}
+        <div className="min-w-0 bg-black/30 rounded-lg p-3 border border-white/10 flex flex-col gap-2">
+          <h4 className="text-xs uppercase tracking-wider text-gray-300 font-RobotoMono">
+            Senate Vote
+          </h4>
+          <p className="text-xs text-gray-400">
+            Force the senate-vote phase off across the projects UI even while{' '}
+            <code>IS_SENATE_VOTE</code> is true in config. Use this to end the
+            senate-vote window early.
+          </p>
+          <div className="flex gap-2 mt-1">
+            <button
+              type="button"
+              onClick={() => setSenateVote(true)}
+              disabled={senateOverrideLoading || senateOverride?.enabled}
+              className="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {senateOverride?.enabled ? 'Senate Vote OFF' : 'Turn Off Senate Vote'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSenateVote(false)}
+              disabled={senateOverrideLoading || !senateOverride?.enabled}
+              className="flex-1 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-gray-200 text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Re-enable
+            </button>
+          </div>
+          {senateOverride?.setBy && (
+            <p className="text-[11px] text-gray-500 mt-1 break-all">
+              Last toggled by {senateOverride.setBy}
+              {senateOverride.setAt
+                ? ` at ${new Date(senateOverride.setAt).toLocaleString()}`
+                : ''}
+            </p>
+          )}
         </div>
       </div>
 

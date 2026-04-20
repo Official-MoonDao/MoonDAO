@@ -147,6 +147,10 @@ type ProjectCardProps = {
   userHasVotingPower?: any
   isVotingPeriod?: boolean
   active?: boolean
+  // Optional override for the senate-vote phase. Defaults to the
+  // `IS_SENATE_VOTE` config constant. Operators can flip this off via the
+  // operator panel without redeploying.
+  isSenateVote?: boolean
 }
 
 import { useIsSenator } from '@/lib/thirdweb/hooks/useIsSenator'
@@ -328,6 +332,7 @@ const ProjectCardContent = memo(
     isExpanded,
     onToggleExpand,
     citizenContract,
+    isSenateVote = IS_SENATE_VOTE,
   }: any) => {
     const proposalJSON = useProposalJSON(project)
     const account = useActiveAccount()
@@ -438,7 +443,7 @@ const ProjectCardContent = memo(
                   )}
                 </div>
                 {/* Only show status badge inline when NOT in Senate Vote mode */}
-                {!IS_SENATE_VOTE && (
+                {!isSenateVote && (
                   <span
                     className={`w-fit sm:mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
                       project.active == PROJECT_ACTIVE
@@ -459,7 +464,7 @@ const ProjectCardContent = memo(
                 )}
               </div>
               {/* Senator participation status - aligned with title on the left */}
-              {IS_SENATE_VOTE && project?.MDP && project.active === PROJECT_PENDING && (
+              {isSenateVote && project?.MDP && project.active === PROJECT_PENDING && (
                 <SenatorsStatus senatorVotes={senatorVotes} isLoading={senatorVotesLoading} />
               )}
             </div>
@@ -500,7 +505,7 @@ const ProjectCardContent = memo(
             </div>
           </div>
           {/* Senate Vote mode: show budget badge and vote buttons together on the right (desktop) or below title (mobile) */}
-          {IS_SENATE_VOTE && project?.MDP && project.active === PROJECT_PENDING && (
+          {isSenateVote && project?.MDP && project.active === PROJECT_PENDING && (
             <div className="w-full sm:w-auto">
               <SenateVoteButtons 
                 mdp={project.MDP} 
@@ -512,7 +517,7 @@ const ProjectCardContent = memo(
               />
             </div>
           )}
-          {!IS_SENATE_VOTE && distribute &&
+          {!isSenateVote && distribute &&
             (isProposalAuthor ? (
               <div className="flex flex-col items-start sm:items-end flex-shrink-0">
                 <p className="text-gray-400 text-sm">Author</p>
@@ -596,7 +601,9 @@ export default function ProjectCard({
   userHasVotingPower,
   isVotingPeriod,
   active,
+  isSenateVote: isSenateVoteProp,
 }: ProjectCardProps) {
+  const isSenateVote = isSenateVoteProp ?? IS_SENATE_VOTE
   const account = useActiveAccount()
   const address = account?.address
   const [isExpanded, setIsExpanded] = useState(false)
@@ -663,7 +670,7 @@ export default function ProjectCard({
 
   return (
     <div className="h-full">
-      {distribute || IS_SENATE_VOTE ? (
+      {distribute || isSenateVote ? (
         <ProjectCardContent
           project={project}
           distribute={distribute}
@@ -677,6 +684,7 @@ export default function ProjectCard({
           isExpanded={isExpanded}
           onToggleExpand={() => setIsExpanded(!isExpanded)}
           citizenContract={citizenContract}
+          isSenateVote={isSenateVote}
         />
       ) : (
         <Link href={`/project/${project?.MDP}`} passHref className="h-full">
@@ -687,6 +695,7 @@ export default function ProjectCard({
             active={active}
             isExpanded={false}
             citizenContract={citizenContract}
+            isSenateVote={isSenateVote}
           />
         </Link>
       )}
