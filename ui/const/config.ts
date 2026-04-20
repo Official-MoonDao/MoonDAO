@@ -143,7 +143,7 @@ export const PROJECT_CREATOR_ADDRESSES: Index = {
 }
 
 export const SENATORS_ADDRESSES: Index = {
-  arbitrum: '0x0c4Fa101F5726AC76C76Fa6a622809C6F84d36a7',
+  arbitrum: '0x05b969ef46ad0e533c06b119827b0bf8ace020c8',
   sepolia: '0x3aEd5a0F378A2a20c8d46F30e259A7D9DbC8D304',
 }
 
