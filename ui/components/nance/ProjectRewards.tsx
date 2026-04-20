@@ -15,6 +15,8 @@ import {
   USD_BUDGET,
   IS_SENATE_VOTE,
   IS_MEMBER_VOTE,
+  RETRO_PAYOUT_TOKEN,
+  RETRO_ETH_BUDGET,
 } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import _ from 'lodash'
@@ -48,6 +50,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Tooltip from '@/components/layout/Tooltip'
+import OperatorPanel from '@/components/operator/OperatorPanel'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import PastProjects, { hasFinalReport } from '@/components/project/PastProjects'
 import ProjectCard from '@/components/project/ProjectCard'
@@ -67,6 +70,7 @@ export type ProjectRewardsProps = {
   distributions: Distribution[]
   proposalAllocations?: Distribution[]
   refreshRewards: () => void
+  retroCycleOverride?: boolean
 }
 
 // Helper function to format large numbers for mobile display
@@ -77,6 +81,7 @@ export function ProjectRewards({
   distributions,
   proposalAllocations,
   refreshRewards,
+  retroCycleOverride = false,
 }: ProjectRewardsProps) {
   const router = useRouter()
 
@@ -86,7 +91,7 @@ export function ProjectRewards({
   const account = useActiveAccount()
   const userAddress = account?.address
 
-  const [rewardVotingActive, setRewardVotingActive] = useState(false)
+  const [rewardVotingActive, setRewardVotingActive] = useState(retroCycleOverride)
   const [approvalVotingActive, setApprovalVotingActive] = useState(false)
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
@@ -112,8 +117,6 @@ export function ProjectRewards({
 
   // Proposals contract owner (only they can close voting)
   const [proposalsContractOwner, setProposalsContractOwner] = useState<string | null>(null)
-  const [proposalsOwnerStatus, setProposalsOwnerStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [proposalsOwnerRetryCount, setProposalsOwnerRetryCount] = useState(0)
 
   //Check if its the approval cycle
   useEffect(() => {
@@ -124,14 +127,37 @@ export function ProjectRewards({
     return () => clearInterval(interval)
   })
 
-  //Check if its the rewards cycle
+  //Check if its the rewards cycle (or operator-forced override)
   useEffect(() => {
-    setRewardVotingActive(isRewardsCycle(new Date()))
-    const interval = setInterval(() => {
-      setRewardVotingActive(isRewardsCycle(new Date()))
-    }, 30000)
-    return () => clearInterval(interval)
-  })
+    let cancelled = false
+    let liveOverride = retroCycleOverride
+
+    const update = () => {
+      if (cancelled) return
+      setRewardVotingActive(isRewardsCycle(new Date(), liveOverride))
+    }
+
+    const fetchOverride = () => {
+      fetch('/api/operator/retro-cycle-status')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (cancelled || !data) return
+          liveOverride = !!data.enabled
+          update()
+        })
+        .catch(() => {})
+    }
+
+    update()
+    fetchOverride()
+    const updateInterval = setInterval(update, 30000)
+    const overrideInterval = setInterval(fetchOverride, 60000)
+    return () => {
+      cancelled = true
+      clearInterval(updateInterval)
+      clearInterval(overrideInterval)
+    }
+  }, [retroCycleOverride])
 
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
@@ -271,29 +297,35 @@ export function ProjectRewards({
     if (!proposalContract) return
 
     let isCancelled = false
-    setProposalsOwnerStatus('loading')
 
     readContract({
       contract: proposalContract,
-      method: 'owner' as string,
+      method: 'function owner() view returns (address)',
       params: [],
     })
       .then((result: unknown) => {
         if (isCancelled) return
-        const owner = typeof result === 'string' ? result : Array.isArray(result) ? result[0] : null
+        const owner =
+          typeof result === 'string'
+            ? result
+            : Array.isArray(result)
+            ? result[0]
+            : null
         setProposalsContractOwner(owner != null ? String(owner).toLowerCase() : null)
-        setProposalsOwnerStatus('success')
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (isCancelled) return
+        console.error(
+          '[ProjectRewards] Proposals contract owner() read failed:',
+          err
+        )
         setProposalsContractOwner(null)
-        setProposalsOwnerStatus('error')
       })
 
     return () => {
       isCancelled = true
     }
-  }, [proposalContract, proposalsOwnerRetryCount])
+  }, [proposalContract])
 
   const isProposalsContractOwner =
     !!userAddress &&
@@ -395,6 +427,17 @@ export function ProjectRewards({
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
   // 2025q4
 
+  // For Q4 2025 retroactives we pay in ETH instead of USDC. The on-chain CSV
+  // generated by getPayouts already uses `native,,address,amount` rows, which
+  // means ETH on Arbitrum — so the only thing that changes vs the prior USDC
+  // cycles is the budget magnitude and the displayed unit.
+  const isEthPayoutCycle = RETRO_PAYOUT_TOKEN === 'ETH'
+  const retroPrimaryBudget = isEthPayoutCycle ? RETRO_ETH_BUDGET : USD_BUDGET
+  const retroPrimaryAssetName = isEthPayoutCycle ? 'ETH' : 'USDC'
+  const retroPrimaryBudgetUsdValue = isEthPayoutCycle
+    ? RETRO_ETH_BUDGET * (ethPrice || 0)
+    : USD_BUDGET
+
   const usdBudget = USD_BUDGET
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
 
@@ -409,7 +452,7 @@ export function ProjectRewards({
     projectIdToEstimatedPercentage,
     eligibleProjects,
     communityCircle,
-    USD_BUDGET,
+    retroPrimaryBudget,
     mooneyBudget
   )
 
@@ -614,6 +657,14 @@ export function ProjectRewards({
           branded={false}
         >
           <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6">
+            {/* Operator Panel — only renders for Executive Branch members */}
+            <OperatorPanel
+              proposals={proposals}
+              currentProjects={currentProjects}
+              pastProjects={pastProjects}
+              onAfterChange={refreshRewards}
+            />
+
             {/* Project System Intro */}
             <div className="bg-black/20 rounded-none sm:rounded-xl px-3 py-4 sm:p-5 border-y sm:border border-white/10">
               <div className="flex flex-col gap-4">
@@ -654,12 +705,35 @@ export function ProjectRewards({
                       ),
                     },
                     {
+                      id: 'present',
+                      label: 'Present',
+                      subtitle: 'Townhall',
+                      active: false,
+                      tooltip:
+                        "At the quarterly Townhall, every proposal gets a chance to pitch to the community. Each project has 10 minutes to walk through the problem they're solving, their proposed solution, the team, and the budget, followed by Q&A from the community.",
+                      icon: (
+                        <svg
+                          className="w-4 h-4 sm:w-5 sm:h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                          />
+                        </svg>
+                      ),
+                    },
+                    {
                       id: 'senate',
                       label: 'Senate',
                       subtitle: 'Review',
                       active: IS_SENATE_VOTE,
                       tooltip:
-                        "After the Townhall, the Senate votes to approve or reject each proposal under the rules in the Constitution. Each Senator has one vote. Approval requires a super-majority (more than 66.6%) of Senate votes in favor, with a quorum of at least 70% of all Senators participating. Only proposals that pass advance to be funded.",
+                        "After the Townhall, the Senate votes to approve or reject each proposal under the rules in the Constitution. Each Senator has one vote. Approval requires a super-majority (more than 66.6%) of Senate votes in favor, with a quorum of at least 70% of all Senators participating. Only proposals that pass the Senate advance to the Member Vote.",
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -682,7 +756,7 @@ export function ProjectRewards({
                       subtitle: 'Vote',
                       active: IS_MEMBER_VOTE,
                       tooltip:
-                        "At the quarterly Townhall, teams pitch their proposals and voting members distribute their voting power across them as percentages. The top 50% by voting power are funded, capped so the total budget stays under 3/4 of the quarterly budget. Contributors cannot vote on their own project.",
+                        "Once the Senate has approved proposals, voting members distribute their voting power across the approved proposals as percentages. The top 50% by voting power are funded, capped so total project budgets stay under 3/4 of the quarterly budget. Contributors cannot vote on their own project.",
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -846,17 +920,10 @@ export function ProjectRewards({
             <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
                 <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${currentQuarter}: ${currentYear} Rewards`}</h1>
-                {IS_SENATE_VOTE && proposalsOwnerStatus === 'error' && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-amber-500 text-sm">Unable to check permissions</span>
-                    <button
-                      onClick={() => setProposalsOwnerRetryCount((c) => c + 1)}
-                      className="px-4 py-2 bg-amber-600/80 hover:bg-amber-600 disabled:opacity-50 text-white font-RobotoMono rounded-lg transition-all duration-200 text-sm"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
+                {/* Permission-check warning is suppressed for everyday users
+                    because they would never see the "Close voting" button
+                    anyway. The error is still logged to the console for the
+                    Proposals contract owner / EB to debug. */}
                 {IS_SENATE_VOTE && isProposalsContractOwner && (
                   <button
                     onClick={tallyVotes}
@@ -883,9 +950,14 @@ export function ProjectRewards({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-4 px-1 sm:px-0">
                 <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                   <RewardAsset
-                    name="USDC"
-                    value={`$${USD_BUDGET.toLocaleString()}`}
-                    usdValue={usdBudget.toFixed(2)}
+                    name={retroPrimaryAssetName}
+                    value={
+                      isEthPayoutCycle
+                        ? `${retroPrimaryBudget.toFixed(2)} ETH`
+                        : `$${retroPrimaryBudget.toLocaleString()}`
+                    }
+                    usdValue={retroPrimaryBudgetUsdValue.toFixed(2)}
+                    approximateUSD={isEthPayoutCycle}
                   />
                 </div>
                 <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">

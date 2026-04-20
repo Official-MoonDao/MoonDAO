@@ -659,3 +659,21 @@ export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
 // Per the docs: "Proposal budgets must be less than or equal to 1/5 of the
 // total quarterly rewards."
 export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)
+
+// Hard-coded allowlist of wallet addresses that can use the operator panel
+// on /projects (start the retro cycle, mark projects eligible, etc.).
+// Lowercase for cheap comparison.
+export const OPERATORS: string[] = [
+  '0x679d87d8640e66778c3419d164998e720d7495f6', // pmoncada.eth
+  '0xb2d3900807094d4fe47405871b0c8adb58e10d42', // ryand2d.eth
+]
+
+// Retroactive rewards payout token for the *currently-voting* cycle.
+// When set to 'ETH', the retro-rewards UI uses RETRO_ETH_BUDGET instead of
+// USD_BUDGET and labels the budget asset "ETH" (the airdrop CSV already
+// targets `native,,address,amount` rows, which is ETH on Arbitrum).
+export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = 'ETH'
+
+// Q4 2025 retroactives: 14.15 ETH (5% of liquid non-MOONEY assets at the
+// start of the quarter, captured in commit bdabf7d5).
+export const RETRO_ETH_BUDGET = 14.15

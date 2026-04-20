@@ -11,6 +11,7 @@ import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 import { getProposalStatus } from '@/lib/nance/useProposalStatus'
+import { getRetroCycleOverride } from '@/lib/operator/retroCycle'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -25,7 +26,11 @@ export default function Projects({
   pastProjects,
   distributions,
   proposalAllocations,
-}: ProjectRewardsProps & { proposalAllocations: any[] }) {
+  retroCycleOverride,
+}: ProjectRewardsProps & {
+  proposalAllocations: any[]
+  retroCycleOverride: boolean
+}) {
   const router = useRouter()
   useChainDefault()
   return (
@@ -35,6 +40,7 @@ export default function Projects({
       pastProjects={pastProjects}
       distributions={distributions}
       proposalAllocations={proposalAllocations}
+      retroCycleOverride={retroCycleOverride}
       refreshRewards={() => router.reload()}
     />
   )
@@ -45,7 +51,10 @@ export async function getStaticProps() {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const { quarter, year } = getRelativeQuarter(isRewardsCycle(new Date()) ? -1 : 0)
+    const retroOverride = await getRetroCycleOverride()
+    const { quarter, year } = getRelativeQuarter(
+      isRewardsCycle(new Date(), retroOverride.enabled) ? -1 : 0
+    )
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = (await queryTable(chain, projectStatement)) || []
@@ -126,6 +135,7 @@ export async function getStaticProps() {
         pastProjects: pastProjects.reverse(),
         distributions,
         proposalAllocations,
+        retroCycleOverride: retroOverride.enabled,
       },
       revalidate: 60,
     }
@@ -138,6 +148,7 @@ export async function getStaticProps() {
         pastProjects: [],
         distributions: [],
         proposalAllocations: [],
+        retroCycleOverride: false,
       },
       revalidate: 60,
     }
