@@ -546,11 +546,6 @@ const ProjectCardContent = memo(
                 />
               </div>
             ))}
-          {!distribute && isVotingPeriod && (
-            <div className="flex flex-col items-start sm:items-end flex-shrink-0">
-              <p className="text-gray-400 text-sm">Ongoing</p>
-            </div>
-          )}
         </div>
         {/* Description Section */}
         <div className="flex-1 flex flex-col">
