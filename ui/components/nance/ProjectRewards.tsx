@@ -164,13 +164,18 @@ export function ProjectRewards({
     }
   }, [userAddress, distributions, quarter, year])
 
-  // Check if the user already has a proposal allocation for the current quarter
+  // Check if the user already has a proposal allocation for the *submission*
+  // quarter (the quarter the proposals being voted on belong to). NOTE: do
+  // NOT use `year`/`quarter` here — those are shifted to the prior quarter
+  // during the retroactive-rewards window, and reusing them caused old
+  // member-vote rows from the previous quarter to be surfaced as if the user
+  // had already submitted this quarter's distribution.
   useEffect(() => {
     if (proposalAllocations && userAddress) {
       for (const d of proposalAllocations) {
         if (
-          d.year === year &&
-          d.quarter === quarter &&
+          d.year === submissionYear &&
+          d.quarter === submissionQuarter &&
           d.address.toLowerCase() === userAddress.toLowerCase()
         ) {
           setProposalDistribution(d.distribution)
@@ -180,7 +185,7 @@ export function ProjectRewards({
         }
       }
     }
-  }, [userAddress, proposalAllocations, quarter, year])
+  }, [userAddress, proposalAllocations, submissionQuarter, submissionYear])
 
   // Build project id -> author address for member vote (exclude own proposal from allocation)
   const [projectIdToAuthorAddress, setProjectIdToAuthorAddress] = useState<Record<string, string>>(
@@ -582,11 +587,14 @@ export function ProjectRewards({
     try {
       if (!account) throw new Error('No account found')
       let receipt
+      // Member-vote proposal allocations are keyed by the *submission* quarter
+      // (the quarter the proposals being voted on belong to), not the
+      // rewards-shifted `quarter`/`year` used for retroactive distributions.
       if (proposalEdit) {
         const transaction = prepareContractCall({
           contract: contract,
           method: 'updateTableCol' as string,
-          params: [quarter, year, JSON.stringify(normalizedDistribution)],
+          params: [submissionQuarter, submissionYear, JSON.stringify(normalizedDistribution)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
@@ -596,7 +604,7 @@ export function ProjectRewards({
         const transaction = prepareContractCall({
           contract: contract,
           method: 'insertIntoTable' as string,
-          params: [quarter, year, JSON.stringify(normalizedDistribution)],
+          params: [submissionQuarter, submissionYear, JSON.stringify(normalizedDistribution)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
@@ -614,7 +622,13 @@ export function ProjectRewards({
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
-        setTimeout(() => router.push(`/projects/thank-you?quarter=${quarter}&year=${year}`), 3000)
+        setTimeout(
+          () =>
+            router.push(
+              `/projects/thank-you?quarter=${submissionQuarter}&year=${submissionYear}`
+            ),
+          3000
+        )
       }
     } catch (error) {
       console.error('Error submitting distribution:', error)

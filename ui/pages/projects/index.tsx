@@ -121,7 +121,12 @@ export async function getStaticProps() {
     const distributionStatement = `SELECT * FROM ${DISTRIBUTION_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
     const distributions = (await queryTable(chain, distributionStatement)) || []
 
-    const proposalAllocationStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
+    // Proposal allocations (member-vote distributions) are keyed off of the
+    // *submission* quarter — i.e. the quarter the proposals are being voted
+    // into — NOT the rewards-shifted `quarter`/`year` used for retroactive
+    // payouts. Mixing the two surfaces an old member-vote row from the prior
+    // quarter and incorrectly flips the UI into "Edit Distribution" mode.
+    const proposalAllocationStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE year = ${submissionQuarter.year} AND quarter = ${submissionQuarter.quarter}`
     const proposalAllocations = (await queryTable(chain, proposalAllocationStatement)) || []
 
     return {
