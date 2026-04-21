@@ -1310,58 +1310,77 @@ export function ProjectRewards({
                       </p>
                     </div>
                   )}
-                  {approvalVotingActive && isMemberVote && proposals && proposals.length > 0 && (
-                    <div className="mt-6 w-full flex flex-col items-end gap-2">
-                      <div className="text-white/80 font-RobotoMono text-xs sm:text-sm flex flex-wrap justify-end gap-x-3 gap-y-1">
-                        <span>
-                          Allocated:{' '}
-                          {_.sum(
-                            Object.entries(proposalDistribution)
-                              .filter(([id]) => validProposalIds.has(id))
-                              .map(([, v]) => v)
-                          )}
-                          %
-                        </span>
-                        <span>Voting Power: {Math.round(userVotingPower ?? 0)}</span>
+                  {approvalVotingActive && isMemberVote && proposals && proposals.length > 0 && (() => {
+                    const proposalAllocatedPct = _.sum(
+                      Object.entries(proposalDistribution)
+                        .filter(([id]) => validProposalIds.has(id))
+                        .map(([, v]) => v)
+                    )
+                    return (
+                      <div className="mt-6 w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-5">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                          <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 min-w-0">
+                            <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
+                              <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
+                                Allocated
+                              </div>
+                              <div
+                                className={`mt-0.5 sm:mt-1 font-GoodTimes text-lg sm:text-xl tracking-wider ${
+                                  proposalAllocatedPct === 100
+                                    ? 'text-green-400'
+                                    : 'text-white'
+                                }`}
+                              >
+                                {proposalAllocatedPct}%
+                              </div>
+                            </div>
+                            <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
+                              <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
+                                Voting Power
+                              </div>
+                              <div className="mt-0.5 sm:mt-1 font-GoodTimes text-lg sm:text-xl tracking-wider text-white truncate">
+                                {Math.round(userVotingPower ?? 0)}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="w-full sm:w-auto sm:shrink-0">
+                            {userHasVotingPower ? (
+                              proposalSubmitting ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-RobotoMono rounded-lg shadow-lg border-0 text-sm min-w-[180px] opacity-80 cursor-wait"
+                                >
+                                  <span className="w-full flex justify-center items-center gap-2">
+                                    <LoadingSpinner width="w-5" height="h-5" />
+                                    <span className="text-sm font-medium leading-snug">
+                                      Check your wallet…
+                                    </span>
+                                  </span>
+                                </button>
+                              ) : (
+                                <PrivyWeb3Button
+                                  action={() => handleProposalSubmit(proposalContract)}
+                                  requiredChain={chain}
+                                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
+                                  label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
+                                  loadingLabel="Check your wallet…"
+                                />
+                              )
+                            ) : (
+                              <PrivyWeb3Button
+                                v5
+                                requiredChain={DEFAULT_CHAIN_V5}
+                                label="Get Voting Power"
+                                action={() => router.push('/lock')}
+                                className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
+                              />
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      {userHasVotingPower ? (
-                        <span className="flex flex-col md:flex-row md:items-center gap-2">
-                          {proposalSubmitting ? (
-                            <button
-                              type="button"
-                              disabled
-                              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-RobotoMono rounded-lg shadow-lg border-0 text-sm min-w-[180px] opacity-80 cursor-wait"
-                            >
-                              <span className="w-full flex justify-center items-center gap-2">
-                                <LoadingSpinner width="w-5" height="h-5" />
-                                <span className="text-sm font-medium leading-snug">
-                                  Check your wallet…
-                                </span>
-                              </span>
-                            </button>
-                          ) : (
-                            <PrivyWeb3Button
-                              action={() => handleProposalSubmit(proposalContract)}
-                              requiredChain={chain}
-                              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
-                              label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
-                              loadingLabel="Check your wallet…"
-                            />
-                          )}
-                        </span>
-                      ) : (
-                        <span>
-                          <PrivyWeb3Button
-                            v5
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            label="Get Voting Power"
-                            action={() => router.push('/lock')}
-                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm"
-                          />
-                        </span>
-                      )}
-                    </div>
-                  )}
+                    )
+                  })()}
                 </div>
               </div>
             )}
@@ -1519,41 +1538,69 @@ export function ProjectRewards({
                       </p>
                     )}
 
-                    {rewardVotingActive && (
-                      <div className="mt-4 sm:mt-6 w-full flex flex-col items-end gap-2">
-                        {userHasVotingPower && (
-                          <div className="text-white/80 font-RobotoMono text-xs sm:text-sm flex flex-wrap justify-end gap-x-3 gap-y-1">
-                            <span>
-                              Allocated:{' '}
-                              {_.sum(
-                                Object.entries(distribution)
-                                  .filter(([id]) => validEligibleIds.has(id))
-                                  .map(([, v]) => v)
-                              )}
-                              %
-                            </span>
-                            <span>Voting Power: {Math.round(userVotingPower ?? 0)}</span>
+                    {rewardVotingActive && (() => {
+                      const retroAllocatedPct = _.sum(
+                        Object.entries(distribution)
+                          .filter(([id]) => validEligibleIds.has(id))
+                          .map(([, v]) => v)
+                      )
+                      return (
+                      <div className="mt-4 sm:mt-6 w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-5">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                          {userHasVotingPower ? (
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 min-w-0">
+                              <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
+                                <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
+                                  Allocated
+                                </div>
+                                <div
+                                  className={`mt-0.5 sm:mt-1 font-GoodTimes text-lg sm:text-xl tracking-wider ${
+                                    retroAllocatedPct === 100
+                                      ? 'text-green-400'
+                                      : 'text-white'
+                                  }`}
+                                >
+                                  {retroAllocatedPct}%
+                                </div>
+                              </div>
+                              <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
+                                <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
+                                  Voting Power
+                                </div>
+                                <div className="mt-0.5 sm:mt-1 font-GoodTimes text-lg sm:text-xl tracking-wider text-white truncate">
+                                  {Math.round(userVotingPower ?? 0)}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="flex-1 min-w-0 text-xs sm:text-sm text-gray-300 leading-relaxed">
+                              You need vMOONEY voting power to weigh in on
+                              retroactive rewards. Lock MOONEY to participate.
+                            </p>
+                          )}
+                          <div className="w-full sm:w-auto sm:shrink-0">
+                            {userHasVotingPower ? (
+                              <PrivyWeb3Button
+                                action={() => handleSubmit(distributionTableContract)}
+                                requiredChain={chain}
+                                className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
+                                label={edit ? 'Edit Distribution' : 'Submit Distribution'}
+                                loadingLabel="Check your wallet…"
+                              />
+                            ) : (
+                              <PrivyWeb3Button
+                                v5
+                                requiredChain={DEFAULT_CHAIN_V5}
+                                label="Get Voting Power"
+                                action={() => router.push('/lock')}
+                                className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
+                              />
+                            )}
                           </div>
-                        )}
-                        {userHasVotingPower ? (
-                          <PrivyWeb3Button
-                            action={() => handleSubmit(distributionTableContract)}
-                            requiredChain={chain}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
-                            label={edit ? 'Edit Distribution' : 'Submit Distribution'}
-                            loadingLabel="Check your wallet…"
-                          />
-                        ) : (
-                          <PrivyWeb3Button
-                            v5
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            label="Get Voting Power"
-                            action={() => router.push('/lock')}
-                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm"
-                          />
-                        )}
+                        </div>
                       </div>
-                    )}
+                      )
+                    })()}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-400">
