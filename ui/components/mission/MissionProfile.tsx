@@ -72,7 +72,6 @@ import MissionMobileContributeButton from '@/components/mission/MissionMobileCon
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import MissionTeamSection from '@/components/mission/MissionTeamSection'
-import OverviewLeaderboardPreview from '@/components/mission/OverviewLeaderboardPreview'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import { TwitterIcon } from '@/components/assets'
 
@@ -580,6 +579,15 @@ export default function MissionProfile({
                   recommendedChain={recommendedChain}
                   fundingChainBalances={fundingChainBalances}
                   fundingCompareEnabled={fundingChainCompareEnabled}
+                  // Only thread the leaderboard through for missions that
+                  // actually have one (today: just mission 4). MissionInfo
+                  // uses the presence of this array to decide whether to
+                  // render the dedicated "Fly with Frank" tab.
+                  _overviewLeaderboard={
+                    mission?.id === 4 || String(mission?.id) === '4'
+                      ? _overviewLeaderboard ?? []
+                      : undefined
+                  }
                 />
               </div>
             </div>
@@ -639,17 +647,10 @@ export default function MissionProfile({
                 </div>
               </div>
             </div>
-            {/* Fly with Frank Leaderboard preview — only for mission 4
-                (Overview Flight on Arbitrum). Surfaces the top candidates by
-                $OVERVIEW backed and links to the full voting page. */}
-            {(mission?.id === 4 || String(mission?.id) === '4') && (
-              <div className="w-full px-5 md:px-8 lg:px-12 mt-4 md:mt-6 flex justify-center">
-                <OverviewLeaderboardPreview
-                  leaderboard={_overviewLeaderboard ?? []}
-                  missionId={mission?.id ?? 4}
-                />
-              </div>
-            )}
+            {/* The Fly with Frank Leaderboard now lives inside MissionInfo
+                as a dedicated tab so it surfaces above the fold instead of
+                being hidden at the bottom of the page. See MissionInfo's
+                `_overviewLeaderboard` prop wiring above. */}
             <MissionJuiceboxFooter
               projectId={mission?.projectId ?? 0}
               isManager={isManager}
