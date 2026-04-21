@@ -7,8 +7,9 @@ import {
 } from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
+import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { getRelativeQuarter } from '@/lib/utils/dates'
@@ -90,10 +91,13 @@ export default function RewardsThankYou() {
 
   // Pull the project list for the *URL's* quarter so member-vote allocations
   // (which point at proposals from the current submission quarter, not the
-  // rewards-shifted previous quarter) resolve to the right names.
+  // rewards-shifted previous quarter) resolve to the right names. We also
+  // grab `proposalIPFS` so we can fall back to the IPFS proposal body for
+  // any project whose stored `name` is empty / "Untitled" — same title-
+  // resolution pipeline `ProjectCard` uses on the projects page.
   const projectsStatement =
     router.isReady && PROJECT_TABLE_NAME
-      ? `SELECT id, name FROM ${PROJECT_TABLE_NAME} WHERE year = ${year} AND quarter = ${quarter}`
+      ? `SELECT id, name, proposalIPFS, MDP FROM ${PROJECT_TABLE_NAME} WHERE year = ${year} AND quarter = ${quarter}`
       : null
 
   const { data: projectsForQuarter } = useTablelandQuery(projectsStatement, {
@@ -108,37 +112,110 @@ export default function RewardsThankYou() {
     )
   }, [distributions, address])
 
-  // Build a sorted list of non-zero allocations, falling back to a generic
-  // "Project #ID" name if the project record isn't available (e.g. when the
-  // projects query hasn't finished or a project record was removed).
-  const allocations: Allocation[] = useMemo(() => {
+  // Parsed { id -> percent } map from the raw distribution column.
+  const distributionMap = useMemo<Record<string, number>>(() => {
     let dist = userDistribution?.distribution as
       | Record<string, number>
       | string
       | undefined
-    if (!dist) return []
-    // Tableland may return the JSON column as a string depending on the
-    // statement — normalize it before iterating.
+    if (!dist) return {}
     if (typeof dist === 'string') {
       try {
         dist = JSON.parse(dist) as Record<string, number>
       } catch {
-        return []
+        return {}
       }
     }
+    return dist as Record<string, number>
+  }, [userDistribution])
+
+  // For any allocated project whose stored `name` is missing / "Untitled",
+  // pull its proposal JSON from IPFS so we can derive a real title via
+  // `getProjectDisplayName` (same pipeline as the projects page).
+  const [proposalJSONByProjectId, setProposalJSONByProjectId] = useState<
+    Record<string, { title?: string; body?: string } | null>
+  >({})
+
+  useEffect(() => {
+    if (!Array.isArray(projectsForQuarter)) return
+    const allocatedIds = new Set(
+      Object.entries(distributionMap)
+        .filter(([, v]) => Number(v) > 0)
+        .map(([id]) => String(id))
+    )
+    if (allocatedIds.size === 0) return
+
+    const projectsNeedingFetch = projectsForQuarter.filter((p: any) => {
+      if (!allocatedIds.has(String(p.id))) return false
+      if (proposalJSONByProjectId[String(p.id)] !== undefined) return false
+      const stored = getProjectDisplayName({ name: p?.name, MDP: p?.MDP })
+      // `getProjectDisplayName` returns "Untitled Project" when the stored
+      // name is missing / "Untitled" — that's our cue to hit IPFS.
+      return stored === 'Untitled Project' && !!p?.proposalIPFS
+    })
+
+    if (projectsNeedingFetch.length === 0) return
+
+    let cancelled = false
+
+    Promise.all(
+      projectsNeedingFetch.map(async (p: any) => {
+        try {
+          const res = await fetch(p.proposalIPFS)
+          if (!res.ok) return [String(p.id), null] as const
+          const json = await res.json()
+          return [String(p.id), json] as const
+        } catch {
+          return [String(p.id), null] as const
+        }
+      })
+    ).then((results) => {
+      if (cancelled) return
+      setProposalJSONByProjectId((prev) => {
+        const next = { ...prev }
+        for (const [id, json] of results) next[id] = json
+        return next
+      })
+    })
+
+    return () => {
+      cancelled = true
+    }
+    // We intentionally exclude `proposalJSONByProjectId` to avoid a loop —
+    // the `!== undefined` guard above already keys off the latest snapshot
+    // through the function-form `setProposalJSONByProjectId` updater.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectsForQuarter, distributionMap])
+
+  // Build a sorted list of non-zero allocations. Title resolution mirrors
+  // the projects page exactly (`getProjectDisplayName(project, proposalJSON)`),
+  // with a final "Project #ID" fallback only when even IPFS gives us
+  // nothing usable.
+  const allocations: Allocation[] = useMemo(() => {
+    if (!distributionMap || Object.keys(distributionMap).length === 0) return []
     const projectMap = new Map<string, any>()
     if (Array.isArray(projectsForQuarter)) {
       for (const p of projectsForQuarter) projectMap.set(String(p.id), p)
     }
-    return Object.entries(dist as Record<string, number>)
-      .map(([id, percent]) => ({
-        id: String(id),
-        name: projectMap.get(String(id))?.name || `Project #${id}`,
-        percent: Number(percent) || 0,
-      }))
+    return Object.entries(distributionMap)
+      .map(([id, percent]) => {
+        const project = projectMap.get(String(id))
+        const proposalJSON = proposalJSONByProjectId[String(id)] ?? undefined
+        // If we have the project record, defer to the same resolver the
+        // projects page uses. Only when we don't even have a record do we
+        // fall back to a generic "Project #ID" label.
+        const resolved = project
+          ? getProjectDisplayName(project, proposalJSON)
+          : `Project #${id}`
+        return {
+          id: String(id),
+          name: resolved,
+          percent: Number(percent) || 0,
+        }
+      })
       .filter((a) => a.percent > 0)
       .sort((a, b) => b.percent - a.percent)
-  }, [projectsForQuarter, userDistribution])
+  }, [projectsForQuarter, distributionMap, proposalJSONByProjectId])
 
   const totalAllocated = useMemo(
     () => allocations.reduce((sum, a) => sum + a.percent, 0),
