@@ -143,46 +143,54 @@ export function ExpandedFooter({
     hasCallToAction,
   ])
 
-  // Navigation link groups - matching topnav organization exactly
-  const networkLinks = [
-    { text: 'Join Network', href: '/join' },
-    { text: 'Explore Network', href: '/network' },
-    { text: 'Become a Citizen', href: '/join' },
-    { text: 'Create a Team', href: '/team' },
-    { text: 'Submit Contribution', href: '/contributions' },
+  // Footer navigation mirrors the top nav structure 1:1 (see
+  // `ui/lib/navigation/useNavigation.tsx` and the Teams/Projects dropdown
+  // components). Six groups in the same order as the header, with the same
+  // child links — so users see a consistent IA in both places.
+  const citizensLinks = [
+    { text: 'Become a Citizen', href: '/citizen' },
+    { text: 'Submit a Contribution', href: '/contributions' },
+    { text: 'View Citizens', href: '/network?tab=citizens' },
+    { text: 'Explore the Map', href: '/map' },
+  ]
+
+  const teamsLinks = [
+    { text: 'Create a Team', href: '/join' },
+    { text: 'Explore Teams', href: '/network?tab=teams' },
     { text: 'Jobs', href: '/jobs' },
+    { text: 'Marketplace', href: '/marketplace' },
   ]
 
-  const governLinks = [
-    { text: 'Governance Overview', href: '/governance' },
-    { text: 'Project Proposals', href: '/projects' },
-    { text: 'Governance Proposals', href: '/governance-proposals' },
-    { text: 'Constitution', href: '/constitution' },
-  ]
-
-  const tokenLinks = [
-    { text: 'Buy', href: '/mooney' },
-    { text: 'Lock', href: '/lock' },
-  ]
-
-  const projectLinks = [
-    { text: 'Projects Overview', href: '/projects-overview' },
-    { text: 'Projects', href: '/projects' },
+  const projectsLinks = [
     { text: 'Propose Project', href: '/proposals' },
+    { text: 'Explore Projects', href: '/projects' },
+    { text: 'Submit Contribution', href: '/contributions' },
+    { text: 'Projects Overview', href: '/projects-overview' },
+  ]
+
+  const mooneyLinks = [
+    { text: 'Get $MOONEY', href: '/get-mooney' },
+    { text: 'Lock $MOONEY', href: '/lock' },
+    { text: 'Bridge $MOONEY', href: '/bridge' },
+    { text: 'Token Overview', href: '/mooney' },
+    { text: 'Governance Overview', href: '/governance' },
+    { text: 'Governance Proposals', href: '/governance-proposals' },
+  ]
+
+  const launchpadLinks = [
+    { text: 'Launchpad Explainer', href: '/launch' },
+    { text: 'Overview Fundraiser', href: '/mission/4' },
+    { text: 'Fly with Frank Leaderboard', href: '/overview-vote' },
   ]
 
   const learnLinks = [
     { text: 'News', href: '/news' },
+    { text: 'Town Hall', href: '/townhall' },
     { text: 'Roadmap', href: '/roadmap' },
     { text: 'About', href: '/about' },
-    { text: 'Treasury', href: '/treasury' },
     { text: 'Resources', href: '/resources' },
-    { text: 'FAQ', href: '/faq' },
+    { text: 'Constitution', href: '/constitution' },
   ]
-
-  const marketplaceLinks = [{ text: 'Shop', href: '/marketplace' }]
-
-  const supportLinks = [{ text: 'Submit Ticket', href: 'https://discord.gg/moondao' }]
 
   return (
     <>
@@ -234,35 +242,25 @@ export function ExpandedFooter({
                 hasCallToAction && isFullwidth ? 'lg:col-span-4' : 'lg:col-span-6'
               }`}
             >
-              {/* Column 1: NETWORK */}
+              {/* Columns mirror the top-nav groups in order:
+                  Citizens → Teams → Projects → $MOONEY → Launchpad → Learn */}
               <div>
-                <LinkList title="NETWORK" links={networkLinks} />
+                <LinkList title="CITIZENS" links={citizensLinks} />
               </div>
-
-              {/* Column 2: GOVERN */}
               <div>
-                <LinkList title="GOVERN" links={governLinks} />
+                <LinkList title="TEAMS" links={teamsLinks} />
               </div>
-
-              {/* Column 3: $MOONEY */}
               <div>
-                <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
+                <LinkList title="PROJECTS" links={projectsLinks} />
               </div>
-
-              {/* Column 4: PROJECTS */}
               <div>
-                <LinkList title="PROJECTS" links={projectLinks} />
+                <LinkList title="$MOONEY" links={mooneyLinks} />
               </div>
-
-              {/* Column 5: LEARN */}
+              <div>
+                <LinkList title="LAUNCHPAD" links={launchpadLinks} />
+              </div>
               <div>
                 <LinkList title="LEARN" links={learnLinks} />
-              </div>
-
-              {/* Column 6: MARKETPLACE & SUPPORT */}
-              <div className="grid grid-rows-2 gap-8">
-                <LinkList title="MARKETPLACE" links={marketplaceLinks} />
-                <LinkList title="SUPPORT" links={supportLinks} />
               </div>
             </div>
           </div>
@@ -296,7 +294,7 @@ export function ExpandedFooter({
                   </Link>
                 ))}
               </div>
-              <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400 mb-4">
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-gray-400 mb-4">
                 <Link
                   href="https://docs.moondao.com"
                   target="_blank"
@@ -322,6 +320,18 @@ export function ExpandedFooter({
                   className="hover:text-white transition-colors"
                 >
                   Trade $MOONEY
+                </Link>
+                <span className="text-gray-600">•</span>
+                {/* Support used to be its own footer column, but the top-nav
+                    has no Support group. Surface it here as a utility link
+                    so users still have a one-click path to help. */}
+                <Link
+                  href="https://discord.gg/moondao"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Submit a Ticket
                 </Link>
               </div>
             </div>
