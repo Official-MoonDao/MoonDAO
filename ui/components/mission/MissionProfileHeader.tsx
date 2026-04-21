@@ -141,105 +141,166 @@ const MissionProfileHeader = React.memo(
       offChainCommittedUsd,
     ])
 
+    /** Mission 4 (Frank's Overview Flight) gets a special header layout where
+     *  the title + tagline span the full content width, with the image and
+     *  funding card sitting side-by-side underneath. Other missions keep the
+     *  original side-by-side title/image arrangement. */
+    const isOverviewMission =
+      mission?.id === 4 || String(mission?.id) === '4'
+
+    const titleBlock = (
+      <div className="space-y-2">
+        <div className="flex items-start gap-2">
+          {mission?.metadata?.name && (
+            <MissionSingleLineTitle
+              text={mission.metadata.name}
+              minPx={22}
+              // Allow the title to scale up when it has the full content
+              // width to itself (Overview Mission layout); cap at the
+              // standard size otherwise.
+              maxPx={isOverviewMission ? 64 : 42}
+              data-testid="mission-profile-title"
+            />
+          )}
+          {isManager && setMissionMetadataModalEnabled && (
+            <button
+              className="shrink-0 mt-1 p-2 bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-xl transition-all duration-200 border border-white/10 hover:border-white/20"
+              onClick={() => setMissionMetadataModalEnabled(true)}
+              title="Edit Mission"
+            >
+              <PencilIcon width={16} height={16} className="text-white/70 hover:text-white" />
+            </button>
+          )}
+        </div>
+        {mission?.metadata?.tagline && (
+          <p
+            className={
+              isOverviewMission
+                ? 'text-base sm:text-lg md:text-xl text-gray-300 leading-relaxed max-w-3xl'
+                : 'text-base sm:text-lg text-gray-400 leading-relaxed max-w-2xl'
+            }
+          >
+            {mission.metadata.tagline}
+          </p>
+        )}
+        {/* Team Attribution sits with the title in the Overview layout so it
+            reads as part of the full-width header block. */}
+        {isOverviewMission && ruleset && teamNFT?.metadata?.name && (
+          <div className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500 pt-1">
+            <span>
+              Launched{' '}
+              {new Date(ruleset?.[0]?.start * 1000).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </span>
+            <span>·</span>
+            <Link
+              href={`/team/${generatePrettyLink(teamNFT?.metadata?.name)}`}
+              className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
+            >
+              {teamNFT?.metadata?.name}
+            </Link>
+          </div>
+        )}
+      </div>
+    )
+
+    const imageBlock = (
+      <div className="w-full min-w-0 lg:h-full lg:min-h-0 flex flex-col">
+        <div className="relative group w-full flex-1 min-h-0">
+          {mission?.metadata?.logoUri ? (
+            <div className="relative aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+              <IPFSRenderer
+                src={mission?.metadata?.logoUri}
+                fillContainer
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                height={640}
+                width={640}
+                alt="Mission Image"
+                sizes="(max-width: 1024px) 100vw, 560px"
+              />
+              {teamNFT?.metadata?.image && (
+                <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
+                  <IPFSRenderer
+                    src={teamNFT?.metadata?.image}
+                    className="w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full border-2 border-[#090d21] shadow-lg ring-2 ring-white/10"
+                    height={72}
+                    width={72}
+                    alt="Team Image"
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl">
+              <div className="text-center px-4">
+                <div className="w-12 h-12 mx-auto mb-3 bg-indigo-500/20 rounded-xl flex items-center justify-center">
+                  <Image src="/assets/icon-star-blue.svg" alt="Mission" width={24} height={24} />
+                </div>
+                <p className="text-gray-500 text-sm">Mission Image</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+
     return (
       <div className="w-full bg-[#090d21] relative">
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent pointer-events-none" />
 
         <div className="relative z-10 w-full px-5 md:px-8 lg:px-12 pt-6 pb-4 lg:pt-8 lg:pb-6">
-          <div className="w-full grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-10 items-start lg:items-stretch max-w-[1200px] mx-auto">
-            {/* Mission image — square on mobile; on lg stretches to match copy column height (object-cover) */}
-            <div className="w-full min-w-0 lg:h-full lg:min-h-0 flex flex-col">
-              <div className="relative group w-full flex-1 min-h-0">
-                {mission?.metadata?.logoUri ? (
-                  <div className="relative aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
-                    <IPFSRenderer
-                      src={mission?.metadata?.logoUri}
-                      fillContainer
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                      height={640}
-                      width={640}
-                      alt="Mission Image"
-                      sizes="(max-width: 1024px) 100vw, 560px"
-                    />
-                    {teamNFT?.metadata?.image && (
-                      <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
-                        <IPFSRenderer
-                          src={teamNFT?.metadata?.image}
-                          className="w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full border-2 border-[#090d21] shadow-lg ring-2 ring-white/10"
-                          height={72}
-                          width={72}
-                          alt="Team Image"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl">
-                    <div className="text-center px-4">
-                      <div className="w-12 h-12 mx-auto mb-3 bg-indigo-500/20 rounded-xl flex items-center justify-center">
-                        <Image src="/assets/icon-star-blue.svg" alt="Mission" width={24} height={24} />
-                      </div>
-                      <p className="text-gray-500 text-sm">Mission Image</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div
+            className={`w-full max-w-[1200px] mx-auto ${
+              isOverviewMission
+                ? // Overview Mission layout: title spans full width up top,
+                //   then image + funding card side-by-side below.
+                  'flex flex-col gap-6 lg:gap-8'
+                : ''
+            }`}
+          >
+            {isOverviewMission && titleBlock}
+            <div
+              className={`w-full grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-10 items-start lg:items-stretch ${
+                isOverviewMission ? '' : 'max-w-[1200px] mx-auto'
+              }`}
+            >
+              {/* Mission image — square on mobile; on lg stretches to match copy column height (object-cover) */}
+              {imageBlock}
 
-            {/* Mission copy + funding (same column width as image on lg) */}
-            <div className="flex flex-col justify-center lg:justify-start min-w-0 mt-1 lg:mt-0 lg:h-full lg:min-h-0 space-y-4">
-              {/* Title & Tagline */}
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  {mission?.metadata?.name && (
-                    <MissionSingleLineTitle
-                      text={mission.metadata.name}
-                      minPx={22}
-                      maxPx={42}
-                      data-testid="mission-profile-title"
-                    />
-                  )}
-                  {isManager && setMissionMetadataModalEnabled && (
-                    <button
-                      className="shrink-0 mt-1 p-2 bg-white/5 hover:bg-white/10 backdrop-blur-sm rounded-xl transition-all duration-200 border border-white/10 hover:border-white/20"
-                      onClick={() => setMissionMetadataModalEnabled(true)}
-                      title="Edit Mission"
+              {/* Mission copy + funding (same column width as image on lg) */}
+              <div className="flex flex-col justify-center lg:justify-start min-w-0 mt-1 lg:mt-0 lg:h-full lg:min-h-0 space-y-4">
+                {/* Title & Tagline (only in the default layout — the Overview
+                    layout renders these full-width above this grid). */}
+                {!isOverviewMission && titleBlock}
+
+                {/* Team Attribution (only in the default layout — Overview puts
+                    this with the title block). */}
+                {!isOverviewMission && ruleset && teamNFT?.metadata?.name && (
+                  <div className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
+                    <span>
+                      Launched{' '}
+                      {new Date(ruleset?.[0]?.start * 1000).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                    <span>·</span>
+                    <Link
+                      href={`/team/${generatePrettyLink(teamNFT?.metadata?.name)}`}
+                      className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
                     >
-                      <PencilIcon width={16} height={16} className="text-white/70 hover:text-white" />
-                    </button>
-                  )}
-                </div>
-                {mission?.metadata?.tagline && (
-                  <p className="text-base sm:text-lg text-gray-400 leading-relaxed max-w-2xl">
-                    {mission.metadata.tagline}
-                  </p>
+                      {teamNFT?.metadata?.name}
+                    </Link>
+                  </div>
                 )}
-              </div>
 
-              {/* Team Attribution */}
-              {ruleset && teamNFT?.metadata?.name && (
-                <div className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
-                  <span>
-                    Launched{' '}
-                    {new Date(ruleset?.[0]?.start * 1000).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </span>
-                  <span>·</span>
-                  <Link
-                    href={`/team/${generatePrettyLink(teamNFT?.metadata?.name)}`}
-                    className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    {teamNFT?.metadata?.name}
-                  </Link>
-                </div>
-              )}
-
-              {/* Funding Card */}
-              <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-white/[0.06] w-full">
+                {/* Funding Card */}
+                <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-white/[0.06] w-full">
                 {/* Amount Raised + CTA Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                   <div className="min-w-0 w-full sm:w-auto">
@@ -444,6 +505,7 @@ const MissionProfileHeader = React.memo(
                       {paymentsCount || 0}
                     </p>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
