@@ -184,6 +184,11 @@ export default function WeeklyRewardPool() {
               params: [address],
             })
 
+            const hasVMooney =
+              vMooneyBalance !== undefined &&
+              vMooneyBalance !== null &&
+              vMooneyBalance > BigInt(0)
+
             return {
               chain,
               slug,
@@ -192,6 +197,7 @@ export default function WeeklyRewardPool() {
               last,
               count,
               vMooneyBalance,
+              hasVMooney,
               checkedInOnChain: last === start,
             }
           })
@@ -205,22 +211,26 @@ export default function WeeklyRewardPool() {
           last: bigint
           count: bigint
           vMooneyBalance: bigint
+          hasVMooney: boolean
           checkedInOnChain: boolean
         }>
 
         setFeeData(results)
 
-        // aggregate counts & allChecked
-        const { totalCount, allChecked } = results.reduce(
-          (acc, { last, start, count }) => {
-            acc.totalCount += Number(count || BigInt(0))
-            if (last !== start) {
-              acc.allChecked = false
-            }
-            return acc
-          },
-          { totalCount: 0, allChecked: true }
+        // Only chains where the user actually holds vMOONEY are eligible for
+        // check-in (the FeeHook reverts otherwise). The "checked in" state
+        // should therefore only consider those chains; otherwise a user who
+        // has vMOONEY on one chain (e.g. Arbitrum) and is already checked in
+        // there would be incorrectly shown as "not checked in" because they
+        // have a 0 balance on the other chains.
+        const eligibleChains = results.filter((r) => r.hasVMooney)
+        const totalCount = results.reduce(
+          (acc, { count }) => acc + Number(count || BigInt(0)),
+          0
         )
+        const allChecked =
+          eligibleChains.length > 0 &&
+          eligibleChains.every(({ checkedInOnChain }) => checkedInOnChain)
 
         setCheckedInCount(totalCount)
         setIsCheckedIn(allChecked)
@@ -245,6 +255,8 @@ export default function WeeklyRewardPool() {
 
       const currentChain = contextSelectedChain
       let transactionsSent = 0
+      let alreadyCheckedInCount = 0
+      let eligibleChainsCount = 0
 
       const waitForChainSwitch = async (targetChainId: number, maxWait = 5000) => {
         const startTime = Date.now()
@@ -259,8 +271,12 @@ export default function WeeklyRewardPool() {
       }
 
       for (const data of feeData) {
-        if (data.checkedInOnChain) continue
         if (!data.vMooneyBalance || data.vMooneyBalance === BigInt(0)) {
+          continue
+        }
+        eligibleChainsCount++
+        if (data.checkedInOnChain) {
+          alreadyCheckedInCount++
           continue
         }
 
@@ -365,9 +381,22 @@ export default function WeeklyRewardPool() {
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
+        if (alreadyCheckedInCount + transactionsSent === eligibleChainsCount) {
+          setIsCheckedIn(true)
+        }
+      } else if (eligibleChainsCount === 0) {
+        toast.error(
+          'No vMOONEY detected on Ethereum, Arbitrum, or Base. Lock MOONEY to participate.',
+          { style: toastStyle }
+        )
+      } else if (alreadyCheckedInCount === eligibleChainsCount) {
+        toast(
+          "You're already checked in for this week. Rewards are distributed automatically each week.",
+          { style: toastStyle }
+        )
         setIsCheckedIn(true)
       } else {
-        toast.error('No check-ins needed. You may already be checked in or have no vMOONEY.', {
+        toast.error('No check-ins were submitted. Please try again.', {
           style: toastStyle,
         })
       }
@@ -431,7 +460,11 @@ export default function WeeklyRewardPool() {
         <div className="space-y-4">
           {!address || (VMOONEYBalance && VMOONEYBalance > 0) ? (
             <PrivyWeb3Button
-              label={isCheckedIn ? 'Already Checked In' : 'Check In & Claim Reward'}
+              label={
+                isCheckedIn
+                  ? 'Checked In • Reward Auto-Distributes Weekly'
+                  : 'Check In For This Week'
+              }
               action={handleCheckIn}
               isDisabled={isCheckedIn}
               className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-lg whitespace-nowrap ${
