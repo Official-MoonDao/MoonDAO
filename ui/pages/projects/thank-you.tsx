@@ -1,4 +1,4 @@
-import { CheckIcon } from '@heroicons/react/24/outline'
+import { ArrowRightIcon, CheckIcon } from '@heroicons/react/24/outline'
 import DistributionABI from 'const/abis/DistributionTable.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
@@ -170,9 +170,9 @@ export default function RewardsThankYou({
 
             {/* Allocation breakdown */}
             <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6">
-              <div className="flex items-end justify-between flex-wrap gap-2 mb-3 sm:mb-4">
+              <div className="flex items-end justify-between flex-wrap gap-2 mb-1">
                 <h3 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
-                  Your Allocation
+                  Your Submitted Allocation
                 </h3>
                 {hasAllocations && (
                   <span className="text-[11px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono">
@@ -181,6 +181,9 @@ export default function RewardsThankYou({
                   </span>
                 )}
               </div>
+              <p className="text-xs sm:text-sm text-gray-400 mb-3 sm:mb-4">
+                This is the breakdown your wallet voted for in Q{quarter} {year}.
+              </p>
 
               {showLoadingState && (
                 <div className="flex flex-col gap-2">
@@ -240,32 +243,39 @@ export default function RewardsThankYou({
               )}
 
               <p className="mt-4 text-xs sm:text-sm text-gray-400 leading-relaxed">
-                You can update this allocation at any time before the end of
-                the quarter by resubmitting on the{' '}
-                <Link
-                  href="/projects"
-                  className="text-blue-300 hover:text-blue-200 underline underline-offset-2"
-                >
-                  projects
-                </Link>{' '}
-                page.
+                Changed your mind? You can resubmit a new allocation any time
+                before the quarter ends — it will replace the one above.
               </p>
             </div>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <Link
-                href="/projects"
-                className="flex-1 sm:flex-initial text-center px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-RobotoMono shadow-lg hover:shadow-xl transition-all duration-200 min-w-[180px]"
-              >
-                Back to Projects
-              </Link>
-              <Link
-                href="/"
-                className="flex-1 sm:flex-initial text-center px-4 py-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white text-sm font-RobotoMono transition-colors min-w-[180px]"
-              >
-                Return Home
-              </Link>
+            {/* Update / Return CTAs */}
+            <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <div className="min-w-0">
+                  <h4 className="font-GoodTimes text-sm sm:text-base text-white tracking-wider">
+                    Want to change your vote?
+                  </h4>
+                  <p className="text-xs sm:text-sm text-gray-400 mt-1 leading-relaxed">
+                    Head back to the projects page to submit a new allocation
+                    and overwrite this one.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:shrink-0">
+                  <Link
+                    href="/projects"
+                    className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-RobotoMono shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+                  >
+                    <span>Update My Allocation</span>
+                    <ArrowRightIcon className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                  </Link>
+                  <Link
+                    href="/"
+                    className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white text-sm font-RobotoMono transition-colors min-w-[140px]"
+                  >
+                    Return Home
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </ContentLayout>
