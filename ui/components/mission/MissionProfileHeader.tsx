@@ -210,21 +210,20 @@ const MissionProfileHeader = React.memo(
     /** The Overview Mission's artwork is essentially square, so stretching it
      *  to fill the funding card's height on `lg+` (the default behaviour) was
      *  cropping the top and bottom via `object-cover`. For mission 4 we lock
-     *  the image to `aspect-square` at every breakpoint and bound it with a
-     *  `max-w` so it stays roughly the same height as the funding card on
-     *  wide screens (instead of becoming a giant 720px square). We also
-     *  switch to `object-contain` so any minor source-aspect mismatch shows
-     *  thin matching-color letterboxing instead of cropping subject matter.
+     *  the image to `aspect-square` at every breakpoint and let it fill its
+     *  column (the grid below splits 1:1 for Overview, so the column width
+     *  ≈580px on a 1200px layout — the resulting square is balanced against
+     *  the funding card height-wise). We use `object-contain` so any minor
+     *  source-aspect mismatch shows thin matching-color letterboxing instead
+     *  of cropping subject matter.
      *
      *  Other missions keep the existing fill-to-match behaviour so wider
      *  mission images can still match the copy column. */
     const imageAspectClass = isOverviewMission
-      ? // square at every breakpoint; bounded so it doesn't dwarf the
-        // funding card on lg+. mx-auto centers within the wider 3fr column.
-        'aspect-square w-full max-w-[520px] mx-auto'
+      ? 'aspect-square w-full'
       : 'aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full'
     const imageWrapperClass = isOverviewMission
-      ? 'w-full min-w-0 flex flex-col self-start'
+      ? 'w-full min-w-0 flex flex-col'
       : 'w-full min-w-0 lg:h-full lg:min-h-0 flex flex-col'
     const imageObjectFitClass = isOverviewMission
       ? // matches the page bg so any letterbox bars look intentional, not boxed
@@ -245,7 +244,7 @@ const MissionProfileHeader = React.memo(
                 height={640}
                 width={640}
                 alt="Mission Image"
-                sizes="(max-width: 1024px) 100vw, 520px"
+                sizes="(max-width: 1024px) 100vw, 580px"
               />
               {teamNFT?.metadata?.image && (
                 <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
@@ -292,8 +291,13 @@ const MissionProfileHeader = React.memo(
           >
             {isOverviewMission && titleBlock}
             <div
-              className={`w-full grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-10 items-start lg:items-stretch ${
-                isOverviewMission ? '' : 'max-w-[1200px] mx-auto'
+              className={`w-full grid grid-cols-1 gap-8 lg:gap-10 items-start lg:items-stretch ${
+                isOverviewMission
+                  ? // 1:1 split lets the funding card claim the full half of
+                    // the row so it reads as a true "co-equal" panel with
+                    // the artwork instead of a narrow side rail.
+                    'lg:grid-cols-2'
+                  : 'lg:grid-cols-[3fr_2fr] max-w-[1200px] mx-auto'
               }`}
             >
               {/* Mission image — square on mobile; on lg stretches to match copy column height (object-cover) */}
@@ -327,8 +331,19 @@ const MissionProfileHeader = React.memo(
                   </div>
                 )}
 
-                {/* Funding Card */}
-                <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-white/[0.06] w-full">
+                {/* Funding Card. For the Overview Mission we stretch this
+                    card to fill the full height of the row so its bottom
+                    edge aligns with the square hero image. The content
+                    inside stays top-aligned and the bottom (Stats Row) is
+                    pushed to the card's bottom via mt-auto, which gives a
+                    balanced look without big midsection gaps. */}
+                <div
+                  className={`bg-white/[0.03] backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-white/[0.06] w-full ${
+                    isOverviewMission
+                      ? 'lg:flex-1 lg:min-h-0 lg:flex lg:flex-col'
+                      : ''
+                  }`}
+                >
                 {/* Amount Raised + CTA Row */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                   <div className="min-w-0 w-full sm:w-auto">
@@ -442,8 +457,16 @@ const MissionProfileHeader = React.memo(
                   ) : null}
                 </div>
 
-                {/* Stats Row */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                {/* Stats Row. On the Overview layout the funding card is
+                    stretched to match the hero image; mt-auto pushes this
+                    row to the card's bottom so the extra height shows up
+                    as breathing room above the stats rather than a gap
+                    below them. */}
+                <div
+                  className={`grid grid-cols-3 gap-2 sm:gap-3 ${
+                    isOverviewMission ? 'lg:mt-auto' : ''
+                  }`}
+                >
                   {/* Goal */}
                   <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
                     <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
