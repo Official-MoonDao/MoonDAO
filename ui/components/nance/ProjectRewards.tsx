@@ -803,74 +803,140 @@ export function ProjectRewards({
                     },
                   ]
 
+                  const activePhase = phases.find((p) => p.active) ?? phases[0]
                   return (
                     <div className="w-full pt-3 pb-1">
-                      <div className="flex items-start justify-between gap-1 sm:gap-2">
-                        {phases.map((phase, idx) => (
-                          <div
-                            key={phase.id}
-                            className="flex items-start flex-1 min-w-0"
-                          >
-                            <div className="flex flex-col items-center flex-1 min-w-0">
-                              <div className="relative">
-                                <div
-                                  className={`w-8 h-8 sm:w-11 sm:h-11 rounded-full flex items-center justify-center border-2 transition-all ${
-                                    phase.active
-                                      ? 'bg-gradient-to-br from-blue-500 to-purple-600 border-white/40 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]'
-                                      : 'bg-white/5 border-white/15 text-gray-500'
-                                  }`}
-                                >
-                                  {phase.icon}
-                                </div>
+                      {/* Mobile: icon-only stepper with active-phase callout
+                          below. Trying to cram 7 labelled columns onto a
+                          ~360px screen makes every label illegible. */}
+                      <div className="sm:hidden">
+                        <div className="flex items-center justify-between">
+                          {phases.map((phase, idx) => (
+                            <div
+                              key={phase.id}
+                              className="flex items-center flex-1 min-w-0 last:flex-none"
+                            >
+                              <div
+                                className={`relative w-9 h-9 shrink-0 rounded-full flex items-center justify-center border-2 transition-all ${
+                                  phase.active
+                                    ? 'bg-gradient-to-br from-blue-500 to-purple-600 border-white/40 text-white shadow-[0_0_14px_rgba(99,102,241,0.55)]'
+                                    : 'bg-white/5 border-white/15 text-gray-500'
+                                }`}
+                                aria-label={`${phase.label} ${phase.subtitle}${
+                                  phase.active ? ' (current phase)' : ''
+                                }`}
+                              >
+                                {phase.icon}
                                 {phase.active && (
-                                  <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                                  <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
                                   </span>
                                 )}
                               </div>
-                              <div className="mt-2 flex flex-col items-center w-full px-0.5">
-                                <div className="flex items-center justify-center gap-1 max-w-full">
-                                  <span
-                                    className={`text-[10px] sm:text-xs font-RobotoMono font-semibold uppercase tracking-wider leading-tight text-center truncate ${
-                                      phase.active ? 'text-white' : 'text-gray-500'
+                              {idx < phases.length - 1 && (
+                                <div
+                                  className={`h-0.5 flex-1 mx-1 rounded-full ${
+                                    phase.active || phases[idx + 1].active
+                                      ? 'bg-gradient-to-r from-blue-500/60 to-purple-600/60'
+                                      : 'bg-white/10'
+                                  }`}
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 rounded-lg bg-black/30 border border-emerald-400/20 p-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-RobotoMono font-bold uppercase tracking-wider text-emerald-300 bg-emerald-400/15 border border-emerald-400/30 px-1.5 py-0.5 rounded">
+                              Now
+                            </span>
+                            <span className="text-sm font-GoodTimes text-white">
+                              {activePhase.label}
+                              {activePhase.subtitle ? (
+                                <span className="text-blue-300 font-normal">
+                                  {' '}
+                                  · {activePhase.subtitle}
+                                </span>
+                              ) : null}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-300 leading-relaxed mt-2">
+                            {activePhase.tooltip}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Desktop: horizontal stepper with labels under each
+                          circle. Plenty of room here for the full layout. */}
+                      <div className="hidden sm:block">
+                        <div className="flex items-start justify-between gap-2">
+                          {phases.map((phase, idx) => (
+                            <div
+                              key={phase.id}
+                              className="flex items-start flex-1 min-w-0"
+                            >
+                              <div className="flex flex-col items-center flex-1 min-w-0">
+                                <div className="relative">
+                                  <div
+                                    className={`w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all ${
+                                      phase.active
+                                        ? 'bg-gradient-to-br from-blue-500 to-purple-600 border-white/40 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]'
+                                        : 'bg-white/5 border-white/15 text-gray-500'
                                     }`}
                                   >
-                                    {phase.label}
-                                  </span>
-                                  <Tooltip
-                                    compact
-                                    text={phase.tooltip}
-                                    buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 shrink-0"
-                                  >
-                                    ?
-                                  </Tooltip>
+                                    {phase.icon}
+                                  </div>
+                                  {phase.active && (
+                                    <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                                    </span>
+                                  )}
                                 </div>
-                                <span
-                                  className={`hidden sm:inline text-[10px] sm:text-xs leading-tight text-center truncate max-w-full ${
-                                    phase.active ? 'text-blue-300' : 'text-gray-600'
-                                  }`}
-                                >
-                                  {phase.subtitle}
-                                </span>
-                                {phase.active && (
-                                  <span className="mt-1 px-1.5 py-0.5 rounded-sm text-[9px] font-RobotoMono font-bold uppercase tracking-wider bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
-                                    Now
+                                <div className="mt-2 flex flex-col items-center w-full px-0.5">
+                                  <div className="flex items-center justify-center gap-1 max-w-full">
+                                    <span
+                                      className={`text-xs font-RobotoMono font-semibold uppercase tracking-wider leading-tight text-center truncate ${
+                                        phase.active ? 'text-white' : 'text-gray-500'
+                                      }`}
+                                    >
+                                      {phase.label}
+                                    </span>
+                                    <Tooltip
+                                      compact
+                                      text={phase.tooltip}
+                                      buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 shrink-0"
+                                    >
+                                      ?
+                                    </Tooltip>
+                                  </div>
+                                  <span
+                                    className={`text-xs leading-tight text-center truncate max-w-full ${
+                                      phase.active ? 'text-blue-300' : 'text-gray-600'
+                                    }`}
+                                  >
+                                    {phase.subtitle}
                                   </span>
-                                )}
+                                  {phase.active && (
+                                    <span className="mt-1 px-1.5 py-0.5 rounded-sm text-[9px] font-RobotoMono font-bold uppercase tracking-wider bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                                      Now
+                                    </span>
+                                  )}
+                                </div>
                               </div>
+                              {idx < phases.length - 1 && (
+                                <div
+                                  className={`h-0.5 flex-shrink-0 flex-1 mt-[22px] mx-1 rounded-full ${
+                                    phase.active || phases[idx + 1].active
+                                      ? 'bg-gradient-to-r from-blue-500/60 to-purple-600/60'
+                                      : 'bg-white/10'
+                                  }`}
+                                />
+                              )}
                             </div>
-                            {idx < phases.length - 1 && (
-                              <div
-                                className={`h-0.5 flex-shrink-0 w-3 sm:w-auto sm:flex-1 mt-[16px] sm:mt-[22px] mx-0.5 sm:mx-1 rounded-full ${
-                                  phase.active || phases[idx + 1].active
-                                    ? 'bg-gradient-to-r from-blue-500/60 to-purple-600/60'
-                                    : 'bg-white/10'
-                                }`}
-                              />
-                            )}
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )
@@ -901,15 +967,38 @@ export function ProjectRewards({
             {/* Tabs - switch between Project Proposals, Active Projects, Past Projects */}
             {(() => {
               const pastProjectsWithReports = pastProjects?.filter(hasFinalReport) ?? []
-              const tabs: { id: ProjectTab; label: string; count: number }[] = [
-                { id: 'proposals', label: 'Project Proposals', count: proposals?.length ?? 0 },
-                { id: 'active', label: 'Active Projects', count: currentProjects?.length ?? 0 },
+              // `mobileLabel` is rendered <sm; the longer `label` shows from
+              // sm up. Keeps the row from horizontally scrolling on phones.
+              const tabs: {
+                id: ProjectTab
+                label: string
+                mobileLabel: string
+                count: number
+              }[] = [
+                {
+                  id: 'proposals',
+                  label: 'Project Proposals',
+                  mobileLabel: 'Proposals',
+                  count: proposals?.length ?? 0,
+                },
+                {
+                  id: 'active',
+                  label: 'Active Projects',
+                  mobileLabel: 'Active',
+                  count: currentProjects?.length ?? 0,
+                },
                 {
                   id: 'retroactive',
                   label: 'Retroactive Rewards',
+                  mobileLabel: 'Retro',
                   count: eligibleProjects?.length ?? 0,
                 },
-                { id: 'past', label: 'Past Projects', count: pastProjectsWithReports.length },
+                {
+                  id: 'past',
+                  label: 'Past Projects',
+                  mobileLabel: 'Past',
+                  count: pastProjectsWithReports.length,
+                },
               ]
               return (
                 <div
@@ -933,8 +1022,9 @@ export function ProjectRewards({
                             : 'bg-transparent border-transparent text-gray-500 hover:text-gray-200'
                         }`}
                       >
-                        <span className="flex items-center gap-2">
-                          <span>{tab.label}</span>
+                        <span className="flex items-center gap-1.5 sm:gap-2">
+                          <span className="sm:hidden">{tab.mobileLabel}</span>
+                          <span className="hidden sm:inline">{tab.label}</span>
                           <span
                             className={`inline-flex items-center justify-center min-w-[20px] px-1.5 h-5 rounded-full text-[10px] font-semibold ${
                               isActive
