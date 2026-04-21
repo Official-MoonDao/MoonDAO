@@ -249,17 +249,23 @@ export default function Fees() {
               const hookAddress = FEE_HOOK_ADDRESSES[slug]
               if (!hookAddress) return BigNumber.from(0)
 
-              const contract = getContract({
-                client,
-                address: hookAddress,
-                abi: FeeHook.abi as any,
-                chain,
-              })
-              return readContract({
-                contract,
-                method: 'estimateFees',
-                params: [address],
-              }).catch(() => BigNumber.from(0))
+              try {
+                const contract = getContract({
+                  client,
+                  address: hookAddress,
+                  abi: FeeHook.abi as any,
+                  chain,
+                })
+                const estimate = await readContract({
+                  contract,
+                  method: 'estimateFees',
+                  params: [address],
+                })
+                return BigNumber.from(estimate?.toString() || '0')
+              } catch (err) {
+                console.error(`Error fetching estimate for ${slug}:`, err)
+                return BigNumber.from(0)
+              }
             })
           )
         ).reduce((acc, est) => acc.add(est || BigNumber.from(0)), BigNumber.from(0))
@@ -267,6 +273,7 @@ export default function Fees() {
         setEstimatedFees(ethers.utils.formatEther(totalEstimated))
       } catch (e) {
         console.error('Error fetching estimates:', e)
+        setEstimatedFees('0')
       }
     }
 
@@ -277,10 +284,15 @@ export default function Fees() {
     if (!address) return
 
     const fetchStatus = async () => {
-      try {
-        const raw = await Promise.all(
-          chains.map(async (chain) => {
-            const slug = getChainSlug(chain)
+      // Each chain is fetched independently. A single chain failure (RPC
+      // hiccup, rate limit, etc.) used to reject the whole Promise.all and
+      // leave `feeData` empty, surfacing as "No fee data available" when the
+      // user tried to check in. Isolate failures per-chain so the remaining
+      // chains still populate.
+      const raw = await Promise.all(
+        chains.map(async (chain) => {
+          const slug = getChainSlug(chain)
+          try {
             const hookAddress = FEE_HOOK_ADDRESSES[slug]
             if (!hookAddress) return null
 
@@ -339,31 +351,32 @@ export default function Fees() {
               hasVMooney,
               checkedInOnChain: last === start,
             }
-          })
-        )
+          } catch (err) {
+            console.error(`Error fetching check-in status for ${slug}:`, err)
+            return null
+          }
+        })
+      )
 
-        const results = raw.filter((r) => r !== null) as FeeChainData[]
-        setFeeData(results)
+      const results = raw.filter((r) => r !== null) as FeeChainData[]
+      setFeeData(results)
 
-        // Only chains where the user actually holds vMOONEY are eligible to
-        // check in (the FeeHook reverts otherwise). Aggregating "checked in"
-        // across all chains regardless of balance would mean a user with
-        // vMOONEY only on Arbitrum is forever shown as "not checked in"
-        // because they can never check in on Ethereum / Base.
-        const eligibleChains = results.filter((r) => r.hasVMooney)
-        const totalCount = results.reduce(
-          (acc, { count }) => acc + Number(count || BigInt(0)),
-          0
-        )
-        const allChecked =
-          eligibleChains.length > 0 &&
-          eligibleChains.every(({ checkedInOnChain }) => checkedInOnChain)
+      // Only chains where the user actually holds vMOONEY are eligible to
+      // check in (the FeeHook reverts otherwise). Aggregating "checked in"
+      // across all chains regardless of balance would mean a user with
+      // vMOONEY only on Arbitrum is forever shown as "not checked in"
+      // because they can never check in on Ethereum / Base.
+      const eligibleChains = results.filter((r) => r.hasVMooney)
+      const totalCount = results.reduce(
+        (acc, { count }) => acc + Number(count || BigInt(0)),
+        0
+      )
+      const allChecked =
+        eligibleChains.length > 0 &&
+        eligibleChains.every(({ checkedInOnChain }) => checkedInOnChain)
 
-        setCheckedInCount(totalCount)
-        setIsCheckedIn(allChecked)
-      } catch (err) {
-        console.error('Error fetching check‑in status:', err)
-      }
+      setCheckedInCount(totalCount)
+      setIsCheckedIn(allChecked)
     }
 
     fetchStatus()

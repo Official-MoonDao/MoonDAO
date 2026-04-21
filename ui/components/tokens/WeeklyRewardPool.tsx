@@ -110,17 +110,23 @@ export default function WeeklyRewardPool() {
               const hookAddress = FEE_HOOK_ADDRESSES[slug]
               if (!hookAddress) return BigNumber.from(0)
 
-              const contract = getContract({
-                client,
-                address: hookAddress,
-                abi: FeeHook.abi as any,
-                chain,
-              })
-              return readContract({
-                contract,
-                method: 'estimateFees',
-                params: [address],
-              }).catch(() => BigNumber.from(0))
+              try {
+                const contract = getContract({
+                  client,
+                  address: hookAddress,
+                  abi: FeeHook.abi as any,
+                  chain,
+                })
+                const estimate = await readContract({
+                  contract,
+                  method: 'estimateFees',
+                  params: [address],
+                })
+                return BigNumber.from(estimate?.toString() || '0')
+              } catch (err) {
+                console.error(`Error fetching estimate for ${slug}:`, err)
+                return BigNumber.from(0)
+              }
             })
           )
         ).reduce((acc, est) => acc.add(est || BigNumber.from(0)), BigNumber.from(0))
@@ -128,6 +134,7 @@ export default function WeeklyRewardPool() {
         setEstimatedFees(ethers.utils.formatEther(totalEstimated))
       } catch (e) {
         console.error('Error fetching estimates:', e)
+        setEstimatedFees('0')
       }
     }
 
@@ -138,10 +145,15 @@ export default function WeeklyRewardPool() {
     if (!address) return
 
     const fetchStatus = async () => {
-      try {
-        const raw = await Promise.all(
-          chains.map(async (chain) => {
-            const slug = getChainSlug(chain)
+      // Each chain is fetched independently. A single chain failure (e.g.
+      // public RPC hiccup or rate limit) used to reject the whole Promise.all
+      // and leave `feeData` empty, which surfaced as "No fee data available"
+      // when the user tried to check in. Isolate failures per-chain so the
+      // remaining chains still populate.
+      const raw = await Promise.all(
+        chains.map(async (chain) => {
+          const slug = getChainSlug(chain)
+          try {
             const hookAddress = FEE_HOOK_ADDRESSES[slug]
             if (!hookAddress) return null
 
@@ -200,43 +212,44 @@ export default function WeeklyRewardPool() {
               hasVMooney,
               checkedInOnChain: last === start,
             }
-          })
-        )
+          } catch (err) {
+            console.error(`Error fetching check-in status for ${slug}:`, err)
+            return null
+          }
+        })
+      )
 
-        const results = raw.filter((r) => r) as Array<{
-          chain: any
-          slug: string
-          contract: any
-          start: bigint
-          last: bigint
-          count: bigint
-          vMooneyBalance: bigint
-          hasVMooney: boolean
-          checkedInOnChain: boolean
-        }>
+      const results = raw.filter((r) => r) as Array<{
+        chain: any
+        slug: string
+        contract: any
+        start: bigint
+        last: bigint
+        count: bigint
+        vMooneyBalance: bigint
+        hasVMooney: boolean
+        checkedInOnChain: boolean
+      }>
 
-        setFeeData(results)
+      setFeeData(results)
 
-        // Only chains where the user actually holds vMOONEY are eligible for
-        // check-in (the FeeHook reverts otherwise). The "checked in" state
-        // should therefore only consider those chains; otherwise a user who
-        // has vMOONEY on one chain (e.g. Arbitrum) and is already checked in
-        // there would be incorrectly shown as "not checked in" because they
-        // have a 0 balance on the other chains.
-        const eligibleChains = results.filter((r) => r.hasVMooney)
-        const totalCount = results.reduce(
-          (acc, { count }) => acc + Number(count || BigInt(0)),
-          0
-        )
-        const allChecked =
-          eligibleChains.length > 0 &&
-          eligibleChains.every(({ checkedInOnChain }) => checkedInOnChain)
+      // Only chains where the user actually holds vMOONEY are eligible for
+      // check-in (the FeeHook reverts otherwise). The "checked in" state
+      // should therefore only consider those chains; otherwise a user who
+      // has vMOONEY on one chain (e.g. Arbitrum) and is already checked in
+      // there would be incorrectly shown as "not checked in" because they
+      // have a 0 balance on the other chains.
+      const eligibleChains = results.filter((r) => r.hasVMooney)
+      const totalCount = results.reduce(
+        (acc, { count }) => acc + Number(count || BigInt(0)),
+        0
+      )
+      const allChecked =
+        eligibleChains.length > 0 &&
+        eligibleChains.every(({ checkedInOnChain }) => checkedInOnChain)
 
-        setCheckedInCount(totalCount)
-        setIsCheckedIn(allChecked)
-      } catch (err) {
-        console.error('Error fetching check‑in status:', err)
-      }
+      setCheckedInCount(totalCount)
+      setIsCheckedIn(allChecked)
     }
 
     fetchStatus()
