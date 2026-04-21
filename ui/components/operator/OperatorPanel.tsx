@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import type { MemberVoteOverride } from '@/lib/operator/memberVote'
 import type { RetroCycleOverride } from '@/lib/operator/retroCycle'
 import type { SenateVoteOverride } from '@/lib/operator/senateVote'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
@@ -28,6 +29,11 @@ export default function OperatorPanel({
     null
   )
   const [senateOverrideLoading, setSenateOverrideLoading] = useState(false)
+  const [memberOverride, setMemberOverride] = useState<MemberVoteOverride | null>(
+    null
+  )
+  const [memberOverrideLoading, setMemberOverrideLoading] = useState(false)
+  const [advanceLoading, setAdvanceLoading] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [modalProject, setModalProject] = useState<Project | null>(null)
 
@@ -57,6 +63,12 @@ export default function OperatorPanel({
         if (!cancelled) setSenateOverride(data)
       })
       .catch((err) => console.warn('senate-vote-status fetch failed:', err))
+    fetch('/api/operator/member-vote-status')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setMemberOverride(data)
+      })
+      .catch((err) => console.warn('member-vote-status fetch failed:', err))
     return () => {
       cancelled = true
     }
@@ -116,6 +128,70 @@ export default function OperatorPanel({
       })
     } finally {
       setSenateOverrideLoading(false)
+    }
+  }
+
+  const handleAdvanceToMemberVote = async () => {
+    setAdvanceLoading(true)
+    try {
+      const res = await fetch('/api/operator/advance-to-member-vote', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json?.error || 'Failed to advance to member vote')
+      }
+      if (json?.flags?.senateVoteDisabled) {
+        setSenateOverride(json.flags.senateVoteDisabled)
+      }
+      if (json?.flags?.memberVoteEnabled) {
+        setMemberOverride(json.flags.memberVoteEnabled)
+      }
+      toast.success('Senate vote closed. Member vote is now LIVE.', {
+        style: toastStyle,
+        duration: 5000,
+      })
+      onAfterChange?.()
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to advance to member vote.', {
+        style: toastStyle,
+      })
+    } finally {
+      setAdvanceLoading(false)
+    }
+  }
+
+  const setMemberVote = async (enabled: boolean) => {
+    setMemberOverrideLoading(true)
+    try {
+      const res = await fetch('/api/operator/set-member-vote', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enabled,
+          note: enabled
+            ? 'Member vote enabled from operator panel'
+            : 'Member vote disabled from operator panel',
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok)
+        throw new Error(json?.error || 'Failed to update member vote flag')
+      setMemberOverride(json)
+      toast.success(
+        enabled ? 'Member vote turned ON.' : 'Member vote turned OFF.',
+        { style: toastStyle }
+      )
+      onAfterChange?.()
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update member vote flag.', {
+        style: toastStyle,
+      })
+    } finally {
+      setMemberOverrideLoading(false)
     }
   }
 
@@ -179,6 +255,16 @@ export default function OperatorPanel({
           ) : (
             <span className="inline-flex items-center gap-2 text-xs bg-white/5 text-gray-400 border border-white/10 px-3 py-1.5 rounded-full">
               Senate vote: follows config
+            </span>
+          )}
+          {memberOverride?.enabled ? (
+            <span className="inline-flex items-center gap-2 text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-400/30 px-3 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Member vote: ON (overridden)
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 text-xs bg-white/5 text-gray-400 border border-white/10 px-3 py-1.5 rounded-full">
+              Member vote: follows config
             </span>
           )}
         </div>
@@ -269,15 +355,14 @@ export default function OperatorPanel({
           </div>
         </div>
 
-        {/* Senate Vote toggle — operator can end the senate phase without a deploy */}
+        {/* Senate Vote toggle — operator can force the senate phase OFF in the UI */}
         <div className="min-w-0 bg-black/30 rounded-lg p-3 border border-white/10 flex flex-col gap-2">
           <h4 className="text-xs uppercase tracking-wider text-gray-300 font-RobotoMono">
             Senate Vote
           </h4>
           <p className="text-xs text-gray-400">
             Force the senate-vote phase off across the projects UI even while{' '}
-            <code>IS_SENATE_VOTE</code> is true in config. Use this to end the
-            senate-vote window early.
+            <code>IS_SENATE_VOTE</code> is true in config.
           </p>
           <div className="flex gap-2 mt-1">
             <button
@@ -306,6 +391,67 @@ export default function OperatorPanel({
             </p>
           )}
         </div>
+
+        {/* Member Vote toggle — operator can force the member phase ON in the UI */}
+        <div className="min-w-0 bg-black/30 rounded-lg p-3 border border-white/10 flex flex-col gap-2">
+          <h4 className="text-xs uppercase tracking-wider text-gray-300 font-RobotoMono">
+            Member Vote
+          </h4>
+          <p className="text-xs text-gray-400">
+            Force the member-vote phase on across the projects UI even while{' '}
+            <code>IS_MEMBER_VOTE</code> is false in config.
+          </p>
+          <div className="flex gap-2 mt-1">
+            <button
+              type="button"
+              onClick={() => setMemberVote(true)}
+              disabled={memberOverrideLoading || memberOverride?.enabled}
+              className="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {memberOverride?.enabled ? 'Member Vote ON' : 'Turn On Member Vote'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMemberVote(false)}
+              disabled={memberOverrideLoading || !memberOverride?.enabled}
+              className="flex-1 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-gray-200 text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Turn Off
+            </button>
+          </div>
+          {memberOverride?.setBy && (
+            <p className="text-[11px] text-gray-500 mt-1 break-all">
+              Last toggled by {memberOverride.setBy}
+              {memberOverride.setAt
+                ? ` at ${new Date(memberOverride.setAt).toLocaleString()}`
+                : ''}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* One-shot phase advance: senate OFF + member ON. UI flags only. */}
+      <div className="mt-3 min-w-0 bg-black/30 rounded-lg p-3 border border-emerald-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h4 className="text-xs uppercase tracking-wider text-emerald-200 font-RobotoMono">
+            Close Senate Vote &amp; Open Member Vote
+          </h4>
+          <p className="text-xs text-gray-400 mt-1 max-w-prose">
+            UI-only phase advance: forces the Senate Vote phase OFF and the
+            Member Vote phase ON. The on-chain{' '}
+            <code className="text-emerald-300">Proposals.tallyVotes(mdp)</code>{' '}
+            calls must be done separately by the contract owner via{' '}
+            <code>cast send</code>.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleAdvanceToMemberVote}
+          disabled={advanceLoading}
+          className="shrink-0 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {advanceLoading ? 'Advancing…' : 'Close Senate & Open Member Vote'}
+        </button>
       </div>
 
       {modalProject && (

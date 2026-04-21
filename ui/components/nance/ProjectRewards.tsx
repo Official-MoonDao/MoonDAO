@@ -71,9 +71,12 @@ export type ProjectRewardsProps = {
   proposalAllocations?: Distribution[]
   refreshRewards: () => void
   retroCycleOverride?: boolean
-  // When true (operator-set in MongoDB), treat IS_SENATE_VOTE as false
+  // When true (operator-set in Vercel KV), treat IS_SENATE_VOTE as false
   // across the projects UI even though the config constant is true.
   senateVoteDisabled?: boolean
+  // When true (operator-set in Vercel KV), treat IS_MEMBER_VOTE as true
+  // across the projects UI even though the config constant is false.
+  memberVoteEnabled?: boolean
 }
 
 // Helper function to format large numbers for mobile display
@@ -86,6 +89,7 @@ export function ProjectRewards({
   refreshRewards,
   retroCycleOverride = false,
   senateVoteDisabled: senateVoteDisabledProp = false,
+  memberVoteEnabled: memberVoteEnabledProp = false,
 }: ProjectRewardsProps) {
   const router = useRouter()
 
@@ -103,7 +107,14 @@ export function ProjectRewards({
   const [senateVoteDisabledLive, setSenateVoteDisabledLive] = useState(
     senateVoteDisabledProp
   )
+  // Member vote = config constant OR operator-enabled. Polled on the same
+  // cadence as the senate-vote flag so the operator panel can advance the
+  // phase without a deploy.
+  const [memberVoteEnabledLive, setMemberVoteEnabledLive] = useState(
+    memberVoteEnabledProp
+  )
   const isSenateVote = IS_SENATE_VOTE && !senateVoteDisabledLive
+  const isMemberVote = IS_MEMBER_VOTE || memberVoteEnabledLive
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
   const { quarter: submissionQuarter, year: submissionYear } = getSubmissionQuarter()
@@ -138,10 +149,10 @@ export function ProjectRewards({
     return () => clearInterval(interval)
   })
 
-  // Poll the operator-set senate-vote-disabled flag.
+  // Poll the operator-set senate-vote-disabled and member-vote-enabled flags.
   useEffect(() => {
     let cancelled = false
-    const fetchOverride = () => {
+    const fetchOverrides = () => {
       fetch('/api/operator/senate-vote-status')
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
@@ -149,9 +160,16 @@ export function ProjectRewards({
           setSenateVoteDisabledLive(!!data.enabled)
         })
         .catch(() => {})
+      fetch('/api/operator/member-vote-status')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (cancelled || !data) return
+          setMemberVoteEnabledLive(!!data.enabled)
+        })
+        .catch(() => {})
     }
-    fetchOverride()
-    const interval = setInterval(fetchOverride, 60000)
+    fetchOverrides()
+    const interval = setInterval(fetchOverrides, 60000)
     return () => {
       cancelled = true
       clearInterval(interval)
@@ -711,7 +729,7 @@ export function ProjectRewards({
                       id: 'submit',
                       label: 'Submit',
                       subtitle: 'Proposal',
-                      active: !isSenateVote && !IS_MEMBER_VOTE,
+                      active: !isSenateVote && !isMemberVote,
                       tooltip:
                         "Anyone can submit a project proposal through the proposal portal. Each proposal lays out the problem, the solution, the team, and a budget capped at 1/5 of the quarterly rewards. Proposals can be edited at any time leading up to the Townhall.",
                       icon: (
@@ -780,7 +798,7 @@ export function ProjectRewards({
                       id: 'member',
                       label: 'Member',
                       subtitle: 'Vote',
-                      active: IS_MEMBER_VOTE,
+                      active: isMemberVote,
                       tooltip:
                         "Once the Senate has approved proposals, voting members distribute their voting power across the approved proposals as percentages. The top 50% by voting power are funded, capped so total project budgets stay under 3/4 of the quarterly budget. Contributors cannot vote on their own project.",
                       icon: (
@@ -826,7 +844,7 @@ export function ProjectRewards({
                       id: 'retro',
                       label: 'Retroactive',
                       subtitle: 'Rewards',
-                      active: IS_MEMBER_VOTE && rewardVotingActive,
+                      active: isMemberVote && rewardVotingActive,
                       tooltip:
                         "At the end of the quarter, each completed project submits a Final Report with its contributor split. Citizens and Voting Members then allocate their voting power across the projects to determine retroactive ETH and vMOONEY rewards based on impact.",
                       icon: (
@@ -1062,7 +1080,7 @@ export function ProjectRewards({
                       Project Proposals
                       <span className="ml-2 text-sm font-normal text-orange-400">(Senate Vote)</span>
                     </>
-                  ) : IS_MEMBER_VOTE ? (
+                  ) : isMemberVote ? (
                     <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
                       Project Proposals
                       <span className="ml-2 text-sm font-normal text-emerald-400">(Member Vote)</span>
@@ -1074,12 +1092,12 @@ export function ProjectRewards({
                     </>
                   )}
                 </h2>
-                {IS_MEMBER_VOTE && !isSenateVote && (
+                {isMemberVote && !isSenateVote && (
                   <p className="mb-4">
                     Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.
                   </p>
                 )}
-                {!isSenateVote && !IS_MEMBER_VOTE && (
+                {!isSenateVote && !isMemberVote && (
                   <p className="mb-4 text-gray-400 text-sm">
                     These proposals have been submitted and are awaiting the next voting cycle.
                   </p>
@@ -1092,7 +1110,7 @@ export function ProjectRewards({
                           return !project.tempCheckApproved && !project.tempCheckFailed
                         }
 
-                        if (IS_MEMBER_VOTE) {
+                        if (isMemberVote) {
                           return project.tempCheckApproved && !project.tempCheckFailed
                         }
 
@@ -1108,13 +1126,13 @@ export function ProjectRewards({
                             project={project}
                             projectContract={projectContract}
                             hatsContract={hatsContract}
-                            distribute={approvalVotingActive && (isSenateVote || IS_MEMBER_VOTE)}
-                            distribution={userHasVotingPower && (isSenateVote || IS_MEMBER_VOTE) ? proposalDistribution : undefined}
+                            distribute={approvalVotingActive && (isSenateVote || isMemberVote)}
+                            distribution={userHasVotingPower && (isSenateVote || isMemberVote) ? proposalDistribution : undefined}
                             handleDistributionChange={
-                              userHasVotingPower && (isSenateVote || IS_MEMBER_VOTE) ? handleProposalDistributionChange : undefined
+                              userHasVotingPower && (isSenateVote || isMemberVote) ? handleProposalDistributionChange : undefined
                             }
                             userHasVotingPower={userHasVotingPower}
-                            isVotingPeriod={approvalVotingActive && (isSenateVote || IS_MEMBER_VOTE)}
+                            isVotingPeriod={approvalVotingActive && (isSenateVote || isMemberVote)}
                             active={false}
                             isSenateVote={isSenateVote}
                           />
@@ -1128,7 +1146,7 @@ export function ProjectRewards({
                       </p>
                     </div>
                   )}
-                  {approvalVotingActive && IS_MEMBER_VOTE && proposals && proposals.length > 0 && (
+                  {approvalVotingActive && isMemberVote && proposals && proposals.length > 0 && (
                     <div className="mt-6 w-full flex flex-col items-end gap-2">
                       <div className="text-white/80 font-RobotoMono text-sm">
                         Allocated: {_.sum(Object.values(proposalDistribution))}% &nbsp;&nbsp;Voting Power:{' '}

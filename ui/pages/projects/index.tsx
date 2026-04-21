@@ -11,6 +11,7 @@ import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 import { getProposalStatus } from '@/lib/nance/useProposalStatus'
+import { getMemberVoteOverride } from '@/lib/operator/memberVote'
 import { getRetroCycleOverride } from '@/lib/operator/retroCycle'
 import { getSenateVoteOverride } from '@/lib/operator/senateVote'
 import { Project } from '@/lib/project/useProjectData'
@@ -29,10 +30,12 @@ export default function Projects({
   proposalAllocations,
   retroCycleOverride,
   senateVoteDisabled,
+  memberVoteEnabled,
 }: ProjectRewardsProps & {
   proposalAllocations: any[]
   retroCycleOverride: boolean
   senateVoteDisabled: boolean
+  memberVoteEnabled: boolean
 }) {
   const router = useRouter()
   useChainDefault()
@@ -45,6 +48,7 @@ export default function Projects({
       proposalAllocations={proposalAllocations}
       retroCycleOverride={retroCycleOverride}
       senateVoteDisabled={senateVoteDisabled}
+      memberVoteEnabled={memberVoteEnabled}
       refreshRewards={() => router.reload()}
     />
   )
@@ -55,9 +59,10 @@ export async function getStaticProps() {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const [retroOverride, senateOverride] = await Promise.all([
+    const [retroOverride, senateOverride, memberOverride] = await Promise.all([
       getRetroCycleOverride(),
       getSenateVoteOverride(),
+      getMemberVoteOverride(),
     ])
     const { quarter, year } = getRelativeQuarter(
       isRewardsCycle(new Date(), retroOverride.enabled) ? -1 : 0
@@ -144,6 +149,7 @@ export async function getStaticProps() {
         proposalAllocations,
         retroCycleOverride: retroOverride.enabled,
         senateVoteDisabled: senateOverride.enabled,
+        memberVoteEnabled: memberOverride.enabled,
       },
       revalidate: 60,
     }
@@ -158,6 +164,7 @@ export async function getStaticProps() {
         proposalAllocations: [],
         retroCycleOverride: false,
         senateVoteDisabled: false,
+        memberVoteEnabled: false,
       },
       revalidate: 60,
     }
