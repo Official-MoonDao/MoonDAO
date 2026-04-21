@@ -237,7 +237,11 @@ export default function Tooltip({
               bottom: position.bottom,
               left: position.left,
               opacity: 1,
-              zIndex: 1000,
+              // Must sit above modal overlays (which use z-[9999] across
+              // the codebase) so tooltips spawned inside a modal — like
+              // the network help on the contribute modal — actually render
+              // on top of the dimming layer instead of behind it.
+              zIndex: 10000,
               transform: 'translateX(-50%)',
               transformOrigin: 'bottom center',
             }}

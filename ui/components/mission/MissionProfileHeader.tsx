@@ -244,7 +244,7 @@ const MissionProfileHeader = React.memo(
                 height={640}
                 width={640}
                 alt="Mission Image"
-                sizes="(max-width: 1024px) 100vw, 580px"
+                sizes="(max-width: 1024px) 100vw, 480px"
               />
               {teamNFT?.metadata?.image && (
                 <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
@@ -293,10 +293,12 @@ const MissionProfileHeader = React.memo(
             <div
               className={`w-full grid grid-cols-1 gap-8 lg:gap-10 items-start lg:items-stretch ${
                 isOverviewMission
-                  ? // 1:1 split lets the funding card claim the full half of
-                    // the row so it reads as a true "co-equal" panel with
-                    // the artwork instead of a narrow side rail.
-                    'lg:grid-cols-2'
+                  ? // 2:3 split: shrinks the (square) artwork column so the
+                    //   image height — which drives the row height — is
+                    //   smaller, while the funding card claims more
+                    //   horizontal real-estate. Net effect: less empty
+                    //   vertical space inside the contribute card.
+                    'lg:grid-cols-[2fr_3fr]'
                   : 'lg:grid-cols-[3fr_2fr] max-w-[1200px] mx-auto'
               }`}
             >

@@ -1811,34 +1811,39 @@ export default function MissionContributeModal({
                 )}
 
               <div className="space-y-3">
-                <div className="flex items-center gap-1.5">
-                  <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                    Network
-                  </label>
-                  {/* Help text aimed at first-time contributors who aren't sure
-                      which network to pick — Arbitrum is our default for cheap
-                      gas, so we surface it as the safe fallback. */}
+                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                  Network
+                </label>
+                <div className="flex items-center gap-3">
+                  {/* Help text aimed at first-time contributors who aren't
+                      sure which network to pick. Sits to the LEFT of the
+                      dropdown so the question mark reads as "ask before
+                      picking" rather than as a label decoration. The default
+                      24px Tooltip trigger is used (no size override) so the
+                      "?" is comfortably tappable on touch devices. */}
                   <Tooltip
                     text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
                     compact
-                    wrap
-                    buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
                   >
                     ?
                   </Tooltip>
+                  <div className="flex-1 min-w-0">
+                    <NetworkSelector
+                      chains={chains}
+                      align="left"
+                      displayChain={
+                        !userChosePayChainInModal &&
+                        fundingDisplayChain != null &&
+                        selectedChain.id !== fundingDisplayChain.id
+                          ? fundingDisplayChain
+                          : undefined
+                      }
+                      onUserSelectChain={() =>
+                        setUserChosePayChainInModal(true)
+                      }
+                    />
+                  </div>
                 </div>
-                <NetworkSelector
-                  chains={chains}
-                  align="left"
-                  displayChain={
-                    !userChosePayChainInModal &&
-                    fundingDisplayChain != null &&
-                    selectedChain.id !== fundingDisplayChain.id
-                      ? fundingDisplayChain
-                      : undefined
-                  }
-                  onUserSelectChain={() => setUserChosePayChainInModal(true)}
-                />
               </div>
 
               {/* Contribution amount — primary input */}
