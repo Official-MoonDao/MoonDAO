@@ -495,9 +495,41 @@ export default function Fees() {
       <section id="fees-container" className="overflow-hidden">
         <Container>
           <ContentLayout
-            header="Liquidity Rewards"
-            headerSize="max(20px, 3vw)"
-            description="Earn a share of MoonDAO's weekly trading-fee reward pool by checking in."
+            header={
+              // Render the title + tagline together so we can control the
+              // spacing tightly. ContentLayout's built-in `description` slot
+              // injects a wrapper with `md:mt-20` (when `branded={false}`)
+              // that pushes the tagline ~80px below the title on desktop —
+              // way too airy. Passing both in `header` sidesteps that.
+              <div className="flex flex-col gap-2 sm:gap-3 max-w-3xl">
+                <span
+                  className="font-GoodTimes text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] block"
+                  style={{
+                    // clamp keeps the title readable on phones (28px floor)
+                    // without ballooning on ultrawide monitors (52px ceiling).
+                    // The default `.header-responsive` could push the title
+                    // up to 64px on a 1600px viewport, which combined with
+                    // the dark gradient backdrop made it hard to read.
+                    fontSize: 'clamp(28px, 4.2vw, 48px)',
+                    lineHeight: 1.05,
+                    letterSpacing: '0.01em',
+                  }}
+                >
+                  Liquidity Rewards
+                </span>
+                <p
+                  className="text-white/80 font-RobotoMono leading-snug max-w-2xl"
+                  style={{
+                    // Tighter clamp than `.sub-header`'s `max(2vmin, 20px)`
+                    // which jumped between sizes oddly on tablet widths.
+                    fontSize: 'clamp(14px, 1.4vw, 17px)',
+                  }}
+                >
+                  Earn a share of MoonDAO&apos;s weekly trading-fee reward
+                  pool by checking in.
+                </p>
+              </div>
+            }
             preFooter={
               <NoticeFooter
                 defaultImage="../assets/MoonDAO-Logo-White.svg"
