@@ -37,6 +37,7 @@ import {
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
@@ -80,6 +81,27 @@ export type ProjectRewardsProps = {
   distributions: Distribution[]
   proposalAllocations?: Distribution[]
   refreshRewards: () => void
+}
+
+// The `distribution` column on both Tableland tables is stored via
+// `json(...)` in the smart contract. Depending on the read path (SDK vs
+// gateway / which validator returns the row first) it can come back as a
+// parsed object OR as a raw JSON string. Treat both shapes as valid so a
+// previously-submitted distribution always pre-populates correctly.
+function parseDistribution(raw: any): Record<string, number> {
+  if (!raw) return {}
+  if (typeof raw === 'object') {
+    return raw as Record<string, number>
+  }
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch {
+      return {}
+    }
+  }
+  return {}
 }
 
 // Hit the Tableland API to verify whether the connected wallet already has a
@@ -348,19 +370,41 @@ export function ProjectRewards({
     if (distributions && userAddress) {
       for (const d of distributions) {
         if (
-          d.year === year &&
-          d.quarter === quarter &&
+          Number(d?.year) === year &&
+          Number(d?.quarter) === quarter &&
+          typeof d?.address === 'string' &&
           d.address.toLowerCase() === userAddress.toLowerCase()
         ) {
-          const pruned = filterToKeys(d.distribution, validEligibleIds)
-          setDistribution(pruned)
-          setOriginalDistribution(pruned)
+          const parsed = parseDistribution(d.distribution)
+          const pruned = filterToKeys(parsed, validEligibleIds)
+          if (Object.keys(pruned).length > 0) {
+            setDistribution(pruned)
+            setOriginalDistribution(pruned)
+          }
           setEdit(true)
           break
         }
       }
     }
   }, [userAddress, distributions, quarter, year, validEligibleIds])
+
+  // Pull the connected wallet's *own* member-vote row directly from
+  // Tableland. The `proposalAllocations` prop is filled in by
+  // `getStaticProps` with `revalidate: 60`, which means a vote the user
+  // submitted moments ago can still be missing from the prop for up to a
+  // minute. Hitting the API client-side gets us the freshest version and
+  // makes the "Edit Distribution" + pre-populated values appear as soon
+  // as the row exists on chain.
+  const proposalAllocationStatement = useMemo(() => {
+    const tableName = PROPOSALS_TABLE_NAMES[chainSlug]
+    if (!tableName || !userAddress) return null
+    return `SELECT * FROM ${tableName} WHERE quarter = ${submissionQuarter} AND year = ${submissionYear} AND address = '${userAddress.toLowerCase()}' LIMIT 1`
+  }, [chainSlug, userAddress, submissionQuarter, submissionYear])
+
+  const { data: freshProposalAllocations } = useTablelandQuery(
+    proposalAllocationStatement,
+    { revalidateOnFocus: true }
+  )
 
   // Check if the user already has a proposal allocation for the *submission*
   // quarter (the quarter the proposals being voted on belong to). NOTE: do
@@ -369,26 +413,52 @@ export function ProjectRewards({
   // member-vote rows from the previous quarter to be surfaced as if the user
   // had already submitted this quarter's distribution.
   //
-  // Same pruning rationale as the distributions effect above: drop any
-  // stored keys that aren't part of the proposal slate currently being
-  // voted on.
+  // We prefer the freshly-fetched client-side row (if available) over the
+  // potentially-stale `proposalAllocations` prop. The pruning step keeps
+  // things honest if the loaded row contains keys for proposals that have
+  // since moved out of the active member-vote slate — those orphan keys
+  // would otherwise inflate the displayed Allocated% and slip back into
+  // the next submit. We still flag `edit=true` whenever a row exists for
+  // this (quarter, year, wallet) so the submit path correctly chooses
+  // UPDATE (and respects the unique(quarter, year, address) constraint).
   useEffect(() => {
-    if (proposalAllocations && userAddress) {
-      for (const d of proposalAllocations) {
-        if (
-          d.year === submissionYear &&
-          d.quarter === submissionQuarter &&
-          d.address.toLowerCase() === userAddress.toLowerCase()
-        ) {
-          const pruned = filterToKeys(d.distribution, validProposalIds)
+    if (!userAddress) return
+
+    const candidates: any[] = []
+    if (
+      Array.isArray(freshProposalAllocations) &&
+      freshProposalAllocations.length > 0
+    ) {
+      candidates.push(...freshProposalAllocations)
+    } else if (proposalAllocations?.length) {
+      candidates.push(...proposalAllocations)
+    }
+
+    for (const d of candidates) {
+      if (
+        Number(d?.year) === submissionYear &&
+        Number(d?.quarter) === submissionQuarter &&
+        typeof d?.address === 'string' &&
+        d.address.toLowerCase() === userAddress.toLowerCase()
+      ) {
+        const parsed = parseDistribution(d.distribution)
+        const pruned = filterToKeys(parsed, validProposalIds)
+        if (Object.keys(pruned).length > 0) {
           setProposalDistribution(pruned)
           setOriginalProposalDistribution(pruned)
-          setProposalEdit(true)
-          break
         }
+        setProposalEdit(true)
+        return
       }
     }
-  }, [userAddress, proposalAllocations, submissionQuarter, submissionYear, validProposalIds])
+  }, [
+    userAddress,
+    freshProposalAllocations,
+    proposalAllocations,
+    submissionQuarter,
+    submissionYear,
+    validProposalIds,
+  ])
 
   // Build project id -> author address for member vote (exclude own proposal from allocation)
   const [projectIdToAuthorAddress, setProjectIdToAuthorAddress] = useState<Record<string, string>>(
