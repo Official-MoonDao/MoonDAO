@@ -45,7 +45,6 @@ import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import {
   type Chain,
   arbitrum,
-  base,
   ethereum,
   optimismSepolia,
   sepolia,
@@ -148,8 +147,12 @@ export default function MissionProfile({
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
+  // Keep this list in sync with MissionContributeModal — Base was removed
+  // from the supported funding chains (users without ETH on Base were
+  // bouncing). Mission funding-chain detection / "switch to richest chain"
+  // banners therefore won't suggest Base anymore.
   const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, base, ethereum]),
+    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
     [isTestnet]
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))

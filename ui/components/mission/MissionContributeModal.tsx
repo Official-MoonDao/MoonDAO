@@ -53,7 +53,7 @@ import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
 import type { FundingChainBalanceEntry } from '@/lib/mission/useMissionDefaultFundingChain'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import type { Chain } from '@/lib/rpc/chains'
-import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
+import { arbitrum, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
@@ -63,6 +63,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import StandardButton from '@/components/layout/StandardButton'
 import Modal from '@/components/layout/Modal'
+import Tooltip from '@/components/layout/Tooltip'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CBOnramp } from '../coinbase/CBOnramp'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
@@ -126,8 +127,11 @@ export default function MissionContributeModal({
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
+  // Base was previously offered here but caused confusion / abandonment for
+  // contributors who didn't have ETH on Base. Arbitrum + Ethereum are the
+  // supported funding chains; users on Base will be prompted to switch.
   const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, base, ethereum]),
+    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
     [isTestnet]
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
@@ -1807,9 +1811,22 @@ export default function MissionContributeModal({
                 )}
 
               <div className="space-y-3">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                  Network
-                </label>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+                    Network
+                  </label>
+                  {/* Help text aimed at first-time contributors who aren't sure
+                      which network to pick — Arbitrum is our default for cheap
+                      gas, so we surface it as the safe fallback. */}
+                  <Tooltip
+                    text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
+                    compact
+                    wrap
+                    buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                  >
+                    ?
+                  </Tooltip>
+                </div>
                 <NetworkSelector
                   chains={chains}
                   align="left"
