@@ -1,5 +1,6 @@
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
 import { IS_MEMBER_VOTE, IS_SENATE_VOTE } from 'const/config'
+import { useRouter } from 'next/router'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
 import {
   useProposalStatus,
@@ -91,6 +92,7 @@ export default function Proposal({ project, feedStyle = false, linkDisabled = fa
   const descriptionPreview = getDescriptionPreview(
     proposalJSON?.body || project?.description
   )
+  const phase = getVotingPhaseContext(proposalStatus)
 
   if (feedStyle) {
     return (
@@ -114,11 +116,19 @@ export default function Proposal({ project, feedStyle = false, linkDisabled = fa
               <RequestingTokensOfProposal budget={proposalJSON.budget} variant="feed" />
             </div>
           )}
-          <div className="flex flex-wrap items-start gap-x-4 gap-y-1 text-sm text-gray-400 text-left">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-gray-400 text-left">
             <span className="flex items-center gap-1.5 min-w-0">
-              <StatusDot config={config} />
+              <StatusDot config={config} pulse={Boolean(phase?.pulse)} />
               <span className="min-w-0">{displayLabel}</span>
             </span>
+            {phase && (
+              <PhaseBadge
+                tone={phase.tone}
+                label={phase.label}
+                cta={phase.cta}
+                ctaHref={phase.ctaHref}
+              />
+            )}
           </div>
         </div>
         <ChevronRightIcon
@@ -151,14 +161,22 @@ export default function Proposal({ project, feedStyle = false, linkDisabled = fa
           </p>
         )}
       </div>
-      <div className="flex justify-between items-center mt-4">
-        <div className="flex flex-col items-start">
+      <div className="flex justify-between items-center mt-4 gap-3 flex-wrap">
+        <div className="flex flex-col items-start gap-2">
           <div className="flex items-center gap-x-1.5 min-w-0">
-            <StatusDot config={config} />
+            <StatusDot config={config} pulse={Boolean(phase?.pulse)} />
             <p className="text-sm leading-6 text-white font-RobotoMono font-medium min-w-0">
               {displayLabel}
             </p>
           </div>
+          {phase && (
+            <PhaseBadge
+              tone={phase.tone}
+              label={phase.label}
+              cta={phase.cta}
+              ctaHref={phase.ctaHref}
+            />
+          )}
         </div>
         <ChevronRightIcon
           className="h-5 w-5 flex-none text-gray-400"
@@ -167,5 +185,54 @@ export default function Proposal({ project, feedStyle = false, linkDisabled = fa
         />
       </div>
     </div>
+  )
+}
+
+function PhaseBadge({
+  tone,
+  label,
+  cta,
+  ctaHref,
+}: {
+  tone: 'member' | 'senate'
+  label: string
+  cta: string | null
+  ctaHref: string | null
+}) {
+  const router = useRouter()
+  const styles =
+    tone === 'member'
+      ? {
+          wrapper:
+            'bg-emerald-500/15 border-emerald-500/40 text-emerald-300',
+          cta:
+            'bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.45)]',
+        }
+      : {
+          wrapper: 'bg-orange-500/15 border-orange-500/40 text-orange-300',
+          cta: 'bg-orange-500 hover:bg-orange-400 text-black',
+        }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${styles.wrapper}`}
+    >
+      {label}
+      {cta && ctaHref && (
+        // Use a button (not <a>) so it can safely nest inside parent
+        // `<Link>` wrappers without producing invalid <a>-in-<a> markup.
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            router.push(ctaHref)
+          }}
+          className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold normal-case tracking-normal transition-all cursor-pointer ${styles.cta}`}
+        >
+          {cta} →
+        </button>
+      )}
+    </span>
   )
 }
