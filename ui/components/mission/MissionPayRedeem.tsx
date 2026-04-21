@@ -288,7 +288,6 @@ function MissionPayRedeemContent({
                     >
                       Max
                     </button>
-                  </div>
                 </div>
               </div>
             </div>
