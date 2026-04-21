@@ -178,6 +178,16 @@ function formatTxError(error: any): string {
     return 'Network error while submitting. Please try again.'
   }
 
+  // "block not found" / "transaction not found" come from the receipt-side
+  // RPC being behind the chain head. The transaction was almost certainly
+  // broadcast successfully — the user just needs to give the indexer a
+  // moment and retry.
+  if (
+    /block not found|transaction not found|receipt not found/i.test(message)
+  ) {
+    return "Couldn't confirm your transaction yet — the network is catching up. Check your wallet for the tx hash; if it shows confirmed, refresh in a moment. Otherwise, try submitting again."
+  }
+
   return message.length > 240 ? `${message.slice(0, 240)}…` : message
 }
 
@@ -186,12 +196,18 @@ function formatTxError(error: any): string {
 // re-sign and double-broadcast. We never re-send the transaction itself —
 // once `sendTransaction` returns a hash, the tx is in the mempool and we
 // only retry the receipt fetch.
+//
+// The "block not found" / "transaction not found" failure modes happen when
+// a load-balanced RPC routes the receipt lookup to a node that hasn't yet
+// indexed the block the tx landed in. Those are transient and *expected*
+// on Arbitrum-style fast chains — we treat them as retryable and back off
+// generously rather than bailing after a couple of seconds.
 async function sendTxAndWaitWithRetry({
   transaction,
   account,
   chain,
   client,
-  receiptAttempts = 3,
+  receiptAttempts = 6,
 }: {
   transaction: any
   account: any
@@ -202,6 +218,10 @@ async function sendTxAndWaitWithRetry({
   const sent = await sendTransaction({ transaction, account })
   const transactionHash = sent.transactionHash
 
+  // Backoff schedule (ms) — retry indexer-lag errors generously. Total
+  // patience: ~3 + 5 + 8 + 13 + 21 = ~50s before we surface the error.
+  const backoff = [3000, 5000, 8000, 13000, 21000]
+
   let lastError: unknown
   for (let attempt = 0; attempt < receiptAttempts; attempt++) {
     try {
@@ -211,11 +231,34 @@ async function sendTxAndWaitWithRetry({
         transactionHash,
       })
       return receipt
-    } catch (err) {
+    } catch (err: any) {
       lastError = err
-      if (attempt < receiptAttempts - 1) {
-        await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+      const msg: string =
+        typeof err?.message === 'string' ? err.message : String(err ?? '')
+      const isIndexerLag =
+        /block not found|transaction not found|receipt not found|could not be found/i.test(
+          msg
+        )
+
+      if (attempt >= receiptAttempts - 1) break
+
+      const wait = backoff[Math.min(attempt, backoff.length - 1)]
+      // Log so this is debuggable in the console, but don't toast: the
+      // user is still in the loading state and we expect to recover.
+      if (isIndexerLag) {
+        console.warn(
+          `Receipt lookup lagging (attempt ${
+            attempt + 1
+          }/${receiptAttempts}) for tx ${transactionHash} — retrying in ${wait}ms`
+        )
+      } else {
+        console.warn(
+          `waitForReceipt failed (attempt ${
+            attempt + 1
+          }/${receiptAttempts}) for tx ${transactionHash}: ${msg} — retrying in ${wait}ms`
+        )
       }
+      await new Promise((r) => setTimeout(r, wait))
     }
   }
   throw lastError
