@@ -1,5 +1,6 @@
 import gsap from 'gsap'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export type TooltipProps = {
   text: string
@@ -9,6 +10,9 @@ export type TooltipProps = {
   compact?: boolean
   wrap?: boolean
 }
+
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 export default function Tooltip({
   text,
@@ -20,7 +24,12 @@ export default function Tooltip({
 }: TooltipProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const [contentOffset, setContentOffset] = useState(0)
+  const [position, setPosition] = useState<{ bottom: number; left: number }>({
+    bottom: 0,
+    left: 0,
+  })
 
   const tooltipRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -29,13 +38,44 @@ export default function Tooltip({
   const animationRef = useRef<gsap.core.Tween | null>(null)
   const [isTouched, setIsTouched] = useState(false)
 
+  // Only render the portal on the client
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   useEffect(() => {
     if (isHovered) {
       setIsVisible(true)
     }
   }, [isHovered])
 
-  // Handle animation and position
+  // Compute trigger viewport position and recompute on scroll/resize while visible
+  const updatePosition = () => {
+    if (!triggerRef.current) return
+    const triggerRect = triggerRef.current.getBoundingClientRect()
+    // Anchor the tooltip's bottom edge to the trigger's top edge so the
+    // tooltip naturally sits above the trigger without needing translateY,
+    // which avoids conflicts with gsap's own y transform.
+    setPosition({
+      bottom: window.innerHeight - triggerRect.top,
+      left: triggerRect.left + triggerRect.width / 2,
+    })
+  }
+
+  useIsomorphicLayoutEffect(() => {
+    if (!isVisible) return
+    updatePosition()
+
+    const handle = () => updatePosition()
+    window.addEventListener('scroll', handle, true)
+    window.addEventListener('resize', handle)
+    return () => {
+      window.removeEventListener('scroll', handle, true)
+      window.removeEventListener('resize', handle)
+    }
+  }, [isVisible])
+
+  // Handle entry animation and horizontal viewport-clamping
   useEffect(() => {
     if (
       isHovered &&
@@ -49,19 +89,15 @@ export default function Tooltip({
       const viewportWidth = window.innerWidth
       const padding = 16
 
-      // Calculate how much the content box would overflow
       const triggerCenter = triggerRect.left + triggerRect.width / 2
       const contentLeft = triggerCenter - contentRect.width / 2
       const contentRight = triggerCenter + contentRect.width / 2
 
       let offset = 0
 
-      // If overflowing left, shift right
       if (contentLeft < padding) {
         offset = padding - contentLeft
-      }
-      // If overflowing right, shift left
-      else if (contentRight > viewportWidth - padding) {
+      } else if (contentRight > viewportWidth - padding) {
         offset = viewportWidth - padding - contentRight
       }
 
@@ -92,7 +128,6 @@ export default function Tooltip({
   // Handle exit animation
   useEffect(() => {
     if (!isHovered && isVisible && tooltipRef.current) {
-      // Exit animation
       if (animationRef.current) {
         animationRef.current.kill()
       }
@@ -135,12 +170,12 @@ export default function Tooltip({
   // Handle click outside to close tooltip when manually opened
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node) &&
-        isTouched &&
-        isVisible
-      ) {
+      const target = event.target as Node
+      const clickedInsideTrigger =
+        containerRef.current && containerRef.current.contains(target)
+      const clickedInsideTooltip =
+        tooltipRef.current && tooltipRef.current.contains(target)
+      if (!clickedInsideTrigger && !clickedInsideTooltip && isTouched && isVisible) {
         setIsHovered(false)
         setIsTouched(false)
       }
@@ -169,7 +204,6 @@ export default function Tooltip({
       setIsHovered(false)
       setIsTouched(false)
     } else {
-      // Open if closed
       setIsHovered(true)
       setIsTouched(true)
     }
@@ -190,6 +224,58 @@ export default function Tooltip({
       }
     }
   }
+
+  const tooltipPortal =
+    !disabled && isVisible && isMounted
+      ? createPortal(
+          <div
+            id="tooltip"
+            ref={tooltipRef}
+            className="pointer-events-none text-sm"
+            style={{
+              position: 'fixed',
+              bottom: position.bottom,
+              left: position.left,
+              opacity: 1,
+              zIndex: 1000,
+              transform: 'translateX(-50%)',
+              transformOrigin: 'bottom center',
+            }}
+          >
+            <div
+              ref={contentRef}
+              className={`w-max ${
+                compact
+                  ? 'max-w-[85vw] md:max-w-[400px]'
+                  : 'max-w-[85vw] md:max-w-[200px]'
+              }  bg-white text-black px-3 py-2 rounded-[1vmax] break-words pointer-events-auto`}
+              style={{ transform: `translateX(${contentOffset}px)` }}
+            >
+              <p>{text}</p>
+            </div>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[-1]">
+              <svg
+                width="32"
+                height="24"
+                viewBox="0 0 32 24"
+                fill="white"
+                className={compact ? 'scale-75' : ''}
+              >
+                <path
+                  d="M0,4 
+                     Q0,0 4,0
+                     L28,0
+                     Q32,0 32,4
+                     L18,22
+                     Q16,24 14,22
+                     L0,4"
+                />
+              </svg>
+            </div>
+          </div>,
+          document.body
+        )
+      : null
 
   return (
     <div
@@ -218,7 +304,6 @@ export default function Tooltip({
             !disabled && isHovered ? 'opacity-100' : 'opacity-50'
           } ${!disabled && 'cursor-pointer'}`}
           onMouseEnter={() => {
-            // Only allow hover on non-touch devices or when not manually opened
             const isTouchDevice =
               'ontouchstart' in window || navigator.maxTouchPoints > 0
             if (!isTouchDevice || !isTouched) {
@@ -226,7 +311,6 @@ export default function Tooltip({
             }
           }}
           onMouseLeave={() => {
-            // Only close on hover leave if not manually opened
             if (!isTouched) {
               setIsHovered(false)
             }
@@ -248,50 +332,7 @@ export default function Tooltip({
         </div>
       )}
 
-      {!disabled && isVisible && (
-        <div
-          id="tooltip"
-          ref={tooltipRef}
-          className="absolute bottom-full left-1/2 pointer-events-none text-sm"
-          style={{
-            opacity: 1,
-            zIndex: 1000,
-            transform: 'translateX(-50%) translateY(-20px)',
-            transformOrigin: 'bottom center',
-          }}
-        >
-          <div
-            ref={contentRef}
-            className={`w-max ${
-              compact
-                ? 'max-w-[85vw] md:max-w-[400px]'
-                : 'max-w-[85vw] md:max-w-[200px]'
-            }  bg-white text-black px-3 py-2 rounded-[1vmax] break-words pointer-events-auto`}
-            style={{ transform: `translateX(${contentOffset}px)` }}
-          >
-            <p>{text}</p>
-          </div>
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[-1]">
-            <svg
-              width="32"
-              height="24"
-              viewBox="0 0 32 24"
-              fill="white"
-              className={compact ? 'scale-75' : ''}
-            >
-              <path
-                d="M0,4 
-                   Q0,0 4,0
-                   L28,0
-                   Q32,0 32,4
-                   L18,22
-                   Q16,24 14,22
-                   L0,4"
-              />
-            </svg>
-          </div>
-        </div>
-      )}
+      {tooltipPortal}
     </div>
   )
 }

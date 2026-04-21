@@ -184,8 +184,8 @@ export const PROPOSALS_ADDRESSES: Index = {
   sepolia: '0xffeFE5820dC013fF416217059250961A5dB40973',
 }
 export const PROPOSALS_TABLE_NAMES: Index = {
-  arbitrum: 'Proposals_42161_155',
-  sepolia: 'Proposals_11155111_2045',
+  arbitrum: 'Proposals_42161_157',
+  sepolia: 'Proposals_11155111_2048',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
@@ -433,15 +433,6 @@ export const MOONDAO_ARBITRUM_TREASURY: string = '0xAF26a002d716508b7e375f1f6203
 export const MOONDAO_POLYGON_TREASURY: string = '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
 export const DEAD_ADDRESS: string = ' 0x000000000000000000000000000000000000dEaD'
 
-// DB Config
-const MONGO_USERNAME = process.env.MONGO_USERNAME || ''
-const MONGO_PASSWORD = process.env.MONGO_PASSWORD || ''
-const MONGO_PATH_SUFFIX = process.env.MONGO_PATH_SUFFIX || ''
-const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_PATH_SUFFIX}`
-export const mongoConfig = {
-  url: MONGO_URL,
-}
-
 export const TICKET_TO_SPACE_ADDRESS =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
@@ -643,8 +634,13 @@ export const PROJECT_SYSTEM_CONFIG = {
 // Set IS_SENATE_VOTE to true during Senate Vote phase - shows proposals with "Temperature Check" status
 // Set IS_MEMBER_VOTE to true during Member Vote phase - shows proposals with "Voting" status (passed Senate vote)
 // Only one should be true at a time, or both false when no voting is active
-export const IS_SENATE_VOTE = true
-export const IS_MEMBER_VOTE = false
+export const IS_SENATE_VOTE = false
+export const IS_MEMBER_VOTE = true
+
+// Set IS_REWARDS_CYCLE to true during the retroactive rewards distribution
+// window. When true, the projects page treats the prior quarter as the active
+// retro cycle and surfaces the Citizen / Voting Member distribution UI.
+export const IS_REWARDS_CYCLE = true
 
 // Quarterly budget in USD (stablecoins)
 // 5% of liquid non-MOONEY assets, denominated in USD
@@ -659,3 +655,23 @@ export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
 // Per the docs: "Proposal budgets must be less than or equal to 1/5 of the
 // total quarterly rewards."
 export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)
+
+// Hard-coded allowlist of wallet addresses that can use the operator panel
+// on /projects (start the retro cycle, mark projects eligible, etc.).
+// Lowercase for cheap comparison.
+export const OPERATORS: string[] = [
+  '0x679d87d8640e66778c3419d164998e720d7495f6', // pmoncada.eth
+  '0xb2d3900807094d4fe47405871b0c8adb58e10d42', // ryand2d.eth
+]
+
+// Retroactive rewards payout token for the *currently-voting* cycle.
+// When set to 'ETH', the retro-rewards UI uses RETRO_ETH_BUDGET instead of
+// USD_BUDGET and labels the budget asset "ETH" (the airdrop CSV already
+// targets `native,,address,amount` rows, which is ETH on Arbitrum).
+export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = 'ETH'
+
+// Q1 2026 retroactives: 2.215 ETH.
+// The quarter's total ETH budget was 11.6, of which 90% goes to projects
+// (10.44 ETH). 8.225 ETH was paid out upfront to funded projects, so the
+// remainder for retroactive distribution is (11.6 * 0.9) - 8.225 = 2.215 ETH.
+export const RETRO_ETH_BUDGET = 2.215

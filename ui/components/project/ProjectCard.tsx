@@ -12,6 +12,7 @@ import {
 } from 'const/config'
 import { getProposalVideoUrl } from 'const/proposalVideos'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -147,6 +148,19 @@ type ProjectCardProps = {
   userHasVotingPower?: any
   isVotingPeriod?: boolean
   active?: boolean
+  // Optional override for the senate-vote phase. Defaults to the
+  // `IS_SENATE_VOTE` config constant. Operators can flip this off via the
+  // operator panel without redeploying.
+  isSenateVote?: boolean
+  // Hide the inline status pill ("Active" / "Inactive" / budget) in the
+  // card header. Useful when the surrounding tab already provides the
+  // context (e.g. the Retroactive Rewards tab).
+  hideStatusBadge?: boolean
+  // Force the card to wrap with a Link to /project/{MDP} (navigate on
+  // click) even in distribute / vote modes that would otherwise toggle
+  // an in-place proposal expansion. Used by the Retroactive Rewards tab
+  // to keep card behavior consistent with the standard project listings.
+  linkToProjectPage?: boolean
 }
 
 import { useIsSenator } from '@/lib/thirdweb/hooks/useIsSenator'
@@ -328,6 +342,8 @@ const ProjectCardContent = memo(
     isExpanded,
     onToggleExpand,
     citizenContract,
+    isSenateVote = IS_SENATE_VOTE,
+    hideStatusBadge = false,
   }: any) => {
     const proposalJSON = useProposalJSON(project)
     const account = useActiveAccount()
@@ -437,8 +453,10 @@ const ProjectCardContent = memo(
                     </h1>
                   )}
                 </div>
-                {/* Only show status badge inline when NOT in Senate Vote mode */}
-                {!IS_SENATE_VOTE && (
+                {/* Only show status badge inline when NOT in Senate Vote mode
+                    and the parent hasn't opted out (e.g. Retroactive Rewards
+                    tab, which already implies "Active"). */}
+                {!isSenateVote && !hideStatusBadge && (
                   <span
                     className={`w-fit sm:mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
                       project.active == PROJECT_ACTIVE
@@ -459,7 +477,7 @@ const ProjectCardContent = memo(
                 )}
               </div>
               {/* Senator participation status - aligned with title on the left */}
-              {IS_SENATE_VOTE && project?.MDP && project.active === PROJECT_PENDING && (
+              {isSenateVote && project?.MDP && project.active === PROJECT_PENDING && (
                 <SenatorsStatus senatorVotes={senatorVotes} isLoading={senatorVotesLoading} />
               )}
             </div>
@@ -500,7 +518,7 @@ const ProjectCardContent = memo(
             </div>
           </div>
           {/* Senate Vote mode: show budget badge and vote buttons together on the right (desktop) or below title (mobile) */}
-          {IS_SENATE_VOTE && project?.MDP && project.active === PROJECT_PENDING && (
+          {isSenateVote && project?.MDP && project.active === PROJECT_PENDING && (
             <div className="w-full sm:w-auto">
               <SenateVoteButtons 
                 mdp={project.MDP} 
@@ -512,7 +530,7 @@ const ProjectCardContent = memo(
               />
             </div>
           )}
-          {!IS_SENATE_VOTE && distribute &&
+          {!isSenateVote && distribute &&
             (isProposalAuthor ? (
               <div className="flex flex-col items-start sm:items-end flex-shrink-0">
                 <p className="text-gray-400 text-sm">Author</p>
@@ -546,11 +564,6 @@ const ProjectCardContent = memo(
                 />
               </div>
             ))}
-          {!distribute && isVotingPeriod && (
-            <div className="flex flex-col items-start sm:items-end flex-shrink-0">
-              <p className="text-gray-400 text-sm">Ongoing</p>
-            </div>
-          )}
         </div>
         {/* Description Section */}
         <div className="flex-1 flex flex-col">
@@ -601,7 +614,12 @@ export default function ProjectCard({
   userHasVotingPower,
   isVotingPeriod,
   active,
+  isSenateVote: isSenateVoteProp,
+  hideStatusBadge,
+  linkToProjectPage,
 }: ProjectCardProps) {
+  const isSenateVote = isSenateVoteProp ?? IS_SENATE_VOTE
+  const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
   const [isExpanded, setIsExpanded] = useState(false)
@@ -666,9 +684,57 @@ export default function ProjectCard({
 
   if (!project) return null
 
+  // When `linkToProjectPage` is set we want the whole card to act as a
+  // navigation affordance to /project/<MDP>, but the card itself renders
+  // other anchors and buttons (Final Report link, video <a>, distribute
+  // controls, etc.). Wrapping in a real <Link> would produce nested <a>
+  // tags (invalid HTML) and swallow clicks on those inner controls, so
+  // instead the wrapper handles navigation imperatively and bails when
+  // the click originated inside any interactive descendant.
+  if (linkToProjectPage) {
+    const handleCardClick = (
+      e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>
+    ) => {
+      const target = e.target as HTMLElement | null
+      if (target?.closest('a, button, input, textarea, select, label')) {
+        return
+      }
+      if ('key' in e && e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      router.push(`/project/${project?.MDP}`)
+    }
+
+    return (
+      <div
+        role="link"
+        tabIndex={0}
+        onClick={handleCardClick}
+        onKeyDown={handleCardClick}
+        className="h-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-moon-orange/60 rounded-2xl"
+        aria-label={`Open project ${project?.name || project?.MDP}`}
+      >
+        <ProjectCardContent
+          project={project}
+          distribute={distribute}
+          userContributed={userContributed}
+          distribution={distribution}
+          handleDistributionChange={handleDistributionChange}
+          userHasVotingPower={userHasVotingPower}
+          isMembershipDataLoading={isMembershipDataLoading}
+          isVotingPeriod={isVotingPeriod}
+          active={active}
+          isExpanded={false}
+          citizenContract={citizenContract}
+          isSenateVote={isSenateVote}
+          hideStatusBadge={hideStatusBadge}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="h-full">
-      {distribute || IS_SENATE_VOTE ? (
+      {distribute || isSenateVote ? (
         <ProjectCardContent
           project={project}
           distribute={distribute}
@@ -682,6 +748,8 @@ export default function ProjectCard({
           isExpanded={isExpanded}
           onToggleExpand={() => setIsExpanded(!isExpanded)}
           citizenContract={citizenContract}
+          isSenateVote={isSenateVote}
+          hideStatusBadge={hideStatusBadge}
         />
       ) : (
         <Link href={`/project/${project?.MDP}`} passHref className="h-full">
@@ -692,6 +760,8 @@ export default function ProjectCard({
             active={active}
             isExpanded={false}
             citizenContract={citizenContract}
+            isSenateVote={isSenateVote}
+            hideStatusBadge={hideStatusBadge}
           />
         </Link>
       )}

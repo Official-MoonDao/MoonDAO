@@ -5,6 +5,7 @@ import {
   DISTRIBUTION_TABLE_NAMES,
   PROPOSALS_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
+  IS_REWARDS_CYCLE,
 } from 'const/config'
 import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
@@ -25,7 +26,9 @@ export default function Projects({
   pastProjects,
   distributions,
   proposalAllocations,
-}: ProjectRewardsProps & { proposalAllocations: any[] }) {
+}: ProjectRewardsProps & {
+  proposalAllocations: any[]
+}) {
   const router = useRouter()
   useChainDefault()
   return (
@@ -45,7 +48,9 @@ export async function getStaticProps() {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const { quarter, year } = getRelativeQuarter(isRewardsCycle(new Date()) ? -1 : 0)
+    const { quarter, year } = getRelativeQuarter(
+      isRewardsCycle(new Date(), IS_REWARDS_CYCLE) ? -1 : 0
+    )
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = (await queryTable(chain, projectStatement)) || []
@@ -116,7 +121,12 @@ export async function getStaticProps() {
     const distributionStatement = `SELECT * FROM ${DISTRIBUTION_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
     const distributions = (await queryTable(chain, distributionStatement)) || []
 
-    const proposalAllocationStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
+    // Proposal allocations (member-vote distributions) are keyed off of the
+    // *submission* quarter — i.e. the quarter the proposals are being voted
+    // into — NOT the rewards-shifted `quarter`/`year` used for retroactive
+    // payouts. Mixing the two surfaces an old member-vote row from the prior
+    // quarter and incorrectly flips the UI into "Edit Distribution" mode.
+    const proposalAllocationStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE year = ${submissionQuarter.year} AND quarter = ${submissionQuarter.quarter}`
     const proposalAllocations = (await queryTable(chain, proposalAllocationStatement)) || []
 
     return {

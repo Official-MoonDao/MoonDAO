@@ -1,8 +1,19 @@
 import dotenv from 'dotenv'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import apiKeyMiddleware from '../../../lib/mongodb/models/middleware'
 
 dotenv.config()
+
+// Simple static API-key check. Replaces the previous Mongo-backed
+// `apiKeyMiddleware`, whose secondary signature-verification path was only
+// used by the now-archived Ticket-to-Space sweepstakes UI.
+function checkApiKey(req: NextApiRequest, res: NextApiResponse): boolean {
+  const expected = process.env.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY
+  const headerValue = req.headers['moondao-api-key']
+  const provided = Array.isArray(headerValue) ? headerValue[0] : headerValue
+  if (expected && provided === expected) return true
+  res.status(401).json({ success: false, message: 'Unauthorized' })
+  return false
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,8 +21,7 @@ export default async function handler(
 ) {
   const { method } = req
 
-  const auth = await apiKeyMiddleware(req, res)
-  if (!auth) return
+  if (!checkApiKey(req, res)) return
 
   switch (method) {
     case 'POST':
