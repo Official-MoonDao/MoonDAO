@@ -9,6 +9,7 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatNumberUSStyle } from '@/lib/nance'
+import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -106,6 +107,22 @@ export default function VotingModal({
         })
         toast.success('Vote submitted!')
       }
+
+      // Post a Discord notification about this Senate vote. Fire-and-forget:
+      // never block the UI on it. The helper handles auth, retries, and logs
+      // failures to the console so we can spot regressions.
+      void sendOnchainNotification(
+        '/api/proposals/vote-notification',
+        {
+          txHash: receipt?.transactionHash,
+          kind: 'senate',
+          proposalName: project?.name,
+          proposalMDP: project?.MDP,
+          isEdit: edit,
+        },
+        { label: 'senate-vote-notification' }
+      )
+
       setSubmitting(false)
     } catch (error) {
       console.error('Error submitting distribution:', error)
