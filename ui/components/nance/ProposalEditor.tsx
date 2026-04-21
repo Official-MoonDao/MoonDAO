@@ -171,7 +171,8 @@ export default function ProposalEditor({ project }: { project: Project }) {
       return
     }
 
-    if (!proposalTitle) {
+    const trimmedProposalTitle = proposalTitle?.trim()
+    if (!trimmedProposalTitle) {
       console.error('submitProposal: No title provided')
       toast.error('Please enter a title for the proposal.', {
         style: toastStyle,
@@ -180,7 +181,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
       return
     }
 
-    if (proposalTitle.trim().toLowerCase() === 'untitled') {
+    if (trimmedProposalTitle.toLowerCase() === 'untitled') {
       toast.error('Please give your proposal a descriptive title instead of "Untitled".', {
         style: toastStyle,
       })

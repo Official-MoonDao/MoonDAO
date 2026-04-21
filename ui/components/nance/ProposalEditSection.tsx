@@ -94,7 +94,7 @@ export default function ProposalEditSection({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address,
-          proposalTitle: title,
+          ...(hasNewTitle ? { proposalTitle: title } : {}),
           ...(proposalIPFS ? { proposalIPFS } : {}),
           proposalId: mdp,
         }),
@@ -169,10 +169,11 @@ export default function ProposalEditSection({
       <div className="flex flex-col gap-3 w-full mb-4">
         <div className="flex items-center gap-2 text-white">
           <PencilSquareIcon className="w-5 h-5 text-indigo-400" />
-          <span className="font-medium">Proposal Title</span>
+          <label htmlFor="proposal-title" className="font-medium">Proposal Title</label>
         </div>
         <div className="relative flex-1">
           <input
+            id="proposal-title"
             type="text"
             value={newTitle ?? projectName}
             onChange={(e) => setNewTitle(e.target.value)}
