@@ -165,55 +165,83 @@ function MissionPayRedeemContent({
             <div className="space-y-2">
               <label
                 htmlFor="usd-contribution-input"
-                className="text-white font-semibold text-xs uppercase tracking-wider"
+                className="flex items-center gap-2 text-white font-semibold text-xs uppercase tracking-wider"
               >
-                You contribute
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/25 text-cyan-200 text-[11px] font-bold ring-1 ring-cyan-400/40">
+                  1
+                </span>
+                Enter contribution amount
               </label>
-              <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/40 rounded-xl p-3 sm:p-4 min-w-0">
-                <div className="flex flex-col gap-4 min-w-0">
-                  {/* ETH ↔ USD: side-by-side from md up, stacked on small screens */}
-                  <div className="flex flex-col md:flex-row md:items-center gap-4 min-w-0">
-                    <div className="flex items-center gap-3 min-w-0 md:flex-1">
-                      <div className="w-9 h-9 shrink-0 bg-slate-800 rounded-full flex items-center justify-center ring-1 ring-white/15">
-                        <Image
-                          src="/coins/ETH.svg"
-                          alt="ETH"
-                          width={18}
-                          height={18}
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-white text-lg leading-tight break-all sm:break-normal">
-                          {calculateEthAmount()}
-                        </p>
-                        <p className="text-gray-500 text-xs">ETH (estimated)</p>
-                      </div>
-                    </div>
-
-                    <label
-                      htmlFor="usd-contribution-input"
-                      className="flex min-w-0 w-full md:flex-1 items-center gap-2 rounded-lg px-3 py-2.5 border border-white/15 bg-black/50 shadow-inner cursor-text focus-within:border-cyan-400/50 focus-within:ring-1 focus-within:ring-cyan-400/30 transition-colors"
-                    >
-                      <span className="text-cyan-200/80 text-lg font-bold shrink-0 select-none pointer-events-none">
-                        $
-                      </span>
-                      <input
-                        id="usd-contribution-input"
-                        type="text"
-                        inputMode="decimal"
-                        className="min-w-0 flex-1 bg-transparent border-none outline-none text-lg font-bold text-white text-right placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 ring-0 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        value={usdInput}
-                        onChange={handleUsdInputChange}
-                        placeholder="0"
-                        maxLength={15}
-                      />
-                      <span className="text-gray-300 text-lg font-bold shrink-0 select-none pointer-events-none">
-                        USD
-                      </span>
-                    </label>
+              <p className="text-gray-400 text-xs">
+                Type the amount of USD you want to contribute. We&apos;ll convert it to ETH for
+                you.
+              </p>
+              <div className="bg-slate-950/90 border-2 border-cyan-500/40 ring-2 ring-cyan-500/15 shadow-lg shadow-cyan-500/10 rounded-xl p-4 sm:p-5 min-w-0 transition-all focus-within:border-cyan-400/70 focus-within:ring-cyan-400/30 focus-within:shadow-cyan-500/25">
+                <label
+                  htmlFor="usd-contribution-input"
+                  className="block cursor-text"
+                >
+                  <div className="flex items-baseline justify-center gap-1 sm:gap-2 min-w-0">
+                    <span className="text-cyan-200/80 text-3xl sm:text-5xl font-bold shrink-0 select-none">
+                      $
+                    </span>
+                    <input
+                      id="usd-contribution-input"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      aria-label="Contribution amount in USD"
+                      className="min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center text-4xl sm:text-6xl font-bold tracking-tight placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      value={usdInput}
+                      onChange={handleUsdInputChange}
+                      placeholder="0"
+                      maxLength={15}
+                    />
+                    <span className="text-gray-300 text-xl sm:text-2xl font-bold shrink-0 select-none">
+                      USD
+                    </span>
                   </div>
+                  <div className="mt-2 flex items-center justify-center gap-1.5">
+                    <Image
+                      src="/coins/ETH.svg"
+                      alt=""
+                      width={14}
+                      height={14}
+                      className="w-3.5 h-3.5 opacity-60"
+                    />
+                    <p className="text-gray-400 text-xs sm:text-sm tabular-nums">
+                      ≈ {calculateEthAmount()} ETH
+                    </p>
+                  </div>
+                </label>
 
-                  <div className="pt-3 border-t border-white/[0.08] min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                {/* Quick amount presets */}
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  {[10, 25, 50, 100, 500].map((preset) => {
+                    const isActive =
+                      parseFloat((usdInput || '').replace(/,/g, '')) === preset
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          handleUsdInputChange({
+                            target: { value: String(preset) },
+                          } as React.ChangeEvent<HTMLInputElement>)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border ${
+                          isActive
+                            ? 'bg-cyan-500/25 border-cyan-400/60 text-cyan-100'
+                            : 'bg-white/5 hover:bg-white/15 border-white/15 text-white'
+                        }`}
+                      >
+                        ${preset}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/[0.08] min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-gray-400 text-xs sm:text-sm leading-relaxed break-words min-w-0">
                       <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
                       <span className="text-white font-medium tabular-nums">
