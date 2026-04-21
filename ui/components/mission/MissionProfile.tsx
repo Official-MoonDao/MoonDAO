@@ -41,6 +41,7 @@ import { useMissionDefaultFundingChain } from '@/lib/mission/useMissionDefaultFu
 import { useManagerActions } from '@/lib/mission/useManagerActions'
 import useMissionData from '@/lib/mission/useMissionData'
 import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
+import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import {
   type Chain,
   arbitrum,
@@ -71,6 +72,7 @@ import MissionMobileContributeButton from '@/components/mission/MissionMobileCon
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import MissionTeamSection from '@/components/mission/MissionTeamSection'
+import OverviewLeaderboardPreview from '@/components/mission/OverviewLeaderboardPreview'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import { TwitterIcon } from '@/components/assets'
 
@@ -102,6 +104,9 @@ type MissionProfileProps = {
   _teamHats?: any[]
   _fundingGoal: number
   _ruleset: any[]
+  /** Pre-fetched top entries of the $OVERVIEW leaderboard. Only provided
+   *  for the Overview Flight mission (id 4); undefined for other missions. */
+  _overviewLeaderboard?: LeaderboardEntry[]
 }
 
 export default function MissionProfile({
@@ -115,6 +120,7 @@ export default function MissionProfile({
   _teamHats,
   _fundingGoal,
   _ruleset,
+  _overviewLeaderboard,
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const router = useRouter()
@@ -449,7 +455,10 @@ export default function MissionProfile({
               visibleButton={windowWidth > 0 && windowWidth > 768}
               buttonClassName={
                 mission?.id === 4 || String(mission?.id) === '4'
-                  ? 'w-full sm:min-w-[280px] rounded-full gradient-2 px-8 sm:px-10 py-3.5 sm:py-4 text-base sm:text-xl font-bold uppercase tracking-wide shadow-lg shadow-blue-500/30 ring-1 ring-white/15 hover:brightness-110 hover:shadow-xl hover:shadow-blue-500/50 hover:scale-[1.02] active:scale-[0.99] transition-all duration-200 flex justify-center items-center'
+                  ? // Overview Mission CTA: prominent but sized to avoid colliding
+                    // with the amount-raised text on sm/md or the manager-actions
+                    // row below. No hover-scale (keeps the button inside its slot).
+                    'w-full sm:w-auto sm:min-w-[200px] sm:max-w-[260px] rounded-full gradient-2 px-5 sm:px-7 py-2.5 sm:py-3 text-sm sm:text-base font-bold uppercase tracking-wide shadow-lg shadow-blue-500/30 ring-1 ring-white/15 hover:brightness-110 hover:shadow-blue-500/50 active:scale-[0.99] transition-all duration-200 flex justify-center items-center'
                   : 'max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center'
               }
             />
@@ -630,32 +639,15 @@ export default function MissionProfile({
                 </div>
               </div>
             </div>
-            {/* Support Candidates Card - only for mission 4 (Overview flight on Arbitrum) */}
+            {/* Fly with Frank Leaderboard preview — only for mission 4
+                (Overview Flight on Arbitrum). Surfaces the top candidates by
+                $OVERVIEW backed and links to the full voting page. */}
             {(mission?.id === 4 || String(mission?.id) === '4') && (
               <div className="w-full px-5 md:px-8 lg:px-12 mt-4 md:mt-6 flex justify-center">
-                <Link
-                  href={`/overview-vote?from=mission&missionId=${mission?.id ?? ''}`}
-                  className="w-full max-w-[1200px] block bg-gradient-to-r from-indigo-900/30 via-purple-900/20 to-blue-900/20 border border-indigo-500/20 hover:border-indigo-500/40 rounded-2xl p-4 sm:p-6 transition-all duration-300 group"
-                >
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30 group-hover:scale-105 transition-transform">
-                        <span className="text-2xl">🗳️</span>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white group-hover:text-indigo-200 transition-colors">
-                          Support candidates
-                        </h3>
-                        <p className="text-gray-400 text-sm">
-                          After contributing, back a candidate on the leaderboard to amplify your impact.
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-indigo-400 font-medium text-sm sm:text-base group-hover:text-indigo-300 whitespace-nowrap">
-                      Back a candidate →
-                    </span>
-                  </div>
-                </Link>
+                <OverviewLeaderboardPreview
+                  leaderboard={_overviewLeaderboard ?? []}
+                  missionId={mission?.id ?? 4}
+                />
               </div>
             )}
             <MissionJuiceboxFooter

@@ -2,10 +2,8 @@ import confetti from 'canvas-confetti'
 import VotesTableABI from 'const/abis/Votes.json'
 import {
   CITIZEN_TABLE_NAMES,
-  OVERVIEW_BLOCKED_CITIZEN_IDS,
   OVERVIEW_DELEGATION_VOTE_ID,
   OVERVIEW_TOKEN_ADDRESS,
-  OVERVIEW_TOKEN_DECIMALS,
   TABLELAND_ENDPOINT,
   VOTES_TABLE_ADDRESSES,
   VOTES_TABLE_NAMES,
@@ -18,36 +16,19 @@ import { getAccessToken } from '@privy-io/react-auth'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import {
-  applyOptimisticUpdate,
-  isValidEthAddress,
-  parseDelegations,
-  aggregateDelegations,
-  buildLeaderboard,
-} from '@/lib/overview-delegate/leaderboard'
+import { fetchOverviewLeaderboard } from '@/lib/overview-delegate/fetchLeaderboard'
+import { applyOptimisticUpdate } from '@/lib/overview-delegate/leaderboard'
 import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import { arbitrum } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { engineBatchRead } from '@/lib/thirdweb/engine'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import Container from '@/components/layout/Container'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-
-const ERC20_BALANCE_OF_ABI = [
-  {
-    inputs: [{ name: 'account', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-]
 
 type Citizen = {
   id: string
@@ -754,122 +735,9 @@ export default function OverviewDelegate({
 }
 
 export async function getStaticProps() {
-  try {
-    const chain = arbitrum
-    const chainSlug = getChainSlug(chain)
-    const tokenAddress = OVERVIEW_TOKEN_ADDRESS
-
-    // 1. Query delegations from Tableland
-    const votesTableName = VOTES_TABLE_NAMES[chainSlug]
-    if (!votesTableName) {
-      return {
-        props: { leaderboard: [], tokenAddress },
-        revalidate: 60,
-      }
-    }
-
-    const statement = `SELECT * FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID}`
-    const rows = await queryTable(chain, statement)
-
-    if (!rows || rows.length === 0) {
-      return {
-        props: { leaderboard: [], tokenAddress },
-        revalidate: 60,
-      }
-    }
-
-    const delegations = parseDelegations(rows)
-
-    if (delegations.length === 0) {
-      return {
-        props: { leaderboard: [], tokenAddress },
-        revalidate: 60,
-      }
-    }
-
-    // 2. Batch-fetch current balances (anti-gaming)
-    const uniqueDelegators = [...new Set(delegations.map((d) => d.delegatorAddress))]
-
-    let balanceMap: Record<string, number> = {}
-    try {
-      const balances = await engineBatchRead<string>(
-        tokenAddress,
-        'balanceOf',
-        uniqueDelegators.map((addr) => [addr]),
-        ERC20_BALANCE_OF_ABI,
-        chain.id
-      )
-      const divisor = 10n ** BigInt(OVERVIEW_TOKEN_DECIMALS)
-      for (let i = 0; i < uniqueDelegators.length; i++) {
-        const raw = balances[i]
-        const wei = BigInt(raw || '0')
-        const whole = wei / divisor
-        const remainder = wei % divisor
-        const normalized = Number(whole) + Number(remainder) / Number(divisor)
-        balanceMap[uniqueDelegators[i].toLowerCase()] = normalized
-      }
-    } catch (error) {
-      console.error('Error fetching balances, using stored amounts:', error)
-      for (const addr of uniqueDelegators) {
-        balanceMap[addr.toLowerCase()] = Infinity
-      }
-    }
-
-    const aggregated = aggregateDelegations(delegations, balanceMap)
-
-    if (aggregated.length === 0) {
-      return {
-        props: { leaderboard: [], tokenAddress },
-        revalidate: 60,
-      }
-    }
-
-    const safeAddresses = aggregated
-      .map((e) => e.delegateeAddress)
-      .filter(isValidEthAddress)
-
-    let citizenMap: Record<
-      string,
-      { id: number | string; name: string; image?: string }
-    > = {}
-
-    if (safeAddresses.length > 0) {
-      try {
-        const citizenTableName = CITIZEN_TABLE_NAMES[chainSlug]
-        if (citizenTableName) {
-          const inClause = safeAddresses
-            .map((a) => `'${a}'`)
-            .join(',')
-          const citizenStatement = `SELECT id, name, owner, image FROM ${citizenTableName} WHERE LOWER(owner) IN (${inClause})`
-          const citizenRows = await queryTable(chain, citizenStatement)
-
-          if (citizenRows) {
-            for (const c of citizenRows) {
-              if (OVERVIEW_BLOCKED_CITIZEN_IDS.includes(c.id)) continue
-              citizenMap[c.owner.toLowerCase()] = {
-                id: c.id,
-                name: c.name,
-                image: c.image,
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching citizen data:', error)
-      }
-    }
-
-    const leaderboardResult = buildLeaderboard(aggregated, citizenMap)
-
-    return {
-      props: { leaderboard: leaderboardResult, tokenAddress },
-      revalidate: 60,
-    }
-  } catch (error) {
-    console.error('Error in getStaticProps:', error)
-    return {
-      props: { leaderboard: [], tokenAddress: OVERVIEW_TOKEN_ADDRESS },
-      revalidate: 60,
-    }
+  const leaderboard = await fetchOverviewLeaderboard()
+  return {
+    props: { leaderboard, tokenAddress: OVERVIEW_TOKEN_ADDRESS },
+    revalidate: 60,
   }
 }

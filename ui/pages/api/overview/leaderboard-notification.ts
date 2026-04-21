@@ -1,46 +1,26 @@
 import {
   CITIZEN_TABLE_NAMES,
   GENERAL_CHANNEL_ID,
-  OVERVIEW_BLOCKED_CITIZEN_IDS,
-  OVERVIEW_DELEGATION_VOTE_ID,
-  OVERVIEW_TOKEN_ADDRESS,
-  OVERVIEW_TOKEN_DECIMALS,
   TEST_CHANNEL_ID,
   VOTES_TABLE_ADDRESSES,
-  VOTES_TABLE_NAMES,
   DEPLOYED_ORIGIN,
 } from 'const/config'
-import { formatUnits } from 'ethers'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
+import { fetchOverviewLeaderboard } from '@/lib/overview-delegate/fetchLeaderboard'
 import {
-  parseDelegations,
-  aggregateDelegations,
-  buildLeaderboard,
-  isValidEthAddress,
   formatLeaderboardStandings,
+  isValidEthAddress,
 } from '@/lib/overview-delegate/leaderboard'
-import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import { getPrivyUserData } from '@/lib/privy'
 import { arbitrum } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
-import { engineBatchRead } from '@/lib/thirdweb/engine'
 import { getBlocksInTimeframe } from '@/lib/utils/blocks'
-
-const ERC20_BALANCE_OF_ABI = [
-  {
-    inputs: [{ name: 'account', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-]
 
 const chain = arbitrum
 const chainSlug = getChainSlug(chain)
@@ -54,76 +34,6 @@ const usedTransactions = new Set<string>()
 setInterval(() => {
   usedTransactions.clear()
 }, 60 * 60 * 1000)
-
-async function buildCurrentLeaderboard(): Promise<LeaderboardEntry[]> {
-  const votesTableName = VOTES_TABLE_NAMES[chainSlug]
-  if (!votesTableName) return []
-
-  const statement = `SELECT * FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID}`
-  const rows = await queryTable(chain, statement)
-  if (!rows || rows.length === 0) return []
-
-  const delegations = parseDelegations(rows)
-  if (delegations.length === 0) return []
-
-  const uniqueDelegators = [
-    ...new Set(delegations.map((d) => d.delegatorAddress)),
-  ]
-
-  let balanceMap: Record<string, number> = {}
-  try {
-    const balances = await engineBatchRead<string>(
-      OVERVIEW_TOKEN_ADDRESS,
-      'balanceOf',
-      uniqueDelegators.map((addr) => [addr]),
-      ERC20_BALANCE_OF_ABI,
-      chain.id
-    )
-    for (let i = 0; i < uniqueDelegators.length; i++) {
-      const raw = balances[i]
-      const wei = BigInt(raw || '0')
-      const normalized = parseFloat(formatUnits(wei, OVERVIEW_TOKEN_DECIMALS))
-      balanceMap[uniqueDelegators[i].toLowerCase()] = normalized
-    }
-  } catch {
-    for (const addr of uniqueDelegators) {
-      balanceMap[addr.toLowerCase()] = Infinity
-    }
-  }
-
-  const aggregated = aggregateDelegations(delegations, balanceMap)
-  if (aggregated.length === 0) return []
-
-  const safeAddresses = aggregated
-    .map((e) => e.delegateeAddress)
-    .filter(isValidEthAddress)
-
-  let citizenMap: Record<
-    string,
-    { id: number; name: string; image?: string }
-  > = {}
-
-  if (safeAddresses.length > 0) {
-    const citizenTableName = CITIZEN_TABLE_NAMES[chainSlug]
-    if (citizenTableName) {
-      const inClause = safeAddresses.map((a) => `'${a}'`).join(',')
-      const citizenStatement = `SELECT id, name, owner, image FROM ${citizenTableName} WHERE LOWER(owner) IN (${inClause})`
-      const citizenRows = await queryTable(chain, citizenStatement)
-      if (citizenRows) {
-        for (const c of citizenRows) {
-          if (OVERVIEW_BLOCKED_CITIZEN_IDS.includes(c.id)) continue
-          citizenMap[c.owner.toLowerCase()] = {
-            id: c.id,
-            name: c.name,
-            image: c.image,
-          }
-        }
-      }
-    }
-  }
-
-  return buildLeaderboard(aggregated, citizenMap, 25)
-}
 
 async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -244,10 +154,7 @@ async function handler(req: any, res: any) {
       } catch {}
     }
 
-    let leaderboard: LeaderboardEntry[] = []
-    try {
-      leaderboard = await buildCurrentLeaderboard()
-    } catch {}
+    const leaderboard = await fetchOverviewLeaderboard(25)
 
     const voterDisplay = voterCitizen?.name
       ? `[${voterCitizen.name}](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(voterCitizen.name, voterCitizen.id)})`
