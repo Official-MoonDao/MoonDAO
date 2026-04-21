@@ -381,7 +381,7 @@ export function ProjectRewards({
       setApprovalVotingActive(isApprovalActive(new Date()))
     }, 30000)
     return () => clearInterval(interval)
-  })
+  }, [])
 
   //Check if its the rewards cycle. `IS_REWARDS_CYCLE` (config) acts as a
   // force-on switch; otherwise we fall through to the date-based default.
