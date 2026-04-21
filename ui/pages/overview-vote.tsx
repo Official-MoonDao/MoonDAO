@@ -267,18 +267,70 @@ export default function OverviewDelegate({
       const receipt: any = await sendAndConfirmTransaction({ transaction: tx, account })
       setHasExistingDelegation(true)
 
-      // Send Discord notification (fire-and-forget)
-      getAccessToken().then((accessToken) => {
-        fetch('/api/overview/leaderboard-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            txHash: receipt.transactionHash,
-            accessToken,
-            delegateeAddress: selectedCitizen.owner,
-          }),
-        }).catch(() => {})
-      }).catch(() => {})
+      // Send Discord notification (fire-and-forget). The notification API is
+      // wrapped in `authMiddleware`, which requires either a valid NextAuth
+      // session cookie OR an `Authorization: Bearer <privy-token>` header. We
+      // can't rely solely on the NextAuth cookie because it isn't always
+      // present for Privy-authenticated users (race after sign-in, expired
+      // session, blocked third-party cookies, etc.) — so we always send the
+      // Bearer token explicitly. Without this the middleware silently 401s
+      // and the Discord message never gets posted.
+      ;(async () => {
+        try {
+          const accessToken = await getAccessToken()
+          const txHash = receipt?.transactionHash
+          if (!accessToken || !txHash) {
+            console.warn(
+              '[leaderboard-notification] skipped: missing',
+              !accessToken ? 'accessToken' : 'txHash'
+            )
+            return
+          }
+
+          // Tiny retry loop for transient network / 5xx failures so a single
+          // blip doesn't drop the notification entirely.
+          const maxAttempts = 3
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+              const resp = await fetch(
+                '/api/overview/leaderboard-notification',
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                  },
+                  body: JSON.stringify({
+                    txHash,
+                    accessToken,
+                    delegateeAddress: selectedCitizen.owner,
+                  }),
+                }
+              )
+              if (resp.ok) return
+              // 4xx responses (other than 408/429) indicate a problem that
+              // retrying won't fix — log and stop.
+              if (
+                resp.status >= 400 &&
+                resp.status < 500 &&
+                resp.status !== 408 &&
+                resp.status !== 429
+              ) {
+                const body = await resp.text().catch(() => '')
+                console.warn(
+                  `[leaderboard-notification] failed (${resp.status}): ${body}`
+                )
+                return
+              }
+            } catch (fetchErr) {
+              if (attempt === maxAttempts - 1) throw fetchErr
+            }
+            await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)))
+          }
+        } catch (err) {
+          console.warn('[leaderboard-notification] error:', err)
+        }
+      })()
 
       confetti({
         particleCount: 150,
