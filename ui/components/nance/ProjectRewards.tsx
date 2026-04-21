@@ -26,7 +26,7 @@ import _ from 'lodash'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -409,24 +409,33 @@ export function ProjectRewards({
   // row exists for this quarter, so the submit path correctly does an
   // UPDATE (not INSERT, which would violate the unique(quarter,year,addr)
   // constraint).
+  // Track the (wallet, quarter, year) we've already seeded distribution
+  // state from so we don't keep clobbering an in-progress edit every time
+  // the props change reference (e.g., when SWR/ISR returns the same data
+  // again on revalidation). Once seeded, the user's edits stay put until
+  // they switch wallets or quarters.
+  const seededDistributionKey = useRef<string | null>(null)
   useEffect(() => {
-    if (distributions && userAddress) {
-      for (const d of distributions) {
-        if (
-          Number(d?.year) === year &&
-          Number(d?.quarter) === quarter &&
-          typeof d?.address === 'string' &&
-          d.address.toLowerCase() === userAddress.toLowerCase()
-        ) {
-          const parsed = parseDistribution(d.distribution)
-          const pruned = filterToKeys(parsed, validEligibleIds)
-          if (Object.keys(pruned).length > 0) {
-            setDistribution(pruned)
-            setOriginalDistribution(pruned)
-          }
-          setEdit(true)
-          break
+    if (!distributions || !userAddress) return
+    const seedKey = `${userAddress.toLowerCase()}-${year}-${quarter}`
+    if (seededDistributionKey.current === seedKey) return
+
+    for (const d of distributions) {
+      if (
+        Number(d?.year) === year &&
+        Number(d?.quarter) === quarter &&
+        typeof d?.address === 'string' &&
+        d.address.toLowerCase() === userAddress.toLowerCase()
+      ) {
+        const parsed = parseDistribution(d.distribution)
+        const pruned = filterToKeys(parsed, validEligibleIds)
+        if (Object.keys(pruned).length > 0) {
+          setDistribution(pruned)
+          setOriginalDistribution(pruned)
         }
+        setEdit(true)
+        seededDistributionKey.current = seedKey
+        break
       }
     }
   }, [userAddress, distributions, quarter, year, validEligibleIds])
@@ -444,9 +453,12 @@ export function ProjectRewards({
     return `SELECT * FROM ${tableName} WHERE quarter = ${submissionQuarter} AND year = ${submissionYear} AND address = '${userAddress.toLowerCase()}' LIMIT 1`
   }, [chainSlug, userAddress, submissionQuarter, submissionYear])
 
+  // NOTE: leave `revalidateOnFocus: false` (the default). We only need this
+  // freshness query to fire on mount + when its key changes — re-fetching
+  // every time the window regains focus risks racing with a user mid-typing
+  // and overwriting their edit if SWR ever returns a new array reference.
   const { data: freshProposalAllocations } = useTablelandQuery(
-    proposalAllocationStatement,
-    { revalidateOnFocus: true }
+    proposalAllocationStatement
   )
 
   // Check if the user already has a proposal allocation for the *submission*
@@ -464,8 +476,16 @@ export function ProjectRewards({
   // the next submit. We still flag `edit=true` whenever a row exists for
   // this (quarter, year, wallet) so the submit path correctly chooses
   // UPDATE (and respects the unique(quarter, year, address) constraint).
+  //
+  // CRITICAL: only seed proposalDistribution ONCE per (wallet, quarter,
+  // year). Otherwise any later prop/SWR re-render can re-run the effect
+  // and stomp the user's in-progress edit (typing "10" then blurring →
+  // value snaps back to whatever the saved row had).
+  const seededProposalKey = useRef<string | null>(null)
   useEffect(() => {
     if (!userAddress) return
+    const seedKey = `${userAddress.toLowerCase()}-${submissionYear}-${submissionQuarter}`
+    if (seededProposalKey.current === seedKey) return
 
     const candidates: any[] = []
     if (
@@ -476,6 +496,11 @@ export function ProjectRewards({
     } else if (proposalAllocations?.length) {
       candidates.push(...proposalAllocations)
     }
+
+    // Don't mark as seeded until we've actually seen a row to seed from —
+    // otherwise the very first render (before SWR resolves) would lock in
+    // an empty seed and prevent the real saved row from ever loading.
+    if (candidates.length === 0) return
 
     for (const d of candidates) {
       if (
@@ -491,9 +516,15 @@ export function ProjectRewards({
           setOriginalProposalDistribution(pruned)
         }
         setProposalEdit(true)
+        seededProposalKey.current = seedKey
         return
       }
     }
+
+    // Wallet has no row for this (quarter, year). Mark seeded so we don't
+    // keep re-running needlessly, but DON'T touch proposalDistribution —
+    // the user may already be typing into a fresh allocation.
+    seededProposalKey.current = seedKey
   }, [
     userAddress,
     freshProposalAllocations,
