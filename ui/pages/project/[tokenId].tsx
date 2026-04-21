@@ -258,7 +258,7 @@ export default function ProjectProfile({
           />
         }
       >
-        <div id="page-container" className="flex flex-col gap-4 sm:gap-6 py-4 sm:py-6 md:py-8">
+        <div id="page-container" className="flex flex-col gap-4 sm:gap-6 pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8">
           {finalReportMarkdown && (
             <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
               <div className="prose prose-invert max-w-none">
@@ -389,9 +389,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
       chain: chain,
     })
 
-    // If this is a newly submitted proposal, retry a few times to allow Tableland to index
+    // If this is a newly submitted or updated proposal, retry a few times to allow Tableland to index
     const isNewSubmission = pageQuery?.new === '1'
-    const maxRetries = isNewSubmission ? 4 : 1
+    const isUpdated = pageQuery?.updated === '1'
+    const maxRetries = (isNewSubmission || isUpdated) ? 4 : 1
     const retryDelay = 3000 // 3 seconds between retries
 
     let project: Project | undefined

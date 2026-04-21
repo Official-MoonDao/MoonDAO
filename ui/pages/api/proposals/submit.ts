@@ -349,7 +349,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     const account = await createHSMWallet()
     if (req.body.proposalId) {
       // UPDATE
-      const { proposalId, proposalIPFS } = req.body
+      const { proposalId, proposalIPFS, proposalTitle } = req.body
       const projectTableContract = getContract({
         client: serverClient,
         address: PROJECT_TABLE_ADDRESSES[chainSlug],
@@ -360,15 +360,57 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
 
       const projects = await queryTable(chain, projectStatement)
       const project = projects[0]
-      const transaction = prepareContractCall({
-        contract: projectTableContract,
-        method: 'updateTableCol',
-        params: [project.id, 'proposalIPFS', proposalIPFS],
-      })
-      const receipt = await sendAndConfirmTransaction({
-        transaction,
-        account,
-      })
+
+      const validIPFS =
+        proposalIPFS && typeof proposalIPFS === 'string'
+          ? proposalIPFS
+          : undefined
+      const normalizedTitle =
+        proposalTitle && typeof proposalTitle === 'string'
+          ? proposalTitle.trim()
+          : undefined
+      const MAX_TITLE_LENGTH = 100
+      const validTitle =
+        normalizedTitle &&
+        normalizedTitle.length > 0 &&
+        normalizedTitle.toLowerCase() !== 'untitled' &&
+        normalizedTitle.length <= MAX_TITLE_LENGTH
+          ? normalizedTitle
+          : undefined
+
+      if (!validIPFS && !validTitle) {
+        return res.status(400).json({
+          error:
+            'At least one valid updatable field (proposalIPFS or proposalTitle) must be provided.',
+        })
+      }
+
+      // Update proposalIPFS if provided
+      if (validIPFS) {
+        const updateIPFS = prepareContractCall({
+          contract: projectTableContract,
+          method: 'updateTableCol',
+          params: [project.id, 'proposalIPFS', validIPFS],
+        })
+        await sendAndConfirmTransaction({
+          transaction: updateIPFS,
+          account,
+        })
+      }
+
+      // Update name if a new valid title was provided
+      if (validTitle) {
+        const updateName = prepareContractCall({
+          contract: projectTableContract,
+          method: 'updateTableCol',
+          params: [project.id, 'name', validTitle.replace(/'/g, "''")],
+        })
+        await sendAndConfirmTransaction({
+          transaction: updateName,
+          account,
+        })
+      }
+
       res.status(200).json({
         proposalId: proposalId,
       })

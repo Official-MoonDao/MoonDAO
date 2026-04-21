@@ -183,7 +183,7 @@ const TopNavBar = ({
                         onMouseEnter={() => handleDropdownEnter(item.name)}
                         onMouseLeave={handleDropdownLeave}
                       >
-                        <div className="min-w-56 w-full bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 px-2 rounded-xl">
+                          <div className="min-w-56 max-w-xs w-full bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 px-2 rounded-xl">
                           {item.dynamicChildren === 'Teams' ? (
                             <TeamsNavDropdown variant="desktop" />
                           ) : item.dynamicChildren === 'Projects' ? (

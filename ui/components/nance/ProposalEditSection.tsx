@@ -50,8 +50,18 @@ export default function ProposalEditSection({
   }
 
   const handleUpdate = async () => {
-    if (!newBody) {
-      toast.error('Please import your updated Google Doc first.', {
+    const title = (newTitle ?? projectName).trim()
+    if (!title || title.toLowerCase() === 'untitled') {
+      toast.error('Please enter a meaningful proposal title.', {
+        style: toastStyle,
+      })
+      return
+    }
+
+    const hasNewBody = !!newBody
+    const hasNewTitle = newTitle !== undefined && newTitle.trim() !== projectName.trim()
+    if (!hasNewBody && !hasNewTitle) {
+      toast.error('Please change the title or import an updated Google Doc.', {
         style: toastStyle,
       })
       return
@@ -59,29 +69,33 @@ export default function ProposalEditSection({
 
     setIsUpdating(true)
     try {
-      const title = newTitle || projectName
-      const header = `# ${title}\n\n`
-      const fileName = `${title.replace(/\s+/g, '-')}.md`
+      let proposalIPFS: string | undefined
 
-      const fileContents = JSON.stringify({
-        body: header + newBody,
-        budget: proposalJSON?.budget,
-        authorAddress: address,
-        nonProjectProposal: proposalJSON?.nonProjectProposal,
-      })
+      if (hasNewBody) {
+        const header = `# ${title}\n\n`
+        const fileName = `${title.replace(/\s+/g, '-')}.md`
 
-      const file = new File([fileContents], fileName, {
-        type: 'application/json',
-      })
-      const { url: proposalIPFS } = await pinBlobOrFile(file, '/api/ipfs/pin')
+        const fileContents = JSON.stringify({
+          body: header + newBody,
+          budget: proposalJSON?.budget,
+          authorAddress: address,
+          nonProjectProposal: proposalJSON?.nonProjectProposal,
+        })
+
+        const file = new File([fileContents], fileName, {
+          type: 'application/json',
+        })
+        const pinResult = await pinBlobOrFile(file, '/api/ipfs/pin')
+        proposalIPFS = pinResult.url
+      }
 
       const res = await fetch('/api/proposals/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address,
-          proposalTitle: title,
-          proposalIPFS,
+          ...(hasNewTitle ? { proposalTitle: title } : {}),
+          ...(proposalIPFS ? { proposalIPFS } : {}),
           proposalId: mdp,
         }),
       })
@@ -94,7 +108,9 @@ export default function ProposalEditSection({
       toast.success('Proposal updated successfully! Refreshing...', {
         style: toastStyle,
       })
-      setTimeout(() => router.reload(), 4000)
+      setTimeout(() => {
+        router.replace(`/project/${mdp}?updated=1`)
+      }, 2000)
     } catch (error: any) {
       console.error('Error updating proposal:', error)
       toast.error(error.message || 'Failed to update proposal', {
@@ -142,16 +158,28 @@ export default function ProposalEditSection({
         <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
         <div className="text-sm text-gray-300">
           <p className="font-medium text-blue-300 mb-1">How to edit your proposal:</p>
-          <ol className="list-decimal list-inside space-y-1 text-gray-400">
-            <li>Edit your Google Doc with the changes you want to make</li>
-            <li>
-              Paste the Google Doc link below and click{' '}
-              <span className="text-white">Import</span>
-            </li>
-            <li>Review the preview, then click{' '}
-              <span className="text-white">Update Proposal</span> to save
-            </li>
-          </ol>
+          <ul className="list-disc list-inside space-y-1 text-gray-400">
+            <li>To <span className="text-white">rename</span> your proposal, edit the title below and click <span className="text-white">Update Proposal</span></li>
+            <li>To <span className="text-white">update the body</span>, paste your edited Google Doc link, import it, then click <span className="text-white">Update Proposal</span></li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Title Input */}
+      <div className="flex flex-col gap-3 w-full mb-4">
+        <div className="flex items-center gap-2 text-white">
+          <PencilSquareIcon className="w-5 h-5 text-indigo-400" />
+          <label htmlFor="proposal-title" className="font-medium">Proposal Title</label>
+        </div>
+        <div className="relative flex-1">
+          <input
+            id="proposal-title"
+            type="text"
+            value={newTitle ?? projectName}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="Enter proposal title"
+            className="w-full px-4 py-3 bg-black/40 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+          />
         </div>
       </div>
 
@@ -185,7 +213,7 @@ export default function ProposalEditSection({
       <div className="mt-4 flex justify-end">
         <button
           onClick={handleUpdate}
-          disabled={!newBody || isUpdating || isImporting}
+          disabled={isUpdating || isImporting || (!newBody && (newTitle === undefined || newTitle.trim() === projectName.trim()))}
           className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-indigo-500/25 flex items-center gap-2"
         >
           {isUpdating ? (

@@ -80,8 +80,8 @@ export function ProjectsNavDropdown({
   const isDesktop = variant === 'desktop'
 
   const baseLinkClass = isDesktop
-    ? 'block px-4 py-2 text-sm transition-all duration-200 mx-2 rounded-lg text-gray-300 hover:text-white hover:bg-purple-500/20'
-    : 'text-gray-300 hover:text-white my-3 flex items-center transition-colors duration-200'
+    ? 'block px-4 py-2 text-sm transition-all duration-200 mx-2 rounded-lg text-gray-300 hover:text-white hover:bg-purple-500/20 overflow-hidden'
+    : 'text-gray-300 hover:text-white my-3 flex items-center transition-colors duration-200 overflow-hidden'
 
   const wrapMobile = (content: React.ReactNode) =>
     isDesktop ? content : <li className="list-disc marker:text-white group">{content}</li>
