@@ -30,6 +30,42 @@ import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * `readContract` occasionally fails with
+ * `TypeError: Cannot read properties of undefined (reading 'buffer')` when
+ * the underlying RPC returns a malformed/empty response (typically Infura
+ * batch hiccups). Retry on that specific failure mode so a transient blip
+ * on a single chain (most often Arbitrum) doesn't drop its row from the
+ * weekly reward pool data — that was the root cause of the dashboard
+ * showing "0 check-ins" while the user was actually checked in.
+ */
+async function safeRead<T>(
+  fn: () => Promise<T>,
+  label: string,
+  retries = 2,
+  baseDelay = 250
+): Promise<T | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (err: any) {
+      const isLast = attempt === retries
+      const isBufferDecodeError =
+        err?.message?.includes("reading 'buffer'") ||
+        err?.message?.includes('decodeAbiParameters')
+      if (!isLast && isBufferDecodeError) {
+        await sleep(baseDelay * Math.pow(2, attempt))
+        continue
+      }
+      console.error(`safeRead [${label}] failed:`, err)
+      return null
+    }
+  }
+  return null
+}
+
 export default function WeeklyRewardPool() {
   const account = useActiveAccount()
   const address = account?.address
@@ -117,23 +153,22 @@ export default function WeeklyRewardPool() {
               const hookAddress = FEE_HOOK_ADDRESSES[slug]
               if (!hookAddress) return BigNumber.from(0)
 
-              try {
-                const contract = getContract({
-                  client,
-                  address: hookAddress,
-                  abi: FeeHook.abi as any,
-                  chain,
-                })
-                const estimate = await readContract({
-                  contract,
-                  method: 'estimateFees',
-                  params: [address],
-                })
-                return BigNumber.from(estimate?.toString() || '0')
-              } catch (err) {
-                console.error(`Error fetching estimate for ${slug}:`, err)
-                return BigNumber.from(0)
-              }
+              const contract = getContract({
+                client,
+                address: hookAddress,
+                abi: FeeHook.abi as any,
+                chain,
+              })
+              const estimate = await safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'estimateFees',
+                    params: [address],
+                  }),
+                `${slug}.estimateFees`
+              )
+              return BigNumber.from(estimate?.toString() || '0')
             })
           )
         ).reduce((acc, est) => acc.add(est || BigNumber.from(0)), BigNumber.from(0))
@@ -172,52 +207,82 @@ export default function WeeklyRewardPool() {
             })
 
             const [start, last, count, vMooneyAddress] = await Promise.all([
-              readContract({ contract, method: 'weekStart', params: [] }),
-              readContract({
-                contract,
-                method: 'lastCheckIn',
-                params: [address],
-              }),
-              readContract({
-                contract,
-                method: 'getCheckedInCount',
-                params: [],
-              }),
-              readContract({
-                contract,
-                method: 'vMooneyAddress',
-                params: [],
-              }),
+              safeRead(
+                () => readContract({ contract, method: 'weekStart', params: [] }),
+                `${slug}.weekStart`
+              ),
+              safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'lastCheckIn',
+                    params: [address],
+                  }),
+                `${slug}.lastCheckIn`
+              ),
+              safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'getCheckedInCount',
+                    params: [],
+                  }),
+                `${slug}.getCheckedInCount`
+              ),
+              safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'vMooneyAddress',
+                    params: [],
+                  }),
+                `${slug}.vMooneyAddress`
+              ),
             ])
+
+            // Drop the chain only if the truly required reads are missing
+            // after retries. Previously a single rejected read would null
+            // out the whole chain, which is what was making Arbitrum's
+            // check-in count silently disappear.
+            if (start == null || vMooneyAddress == null) {
+              console.warn(
+                `Skipping ${slug}: missing required FeeHook reads (start=${start}, vMooneyAddress=${vMooneyAddress})`
+              )
+              return null
+            }
 
             const vMooneyContract = getContract({
               client,
-              address: vMooneyAddress,
+              address: vMooneyAddress as `0x${string}`,
               abi: ERC20ABI as any,
               chain,
             })
 
-            const vMooneyBalance = await readContract({
-              contract: vMooneyContract,
-              method: 'balanceOf',
-              params: [address],
-            })
+            const vMooneyBalance = await safeRead(
+              () =>
+                readContract({
+                  contract: vMooneyContract,
+                  method: 'balanceOf',
+                  params: [address],
+                }),
+              `${slug}.balanceOf`
+            )
 
-            const hasVMooney =
-              vMooneyBalance !== undefined &&
-              vMooneyBalance !== null &&
-              vMooneyBalance > BigInt(0)
+            const balance = (vMooneyBalance as bigint | null) ?? BigInt(0)
+            const safeLast = (last as bigint | null) ?? BigInt(0)
+            const safeCount = (count as bigint | null) ?? BigInt(0)
+            const hasVMooney = balance > BigInt(0)
 
             return {
               chain,
               slug,
               contract,
-              start,
-              last,
-              count,
-              vMooneyBalance,
+              start: start as bigint,
+              last: safeLast,
+              count: safeCount,
+              vMooneyBalance: balance,
               hasVMooney,
-              checkedInOnChain: last === start,
+              checkedInOnChain: safeLast === (start as bigint),
             }
           } catch (err) {
             console.error(`Error fetching check-in status for ${slug}:`, err)

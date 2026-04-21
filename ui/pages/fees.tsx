@@ -63,6 +63,44 @@ type FeeChainData = {
 
 const WEEK = 7 * 24 * 60 * 60
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * `readContract` calls occasionally fail with
+ * `TypeError: Cannot read properties of undefined (reading 'buffer')`.
+ *
+ * This happens deep inside `decodeAbiParameters` when the RPC returns a
+ * malformed/empty response — usually a transient symptom of Infura
+ * rate-limiting batched JSON-RPC reads. Retrying once or twice with a
+ * short backoff almost always succeeds, and prevents the per-chain
+ * `Promise.all` from rejecting (which previously dropped Arbitrum's row
+ * from `feeData` entirely).
+ */
+async function safeRead<T>(
+  fn: () => Promise<T>,
+  label: string,
+  retries = 2,
+  baseDelay = 250
+): Promise<T | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (err: any) {
+      const isLast = attempt === retries
+      const isBufferDecodeError =
+        err?.message?.includes("reading 'buffer'") ||
+        err?.message?.includes('decodeAbiParameters')
+      if (!isLast && isBufferDecodeError) {
+        await sleep(baseDelay * Math.pow(2, attempt))
+        continue
+      }
+      console.error(`safeRead [${label}] failed:`, err)
+      return null
+    }
+  }
+  return null
+}
+
 function formatEth(value: string | null, decimals = 4) {
   if (value === null) return null
   const num = Number(value)
@@ -249,23 +287,22 @@ export default function Fees() {
               const hookAddress = FEE_HOOK_ADDRESSES[slug]
               if (!hookAddress) return BigNumber.from(0)
 
-              try {
-                const contract = getContract({
-                  client,
-                  address: hookAddress,
-                  abi: FeeHook.abi as any,
-                  chain,
-                })
-                const estimate = await readContract({
-                  contract,
-                  method: 'estimateFees',
-                  params: [address],
-                })
-                return BigNumber.from(estimate?.toString() || '0')
-              } catch (err) {
-                console.error(`Error fetching estimate for ${slug}:`, err)
-                return BigNumber.from(0)
-              }
+              const contract = getContract({
+                client,
+                address: hookAddress,
+                abi: FeeHook.abi as any,
+                chain,
+              })
+              const estimate = await safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'estimateFees',
+                    params: [address],
+                  }),
+                `${slug}.estimateFees`
+              )
+              return BigNumber.from(estimate?.toString() || '0')
             })
           )
         ).reduce((acc, est) => acc.add(est || BigNumber.from(0)), BigNumber.from(0))
@@ -303,53 +340,88 @@ export default function Fees() {
               chain,
             })
 
+            // Read each method independently with retry. Previously these
+            // were batched in `Promise.all`; if any single read failed (the
+            // recurring `decodeAbiParameters → buffer` error from a flaky
+            // RPC batch), the whole chain row was dropped from `feeData`,
+            // which surfaced as Arbitrum data going missing.
             const [start, last, count, vMooneyAddress] = await Promise.all([
-              readContract({ contract, method: 'weekStart', params: [] }),
-              readContract({
-                contract,
-                method: 'lastCheckIn',
-                params: [address],
-              }),
-              readContract({
-                contract,
-                method: 'getCheckedInCount',
-                params: [],
-              }),
-              readContract({
-                contract,
-                method: 'vMooneyAddress',
-                params: [],
-              }),
+              safeRead(
+                () => readContract({ contract, method: 'weekStart', params: [] }),
+                `${slug}.weekStart`
+              ),
+              safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'lastCheckIn',
+                    params: [address],
+                  }),
+                `${slug}.lastCheckIn`
+              ),
+              safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'getCheckedInCount',
+                    params: [],
+                  }),
+                `${slug}.getCheckedInCount`
+              ),
+              safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'vMooneyAddress',
+                    params: [],
+                  }),
+                `${slug}.vMooneyAddress`
+              ),
             ])
+
+            // We need at least the week boundaries + vMooney address to do
+            // anything useful. If those are missing the chain is unusable
+            // for this render, but we still don't want to throw — other
+            // chains should keep populating.
+            if (start == null || vMooneyAddress == null) {
+              console.warn(
+                `Skipping ${slug}: missing required FeeHook reads (start=${start}, vMooneyAddress=${vMooneyAddress})`
+              )
+              return null
+            }
 
             const vMooneyContract = getContract({
               client,
-              address: vMooneyAddress,
+              address: vMooneyAddress as `0x${string}`,
               abi: ERC20ABI as any,
               chain,
             })
 
-            const vMooneyBalance = await readContract({
-              contract: vMooneyContract,
-              method: 'balanceOf',
-              params: [address],
-            })
+            const vMooneyBalance = await safeRead(
+              () =>
+                readContract({
+                  contract: vMooneyContract,
+                  method: 'balanceOf',
+                  params: [address],
+                }),
+              `${slug}.balanceOf`
+            )
 
-            const hasVMooney =
-              vMooneyBalance !== undefined &&
-              vMooneyBalance !== null &&
-              vMooneyBalance > BigInt(0)
+            const balance = (vMooneyBalance as bigint | null) ?? BigInt(0)
+            const safeLast = (last as bigint | null) ?? BigInt(0)
+            const safeCount = (count as bigint | null) ?? BigInt(0)
+            const hasVMooney = balance > BigInt(0)
 
             return {
               chain,
               slug,
               contract,
-              start,
-              last,
-              count,
-              vMooneyBalance,
+              start: start as bigint,
+              last: safeLast,
+              count: safeCount,
+              vMooneyBalance: balance,
               hasVMooney,
-              checkedInOnChain: last === start,
+              checkedInOnChain: safeLast === (start as bigint),
             }
           } catch (err) {
             console.error(`Error fetching check-in status for ${slug}:`, err)
