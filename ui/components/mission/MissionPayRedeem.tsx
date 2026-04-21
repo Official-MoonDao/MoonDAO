@@ -111,6 +111,7 @@ function MissionPayRedeemContent({
   hideRecentContributions = false,
   contributionBalanceEth,
   contributionBalanceChain,
+  isQuoteLoading = false,
 }: any) {
   const resolvedSymbol = getMissionTokenSymbol(mission?.id, token?.tokenSymbol)
   const isRefundable = Number(stage) === 3
@@ -314,17 +315,37 @@ function MissionPayRedeemContent({
                       className="flex items-baseline gap-1.5 flex-wrap"
                       role="status"
                       aria-live="polite"
-                      aria-label={`${resolvedSymbol || 'tokens'}: ${formatContributionOutput(output)}`}
+                      aria-label={
+                        isQuoteLoading
+                          ? `Calculating ${resolvedSymbol || 'tokens'} quote`
+                          : `${resolvedSymbol || 'tokens'}: ${formatContributionOutput(output)}`
+                      }
                     >
-                      <p
-                        id="token-output"
-                        className="text-lg sm:text-xl font-bold text-emerald-200/95 tabular-nums tracking-tight"
-                      >
-                        {formatContributionOutput(output)}
-                      </p>
-                      <p className="font-bold text-white/70 text-sm leading-tight">
-                        {resolvedSymbol ? `$${resolvedSymbol}` : 'tokens'}
-                      </p>
+                      {isQuoteLoading ? (
+                        // Distinguish "we don't have the price/ruleset yet" from
+                        // "your contribution legitimately rounds to 0 tokens".
+                        // Without this users would see "0 $OVERVIEW" during
+                        // a transient ETH-price hiccup and assume the calc is
+                        // broken (it's just the upstream price API being slow).
+                        <div className="flex items-center gap-2">
+                          <LoadingSpinner className="scale-50" />
+                          <p className="text-white/60 text-sm">
+                            Calculating {resolvedSymbol ? `$${resolvedSymbol}` : 'tokens'}…
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <p
+                            id="token-output"
+                            className="text-lg sm:text-xl font-bold text-emerald-200/95 tabular-nums tracking-tight"
+                          >
+                            {formatContributionOutput(output)}
+                          </p>
+                          <p className="font-bold text-white/70 text-sm leading-tight">
+                            {resolvedSymbol ? `$${resolvedSymbol}` : 'tokens'}
+                          </p>
+                        </>
+                      )}
                     </div>
                     {(() => {
                       const sym = (resolvedSymbol || '').trim()
@@ -1026,6 +1047,28 @@ function MissionPayRedeemComponent({
     }
   }, [usdInput, ethUsdPrice])
 
+  /**
+   * Whether the "You receive" quote is genuinely waiting on something the
+   * user can't influence (ETH/USD price still loading, ruleset not loaded
+   * yet, or USD typed but ETH input not yet derived). When true we render
+   * a spinner instead of "0" so users understand the calc isn't broken —
+   * historically a transient Etherscan failure would leave `ethUsdPrice`
+   * at 0, the input gating would skip, and the user would just see "0
+   * $OVERVIEW" with no signal that anything was wrong.
+   */
+  const cleanUsdInput =
+    typeof usdInput === 'string' ? usdInput.replace(/,/g, '') : ''
+  const numericUsdInput = parseFloat(cleanUsdInput)
+  const userTypedAmount = Number.isFinite(numericUsdInput) && numericUsdInput > 0
+  const ruleSetReady = !!(ruleset && ruleset[0] && ruleset[1])
+  const isQuoteLoading =
+    userTypedAmount &&
+    output === 0 &&
+    (isLoadingEthUsdPrice ||
+      !ethUsdPrice ||
+      !ruleSetReady ||
+      parseFloat(input) <= 0)
+
   useEffect(() => {
     if (
       Number(stage) === 3 &&
@@ -1120,6 +1163,7 @@ function MissionPayRedeemComponent({
                 hideRecentContributions={hideRecentContributions}
                 contributionBalanceEth={contributionBalance.eth}
                 contributionBalanceChain={contributionBalance.chain}
+                isQuoteLoading={isQuoteLoading}
               />
             </div>
           )}

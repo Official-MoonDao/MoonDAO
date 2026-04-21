@@ -1444,6 +1444,28 @@ export default function MissionContributeModal({
     }
   }, [paymentEthAmount, getQuote, ruleset])
 
+  /**
+   * Distinguish "we don't yet have the data needed to compute the quote"
+   * from "your contribution genuinely rounds to 0 tokens". Without this,
+   * a transient ETH/USD price failure (Etherscan rate-limit, etc.) would
+   * leave `ethUsdPrice = 0`, gate `paymentEthAmount` to 0, and the
+   * "You receive" line would silently show "0 $OVERVIEW" with no signal
+   * to the user that anything is loading.
+   */
+  const cleanUsdInputForQuote =
+    typeof usdInput === 'string' ? usdInput.replace(/,/g, '') : ''
+  const numericUsdInputForQuote = parseFloat(cleanUsdInputForQuote)
+  const userTypedUsdAmount =
+    Number.isFinite(numericUsdInputForQuote) && numericUsdInputForQuote > 0
+  const rulesetReadyForQuote = !!(ruleset && ruleset[0] && ruleset[1])
+  const isQuoteLoading =
+    userTypedUsdAmount &&
+    output === 0 &&
+    (isLoadingEthUsdPrice ||
+      !ethUsdPrice ||
+      !rulesetReadyForQuote ||
+      paymentEthAmount <= 0)
+
   // Update ETH input when USD changes
   useEffect(() => {
     if (usdInput && ethUsdPrice) {
@@ -2021,11 +2043,22 @@ export default function MissionContributeModal({
                       className="text-left sm:text-right border-t sm:border-t-0 border-white/[0.08] pt-3 sm:pt-0 sm:border-l sm:pl-4 sm:min-w-[10rem]"
                       role="status"
                       aria-live="polite"
-                      aria-label={`${token?.tokenSymbol || 'Tokens'}: ${formatContributionOutput(output)}`}
+                      aria-label={
+                        isQuoteLoading
+                          ? `Calculating ${token?.tokenSymbol || 'token'} quote`
+                          : `${token?.tokenSymbol || 'Tokens'}: ${formatContributionOutput(output)}`
+                      }
                     >
-                      <p className="font-bold text-emerald-200/95 text-xl sm:text-2xl tabular-nums tracking-tight sm:text-right">
-                        {formatContributionOutput(output)}
-                      </p>
+                      {isQuoteLoading ? (
+                        <div className="flex items-center gap-2 sm:justify-end">
+                          <LoadingSpinner className="scale-50" />
+                          <p className="text-white/60 text-sm">Calculating…</p>
+                        </div>
+                      ) : (
+                        <p className="font-bold text-emerald-200/95 text-xl sm:text-2xl tabular-nums tracking-tight sm:text-right">
+                          {formatContributionOutput(output)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
