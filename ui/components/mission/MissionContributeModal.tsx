@@ -1896,9 +1896,11 @@ export default function MissionContributeModal({
                     </div>
                   </label>
 
-                  {/* Quick amount presets */}
+                  {/* Quick amount presets — power-of-ten ladder so users can
+                      jump from a small "try it" contribution to a serious
+                      one in a single tap. */}
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                    {[10, 25, 50, 100, 500].map((preset) => {
+                    {[10, 100, 1000, 10000].map((preset) => {
                       const isActive =
                         parseFloat((usdInput || '').replace(/,/g, '')) === preset
                       return (
@@ -1916,7 +1918,7 @@ export default function MissionContributeModal({
                               : 'bg-white/5 hover:bg-white/15 border-white/15 text-white'
                           }`}
                         >
-                          ${preset}
+                          ${preset.toLocaleString('en-US')}
                         </button>
                       )
                     })}
