@@ -50,6 +50,54 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const iface = new utils.Interface(ProjectTableABI as any)
 
+  // Coerce a `string | object` body field into a canonical JSON string,
+  // rejecting payloads that aren't valid JSON or aren't an object/array at
+  // the top level. This prevents callers (or anyone bypassing the modal's
+  // client-side validation) from writing malformed data on-chain that
+  // downstream `JSON.parse` consumers would crash on.
+  const normalizeJsonField = (
+    field: 'rewardDistribution' | 'upfrontPayments',
+    raw: unknown
+  ): { ok: true; json: string } | { ok: false; error: string } => {
+    if (raw === null || raw === undefined) {
+      return { ok: false, error: `${field} is empty` }
+    }
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim()
+      if (!trimmed) return { ok: false, error: `${field} is empty` }
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(trimmed)
+      } catch (err: any) {
+        return {
+          ok: false,
+          error: `${field} is not valid JSON: ${err?.message || 'parse error'}`,
+        }
+      }
+      if (parsed === null || typeof parsed !== 'object') {
+        return {
+          ok: false,
+          error: `${field} must be a JSON object or array`,
+        }
+      }
+      return { ok: true, json: JSON.stringify(parsed) }
+    }
+    if (typeof raw === 'object') {
+      try {
+        return { ok: true, json: JSON.stringify(raw) }
+      } catch (err: any) {
+        return {
+          ok: false,
+          error: `${field} could not be serialized: ${err?.message || 'serialize error'}`,
+        }
+      }
+    }
+    return {
+      ok: false,
+      error: `${field} must be a JSON object/array or a JSON-encoded string`,
+    }
+  }
+
   const calls: Array<{ label: string; data: string }> = []
 
   if (body.finalReportLink) {
@@ -73,27 +121,33 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (body.rewardDistribution !== undefined) {
-    const json =
-      typeof body.rewardDistribution === 'string'
-        ? body.rewardDistribution
-        : JSON.stringify(body.rewardDistribution)
+    const result = normalizeJsonField(
+      'rewardDistribution',
+      body.rewardDistribution
+    )
+    if (!result.ok) {
+      return res.status(400).json({ error: result.error })
+    }
     calls.push({
       label: 'updateRewardDistribution',
-      data: iface.encodeFunctionData('updateRewardDistribution', [projectId, json]),
+      data: iface.encodeFunctionData('updateRewardDistribution', [
+        projectId,
+        result.json,
+      ]),
     })
   }
 
   if (body.upfrontPayments !== undefined) {
-    const json =
-      typeof body.upfrontPayments === 'string'
-        ? body.upfrontPayments
-        : JSON.stringify(body.upfrontPayments)
+    const result = normalizeJsonField('upfrontPayments', body.upfrontPayments)
+    if (!result.ok) {
+      return res.status(400).json({ error: result.error })
+    }
     calls.push({
       label: 'updateTableCol(upfrontPayments)',
       data: iface.encodeFunctionData('updateTableCol', [
         projectId,
         'upfrontPayments',
-        json,
+        result.json,
       ]),
     })
   }
