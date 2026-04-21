@@ -190,8 +190,13 @@ function MissionPayRedeemContent({
                       </div>
                     </div>
 
-                    <div className="flex min-w-0 w-full md:flex-1 items-center gap-2 rounded-lg px-3 py-2.5 border border-white/15 bg-black/50 shadow-inner">
-                      <span className="text-cyan-200/80 text-lg font-bold shrink-0">$</span>
+                    <label
+                      htmlFor="usd-contribution-input"
+                      className="flex min-w-0 w-full md:flex-1 items-center gap-2 rounded-lg px-3 py-2.5 border border-white/15 bg-black/50 shadow-inner cursor-text focus-within:border-cyan-400/50 focus-within:ring-1 focus-within:ring-cyan-400/30 transition-colors"
+                    >
+                      <span className="text-cyan-200/80 text-lg font-bold shrink-0 select-none pointer-events-none">
+                        $
+                      </span>
                       <input
                         id="usd-contribution-input"
                         type="text"
@@ -202,8 +207,10 @@ function MissionPayRedeemContent({
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-gray-300 text-lg font-bold shrink-0">USD</span>
-                    </div>
+                      <span className="text-gray-300 text-lg font-bold shrink-0 select-none pointer-events-none">
+                        USD
+                      </span>
+                    </label>
                   </div>
 
                   <div className="pt-3 border-t border-white/[0.08] min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -216,6 +223,23 @@ function MissionPayRedeemContent({
                           ? `${formatEthFiveSigFigs(Number(contributionBalanceEth))} ETH`
                           : '—'}
                       </span>
+                      {contributionBalanceEth != null &&
+                        Number.isFinite(contributionBalanceEth) &&
+                        contributionBalanceEth > 0 &&
+                        ethUsdPrice != null &&
+                        ethUsdPrice > 0 && (
+                          <span className="text-gray-400 tabular-nums ml-1">
+                            (~$
+                            {(Number(contributionBalanceEth) * ethUsdPrice).toLocaleString(
+                              'en-US',
+                              {
+                                maximumFractionDigits: 2,
+                                minimumFractionDigits: 2,
+                              }
+                            )}
+                            )
+                          </span>
+                        )}
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
                         on{' '}
                         {contributionBalanceChain?.name?.replace(' One', '') ?? 'network'}
