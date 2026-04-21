@@ -1814,19 +1814,7 @@ export default function MissionContributeModal({
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                   Network
                 </label>
-                <div className="flex items-center gap-3">
-                  {/* Help text aimed at first-time contributors who aren't
-                      sure which network to pick. Sits to the LEFT of the
-                      dropdown so the question mark reads as "ask before
-                      picking" rather than as a label decoration. The default
-                      24px Tooltip trigger is used (no size override) so the
-                      "?" is comfortably tappable on touch devices. */}
-                  <Tooltip
-                    text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
-                    compact
-                  >
-                    ?
-                  </Tooltip>
+                <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <NetworkSelector
                       chains={chains}
@@ -1843,6 +1831,18 @@ export default function MissionContributeModal({
                       }
                     />
                   </div>
+                  {/* Help text aimed at first-time contributors who aren't
+                      sure which network to pick. Sits to the RIGHT of the
+                      dropdown as a follow-up "?" affordance. Uses the
+                      default 24px Tooltip trigger (no size override) so it
+                      reads as a clearly-tappable help button, larger than
+                      the small inline `?`s elsewhere on the mission card. */}
+                  <Tooltip
+                    text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
+                    compact
+                  >
+                    ?
+                  </Tooltip>
                 </div>
               </div>
 
