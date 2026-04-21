@@ -64,11 +64,41 @@ export function useTotalVMOONEY(
   }
 }
 
+// Retry an async fn up to `attempts` times with exponential backoff. Used to
+// make per-chain vMOONEY reads resilient to transient RPC blips so we don't
+// silently undercount voting power when a single chain hiccups.
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  attempts = 3,
+  baseDelayMs = 250
+): Promise<T> {
+  let lastError: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      if (i < attempts - 1) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, baseDelayMs * Math.pow(2, i))
+        )
+      }
+    }
+  }
+  throw lastError
+}
+
 export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number) {
   try {
     const { engineBatchRead } = await import('@/lib/thirdweb/engine')
     const chains = [arbitrum, ethereum, base, polygon]
 
+    // Fail loudly if any chain ultimately can't be read (after retries) so
+    // callers (the API route, the vote-tally code) get a hard error and can
+    // decide whether to retry, rather than silently returning a lower vMOONEY
+    // total. Previously a single transient RPC failure on one chain would
+    // quietly drop that chain's balance from the sum, which produced
+    // intermittently-wrong voting power both in the UI and at tally time.
     const results = await Promise.all(
       chains.map(async (chain) => {
         const chainSlug = getChainSlug(chain)
@@ -76,41 +106,40 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
         const tokenAddress = VMOONEY_ADDRESSES[chainSlug]
 
         if (!process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET) {
-          return []
+          return addresses.map(() => 0)
         }
 
-        try {
-          const balances = await engineBatchRead<string>(
+        const balances = await withRetry(() =>
+          engineBatchRead<string>(
             tokenAddress,
             'balanceOf',
             addresses.map((address) => (timestamp ? [address, timestamp] : [address])),
             VMOONEY_ABI,
             chainId
           )
+        )
 
-          return balances.map((balance) => {
-            const parsed = parseInt(balance)
-            return isNaN(parsed) ? 0 : parsed / 1e18
-          })
-        } catch (error) {
-          console.error(`Failed to fetch vMOONEY balances for chain ${chainId}:`, error)
-          return []
-        }
+        return balances.map((balance) => {
+          const parsed = parseInt(balance)
+          return isNaN(parsed) ? 0 : parsed / 1e18
+        })
       })
     )
 
-    // Sum across chains
-    const totals = results.reduce((accumulator, value) => {
-      value.forEach((v: any, i: number) => {
-        const numValue = isNaN(value[i] as number) ? 0 : (value[i] as number)
-        accumulator[i] = (accumulator[i] || 0) + numValue
+    // Sum across chains. Initialize each address slot to 0 so an empty
+    // result (e.g. missing thirdweb secret on a chain) doesn't drop the
+    // address out of the totals array.
+    const totals: number[] = addresses.map(() => 0)
+    results.forEach((chainBalances) => {
+      chainBalances.forEach((value: number, i: number) => {
+        const numValue = isNaN(value) ? 0 : value
+        totals[i] = (totals[i] || 0) + numValue
       })
-      return accumulator
-    }, [] as number[])
+    })
 
     return totals
   } catch (error) {
     console.error('Failed to fetch vMOONEY balances:', error)
-    return []
+    throw error
   }
 }
