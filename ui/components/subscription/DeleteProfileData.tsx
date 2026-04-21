@@ -33,17 +33,19 @@ export default function DeleteProfileData({
   const handleDelete = async () => {
     setIsLoading(true)
 
-    const formResponseId = getAttribute(nft, 'formResponseId')?.value
+    const formResponseId = getAttribute(nft?.metadata?.attributes, 'formId')?.value
 
     try {
       let transaction
       if (type === 'team') {
-        await unpinTeamImage(tokenId)
+        try { await unpinTeamImage(tokenId) } catch (e) { console.warn('Failed to unpin team image:', e) }
 
-        await deleteResponse(
-          process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
-          formResponseId
-        )
+        try {
+          await deleteResponse(
+            process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
+            formResponseId
+          )
+        } catch (e) { console.warn('Failed to delete typeform response:', e) }
 
         transaction = prepareContractCall({
           contract: tableContract,
@@ -66,12 +68,14 @@ export default function DeleteProfileData({
           ],
         })
       } else if (type === 'citizen') {
-        await unpinCitizenImage(tokenId)
+        try { await unpinCitizenImage(tokenId) } catch (e) { console.warn('Failed to unpin citizen image:', e) }
 
-        await deleteResponse(
-          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
-          formResponseId
-        )
+        try {
+          await deleteResponse(
+            process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+            formResponseId
+          )
+        } catch (e) { console.warn('Failed to delete typeform response:', e) }
 
         transaction = prepareContractCall({
           contract: tableContract,
@@ -96,7 +100,11 @@ export default function DeleteProfileData({
         })
       }
 
-      if (!transaction || !account) return
+      if (!transaction || !account) {
+        console.error('Delete failed: transaction or account is missing', { transaction: !!transaction, account: !!account, tableContract: !!tableContract })
+        toast.error('Unable to prepare delete transaction. Please try again.')
+        return
+      }
 
       const receipt = await sendAndConfirmTransaction({
         transaction,
@@ -113,8 +121,9 @@ export default function DeleteProfileData({
         setEnabled(false)
         router.reload()
       }, 15000)
-    } catch (err) {
-      console.log(err)
+    } catch (err: any) {
+      console.error('Delete profile error:', err)
+      toast.error(err?.message || 'Failed to delete profile data.')
     }
     setIsLoading(false)
   }
@@ -142,7 +151,7 @@ export default function DeleteProfileData({
             label={isLoading ? 'Deleting...' : 'Delete'}
             isDisabled={isLoading}
             action={handleDelete}
-            className="flex-1"
+            className="flex-1 !rounded-lg"
           />
         </div>
       </div>
