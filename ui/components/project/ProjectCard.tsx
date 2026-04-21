@@ -155,6 +155,11 @@ type ProjectCardProps = {
   // card header. Useful when the surrounding tab already provides the
   // context (e.g. the Retroactive Rewards tab).
   hideStatusBadge?: boolean
+  // Force the card to wrap with a Link to /project/{MDP} (navigate on
+  // click) even in distribute / vote modes that would otherwise toggle
+  // an in-place proposal expansion. Used by the Retroactive Rewards tab
+  // to keep card behavior consistent with the standard project listings.
+  linkToProjectPage?: boolean
 }
 
 import { useIsSenator } from '@/lib/thirdweb/hooks/useIsSenator'
@@ -610,6 +615,7 @@ export default function ProjectCard({
   active,
   isSenateVote: isSenateVoteProp,
   hideStatusBadge,
+  linkToProjectPage,
 }: ProjectCardProps) {
   const isSenateVote = isSenateVoteProp ?? IS_SENATE_VOTE
   const account = useActiveAccount()
@@ -675,6 +681,36 @@ export default function ProjectCard({
   }, [adminHatId, hats, wearers, distribute, address, project])
 
   if (!project) return null
+
+  // When `linkToProjectPage` is set, always wrap with a navigation Link
+  // and skip the in-place expand affordance — but still pass the
+  // distribute / vote-mode props so the inline distribution UI
+  // (NumberStepper, contributor labels, etc.) keeps rendering. Callers
+  // use this to make cards in the Retroactive Rewards tab behave like
+  // the standard nav cards in Active/Past tabs.
+  if (linkToProjectPage) {
+    return (
+      <div className="h-full">
+        <Link href={`/project/${project?.MDP}`} passHref className="h-full">
+          <ProjectCardContent
+            project={project}
+            distribute={distribute}
+            userContributed={userContributed}
+            distribution={distribution}
+            handleDistributionChange={handleDistributionChange}
+            userHasVotingPower={userHasVotingPower}
+            isMembershipDataLoading={isMembershipDataLoading}
+            isVotingPeriod={isVotingPeriod}
+            active={active}
+            isExpanded={false}
+            citizenContract={citizenContract}
+            isSenateVote={isSenateVote}
+            hideStatusBadge={hideStatusBadge}
+          />
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full">

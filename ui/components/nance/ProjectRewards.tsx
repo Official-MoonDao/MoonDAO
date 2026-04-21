@@ -1323,6 +1323,7 @@ export function ProjectRewards({
                             active={true}
                             isSenateVote={isSenateVote}
                             hideStatusBadge={true}
+                            linkToProjectPage={true}
                           />
                           {/* Per-project share preview — only render when we
                               have a real tally; otherwise the row is a no-op
