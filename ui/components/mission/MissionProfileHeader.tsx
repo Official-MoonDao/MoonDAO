@@ -207,19 +207,45 @@ const MissionProfileHeader = React.memo(
       </div>
     )
 
+    /** The Overview Mission's artwork is essentially square, so stretching it
+     *  to fill the funding card's height on `lg+` (the default behaviour) was
+     *  cropping the top and bottom via `object-cover`. For mission 4 we lock
+     *  the image to `aspect-square` at every breakpoint and bound it with a
+     *  `max-w` so it stays roughly the same height as the funding card on
+     *  wide screens (instead of becoming a giant 720px square). We also
+     *  switch to `object-contain` so any minor source-aspect mismatch shows
+     *  thin matching-color letterboxing instead of cropping subject matter.
+     *
+     *  Other missions keep the existing fill-to-match behaviour so wider
+     *  mission images can still match the copy column. */
+    const imageAspectClass = isOverviewMission
+      ? // square at every breakpoint; bounded so it doesn't dwarf the
+        // funding card on lg+. mx-auto centers within the wider 3fr column.
+        'aspect-square w-full max-w-[520px] mx-auto'
+      : 'aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full'
+    const imageWrapperClass = isOverviewMission
+      ? 'w-full min-w-0 flex flex-col self-start'
+      : 'w-full min-w-0 lg:h-full lg:min-h-0 flex flex-col'
+    const imageObjectFitClass = isOverviewMission
+      ? // matches the page bg so any letterbox bars look intentional, not boxed
+        'object-contain bg-[#090d21]'
+      : 'object-cover'
+
     const imageBlock = (
-      <div className="w-full min-w-0 lg:h-full lg:min-h-0 flex flex-col">
+      <div className={imageWrapperClass}>
         <div className="relative group w-full flex-1 min-h-0">
           {mission?.metadata?.logoUri ? (
-            <div className="relative aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+            <div
+              className={`relative ${imageAspectClass} rounded-2xl shadow-2xl border border-white/10 overflow-hidden`}
+            >
               <IPFSRenderer
                 src={mission?.metadata?.logoUri}
                 fillContainer
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                className={`${imageObjectFitClass} transition-transform duration-500 group-hover:scale-[1.02]`}
                 height={640}
                 width={640}
                 alt="Mission Image"
-                sizes="(max-width: 1024px) 100vw, 560px"
+                sizes="(max-width: 1024px) 100vw, 520px"
               />
               {teamNFT?.metadata?.image && (
                 <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
@@ -234,7 +260,9 @@ const MissionProfileHeader = React.memo(
               )}
             </div>
           ) : (
-            <div className="aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl">
+            <div
+              className={`${imageAspectClass} rounded-2xl border border-white/10 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl`}
+            >
               <div className="text-center px-4">
                 <div className="w-12 h-12 mx-auto mb-3 bg-indigo-500/20 rounded-xl flex items-center justify-center">
                   <Image src="/assets/icon-star-blue.svg" alt="Mission" width={24} height={24} />
