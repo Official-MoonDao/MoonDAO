@@ -26,6 +26,7 @@ import {
   readContract,
   getContract,
 } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import {
   arbitrum,
   base,
@@ -33,8 +34,7 @@ import {
   sepolia,
   arbitrumSepolia,
   Chain,
-} from 'thirdweb/chains'
-import { useActiveAccount } from 'thirdweb/react'
+} from '@/lib/rpc/chains'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'

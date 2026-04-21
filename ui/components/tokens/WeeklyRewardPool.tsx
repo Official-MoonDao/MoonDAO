@@ -10,8 +10,15 @@ import Link from 'next/link'
 import { useContext, useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract, prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { arbitrum, base, ethereum, sepolia, arbitrumSepolia, Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
+import {
+  arbitrum,
+  base,
+  ethereum,
+  sepolia,
+  arbitrumSepolia,
+  Chain,
+} from '@/lib/rpc/chains'
 import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
