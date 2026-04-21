@@ -12,6 +12,7 @@ import {
 } from 'const/config'
 import { getProposalVideoUrl } from 'const/proposalVideos'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -618,6 +619,7 @@ export default function ProjectCard({
   linkToProjectPage,
 }: ProjectCardProps) {
   const isSenateVote = isSenateVoteProp ?? IS_SENATE_VOTE
+  const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
   const [isExpanded, setIsExpanded] = useState(false)
@@ -682,32 +684,50 @@ export default function ProjectCard({
 
   if (!project) return null
 
-  // When `linkToProjectPage` is set, always wrap with a navigation Link
-  // and skip the in-place expand affordance — but still pass the
-  // distribute / vote-mode props so the inline distribution UI
-  // (NumberStepper, contributor labels, etc.) keeps rendering. Callers
-  // use this to make cards in the Retroactive Rewards tab behave like
-  // the standard nav cards in Active/Past tabs.
+  // When `linkToProjectPage` is set we want the whole card to act as a
+  // navigation affordance to /project/<MDP>, but the card itself renders
+  // other anchors and buttons (Final Report link, video <a>, distribute
+  // controls, etc.). Wrapping in a real <Link> would produce nested <a>
+  // tags (invalid HTML) and swallow clicks on those inner controls, so
+  // instead the wrapper handles navigation imperatively and bails when
+  // the click originated inside any interactive descendant.
   if (linkToProjectPage) {
+    const handleCardClick = (
+      e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>
+    ) => {
+      const target = e.target as HTMLElement | null
+      if (target?.closest('a, button, input, textarea, select, label')) {
+        return
+      }
+      if ('key' in e && e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      router.push(`/project/${project?.MDP}`)
+    }
+
     return (
-      <div className="h-full">
-        <Link href={`/project/${project?.MDP}`} passHref className="h-full">
-          <ProjectCardContent
-            project={project}
-            distribute={distribute}
-            userContributed={userContributed}
-            distribution={distribution}
-            handleDistributionChange={handleDistributionChange}
-            userHasVotingPower={userHasVotingPower}
-            isMembershipDataLoading={isMembershipDataLoading}
-            isVotingPeriod={isVotingPeriod}
-            active={active}
-            isExpanded={false}
-            citizenContract={citizenContract}
-            isSenateVote={isSenateVote}
-            hideStatusBadge={hideStatusBadge}
-          />
-        </Link>
+      <div
+        role="link"
+        tabIndex={0}
+        onClick={handleCardClick}
+        onKeyDown={handleCardClick}
+        className="h-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-moon-orange/60 rounded-2xl"
+        aria-label={`Open project ${project?.name || project?.MDP}`}
+      >
+        <ProjectCardContent
+          project={project}
+          distribute={distribute}
+          userContributed={userContributed}
+          distribution={distribution}
+          handleDistributionChange={handleDistributionChange}
+          userHasVotingPower={userHasVotingPower}
+          isMembershipDataLoading={isMembershipDataLoading}
+          isVotingPeriod={isVotingPeriod}
+          active={active}
+          isExpanded={false}
+          citizenContract={citizenContract}
+          isSenateVote={isSenateVote}
+          hideStatusBadge={hideStatusBadge}
+        />
       </div>
     )
   }
