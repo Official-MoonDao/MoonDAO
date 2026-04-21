@@ -433,15 +433,6 @@ export const MOONDAO_ARBITRUM_TREASURY: string = '0xAF26a002d716508b7e375f1f6203
 export const MOONDAO_POLYGON_TREASURY: string = '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
 export const DEAD_ADDRESS: string = ' 0x000000000000000000000000000000000000dEaD'
 
-// DB Config
-const MONGO_USERNAME = process.env.MONGO_USERNAME || ''
-const MONGO_PASSWORD = process.env.MONGO_PASSWORD || ''
-const MONGO_PATH_SUFFIX = process.env.MONGO_PATH_SUFFIX || ''
-const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_PATH_SUFFIX}`
-export const mongoConfig = {
-  url: MONGO_URL,
-}
-
 export const TICKET_TO_SPACE_ADDRESS =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon

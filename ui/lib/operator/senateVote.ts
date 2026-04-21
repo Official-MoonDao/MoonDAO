@@ -1,5 +1,8 @@
-import dbConnect from '@/lib/mongodb/mongo'
-import OperatorFlag from '@/lib/mongodb/models/OperatorFlag'
+import {
+  OperatorFlagRecord,
+  readOperatorFlag,
+  writeOperatorFlag,
+} from '@/lib/operator/kv'
 
 export const SENATE_VOTE_DISABLED_KEY = 'senate_vote_disabled'
 
@@ -15,25 +18,27 @@ export type SenateVoteOverride = {
   expiresAt?: Date | null
 }
 
-export async function getSenateVoteOverride(): Promise<SenateVoteOverride> {
-  try {
-    await dbConnect()
-    const doc = await OperatorFlag.findOne({ key: SENATE_VOTE_DISABLED_KEY })
-    if (!doc) return { enabled: false }
-    if (doc.expiresAt && new Date(doc.expiresAt) < new Date()) {
-      return { enabled: false }
-    }
-    return {
-      enabled: !!doc.enabled,
-      setBy: doc.setBy,
-      note: doc.note,
-      setAt: (doc as any).updatedAt,
-      expiresAt: doc.expiresAt ?? null,
-    }
-  } catch (err) {
-    console.error('getSenateVoteOverride failed:', err)
+type StoredSenateVoteOverride = OperatorFlagRecord<{}>
+
+function fromRecord(rec: StoredSenateVoteOverride | null): SenateVoteOverride {
+  if (!rec) return { enabled: false }
+  if (rec.expiresAt && new Date(rec.expiresAt) < new Date()) {
     return { enabled: false }
   }
+  return {
+    enabled: !!rec.enabled,
+    setBy: rec.setBy,
+    note: rec.note,
+    setAt: rec.setAt ? new Date(rec.setAt) : undefined,
+    expiresAt: rec.expiresAt ? new Date(rec.expiresAt) : null,
+  }
+}
+
+export async function getSenateVoteOverride(): Promise<SenateVoteOverride> {
+  const rec = await readOperatorFlag<StoredSenateVoteOverride>(
+    SENATE_VOTE_DISABLED_KEY
+  )
+  return fromRecord(rec)
 }
 
 export async function setSenateVoteOverride(params: {
@@ -42,27 +47,14 @@ export async function setSenateVoteOverride(params: {
   note?: string
   expiresAt?: Date | null
 }): Promise<SenateVoteOverride> {
-  await dbConnect()
-  const update: any = {
-    enabled: params.enabled,
-    setBy: params.setBy,
-    note: params.note,
-  }
-  if (params.expiresAt === null) {
-    update.expiresAt = undefined
-  } else if (params.expiresAt) {
-    update.expiresAt = params.expiresAt
-  }
-  const doc = await OperatorFlag.findOneAndUpdate(
-    { key: SENATE_VOTE_DISABLED_KEY },
-    { $set: update },
-    { upsert: true, new: true }
+  const stored = await writeOperatorFlag<StoredSenateVoteOverride>(
+    SENATE_VOTE_DISABLED_KEY,
+    {
+      enabled: params.enabled,
+      setBy: params.setBy,
+      note: params.note,
+    },
+    { expiresAt: params.expiresAt }
   )
-  return {
-    enabled: !!doc.enabled,
-    setBy: doc.setBy,
-    note: doc.note,
-    setAt: (doc as any).updatedAt,
-    expiresAt: doc.expiresAt ?? null,
-  }
+  return fromRecord(stored)
 }
