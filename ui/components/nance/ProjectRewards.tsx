@@ -1185,7 +1185,7 @@ export function ProjectRewards({
                           <PrivyWeb3Button
                             action={() => handleProposalSubmit(proposalContract)}
                             requiredChain={chain}
-                            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm"
                             label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
                           />
                         </span>
@@ -1196,7 +1196,7 @@ export function ProjectRewards({
                             requiredChain={DEFAULT_CHAIN_V5}
                             label="Get Voting Power"
                             action={() => router.push('/lock')}
-                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm"
                           />
                         </span>
                       )}
@@ -1369,7 +1369,7 @@ export function ProjectRewards({
                           <PrivyWeb3Button
                             action={() => handleSubmit(distributionTableContract)}
                             requiredChain={chain}
-                            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm"
                             label={edit ? 'Edit Distribution' : 'Submit Distribution'}
                           />
                         ) : (
@@ -1378,7 +1378,7 @@ export function ProjectRewards({
                             requiredChain={DEFAULT_CHAIN_V5}
                             label="Get Voting Power"
                             action={() => router.push('/lock')}
-                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm"
                           />
                         )}
                       </div>
