@@ -1,4 +1,5 @@
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
+import { IS_MEMBER_VOTE, IS_SENATE_VOTE } from 'const/config'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
 import {
   useProposalStatus,
@@ -18,15 +19,57 @@ type ProposalProps = {
   linkDisabled?: boolean
 }
 
-function StatusDot({ config }: { config: StatusIndicatorStyle }) {
+function StatusDot({
+  config,
+  pulse = false,
+}: {
+  config: StatusIndicatorStyle
+  pulse?: boolean
+}) {
   return (
     <span
-      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${config.bg}`}
+      className={`relative flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${config.bg}`}
       aria-hidden
     >
-      <span className={`block h-1.5 w-1.5 rounded-full ${config.dot}`} />
+      {pulse && (
+        <span
+          className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping ${config.dot}`}
+        />
+      )}
+      <span className={`relative block h-1.5 w-1.5 rounded-full ${config.dot}`} />
     </span>
   )
+}
+
+/**
+ * Resolve the user-facing voting-phase context for a proposal based on the
+ * current cycle flags in `const/config.ts` (IS_SENATE_VOTE / IS_MEMBER_VOTE).
+ *
+ * - Member Vote: proposals in `Voting` status need vMOONEY holders to allocate
+ *   their voting power on /projects. Treat this as an active call to action.
+ * - Senate Vote: proposals in `Temperature Check` status are awaiting Senate
+ *   approval. Surface this so members understand the proposal isn't stale.
+ */
+function getVotingPhaseContext(status: ProposalStatus | undefined) {
+  if (IS_MEMBER_VOTE && status === 'Voting') {
+    return {
+      label: 'Member Vote',
+      cta: 'Vote Now',
+      ctaHref: '/projects',
+      tone: 'member' as const,
+      pulse: true,
+    }
+  }
+  if (IS_SENATE_VOTE && status === 'Temperature Check') {
+    return {
+      label: 'Senate Vote In Progress',
+      cta: null,
+      ctaHref: null,
+      tone: 'senate' as const,
+      pulse: true,
+    }
+  }
+  return null
 }
 
 function getDescriptionPreview(body: string | undefined, maxLength = 120): string | null {
