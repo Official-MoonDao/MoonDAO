@@ -292,7 +292,7 @@ function MissionPayRedeemContent({
                     : 'Contribute'
                 }
                 id="open-contribute-modal"
-                className="rounded-xl gradient-2 w-full py-2.5 font-medium"
+                className="rounded-xl gradient-2 w-full py-4 sm:py-5 text-xl sm:text-2xl font-bold tracking-wide uppercase shadow-lg shadow-blue-500/30 ring-1 ring-white/10 hover:shadow-xl hover:shadow-blue-500/50 hover:brightness-110 hover:scale-[1.02] active:scale-[0.99] transition-all duration-200"
                 action={() => onOpenModal?.(usdInput)}
                 isDisabled={isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0}
               />
@@ -1008,7 +1008,7 @@ function MissionPayRedeemComponent({
                       : 'Contribute'
                   }
                   id="open-contribute-modal"
-                  className={`rounded-full gradient-2 rounded-full w-[80vw] py-1 ${buttonClassName}`}
+                  className={`rounded-full gradient-2 w-[85vw] py-3.5 text-lg font-bold uppercase tracking-wide shadow-xl shadow-blue-500/40 ring-1 ring-white/15 hover:brightness-110 hover:shadow-blue-500/60 active:scale-[0.99] transition-all duration-200 ${buttonClassName}`}
                   action={() => requestOpenContributeModal(usdInput)}
                   isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
                   showSignInLabel={false}
