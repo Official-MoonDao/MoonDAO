@@ -1049,10 +1049,22 @@ export default function MissionContributeModal({
       console.error('Primary terminal contract not initialized')
       return
     }
+
+    const emailTrim = contributorEmail.trim()
+    const missingRequired: string[] = []
+    if (!isValidContributorEmail(emailTrim)) {
+      missingRequired.push('a valid email address')
+    }
     if (!agreedToCondition) {
-      toast.error('Please agree to the terms.', {
-        style: toastStyle,
-      })
+      missingRequired.push('agree to the Terms and Conditions')
+    }
+    if (missingRequired.length > 0) {
+      toast.error(
+        missingRequired.length === 1
+          ? `Please ${missingRequired[0]}.`
+          : `Please enter ${missingRequired[0]} and ${missingRequired[1]}.`,
+        { style: toastStyle, duration: 6000 }
+      )
       return
     }
 
@@ -1082,14 +1094,6 @@ export default function MissionContributeModal({
       return toast.error('Mission tokens are not supported on this network.', {
         style: toastStyle,
       })
-    }
-
-    const emailTrim = contributorEmail.trim()
-    if (!isValidContributorEmail(emailTrim)) {
-      toast.error('Please enter a valid email address.', {
-        style: toastStyle,
-      })
-      return
     }
 
     // Reset rejection state when attempting a new transaction
@@ -1874,6 +1878,23 @@ export default function MissionContributeModal({
                           ? '…'
                           : '—'}
                       </span>
+                      {fundingBalanceResolved &&
+                        fundingBalanceWei != null &&
+                        fundingBalanceWei > BigInt(0) &&
+                        ethUsdPrice != null &&
+                        ethUsdPrice > 0 && (
+                          <span className="text-gray-400 tabular-nums ml-1">
+                            (~$
+                            {(
+                              parseFloat(formatUnits(fundingBalanceWei.toString(), 18)) *
+                              ethUsdPrice
+                            ).toLocaleString('en-US', {
+                              maximumFractionDigits: 2,
+                              minimumFractionDigits: 2,
+                            })}
+                            )
+                          </span>
+                        )}
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
                         on {(payChain.name ?? 'network').replace(' One', '')}
                         {!walletOnPayChain && fundingBalanceResolved ? (
@@ -2033,7 +2054,10 @@ export default function MissionContributeModal({
                         htmlFor="contribution-contributor-email-direct"
                         className="text-gray-300 font-medium text-sm uppercase tracking-wider"
                       >
-                        Email
+                        Email{' '}
+                        <span className="text-red-400 normal-case font-semibold">
+                          (required)
+                        </span>
                       </label>
                       <p className="text-sm text-gray-300 leading-relaxed mt-2">
                         We will use this email to send you relevant updates about the mission and
@@ -2068,7 +2092,10 @@ export default function MissionContributeModal({
                   <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                        Terms and Conditions
+                        Terms and Conditions{' '}
+                        <span className="text-red-400 normal-case font-semibold">
+                          (required)
+                        </span>
                       </p>
                     </div>
                     <MissionTokenNotice />
@@ -2134,8 +2161,6 @@ export default function MissionContributeModal({
                       className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-700 disabled:to-gray-600 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                       action={buyMissionToken}
                       isDisabled={
-                        !agreedToCondition ||
-                        !isValidContributorEmail(contributorEmail.trim()) ||
                         !usdInput ||
                         parseFloat((usdInput as string).replace(/,/g, '')) <= 0 ||
                         !chainSlugs.includes(chainSlug) ||
@@ -2202,7 +2227,10 @@ export default function MissionContributeModal({
                         htmlFor="contribution-contributor-email-onramp"
                         className="text-gray-300 font-medium text-sm uppercase tracking-wider"
                       >
-                        Email
+                        Email{' '}
+                        <span className="text-red-400 normal-case font-semibold">
+                          (required)
+                        </span>
                       </label>
                       <p className="text-sm text-gray-300 leading-relaxed mt-2">
                         We will use this email to send you relevant updates about the mission and
@@ -2237,7 +2265,10 @@ export default function MissionContributeModal({
                   <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                        Terms and Conditions
+                        Terms and Conditions{' '}
+                        <span className="text-red-400 normal-case font-semibold">
+                          (required)
+                        </span>
                       </p>
                     </div>
                     <MissionTokenNotice />
