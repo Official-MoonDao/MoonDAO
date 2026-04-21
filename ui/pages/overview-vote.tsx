@@ -86,6 +86,12 @@ export default function OverviewDelegate({
   // user had when they first backed someone. Users who have since earned
   // more $OVERVIEW therefore see their delegated total stuck at the old
   // value until they successfully re-submit.
+  //
+  // We only adjust the entry if the server total looks *stale* relative to
+  // the user's live balance. If the server already knows about the larger
+  // balance (entry total >= live balance), we leave it alone to avoid the
+  // double-count case where server had fresh data and we'd add the delta on
+  // top of an already-correct number.
   const visibleLeaderboard = useMemo(() => {
     if (
       !userAddress ||
@@ -99,16 +105,24 @@ export default function OverviewDelegate({
     const targetAddr = previousDelegation.delegatee.toLowerCase()
     const liveAmount = Math.floor(userBalance)
     const storedAmount = previousDelegation.amount
-    const delta = liveAmount - storedAmount
-    if (delta === 0) return displayLeaderboard
     let touched = false
     const overlaid = displayLeaderboard.map((entry) => {
       if (entry.delegateeAddress.toLowerCase() !== targetAddr) return entry
+      // Server total already reflects (at least) the user's current balance —
+      // assume it's fresh and leave it alone. This avoids inflating the
+      // number when ISR happened to revalidate after the user's balance bump.
+      if (entry.totalDelegated >= liveAmount) return entry
+      // Server total < live balance => server is stale (likely fell back to
+      // stored amount). Swap the user's stored portion for the live balance.
+      const userServerContribution = Math.min(
+        entry.totalDelegated,
+        storedAmount
+      )
+      const adjusted =
+        entry.totalDelegated - userServerContribution + liveAmount
+      if (adjusted === entry.totalDelegated) return entry
       touched = true
-      return {
-        ...entry,
-        totalDelegated: Math.max(0, entry.totalDelegated + delta),
-      }
+      return { ...entry, totalDelegated: Math.max(0, adjusted) }
     })
     if (!touched) return displayLeaderboard
     return [...overlaid].sort((a, b) => b.totalDelegated - a.totalDelegated)
@@ -455,11 +469,45 @@ export default function OverviewDelegate({
         setIsRefreshing(false)
       }
       pollForUpdate()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting delegation:', error)
-      toast.error('Failed to submit delegation. Please try again.', {
-        style: toastStyle,
-      })
+      // Pull a useful message out of whatever shape the error happens to be
+      // in (thirdweb v5 errors, viem-style errors, plain Error, etc.) so the
+      // toast actually tells the user *why* the submit failed instead of
+      // hiding everything behind a generic retry message.
+      const rawMessage: string =
+        error?.shortMessage ||
+        error?.cause?.shortMessage ||
+        error?.cause?.message ||
+        error?.message ||
+        ''
+      const lower = rawMessage.toLowerCase()
+
+      let toastMessage = 'Failed to submit delegation. Please try again.'
+      if (
+        lower.includes('user rejected') ||
+        lower.includes('user denied') ||
+        lower.includes('rejected the request') ||
+        lower.includes('action_rejected')
+      ) {
+        toastMessage = 'Transaction cancelled in your wallet.'
+      } else if (
+        lower.includes('insufficient funds') ||
+        lower.includes('insufficient balance')
+      ) {
+        toastMessage =
+          'Not enough ETH on Arbitrum to cover gas. Add a small amount of ETH to your wallet on Arbitrum and try again.'
+      } else if (
+        lower.includes('chain') &&
+        (lower.includes('mismatch') || lower.includes('switch'))
+      ) {
+        toastMessage =
+          'Wallet is on the wrong network. Please switch to Arbitrum and try again.'
+      } else if (rawMessage) {
+        toastMessage = `Failed to submit delegation: ${rawMessage.slice(0, 160)}`
+      }
+
+      toast.error(toastMessage, { style: toastStyle, duration: 8000 })
     } finally {
       setIsSubmitting(false)
     }
