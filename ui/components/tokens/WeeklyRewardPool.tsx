@@ -479,20 +479,23 @@ export default function WeeklyRewardPool() {
         {/* Action Button */}
         <div className="space-y-4">
           {!address || (VMOONEYBalance && VMOONEYBalance > 0) ? (
-            <PrivyWeb3Button
-              label={
-                isCheckedIn
-                  ? 'Checked In • Reward Auto-Distributes Weekly'
-                  : 'Check In For This Week'
-              }
-              action={handleCheckIn}
-              isDisabled={isCheckedIn}
-              className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-lg whitespace-nowrap ${
-                isCheckedIn
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 cursor-not-allowed shadow-green-500/25'
-                  : 'bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 hover:from-blue-600 hover:via-purple-700 hover:to-pink-700 shadow-purple-500/25'
-              }`}
-            />
+            <div className="space-y-2">
+              <PrivyWeb3Button
+                label={isCheckedIn ? 'Checked In ✓' : 'Check In This Week'}
+                action={handleCheckIn}
+                isDisabled={isCheckedIn}
+                className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-lg truncate ${
+                  isCheckedIn
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 cursor-not-allowed shadow-green-500/25'
+                    : 'bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 hover:from-blue-600 hover:via-purple-700 hover:to-pink-700 shadow-purple-500/25'
+                }`}
+              />
+              {isCheckedIn && (
+                <p className="text-center text-xs text-green-300/80">
+                  Rewards auto-distribute weekly
+                </p>
+              )}
+            </div>
           ) : (
             <Link
               href="/lock"
