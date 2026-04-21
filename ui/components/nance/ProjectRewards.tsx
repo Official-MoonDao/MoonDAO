@@ -1005,7 +1005,7 @@ export function ProjectRewards({
                   id="projects-tabs"
                   role="tablist"
                   aria-label="Project sections"
-                  className="-mb-3 sm:-mb-4 px-1 sm:px-0 flex items-end gap-1 border-b border-white/10 overflow-x-auto"
+                  className="-mb-3 sm:-mb-4 px-1 sm:px-0 flex items-end gap-1 border-b border-white/10 overflow-x-auto scrollbar-hide"
                 >
                   {tabs.map((tab) => {
                     const isActive = activeTab === tab.id
@@ -1176,9 +1176,9 @@ export function ProjectRewards({
                   )}
                   {approvalVotingActive && isMemberVote && proposals && proposals.length > 0 && (
                     <div className="mt-6 w-full flex flex-col items-end gap-2">
-                      <div className="text-white/80 font-RobotoMono text-sm">
-                        Allocated: {_.sum(Object.values(proposalDistribution))}% &nbsp;&nbsp;Voting Power:{' '}
-                        {Math.round(userVotingPower ?? 0)}
+                      <div className="text-white/80 font-RobotoMono text-xs sm:text-sm flex flex-wrap justify-end gap-x-3 gap-y-1">
+                        <span>Allocated: {_.sum(Object.values(proposalDistribution))}%</span>
+                        <span>Voting Power: {Math.round(userVotingPower ?? 0)}</span>
                       </div>
                       {userHasVotingPower ? (
                         <span className="flex flex-col md:flex-row md:items-center gap-2">
@@ -1360,10 +1360,9 @@ export function ProjectRewards({
                     {rewardVotingActive && (
                       <div className="mt-4 sm:mt-6 w-full flex flex-col items-end gap-2">
                         {userHasVotingPower && (
-                          <div className="text-white/80 font-RobotoMono text-xs sm:text-sm">
-                            Allocated: {_.sum(Object.values(distribution))}%
-                            &nbsp;&nbsp;Voting Power:{' '}
-                            {Math.round(userVotingPower ?? 0)}
+                          <div className="text-white/80 font-RobotoMono text-xs sm:text-sm flex flex-wrap justify-end gap-x-3 gap-y-1">
+                            <span>Allocated: {_.sum(Object.values(distribution))}%</span>
+                            <span>Voting Power: {Math.round(userVotingPower ?? 0)}</span>
                           </div>
                         )}
                         {userHasVotingPower ? (
