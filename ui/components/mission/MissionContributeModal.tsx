@@ -862,6 +862,13 @@ export default function MissionContributeModal({
       if (!stale()) {
         commitEstimate()
         setEstimatedGas(applyGasBuffer(BigInt(isCrossChain ? 300000 : 180000), isCrossChain))
+        // Reset the LayerZero quote on any failure (e.g. RPC timeout on
+        // Ethereum, ABI mismatch, etc.) so a stale value from a previous
+        // estimate doesn't linger and so the UI can exit its loading state
+        // once `isLoadingGasEstimate` flips false. PaymentBreakdown will
+        // render a "—" placeholder for the cross-chain fee in that case
+        // rather than spinning forever.
+        if (isCrossChain) setCrossChainQuote(BigInt(0))
         setIsLoadingGasEstimate(false)
       }
     }
