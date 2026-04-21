@@ -47,6 +47,7 @@ import { getBudget, getPayouts, computeRewardPercentages } from '@/lib/utils/rew
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
+import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import Modal from '@/components/layout/Modal'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
@@ -123,6 +124,12 @@ export function ProjectRewards({
   // all (no signal about which projects matter more). The user can either
   // back out and re-allocate, or acknowledge and continue anyway.
   const [equalWarningOpen, setEqualWarningOpen] = useState(false)
+  // When the user confirms the equal-weight warning we re-invoke the
+  // submit handler from outside `PrivyWeb3Button`, so its internal
+  // `isLoading` state never flips. This external flag drives a matching
+  // spinner/disabled state on the Submit Distribution button so the user
+  // still gets the "Check your wallet…" affordance after acknowledging.
+  const [proposalSubmitting, setProposalSubmitting] = useState(false)
 
   // ---------------------------------------------------------------------------
   // Valid project-id sets used to scope distributions / proposal allocations
@@ -1319,13 +1326,28 @@ export function ProjectRewards({
                       </div>
                       {userHasVotingPower ? (
                         <span className="flex flex-col md:flex-row md:items-center gap-2">
-                          <PrivyWeb3Button
-                            action={() => handleProposalSubmit(proposalContract)}
-                            requiredChain={chain}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
-                            label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
-                            loadingLabel="Check your wallet…"
-                          />
+                          {proposalSubmitting ? (
+                            <button
+                              type="button"
+                              disabled
+                              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-RobotoMono rounded-lg shadow-lg border-0 text-sm min-w-[180px] opacity-80 cursor-wait"
+                            >
+                              <span className="w-full flex justify-center items-center gap-2">
+                                <LoadingSpinner width="w-5" height="h-5" />
+                                <span className="text-sm font-medium leading-snug">
+                                  Check your wallet…
+                                </span>
+                              </span>
+                            </button>
+                          ) : (
+                            <PrivyWeb3Button
+                              action={() => handleProposalSubmit(proposalContract)}
+                              requiredChain={chain}
+                              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
+                              label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
+                              loadingLabel="Check your wallet…"
+                            />
+                          )}
                         </span>
                       ) : (
                         <span>
@@ -1582,11 +1604,16 @@ export function ProjectRewards({
               </button>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setEqualWarningOpen(false)
-                  handleProposalSubmit(proposalContract, {
-                    bypassEqualCheck: true,
-                  })
+                  setProposalSubmitting(true)
+                  try {
+                    await handleProposalSubmit(proposalContract, {
+                      bypassEqualCheck: true,
+                    })
+                  } finally {
+                    setProposalSubmitting(false)
+                  }
                 }}
                 className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-RobotoMono shadow"
               >
