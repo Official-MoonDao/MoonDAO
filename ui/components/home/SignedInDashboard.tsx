@@ -13,8 +13,9 @@ import {
   ClipboardDocumentIcon,
   PlusIcon,
   ArrowUpRightIcon,
+  ArrowRightIcon,
 } from '@heroicons/react/24/outline'
-import { useFundWallet, usePrivy } from '@privy-io/react-auth'
+import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
@@ -47,14 +48,11 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useMemo, useState } from 'react'
+import { useContext, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { shouldShowTeamsSection } from '@/lib/dashboard/shouldShowTeamsSection'
 import { useNewsletters } from '@/lib/home/useHomeData'
-import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import useMissionData from '@/lib/mission/useMissionData'
 import useMissionRaisedProgress from '@/lib/mission/useMissionRaisedProgress'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
@@ -87,7 +85,6 @@ import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardActiveProjects from '../project/DashboardActiveProjects'
 import DashboardQuests from './DashboardQuests'
-import DashboardTeams from './DashboardTeams'
 import LazyEarth from '@/components/globe/LazyEarth'
 
 // Parse citizen location from Tableland (can be JSON or plain string)
@@ -221,11 +218,6 @@ export default function SignedInDashboard({
 
   const account = useActiveAccount()
   const address = account?.address
-  const { user } = usePrivy()
-  const wearerAddresses = useMemo(
-    () => getLinkedEvmAddresses(user, account?.address),
-    [user, account?.address]
-  )
 
   // Hooks for SendModal
   const { nativeBalance } = useNativeBalance()
@@ -252,11 +244,6 @@ export default function SignedInDashboard({
     chain: selectedChain,
   })
 
-  const { userTeams: teamHats, isLoading: isLoadingTeams } = useTeamWearer(
-    teamContract,
-    selectedChain,
-    wearerAddresses
-  )
   const marketplaceTableContract = useContract({
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceTableABI as any,
@@ -1003,14 +990,10 @@ export default function SignedInDashboard({
           />
         </div>
 
-        {/* Events and Your Teams Section - Side by Side (Teams hidden when user has none) */}
-        <div
-          className={`grid gap-8 mt-8 mb-8 ${
-            shouldShowTeamsSection(teamHats, isLoadingTeams) ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'
-          }`}
-        >
+        {/* Events and Open Jobs Section - Side by Side */}
+        <div className="grid gap-8 mt-8 mb-8 grid-cols-1 lg:grid-cols-2">
           {/* Events Section */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
@@ -1023,10 +1006,10 @@ export default function SignedInDashboard({
               </div>
             </div>
 
-            <div className="relative">
+            <div className="relative flex-1 min-h-[500px]">
               <div
                 id="luma-loading-dashboard-small"
-                className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[500px]"
+                className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center"
               >
                 <div className="text-white text-center">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
@@ -1036,13 +1019,13 @@ export default function SignedInDashboard({
               <iframe
                 src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
                 width="100%"
-                height="600"
+                height="100%"
                 frameBorder="0"
                 style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
                 allowFullScreen
                 aria-hidden="false"
                 tabIndex={0}
-                className="rounded-lg relative z-10"
+                className="rounded-lg z-10 absolute inset-0 h-full w-full"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="MoonDAO Events Calendar"
@@ -1056,80 +1039,75 @@ export default function SignedInDashboard({
             </div>
           </div>
 
-          {/* Your Teams Section - only shown when user is a member of at least one team */}
-          {shouldShowTeamsSection(teamHats, isLoadingTeams) && (
-            <div
-              data-testid="dashboard-your-teams-section"
-              className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-5"
-            >
-              <div className="mb-3">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base sm:text-lg font-bold text-white mb-1 flex items-center gap-2">
-                    <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                    <span className="leading-tight">Your Teams</span>
-                  </h3>
-                </div>
+          {/* Open Jobs Section */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <BriefcaseIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Open Jobs</span>
+                </h3>
+                <p className="text-gray-300 text-sm sm:text-base leading-tight">
+                  Contribute to MoonDAO and earn rewards
+                </p>
               </div>
-
-              <div className="space-y-2">
-                <DashboardTeams
-                  selectedChain={selectedChain}
-                  hatsContract={hatsContract}
-                  teamContract={teamContract}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Open Jobs - Full Width */}
-        <div className="mb-6">
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white text-lg">Open Jobs</h3>
               <StandardButton
-                className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap flex-shrink-0"
                 link="/jobs"
               >
                 See all
               </StandardButton>
             </div>
 
-            <div className="space-y-3">
-              {newestJobs && newestJobs.length > 0 ? (
-                <Link href={newestJobs[0]?.contactInfo || '/jobs'} className="block">
-                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                        <BriefcaseIcon className="w-5 h-5" />
+            {newestJobs && newestJobs.length > 0 ? (
+              <div className="flex-1 flex flex-col gap-3 min-h-0">
+                {newestJobs.slice(0, 5).map((job: any) => (
+                  <Link
+                    key={job.id}
+                    href={job?.contactInfo || '/jobs'}
+                    className="block bg-black/20 hover:bg-black/40 border border-white/5 hover:border-white/10 rounded-xl transition-all"
+                  >
+                    <div className="flex items-center gap-3 p-3 sm:p-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                        <BriefcaseIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-medium text-sm sm:text-base truncate">
+                          {job?.title || 'Open Position'}
+                        </h4>
+                        {job?.description && (
+                          <p className="text-gray-400 text-xs sm:text-sm truncate mt-0.5">
+                            {job.description}
+                          </p>
+                        )}
+                      </div>
+                      <ArrowRightIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-white font-medium text-sm truncate">
-                        {newestJobs[0]?.title}
-                      </h4>
-                      <p className="text-gray-400 text-xs">
-                        {newestJobs.length > 1
-                          ? `+${newestJobs.length - 1} more positions`
-                          : 'Click to apply'}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ) : (
-                <Link href="/jobs" className="block">
-                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
-                      <BriefcaseIcon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium text-sm">No open positions</h4>
-                      <p className="text-gray-400 text-xs">Check back soon for opportunities</p>
-                    </div>
-                  </div>
-                </Link>
-              )}
-            </div>
+                  </Link>
+                ))}
+                {newestJobs.length > 5 && (
+                  <Link
+                    href="/jobs"
+                    className="text-center text-blue-300 hover:text-blue-200 text-sm py-2 transition-colors"
+                  >
+                    +{newestJobs.length - 5} more positions →
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/jobs"
+                className="flex-1 flex items-center justify-center bg-black/20 border border-white/5 rounded-xl hover:bg-black/30 transition-all min-h-[200px]"
+              >
+                <div className="text-center p-6">
+                  <BriefcaseIcon className="w-10 h-10 text-gray-500 mx-auto mb-2" />
+                  <h4 className="text-white font-medium text-sm">No open positions</h4>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Check back soon for opportunities
+                  </p>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
 
