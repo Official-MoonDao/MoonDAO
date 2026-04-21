@@ -81,7 +81,7 @@ export default function RewardsThankYou() {
   // wallet to filter by.
   const allocationStatement =
     router.isReady && address && allocationTableName
-      ? `SELECT * FROM ${allocationTableName} WHERE year = ${year} AND quarter = ${quarter}`
+      ? `SELECT * FROM ${allocationTableName} WHERE year = ${year} AND quarter = ${quarter} AND address = '${address.toLowerCase()}' LIMIT 1`
       : null
 
   const { data: distributions, isLoading: allocationsApiLoading } =
