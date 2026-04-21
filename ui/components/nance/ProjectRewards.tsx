@@ -116,6 +116,57 @@ export function ProjectRewards({
   const [proposalDistribution, setProposalDistribution] = useState<{ [key: string]: number }>({})
   const [originalProposalDistribution, setOriginalProposalDistribution] = useState<{ [key: string]: number }>({})
 
+  // ---------------------------------------------------------------------------
+  // Valid project-id sets used to scope distributions / proposal allocations
+  // to the slate that's *currently* on screen. Stored allocations from past
+  // cycles can include keys that are no longer in the current proposals or
+  // eligible-projects list; those orphan keys would otherwise inflate the
+  // displayed Allocated% and silently hitch a ride on submits.
+  //
+  // - validProposalIds → ids of proposals visible in the member-vote tab.
+  // - validEligibleIds → ids of eligible projects in the retroactive tab.
+  // ---------------------------------------------------------------------------
+  const validProposalIds = useMemo(() => {
+    if (!proposals?.length) return new Set<string>()
+    let visible = proposals
+    if (IS_SENATE_VOTE) {
+      visible = proposals.filter(
+        (p: any) => !p.tempCheckApproved && !p.tempCheckFailed
+      )
+    } else if (IS_MEMBER_VOTE) {
+      visible = proposals.filter(
+        (p: any) => p.tempCheckApproved && !p.tempCheckFailed
+      )
+    } else {
+      visible = proposals.filter((p: any) => !p.tempCheckFailed)
+    }
+    return new Set(visible.map((p: any) => String(p.id)))
+  }, [proposals])
+
+  const validEligibleIds = useMemo(() => {
+    if (!currentProjects?.length) return new Set<string>()
+    return new Set(
+      currentProjects
+        .filter((p: any) => p.eligible)
+        .map((p: any) => String(p.id))
+    )
+  }, [currentProjects])
+
+  // Helper: keep only the entries whose key appears in `validKeys`. Used to
+  // strip orphan project ids from a distribution loaded out of the
+  // distributions / proposalAllocations table.
+  const filterToKeys = (
+    dist: Record<string, number> | undefined | null,
+    validKeys: Set<string>
+  ): Record<string, number> => {
+    if (!dist) return {}
+    const out: Record<string, number> = {}
+    for (const [k, v] of Object.entries(dist)) {
+      if (validKeys.has(k)) out[k] = v as number
+    }
+    return out
+  }
+
   // Proposals contract owner (only they can close voting)
   const [proposalsContractOwner, setProposalsContractOwner] = useState<string | null>(null)
 
@@ -146,7 +197,14 @@ export function ProjectRewards({
     }
   }, [])
 
-  // Check if the user already has a distribution for the current quarter
+  // Check if the user already has a distribution for the current quarter.
+  // We prune the loaded distribution to the set of project IDs that are
+  // actually eligible right now — otherwise stale entries from a previous
+  // cycle become invisible "orphan" keys that inflate the displayed
+  // Allocated% and get re-submitted on edit. We still flag `edit=true` if a
+  // row exists for this quarter, so the submit path correctly does an
+  // UPDATE (not INSERT, which would violate the unique(quarter,year,addr)
+  // constraint).
   useEffect(() => {
     if (distributions && userAddress) {
       for (const d of distributions) {
@@ -155,14 +213,15 @@ export function ProjectRewards({
           d.quarter === quarter &&
           d.address.toLowerCase() === userAddress.toLowerCase()
         ) {
-          setDistribution(d.distribution)
-          setOriginalDistribution(d.distribution)
+          const pruned = filterToKeys(d.distribution, validEligibleIds)
+          setDistribution(pruned)
+          setOriginalDistribution(pruned)
           setEdit(true)
           break
         }
       }
     }
-  }, [userAddress, distributions, quarter, year])
+  }, [userAddress, distributions, quarter, year, validEligibleIds])
 
   // Check if the user already has a proposal allocation for the *submission*
   // quarter (the quarter the proposals being voted on belong to). NOTE: do
@@ -170,6 +229,10 @@ export function ProjectRewards({
   // during the retroactive-rewards window, and reusing them caused old
   // member-vote rows from the previous quarter to be surfaced as if the user
   // had already submitted this quarter's distribution.
+  //
+  // Same pruning rationale as the distributions effect above: drop any
+  // stored keys that aren't part of the proposal slate currently being
+  // voted on.
   useEffect(() => {
     if (proposalAllocations && userAddress) {
       for (const d of proposalAllocations) {
@@ -178,14 +241,15 @@ export function ProjectRewards({
           d.quarter === submissionQuarter &&
           d.address.toLowerCase() === userAddress.toLowerCase()
         ) {
-          setProposalDistribution(d.distribution)
-          setOriginalProposalDistribution(d.distribution)
+          const pruned = filterToKeys(d.distribution, validProposalIds)
+          setProposalDistribution(pruned)
+          setOriginalProposalDistribution(pruned)
           setProposalEdit(true)
           break
         }
       }
     }
-  }, [userAddress, proposalAllocations, submissionQuarter, submissionYear])
+  }, [userAddress, proposalAllocations, submissionQuarter, submissionYear, validProposalIds])
 
   // Build project id -> author address for member vote (exclude own proposal from allocation)
   const [projectIdToAuthorAddress, setProjectIdToAuthorAddress] = useState<Record<string, string>>(
@@ -485,14 +549,24 @@ export function ProjectRewards({
   }, [])
 
   const handleSubmit = async (contract: any) => {
-    const totalPercentage = Object.values(distribution).reduce((sum, value) => sum + value, 0)
+    // Strip any orphan keys (project ids no longer in the eligible set)
+    // before validating, comparing, or sending — see filterToKeys note above.
+    const scopedDistribution = filterToKeys(distribution, validEligibleIds)
+    const scopedOriginalDistribution = filterToKeys(
+      originalDistribution,
+      validEligibleIds
+    )
+    const totalPercentage = Object.values(scopedDistribution).reduce(
+      (sum, value) => sum + value,
+      0
+    )
     if (totalPercentage !== 100) {
       toast.error('Total distribution must equal 100%.', {
         style: toastStyle,
       })
       return
     }
-    if (edit && _.isEqual(distribution, originalDistribution)) {
+    if (edit && _.isEqual(scopedDistribution, scopedOriginalDistribution)) {
       toast.error('No changes detected. Please modify your distribution before resubmitting.', {
         style: toastStyle,
       })
@@ -505,7 +579,7 @@ export function ProjectRewards({
         const transaction = prepareContractCall({
           contract: contract,
           method: 'updateTableCol' as string,
-          params: [quarter, year, JSON.stringify(distribution)],
+          params: [quarter, year, JSON.stringify(scopedDistribution)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
@@ -515,7 +589,7 @@ export function ProjectRewards({
         const transaction = prepareContractCall({
           contract: contract,
           method: 'insertIntoTable' as string,
-          params: [quarter, year, JSON.stringify(distribution)],
+          params: [quarter, year, JSON.stringify(scopedDistribution)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
@@ -544,14 +618,31 @@ export function ProjectRewards({
   }
 
   const handleProposalSubmit = async (contract: any) => {
-    const totalPercentage = Object.values(proposalDistribution).reduce((sum, value) => sum + value, 0)
+    // Scope to the proposals currently visible in this voting tab, then
+    // compare against the (also-scoped) original to keep the edit-detection
+    // honest if the loaded row contained orphan keys from a previous cycle.
+    const scopedProposalDistribution = filterToKeys(
+      proposalDistribution,
+      validProposalIds
+    )
+    const scopedOriginalProposalDistribution = filterToKeys(
+      originalProposalDistribution,
+      validProposalIds
+    )
+    const totalPercentage = Object.values(scopedProposalDistribution).reduce(
+      (sum, value) => sum + value,
+      0
+    )
     if (totalPercentage !== 100) {
       toast.error('Total distribution must equal 100%.', {
         style: toastStyle,
       })
       return
     }
-    if (proposalEdit && _.isEqual(proposalDistribution, originalProposalDistribution)) {
+    if (
+      proposalEdit &&
+      _.isEqual(scopedProposalDistribution, scopedOriginalProposalDistribution)
+    ) {
       toast.error('No changes detected. Please modify your distribution before resubmitting.', {
         style: toastStyle,
       })
@@ -560,7 +651,7 @@ export function ProjectRewards({
     // Exclude projects where the user is the author (they cannot vote on their own proposal)
     const userAddr = userAddress?.toLowerCase()
     const distributionToSubmit: Record<string, number> = {}
-    for (const [projectId, value] of Object.entries(proposalDistribution)) {
+    for (const [projectId, value] of Object.entries(scopedProposalDistribution)) {
       const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
       if (author && author === userAddr) continue
       distributionToSubmit[projectId] = value
@@ -1191,7 +1282,15 @@ export function ProjectRewards({
                   {approvalVotingActive && isMemberVote && proposals && proposals.length > 0 && (
                     <div className="mt-6 w-full flex flex-col items-end gap-2">
                       <div className="text-white/80 font-RobotoMono text-xs sm:text-sm flex flex-wrap justify-end gap-x-3 gap-y-1">
-                        <span>Allocated: {_.sum(Object.values(proposalDistribution))}%</span>
+                        <span>
+                          Allocated:{' '}
+                          {_.sum(
+                            Object.entries(proposalDistribution)
+                              .filter(([id]) => validProposalIds.has(id))
+                              .map(([, v]) => v)
+                          )}
+                          %
+                        </span>
                         <span>Voting Power: {Math.round(userVotingPower ?? 0)}</span>
                       </div>
                       {userHasVotingPower ? (
@@ -1377,7 +1476,15 @@ export function ProjectRewards({
                       <div className="mt-4 sm:mt-6 w-full flex flex-col items-end gap-2">
                         {userHasVotingPower && (
                           <div className="text-white/80 font-RobotoMono text-xs sm:text-sm flex flex-wrap justify-end gap-x-3 gap-y-1">
-                            <span>Allocated: {_.sum(Object.values(distribution))}%</span>
+                            <span>
+                              Allocated:{' '}
+                              {_.sum(
+                                Object.entries(distribution)
+                                  .filter(([id]) => validEligibleIds.has(id))
+                                  .map(([, v]) => v)
+                              )}
+                              %
+                            </span>
                             <span>Voting Power: {Math.round(userVotingPower ?? 0)}</span>
                           </div>
                         )}
