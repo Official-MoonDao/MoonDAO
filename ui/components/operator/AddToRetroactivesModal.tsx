@@ -204,29 +204,38 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
           </label>
         </div>
 
-        {resultTxs.length > 0 && (
-          <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-3">
-            <p className="text-green-300 text-xs font-semibold mb-2">
-              Submitted {resultTxs.length} transaction(s):
-            </p>
-            <ul className="space-y-1 text-xs">
-              {resultTxs.map((t) => (
-                <li key={t.hash} className="text-gray-200">
-                  <span className="text-gray-400">{t.label}</span> →{' '}
-                  <a
-                    href={`https://arbiscan.io/tx/${t.hash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-400 hover:underline break-all"
-                  >
-                    {t.hash}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {(() => {
+          const explorerBaseUrl = process.env.NEXT_PUBLIC_CHAIN?.toLowerCase().includes(
+            'sepolia'
+          )
+            ? 'https://sepolia.arbiscan.io'
+            : 'https://arbiscan.io'
 
+          return (
+            resultTxs.length > 0 && (
+              <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-3">
+                <p className="text-green-300 text-xs font-semibold mb-2">
+                  Submitted {resultTxs.length} transaction(s):
+                </p>
+                <ul className="space-y-1 text-xs">
+                  {resultTxs.map((t) => (
+                    <li key={t.hash} className="text-gray-200">
+                      <span className="text-gray-400">{t.label}</span> →{' '}
+                      <a
+                        href={`${explorerBaseUrl}/tx/${t.hash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-400 hover:underline break-all"
+                      >
+                        {t.hash}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          )
+        })()}
         <div className="flex justify-end gap-2 pt-2">
           <button
             type="button"
