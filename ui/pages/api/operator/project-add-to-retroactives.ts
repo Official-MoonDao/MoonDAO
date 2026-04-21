@@ -37,8 +37,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const body = (req.body ?? {}) as Body
   const projectId = Number(body.projectId)
-  if (!Number.isInteger(projectId) || projectId < 0) {
-    return res.status(400).json({ error: 'projectId must be a non-negative integer' })
+  if (!Number.isInteger(projectId) || projectId < 1) {
+    return res.status(400).json({ error: 'projectId must be a positive integer' })
   }
 
   const chain = DEFAULT_CHAIN_V5
