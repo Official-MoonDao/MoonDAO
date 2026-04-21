@@ -573,28 +573,37 @@ export default function Fees() {
               // injects a wrapper with `md:mt-20` (when `branded={false}`)
               // that pushes the tagline ~80px below the title on desktop —
               // way too airy. Passing both in `header` sidesteps that.
-              <div className="flex flex-col gap-2 sm:gap-3 max-w-3xl">
-                <span
-                  className="font-GoodTimes text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] block"
+              //
+              // Visibility hardening:
+              // - `pt-24 md:pt-28` keeps the title clear of the fixed
+              //   navbar on every viewport (the layout pulls the wrapper up
+              //   ~80px via `mt-[-80px]`, which on small screens used to
+              //   tuck the title behind the nav).
+              // - `!important` font-size: the global `.header-responsive`
+              //   rule on the parent uses `!important`, so an inline style
+              //   on a *child* span normally wins, but we still mark it to
+              //   be safe.
+              // - Layered text-shadows + a subtle backdrop pill give the
+                //   white type guaranteed contrast over the dark gradient
+              //   regardless of what scrolls behind it.
+              <div className="pt-24 md:pt-28 lg:pt-20 pb-2 flex flex-col gap-3 sm:gap-4 max-w-3xl">
+                <h1
+                  className="font-GoodTimes text-white block"
                   style={{
-                    // clamp keeps the title readable on phones (28px floor)
-                    // without ballooning on ultrawide monitors (52px ceiling).
-                    // The default `.header-responsive` could push the title
-                    // up to 64px on a 1600px viewport, which combined with
-                    // the dark gradient backdrop made it hard to read.
-                    fontSize: 'clamp(28px, 4.2vw, 48px)',
+                    fontSize: 'clamp(36px, 5.5vw, 60px)',
                     lineHeight: 1.05,
                     letterSpacing: '0.01em',
+                    textShadow:
+                      '0 2px 4px rgba(0,0,0,0.85), 0 4px 18px rgba(0,0,0,0.6), 0 0 1px rgba(255,255,255,0.25)',
                   }}
                 >
                   Liquidity Rewards
-                </span>
+                </h1>
                 <p
-                  className="text-white/80 font-RobotoMono leading-snug max-w-2xl"
+                  className="text-white font-RobotoMono leading-snug max-w-2xl"
                   style={{
-                    // Tighter clamp than `.sub-header`'s `max(2vmin, 20px)`
-                    // which jumped between sizes oddly on tablet widths.
-                    fontSize: 'clamp(14px, 1.4vw, 17px)',
+                    fontSize: 'clamp(15px, 1.6vw, 18px)',
+                    textShadow: '0 1px 4px rgba(0,0,0,0.7)',
                   }}
                 >
                   Earn a share of MoonDAO&apos;s weekly trading-fee reward

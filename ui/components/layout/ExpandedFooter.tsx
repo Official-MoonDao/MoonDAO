@@ -273,14 +273,23 @@ export function ExpandedFooter({
               <h3 className="text-sm font-medium text-gray-400 uppercase mb-4">
                 Follow Us
               </h3>
-              <div className="flex items-center gap-4 mb-6">
+              {/*
+                7 social icons at 40px + a 16px gap was overflowing on
+                ~360–390px viewports (the row needs ~376px but the
+                container's `px-[5vw]` padding only leaves ~325px), which
+                clipped the rightmost icons (GitHub / CoinMarketCap).
+                `flex-wrap` lets the row break onto a second line on
+                phones, and the slightly smaller icon + gap on mobile keeps
+                it to a single tidy row when there's room.
+              */}
+              <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 mb-6 max-w-full">
                 {socialLinks.map((link) => (
                   <Link
                     key={link.label}
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300 opacity-70 hover:opacity-100"
+                    className="shrink-0 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300 opacity-70 hover:opacity-100"
                     aria-label={link.label}
                   >
                     {link.icon}
