@@ -1322,8 +1322,9 @@ export function ProjectRewards({
                           <PrivyWeb3Button
                             action={() => handleProposalSubmit(proposalContract)}
                             requiredChain={chain}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm"
+                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
                             label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
+                            loadingLabel="Check your wallet…"
                           />
                         </span>
                       ) : (
@@ -1516,8 +1517,9 @@ export function ProjectRewards({
                           <PrivyWeb3Button
                             action={() => handleSubmit(distributionTableContract)}
                             requiredChain={chain}
-                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm"
+                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
                             label={edit ? 'Edit Distribution' : 'Submit Distribution'}
+                            loadingLabel="Check your wallet…"
                           />
                         ) : (
                           <PrivyWeb3Button
