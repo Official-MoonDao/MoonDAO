@@ -151,6 +151,10 @@ type ProjectCardProps = {
   // `IS_SENATE_VOTE` config constant. Operators can flip this off via the
   // operator panel without redeploying.
   isSenateVote?: boolean
+  // Hide the inline status pill ("Active" / "Inactive" / budget) in the
+  // card header. Useful when the surrounding tab already provides the
+  // context (e.g. the Retroactive Rewards tab).
+  hideStatusBadge?: boolean
 }
 
 import { useIsSenator } from '@/lib/thirdweb/hooks/useIsSenator'
@@ -333,6 +337,7 @@ const ProjectCardContent = memo(
     onToggleExpand,
     citizenContract,
     isSenateVote = IS_SENATE_VOTE,
+    hideStatusBadge = false,
   }: any) => {
     const proposalJSON = useProposalJSON(project)
     const account = useActiveAccount()
@@ -442,8 +447,10 @@ const ProjectCardContent = memo(
                     </h1>
                   )}
                 </div>
-                {/* Only show status badge inline when NOT in Senate Vote mode */}
-                {!isSenateVote && (
+                {/* Only show status badge inline when NOT in Senate Vote mode
+                    and the parent hasn't opted out (e.g. Retroactive Rewards
+                    tab, which already implies "Active"). */}
+                {!isSenateVote && !hideStatusBadge && (
                   <span
                     className={`w-fit sm:mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
                       project.active == PROJECT_ACTIVE
@@ -602,6 +609,7 @@ export default function ProjectCard({
   isVotingPeriod,
   active,
   isSenateVote: isSenateVoteProp,
+  hideStatusBadge,
 }: ProjectCardProps) {
   const isSenateVote = isSenateVoteProp ?? IS_SENATE_VOTE
   const account = useActiveAccount()
@@ -685,6 +693,7 @@ export default function ProjectCard({
           onToggleExpand={() => setIsExpanded(!isExpanded)}
           citizenContract={citizenContract}
           isSenateVote={isSenateVote}
+          hideStatusBadge={hideStatusBadge}
         />
       ) : (
         <Link href={`/project/${project?.MDP}`} passHref className="h-full">
@@ -696,6 +705,7 @@ export default function ProjectCard({
             isExpanded={false}
             citizenContract={citizenContract}
             isSenateVote={isSenateVote}
+            hideStatusBadge={hideStatusBadge}
           />
         </Link>
       )}

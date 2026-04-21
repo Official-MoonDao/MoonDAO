@@ -1322,6 +1322,7 @@ export function ProjectRewards({
                             isVotingPeriod={rewardVotingActive}
                             active={true}
                             isSenateVote={isSenateVote}
+                            hideStatusBadge={true}
                           />
                           {/* Per-project share preview — only render when we
                               have a real tally; otherwise the row is a no-op
