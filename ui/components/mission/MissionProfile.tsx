@@ -447,7 +447,11 @@ export default function MissionProfile({
               recommendedFundingChain={recommendedChain}
               onlyButton
               visibleButton={windowWidth > 0 && windowWidth > 768}
-              buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
+              buttonClassName={
+                mission?.id === 4 || String(mission?.id) === '4'
+                  ? 'w-full sm:min-w-[280px] rounded-full gradient-2 px-8 sm:px-10 py-3.5 sm:py-4 text-base sm:text-xl font-bold uppercase tracking-wide shadow-lg shadow-blue-500/30 ring-1 ring-white/15 hover:brightness-110 hover:shadow-xl hover:shadow-blue-500/50 hover:scale-[1.02] active:scale-[0.99] transition-all duration-200 flex justify-center items-center'
+                  : 'max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center'
+              }
             />
           )
         }
