@@ -10,7 +10,7 @@ import {
 } from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getAccessToken } from '@privy-io/react-auth'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
@@ -78,6 +78,42 @@ export default function OverviewDelegate({
     setDisplayLeaderboard(leaderboard)
   }, [leaderboard])
 
+  // Overlay the connected user's *live* $OVERVIEW balance onto the leaderboard
+  // entry of the citizen they've delegated to. Without this, when the
+  // server-side balance fetch in `fetchOverviewLeaderboard` either fails or
+  // is served from a stale `getStaticProps` cache (revalidate: 60), we fall
+  // back to the originally-stored delegation amount — which is whatever the
+  // user had when they first backed someone. Users who have since earned
+  // more $OVERVIEW therefore see their delegated total stuck at the old
+  // value until they successfully re-submit.
+  const visibleLeaderboard = useMemo(() => {
+    if (
+      !userAddress ||
+      !previousDelegation ||
+      userBalance == null ||
+      !Number.isFinite(userBalance) ||
+      userBalance <= 0
+    ) {
+      return displayLeaderboard
+    }
+    const targetAddr = previousDelegation.delegatee.toLowerCase()
+    const liveAmount = Math.floor(userBalance)
+    const storedAmount = previousDelegation.amount
+    const delta = liveAmount - storedAmount
+    if (delta === 0) return displayLeaderboard
+    let touched = false
+    const overlaid = displayLeaderboard.map((entry) => {
+      if (entry.delegateeAddress.toLowerCase() !== targetAddr) return entry
+      touched = true
+      return {
+        ...entry,
+        totalDelegated: Math.max(0, entry.totalDelegated + delta),
+      }
+    })
+    if (!touched) return displayLeaderboard
+    return [...overlaid].sort((a, b) => b.totalDelegated - a.totalDelegated)
+  }, [displayLeaderboard, previousDelegation, userBalance, userAddress])
+
   const votesContract = useContract({
     address: VOTES_TABLE_ADDRESSES[overviewChainSlug],
     chain: overviewChain,
@@ -91,8 +127,14 @@ export default function OverviewDelegate({
     const checkExisting = async () => {
       try {
         const stmt = `SELECT * FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID} AND address = '${userAddress.toLowerCase()}'`
+        // Use the env-aware Tableland endpoint (testnets vs mainnet). The
+        // hardcoded `tableland.network` URL silently 404s the row on testnet,
+        // which falsely sets `hasExistingDelegation = false` and routes the
+        // submit to `insertIntoTable` — that then reverts due to the
+        // `unique(address, voteId)` constraint and the user gets the generic
+        // "Failed to submit delegation" toast on every re-back.
         const res = await fetch(
-          `https://tableland.network/api/v1/query?statement=${encodeURIComponent(stmt)}`
+          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
         )
         if (res.ok) {
           const data = await res.json()
@@ -258,7 +300,31 @@ export default function OverviewDelegate({
     const vote = JSON.stringify({ [selectedCitizen.owner]: delegateAmount })
 
     try {
-      const method = hasExistingDelegation ? 'updateTableCol' : 'insertIntoTable'
+      // Re-check existence right before submitting. The initial check from
+      // mount can be stale (race after a previous vote landed, or the user
+      // hopped wallets). Picking the wrong method causes the Tableland mutate
+      // to fail server-side: insertIntoTable on an existing (address,voteId)
+      // pair violates the unique constraint, and updateTableCol when no row
+      // exists silently no-ops. Either way the user sees the generic
+      // "Failed to submit delegation" error.
+      let existsNow = hasExistingDelegation
+      try {
+        const stmt = `SELECT id FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID} AND address = '${userAddress!.toLowerCase()}'`
+        const res = await fetch(
+          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
+        )
+        if (res.ok) {
+          const data = await res.json()
+          existsNow = Array.isArray(data) && data.length > 0
+        }
+      } catch (lookupErr) {
+        console.warn(
+          '[overview-vote] pre-submit existence check failed; falling back to cached value',
+          lookupErr
+        )
+      }
+
+      const method = existsNow ? 'updateTableCol' : 'insertIntoTable'
       const tx = prepareContractCall({
         contract: votesContract,
         method: method as string,
@@ -646,13 +712,13 @@ export default function OverviewDelegate({
                 The 25 citizens with the most $OVERVIEW support advance to Round 2.
               </p>
 
-              {displayLeaderboard.length === 0 ? (
+              {visibleLeaderboard.length === 0 ? (
                 <p className="text-gray-400 text-center py-6 sm:py-8 text-sm">
                   No delegations yet. Be the first to back a candidate!
                 </p>
               ) : (
                 <div className="space-y-2 sm:space-y-3">
-                  {displayLeaderboard.map((entry, index) => {
+                  {visibleLeaderboard.map((entry, index) => {
                     const citizenLink = entry.citizenName
                       ? `/citizen/${generatePrettyLinkWithId(entry.citizenName, entry.citizenId)}`
                       : `/citizen/${entry.citizenId}`
