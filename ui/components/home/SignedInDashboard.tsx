@@ -1048,7 +1048,7 @@ export default function SignedInDashboard({
                   <span className="leading-tight">Open Jobs</span>
                 </h3>
                 <p className="text-gray-300 text-sm sm:text-base leading-tight">
-                  Contribute to MoonDAO and earn rewards
+                  Find open job positions within the MoonDAO Network.
                 </p>
               </div>
               <StandardButton
