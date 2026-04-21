@@ -6,9 +6,11 @@ import ProposalsABI from 'const/abis/Proposals.json'
 import {
   DEFAULT_CHAIN_V5,
   DISTRIBUTION_TABLE_ADDRESSES,
+  DISTRIBUTION_TABLE_NAMES,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
   PROPOSALS_ADDRESSES,
+  PROPOSALS_TABLE_NAMES,
   ARBITRUM_ASSETS_URL,
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
@@ -26,7 +28,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
+import {
+  prepareContractCall,
+  readContract,
+  sendTransaction,
+  waitForReceipt,
+} from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
@@ -73,6 +80,123 @@ export type ProjectRewardsProps = {
   distributions: Distribution[]
   proposalAllocations?: Distribution[]
   refreshRewards: () => void
+}
+
+// Hit the Tableland API to verify whether the connected wallet already has a
+// row for the given (quarter, year) — used right before submitting so we can
+// pick `insertIntoTable` vs `updateTableCol` based on the actual on-chain
+// table state rather than the (potentially stale) `getStaticProps` cache.
+//
+// Returns:
+//   true  → row exists, must use updateTableCol
+//   false → no row, must use insertIntoTable
+//   null  → query failed; caller should fall back to its cached flag
+async function fetchExistingRowExists(
+  tableName: string | undefined,
+  quarter: number,
+  year: number,
+  address: string
+): Promise<boolean | null> {
+  if (!tableName || !address) return null
+  try {
+    const lower = address.toLowerCase()
+    const statement = `SELECT id FROM ${tableName} WHERE quarter = ${quarter} AND year = ${year} AND address = '${lower}' LIMIT 1`
+    // Cache-bust the API so we never hit the 30s CDN cache for this check.
+    const url = `/api/tableland/query?statement=${encodeURIComponent(
+      statement
+    )}&_t=${Date.now()}`
+    const res = await fetch(url, { cache: 'no-store' })
+    if (!res.ok) return null
+    const rows = await res.json()
+    return Array.isArray(rows) && rows.length > 0
+  } catch (err) {
+    console.warn('Pre-submit existence check failed:', err)
+    return null
+  }
+}
+
+// Pull a human-readable reason out of a thirdweb / wallet / RPC error so the
+// user (and we) can tell why a submission failed instead of always seeing the
+// same generic toast.
+function formatTxError(error: any): string {
+  if (!error) return 'Unknown error.'
+  const message: string =
+    typeof error?.message === 'string' ? error.message : String(error)
+
+  if (
+    error?.code === 4001 ||
+    /user rejected|user denied|rejected the request/i.test(message)
+  ) {
+    return 'Transaction was cancelled in your wallet.'
+  }
+
+  if (/insufficient funds/i.test(message)) {
+    return 'Insufficient funds to cover gas. Please top up and try again.'
+  }
+
+  if (/nonce too low|replacement transaction underpriced/i.test(message)) {
+    return 'Wallet nonce mismatch — refresh the page and try again.'
+  }
+
+  const revertReason: string | undefined =
+    error?.reason ||
+    error?.shortMessage ||
+    error?.cause?.shortMessage ||
+    error?.cause?.reason ||
+    (typeof error?.data?.message === 'string' ? error.data.message : undefined)
+  if (revertReason && typeof revertReason === 'string') {
+    return `Transaction reverted: ${revertReason}`
+  }
+
+  if (/timeout|timed out|took too long/i.test(message)) {
+    return 'Transaction timed out waiting for confirmation. Check your wallet for status.'
+  }
+
+  if (/fetch failed|network request failed|network error/i.test(message)) {
+    return 'Network error while submitting. Please try again.'
+  }
+
+  return message.length > 240 ? `${message.slice(0, 240)}…` : message
+}
+
+// Send the prepared transaction once, then poll for its receipt with a few
+// retries so a flaky RPC during the *confirmation* step doesn't make the user
+// re-sign and double-broadcast. We never re-send the transaction itself —
+// once `sendTransaction` returns a hash, the tx is in the mempool and we
+// only retry the receipt fetch.
+async function sendTxAndWaitWithRetry({
+  transaction,
+  account,
+  chain,
+  client,
+  receiptAttempts = 3,
+}: {
+  transaction: any
+  account: any
+  chain: any
+  client: any
+  receiptAttempts?: number
+}) {
+  const sent = await sendTransaction({ transaction, account })
+  const transactionHash = sent.transactionHash
+
+  let lastError: unknown
+  for (let attempt = 0; attempt < receiptAttempts; attempt++) {
+    try {
+      const receipt = await waitForReceipt({
+        client,
+        chain,
+        transactionHash,
+      })
+      return receipt
+    } catch (err) {
+      lastError = err
+      if (attempt < receiptAttempts - 1) {
+        await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+      }
+    }
+  }
+  throw lastError
 }
 
 // Helper function to format large numbers for mobile display
@@ -589,28 +713,33 @@ export function ProjectRewards({
     }
     try {
       if (!account) throw new Error('No account found')
-      let receipt
-      if (edit) {
-        const transaction = prepareContractCall({
-          contract: contract,
-          method: 'updateTableCol' as string,
-          params: [quarter, year, JSON.stringify(scopedDistribution)],
-        })
-        receipt = await sendAndConfirmTransaction({
-          transaction,
-          account,
-        })
-      } else {
-        const transaction = prepareContractCall({
-          contract: contract,
-          method: 'insertIntoTable' as string,
-          params: [quarter, year, JSON.stringify(scopedDistribution)],
-        })
-        receipt = await sendAndConfirmTransaction({
-          transaction,
-          account,
-        })
-      }
+      // Re-check whether a row already exists for this wallet/quarter right
+      // before we sign. If `getStaticProps` was cached before the user's
+      // last submit, `edit` may still be `false` and we'd otherwise call
+      // `insertIntoTable`, which Tableland silently rejects on the unique
+      // constraint. Falling back to the cached `edit` flag if the lookup
+      // itself fails keeps us no worse off than before.
+      const distributionTableName = DISTRIBUTION_TABLE_NAMES[chainSlug]
+      const freshExists = await fetchExistingRowExists(
+        distributionTableName,
+        quarter,
+        year,
+        account.address
+      )
+      const isEdit = freshExists ?? edit
+
+      const method = isEdit ? 'updateTableCol' : 'insertIntoTable'
+      const transaction = prepareContractCall({
+        contract: contract,
+        method: method as string,
+        params: [quarter, year, JSON.stringify(scopedDistribution)],
+      })
+      const receipt = await sendTxAndWaitWithRetry({
+        transaction,
+        account,
+        chain: contract.chain,
+        client: contract.client,
+      })
       if (receipt) {
         toast.success('Distribution submitted successfully!', {
           style: toastStyle,
@@ -622,12 +751,19 @@ export function ProjectRewards({
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
-        setTimeout(() => router.push(`/projects/thank-you?quarter=${quarter}&year=${year}`), 3000)
+        setTimeout(
+          () =>
+            router.push(
+              `/projects/thank-you?quarter=${quarter}&year=${year}&type=retro`
+            ),
+          3000
+        )
       }
     } catch (error) {
       console.error('Error submitting distribution:', error)
-      toast.error('Error submitting distribution. Please try again.', {
+      toast.error(formatTxError(error), {
         style: toastStyle,
+        duration: 6000,
       })
     }
   }
@@ -708,31 +844,34 @@ export function ProjectRewards({
     }
     try {
       if (!account) throw new Error('No account found')
-      let receipt
       // Member-vote proposal allocations are keyed by the *submission* quarter
       // (the quarter the proposals being voted on belong to), not the
       // rewards-shifted `quarter`/`year` used for retroactive distributions.
-      if (proposalEdit) {
-        const transaction = prepareContractCall({
-          contract: contract,
-          method: 'updateTableCol' as string,
-          params: [submissionQuarter, submissionYear, JSON.stringify(normalizedDistribution)],
-        })
-        receipt = await sendAndConfirmTransaction({
-          transaction,
-          account,
-        })
-      } else {
-        const transaction = prepareContractCall({
-          contract: contract,
-          method: 'insertIntoTable' as string,
-          params: [submissionQuarter, submissionYear, JSON.stringify(normalizedDistribution)],
-        })
-        receipt = await sendAndConfirmTransaction({
-          transaction,
-          account,
-        })
-      }
+      //
+      // Refresh the existence check against Tableland directly so a stale
+      // `proposalEdit` flag (from a cached `getStaticProps`) doesn't push us
+      // into `insertIntoTable` when an `updateTableCol` is actually required.
+      const proposalsTableName = PROPOSALS_TABLE_NAMES[chainSlug]
+      const freshExists = await fetchExistingRowExists(
+        proposalsTableName,
+        submissionQuarter,
+        submissionYear,
+        account.address
+      )
+      const isEdit = freshExists ?? proposalEdit
+
+      const method = isEdit ? 'updateTableCol' : 'insertIntoTable'
+      const transaction = prepareContractCall({
+        contract: contract,
+        method: method as string,
+        params: [submissionQuarter, submissionYear, JSON.stringify(normalizedDistribution)],
+      })
+      const receipt = await sendTxAndWaitWithRetry({
+        transaction,
+        account,
+        chain: contract.chain,
+        client: contract.client,
+      })
       if (receipt) {
         toast.success('Distribution submitted successfully!', {
           style: toastStyle,
@@ -747,15 +886,16 @@ export function ProjectRewards({
         setTimeout(
           () =>
             router.push(
-              `/projects/thank-you?quarter=${submissionQuarter}&year=${submissionYear}`
+              `/projects/thank-you?quarter=${submissionQuarter}&year=${submissionYear}&type=member`
             ),
           3000
         )
       }
     } catch (error) {
       console.error('Error submitting distribution:', error)
-      toast.error('Error submitting distribution. Please try again.', {
+      toast.error(formatTxError(error), {
         style: toastStyle,
+        duration: 6000,
       })
     }
   }
@@ -1502,7 +1642,17 @@ export function ProjectRewards({
                             active={true}
                             isSenateVote={isSenateVote}
                             hideStatusBadge={true}
-                            linkToProjectPage={true}
+                            // Wrap the whole card in a project-page link only
+                            // when the user *isn't* actively allocating. While
+                            // distribution is open and the user has voting
+                            // power, stray clicks near (or bubbling out of)
+                            // the NumberStepper would otherwise navigate
+                            // them away mid-vote. The project name itself
+                            // remains a link via ProjectCardContent so
+                            // intentional navigation still works.
+                            linkToProjectPage={
+                              !(rewardVotingActive && userHasVotingPower)
+                            }
                           />
                           {/* Per-project share preview — only render when we
                               have a real tally; otherwise the row is a no-op

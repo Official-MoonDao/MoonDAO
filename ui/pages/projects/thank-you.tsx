@@ -1,21 +1,16 @@
 import { ArrowRightIcon, CheckIcon } from '@heroicons/react/24/outline'
-import DistributionABI from 'const/abis/DistributionTable.json'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   DEFAULT_CHAIN_V5,
-  DISTRIBUTION_TABLE_ADDRESSES,
-  PROJECT_TABLE_ADDRESSES,
+  DISTRIBUTION_TABLE_NAMES,
+  PROJECT_TABLE_NAMES,
+  PROPOSALS_TABLE_NAMES,
 } from 'const/config'
-import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
-import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
-import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -28,27 +23,35 @@ type Allocation = {
   percent: number
 }
 
-export default function RewardsThankYou({
-  distributionTableName,
-  projects,
-}: {
-  distributionTableName: string
-  projects: any
-}) {
+type SubmissionType = 'retro' | 'member'
+
+const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+const DISTRIBUTION_TABLE_NAME = DISTRIBUTION_TABLE_NAMES[chainSlug]
+const PROPOSALS_TABLE_NAME = PROPOSALS_TABLE_NAMES[chainSlug]
+const PROJECT_TABLE_NAME = PROJECT_TABLE_NAMES[chainSlug]
+
+export default function RewardsThankYou() {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
 
   const { quarter: fallbackQuarter, year: fallbackYear } = getRelativeQuarter(-1)
 
-  const { quarter, year } = useMemo(() => {
-    if (!router.isReady) return { quarter: fallbackQuarter, year: fallbackYear }
+  // Pull the quarter / year / submission type from the redirect URL. The
+  // member-vote and retro-distribution flows live in different Tableland
+  // tables, so the `type` flag is what tells us which one to query.
+  const { quarter, year, type } = useMemo(() => {
+    if (!router.isReady)
+      return { quarter: fallbackQuarter, year: fallbackYear, type: 'retro' as SubmissionType }
     const rawQuarter = Array.isArray(router.query.quarter)
       ? router.query.quarter[0]
       : router.query.quarter
     const rawYear = Array.isArray(router.query.year)
       ? router.query.year[0]
       : router.query.year
+    const rawType = Array.isArray(router.query.type)
+      ? router.query.type[0]
+      : router.query.type
     const parsedQuarter = rawQuarter ? Number(rawQuarter) : undefined
     const parsedYear = rawYear ? Number(rawYear) : undefined
     return {
@@ -57,14 +60,43 @@ export default function RewardsThankYou({
           ? parsedQuarter
           : fallbackQuarter,
       year: parsedYear && parsedYear >= 2020 ? parsedYear : fallbackYear,
+      type: (rawType === 'member' ? 'member' : 'retro') as SubmissionType,
     }
-  }, [router.isReady, router.query.quarter, router.query.year, fallbackQuarter, fallbackYear])
+  }, [
+    router.isReady,
+    router.query.quarter,
+    router.query.year,
+    router.query.type,
+    fallbackQuarter,
+    fallbackYear,
+  ])
 
-  const statement = address
-    ? `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
-    : null
+  const allocationTableName =
+    type === 'member' ? PROPOSALS_TABLE_NAME : DISTRIBUTION_TABLE_NAME
 
-  const { data: distributions, isLoading } = useTablelandQuery(statement, {
+  // Query the correct allocation table (proposals vs distributions). We need
+  // both `router.isReady` and a connected wallet before we can fire the
+  // query — without those we'd be querying with a fallback quarter or no
+  // wallet to filter by.
+  const allocationStatement =
+    router.isReady && address && allocationTableName
+      ? `SELECT * FROM ${allocationTableName} WHERE year = ${year} AND quarter = ${quarter}`
+      : null
+
+  const { data: distributions, isLoading: allocationsApiLoading } =
+    useTablelandQuery(allocationStatement, {
+      revalidateOnFocus: false,
+    })
+
+  // Pull the project list for the *URL's* quarter so member-vote allocations
+  // (which point at proposals from the current submission quarter, not the
+  // rewards-shifted previous quarter) resolve to the right names.
+  const projectsStatement =
+    router.isReady && PROJECT_TABLE_NAME
+      ? `SELECT id, name FROM ${PROJECT_TABLE_NAME} WHERE year = ${year} AND quarter = ${quarter}`
+      : null
+
+  const { data: projectsForQuarter } = useTablelandQuery(projectsStatement, {
     revalidateOnFocus: false,
   })
 
@@ -77,19 +109,28 @@ export default function RewardsThankYou({
   }, [distributions, address])
 
   // Build a sorted list of non-zero allocations, falling back to a generic
-  // "Project #ID" name if the project record isn't available (e.g. when a
-  // member-vote allocation references proposals that aren't in the
-  // retroactive eligible set used by `getStaticProps`).
+  // "Project #ID" name if the project record isn't available (e.g. when the
+  // projects query hasn't finished or a project record was removed).
   const allocations: Allocation[] = useMemo(() => {
-    const dist = userDistribution?.distribution as
+    let dist = userDistribution?.distribution as
       | Record<string, number>
+      | string
       | undefined
     if (!dist) return []
-    const projectMap = new Map<string, any>()
-    if (Array.isArray(projects)) {
-      for (const p of projects) projectMap.set(String(p.id), p)
+    // Tableland may return the JSON column as a string depending on the
+    // statement — normalize it before iterating.
+    if (typeof dist === 'string') {
+      try {
+        dist = JSON.parse(dist) as Record<string, number>
+      } catch {
+        return []
+      }
     }
-    return Object.entries(dist)
+    const projectMap = new Map<string, any>()
+    if (Array.isArray(projectsForQuarter)) {
+      for (const p of projectsForQuarter) projectMap.set(String(p.id), p)
+    }
+    return Object.entries(dist as Record<string, number>)
       .map(([id, percent]) => ({
         id: String(id),
         name: projectMap.get(String(id))?.name || `Project #${id}`,
@@ -97,20 +138,23 @@ export default function RewardsThankYou({
       }))
       .filter((a) => a.percent > 0)
       .sort((a, b) => b.percent - a.percent)
-  }, [projects, userDistribution])
+  }, [projectsForQuarter, userDistribution])
 
   const totalAllocated = useMemo(
     () => allocations.reduce((sum, a) => sum + a.percent, 0),
     [allocations]
   )
-  const allocationsLoading = !!address && isLoading
+  const allocationsLoading = !!address && allocationsApiLoading
   const hasAllocations = allocations.length > 0
   const showLoadingState = allocationsLoading && !hasAllocations
-  const showEmptyState = !!address && !allocationsLoading && !hasAllocations
+  const showEmptyState =
+    !!address && !allocationsLoading && !hasAllocations && distributions !== undefined
+
+  const submissionLabel = type === 'member' ? 'project vote' : 'reward distribution'
 
   const descriptionSection = (
     <p>
-      {`You've successfully submitted your Q${quarter} ${year} project allocations!`}
+      {`You've successfully submitted your Q${quarter} ${year} ${submissionLabel}!`}
     </p>
   )
 
@@ -151,8 +195,10 @@ export default function RewardsThankYou({
                     Vote Submitted
                   </h2>
                   <p className="text-gray-300 text-sm sm:text-base mt-1 leading-relaxed">
-                    Your Q{quarter} {year} allocations are recorded on-chain.
-                    Thanks for helping shape the next chapter of MoonDAO.
+                    Your Q{quarter} {year}{' '}
+                    {type === 'member' ? 'project vote' : 'reward distribution'}{' '}
+                    is recorded on-chain. Thanks for helping shape the next
+                    chapter of MoonDAO.
                   </p>
                 </div>
               </div>
@@ -230,8 +276,8 @@ export default function RewardsThankYou({
 
               {showEmptyState && (
                 <p className="text-sm text-gray-400">
-                  We couldn&apos;t find an allocation for this wallet in Q
-                  {quarter} {year}. Try connecting the wallet you voted with,
+                  We couldn&apos;t find a {submissionLabel} for this wallet in
+                  Q{quarter} {year}. Try connecting the wallet you voted with,
                   or head back to the projects page to submit one.
                 </p>
               )}
@@ -295,61 +341,4 @@ function StatTile({ label, value }: { label: string; value: string }) {
       </div>
     </div>
   )
-}
-
-export async function getStaticProps() {
-  try {
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
-
-    const projectTableContract = getContract({
-      client: serverClient,
-      chain,
-      address: PROJECT_TABLE_ADDRESSES[chainSlug],
-      abi: ProjectTableABI as any,
-    })
-
-    const projectTableName = await readContract({
-      contract: projectTableContract,
-      method: 'getTableName',
-    })
-
-    const { quarter, year } = getRelativeQuarter(-1)
-
-    const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter} AND eligible != 0`
-    const projects = await queryTable(chain, projectStatement)
-    const filteredProjects = projects.filter(
-      (project: any) =>
-        !BLOCKED_PROJECTS.has(project?.id) && !BLOCKED_MDPS.has(project?.MDP)
-    )
-
-    const distributionTableContract = getContract({
-      client: serverClient,
-      chain,
-      address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
-      abi: DistributionABI as any,
-    })
-
-    const distributionTableName = await readContract({
-      contract: distributionTableContract,
-      method: 'getTableName',
-    })
-
-    return {
-      props: {
-        distributionTableName,
-        projects: filteredProjects,
-      },
-      revalidate: 60,
-    }
-  } catch (error) {
-    console.error(error)
-    return {
-      props: {
-        distributionTableName: '',
-        projects: [],
-      },
-      revalidate: 60,
-    }
-  }
 }
