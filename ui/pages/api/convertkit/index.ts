@@ -8,7 +8,8 @@ dotenv.config()
 // used by the now-archived Ticket-to-Space sweepstakes UI.
 function checkApiKey(req: NextApiRequest, res: NextApiResponse): boolean {
   const expected = process.env.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY
-  const provided = req.headers['moondao-api-key']
+  const headerValue = req.headers['moondao-api-key']
+  const provided = Array.isArray(headerValue) ? headerValue[0] : headerValue
   if (expected && provided === expected) return true
   res.status(401).json({ success: false, message: 'Unauthorized' })
   return false
