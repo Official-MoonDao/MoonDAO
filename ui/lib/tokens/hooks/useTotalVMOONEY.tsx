@@ -140,6 +140,6 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
     return totals
   } catch (error) {
     console.error('Failed to fetch vMOONEY balances:', error)
-    throw error
+    return addresses.map(() => 0)
   }
 }
