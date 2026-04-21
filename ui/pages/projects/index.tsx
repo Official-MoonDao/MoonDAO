@@ -5,15 +5,13 @@ import {
   DISTRIBUTION_TABLE_NAMES,
   PROPOSALS_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
+  IS_REWARDS_CYCLE,
 } from 'const/config'
 import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 import { getProposalStatus } from '@/lib/nance/useProposalStatus'
-import { getMemberVoteOverride } from '@/lib/operator/memberVote'
-import { getRetroCycleOverride } from '@/lib/operator/retroCycle'
-import { getSenateVoteOverride } from '@/lib/operator/senateVote'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -28,14 +26,8 @@ export default function Projects({
   pastProjects,
   distributions,
   proposalAllocations,
-  retroCycleOverride,
-  senateVoteDisabled,
-  memberVoteEnabled,
 }: ProjectRewardsProps & {
   proposalAllocations: any[]
-  retroCycleOverride: boolean
-  senateVoteDisabled: boolean
-  memberVoteEnabled: boolean
 }) {
   const router = useRouter()
   useChainDefault()
@@ -46,9 +38,6 @@ export default function Projects({
       pastProjects={pastProjects}
       distributions={distributions}
       proposalAllocations={proposalAllocations}
-      retroCycleOverride={retroCycleOverride}
-      senateVoteDisabled={senateVoteDisabled}
-      memberVoteEnabled={memberVoteEnabled}
       refreshRewards={() => router.reload()}
     />
   )
@@ -59,13 +48,8 @@ export async function getStaticProps() {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const [retroOverride, senateOverride, memberOverride] = await Promise.all([
-      getRetroCycleOverride(),
-      getSenateVoteOverride(),
-      getMemberVoteOverride(),
-    ])
     const { quarter, year } = getRelativeQuarter(
-      isRewardsCycle(new Date(), retroOverride.enabled) ? -1 : 0
+      isRewardsCycle(new Date(), IS_REWARDS_CYCLE) ? -1 : 0
     )
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
@@ -147,9 +131,6 @@ export async function getStaticProps() {
         pastProjects: pastProjects.reverse(),
         distributions,
         proposalAllocations,
-        retroCycleOverride: retroOverride.enabled,
-        senateVoteDisabled: senateOverride.enabled,
-        memberVoteEnabled: memberOverride.enabled,
       },
       revalidate: 60,
     }
@@ -162,9 +143,6 @@ export async function getStaticProps() {
         pastProjects: [],
         distributions: [],
         proposalAllocations: [],
-        retroCycleOverride: false,
-        senateVoteDisabled: false,
-        memberVoteEnabled: false,
       },
       revalidate: 60,
     }

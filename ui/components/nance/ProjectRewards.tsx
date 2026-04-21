@@ -15,6 +15,7 @@ import {
   USD_BUDGET,
   IS_SENATE_VOTE,
   IS_MEMBER_VOTE,
+  IS_REWARDS_CYCLE,
   RETRO_PAYOUT_TOKEN,
   RETRO_ETH_BUDGET,
 } from 'const/config'
@@ -70,13 +71,6 @@ export type ProjectRewardsProps = {
   distributions: Distribution[]
   proposalAllocations?: Distribution[]
   refreshRewards: () => void
-  retroCycleOverride?: boolean
-  // When true (operator-set in Vercel KV), treat IS_SENATE_VOTE as false
-  // across the projects UI even though the config constant is true.
-  senateVoteDisabled?: boolean
-  // When true (operator-set in Vercel KV), treat IS_MEMBER_VOTE as true
-  // across the projects UI even though the config constant is false.
-  memberVoteEnabled?: boolean
 }
 
 // Helper function to format large numbers for mobile display
@@ -87,9 +81,6 @@ export function ProjectRewards({
   distributions,
   proposalAllocations,
   refreshRewards,
-  retroCycleOverride = false,
-  senateVoteDisabled: senateVoteDisabledProp = false,
-  memberVoteEnabled: memberVoteEnabledProp = false,
 }: ProjectRewardsProps) {
   const router = useRouter()
 
@@ -99,22 +90,10 @@ export function ProjectRewards({
   const account = useActiveAccount()
   const userAddress = account?.address
 
-  const [rewardVotingActive, setRewardVotingActive] = useState(retroCycleOverride)
+  const [rewardVotingActive, setRewardVotingActive] = useState(IS_REWARDS_CYCLE)
   const [approvalVotingActive, setApprovalVotingActive] = useState(false)
-  // Senate vote = config constant AND not operator-disabled. Polls the
-  // operator flag every minute so toggling it from the operator panel
-  // propagates without a refresh.
-  const [senateVoteDisabledLive, setSenateVoteDisabledLive] = useState(
-    senateVoteDisabledProp
-  )
-  // Member vote = config constant OR operator-enabled. Polled on the same
-  // cadence as the senate-vote flag so the operator panel can advance the
-  // phase without a deploy.
-  const [memberVoteEnabledLive, setMemberVoteEnabledLive] = useState(
-    memberVoteEnabledProp
-  )
-  const isSenateVote = IS_SENATE_VOTE && !senateVoteDisabledLive
-  const isMemberVote = IS_MEMBER_VOTE || memberVoteEnabledLive
+  const isSenateVote = IS_SENATE_VOTE
+  const isMemberVote = IS_MEMBER_VOTE
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
   const { quarter: submissionQuarter, year: submissionYear } = getSubmissionQuarter()
@@ -149,64 +128,23 @@ export function ProjectRewards({
     return () => clearInterval(interval)
   })
 
-  // Poll the operator-set senate-vote-disabled and member-vote-enabled flags.
+  //Check if its the rewards cycle. `IS_REWARDS_CYCLE` (config) acts as a
+  // force-on switch; otherwise we fall through to the date-based default.
   useEffect(() => {
     let cancelled = false
-    const fetchOverrides = () => {
-      fetch('/api/operator/senate-vote-status')
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (cancelled || !data) return
-          setSenateVoteDisabledLive(!!data.enabled)
-        })
-        .catch(() => {})
-      fetch('/api/operator/member-vote-status')
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (cancelled || !data) return
-          setMemberVoteEnabledLive(!!data.enabled)
-        })
-        .catch(() => {})
-    }
-    fetchOverrides()
-    const interval = setInterval(fetchOverrides, 60000)
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [])
-
-  //Check if its the rewards cycle (or operator-forced override)
-  useEffect(() => {
-    let cancelled = false
-    let liveOverride = retroCycleOverride
 
     const update = () => {
       if (cancelled) return
-      setRewardVotingActive(isRewardsCycle(new Date(), liveOverride))
-    }
-
-    const fetchOverride = () => {
-      fetch('/api/operator/retro-cycle-status')
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (cancelled || !data) return
-          liveOverride = !!data.enabled
-          update()
-        })
-        .catch(() => {})
+      setRewardVotingActive(isRewardsCycle(new Date(), IS_REWARDS_CYCLE))
     }
 
     update()
-    fetchOverride()
     const updateInterval = setInterval(update, 30000)
-    const overrideInterval = setInterval(fetchOverride, 60000)
     return () => {
       cancelled = true
       clearInterval(updateInterval)
-      clearInterval(overrideInterval)
     }
-  }, [retroCycleOverride])
+  }, [])
 
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
