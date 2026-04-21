@@ -720,6 +720,40 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             <LargeAmountExchangeOnrampNotice walletAddress={address} />
           )}
 
+        {/* Payment-method recommendation — shown right before the Buy button so
+            users see it at the moment they're about to choose how to pay. */}
+        <div
+          data-testid="cbonramp-debit-card-tip"
+          className="bg-emerald-500/10 border border-emerald-400/30 rounded-lg p-4"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-6 h-6 bg-emerald-500/20 rounded-full flex items-center justify-center mt-0.5">
+              <svg
+                className="w-3.5 h-3.5 text-emerald-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-emerald-200 font-semibold text-sm mb-1">
+                Tip: Use a debit card for the best results
+              </p>
+              <p className="text-emerald-100/80 text-xs leading-relaxed">
+                In our experience, bank-issued debit cards have the highest success rate.
+                Credit cards, prepaid cards, and virtual cards are not supported by Coinbase.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Purchase button */}
         <PrivyWeb3Button
           label={
@@ -761,12 +795,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           <p className="text-gray-300 text-xs text-center leading-relaxed">
             You'll be redirected to Coinbase to complete your purchase securely.
           </p>
-          <div className="border-t border-white/5">
-            <p className="text-gray-400 text-xs text-center leading-relaxed italic">
-              Coinbase only accepts bank-issued debit cards and does not accept credit cards,
-              prepaid cards, or virtual cards at this time.
-            </p>
-          </div>
         </div>
       </div>
     </div>
