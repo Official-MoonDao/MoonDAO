@@ -47,6 +47,7 @@ import { getBudget, getPayouts, computeRewardPercentages } from '@/lib/utils/rew
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
+import Modal from '@/components/layout/Modal'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
@@ -115,6 +116,13 @@ export function ProjectRewards({
   const [proposalEdit, setProposalEdit] = useState(false)
   const [proposalDistribution, setProposalDistribution] = useState<{ [key: string]: number }>({})
   const [originalProposalDistribution, setOriginalProposalDistribution] = useState<{ [key: string]: number }>({})
+
+  // Equal-weight confirmation modal. We open this when a member tries to
+  // submit a vote that gives every scored proposal the exact same weight,
+  // since mathematically that produces the same outcome as not voting at
+  // all (no signal about which projects matter more). The user can either
+  // back out and re-allocate, or acknowledge and continue anyway.
+  const [equalWarningOpen, setEqualWarningOpen] = useState(false)
 
   // ---------------------------------------------------------------------------
   // Valid project-id sets used to scope distributions / proposal allocations
@@ -617,7 +625,10 @@ export function ProjectRewards({
     }
   }
 
-  const handleProposalSubmit = async (contract: any) => {
+  const handleProposalSubmit = async (
+    contract: any,
+    opts: { bypassEqualCheck?: boolean } = {}
+  ) => {
     // Scope to the proposals currently visible in this voting tab, then
     // compare against the (also-scoped) original to keep the edit-detection
     // honest if the loaded row contained orphan keys from a previous cycle.
@@ -647,6 +658,19 @@ export function ProjectRewards({
         style: toastStyle,
       })
       return
+    }
+    // If every scored proposal gets the same weight, the vote is
+    // mathematically a no-op — surface a confirmation prompt before
+    // burning a transaction on it. The modal calls back into this
+    // function with `bypassEqualCheck: true` if the user opts to proceed.
+    if (!opts.bypassEqualCheck) {
+      const nonZeroValues = Object.values(scopedProposalDistribution).filter(
+        (v) => v > 0
+      )
+      if (nonZeroValues.length > 1 && new Set(nonZeroValues).size === 1) {
+        setEqualWarningOpen(true)
+        return
+      }
     }
     // Exclude projects where the user is the author (they cannot vote on their own proposal)
     const userAddr = userAddress?.toLowerCase()
@@ -1525,6 +1549,51 @@ export function ProjectRewards({
           </div>
         </ContentLayout>
       </Container>
+
+      {equalWarningOpen && (
+        <Modal
+          id="equal-weight-warning-modal"
+          setEnabled={(open) => {
+            if (!open) setEqualWarningOpen(false)
+          }}
+          size="md"
+        >
+          <div className="flex flex-col gap-5 text-sm p-1 sm:p-2">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-lg sm:text-xl font-GoodTimes text-white tracking-wider">
+                Hey! A quick gut-check
+              </h2>
+              <p className="text-gray-300 leading-relaxed">
+                Try to really think about your allocation for proposals. We
+                noticed you gave the same weight to each project — this is
+                the same as not voting at all. Try to really consider where
+                MoonDAO&apos;s funds are best spent!
+              </p>
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setEqualWarningOpen(false)}
+                className="px-4 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white text-sm font-RobotoMono transition-colors"
+              >
+                Adjust My Vote
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEqualWarningOpen(false)
+                  handleProposalSubmit(proposalContract, {
+                    bypassEqualCheck: true,
+                  })
+                }}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-RobotoMono shadow"
+              >
+                Continue Anyway
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </section>
   )
 }
