@@ -128,7 +128,7 @@ export async function fetchOverviewLeaderboard(
       }
     }
 
-    return buildLeaderboard(aggregated, citizenMap as any, limit)
+    return buildLeaderboard(aggregated, citizenMap, limit)
   } catch (error) {
     console.error('[fetchOverviewLeaderboard] fatal error:', error)
     return []
