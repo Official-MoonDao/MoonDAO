@@ -4,7 +4,9 @@ import {
   DEFAULT_CHAIN_V5,
   JBV5_CONTROLLER_ADDRESS,
   JOBS_TABLE_ADDRESSES,
+  JOBS_TABLE_NAMES,
   MARKETPLACE_TABLE_ADDRESSES,
+  MARKETPLACE_TABLE_NAMES,
   MISSION_TABLE_ADDRESSES,
   MISSION_TABLE_NAMES,
   PROJECT_TABLE_ADDRESSES,
@@ -256,31 +258,60 @@ export async function getStaticProps() {
         projectTableNameResolved || PROJECT_TABLE_NAMES[chainSlug] || ''
       const missionTableName =
         missionTableNameResolved || MISSION_TABLE_NAMES[chainSlug] || ''
+      // Marketplace and Jobs tables previously had no fallback. When the
+      // on-chain `getTableName()` read fails (RPC blip / ISR build hiccup),
+      // queries silently returned empty arrays — the dashboard would say
+      // "No open positions" and "No new listings" even with live data.
+      const marketplaceTableNameWithFallback =
+        marketplaceTableName || MARKETPLACE_TABLE_NAMES[chainSlug] || ''
+      const jobTableNameWithFallback =
+        jobTableName || JOBS_TABLE_NAMES[chainSlug] || ''
 
       const blockedIds = BLOCKED_CITIZENS.size > 0
         ? ` WHERE id NOT IN (${Array.from(BLOCKED_CITIZENS).join(',')})`
         : ''
       const [citizens, citizensCountResult, listings, jobs, teams, projects, missionRows] =
         await Promise.all([
-          citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 8`) : Promise.resolve([]),
-          citizenTableName ? queryTable(chain, `SELECT COUNT(*) as count FROM ${citizenTableName}${blockedIds}`) : Promise.resolve([{ count: 0 }]),
-        marketplaceTableName ? queryTable(
+          citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 8`).catch((error) => {
+            console.error('Error querying citizen table:', error)
+            return []
+          }) : Promise.resolve([]),
+          citizenTableName ? queryTable(chain, `SELECT COUNT(*) as count FROM ${citizenTableName}${blockedIds}`).catch((error) => {
+            console.error('Error querying citizen count:', error)
+            return [{ count: 0 }]
+          }) : Promise.resolve([{ count: 0 }]),
+        marketplaceTableNameWithFallback ? queryTable(
           chain,
-          `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${Math.floor(
+          `SELECT * FROM ${marketplaceTableNameWithFallback} WHERE (startTime = 0 OR startTime <= ${Math.floor(
             Date.now() / 1000
           )}) AND (endTime = 0 OR endTime >= ${Math.floor(
             Date.now() / 1000
           )}) ORDER BY id DESC LIMIT 5`
-        ) : Promise.resolve([]),
-        jobTableName ? queryTable(
+        ).catch((error) => {
+          console.error('Error querying marketplace table:', error)
+          return []
+        }) : Promise.resolve([]),
+        jobTableNameWithFallback ? queryTable(
           chain,
-          `SELECT * FROM ${jobTableName} WHERE (endTime = 0 OR endTime >= ${Math.floor(
+          `SELECT * FROM ${jobTableNameWithFallback} WHERE (endTime = 0 OR endTime >= ${Math.floor(
             Date.now() / 1000
           )}) ORDER BY id DESC LIMIT 5`
-        ) : Promise.resolve([]),
-        teamTableName ? queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`) : Promise.resolve([]),
-        projectTableName ? queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`) : Promise.resolve([]),
-        missionTableName ? queryTable(chain, `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 1`) : Promise.resolve([]),
+        ).catch((error) => {
+          console.error('Error querying job board table:', error)
+          return []
+        }) : Promise.resolve([]),
+        teamTableName ? queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`).catch((error) => {
+          console.error('Error querying team table:', error)
+          return []
+        }) : Promise.resolve([]),
+        projectTableName ? queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`).catch((error) => {
+          console.error('Error querying project table:', error)
+          return []
+        }) : Promise.resolve([]),
+        missionTableName ? queryTable(chain, `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 1`).catch((error) => {
+          console.error('Error querying mission table:', error)
+          return []
+        }) : Promise.resolve([]),
       ])
 
       const citizensCount = Number(citizensCountResult?.[0]?.count ?? 0)
@@ -364,12 +395,38 @@ export async function getStaticProps() {
     newestTeams = teams
     allProjects = projects
 
-    // Process missions data - simplified to just pass basic data to client
+    // Process missions data - simplified to just pass basic data to client.
+    // Always populate `missions` + `featuredMissionData` from the table row so
+    // the dashboard can render *something* even when JB controller / IPFS
+    // calls fail. The client fills in richer details after hydration.
     if (missionRows && missionRows.length > 0) {
       const filteredMissionRows = missionRows.filter((mission: any) => {
         return !BLOCKED_MISSIONS.has(mission.id) && mission && mission.id
       })
       if (filteredMissionRows.length > 0 && filteredMissionRows[0]?.projectId) {
+        const baseRow = filteredMissionRows[0]
+        const fallbackMission = {
+          id: baseRow.id,
+          teamId: baseRow.teamId,
+          projectId: baseRow.projectId,
+          fundingGoal: baseRow.fundingGoal || 0,
+          deadline: baseRow.deadline || null,
+          stage: baseRow.stage || 1,
+          metadata: {
+            name: 'Featured Mission',
+            description: 'Loading mission details...',
+            image: '/assets/placeholder-mission.png',
+          },
+        }
+
+        // Seed with the basic row first so the section renders even if any
+        // of the downstream calls below fail.
+        missions = [fallbackMission]
+        featuredMissionData = {
+          mission: fallbackMission,
+          projectMetadata: fallbackMission.metadata,
+        }
+
         try {
           const chain = DEFAULT_CHAIN_V5
           const jbV5ControllerContract = getContract({
@@ -382,52 +439,36 @@ export async function getStaticProps() {
           const metadataURI = await readContract({
             contract: jbV5ControllerContract,
             method: 'uriOf' as string,
-            params: [filteredMissionRows[0].projectId],
+            params: [baseRow.projectId],
           }).catch((error) => {
-            console.error('Failed to fetch featured mission metadata:', error)
+            console.error('Failed to fetch featured mission metadata URI:', error)
             return null
           })
 
           if (metadataURI) {
-            const metadataRes = await fetch(getIPFSGateway(metadataURI))
-            const metadata = await metadataRes.json()
-
-            missions = [
-              {
-                id: filteredMissionRows[0].id,
-                teamId: filteredMissionRows[0].teamId,
-                projectId: filteredMissionRows[0].projectId,
-                fundingGoal: filteredMissionRows[0].fundingGoal || 0,
-                deadline: filteredMissionRows[0].deadline || null,
-                stage: filteredMissionRows[0].stage || 1,
-                metadata: metadata,
-              },
-            ]
-
-            // Pass basic featured mission data - let client fetch details
-            featuredMissionData = {
-              mission: missions[0],
-              projectMetadata: metadata,
+            try {
+              const metadataRes = await fetch(getIPFSGateway(metadataURI))
+              if (metadataRes.ok) {
+                const metadata = await metadataRes.json()
+                const enrichedMission = {
+                  ...fallbackMission,
+                  metadata,
+                }
+                missions = [enrichedMission]
+                featuredMissionData = {
+                  mission: enrichedMission,
+                  projectMetadata: metadata,
+                }
+              }
+            } catch (ipfsError) {
+              console.warn(
+                'Failed to fetch featured mission metadata from IPFS:',
+                ipfsError
+              )
             }
           }
         } catch (error) {
-          console.warn('Failed to fetch featured mission metadata:', error)
-          // Fallback to basic data without metadata
-          missions = [
-            {
-              id: filteredMissionRows[0].id,
-              teamId: filteredMissionRows[0].teamId,
-              projectId: filteredMissionRows[0].projectId,
-              fundingGoal: filteredMissionRows[0].fundingGoal || 0,
-              deadline: filteredMissionRows[0].deadline || null,
-              stage: filteredMissionRows[0].stage || 1,
-              metadata: {
-                name: 'Featured Mission',
-                description: 'Loading mission details...',
-                image: '/assets/placeholder-mission.png',
-              },
-            },
-          ]
+          console.warn('Failed to enrich featured mission metadata:', error)
         }
       }
     }

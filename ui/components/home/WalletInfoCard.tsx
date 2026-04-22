@@ -203,58 +203,60 @@ export default function WalletInfoCard({
       {/* Balances */}
       <div className="space-y-3 mb-4 min-w-0">
         {/* $MOONEY Balance */}
-        <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-2 min-w-0">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Image
-                src="/coins/MOONEY.png"
-                alt="MOONEY"
-                width={20}
-                height={20}
-                className="rounded-full flex-shrink-0"
-              />
-              <span className="text-sm text-gray-400">$MOONEY</span>
-            </div>
+        <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0 flex flex-col">
+          <div className="flex items-center gap-2 min-w-0">
+            <Image
+              src="/coins/MOONEY.png"
+              alt="MOONEY"
+              width={20}
+              height={20}
+              className="rounded-full flex-shrink-0"
+            />
+            <span className="text-sm text-gray-400 truncate">$MOONEY</span>
+          </div>
+          <div className="mt-1 mb-3 min-h-[1.75rem] flex items-center">
             {isUnlockedLoading ? (
               <LoadingSpinner width="w-4" height="h-4" className="flex-shrink-0" />
             ) : (
-              <span className="text-white font-semibold text-right min-w-0 break-all">
+              <span className="text-white font-semibold text-lg break-all">
                 {formatToken(unlockedMooney)}
               </span>
             )}
           </div>
           <NavLink
             href="/get-mooney"
-            className="block w-full text-center py-1.5 px-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-300 text-xs font-medium transition-all"
+            className="block w-full text-center py-1.5 px-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-300 text-xs font-medium transition-all mt-auto"
           >
             Get $MOONEY
           </NavLink>
         </div>
 
         {/* Locked MOONEY */}
-        <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-2 min-w-0">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Image
-                src="/assets/vmooney-shield.svg"
-                alt="Locked"
-                width={20}
-                height={20}
-                className="flex-shrink-0"
-              />
-              <span className="text-sm text-gray-400">$vMOONEY (Locked)</span>
-            </div>
+        <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0 flex flex-col">
+          <div className="flex items-center gap-2 min-w-0">
+            <Image
+              src="/assets/vmooney-shield.svg"
+              alt="Locked"
+              width={20}
+              height={20}
+              className="flex-shrink-0"
+            />
+            <span className="text-sm text-gray-400 truncate">
+              $vMOONEY (Locked)
+            </span>
+          </div>
+          <div className="mt-1 mb-3 min-h-[1.75rem] flex items-center">
             {isLockedLoading ? (
               <LoadingSpinner width="w-4" height="h-4" className="flex-shrink-0" />
             ) : (
-              <span className="text-white font-semibold text-right min-w-0 break-all">
+              <span className="text-white font-semibold text-lg break-all">
                 {formatToken(lockedMooney)}
               </span>
             )}
           </div>
           <NavLink
             href="/lock"
-            className="block w-full text-center py-1.5 px-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-medium transition-all"
+            className="block w-full text-center py-1.5 px-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-medium transition-all mt-auto"
           >
             Lock $MOONEY
           </NavLink>

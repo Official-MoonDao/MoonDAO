@@ -3,6 +3,7 @@ import { add, differenceInDays, formatDistanceToNow, fromUnixTime } from 'date-f
 import Image from 'next/image'
 import Link from 'next/link'
 import { STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
+import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { Project } from '@/lib/project/useProjectData'
 import { AddressLink } from './AddressLink'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
@@ -72,7 +73,15 @@ export default function ProposalInfo({
   /** Dashboard feed: match newsletter typography; no inner link (card is wrapped by Link). */
   feedStyle?: boolean
 }) {
-  const titleText = `MDP-${project.MDP}: ${project.name}`
+  // Resolve the title the same way the projects page does:
+  //   1. Tableland `project.name` (when it's a real title, not "Untitled")
+  //   2. `proposalJSON.title` (from IPFS)
+  //   3. First meaningful H1 in the proposal body
+  //   4. "Untitled Project" fallback
+  // This avoids `MDP-X: undefined` / `MDP-X: Untitled` on the dashboard for
+  // proposals whose Tableland row hasn't been populated yet.
+  const displayName = getProjectDisplayName(project, proposalJSON)
+  const titleText = `MDP-${project.MDP}: ${displayName}`
 
   return (
     <div className="flex min-w-0 flex-col gap-x-4 sm:flex-row">

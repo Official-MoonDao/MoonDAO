@@ -131,9 +131,17 @@ export default function Quest({
   const fetchHasClaimed = useCallback(
     async (polling = false) => {
       const verifierId = quest.verifier?.verifierId
+      // Guard: a 42-char `0x...` address is required. An empty / malformed
+      // address makes viem throw deep in its ABI encoder with messages like
+      // "Cannot read properties of undefined (reading 'buffer')".
+      const isValidAddress =
+        typeof userAddress === 'string' &&
+        userAddress.startsWith('0x') &&
+        userAddress.length === 42
+
       if (
         xpManagerContract &&
-        userAddress &&
+        isValidAddress &&
         verifierId !== undefined &&
         verifierId !== null
       ) {
@@ -142,18 +150,29 @@ export default function Quest({
           setIsCheckingClaimed(true)
         }
 
-        const claimed = await readContract({
-          contract: xpManagerContract,
-          method: 'hasClaimedFromVerifier' as string,
-          params: [userAddress, verifierId],
-        })
+        try {
+          const claimed = await readContract({
+            contract: xpManagerContract,
+            method: 'hasClaimedFromVerifier' as string,
+            params: [userAddress, BigInt(verifierId)],
+          })
 
-        setHasClaimed(Boolean(claimed))
-        // Always clear checking status when not polling, regardless of result
-        if (!polling) {
-          setIsCheckingClaimed(false)
+          setHasClaimed(Boolean(claimed))
+          if (!polling) {
+            setIsCheckingClaimed(false)
+          }
+          return Boolean(claimed)
+        } catch (err) {
+          // Common causes: contract not deployed on current chain, RPC
+          // returned `0x`, decode error, network blip. Treat as "not claimed"
+          // so the UI stays usable instead of crashing the page.
+          console.error('Error reading hasClaimedFromVerifier:', err)
+          setHasClaimed(false)
+          if (!polling) {
+            setIsCheckingClaimed(false)
+          }
+          return false
         }
-        return Boolean(claimed)
       } else {
         // Always clear checking status when not polling
         if (!polling) {
@@ -509,28 +528,32 @@ export default function Quest({
     async function fetchXpAmount() {
       setIsLoadingXpAmount(true)
 
-      if (quest.verifier.type === 'staged') {
-        // For staged quests, show total claimable XP instead of fixed amount
-        await fetchStagedProgress()
-        setIsLoadingXpAmount(false)
-        return
-      }
+      try {
+        if (quest.verifier.type === 'staged') {
+          // For staged quests, show total claimable XP instead of fixed amount
+          await fetchStagedProgress()
+          return
+        }
 
-      if (quest.verifier.xpPerClaim) {
-        setXpAmount(quest.verifier.xpPerClaim)
-        setIsLoadingXpAmount(false)
-        return
-      }
+        if (quest.verifier.xpPerClaim) {
+          setXpAmount(quest.verifier.xpPerClaim)
+          return
+        }
 
-      if (verifierContract && userAddress) {
-        const xpAmount = await readContract({
-          contract: verifierContract,
-          method: 'xpPerClaim' as string,
-          params: [],
-        })
-        setXpAmount(Number(xpAmount))
+        if (verifierContract && userAddress) {
+          const xpAmount = await readContract({
+            contract: verifierContract,
+            method: 'xpPerClaim' as string,
+            params: [],
+          })
+          setXpAmount(Number(xpAmount))
+        }
+      } catch (err) {
+        console.error('Error fetching XP amount:', err)
+        setXpAmount(0)
+      } finally {
+        setIsLoadingXpAmount(false)
       }
-      setIsLoadingXpAmount(false)
     }
 
     fetchXpAmount()

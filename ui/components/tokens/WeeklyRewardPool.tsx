@@ -10,8 +10,15 @@ import Link from 'next/link'
 import { useContext, useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract, prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { arbitrum, base, ethereum, sepolia, arbitrumSepolia, Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
+import {
+  arbitrum,
+  base,
+  ethereum,
+  sepolia,
+  arbitrumSepolia,
+  Chain,
+} from '@/lib/rpc/chains'
 import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -22,6 +29,42 @@ import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * `readContract` occasionally fails with
+ * `TypeError: Cannot read properties of undefined (reading 'buffer')` when
+ * the underlying RPC returns a malformed/empty response (typically Infura
+ * batch hiccups). Retry on that specific failure mode so a transient blip
+ * on a single chain (most often Arbitrum) doesn't drop its row from the
+ * weekly reward pool data — that was the root cause of the dashboard
+ * showing "0 check-ins" while the user was actually checked in.
+ */
+async function safeRead<T>(
+  fn: () => Promise<T>,
+  label: string,
+  retries = 2,
+  baseDelay = 250
+): Promise<T | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (err: any) {
+      const isLast = attempt === retries
+      const isBufferDecodeError =
+        err?.message?.includes("reading 'buffer'") ||
+        err?.message?.includes('decodeAbiParameters')
+      if (!isLast && isBufferDecodeError) {
+        await sleep(baseDelay * Math.pow(2, attempt))
+        continue
+      }
+      console.error(`safeRead [${label}] failed:`, err)
+      return null
+    }
+  }
+  return null
+}
 
 export default function WeeklyRewardPool() {
   const account = useActiveAccount()
@@ -116,11 +159,16 @@ export default function WeeklyRewardPool() {
                 abi: FeeHook.abi as any,
                 chain,
               })
-              return readContract({
-                contract,
-                method: 'estimateFees',
-                params: [address],
-              }).catch(() => BigNumber.from(0))
+              const estimate = await safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'estimateFees',
+                    params: [address],
+                  }),
+                `${slug}.estimateFees`
+              )
+              return BigNumber.from(estimate?.toString() || '0')
             })
           )
         ).reduce((acc, est) => acc.add(est || BigNumber.from(0)), BigNumber.from(0))
@@ -128,6 +176,7 @@ export default function WeeklyRewardPool() {
         setEstimatedFees(ethers.utils.formatEther(totalEstimated))
       } catch (e) {
         console.error('Error fetching estimates:', e)
+        setEstimatedFees('0')
       }
     }
 
@@ -138,10 +187,15 @@ export default function WeeklyRewardPool() {
     if (!address) return
 
     const fetchStatus = async () => {
-      try {
-        const raw = await Promise.all(
-          chains.map(async (chain) => {
-            const slug = getChainSlug(chain)
+      // Each chain is fetched independently. A single chain failure (e.g.
+      // public RPC hiccup or rate limit) used to reject the whole Promise.all
+      // and leave `feeData` empty, which surfaced as "No fee data available"
+      // when the user tried to check in. Isolate failures per-chain so the
+      // remaining chains still populate.
+      const raw = await Promise.all(
+        chains.map(async (chain) => {
+          const slug = getChainSlug(chain)
+          try {
             const hookAddress = FEE_HOOK_ADDRESSES[slug]
             if (!hookAddress) return null
 
@@ -153,80 +207,121 @@ export default function WeeklyRewardPool() {
             })
 
             const [start, last, count, vMooneyAddress] = await Promise.all([
-              readContract({ contract, method: 'weekStart', params: [] }),
-              readContract({
-                contract,
-                method: 'lastCheckIn',
-                params: [address],
-              }),
-              readContract({
-                contract,
-                method: 'getCheckedInCount',
-                params: [],
-              }),
-              readContract({
-                contract,
-                method: 'vMooneyAddress',
-                params: [],
-              }),
+              safeRead(
+                () => readContract({ contract, method: 'weekStart', params: [] }),
+                `${slug}.weekStart`
+              ),
+              safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'lastCheckIn',
+                    params: [address],
+                  }),
+                `${slug}.lastCheckIn`
+              ),
+              safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'getCheckedInCount',
+                    params: [],
+                  }),
+                `${slug}.getCheckedInCount`
+              ),
+              safeRead(
+                () =>
+                  readContract({
+                    contract,
+                    method: 'vMooneyAddress',
+                    params: [],
+                  }),
+                `${slug}.vMooneyAddress`
+              ),
             ])
+
+            // Drop the chain only if the truly required reads are missing
+            // after retries. Previously a single rejected read would null
+            // out the whole chain, which is what was making Arbitrum's
+            // check-in count silently disappear.
+            if (start == null || vMooneyAddress == null) {
+              console.warn(
+                `Skipping ${slug}: missing required FeeHook reads (start=${start}, vMooneyAddress=${vMooneyAddress})`
+              )
+              return null
+            }
 
             const vMooneyContract = getContract({
               client,
-              address: vMooneyAddress,
+              address: vMooneyAddress as `0x${string}`,
               abi: ERC20ABI as any,
               chain,
             })
 
-            const vMooneyBalance = await readContract({
-              contract: vMooneyContract,
-              method: 'balanceOf',
-              params: [address],
-            })
+            const vMooneyBalance = await safeRead(
+              () =>
+                readContract({
+                  contract: vMooneyContract,
+                  method: 'balanceOf',
+                  params: [address],
+                }),
+              `${slug}.balanceOf`
+            )
+
+            const balance = (vMooneyBalance as bigint | null) ?? BigInt(0)
+            const safeLast = (last as bigint | null) ?? BigInt(0)
+            const safeCount = (count as bigint | null) ?? BigInt(0)
+            const hasVMooney = balance > BigInt(0)
 
             return {
               chain,
               slug,
               contract,
-              start,
-              last,
-              count,
-              vMooneyBalance,
-              checkedInOnChain: last === start,
+              start: start as bigint,
+              last: safeLast,
+              count: safeCount,
+              vMooneyBalance: balance,
+              hasVMooney,
+              checkedInOnChain: safeLast === (start as bigint),
             }
-          })
-        )
+          } catch (err) {
+            console.error(`Error fetching check-in status for ${slug}:`, err)
+            return null
+          }
+        })
+      )
 
-        const results = raw.filter((r) => r) as Array<{
-          chain: any
-          slug: string
-          contract: any
-          start: bigint
-          last: bigint
-          count: bigint
-          vMooneyBalance: bigint
-          checkedInOnChain: boolean
-        }>
+      const results = raw.filter((r) => r) as Array<{
+        chain: any
+        slug: string
+        contract: any
+        start: bigint
+        last: bigint
+        count: bigint
+        vMooneyBalance: bigint
+        hasVMooney: boolean
+        checkedInOnChain: boolean
+      }>
 
-        setFeeData(results)
+      setFeeData(results)
 
-        // aggregate counts & allChecked
-        const { totalCount, allChecked } = results.reduce(
-          (acc, { last, start, count }) => {
-            acc.totalCount += Number(count || BigInt(0))
-            if (last !== start) {
-              acc.allChecked = false
-            }
-            return acc
-          },
-          { totalCount: 0, allChecked: true }
-        )
+      // Only chains where the user actually holds vMOONEY are eligible for
+      // check-in (the FeeHook reverts otherwise). The "checked in" state
+      // should therefore only consider those chains; otherwise a user who
+      // has vMOONEY on one chain (e.g. Arbitrum) and is already checked in
+      // there would be incorrectly shown as "not checked in" because they
+      // have a 0 balance on the other chains.
+      const eligibleChains = results.filter((r) => r.hasVMooney)
+      const totalCount = results.reduce(
+        (acc, { count }) => acc + Number(count || BigInt(0)),
+        0
+      )
+      const allChecked =
+        eligibleChains.length > 0 &&
+        eligibleChains.every(({ checkedInOnChain }) => checkedInOnChain)
 
-        setCheckedInCount(totalCount)
-        setIsCheckedIn(allChecked)
-      } catch (err) {
-        console.error('Error fetching check‑in status:', err)
-      }
+      setCheckedInCount(totalCount)
+      setIsCheckedIn(allChecked)
     }
 
     fetchStatus()
@@ -245,6 +340,8 @@ export default function WeeklyRewardPool() {
 
       const currentChain = contextSelectedChain
       let transactionsSent = 0
+      let alreadyCheckedInCount = 0
+      let eligibleChainsCount = 0
 
       const waitForChainSwitch = async (targetChainId: number, maxWait = 5000) => {
         const startTime = Date.now()
@@ -259,8 +356,12 @@ export default function WeeklyRewardPool() {
       }
 
       for (const data of feeData) {
-        if (data.checkedInOnChain) continue
         if (!data.vMooneyBalance || data.vMooneyBalance === BigInt(0)) {
+          continue
+        }
+        eligibleChainsCount++
+        if (data.checkedInOnChain) {
+          alreadyCheckedInCount++
           continue
         }
 
@@ -365,9 +466,22 @@ export default function WeeklyRewardPool() {
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
+        if (alreadyCheckedInCount + transactionsSent === eligibleChainsCount) {
+          setIsCheckedIn(true)
+        }
+      } else if (eligibleChainsCount === 0) {
+        toast.error(
+          'No vMOONEY detected on Ethereum, Arbitrum, or Base. Lock MOONEY to participate.',
+          { style: toastStyle }
+        )
+      } else if (alreadyCheckedInCount === eligibleChainsCount) {
+        toast(
+          "You're already checked in for this week. Rewards are distributed automatically each week.",
+          { style: toastStyle }
+        )
         setIsCheckedIn(true)
       } else {
-        toast.error('No check-ins needed. You may already be checked in or have no vMOONEY.', {
+        toast.error('No check-ins were submitted. Please try again.', {
           style: toastStyle,
         })
       }
@@ -430,16 +544,23 @@ export default function WeeklyRewardPool() {
         {/* Action Button */}
         <div className="space-y-4">
           {!address || (VMOONEYBalance && VMOONEYBalance > 0) ? (
-            <PrivyWeb3Button
-              label={isCheckedIn ? 'Already Checked In' : 'Check In & Claim Reward'}
-              action={handleCheckIn}
-              isDisabled={isCheckedIn}
-              className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-lg whitespace-nowrap ${
-                isCheckedIn
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 cursor-not-allowed shadow-green-500/25'
-                  : 'bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 hover:from-blue-600 hover:via-purple-700 hover:to-pink-700 shadow-purple-500/25'
-              }`}
-            />
+            <div className="space-y-2">
+              <PrivyWeb3Button
+                label={isCheckedIn ? 'Checked In ✓' : 'Check In This Week'}
+                action={handleCheckIn}
+                isDisabled={isCheckedIn}
+                className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-lg truncate ${
+                  isCheckedIn
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 cursor-not-allowed shadow-green-500/25'
+                    : 'bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 hover:from-blue-600 hover:via-purple-700 hover:to-pink-700 shadow-purple-500/25'
+                }`}
+              />
+              {isCheckedIn && (
+                <p className="text-center text-xs text-green-300/80">
+                  Rewards auto-distribute weekly
+                </p>
+              )}
+            </div>
           ) : (
             <Link
               href="/lock"

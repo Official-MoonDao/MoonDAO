@@ -6,9 +6,6 @@ on:
     - cron: '0 21 * * 4'
   workflow_dispatch:
 
-env:
-  FOUNDRY_PROFILE: ci
-
 jobs:
   distribute:
     runs-on: ubuntu-latest
@@ -44,8 +41,10 @@ jobs:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: |
           cd fee-hook
-          # sepolia, mainnet, arbitrum, and polygon
-          CHAINS=(11155111 1 42161 137)
+          # Chains with a deployed FeeHook: sepolia, mainnet, arbitrum, base.
+          # (Polygon was previously listed but has no FeeHook deployment, which
+          # caused the script to revert. Base was missing despite having one.)
+          CHAINS=(11155111 1 42161 8453)
           for CHAIN in "${CHAINS[@]}"; do
             forge script script/DistributeFees.s.sol --rpc-url "https://${CHAIN}.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }}" --broadcast --via-ir -vvvv || true
           done
