@@ -15,6 +15,7 @@ type StandardDetailCardProps = {
   price?: string
   currency?: string
   isCitizen?: boolean
+  hideParagraphOnMobile?: boolean
 }
 
 export default function StandardDetailCard({
@@ -27,6 +28,7 @@ export default function StandardDetailCard({
   price,
   currency,
   isCitizen = false,
+  hideParagraphOnMobile = false,
 }: StandardDetailCardProps) {
   const router = useRouter()
   const CardContent = (
@@ -49,7 +51,7 @@ export default function StandardDetailCard({
               {title}
             </h1>
             <div className="break-words text-left mb-3">{subheader}</div>
-            <p className="text-sm text-slate-300 leading-relaxed break-words text-left">
+            <p className={`text-sm text-slate-300 leading-relaxed break-words text-left${hideParagraphOnMobile ? ' hidden sm:block' : ''}`}>
               {paragraph && paragraph?.length > 200 ? paragraph.slice(0, 200) + '...' : paragraph}
             </p>
           </div>

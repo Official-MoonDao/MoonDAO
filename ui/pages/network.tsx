@@ -158,6 +158,7 @@ export default function Network({
             paragraph={nft.metadata.description}
             image={nft.metadata.image}
             link={link}
+            hideParagraphOnMobile={isCitizensTab}
           />
         </div>
       )

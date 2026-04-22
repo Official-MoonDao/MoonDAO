@@ -16,9 +16,9 @@ export default function PaginationButtons({
   return (
     <div
       id="pagination-container"
-      className="w-full mb-5 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl p-4 md:p-6"
+      className="w-full mb-5 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl p-2 sm:p-4 md:p-6"
     >
-      <div className="flex font-GoodTimes text-xl md:text-2xl flex-row justify-center items-center gap-4 md:gap-8">
+      <div className="flex font-GoodTimes text-base sm:text-xl md:text-2xl flex-row justify-center items-center gap-2 sm:gap-4 md:gap-8">
         <button
           onClick={() => {
             if (pageIdx > 1) {
@@ -26,7 +26,7 @@ export default function PaginationButtons({
             }
           }}
           className={`
-            flex-shrink-0 w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-xl
+            flex-shrink-0 w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center rounded-xl
             transition-all duration-200 shadow-lg
             ${
               pageIdx === 1
@@ -47,7 +47,7 @@ export default function PaginationButtons({
         </button>
         <div
           id="page-number"
-          className="px-4 md:px-6 py-2 bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-xl font-bold text-white whitespace-nowrap"
+          className="px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-sm border border-white/10 rounded-xl font-bold text-white whitespace-nowrap"
         >
           {label || 'Page'} {pageIdx} of {maxPage}
         </div>
@@ -58,7 +58,7 @@ export default function PaginationButtons({
             }
           }}
           className={`
-            flex-shrink-0 w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-xl
+            flex-shrink-0 w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center rounded-xl
             transition-all duration-200 shadow-lg
             ${
               pageIdx === maxPage
