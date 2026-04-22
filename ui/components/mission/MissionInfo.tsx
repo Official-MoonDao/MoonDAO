@@ -1,14 +1,30 @@
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import MissionActivityList from './MissionActivityList'
 import MissionPayRedeem from './MissionPayRedeem'
 import MissionSocialLinks from './MissionSocialLinks'
 import MissionTimelineChart from './MissionTimelineChart'
 import MissionTokenInfo from './MissionTokenInfo'
+import OverviewLeaderboardPreview from './OverviewLeaderboardPreview'
 
-export type MissionInfoTabType = 'activity' | 'about' | 'tokenomics'
+export type MissionInfoTabType =
+  | 'activity'
+  | 'about'
+  | 'tokenomics'
+  | 'leaderboard'
+
+/** Human-readable label for each tab. We map explicitly so we can use a
+ *  multi-word label (e.g. "Fly with Frank") for the leaderboard tab without
+ *  losing the title-cased fallback for the other tabs. */
+const TAB_LABELS: Record<MissionInfoTabType, string> = {
+  about: 'About',
+  leaderboard: 'Fly with Frank',
+  activity: 'Activity',
+  tokenomics: 'Tokenomics',
+}
 
 function MissionInfoTab({
   tab,
@@ -22,14 +38,14 @@ function MissionInfoTab({
   const isActive = currentTab === tab
   return (
     <button
-      className={`relative px-5 py-3 text-base md:text-lg font-semibold tracking-wide transition-all duration-200 ${
+      className={`relative px-5 py-3 text-base md:text-lg font-semibold tracking-wide whitespace-nowrap transition-all duration-200 ${
         isActive
           ? 'text-white'
           : 'text-gray-500 hover:text-gray-300'
       }`}
       onClick={() => setTab(tab)}
     >
-      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+      {TAB_LABELS[tab]}
       {isActive && (
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[2px] bg-indigo-400 rounded-full" />
       )}
@@ -74,19 +90,53 @@ export default function MissionInfo({
   recommendedChain = null,
   fundingChainBalances = null,
   fundingCompareEnabled = false,
+  /** Pre-fetched $OVERVIEW leaderboard for the Overview Mission (id 4).
+   *  When provided we surface a dedicated Leaderboard tab; for every other
+   *  mission this is `undefined` and the tab is hidden. */
+  _overviewLeaderboard,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
 
+  const showLeaderboardTab = Array.isArray(_overviewLeaderboard)
+
+  /** Tabs in the order they should appear in the bar. The leaderboard slot
+   *  sits right after "about" so the most actionable content for mission 4
+   *  shows up early — but it's omitted entirely for missions that don't
+   *  ship leaderboard data. */
+  const visibleTabs = useMemo<MissionInfoTabType[]>(
+    () =>
+      showLeaderboardTab
+        ? ['about', 'leaderboard', 'activity', 'tokenomics']
+        : ['about', 'activity', 'tokenomics'],
+    [showLeaderboardTab]
+  )
+
+  /** Resolve the initial tab from `?tab=`, falling back to "about" if the
+   *  URL specifies a tab that isn't valid for this mission (e.g. someone
+   *  shares a `?tab=leaderboard` link to a non-mission-4 page). */
+  const resolveTab = (raw: unknown): MissionInfoTabType => {
+    if (
+      typeof raw === 'string' &&
+      (visibleTabs as string[]).includes(raw)
+    ) {
+      return raw as MissionInfoTabType
+    }
+    return 'about'
+  }
+
   const [tab, setTab] = useState<MissionInfoTabType>(
-    (router.query.tab as MissionInfoTabType) || 'about'
+    resolveTab(router.query.tab)
   )
 
   useEffect(() => {
     if (router.query.tab) {
-      setTab(router.query.tab as MissionInfoTabType)
+      setTab(resolveTab(router.query.tab))
     }
-  }, [router])
+    // resolveTab depends on visibleTabs; including the latter triggers a
+    // re-resolve if the leaderboard data arrives after first paint.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, visibleTabs])
 
   useEffect(() => {
     if (!router.isReady || !mission?.id) return
@@ -122,12 +172,19 @@ export default function MissionInfo({
         />
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation — overflow-x-auto so the bar stays single-row on
+          phones when the optional Leaderboard tab makes it wider than the
+          viewport. */}
       <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
-        <div className="flex items-center gap-1 border-b border-white/[0.08]">
-          <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
-          <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
-          <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
+        <div className="flex items-center gap-1 border-b border-white/[0.08] overflow-x-auto max-w-full -mx-1 px-1">
+          {visibleTabs.map((t) => (
+            <MissionInfoTab
+              key={t}
+              tab={t}
+              currentTab={tab}
+              setTab={setTab}
+            />
+          ))}
         </div>
         <div className="hidden md:flex items-center gap-2">
           <MissionSocialLinks
@@ -201,6 +258,20 @@ export default function MissionInfo({
                   />
                 </div>
               )}
+            </div>
+          )}
+          {tab === 'leaderboard' && showLeaderboardTab && (
+            <div className="w-full mb-8">
+              <MissionInfoHeader
+                title="Fly with Frank Leaderboard"
+                icon="/assets/icon-star-blue.svg"
+              />
+              <OverviewLeaderboardPreview
+                leaderboard={
+                  (_overviewLeaderboard as LeaderboardEntry[]) ?? []
+                }
+                missionId={mission?.id ?? 4}
+              />
             </div>
           )}
           {tab === 'activity' && (

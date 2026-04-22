@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic'
 import { fetchFromIPFSWithFallback, getIPFSGateway } from '@/lib/ipfs/gateway'
 import { getMissionServerData } from '@/lib/mission/fetchMissionServerData'
 import { fetchTokenMetadata } from '@/lib/mission/fetchTokenServerData'
+import { fetchOverviewLeaderboard } from '@/lib/overview-delegate/fetchLeaderboard'
+import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import { fetchTeamNFTAndHats } from '@/lib/team/fetchTeamServerData'
 import Head from '@/components/layout/Head'
 import { Mission } from '@/components/mission/MissionCard'
@@ -32,7 +34,12 @@ type ProjectProfileProps = {
   _teamHats?: any[]
   _fundingGoal: number
   _ruleset: any[]
+  _overviewLeaderboard?: LeaderboardEntry[]
 }
+
+/** Mission ID for the Overview Flight fundraiser; used to opportunistically
+ *  hydrate the $OVERVIEW leaderboard preview rendered on its mission page. */
+const OVERVIEW_MISSION_ID = 4
 
 export default function MissionProfilePage({
   mission,
@@ -45,6 +52,7 @@ export default function MissionProfilePage({
   _teamHats,
   _fundingGoal,
   _ruleset,
+  _overviewLeaderboard,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -67,6 +75,7 @@ export default function MissionProfilePage({
           _teamHats={_teamHats}
           _fundingGoal={_fundingGoal}
           _ruleset={_ruleset}
+          _overviewLeaderboard={_overviewLeaderboard}
         />
       </JuiceProviders>
     </>
@@ -154,6 +163,20 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
         ? contractData.metadataURI.replace('ipfs://', '')
         : contractData.metadataURI
 
+      // Kick off the (mission-4-only) Overview leaderboard fetch in parallel
+      // with the IPFS metadata + token metadata round-trips so it doesn't
+      // serially extend page TTFB.
+      const isOverviewMission = Number(tokenId) === OVERVIEW_MISSION_ID
+      const overviewLeaderboardPromise = isOverviewMission
+        ? fetchOverviewLeaderboard(5).catch((error) => {
+            console.warn(
+              '[mission/4] overview leaderboard fetch failed:',
+              error
+            )
+            return [] as LeaderboardEntry[]
+          })
+        : Promise.resolve(undefined)
+
       const metadata = await fetchFromIPFSWithFallback(ipfsHash).catch((error: any) => {
         console.warn('All IPFS gateways failed:', error)
         return {
@@ -181,6 +204,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
           ]
         : [{ weight: 0 }, { reservedPercent: 0 }]
 
+      const _overviewLeaderboard = await overviewLeaderboardPromise
+
       return {
         props: {
           mission,
@@ -193,6 +218,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
           _teamHats: teamHats,
           _fundingGoal: missionRow.fundingGoal,
           _ruleset,
+          ...(_overviewLeaderboard !== undefined
+            ? { _overviewLeaderboard }
+            : {}),
         },
       }
     } catch (error) {

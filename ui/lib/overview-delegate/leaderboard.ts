@@ -76,7 +76,14 @@ export function aggregateDelegations(
 
 export function buildLeaderboard(
   aggregated: AggregatedEntry[],
-  citizenMap: Record<string, { id: number; name: string; image?: string }>,
+  // `id` is widened to `number | string` to match `LeaderboardEntry.citizenId`
+  // and the actual shape coming back from Tableland (which can return numeric
+  // columns as strings depending on the gateway). Callers no longer need an
+  // `as any` cast here.
+  citizenMap: Record<
+    string,
+    { id: number | string; name: string; image?: string }
+  >,
   limit?: number
 ): LeaderboardEntry[] {
   const leaderboard: LeaderboardEntry[] = []

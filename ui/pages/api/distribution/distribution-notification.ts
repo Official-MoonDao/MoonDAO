@@ -1,28 +1,38 @@
+/**
+ * Discord notification for retroactive-rewards distribution submissions.
+ *
+ * Fires when a citizen submits (or updates) their distribution row on the
+ * Distribution Tableland contract. The route validates that the transaction
+ * was sent by an authenticated wallet, that it actually targets the
+ * Distribution contract, and that it's recent — then posts a message to
+ * Discord summarizing what was submitted (quarter / year / project count).
+ *
+ * Mirrors the auth + validation pattern of `vote-notification.ts` and
+ * `leaderboard-notification.ts`. The client must send the Privy access token
+ * both in the `Authorization: Bearer ...` header (so `authMiddleware` lets
+ * the request through) and in the body (so we can re-verify and look up the
+ * user's wallets).
+ */
 import {
   CITIZEN_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
+  DISTRIBUTION_TABLE_ADDRESSES,
   GENERAL_CHANNEL_ID,
   TEST_CHANNEL_ID,
-  VOTES_TABLE_ADDRESSES,
   DEPLOYED_ORIGIN,
 } from 'const/config'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
-import { fetchOverviewLeaderboard } from '@/lib/overview-delegate/fetchLeaderboard'
-import {
-  formatLeaderboardStandings,
-  isValidEthAddress,
-} from '@/lib/overview-delegate/leaderboard'
 import { getPrivyUserData } from '@/lib/privy'
-import { arbitrum } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { getBlocksInTimeframe } from '@/lib/utils/blocks'
 
-const chain = arbitrum
+const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 
 const NOTIFICATION_CHANNEL_ID =
@@ -34,6 +44,10 @@ const usedTransactions = new Set<string>()
 setInterval(() => {
   usedTransactions.clear()
 }, 60 * 60 * 1000)
+
+function shortAddress(address: string): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`
+}
 
 async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -88,10 +102,13 @@ async function handler(req: any, res: any) {
       })
     }
 
-    const votesAddress = VOTES_TABLE_ADDRESSES[chainSlug]
-    if (txReceipt.to?.toLowerCase() !== votesAddress?.toLowerCase()) {
+    const distributionAddress = DISTRIBUTION_TABLE_ADDRESSES[chainSlug]
+    if (
+      !distributionAddress ||
+      txReceipt.to?.toLowerCase() !== distributionAddress.toLowerCase()
+    ) {
       return res.status(400).json({
-        message: 'Transaction is not to the Votes contract',
+        message: 'Transaction is not to the Distribution contract',
       })
     }
 
@@ -112,7 +129,7 @@ async function handler(req: any, res: any) {
 
     if (blockAge > maxBlocksAge) {
       return res.status(400).json({
-        message: `Transaction is too old`,
+        message: 'Transaction is too old',
       })
     }
 
@@ -134,54 +151,38 @@ async function handler(req: any, res: any) {
       } catch {}
     }
 
-    let delegateeCitizen: any = null
-    let delegateeAddress: string | null = null
-    if (typeof data.delegateeAddress === 'string') {
-      const candidateAddress = data.delegateeAddress.toLowerCase()
-      if (isValidEthAddress(candidateAddress)) {
-        delegateeAddress = candidateAddress
-      }
-    }
-    if (citizenTableName && delegateeAddress) {
-      try {
-        const delegateeRows: any = await queryTable(
-          chain,
-          `SELECT name, id, image, owner FROM ${citizenTableName} WHERE LOWER(owner) = '${delegateeAddress}'`
-        )
-        if (delegateeRows?.length > 0) {
-          delegateeCitizen = delegateeRows[0]
-        }
-      } catch {}
-    }
-
-    const leaderboard = await fetchOverviewLeaderboard(25)
-
     const voterDisplay = voterCitizen?.name
       ? `[${voterCitizen.name}](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(voterCitizen.name, voterCitizen.id)})`
-      : `${voterAddress.slice(0, 6)}...${voterAddress.slice(-4)}`
+      : shortAddress(voterAddress)
 
-    const delegateeDisplay = delegateeCitizen?.name
-      ? `[${delegateeCitizen.name}](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(delegateeCitizen.name, delegateeCitizen.id)})`
-      : delegateeAddress
-        ? `${delegateeAddress.slice(0, 6)}...${delegateeAddress.slice(-4)}`
-        : 'a candidate'
+    const quarter = Number(data.quarter)
+    const year = Number(data.year)
+    const projectCountRaw = data.projectCount
+    const projectCount =
+      typeof projectCountRaw === 'number' && Number.isFinite(projectCountRaw)
+        ? projectCountRaw
+        : null
 
-    let content = `## 🗳️ **${delegateeDisplay}** received a new backer in the Overview Flight!`
+    const quarterLabel =
+      Number.isInteger(quarter) && Number.isInteger(year)
+        ? ` for **Q${quarter} ${year}**`
+        : ''
+    const acrossLabel =
+      projectCount != null && projectCount > 0
+        ? ` across **${projectCount} project${projectCount === 1 ? '' : 's'}**`
+        : ''
+    const verb = data.isEdit
+      ? 'updated their retroactive rewards distribution'
+      : 'submitted a retroactive rewards distribution'
 
-    if (leaderboard.length > 0) {
-      content += `\n\n### Current Standings\n${formatLeaderboardStandings(leaderboard, DEPLOYED_ORIGIN, generatePrettyLinkWithId)}`
-      content += `\n\n[Vote now →](${DEPLOYED_ORIGIN}/overview-vote)`
-    }
+    let content = `## 🎯 **${voterDisplay}** ${verb}${quarterLabel}${acrossLabel}`
+    content += `\n\n[View projects →](${DEPLOYED_ORIGIN}/projects)`
 
     const messageData: any = {
       embeds: [{ description: content }],
     }
 
-    if (delegateeCitizen?.image) {
-      messageData.embeds[0].thumbnail = {
-        url: `https://ipfs.io/ipfs/${delegateeCitizen.image.replace('ipfs://', '')}`,
-      }
-    } else if (voterCitizen?.image) {
+    if (voterCitizen?.image) {
       messageData.embeds[0].thumbnail = {
         url: `https://ipfs.io/ipfs/${voterCitizen.image.replace('ipfs://', '')}`,
       }
@@ -206,9 +207,9 @@ async function handler(req: any, res: any) {
 
     return res.status(200).json({ success: true })
   } catch (err: any) {
-    console.error('Leaderboard notification error:', err)
+    console.error('Distribution notification error:', err)
     return res.status(400).json({
-      message: err.message || 'Failed to send leaderboard notification',
+      message: err.message || 'Failed to send distribution notification',
     })
   }
 }

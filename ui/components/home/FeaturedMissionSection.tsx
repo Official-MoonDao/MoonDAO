@@ -325,13 +325,31 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
 
               {/* CTA Buttons */}
               <div className="flex flex-row gap-2 md:gap-4 pt-4">
-                <StandardButton
-                  className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/20 text-center w-full flex items-center justify-center"
-                  link={`/mission/${featuredMission?.id}`}
-                  hoverEffect={false}
-                >
-                  <span className="ml-1 md:ml-2">Contribute</span>
-                </StandardButton>
+                <div className="relative group w-full">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <StandardButton
+                    className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-bold text-base md:text-xl lg:text-2xl uppercase tracking-wide px-6 md:px-8 lg:px-10 py-4 md:py-5 lg:py-6 rounded-xl hover:scale-[1.03] transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/40 border border-white/20 text-center w-full flex items-center justify-center"
+                    link={`/mission/${featuredMission?.id}`}
+                    hoverEffect={false}
+                  >
+                    <div className="flex items-center justify-center w-full text-center">
+                      <span className="relative">Contribute</span>
+                      <svg
+                        className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 group-hover:translate-x-1 transition-transform duration-300 ml-2 md:ml-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        />
+                      </svg>
+                    </div>
+                  </StandardButton>
+                </div>
               </div>
             </div>
           </div>

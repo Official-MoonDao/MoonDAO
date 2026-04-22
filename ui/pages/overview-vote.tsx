@@ -2,52 +2,33 @@ import confetti from 'canvas-confetti'
 import VotesTableABI from 'const/abis/Votes.json'
 import {
   CITIZEN_TABLE_NAMES,
-  OVERVIEW_BLOCKED_CITIZEN_IDS,
   OVERVIEW_DELEGATION_VOTE_ID,
   OVERVIEW_TOKEN_ADDRESS,
-  OVERVIEW_TOKEN_DECIMALS,
   TABLELAND_ENDPOINT,
   VOTES_TABLE_ADDRESSES,
   VOTES_TABLE_NAMES,
 } from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { getAccessToken } from '@privy-io/react-auth'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import {
-  applyOptimisticUpdate,
-  isValidEthAddress,
-  parseDelegations,
-  aggregateDelegations,
-  buildLeaderboard,
-} from '@/lib/overview-delegate/leaderboard'
+import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
+import { fetchOverviewLeaderboard } from '@/lib/overview-delegate/fetchLeaderboard'
+import { applyOptimisticUpdate } from '@/lib/overview-delegate/leaderboard'
 import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import { arbitrum } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { engineBatchRead } from '@/lib/thirdweb/engine'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import Container from '@/components/layout/Container'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-
-const ERC20_BALANCE_OF_ABI = [
-  {
-    inputs: [{ name: 'account', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-]
 
 type Citizen = {
   id: string
@@ -97,6 +78,56 @@ export default function OverviewDelegate({
     setDisplayLeaderboard(leaderboard)
   }, [leaderboard])
 
+  // Overlay the connected user's *live* $OVERVIEW balance onto the leaderboard
+  // entry of the citizen they've delegated to. Without this, when the
+  // server-side balance fetch in `fetchOverviewLeaderboard` either fails or
+  // is served from a stale `getStaticProps` cache (revalidate: 60), we fall
+  // back to the originally-stored delegation amount — which is whatever the
+  // user had when they first backed someone. Users who have since earned
+  // more $OVERVIEW therefore see their delegated total stuck at the old
+  // value until they successfully re-submit.
+  //
+  // We only adjust the entry if the server total looks *stale* relative to
+  // the user's live balance. If the server already knows about the larger
+  // balance (entry total >= live balance), we leave it alone to avoid the
+  // double-count case where server had fresh data and we'd add the delta on
+  // top of an already-correct number.
+  const visibleLeaderboard = useMemo(() => {
+    if (
+      !userAddress ||
+      !previousDelegation ||
+      userBalance == null ||
+      !Number.isFinite(userBalance) ||
+      userBalance <= 0
+    ) {
+      return displayLeaderboard
+    }
+    const targetAddr = previousDelegation.delegatee.toLowerCase()
+    const liveAmount = Math.floor(userBalance)
+    const storedAmount = previousDelegation.amount
+    let touched = false
+    const overlaid = displayLeaderboard.map((entry) => {
+      if (entry.delegateeAddress.toLowerCase() !== targetAddr) return entry
+      // Server total already reflects (at least) the user's current balance —
+      // assume it's fresh and leave it alone. This avoids inflating the
+      // number when ISR happened to revalidate after the user's balance bump.
+      if (entry.totalDelegated >= liveAmount) return entry
+      // Server total < live balance => server is stale (likely fell back to
+      // stored amount). Swap the user's stored portion for the live balance.
+      const userServerContribution = Math.min(
+        entry.totalDelegated,
+        storedAmount
+      )
+      const adjusted =
+        entry.totalDelegated - userServerContribution + liveAmount
+      if (adjusted === entry.totalDelegated) return entry
+      touched = true
+      return { ...entry, totalDelegated: Math.max(0, adjusted) }
+    })
+    if (!touched) return displayLeaderboard
+    return [...overlaid].sort((a, b) => b.totalDelegated - a.totalDelegated)
+  }, [displayLeaderboard, previousDelegation, userBalance, userAddress])
+
   const votesContract = useContract({
     address: VOTES_TABLE_ADDRESSES[overviewChainSlug],
     chain: overviewChain,
@@ -110,8 +141,14 @@ export default function OverviewDelegate({
     const checkExisting = async () => {
       try {
         const stmt = `SELECT * FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID} AND address = '${userAddress.toLowerCase()}'`
+        // Use the env-aware Tableland endpoint (testnets vs mainnet). The
+        // hardcoded `tableland.network` URL silently 404s the row on testnet,
+        // which falsely sets `hasExistingDelegation = false` and routes the
+        // submit to `insertIntoTable` — that then reverts due to the
+        // `unique(address, voteId)` constraint and the user gets the generic
+        // "Failed to submit delegation" toast on every re-back.
         const res = await fetch(
-          `https://tableland.network/api/v1/query?statement=${encodeURIComponent(stmt)}`
+          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
         )
         if (res.ok) {
           const data = await res.json()
@@ -277,7 +314,31 @@ export default function OverviewDelegate({
     const vote = JSON.stringify({ [selectedCitizen.owner]: delegateAmount })
 
     try {
-      const method = hasExistingDelegation ? 'updateTableCol' : 'insertIntoTable'
+      // Re-check existence right before submitting. The initial check from
+      // mount can be stale (race after a previous vote landed, or the user
+      // hopped wallets). Picking the wrong method causes the Tableland mutate
+      // to fail server-side: insertIntoTable on an existing (address,voteId)
+      // pair violates the unique constraint, and updateTableCol when no row
+      // exists silently no-ops. Either way the user sees the generic
+      // "Failed to submit delegation" error.
+      let existsNow = hasExistingDelegation
+      try {
+        const stmt = `SELECT id FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID} AND address = '${userAddress!.toLowerCase()}'`
+        const res = await fetch(
+          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
+        )
+        if (res.ok) {
+          const data = await res.json()
+          existsNow = Array.isArray(data) && data.length > 0
+        }
+      } catch (lookupErr) {
+        console.warn(
+          '[overview-vote] pre-submit existence check failed; falling back to cached value',
+          lookupErr
+        )
+      }
+
+      const method = existsNow ? 'updateTableCol' : 'insertIntoTable'
       const tx = prepareContractCall({
         contract: votesContract,
         method: method as string,
@@ -286,18 +347,18 @@ export default function OverviewDelegate({
       const receipt: any = await sendAndConfirmTransaction({ transaction: tx, account })
       setHasExistingDelegation(true)
 
-      // Send Discord notification (fire-and-forget)
-      getAccessToken().then((accessToken) => {
-        fetch('/api/overview/leaderboard-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            txHash: receipt.transactionHash,
-            accessToken,
-            delegateeAddress: selectedCitizen.owner,
-          }),
-        }).catch(() => {})
-      }).catch(() => {})
+      // Fire-and-forget Discord notification via the shared helper, which
+      // handles the Privy Bearer header (the notification API's
+      // `authMiddleware` 401s without it for Privy-only sessions) and the
+      // bounded retry loop for transient network / 5xx blips.
+      void sendOnchainNotification(
+        '/api/overview/leaderboard-notification',
+        {
+          txHash: receipt?.transactionHash,
+          delegateeAddress: selectedCitizen.owner,
+        },
+        { label: 'leaderboard-notification' }
+      )
 
       confetti({
         particleCount: 150,
@@ -356,11 +417,45 @@ export default function OverviewDelegate({
         setIsRefreshing(false)
       }
       pollForUpdate()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting delegation:', error)
-      toast.error('Failed to submit delegation. Please try again.', {
-        style: toastStyle,
-      })
+      // Pull a useful message out of whatever shape the error happens to be
+      // in (thirdweb v5 errors, viem-style errors, plain Error, etc.) so the
+      // toast actually tells the user *why* the submit failed instead of
+      // hiding everything behind a generic retry message.
+      const rawMessage: string =
+        error?.shortMessage ||
+        error?.cause?.shortMessage ||
+        error?.cause?.message ||
+        error?.message ||
+        ''
+      const lower = rawMessage.toLowerCase()
+
+      let toastMessage = 'Failed to submit delegation. Please try again.'
+      if (
+        lower.includes('user rejected') ||
+        lower.includes('user denied') ||
+        lower.includes('rejected the request') ||
+        lower.includes('action_rejected')
+      ) {
+        toastMessage = 'Transaction cancelled in your wallet.'
+      } else if (
+        lower.includes('insufficient funds') ||
+        lower.includes('insufficient balance')
+      ) {
+        toastMessage =
+          'Not enough ETH on Arbitrum to cover gas. Add a small amount of ETH to your wallet on Arbitrum and try again.'
+      } else if (
+        lower.includes('chain') &&
+        (lower.includes('mismatch') || lower.includes('switch'))
+      ) {
+        toastMessage =
+          'Wallet is on the wrong network. Please switch to Arbitrum and try again.'
+      } else if (rawMessage) {
+        toastMessage = `Failed to submit delegation: ${rawMessage.slice(0, 160)}`
+      }
+
+      toast.error(toastMessage, { style: toastStyle, duration: 8000 })
     } finally {
       setIsSubmitting(false)
     }
@@ -613,13 +708,13 @@ export default function OverviewDelegate({
                 The 25 citizens with the most $OVERVIEW support advance to Round 2.
               </p>
 
-              {displayLeaderboard.length === 0 ? (
+              {visibleLeaderboard.length === 0 ? (
                 <p className="text-gray-400 text-center py-6 sm:py-8 text-sm">
                   No delegations yet. Be the first to back a candidate!
                 </p>
               ) : (
                 <div className="space-y-2 sm:space-y-3">
-                  {displayLeaderboard.map((entry, index) => {
+                  {visibleLeaderboard.map((entry, index) => {
                     const citizenLink = entry.citizenName
                       ? `/citizen/${generatePrettyLinkWithId(entry.citizenName, entry.citizenId)}`
                       : `/citizen/${entry.citizenId}`
@@ -754,122 +849,9 @@ export default function OverviewDelegate({
 }
 
 export async function getStaticProps() {
-  try {
-    const chain = arbitrum
-    const chainSlug = getChainSlug(chain)
-    const tokenAddress = OVERVIEW_TOKEN_ADDRESS
-
-    // 1. Query delegations from Tableland
-    const votesTableName = VOTES_TABLE_NAMES[chainSlug]
-    if (!votesTableName) {
-      return {
-        props: { leaderboard: [], tokenAddress },
-        revalidate: 60,
-      }
-    }
-
-    const statement = `SELECT * FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID}`
-    const rows = await queryTable(chain, statement)
-
-    if (!rows || rows.length === 0) {
-      return {
-        props: { leaderboard: [], tokenAddress },
-        revalidate: 60,
-      }
-    }
-
-    const delegations = parseDelegations(rows)
-
-    if (delegations.length === 0) {
-      return {
-        props: { leaderboard: [], tokenAddress },
-        revalidate: 60,
-      }
-    }
-
-    // 2. Batch-fetch current balances (anti-gaming)
-    const uniqueDelegators = [...new Set(delegations.map((d) => d.delegatorAddress))]
-
-    let balanceMap: Record<string, number> = {}
-    try {
-      const balances = await engineBatchRead<string>(
-        tokenAddress,
-        'balanceOf',
-        uniqueDelegators.map((addr) => [addr]),
-        ERC20_BALANCE_OF_ABI,
-        chain.id
-      )
-      const divisor = 10n ** BigInt(OVERVIEW_TOKEN_DECIMALS)
-      for (let i = 0; i < uniqueDelegators.length; i++) {
-        const raw = balances[i]
-        const wei = BigInt(raw || '0')
-        const whole = wei / divisor
-        const remainder = wei % divisor
-        const normalized = Number(whole) + Number(remainder) / Number(divisor)
-        balanceMap[uniqueDelegators[i].toLowerCase()] = normalized
-      }
-    } catch (error) {
-      console.error('Error fetching balances, using stored amounts:', error)
-      for (const addr of uniqueDelegators) {
-        balanceMap[addr.toLowerCase()] = Infinity
-      }
-    }
-
-    const aggregated = aggregateDelegations(delegations, balanceMap)
-
-    if (aggregated.length === 0) {
-      return {
-        props: { leaderboard: [], tokenAddress },
-        revalidate: 60,
-      }
-    }
-
-    const safeAddresses = aggregated
-      .map((e) => e.delegateeAddress)
-      .filter(isValidEthAddress)
-
-    let citizenMap: Record<
-      string,
-      { id: number | string; name: string; image?: string }
-    > = {}
-
-    if (safeAddresses.length > 0) {
-      try {
-        const citizenTableName = CITIZEN_TABLE_NAMES[chainSlug]
-        if (citizenTableName) {
-          const inClause = safeAddresses
-            .map((a) => `'${a}'`)
-            .join(',')
-          const citizenStatement = `SELECT id, name, owner, image FROM ${citizenTableName} WHERE LOWER(owner) IN (${inClause})`
-          const citizenRows = await queryTable(chain, citizenStatement)
-
-          if (citizenRows) {
-            for (const c of citizenRows) {
-              if (OVERVIEW_BLOCKED_CITIZEN_IDS.includes(c.id)) continue
-              citizenMap[c.owner.toLowerCase()] = {
-                id: c.id,
-                name: c.name,
-                image: c.image,
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching citizen data:', error)
-      }
-    }
-
-    const leaderboardResult = buildLeaderboard(aggregated, citizenMap)
-
-    return {
-      props: { leaderboard: leaderboardResult, tokenAddress },
-      revalidate: 60,
-    }
-  } catch (error) {
-    console.error('Error in getStaticProps:', error)
-    return {
-      props: { leaderboard: [], tokenAddress: OVERVIEW_TOKEN_ADDRESS },
-      revalidate: 60,
-    }
+  const leaderboard = await fetchOverviewLeaderboard()
+  return {
+    props: { leaderboard, tokenAddress: OVERVIEW_TOKEN_ADDRESS },
+    revalidate: 60,
   }
 }

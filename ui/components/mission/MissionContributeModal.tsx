@@ -53,7 +53,7 @@ import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
 import type { FundingChainBalanceEntry } from '@/lib/mission/useMissionDefaultFundingChain'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import type { Chain } from '@/lib/rpc/chains'
-import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
+import { arbitrum, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
@@ -63,6 +63,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import StandardButton from '@/components/layout/StandardButton'
 import Modal from '@/components/layout/Modal'
+import Tooltip from '@/components/layout/Tooltip'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CBOnramp } from '../coinbase/CBOnramp'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
@@ -126,8 +127,11 @@ export default function MissionContributeModal({
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
+  // Base was previously offered here but caused confusion / abandonment for
+  // contributors who didn't have ETH on Base. Arbitrum + Ethereum are the
+  // supported funding chains; users on Base will be prompted to switch.
   const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, base, ethereum]),
+    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
     [isTestnet]
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
@@ -858,6 +862,13 @@ export default function MissionContributeModal({
       if (!stale()) {
         commitEstimate()
         setEstimatedGas(applyGasBuffer(BigInt(isCrossChain ? 300000 : 180000), isCrossChain))
+        // Reset the LayerZero quote on any failure (e.g. RPC timeout on
+        // Ethereum, ABI mismatch, etc.) so a stale value from a previous
+        // estimate doesn't linger and so the UI can exit its loading state
+        // once `isLoadingGasEstimate` flips false. PaymentBreakdown will
+        // render a "—" placeholder for the cross-chain fee in that case
+        // rather than spinning forever.
+        if (isCrossChain) setCrossChainQuote(BigInt(0))
         setIsLoadingGasEstimate(false)
       }
     }
@@ -1049,9 +1060,27 @@ export default function MissionContributeModal({
       console.error('Primary terminal contract not initialized')
       return
     }
+
+    const emailTrim = contributorEmail.trim()
+    // Each entry is a full verb phrase so we can drop them into a single
+    // `Please {a} and {b}.` template without ending up with ungrammatical
+    // toasts like "Please a valid email address." when only one field is
+    // missing.
+    const missingRequired: string[] = []
+    if (!isValidContributorEmail(emailTrim)) {
+      missingRequired.push('enter a valid email address')
+    }
     if (!agreedToCondition) {
-      toast.error('Please agree to the terms.', {
+      missingRequired.push('agree to the Terms and Conditions')
+    }
+    if (missingRequired.length > 0) {
+      const joined =
+        missingRequired.length === 1
+          ? missingRequired[0]
+          : `${missingRequired.slice(0, -1).join(', ')} and ${missingRequired[missingRequired.length - 1]}`
+      toast.error(`Please ${joined}.`, {
         style: toastStyle,
+        duration: 6000,
       })
       return
     }
@@ -1082,14 +1111,6 @@ export default function MissionContributeModal({
       return toast.error('Mission tokens are not supported on this network.', {
         style: toastStyle,
       })
-    }
-
-    const emailTrim = contributorEmail.trim()
-    if (!isValidContributorEmail(emailTrim)) {
-      toast.error('Please enter a valid email address.', {
-        style: toastStyle,
-      })
-      return
     }
 
     // Reset rejection state when attempting a new transaction
@@ -1428,6 +1449,28 @@ export default function MissionContributeModal({
       setOutput(0)
     }
   }, [paymentEthAmount, getQuote, ruleset])
+
+  /**
+   * Distinguish "we don't yet have the data needed to compute the quote"
+   * from "your contribution genuinely rounds to 0 tokens". Without this,
+   * a transient ETH/USD price failure (Etherscan rate-limit, etc.) would
+   * leave `ethUsdPrice = 0`, gate `paymentEthAmount` to 0, and the
+   * "You receive" line would silently show "0 $OVERVIEW" with no signal
+   * to the user that anything is loading.
+   */
+  const cleanUsdInputForQuote =
+    typeof usdInput === 'string' ? usdInput.replace(/,/g, '') : ''
+  const numericUsdInputForQuote = parseFloat(cleanUsdInputForQuote)
+  const userTypedUsdAmount =
+    Number.isFinite(numericUsdInputForQuote) && numericUsdInputForQuote > 0
+  const rulesetReadyForQuote = !!(ruleset && ruleset[0] && ruleset[1])
+  const isQuoteLoading =
+    userTypedUsdAmount &&
+    output === 0 &&
+    (isLoadingEthUsdPrice ||
+      !ethUsdPrice ||
+      !rulesetReadyForQuote ||
+      paymentEthAmount <= 0)
 
   // Update ETH input when USD changes
   useEffect(() => {
@@ -1806,63 +1849,122 @@ export default function MissionContributeModal({
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                   Network
                 </label>
-                <NetworkSelector
-                  chains={chains}
-                  align="left"
-                  displayChain={
-                    !userChosePayChainInModal &&
-                    fundingDisplayChain != null &&
-                    selectedChain.id !== fundingDisplayChain.id
-                      ? fundingDisplayChain
-                      : undefined
-                  }
-                  onUserSelectChain={() => setUserChosePayChainInModal(true)}
-                />
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <NetworkSelector
+                      chains={chains}
+                      align="left"
+                      displayChain={
+                        !userChosePayChainInModal &&
+                        fundingDisplayChain != null &&
+                        selectedChain.id !== fundingDisplayChain.id
+                          ? fundingDisplayChain
+                          : undefined
+                      }
+                      onUserSelectChain={() =>
+                        setUserChosePayChainInModal(true)
+                      }
+                    />
+                  </div>
+                  {/* Help text aimed at first-time contributors who aren't
+                      sure which network to pick. Sits to the RIGHT of the
+                      dropdown as a follow-up "?" affordance. Uses the
+                      default 24px Tooltip trigger (no size override) so it
+                      reads as a clearly-tappable help button, larger than
+                      the small inline `?`s elsewhere on the mission card. */}
+                  <Tooltip
+                    text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
+                    compact
+                  >
+                    ?
+                  </Tooltip>
+                </div>
               </div>
 
               {/* Contribution amount — primary input */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <label
                   htmlFor="payment-input"
-                  className="text-white font-semibold text-sm uppercase tracking-wider"
+                  className="flex items-center gap-2 text-white font-semibold text-sm uppercase tracking-wider"
                 >
-                  You contribute
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/25 text-cyan-200 text-[11px] font-bold ring-1 ring-cyan-400/40">
+                    1
+                  </span>
+                  Enter contribution amount
                 </label>
-                <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/30 rounded-xl p-3 sm:p-4">
-                  <div className="flex items-center justify-between gap-2 sm:gap-4">
-                    <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 shrink">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 flex items-center justify-center border border-white/15 shrink-0">
-                        <Image
-                          src="/coins/ETH.svg"
-                          alt="ETH"
-                          width={24}
-                          height={24}
-                          className="w-5 h-5 sm:w-6 sm:h-6"
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-white text-base sm:text-lg truncate">
-                          {calculateEthAmount()}
-                        </p>
-                        <p className="text-gray-500 text-xs">ETH (estimated)</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl px-2 sm:px-3 py-2 border border-white/15 bg-black/50 shadow-inner shrink-0">
-                      <span className="text-cyan-200/80 text-base sm:text-lg font-bold shrink-0">$</span>
+                <p className="text-gray-400 text-xs sm:text-sm">
+                  Type the amount of USD you want to contribute. We&apos;ll convert it to ETH for
+                  you.
+                </p>
+                <div className="bg-slate-950/90 border-2 border-cyan-500/40 ring-2 ring-cyan-500/15 shadow-lg shadow-cyan-500/10 rounded-xl p-4 sm:p-6 transition-all focus-within:border-cyan-400/70 focus-within:ring-cyan-400/30 focus-within:shadow-cyan-500/25">
+                  <label
+                    htmlFor="payment-input"
+                    className="block cursor-text"
+                  >
+                    <div className="flex items-baseline justify-center gap-1 sm:gap-2 min-w-0">
+                      <span className="text-cyan-200/80 text-3xl sm:text-5xl font-bold shrink-0 select-none">
+                        $
+                      </span>
                       <input
                         id="payment-input"
                         type="text"
                         inputMode="decimal"
-                        className="min-w-0 w-16 sm:w-28 bg-transparent border-none outline-none text-white text-right text-base sm:text-lg font-bold placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        autoFocus
+                        autoComplete="off"
+                        aria-label="Contribution amount in USD"
+                        className="min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center text-4xl sm:text-6xl font-bold tracking-tight placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-gray-300 text-base sm:text-lg font-bold shrink-0">USD</span>
+                      <span className="text-gray-300 text-xl sm:text-2xl font-bold shrink-0 select-none">
+                        USD
+                      </span>
                     </div>
+                    <div className="mt-2 flex items-center justify-center gap-1.5">
+                      <Image
+                        src="/coins/ETH.svg"
+                        alt=""
+                        width={14}
+                        height={14}
+                        className="w-3.5 h-3.5 opacity-60"
+                      />
+                      <p className="text-gray-400 text-xs sm:text-sm tabular-nums">
+                        ≈ {calculateEthAmount()} ETH
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Quick amount presets — power-of-ten ladder so users can
+                      jump from a small "try it" contribution to a serious
+                      one in a single tap. */}
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    {[10, 100, 1000, 10000].map((preset) => {
+                      const isActive =
+                        parseFloat((usdInput || '').replace(/,/g, '')) === preset
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            handleUsdInputChange({
+                              target: { value: String(preset) },
+                            } as React.ChangeEvent<HTMLInputElement>)
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border ${
+                            isActive
+                              ? 'bg-cyan-500/25 border-cyan-400/60 text-cyan-100'
+                              : 'bg-white/5 hover:bg-white/15 border-white/15 text-white'
+                          }`}
+                        >
+                          ${preset.toLocaleString('en-US')}
+                        </button>
+                      )
+                    })}
                   </div>
-                  <div className="mt-3 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+
+                  <div className="mt-4 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <p className="text-gray-400 text-xs sm:text-sm">
                       <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
                       <span className="text-white font-medium tabular-nums">
@@ -1874,6 +1976,23 @@ export default function MissionContributeModal({
                           ? '…'
                           : '—'}
                       </span>
+                      {fundingBalanceResolved &&
+                        fundingBalanceWei != null &&
+                        fundingBalanceWei > BigInt(0) &&
+                        ethUsdPrice != null &&
+                        ethUsdPrice > 0 && (
+                          <span className="text-gray-400 tabular-nums ml-1">
+                            (~$
+                            {(
+                              parseFloat(formatUnits(fundingBalanceWei.toString(), 18)) *
+                              ethUsdPrice
+                            ).toLocaleString('en-US', {
+                              maximumFractionDigits: 2,
+                              minimumFractionDigits: 2,
+                            })}
+                            )
+                          </span>
+                        )}
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
                         on {(payChain.name ?? 'network').replace(' One', '')}
                         {!walletOnPayChain && fundingBalanceResolved ? (
@@ -1930,11 +2049,22 @@ export default function MissionContributeModal({
                       className="text-left sm:text-right border-t sm:border-t-0 border-white/[0.08] pt-3 sm:pt-0 sm:border-l sm:pl-4 sm:min-w-[10rem]"
                       role="status"
                       aria-live="polite"
-                      aria-label={`${token?.tokenSymbol || 'Tokens'}: ${formatContributionOutput(output)}`}
+                      aria-label={
+                        isQuoteLoading
+                          ? `Calculating ${token?.tokenSymbol || 'token'} quote`
+                          : `${token?.tokenSymbol || 'Tokens'}: ${formatContributionOutput(output)}`
+                      }
                     >
-                      <p className="font-bold text-emerald-200/95 text-xl sm:text-2xl tabular-nums tracking-tight sm:text-right">
-                        {formatContributionOutput(output)}
-                      </p>
+                      {isQuoteLoading ? (
+                        <div className="flex items-center gap-2 sm:justify-end">
+                          <LoadingSpinner className="scale-50" />
+                          <p className="text-white/60 text-sm">Calculating…</p>
+                        </div>
+                      ) : (
+                        <p className="font-bold text-emerald-200/95 text-xl sm:text-2xl tabular-nums tracking-tight sm:text-right">
+                          {formatContributionOutput(output)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2033,7 +2163,10 @@ export default function MissionContributeModal({
                         htmlFor="contribution-contributor-email-direct"
                         className="text-gray-300 font-medium text-sm uppercase tracking-wider"
                       >
-                        Email
+                        Email{' '}
+                        <span className="text-red-400 normal-case font-semibold">
+                          (required)
+                        </span>
                       </label>
                       <p className="text-sm text-gray-300 leading-relaxed mt-2">
                         We will use this email to send you relevant updates about the mission and
@@ -2068,7 +2201,10 @@ export default function MissionContributeModal({
                   <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                        Terms and Conditions
+                        Terms and Conditions{' '}
+                        <span className="text-red-400 normal-case font-semibold">
+                          (required)
+                        </span>
                       </p>
                     </div>
                     <MissionTokenNotice />
@@ -2134,8 +2270,6 @@ export default function MissionContributeModal({
                       className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-700 disabled:to-gray-600 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                       action={buyMissionToken}
                       isDisabled={
-                        !agreedToCondition ||
-                        !isValidContributorEmail(contributorEmail.trim()) ||
                         !usdInput ||
                         parseFloat((usdInput as string).replace(/,/g, '')) <= 0 ||
                         !chainSlugs.includes(chainSlug) ||
@@ -2202,7 +2336,10 @@ export default function MissionContributeModal({
                         htmlFor="contribution-contributor-email-onramp"
                         className="text-gray-300 font-medium text-sm uppercase tracking-wider"
                       >
-                        Email
+                        Email{' '}
+                        <span className="text-red-400 normal-case font-semibold">
+                          (required)
+                        </span>
                       </label>
                       <p className="text-sm text-gray-300 leading-relaxed mt-2">
                         We will use this email to send you relevant updates about the mission and
@@ -2237,7 +2374,10 @@ export default function MissionContributeModal({
                   <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-white/10 flex flex-col gap-3">
                     <div>
                       <p className="text-gray-300 font-medium text-sm uppercase tracking-wider">
-                        Terms and Conditions
+                        Terms and Conditions{' '}
+                        <span className="text-red-400 normal-case font-semibold">
+                          (required)
+                        </span>
                       </p>
                     </div>
                     <MissionTokenNotice />

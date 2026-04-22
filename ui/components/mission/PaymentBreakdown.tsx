@@ -135,26 +135,39 @@ export function PaymentBreakdown({
           <p className={rowValueClass}>${usdInput} USD</p>
         </div>
 
-        {/* Cross-Chain Fee */}
+        {/* Cross-Chain Fee. Spinner is gated on `isLoadingGasEstimate`
+            ONLY — previously it also required a non-zero fee value, which
+            meant any time the LayerZero quote failed/timed out (e.g. slow
+            Ethereum RPC) the value stayed at "0.00" forever and the
+            spinner spun indefinitely even though loading was done. After
+            loading finishes we render whatever value we have, falling back
+            to a "—" placeholder when no quote was retrieved so users see
+            the breakdown progress instead of an apparent hang. */}
         {chainSlug !== defaultChainSlug && !layerZeroLimitExceeded && (
           <div className="flex items-center justify-between gap-3">
             <p className={rowLabelClass}>Cross-chain fee</p>
-            {!isLoadingGasEstimate && layerZeroFeeDisplay.usd !== '0.00' ? (
+            {isLoadingGasEstimate ? (
+              <LoadingSpinner className="scale-50" />
+            ) : layerZeroFeeDisplay.usd !== '0.00' ? (
               <p className={rowValueClass}>~${layerZeroFeeDisplay.usd} USD</p>
             ) : (
-              <LoadingSpinner className="scale-50" />
+              <p className={`${rowValueClass} text-gray-500`}>—</p>
             )}
           </div>
         )}
 
-        {/* Gas Fee */}
+        {/* Gas Fee. Same spinner-gate rationale as the cross-chain row
+            above — only spin while we're actively loading, then show the
+            value (or a "—" placeholder if the estimator returned nothing). */}
         {showEstimatedGas && (
           <div className="flex items-center justify-between gap-3">
             <p className={rowLabelClass}>Gas fee</p>
-            {!isLoadingGasEstimate && gasCostDisplay.eth !== '0.0000' ? (
+            {isLoadingGasEstimate ? (
+              <LoadingSpinner className="scale-50" />
+            ) : gasCostDisplay.eth !== '0.0000' ? (
               <p className={rowValueClass}>~${gasCostDisplay.usd} USD</p>
             ) : (
-              <LoadingSpinner className="scale-50" />
+              <p className={`${rowValueClass} text-gray-500`}>—</p>
             )}
           </div>
         )}

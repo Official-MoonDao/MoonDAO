@@ -1,28 +1,44 @@
+/**
+ * Discord notification for proposal votes.
+ *
+ * Two flavors, distinguished by the `kind` field in the request body:
+ *   - 'senate': a single-proposal Senate vote (NonProjectProposal contract).
+ *               Includes the proposal name + MDP + distribution payload.
+ *   - 'member': a quarterly Member Vote across many proposals (Proposals
+ *               contract). Includes quarter / year and a count of proposals
+ *               the voter allocated to.
+ *
+ * The route validates that:
+ *   - The caller has a valid Privy token (via the Bearer header — populated by
+ *     the new `Authorization: Bearer ${accessToken}` convention also used by
+ *     leaderboard-notification — and re-checked against the body for defense
+ *     in depth).
+ *   - The transaction was sent by one of the authenticated user's wallets.
+ *   - The transaction's `to` matches the expected contract for `kind`.
+ *   - The transaction is recent (within ~10 minutes of blocks).
+ *   - We haven't already processed this `txHash` in this Node process.
+ */
 import {
   CITIZEN_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
   GENERAL_CHANNEL_ID,
+  NON_PROJECT_PROPOSAL_ADDRESSES,
+  PROPOSALS_ADDRESSES,
   TEST_CHANNEL_ID,
-  VOTES_TABLE_ADDRESSES,
   DEPLOYED_ORIGIN,
 } from 'const/config'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
-import { fetchOverviewLeaderboard } from '@/lib/overview-delegate/fetchLeaderboard'
-import {
-  formatLeaderboardStandings,
-  isValidEthAddress,
-} from '@/lib/overview-delegate/leaderboard'
 import { getPrivyUserData } from '@/lib/privy'
-import { arbitrum } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { getBlocksInTimeframe } from '@/lib/utils/blocks'
 
-const chain = arbitrum
+const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 
 const NOTIFICATION_CHANNEL_ID =
@@ -30,10 +46,23 @@ const NOTIFICATION_CHANNEL_ID =
     ? GENERAL_CHANNEL_ID
     : TEST_CHANNEL_ID
 
+// In-process dedup: if the same tx is posted twice by the client (retry, etc.)
+// we don't want two Discord messages. This isn't multi-instance-safe on
+// serverless, but it covers the common case of a client-side retry.
 const usedTransactions = new Set<string>()
 setInterval(() => {
   usedTransactions.clear()
 }, 60 * 60 * 1000)
+
+type VoteKind = 'senate' | 'member'
+
+function isVoteKind(value: unknown): value is VoteKind {
+  return value === 'senate' || value === 'member'
+}
+
+function shortAddress(address: string): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`
+}
 
 async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -46,9 +75,14 @@ async function handler(req: any, res: any) {
       return res.status(400).json({ message: 'Bad request' })
     }
 
-    const { txHash, accessToken } = data
+    const { txHash, accessToken, kind } = data
     if (!txHash || !accessToken) {
       return res.status(400).json({ message: 'Missing required fields' })
+    }
+    if (!isVoteKind(kind)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid 'kind' (expected 'senate' or 'member')" })
     }
 
     const privyUserData = await getPrivyUserData(accessToken)
@@ -88,10 +122,18 @@ async function handler(req: any, res: any) {
       })
     }
 
-    const votesAddress = VOTES_TABLE_ADDRESSES[chainSlug]
-    if (txReceipt.to?.toLowerCase() !== votesAddress?.toLowerCase()) {
+    // Each `kind` has exactly one valid destination contract.
+    const expectedContract =
+      kind === 'senate'
+        ? NON_PROJECT_PROPOSAL_ADDRESSES[chainSlug]
+        : PROPOSALS_ADDRESSES[chainSlug]
+
+    if (
+      !expectedContract ||
+      txReceipt.to?.toLowerCase() !== expectedContract.toLowerCase()
+    ) {
       return res.status(400).json({
-        message: 'Transaction is not to the Votes contract',
+        message: 'Transaction is not to the expected contract for this vote',
       })
     }
 
@@ -112,7 +154,7 @@ async function handler(req: any, res: any) {
 
     if (blockAge > maxBlocksAge) {
       return res.status(400).json({
-        message: `Transaction is too old`,
+        message: 'Transaction is too old',
       })
     }
 
@@ -134,54 +176,72 @@ async function handler(req: any, res: any) {
       } catch {}
     }
 
-    let delegateeCitizen: any = null
-    let delegateeAddress: string | null = null
-    if (typeof data.delegateeAddress === 'string') {
-      const candidateAddress = data.delegateeAddress.toLowerCase()
-      if (isValidEthAddress(candidateAddress)) {
-        delegateeAddress = candidateAddress
-      }
-    }
-    if (citizenTableName && delegateeAddress) {
-      try {
-        const delegateeRows: any = await queryTable(
-          chain,
-          `SELECT name, id, image, owner FROM ${citizenTableName} WHERE LOWER(owner) = '${delegateeAddress}'`
-        )
-        if (delegateeRows?.length > 0) {
-          delegateeCitizen = delegateeRows[0]
-        }
-      } catch {}
-    }
-
-    const leaderboard = await fetchOverviewLeaderboard(25)
-
     const voterDisplay = voterCitizen?.name
       ? `[${voterCitizen.name}](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(voterCitizen.name, voterCitizen.id)})`
-      : `${voterAddress.slice(0, 6)}...${voterAddress.slice(-4)}`
+      : shortAddress(voterAddress)
 
-    const delegateeDisplay = delegateeCitizen?.name
-      ? `[${delegateeCitizen.name}](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(delegateeCitizen.name, delegateeCitizen.id)})`
-      : delegateeAddress
-        ? `${delegateeAddress.slice(0, 6)}...${delegateeAddress.slice(-4)}`
-        : 'a candidate'
+    let content = ''
+    let linkUrl = ''
 
-    let content = `## 🗳️ **${delegateeDisplay}** received a new backer in the Overview Flight!`
+    if (kind === 'senate') {
+      // Senate vote payload: { proposalName, proposalMDP, isEdit }
+      const proposalNameRaw =
+        typeof data.proposalName === 'string' ? data.proposalName.trim() : ''
+      const proposalMDPRaw = data.proposalMDP
+      const proposalMDP =
+        typeof proposalMDPRaw === 'number'
+          ? proposalMDPRaw
+          : typeof proposalMDPRaw === 'string' && proposalMDPRaw.trim() !== ''
+            ? Number(proposalMDPRaw)
+            : null
 
-    if (leaderboard.length > 0) {
-      content += `\n\n### Current Standings\n${formatLeaderboardStandings(leaderboard, DEPLOYED_ORIGIN, generatePrettyLinkWithId)}`
-      content += `\n\n[Vote now →](${DEPLOYED_ORIGIN}/overview-vote)`
+      const proposalLabel = proposalNameRaw
+        ? proposalMDP != null && Number.isFinite(proposalMDP)
+          ? `MDP-${proposalMDP}: ${proposalNameRaw}`
+          : proposalNameRaw
+        : proposalMDP != null && Number.isFinite(proposalMDP)
+          ? `MDP-${proposalMDP}`
+          : 'a proposal'
+
+      const verb = data.isEdit ? 'updated their vote on' : 'voted on'
+      content = `## 🗳️ **${voterDisplay}** ${verb} **${proposalLabel}**`
+
+      if (proposalMDP != null && Number.isFinite(proposalMDP)) {
+        linkUrl = `${DEPLOYED_ORIGIN}/proposal/${proposalMDP}`
+        content += `\n\n[View proposal →](${linkUrl})`
+      }
+    } else {
+      // Member vote payload: { quarter, year, proposalCount, isEdit }
+      const quarter = Number(data.quarter)
+      const year = Number(data.year)
+      const proposalCountRaw = data.proposalCount
+      const proposalCount =
+        typeof proposalCountRaw === 'number' && Number.isFinite(proposalCountRaw)
+          ? proposalCountRaw
+          : null
+
+      const quarterLabel =
+        Number.isInteger(quarter) && Number.isInteger(year)
+          ? ` for **Q${quarter} ${year}**`
+          : ''
+      const acrossLabel =
+        proposalCount != null && proposalCount > 0
+          ? ` across **${proposalCount} proposal${proposalCount === 1 ? '' : 's'}**`
+          : ''
+      const verb = data.isEdit
+        ? 'updated their member vote'
+        : 'submitted a member vote'
+
+      content = `## 🗳️ **${voterDisplay}** ${verb}${quarterLabel}${acrossLabel}`
+      linkUrl = `${DEPLOYED_ORIGIN}/projects`
+      content += `\n\n[View proposals →](${linkUrl})`
     }
 
     const messageData: any = {
       embeds: [{ description: content }],
     }
 
-    if (delegateeCitizen?.image) {
-      messageData.embeds[0].thumbnail = {
-        url: `https://ipfs.io/ipfs/${delegateeCitizen.image.replace('ipfs://', '')}`,
-      }
-    } else if (voterCitizen?.image) {
+    if (voterCitizen?.image) {
       messageData.embeds[0].thumbnail = {
         url: `https://ipfs.io/ipfs/${voterCitizen.image.replace('ipfs://', '')}`,
       }
@@ -200,15 +260,16 @@ async function handler(req: any, res: any) {
     )
 
     if (!response.ok) {
+      // Allow a retry from the client if Discord rejected us.
       usedTransactions.delete(txHash)
       throw new Error('Failed to send message to Discord')
     }
 
     return res.status(200).json({ success: true })
   } catch (err: any) {
-    console.error('Leaderboard notification error:', err)
+    console.error('Vote notification error:', err)
     return res.status(400).json({
-      message: err.message || 'Failed to send leaderboard notification',
+      message: err.message || 'Failed to send vote notification',
     })
   }
 }

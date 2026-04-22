@@ -39,6 +39,7 @@ import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
 import useWindowSize from '@/lib/team/use-window-size'
@@ -895,6 +896,25 @@ export function ProjectRewards({
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
+
+        // Fire-and-forget Discord notification. We pass the count of
+        // projects the user actually allocated to (entries with a non-zero
+        // weight) so the message has more signal than just "submitted".
+        const allocatedProjectCount = Object.values(scopedDistribution).filter(
+          (v) => v > 0
+        ).length
+        void sendOnchainNotification(
+          '/api/distribution/distribution-notification',
+          {
+            txHash: receipt?.transactionHash,
+            quarter,
+            year,
+            projectCount: allocatedProjectCount,
+            isEdit,
+          },
+          { label: 'retro-distribution-notification' }
+        )
+
         setTimeout(
           () =>
             router.push(
@@ -1027,6 +1047,27 @@ export function ProjectRewards({
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
+
+        // Fire-and-forget Discord notification. The proposal count reflects
+        // proposals the user *actually* allocated to (post author-exclusion
+        // / normalization) — that's the most accurate signal of how many
+        // proposals they weighed in on.
+        const proposalCount = Object.values(normalizedDistribution).filter(
+          (v) => v > 0
+        ).length
+        void sendOnchainNotification(
+          '/api/proposals/vote-notification',
+          {
+            txHash: receipt?.transactionHash,
+            kind: 'member',
+            quarter: submissionQuarter,
+            year: submissionYear,
+            proposalCount,
+            isEdit,
+          },
+          { label: 'member-vote-notification' }
+        )
+
         setTimeout(
           () =>
             router.push(

@@ -41,10 +41,10 @@ import { useMissionDefaultFundingChain } from '@/lib/mission/useMissionDefaultFu
 import { useManagerActions } from '@/lib/mission/useManagerActions'
 import useMissionData from '@/lib/mission/useMissionData'
 import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
+import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import {
   type Chain,
   arbitrum,
-  base,
   ethereum,
   optimismSepolia,
   sepolia,
@@ -102,6 +102,9 @@ type MissionProfileProps = {
   _teamHats?: any[]
   _fundingGoal: number
   _ruleset: any[]
+  /** Pre-fetched top entries of the $OVERVIEW leaderboard. Only provided
+   *  for the Overview Flight mission (id 4); undefined for other missions. */
+  _overviewLeaderboard?: LeaderboardEntry[]
 }
 
 export default function MissionProfile({
@@ -115,6 +118,7 @@ export default function MissionProfile({
   _teamHats,
   _fundingGoal,
   _ruleset,
+  _overviewLeaderboard,
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const router = useRouter()
@@ -143,8 +147,12 @@ export default function MissionProfile({
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
+  // Keep this list in sync with MissionContributeModal — Base was removed
+  // from the supported funding chains (users without ETH on Base were
+  // bouncing). Mission funding-chain detection / "switch to richest chain"
+  // banners therefore won't suggest Base anymore.
   const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, base, ethereum]),
+    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
     [isTestnet]
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
@@ -447,7 +455,14 @@ export default function MissionProfile({
               recommendedFundingChain={recommendedChain}
               onlyButton
               visibleButton={windowWidth > 0 && windowWidth > 768}
-              buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
+              buttonClassName={
+                mission?.id === 4 || String(mission?.id) === '4'
+                  ? // Overview Mission CTA: prominent but sized to avoid colliding
+                    // with the amount-raised text on sm/md or the manager-actions
+                    // row below. No hover-scale (keeps the button inside its slot).
+                    'w-full sm:w-auto sm:min-w-[200px] sm:max-w-[260px] rounded-full gradient-2 px-5 sm:px-7 py-2.5 sm:py-3 text-sm sm:text-base font-bold uppercase tracking-wide shadow-lg shadow-blue-500/30 ring-1 ring-white/15 hover:brightness-110 hover:shadow-blue-500/50 active:scale-[0.99] transition-all duration-200 flex justify-center items-center'
+                  : 'max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center'
+              }
             />
           )
         }
@@ -567,6 +582,15 @@ export default function MissionProfile({
                   recommendedChain={recommendedChain}
                   fundingChainBalances={fundingChainBalances}
                   fundingCompareEnabled={fundingChainCompareEnabled}
+                  // Only thread the leaderboard through for missions that
+                  // actually have one (today: just mission 4). MissionInfo
+                  // uses the presence of this array to decide whether to
+                  // render the dedicated "Fly with Frank" tab.
+                  _overviewLeaderboard={
+                    mission?.id === 4 || String(mission?.id) === '4'
+                      ? _overviewLeaderboard ?? []
+                      : undefined
+                  }
                 />
               </div>
             </div>
@@ -626,34 +650,10 @@ export default function MissionProfile({
                 </div>
               </div>
             </div>
-            {/* Support Candidates Card - only for mission 4 (Overview flight on Arbitrum) */}
-            {(mission?.id === 4 || String(mission?.id) === '4') && (
-              <div className="w-full px-5 md:px-8 lg:px-12 mt-4 md:mt-6 flex justify-center">
-                <Link
-                  href={`/overview-vote?from=mission&missionId=${mission?.id ?? ''}`}
-                  className="w-full max-w-[1200px] block bg-gradient-to-r from-indigo-900/30 via-purple-900/20 to-blue-900/20 border border-indigo-500/20 hover:border-indigo-500/40 rounded-2xl p-4 sm:p-6 transition-all duration-300 group"
-                >
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-indigo-500/30 group-hover:scale-105 transition-transform">
-                        <span className="text-2xl">🗳️</span>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white group-hover:text-indigo-200 transition-colors">
-                          Support candidates
-                        </h3>
-                        <p className="text-gray-400 text-sm">
-                          After contributing, back a candidate on the leaderboard to amplify your impact.
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-indigo-400 font-medium text-sm sm:text-base group-hover:text-indigo-300 whitespace-nowrap">
-                      Back a candidate →
-                    </span>
-                  </div>
-                </Link>
-              </div>
-            )}
+            {/* The Fly with Frank Leaderboard now lives inside MissionInfo
+                as a dedicated tab so it surfaces above the fold instead of
+                being hidden at the bottom of the page. See MissionInfo's
+                `_overviewLeaderboard` prop wiring above. */}
             <MissionJuiceboxFooter
               projectId={mission?.projectId ?? 0}
               isManager={isManager}

@@ -111,6 +111,7 @@ function MissionPayRedeemContent({
   hideRecentContributions = false,
   contributionBalanceEth,
   contributionBalanceChain,
+  isQuoteLoading = false,
 }: any) {
   const resolvedSymbol = getMissionTokenSymbol(mission?.id, token?.tokenSymbol)
   const isRefundable = Number(stage) === 3
@@ -165,48 +166,85 @@ function MissionPayRedeemContent({
             <div className="space-y-2">
               <label
                 htmlFor="usd-contribution-input"
-                className="text-white font-semibold text-xs uppercase tracking-wider"
+                className="flex items-center gap-2 text-white font-semibold text-xs uppercase tracking-wider"
               >
-                You contribute
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/25 text-cyan-200 text-[11px] font-bold ring-1 ring-cyan-400/40">
+                  1
+                </span>
+                Enter contribution amount
               </label>
-              <div className="bg-slate-950/90 border border-cyan-500/25 ring-1 ring-cyan-500/10 shadow-lg shadow-black/40 rounded-xl p-3 sm:p-4 min-w-0">
-                <div className="flex flex-col gap-4 min-w-0">
-                  {/* ETH ↔ USD: side-by-side from md up, stacked on small screens */}
-                  <div className="flex flex-col md:flex-row md:items-center gap-4 min-w-0">
-                    <div className="flex items-center gap-3 min-w-0 md:flex-1">
-                      <div className="w-9 h-9 shrink-0 bg-slate-800 rounded-full flex items-center justify-center ring-1 ring-white/15">
-                        <Image
-                          src="/coins/ETH.svg"
-                          alt="ETH"
-                          width={18}
-                          height={18}
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-white text-lg leading-tight break-all sm:break-normal">
-                          {calculateEthAmount()}
-                        </p>
-                        <p className="text-gray-500 text-xs">ETH (estimated)</p>
-                      </div>
-                    </div>
-
-                    <div className="flex min-w-0 w-full md:flex-1 items-center gap-2 rounded-lg px-3 py-2.5 border border-white/15 bg-black/50 shadow-inner">
-                      <span className="text-cyan-200/80 text-lg font-bold shrink-0">$</span>
-                      <input
-                        id="usd-contribution-input"
-                        type="text"
-                        inputMode="decimal"
-                        className="min-w-0 flex-1 bg-transparent border-none outline-none text-lg font-bold text-white text-right placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 ring-0 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        value={usdInput}
-                        onChange={handleUsdInputChange}
-                        placeholder="0"
-                        maxLength={15}
-                      />
-                      <span className="text-gray-300 text-lg font-bold shrink-0">USD</span>
-                    </div>
+              <p className="text-gray-400 text-xs">
+                Type the amount of USD you want to contribute. We&apos;ll convert it to ETH for
+                you.
+              </p>
+              <div className="bg-slate-950/90 border-2 border-cyan-500/40 ring-2 ring-cyan-500/15 shadow-lg shadow-cyan-500/10 rounded-xl p-4 sm:p-5 min-w-0 transition-all focus-within:border-cyan-400/70 focus-within:ring-cyan-400/30 focus-within:shadow-cyan-500/25">
+                <label
+                  htmlFor="usd-contribution-input"
+                  className="block cursor-text"
+                >
+                  <div className="flex items-baseline justify-center gap-1 sm:gap-2 min-w-0">
+                    <span className="text-cyan-200/80 text-3xl sm:text-5xl font-bold shrink-0 select-none">
+                      $
+                    </span>
+                    <input
+                      id="usd-contribution-input"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      aria-label="Contribution amount in USD"
+                      className="min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center text-4xl sm:text-6xl font-bold tracking-tight placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      value={usdInput}
+                      onChange={handleUsdInputChange}
+                      placeholder="0"
+                      maxLength={15}
+                    />
+                    <span className="text-gray-300 text-xl sm:text-2xl font-bold shrink-0 select-none">
+                      USD
+                    </span>
                   </div>
+                  <div className="mt-2 flex items-center justify-center gap-1.5">
+                    <Image
+                      src="/coins/ETH.svg"
+                      alt=""
+                      width={14}
+                      height={14}
+                      className="w-3.5 h-3.5 opacity-60"
+                    />
+                    <p className="text-gray-400 text-xs sm:text-sm tabular-nums">
+                      ≈ {calculateEthAmount()} ETH
+                    </p>
+                  </div>
+                </label>
 
-                  <div className="pt-3 border-t border-white/[0.08] min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                {/* Quick amount presets — power-of-ten ladder so users can
+                    jump from a small "try it" contribution to a serious one
+                    in a single tap. Keep in sync with MissionContributeModal. */}
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  {[10, 100, 1000, 10000].map((preset) => {
+                    const isActive =
+                      parseFloat((usdInput || '').replace(/,/g, '')) === preset
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          handleUsdInputChange({
+                            target: { value: String(preset) },
+                          } as React.ChangeEvent<HTMLInputElement>)
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border ${
+                          isActive
+                            ? 'bg-cyan-500/25 border-cyan-400/60 text-cyan-100'
+                            : 'bg-white/5 hover:bg-white/15 border-white/15 text-white'
+                        }`}
+                      >
+                        ${preset.toLocaleString('en-US')}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/[0.08] min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-gray-400 text-xs sm:text-sm leading-relaxed break-words min-w-0">
                       <span className="text-gray-500 uppercase tracking-wide mr-1">Balance</span>
                       <span className="text-white font-medium tabular-nums">
@@ -216,6 +254,23 @@ function MissionPayRedeemContent({
                           ? `${formatEthFiveSigFigs(Number(contributionBalanceEth))} ETH`
                           : '—'}
                       </span>
+                      {contributionBalanceEth != null &&
+                        Number.isFinite(contributionBalanceEth) &&
+                        contributionBalanceEth > 0 &&
+                        ethUsdPrice != null &&
+                        ethUsdPrice > 0 && (
+                          <span className="text-gray-400 tabular-nums ml-1">
+                            (~$
+                            {(Number(contributionBalanceEth) * ethUsdPrice).toLocaleString(
+                              'en-US',
+                              {
+                                maximumFractionDigits: 2,
+                                minimumFractionDigits: 2,
+                              }
+                            )}
+                            )
+                          </span>
+                        )}
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
                         on{' '}
                         {contributionBalanceChain?.name?.replace(' One', '') ?? 'network'}
@@ -236,7 +291,6 @@ function MissionPayRedeemContent({
                     >
                       Max
                     </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -261,17 +315,37 @@ function MissionPayRedeemContent({
                       className="flex items-baseline gap-1.5 flex-wrap"
                       role="status"
                       aria-live="polite"
-                      aria-label={`${resolvedSymbol || 'tokens'}: ${formatContributionOutput(output)}`}
+                      aria-label={
+                        isQuoteLoading
+                          ? `Calculating ${resolvedSymbol || 'tokens'} quote`
+                          : `${resolvedSymbol || 'tokens'}: ${formatContributionOutput(output)}`
+                      }
                     >
-                      <p
-                        id="token-output"
-                        className="text-lg sm:text-xl font-bold text-emerald-200/95 tabular-nums tracking-tight"
-                      >
-                        {formatContributionOutput(output)}
-                      </p>
-                      <p className="font-bold text-white/70 text-sm leading-tight">
-                        {resolvedSymbol ? `$${resolvedSymbol}` : 'tokens'}
-                      </p>
+                      {isQuoteLoading ? (
+                        // Distinguish "we don't have the price/ruleset yet" from
+                        // "your contribution legitimately rounds to 0 tokens".
+                        // Without this users would see "0 $OVERVIEW" during
+                        // a transient ETH-price hiccup and assume the calc is
+                        // broken (it's just the upstream price API being slow).
+                        <div className="flex items-center gap-2">
+                          <LoadingSpinner className="scale-50" />
+                          <p className="text-white/60 text-sm">
+                            Calculating {resolvedSymbol ? `$${resolvedSymbol}` : 'tokens'}…
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <p
+                            id="token-output"
+                            className="text-lg sm:text-xl font-bold text-emerald-200/95 tabular-nums tracking-tight"
+                          >
+                            {formatContributionOutput(output)}
+                          </p>
+                          <p className="font-bold text-white/70 text-sm leading-tight">
+                            {resolvedSymbol ? `$${resolvedSymbol}` : 'tokens'}
+                          </p>
+                        </>
+                      )}
                     </div>
                     {(() => {
                       const sym = (resolvedSymbol || '').trim()
@@ -292,7 +366,7 @@ function MissionPayRedeemContent({
                     : 'Contribute'
                 }
                 id="open-contribute-modal"
-                className="rounded-xl gradient-2 w-full py-2.5 font-medium"
+                className="rounded-xl gradient-2 w-full py-4 sm:py-5 text-xl sm:text-2xl font-bold tracking-wide uppercase shadow-lg shadow-blue-500/30 ring-1 ring-white/10 hover:shadow-xl hover:shadow-blue-500/50 hover:brightness-110 hover:scale-[1.02] active:scale-[0.99] transition-all duration-200"
                 action={() => onOpenModal?.(usdInput)}
                 isDisabled={isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0}
               />
@@ -973,6 +1047,28 @@ function MissionPayRedeemComponent({
     }
   }, [usdInput, ethUsdPrice])
 
+  /**
+   * Whether the "You receive" quote is genuinely waiting on something the
+   * user can't influence (ETH/USD price still loading, ruleset not loaded
+   * yet, or USD typed but ETH input not yet derived). When true we render
+   * a spinner instead of "0" so users understand the calc isn't broken —
+   * historically a transient Etherscan failure would leave `ethUsdPrice`
+   * at 0, the input gating would skip, and the user would just see "0
+   * $OVERVIEW" with no signal that anything was wrong.
+   */
+  const cleanUsdInput =
+    typeof usdInput === 'string' ? usdInput.replace(/,/g, '') : ''
+  const numericUsdInput = parseFloat(cleanUsdInput)
+  const userTypedAmount = Number.isFinite(numericUsdInput) && numericUsdInput > 0
+  const ruleSetReady = !!(ruleset && ruleset[0] && ruleset[1])
+  const isQuoteLoading =
+    userTypedAmount &&
+    output === 0 &&
+    (isLoadingEthUsdPrice ||
+      !ethUsdPrice ||
+      !ruleSetReady ||
+      parseFloat(input) <= 0)
+
   useEffect(() => {
     if (
       Number(stage) === 3 &&
@@ -1008,7 +1104,7 @@ function MissionPayRedeemComponent({
                       : 'Contribute'
                   }
                   id="open-contribute-modal"
-                  className={`rounded-full gradient-2 rounded-full w-[80vw] py-1 ${buttonClassName}`}
+                  className={`rounded-full gradient-2 w-[85vw] py-3.5 text-lg font-bold uppercase tracking-wide shadow-xl shadow-blue-500/40 ring-1 ring-white/15 hover:brightness-110 hover:shadow-blue-500/60 active:scale-[0.99] transition-all duration-200 ${buttonClassName}`}
                   action={() => requestOpenContributeModal(usdInput)}
                   isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
                   showSignInLabel={false}
@@ -1067,6 +1163,7 @@ function MissionPayRedeemComponent({
                 hideRecentContributions={hideRecentContributions}
                 contributionBalanceEth={contributionBalance.eth}
                 contributionBalanceChain={contributionBalance.chain}
+                isQuoteLoading={isQuoteLoading}
               />
             </div>
           )}

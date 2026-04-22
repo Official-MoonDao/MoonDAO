@@ -69,13 +69,13 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: 'Launchpad',
+        name: 'Send Frank to Space',
         icon: RocketLaunchIcon,
         href: '/launch',
         children: [
-          { name: 'Launchpad Explainer', href: '/launch' },
-          { name: 'Overview Fundraiser', href: '/mission/4' },
+          { name: 'Fundraiser', href: '/mission/4' },
           { name: 'Fly with Frank Leaderboard', href: '/overview-vote' },
+          { name: 'Launchpad Explainer', href: '/launch' },
         ],
       },
       {
