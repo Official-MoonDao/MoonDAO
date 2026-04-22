@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import fetcher from '@/lib/swr/fetcher'
 

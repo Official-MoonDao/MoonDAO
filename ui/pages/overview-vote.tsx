@@ -12,10 +12,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { getAccessToken } from '@privy-io/react-auth'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
 import { fetchOverviewLeaderboard } from '@/lib/overview-delegate/fetchLeaderboard'
 import { applyOptimisticUpdate } from '@/lib/overview-delegate/leaderboard'
 import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
@@ -347,70 +347,18 @@ export default function OverviewDelegate({
       const receipt: any = await sendAndConfirmTransaction({ transaction: tx, account })
       setHasExistingDelegation(true)
 
-      // Send Discord notification (fire-and-forget). The notification API is
-      // wrapped in `authMiddleware`, which requires either a valid NextAuth
-      // session cookie OR an `Authorization: Bearer <privy-token>` header. We
-      // can't rely solely on the NextAuth cookie because it isn't always
-      // present for Privy-authenticated users (race after sign-in, expired
-      // session, blocked third-party cookies, etc.) — so we always send the
-      // Bearer token explicitly. Without this the middleware silently 401s
-      // and the Discord message never gets posted.
-      ;(async () => {
-        try {
-          const accessToken = await getAccessToken()
-          const txHash = receipt?.transactionHash
-          if (!accessToken || !txHash) {
-            console.warn(
-              '[leaderboard-notification] skipped: missing',
-              !accessToken ? 'accessToken' : 'txHash'
-            )
-            return
-          }
-
-          // Tiny retry loop for transient network / 5xx failures so a single
-          // blip doesn't drop the notification entirely.
-          const maxAttempts = 3
-          for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            try {
-              const resp = await fetch(
-                '/api/overview/leaderboard-notification',
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${accessToken}`,
-                  },
-                  body: JSON.stringify({
-                    txHash,
-                    accessToken,
-                    delegateeAddress: selectedCitizen.owner,
-                  }),
-                }
-              )
-              if (resp.ok) return
-              // 4xx responses (other than 408/429) indicate a problem that
-              // retrying won't fix — log and stop.
-              if (
-                resp.status >= 400 &&
-                resp.status < 500 &&
-                resp.status !== 408 &&
-                resp.status !== 429
-              ) {
-                const body = await resp.text().catch(() => '')
-                console.warn(
-                  `[leaderboard-notification] failed (${resp.status}): ${body}`
-                )
-                return
-              }
-            } catch (fetchErr) {
-              if (attempt === maxAttempts - 1) throw fetchErr
-            }
-            await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)))
-          }
-        } catch (err) {
-          console.warn('[leaderboard-notification] error:', err)
-        }
-      })()
+      // Fire-and-forget Discord notification via the shared helper, which
+      // handles the Privy Bearer header (the notification API's
+      // `authMiddleware` 401s without it for Privy-only sessions) and the
+      // bounded retry loop for transient network / 5xx blips.
+      void sendOnchainNotification(
+        '/api/overview/leaderboard-notification',
+        {
+          txHash: receipt?.transactionHash,
+          delegateeAddress: selectedCitizen.owner,
+        },
+        { label: 'leaderboard-notification' }
+      )
 
       confetti({
         particleCount: 150,
