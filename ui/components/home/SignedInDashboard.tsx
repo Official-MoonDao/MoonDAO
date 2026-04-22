@@ -653,6 +653,7 @@ export default function SignedInDashboard({
                           </svg>
                         </div>
                       </div>
+                    </div>
                   ))
                 ) : (
                   <div className="text-center py-16 min-h-[300px] flex flex-col justify-center">
