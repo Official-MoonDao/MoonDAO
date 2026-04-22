@@ -1062,20 +1062,26 @@ export default function MissionContributeModal({
     }
 
     const emailTrim = contributorEmail.trim()
+    // Each entry is a full verb phrase so we can drop them into a single
+    // `Please {a} and {b}.` template without ending up with ungrammatical
+    // toasts like "Please a valid email address." when only one field is
+    // missing.
     const missingRequired: string[] = []
     if (!isValidContributorEmail(emailTrim)) {
-      missingRequired.push('a valid email address')
+      missingRequired.push('enter a valid email address')
     }
     if (!agreedToCondition) {
       missingRequired.push('agree to the Terms and Conditions')
     }
     if (missingRequired.length > 0) {
-      toast.error(
+      const joined =
         missingRequired.length === 1
-          ? `Please ${missingRequired[0]}.`
-          : `Please enter ${missingRequired[0]} and ${missingRequired[1]}.`,
-        { style: toastStyle, duration: 6000 }
-      )
+          ? missingRequired[0]
+          : `${missingRequired.slice(0, -1).join(', ')} and ${missingRequired[missingRequired.length - 1]}`
+      toast.error(`Please ${joined}.`, {
+        style: toastStyle,
+        duration: 6000,
+      })
       return
     }
 
