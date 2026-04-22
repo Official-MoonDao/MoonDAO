@@ -245,8 +245,33 @@ export default function Fees() {
                     jsonrpc: '2.0',
                   }),
                 })
+                if (!response.ok) {
+                  console.error(
+                    `RPC request failed for ${slug}: ${response.status} ${response.statusText}`
+                  )
+                  return BigNumber.from(0)
+                }
                 const data = await response.json()
-                return BigNumber.from(data.result || '0')
+                if (data?.error) {
+                  console.error(`RPC error for ${slug}:`, data.error)
+                  return BigNumber.from(0)
+                }
+                const result = data?.result
+                // Guard against malformed responses like '0x' or non-hex strings
+                // that would otherwise throw inside BigNumber.from.
+                if (
+                  typeof result !== 'string' ||
+                  !/^0x[0-9a-fA-F]+$/.test(result)
+                ) {
+                  if (result !== undefined && result !== null) {
+                    console.error(
+                      `Invalid eth_getBalance result for ${slug}:`,
+                      result
+                    )
+                  }
+                  return BigNumber.from(0)
+                }
+                return BigNumber.from(result)
               } catch (error) {
                 console.error(`Error fetching balance for ${slug}:`, error)
                 return BigNumber.from(0)
