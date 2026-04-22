@@ -75,20 +75,58 @@ async function fetchCryptoCompare(): Promise<PriceResult | null> {
   }
 }
 
+/**
+ * Resolves with the first promise that settles with a non-null value.
+ *
+ * Differs from `Promise.any` in two important ways for our use:
+ *  1. Our fetchers return `null` on failure rather than throwing, so a
+ *     `null` resolution should be treated like a rejection (keep waiting
+ *     for the other source).
+ *  2. We deliberately *don't* abort the slower request — we just stop
+ *     waiting for it. The slow source's `AbortSignal.timeout` already
+ *     bounds the work, and letting it finish in the background is fine
+ *     because the serverless invocation will be torn down anyway.
+ *
+ * Returns `null` only if every input resolves null / rejects.
+ */
+function raceFirstValid<T>(promises: Promise<T | null>[]): Promise<T | null> {
+  if (promises.length === 0) return Promise.resolve(null)
+  return new Promise((resolve) => {
+    let pending = promises.length
+    let settled = false
+    const finish = (value: T | null) => {
+      if (settled) return
+      settled = true
+      resolve(value)
+    }
+    for (const p of promises) {
+      p.then(
+        (value) => {
+          if (value != null) {
+            finish(value)
+          } else if (--pending === 0) {
+            finish(null)
+          }
+        },
+        () => {
+          if (--pending === 0) finish(null)
+        }
+      )
+    }
+  })
+}
+
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Race etherscan + coingecko in parallel so a slow primary source doesn't
-  // gate the response on its full timeout. Whichever returns a valid number
-  // first wins; cryptocompare is only used if both of those fail.
-  const [etherscan, coingecko] = await Promise.all([
-    fetchEtherscan(),
-    fetchCoinGecko(),
-  ])
-
-  let result = etherscan ?? coingecko
+  // Truly race etherscan + coingecko: whichever returns a valid price
+  // *first* resolves the response. We don't wait for the slower source to
+  // also finish (each has its own 4s timeout, and `Promise.all` would
+  // serialize us behind the slowest). Cryptocompare is only consulted if
+  // both of the primaries failed/returned null.
+  let result = await raceFirstValid([fetchEtherscan(), fetchCoinGecko()])
   if (!result) {
     result = await fetchCryptoCompare()
   }
