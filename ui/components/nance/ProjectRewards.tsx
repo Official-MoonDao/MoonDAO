@@ -50,7 +50,6 @@ import {
   getRelativeQuarter,
   isRewardsCycle,
   isApprovalActive,
-  getSubmissionQuarter,
 } from '@/lib/utils/dates'
 import { getBudget, getPayouts, computeRewardPercentages } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
@@ -288,7 +287,14 @@ export function ProjectRewards({
   const isMemberVote = IS_MEMBER_VOTE
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
-  const { quarter: submissionQuarter, year: submissionYear } = getSubmissionQuarter()
+  // The proposals being voted on right now belong to the current calendar
+  // quarter — that's the key the page already filters by in
+  // `getStaticProps`. We deliberately do NOT use `getSubmissionQuarter()`
+  // here: past its ~3-week submission cutoff it advances to the *next*
+  // quarter (because new submissions then target the next cycle), which
+  // would orphan member-vote rows from the in-flight Q{n} proposals.
+  const proposalQuarter = currentQuarter
+  const proposalYear = currentYear
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
@@ -451,8 +457,8 @@ export function ProjectRewards({
   const proposalAllocationStatement = useMemo(() => {
     const tableName = PROPOSALS_TABLE_NAMES[chainSlug]
     if (!tableName || !userAddress) return null
-    return `SELECT * FROM ${tableName} WHERE quarter = ${submissionQuarter} AND year = ${submissionYear} AND address = '${userAddress.toLowerCase()}' LIMIT 1`
-  }, [chainSlug, userAddress, submissionQuarter, submissionYear])
+    return `SELECT * FROM ${tableName} WHERE quarter = ${proposalQuarter} AND year = ${proposalYear} AND address = '${userAddress.toLowerCase()}' LIMIT 1`
+  }, [chainSlug, userAddress, proposalQuarter, proposalYear])
 
   // NOTE: leave `revalidateOnFocus: false` (the default). We only need this
   // freshness query to fire on mount + when its key changes — re-fetching
@@ -485,7 +491,7 @@ export function ProjectRewards({
   const seededProposalKey = useRef<string | null>(null)
   useEffect(() => {
     if (!userAddress) return
-    const seedKey = `${userAddress.toLowerCase()}-${submissionYear}-${submissionQuarter}`
+    const seedKey = `${userAddress.toLowerCase()}-${proposalYear}-${proposalQuarter}`
     if (seededProposalKey.current === seedKey) return
 
     const candidates: any[] = []
@@ -505,8 +511,8 @@ export function ProjectRewards({
 
     for (const d of candidates) {
       if (
-        Number(d?.year) === submissionYear &&
-        Number(d?.quarter) === submissionQuarter &&
+        Number(d?.year) === proposalYear &&
+        Number(d?.quarter) === proposalQuarter &&
         typeof d?.address === 'string' &&
         d.address.toLowerCase() === userAddress.toLowerCase()
       ) {
@@ -530,8 +536,8 @@ export function ProjectRewards({
     userAddress,
     freshProposalAllocations,
     proposalAllocations,
-    submissionQuarter,
-    submissionYear,
+    proposalQuarter,
+    proposalYear,
     validProposalIds,
   ])
 
@@ -591,8 +597,8 @@ export function ProjectRewards({
         'Content-Type': 'application/json', // Important: Specify the content type
       },
       body: JSON.stringify({
-        quarter: submissionQuarter,
-        year: submissionYear,
+        quarter: proposalQuarter,
+        year: proposalYear,
       }),
     })
     const resJson = await res.json()
@@ -1018,8 +1024,8 @@ export function ProjectRewards({
       const proposalsTableName = PROPOSALS_TABLE_NAMES[chainSlug]
       const freshExists = await fetchExistingRowExists(
         proposalsTableName,
-        submissionQuarter,
-        submissionYear,
+        proposalQuarter,
+        proposalYear,
         account.address
       )
       const isEdit = freshExists ?? proposalEdit
@@ -1028,7 +1034,7 @@ export function ProjectRewards({
       const transaction = prepareContractCall({
         contract: contract,
         method: method as string,
-        params: [submissionQuarter, submissionYear, JSON.stringify(normalizedDistribution)],
+        params: [proposalQuarter, proposalYear, JSON.stringify(normalizedDistribution)],
       })
       const receipt = await sendTxAndWaitWithRetry({
         transaction,
@@ -1060,8 +1066,8 @@ export function ProjectRewards({
           {
             txHash: receipt?.transactionHash,
             kind: 'member',
-            quarter: submissionQuarter,
-            year: submissionYear,
+            quarter: proposalQuarter,
+            year: proposalYear,
             proposalCount,
             isEdit,
           },
@@ -1071,7 +1077,7 @@ export function ProjectRewards({
         setTimeout(
           () =>
             router.push(
-              `/projects/thank-you?quarter=${submissionQuarter}&year=${submissionYear}&type=member`
+              `/projects/thank-you?quarter=${proposalQuarter}&year=${proposalYear}&type=member`
             ),
           3000
         )
