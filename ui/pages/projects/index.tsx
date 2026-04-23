@@ -17,7 +17,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { getRelativeQuarter, getSubmissionQuarter, isRewardsCycle } from '@/lib/utils/dates'
+import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
 
 export default function Projects({
@@ -61,7 +61,14 @@ export async function getStaticProps() {
       chain: chain,
     })
 
-    const submissionQuarter = getSubmissionQuarter()
+    // The proposals that should appear on /projects are the ones that belong
+    // to the *current* calendar quarter — i.e. the cycle that's actively
+    // being voted on. `getSubmissionQuarter()` is intentionally NOT used
+    // here: past its ~3-week cutoff it advances to the *next* quarter
+    // (because a brand-new submission via /api/proposals/submit would target
+    // the next cycle), and using it for filtering causes every in-flight
+    // Q{n} proposal to vanish from the page the moment that cutoff passes.
+    const activeProposalQuarter = getRelativeQuarter(0)
     const proposals: Project[] = []
     const currentProjects: Project[] = []
     const pastProjects: Project[] = []
@@ -89,8 +96,8 @@ export async function getStaticProps() {
         if (!BLOCKED_PROJECTS.has(project.id) && !BLOCKED_MDPS.has(project.MDP)) {
           const activeStatus = project.active
           if (activeStatus == PROJECT_PENDING
-            && project.quarter === submissionQuarter.quarter
-            && project.year === submissionQuarter.year
+            && project.quarter === activeProposalQuarter.quarter
+            && project.year === activeProposalQuarter.year
           ) {
             if (project.proposalIPFS) {
               const proposalResponse = await fetch(project.proposalIPFS)
@@ -122,11 +129,12 @@ export async function getStaticProps() {
     const distributions = (await queryTable(chain, distributionStatement)) || []
 
     // Proposal allocations (member-vote distributions) are keyed off of the
-    // *submission* quarter — i.e. the quarter the proposals are being voted
-    // into — NOT the rewards-shifted `quarter`/`year` used for retroactive
-    // payouts. Mixing the two surfaces an old member-vote row from the prior
-    // quarter and incorrectly flips the UI into "Edit Distribution" mode.
-    const proposalAllocationStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE year = ${submissionQuarter.year} AND quarter = ${submissionQuarter.quarter}`
+    // *current* proposal quarter — i.e. the quarter the proposals being
+    // voted on belong to — NOT the rewards-shifted `quarter`/`year` used
+    // for retroactive payouts. Mixing the two surfaces an old member-vote
+    // row from the prior quarter and incorrectly flips the UI into "Edit
+    // Distribution" mode.
+    const proposalAllocationStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE year = ${activeProposalQuarter.year} AND quarter = ${activeProposalQuarter.quarter}`
     const proposalAllocations = (await queryTable(chain, proposalAllocationStatement)) || []
 
     return {
