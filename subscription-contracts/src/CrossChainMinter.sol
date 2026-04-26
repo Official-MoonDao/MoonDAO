@@ -31,12 +31,34 @@ destination address and destination endpoint id.
 */
 contract CrossChainMinter is OApp {
     address public citizenAddress;
+
+    /// @notice Addresses authorized to initiate cross-chain mints. The owner is
+    /// always authorized. This prevents griefers from draining the contract's
+    /// pre-funded ETH (which is used to pay the destination Citizen mint cost)
+    /// by spamming `crossChainMint` with arbitrary recipients.
+    mapping(address => bool) public authorizedMinters;
+
+    event AuthorizedMinterSet(address indexed minter, bool authorized);
+
+    modifier onlyAuthorizedMinter() {
+        require(
+            msg.sender == owner() || authorizedMinters[msg.sender],
+            "CrossChainMinter: not authorized"
+        );
+        _;
+    }
+
     constructor(address _endpoint, address _citizenContract) OApp(_endpoint, msg.sender) Ownable(msg.sender) {
         citizenAddress = _citizenContract;
     }
 
+    function setAuthorizedMinter(address _minter, bool _authorized) external onlyOwner {
+        authorizedMinters[_minter] = _authorized;
+        emit AuthorizedMinterSet(_minter, _authorized);
+    }
+
     function crossChainMint(
-        uint16 _dstEid,
+        uint32 _dstEid,
         bytes calldata _options,
         address to,
         string memory name,
@@ -48,7 +70,7 @@ contract CrossChainMinter is OApp {
         string memory website,
         string memory _view,
         string memory formId
-    ) external payable {
+    ) external payable onlyAuthorizedMinter {
         bytes memory payload = abi.encode(
             to,
             name,

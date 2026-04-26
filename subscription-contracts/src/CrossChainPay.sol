@@ -66,6 +66,10 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
     IJBMultiTerminal public jbMultiTerminal;
     IStargate public stargateRouter;
 
+    /// @notice The trusted LayerZero endpoint on this chain. The only address
+    /// permitted to invoke `lzCompose`.
+    address public lzEndpoint;
+
     // Events
     event CrossChainPayInitiated(
         uint32 indexed dstEid,
@@ -173,6 +177,14 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
         address /*_executor*/,
         bytes calldata /*_extraData*/
     ) external payable {
+        // Authenticate the call: only the trusted LayerZero endpoint may invoke
+        // lzCompose, and only if the originating OApp is our configured Stargate
+        // router. Without these checks, any address could craft a message and
+        // drain the contract's entire ETH balance into a JB project of their
+        // choice.
+        require(msg.sender == lzEndpoint, "CrossChainPay: only endpoint");
+        require(_from == address(stargateRouter), "CrossChainPay: untrusted source");
+
         bytes memory _composeMessage = OFTComposeMsgCodec.composeMsg(_message);
         (
             uint256 projectId,
@@ -181,8 +193,11 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             string memory memo,
             bytes memory metadata
         ) = abi.decode(_composeMessage, (uint256, address, uint256, string, bytes));
-        uint contractBalance = address(this).balance;
-        uint256 tokenCount = jbMultiTerminal.pay{value: contractBalance}(
+        // Use only the value forwarded by the endpoint, not the entire balance,
+        // so any leftover ETH (refunds, dust, accidental sends) cannot be swept
+        // out via this hook.
+        uint256 amountToPay = msg.value;
+        uint256 tokenCount = jbMultiTerminal.pay{value: amountToPay}(
             projectId,
             JBConstants.NATIVE_TOKEN,
             0,
@@ -191,7 +206,7 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             memo,
             metadata
         );
-        emit CrossChainPayReceived(projectId, contractBalance, beneficiary);
+        emit CrossChainPayReceived(projectId, amountToPay, beneficiary);
     }
 
     // Admin functions
@@ -201,6 +216,13 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
 
     function setStargateRouter(address _stargateRouter) external onlyOwner {
         stargateRouter = IStargate(_stargateRouter);
+    }
+
+    /// @notice Configure the trusted LayerZero endpoint that is permitted to
+    /// call `lzCompose`. Must be set after deployment (and whenever endpoints
+    /// are migrated) before cross-chain payments will be accepted.
+    function setLzEndpoint(address _lzEndpoint) external onlyOwner {
+        lzEndpoint = _lzEndpoint;
     }
 
     // Emergency functions

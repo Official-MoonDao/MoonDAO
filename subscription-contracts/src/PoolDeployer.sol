@@ -27,6 +27,7 @@ contract PoolDeployer is Ownable {
     PositionManager public posm;
     IERC20 public token;
     address public hookAddress;
+    address public immutable creator; // The MissionCreator (or other deployer) that may call setToken
 
     // the startingPrice is expressed as sqrtPriceX96: floor(sqrt(token / token0) * 2^96)
     // use 1000:1 as starting price based on jb price of 0.001 per token
@@ -37,6 +38,7 @@ contract PoolDeployer is Ownable {
     constructor(address _hookAddress, address _positionManager, address owner) Ownable(owner) {
         hookAddress = _hookAddress;
         posm = PositionManager(payable(_positionManager));
+        creator = msg.sender;
     }
 
     // Allow contract to receive ETH
@@ -44,6 +46,8 @@ contract PoolDeployer is Ownable {
 
     function setToken(address _token) external {
         require(address(token) == address(0), "Token already set");
+        require(msg.sender == creator, "Only creator can set token");
+        require(_token != address(0), "Zero token");
         token = IERC20(_token);
     }
 
@@ -51,7 +55,7 @@ contract PoolDeployer is Ownable {
         hookAddress = _hookAddress;
     }
 
-    function createAndAddLiquidity() external {
+    function createAndAddLiquidity() external onlyOwner {
         uint256 amount0 = address(this).balance - 1 wei;
         uint256 amount1 = token.balanceOf(address(this)) - 1 wei;
         require(amount0 > 0 && amount1 > 0, "no funds to deploy");

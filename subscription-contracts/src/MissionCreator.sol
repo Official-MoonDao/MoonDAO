@@ -293,10 +293,10 @@ contract MissionCreator is Ownable, IERC721Receiver {
         address tokenAddress = address(0);
         if(token){
             tokenAddress = address(jbController.deployERC20For(projectId, tokenName, tokenSymbol, 0));
+            poolDeployer.setToken(tokenAddress);
         }
         moonDAOVesting.setToken(tokenAddress);
         teamVesting.setToken(tokenAddress);
-        poolDeployer.setToken(tokenAddress);
 
 
         jbProjects.safeTransferFrom(address(this), to, projectId);

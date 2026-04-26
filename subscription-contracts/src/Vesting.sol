@@ -10,6 +10,8 @@ interface IERC20 {
 contract Vesting {
     IERC20 public token;
     address public beneficiary;
+    address public immutable creator;            // Only this address may call setToken
+    bool public tokenSet;                        // Whether setToken has been called
     uint256 public immutable start;
     uint256 public immutable cliffDuration;      // 1-year cliff
     uint256 public constant vestingDuration = 4 * 365 days;  // 4-year vesting
@@ -17,6 +19,7 @@ contract Vesting {
 
     constructor(address _beneficiary) {
         beneficiary = _beneficiary;
+        creator = msg.sender;
         if (block.chainid != 11155111){
             cliffDuration = 365 days; // 1-year cliff
         } else {
@@ -25,9 +28,13 @@ contract Vesting {
         start = block.timestamp; // Vesting starts immediately upon deployment
     }
 
-    // Set the token to be vested (only once)
+    // Set the token to be vested (only once, only by the deploying creator).
+    // Allows _token == address(0) so the creator can intentionally finalize a
+    // tokenless vesting contract without leaving setToken open to anyone.
     function setToken(address _token) external {
-        require(address(token) == address(0), "Token already set");
+        require(!tokenSet, "Token already set");
+        require(msg.sender == creator, "Only creator can set token");
+        tokenSet = true;
         token = IERC20(_token);
     }
 
