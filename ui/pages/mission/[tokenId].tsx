@@ -35,6 +35,15 @@ type ProjectProfileProps = {
   _fundingGoal: number
   _ruleset: any[]
   _overviewLeaderboard?: LeaderboardEntry[]
+  /** $OVERVIEW total backing the candidate currently sitting at rank 25 on
+   *  the leaderboard. `null` when fewer than 25 candidates exist. Only
+   *  provided for the Overview Flight mission (id 4). */
+  _overviewTop25Threshold?: number | null
+  /** Number of citizens currently ranked on the $OVERVIEW leaderboard
+   *  (those with a registered Citizen NFT and at least one backer). Drives
+   *  honest copy in the Fly with Frank explainer when the top 25 isn't
+   *  full yet. Only provided for the Overview Flight mission. */
+  _overviewRankedCount?: number
 }
 
 /** Mission ID for the Overview Flight fundraiser; used to opportunistically
@@ -53,6 +62,8 @@ export default function MissionProfilePage({
   _fundingGoal,
   _ruleset,
   _overviewLeaderboard,
+  _overviewTop25Threshold,
+  _overviewRankedCount,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -76,6 +87,8 @@ export default function MissionProfilePage({
           _fundingGoal={_fundingGoal}
           _ruleset={_ruleset}
           _overviewLeaderboard={_overviewLeaderboard}
+          _overviewTop25Threshold={_overviewTop25Threshold}
+          _overviewRankedCount={_overviewRankedCount}
         />
       </JuiceProviders>
     </>
@@ -165,10 +178,15 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
 
       // Kick off the (mission-4-only) Overview leaderboard fetch in parallel
       // with the IPFS metadata + token metadata round-trips so it doesn't
-      // serially extend page TTFB.
+      // serially extend page TTFB. We pull the full ranking (not just the
+      // top 25) so we can simultaneously populate the leaderboard preview
+      // (top 5), derive the live threshold to crack the top 25, and report
+      // the actual ranked count to the explainer so it never makes a false
+      // "fewer than 25 candidates" claim when a partial fetch happens to
+      // truncate results.
       const isOverviewMission = Number(tokenId) === OVERVIEW_MISSION_ID
       const overviewLeaderboardPromise = isOverviewMission
-        ? fetchOverviewLeaderboard(5).catch((error) => {
+        ? fetchOverviewLeaderboard().catch((error) => {
             console.warn(
               '[mission/4] overview leaderboard fetch failed:',
               error
@@ -204,7 +222,26 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
           ]
         : [{ weight: 0 }, { reservedPercent: 0 }]
 
-      const _overviewLeaderboard = await overviewLeaderboardPromise
+      const _overviewLeaderboardFull = await overviewLeaderboardPromise
+
+      // Slice to the top 5 for the preview component (its existing UX),
+      // pull the 25th-place backing total for the explainer's threshold
+      // callout, and report the actual ranked count so the empty-state
+      // copy stays factual when the top 25 isn't filled yet.
+      const _overviewLeaderboard =
+        _overviewLeaderboardFull !== undefined
+          ? _overviewLeaderboardFull.slice(0, 5)
+          : undefined
+      const _overviewRankedCount =
+        _overviewLeaderboardFull !== undefined
+          ? _overviewLeaderboardFull.length
+          : undefined
+      const _overviewTop25Threshold =
+        _overviewLeaderboardFull !== undefined
+          ? _overviewLeaderboardFull.length >= 25
+            ? _overviewLeaderboardFull[24].totalDelegated
+            : null
+          : undefined
 
       return {
         props: {
@@ -220,6 +257,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
           _ruleset,
           ...(_overviewLeaderboard !== undefined
             ? { _overviewLeaderboard }
+            : {}),
+          ...(_overviewTop25Threshold !== undefined
+            ? { _overviewTop25Threshold }
+            : {}),
+          ...(_overviewRankedCount !== undefined
+            ? { _overviewRankedCount }
             : {}),
         },
       }

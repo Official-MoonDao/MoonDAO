@@ -22,6 +22,7 @@ import {
   jbSubgraphVolumeToBigIntWei,
   weiBigintToEthNumber,
 } from '@/lib/mission/useMissionRaisedProgress'
+import MissionDeadlineCountdown from './MissionDeadlineCountdown'
 import MissionFundingMilestonesList from './MissionFundingMilestonesList'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
 import MissionSingleLineTitle from './MissionSingleLineTitle'
@@ -531,19 +532,27 @@ const MissionProfileHeader = React.memo(
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
-                      {refundPeriodPassed || deadlinePassed
-                        ? deadlinePassed
+                    {refundPeriodPassed || deadlinePassed ? (
+                      <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
+                        {deadlinePassed
                           ? `${new Date(deadline || 0).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric',
                             })}`
-                          : 'REFUNDED'
-                        : Number(stage) === 3
-                        ? 'REFUND'
-                        : duration}
-                    </p>
+                          : 'REFUNDED'}
+                      </p>
+                    ) : Number(stage) === 3 ? (
+                      <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
+                        REFUND
+                      </p>
+                    ) : deadline != null && deadline > 0 ? (
+                      <MissionDeadlineCountdown deadline={deadline} />
+                    ) : (
+                      <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
+                        {duration}
+                      </p>
+                    )}
                   </div>
 
                   {/* Contributions */}
