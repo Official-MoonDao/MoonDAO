@@ -46,6 +46,14 @@ import { formatNumberWithCommasAndDecimals } from '@/lib/utils/numbers'
 
 const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
 
+// Allow this handler to run longer than the Vercel default (10s on Hobby /
+// 15s on Pro). Cross-chain (Ethereum) notifications routinely need more time
+// for `waitForReceipt`, Tableland reads, IPFS metadata, Etherscan ETH price,
+// Discord, and the awaited thank-you email.
+export const config = {
+  maxDuration: 60,
+}
+
 const NOTIFICATION_CHANNEL_ID =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? GENERAL_CHANNEL_ID
@@ -72,11 +80,32 @@ const missionCreatorContract = getContract({
   abi: MissionCreator.abi as any,
 })
 
-// In-memory storage for used transaction hashes to prevent replay attacks
-const usedTransactions = new Set<string>()
+// In-memory storage for used transaction hashes to prevent replay attacks.
+//
+// Stored as `txHash -> insertion timestamp (ms)`. We treat any entry older
+// than `USED_TX_TTL_MS` as stale and let the request through, so a previous
+// invocation that was killed mid-flight by the platform (timeout, OOM, lambda
+// recycle) doesn't permanently lock the txHash on a warm instance — the
+// client's retry would otherwise keep getting "This transaction has already
+// been processed" with no way to recover.
+const USED_TX_TTL_MS = 90 * 1000
+const usedTransactions = new Map<string, number>()
+
+function isUsedTransaction(txHash: string): boolean {
+  const insertedAt = usedTransactions.get(txHash)
+  if (insertedAt === undefined) return false
+  if (Date.now() - insertedAt > USED_TX_TTL_MS) {
+    usedTransactions.delete(txHash)
+    return false
+  }
+  return true
+}
 
 setInterval(() => {
-  usedTransactions.clear()
+  const now = Date.now()
+  for (const [txHash, insertedAt] of usedTransactions) {
+    if (now - insertedAt > USED_TX_TTL_MS) usedTransactions.delete(txHash)
+  }
 }, 60 * 60 * 1000)
 
 async function handler(req: any, res: any) {
@@ -261,13 +290,13 @@ async function handler(req: any, res: any) {
     const mission = missionRows[0]
 
     // Reserve txHash once inputs are validated so concurrent/duplicate calls skip expensive work below.
-    if (usedTransactions.has(txHash)) {
+    if (isUsedTransaction(txHash)) {
       return res.status(400).json({
         message:
           'This transaction has already been processed for contribution notification',
       })
     }
-    usedTransactions.add(txHash)
+    usedTransactions.set(txHash, Date.now())
     contributionTxConsumed = txHash
 
     const missionFundingGoal =

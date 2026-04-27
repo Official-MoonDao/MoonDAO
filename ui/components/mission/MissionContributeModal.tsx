@@ -46,6 +46,7 @@ import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import { formatContributionOutput } from '@/lib/mission'
+import { sendContributionNotification } from '@/lib/mission/sendContributionNotification'
 import { waitForCrossChainPayReceipt } from '@/lib/mission/waitForCrossChainPayReceipt'
 import { fetchNativeBalanceWei } from '@/lib/mission/contributeModalDefaultChain'
 import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
@@ -1166,42 +1167,12 @@ export default function MissionContributeModal({
         flushSync(() => setContributeButtonPhase('confirm'))
         const originReceipt: any = await waitForReceipt(submittedOrigin)
 
-        // Send notification while the user is still in the modal
-        try {
-          const accessTokenCross = await getAccessToken()
-          const notificationBodyCross = {
-            txHash: originReceipt.transactionHash,
-            accessToken: accessTokenCross,
-            txChainSlug: chainSlug,
-            projectId: mission?.projectId,
-            contributorEmail: emailTrim,
-            newsletterOptIn,
-            isCrossChain: true,
-            memo: message,
-          }
-          const maxAttempts = 5
-          for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const resp = await fetch('/api/mission/contribution-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(notificationBodyCross),
-            })
-            if (resp.ok) break
-            const body: any = await resp.json().catch(() => ({}))
-            const msg = body?.message || ''
-            const retryable =
-              msg.includes('CrossChainPayInitiated') || msg.includes('Transaction not found')
-            if (retryable && attempt < maxAttempts - 1) {
-              await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
-              continue
-            }
-            break
-          }
-        } catch (notifyErr) {
-          console.error('Cross-chain contribution notification error:', notifyErr)
-        }
-
-        // Notification sent -- now show success and allow the user to leave
+        // Show success UI immediately. Previously we awaited the notification
+        // POST (and up to ~20s of retries) before showing confetti/closing the
+        // modal, which on Ethereum could keep the user staring at a spinner
+        // for 30-90s. Many users would close the tab during that window,
+        // which cancelled the notification fetch and meant the Discord ping
+        // was lost forever.
         confetti({
           particleCount: 150,
           spread: 100,
@@ -1233,6 +1204,49 @@ export default function MissionContributeModal({
             { shallow: true }
           )
         }
+
+        // Fire the notification in the background with `keepalive: true` so
+        // the first attempt survives a tab close. Retries (5xx, network
+        // errors, transient RPC races) still happen if the page stays open.
+        void (async () => {
+          try {
+            const accessTokenCross = await getAccessToken()
+            const result = await sendContributionNotification(
+              {
+                txHash: originReceipt.transactionHash,
+                accessToken: accessTokenCross,
+                txChainSlug: chainSlug,
+                projectId: mission?.projectId,
+                contributorEmail: emailTrim,
+                newsletterOptIn,
+                isCrossChain: true,
+                memo: message,
+              },
+              {
+                keepalive: true,
+                onAttemptError: ({ attempt, status, message: m, willRetry }) => {
+                  console.warn(
+                    `Cross-chain contribution notification attempt ${attempt} failed (status ${status}): ${m}${
+                      willRetry ? ' — retrying' : ''
+                    }`
+                  )
+                },
+              }
+            )
+            if (!result.ok) {
+              console.error(
+                'Cross-chain contribution notification failed after retries:',
+                result.status,
+                result.message
+              )
+            }
+          } catch (notifyErr) {
+            console.error(
+              'Cross-chain contribution notification error:',
+              notifyErr
+            )
+          }
+        })()
 
         // Settlement polling continues in the background (notification already sent)
         void (async () => {
@@ -1305,41 +1319,32 @@ export default function MissionContributeModal({
 
       // Same-chain and cross-chain both settle with a Juicebox Pay on `DEFAULT_CHAIN_V5`; we always
       // notify using that destination tx hash and `defaultChainSlug` (not the LayerZero source tx).
-      const notificationBody = {
-        txHash: receipt.transactionHash,
-        accessToken: accessToken,
-        txChainSlug: defaultChainSlug,
-        projectId: mission?.projectId,
-        contributorEmail: emailTrim,
-        newsletterOptIn,
-      }
-
-      let contributionNotificationData: { message?: string; success?: boolean } = {}
-      const maxNotificationAttempts = 5
-      for (let attempt = 0; attempt < maxNotificationAttempts; attempt++) {
-        const contributionNotification = await fetch('/api/mission/contribution-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(notificationBody),
-        })
-        contributionNotificationData = await contributionNotification.json()
-
-        if (contributionNotification.ok) {
-          break
+      const notificationResult = await sendContributionNotification(
+        {
+          txHash: receipt.transactionHash,
+          accessToken,
+          txChainSlug: defaultChainSlug,
+          projectId: mission?.projectId,
+          contributorEmail: emailTrim,
+          newsletterOptIn,
+        },
+        {
+          onAttemptError: ({ attempt, status, message: m, willRetry }) => {
+            console.warn(
+              `Contribution notification attempt ${attempt} failed (status ${status}): ${m}${
+                willRetry ? ' — retrying' : ''
+              }`
+            )
+          },
         }
+      )
 
-        const msg = contributionNotificationData?.message || ''
-        const retryable =
-          msg.includes('No Pay event found') || msg.includes('Transaction not found')
-        if (retryable && attempt < maxNotificationAttempts - 1) {
-          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
-          continue
-        }
-        break
-      }
-
-      if (!contributionNotificationData?.success && contributionNotificationData?.message) {
-        console.warn('Contribution notification:', contributionNotificationData.message)
+      if (!notificationResult.ok && notificationResult.message) {
+        console.warn(
+          'Contribution notification:',
+          notificationResult.status,
+          notificationResult.message
+        )
       }
 
       setInput('0')
