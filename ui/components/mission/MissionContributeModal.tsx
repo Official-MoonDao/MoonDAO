@@ -1315,38 +1315,12 @@ export default function MissionContributeModal({
         receipt = await waitForReceipt(submittedPay)
       }
 
-      const accessToken = await getAccessToken()
-
-      // Same-chain and cross-chain both settle with a Juicebox Pay on `DEFAULT_CHAIN_V5`; we always
-      // notify using that destination tx hash and `defaultChainSlug` (not the LayerZero source tx).
-      const notificationResult = await sendContributionNotification(
-        {
-          txHash: receipt.transactionHash,
-          accessToken,
-          txChainSlug: defaultChainSlug,
-          projectId: mission?.projectId,
-          contributorEmail: emailTrim,
-          newsletterOptIn,
-        },
-        {
-          onAttemptError: ({ attempt, status, message: m, willRetry }) => {
-            console.warn(
-              `Contribution notification attempt ${attempt} failed (status ${status}): ${m}${
-                willRetry ? ' — retrying' : ''
-              }`
-            )
-          },
-        }
-      )
-
-      if (!notificationResult.ok && notificationResult.message) {
-        console.warn(
-          'Contribution notification:',
-          notificationResult.status,
-          notificationResult.message
-        )
-      }
-
+      // Show success UI immediately on tx confirmation. Same-chain and
+      // cross-chain both settle with a Juicebox Pay on `DEFAULT_CHAIN_V5`,
+      // so the notification fetch is fired into the background (with
+      // `keepalive: true`) using the destination tx hash + `defaultChainSlug`
+      // — never blocking the modal close, confetti, or free-mint flow on
+      // the notification API's retry window.
       setInput('0')
       setUsdInput('0')
 
@@ -1377,6 +1351,47 @@ export default function MissionContributeModal({
         shapes: ['circle', 'star'],
         colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
       })
+
+      // Fire the Discord/newsletter notification in the background. Mirrors
+      // the cross-chain branch's pattern: `keepalive: true` lets the first
+      // attempt survive the user closing the tab, and any retries happen
+      // out-of-band so the success UI is never gated on them.
+      const sameChainTxHash = receipt.transactionHash
+      const sameChainProjectId = mission?.projectId
+      void (async () => {
+        try {
+          const accessToken = await getAccessToken()
+          const result = await sendContributionNotification(
+            {
+              txHash: sameChainTxHash,
+              accessToken,
+              txChainSlug: defaultChainSlug,
+              projectId: sameChainProjectId,
+              contributorEmail: emailTrim,
+              newsletterOptIn,
+            },
+            {
+              keepalive: true,
+              onAttemptError: ({ attempt, status, message: m, willRetry }) => {
+                console.warn(
+                  `Contribution notification attempt ${attempt} failed (status ${status}): ${m}${
+                    willRetry ? ' — retrying' : ''
+                  }`
+                )
+              },
+            }
+          )
+          if (!result.ok) {
+            console.error(
+              'Contribution notification failed after retries:',
+              result.status,
+              result.message
+            )
+          }
+        } catch (notifyErr) {
+          console.error('Contribution notification error:', notifyErr)
+        }
+      })()
 
       if (!isCitizen) {
         // Check free mint eligibility via the API (uses Bendystraw participants data)
