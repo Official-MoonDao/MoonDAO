@@ -6,7 +6,13 @@ import {
   OVERVIEW_TOKEN_DECIMALS,
   VOTES_TABLE_NAMES,
 } from 'const/config'
-import { formatUnits } from 'ethers'
+// `formatUnits` lives on `ethers/lib/utils` in ethers v5 (the version this
+// project ships). Importing the named export from `'ethers'` directly works
+// at type-check time but blows up at runtime under Next's Webpack barrel
+// optimizer ("(0 , formatUnits) is not a function"), which silently kicks
+// the leaderboard onto its stored-amount fallback path. Pulling from the
+// utils sub-path avoids the optimizer foot-gun.
+import { formatUnits } from 'ethers/lib/utils'
 import { arbitrum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'

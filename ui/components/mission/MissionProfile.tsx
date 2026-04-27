@@ -105,6 +105,15 @@ type MissionProfileProps = {
   /** Pre-fetched top entries of the $OVERVIEW leaderboard. Only provided
    *  for the Overview Flight mission (id 4); undefined for other missions. */
   _overviewLeaderboard?: LeaderboardEntry[]
+  /** $OVERVIEW total backing the candidate currently sitting at rank 25 on
+   *  the leaderboard. `null` when fewer than 25 candidates exist. Only
+   *  provided for the Overview Flight mission. Powers the "minimum to enter
+   *  the top 25" callout in the Fly with Frank explainer card. */
+  _overviewTop25Threshold?: number | null
+  /** Total ranked candidates on the $OVERVIEW leaderboard. Used by the Fly
+   *  with Frank explainer to show honest empty-state copy when the top 25
+   *  isn't filled yet (vs. just claiming "fewer than 25"). */
+  _overviewRankedCount?: number
 }
 
 export default function MissionProfile({
@@ -119,6 +128,8 @@ export default function MissionProfile({
   _fundingGoal,
   _ruleset,
   _overviewLeaderboard,
+  _overviewTop25Threshold,
+  _overviewRankedCount,
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const router = useRouter()
@@ -543,6 +554,16 @@ export default function MissionProfile({
                     fundingPickReady={fundingPickReady}
                     fundingChainBalances={fundingChainBalances}
                     recommendedFundingChain={recommendedChain}
+                    overviewTop25Threshold={
+                      mission?.id === 4 || String(mission?.id) === '4'
+                        ? _overviewTop25Threshold ?? null
+                        : undefined
+                    }
+                    overviewRankedCount={
+                      mission?.id === 4 || String(mission?.id) === '4'
+                        ? _overviewRankedCount
+                        : undefined
+                    }
                     hideRecentContributions
                   />
                 </div>
@@ -589,6 +610,16 @@ export default function MissionProfile({
                   _overviewLeaderboard={
                     mission?.id === 4 || String(mission?.id) === '4'
                       ? _overviewLeaderboard ?? []
+                      : undefined
+                  }
+                  _overviewTop25Threshold={
+                    mission?.id === 4 || String(mission?.id) === '4'
+                      ? _overviewTop25Threshold ?? null
+                      : undefined
+                  }
+                  _overviewRankedCount={
+                    mission?.id === 4 || String(mission?.id) === '4'
+                      ? _overviewRankedCount
                       : undefined
                   }
                 />

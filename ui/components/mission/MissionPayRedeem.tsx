@@ -33,6 +33,7 @@ import AcceptedPaymentMethods from '../privy/AcceptedPaymentMethods'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionActivityList from './MissionActivityList'
 import MissionContributorTiersPanel from './MissionContributorTiersPanel'
+import MissionFlyWithFrankExplainer from './MissionFlyWithFrankExplainer'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
 
 /**
@@ -112,6 +113,8 @@ function MissionPayRedeemContent({
   contributionBalanceEth,
   contributionBalanceChain,
   isQuoteLoading = false,
+  overviewTop25Threshold,
+  overviewRankedCount,
 }: any) {
   const resolvedSymbol = getMissionTokenSymbol(mission?.id, token?.tokenSymbol)
   const isRefundable = Number(stage) === 3
@@ -377,6 +380,14 @@ function MissionPayRedeemContent({
             </div>
 
             <MissionContributorTiersPanel missionId={mission?.id} />
+            {overviewTop25Threshold !== undefined &&
+              (mission?.id === 4 || String(mission?.id) === '4') && (
+                <MissionFlyWithFrankExplainer
+                  top25Threshold={overviewTop25Threshold}
+                  rankedCount={overviewRankedCount}
+                  missionId={mission?.id}
+                />
+              )}
             {resolvedSymbol && +tokenCredit?.toString() > 0 && (
               <PrivyWeb3Button
                 requiredChain={DEFAULT_CHAIN_V5}
@@ -562,6 +573,16 @@ export type MissionPayRedeemProps = {
   fundingPickReady?: boolean
   fundingChainBalances?: FundingChainBalanceEntry[] | null
   recommendedFundingChain?: Chain | null
+  /** Live minimum $OVERVIEW required to crack the top 25 on the Fly with
+   *  Frank leaderboard. `null` means fewer than 25 ranked candidates exist
+   *  yet; `undefined` means we're not on the Overview Mission and the
+   *  explainer card should not render at all. */
+  overviewTop25Threshold?: number | null
+  /** Total ranked candidates on the $OVERVIEW leaderboard. Lets the
+   *  explainer's empty-state copy reflect reality (e.g. "X of 25 slots
+   *  filled") instead of falsely claiming "fewer than 25" when a fetch
+   *  hiccup truncates results. */
+  overviewRankedCount?: number
 }
 
 function MissionPayRedeemComponent({
@@ -589,6 +610,8 @@ function MissionPayRedeemComponent({
   fundingPickReady = false,
   fundingChainBalances = null,
   recommendedFundingChain = null,
+  overviewTop25Threshold,
+  overviewRankedCount,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -1164,6 +1187,8 @@ function MissionPayRedeemComponent({
                 contributionBalanceEth={contributionBalance.eth}
                 contributionBalanceChain={contributionBalance.chain}
                 isQuoteLoading={isQuoteLoading}
+                overviewTop25Threshold={overviewTop25Threshold}
+                overviewRankedCount={overviewRankedCount}
               />
             </div>
           )}

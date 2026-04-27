@@ -94,6 +94,14 @@ export default function MissionInfo({
    *  When provided we surface a dedicated Leaderboard tab; for every other
    *  mission this is `undefined` and the tab is hidden. */
   _overviewLeaderboard,
+  /** Live "minimum $OVERVIEW to enter the top 25" value for the Overview
+   *  Mission. Forwarded to MissionPayRedeem so the explainer card under the
+   *  support tiers can render the threshold callout. */
+  _overviewTop25Threshold,
+  /** Total ranked candidates on the leaderboard. Forwarded to the explainer
+   *  card so the empty-state copy can stay accurate when the top 25 isn't
+   *  filled yet. */
+  _overviewRankedCount,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -326,6 +334,8 @@ export default function MissionInfo({
             fundingPickReady={fundingPickReady}
             fundingChainBalances={fundingChainBalances}
             recommendedFundingChain={recommendedChain}
+            overviewTop25Threshold={_overviewTop25Threshold}
+            overviewRankedCount={_overviewRankedCount}
           />
         </div>
       </div>
