@@ -3,7 +3,11 @@ import { signIn, signOut } from 'next-auth/react'
 import { useContext, useEffect, useState } from 'react'
 import { defineChain } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
-import { useSetActiveWallet } from 'thirdweb/react'
+import {
+  useActiveWallet,
+  useDisconnect,
+  useSetActiveWallet,
+} from 'thirdweb/react'
 import { createWalletAdapter } from 'thirdweb/wallets'
 import client from '@/lib/thirdweb/client'
 import PrivyWalletContext from './privy-wallet-context'
@@ -13,6 +17,8 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const setActiveWallet = useSetActiveWallet()
+  const activeWallet = useActiveWallet()
+  const { disconnect: disconnectThirdwebWallet } = useDisconnect()
   const [isSigningIn, setIsSigningIn] = useState(false)
 
   useEffect(() => {
@@ -113,8 +119,19 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
   useEffect(() => {
     if (ready && !authenticated) {
       signOut({ redirect: false })
+      // Ensure the thirdweb active wallet is disconnected so hooks like
+      // useActiveAccount() stop returning the previously connected address.
+      // Without this, pages that read the address directly from thirdweb
+      // (e.g. CitizenTier) can still see the old wallet after Privy logout.
+      if (activeWallet) {
+        try {
+          disconnectThirdwebWallet(activeWallet)
+        } catch (err) {
+          console.warn('Failed to disconnect thirdweb wallet on logout:', err)
+        }
+      }
     }
-  }, [ready, authenticated, user])
+  }, [ready, authenticated, user, activeWallet, disconnectThirdwebWallet])
 
   return <>{children}</>
 }

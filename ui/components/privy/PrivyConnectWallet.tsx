@@ -18,7 +18,7 @@ import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 import useSWR from 'swr'
 import { getContract, prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount, useActiveWallet, useDisconnect } from 'thirdweb/react'
 import { clearAllCitizenCache } from '../../lib/citizen/CitizenProvider'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
@@ -559,6 +559,8 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
 
   const account = useActiveAccount()
   const address = account?.address
+  const activeWallet = useActiveWallet()
+  const { disconnect: disconnectThirdwebWallet } = useDisconnect()
   const { data: _ensData } = useENS(address)
   const ens = _ensData?.name
   const [walletChainId, setWalletChainId] = useState(1)
@@ -1356,9 +1358,24 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                   <button
                     className="w-full mt-4 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
                     onClick={async () => {
+                      // Disconnect the thirdweb-side wallet first so hooks like
+                      // useActiveAccount() immediately stop returning the old
+                      // address. Without this, the previously connected wallet
+                      // can leak into pages (e.g. CitizenTier) and make the app
+                      // think the signed-out user is still a citizen.
+                      if (activeWallet) {
+                        try {
+                          disconnectThirdwebWallet(activeWallet)
+                        } catch (err) {
+                          console.warn(
+                            'Failed to disconnect thirdweb wallet:',
+                            err
+                          )
+                        }
+                      }
                       wallets.forEach((wallet) => wallet.disconnect())
                       clearAllCitizenCache()
-                      logout()
+                      await logout()
                     }}
                   >
                     Log Out
@@ -1374,6 +1391,18 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
             id="sign-in-button"
             onClick={async () => {
               if (user) {
+                if (activeWallet) {
+                  try {
+                    disconnectThirdwebWallet(activeWallet)
+                  } catch (err) {
+                    console.warn(
+                      'Failed to disconnect thirdweb wallet:',
+                      err
+                    )
+                  }
+                }
+                wallets.forEach((wallet) => wallet.disconnect())
+                clearAllCitizenCache()
                 await logout()
                 login()
               } else {

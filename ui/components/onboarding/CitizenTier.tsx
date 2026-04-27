@@ -1,3 +1,4 @@
+import { usePrivy } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import { useContext } from 'react'
@@ -26,8 +27,19 @@ const CitizenTier = ({
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const address = account?.address
+  const { authenticated } = usePrivy()
 
   const handleCitizenClick = async () => {
+    // Don't trust a stale thirdweb address that may linger after logout.
+    // The wrapping <Tier /> normally prompts login when there's no address,
+    // but if the thirdweb wallet hasn't disconnected yet the address can
+    // outlive the Privy session. Bail out so we don't read citizen status
+    // for a previously-signed-in wallet.
+    if (!authenticated) {
+      return toast.error('Please sign in to become a citizen.')
+    }
+    if (!address) return
+
     const citizenContract = getContract({
       client,
       address: CITIZEN_ADDRESSES[chainSlug],
