@@ -101,12 +101,21 @@ function isUsedTransaction(txHash: string): boolean {
   return true
 }
 
-setInterval(() => {
+// Sweep on a cadence comparable to the TTL itself so memory stays bounded
+// on write-heavy warm instances. `isUsedTransaction` also lazy-evicts on
+// hit, but a sustained burst with no re-reads of the same hashes would
+// otherwise let the map grow until the next sweep — keeping the interval
+// near the TTL (60s vs. 90s TTL) caps that worst case at ~one minute of
+// expired entries. `.unref()` so this background timer never keeps a
+// serverless container alive past its idle deadline.
+const USED_TX_SWEEP_MS = 60 * 1000
+const usedTxSweepInterval = setInterval(() => {
   const now = Date.now()
   for (const [txHash, insertedAt] of usedTransactions) {
     if (now - insertedAt > USED_TX_TTL_MS) usedTransactions.delete(txHash)
   }
-}, 60 * 60 * 1000)
+}, USED_TX_SWEEP_MS)
+usedTxSweepInterval.unref?.()
 
 async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
