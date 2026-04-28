@@ -32,8 +32,14 @@ export default async function queryTable(
 ): Promise<any> {
   const provider = new ethers.providers.JsonRpcProvider(chain.rpc)
 
-  const wallet = new ethers.Wallet(process.env.TABLELAND_PRIVATE_KEY as string)
-  wallet.connect(provider)
+  // NOTE: ethers' Wallet.connect returns a NEW wallet rather than mutating
+  // the receiver, so we have to bind the provider via the constructor here.
+  // Without this, the Tableland SDK falls back to the public validator for
+  // every request, which is heavily rate limited.
+  const wallet = new ethers.Wallet(
+    process.env.TABLELAND_PRIVATE_KEY as string,
+    provider
+  )
 
   const signer = createTablelandSigner(wallet, chain.id)
 
