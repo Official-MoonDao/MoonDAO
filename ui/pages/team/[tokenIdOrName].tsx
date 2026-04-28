@@ -29,7 +29,6 @@ import {
   HATS_ADDRESS,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
-  TEAM_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JBV5_CONTROLLER_ADDRESS,
   JBV5_TOKENS_ADDRESS,
@@ -52,9 +51,8 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useSafe from '@/lib/safe/useSafe'
-import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
-import { teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
+import { resolveTeamIdFromPrettyLink } from '@/lib/team/teamPrettyLinks'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -652,86 +650,118 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
-  const teamTableStatement = `SELECT * FROM ${TEAM_TABLE_NAMES[chainSlug]}`
-  const allTeams = (await queryTable(chain, teamTableStatement)) as any
-  const { prettyLinks } = generatePrettyLinks(allTeams)
-
-  let tokenId
+  // Resolve the URL segment to a numeric token id. For numeric segments we
+  // can skip the (expensive) full-team lookup entirely. For pretty-link
+  // segments we hit a cached resolver so a single Tableland blip doesn't
+  // 404 every team page at once.
+  let tokenId: string | number | null = null
   if (!Number.isNaN(Number(tokenIdOrName))) {
     tokenId = tokenIdOrName
-  } else {
-    tokenId = prettyLinks[tokenIdOrName]
-  }
-
-  if (tokenId === undefined) {
-    return {
-      notFound: true,
+  } else if (typeof tokenIdOrName === 'string') {
+    try {
+      tokenId = await resolveTeamIdFromPrettyLink(chain, tokenIdOrName)
+    } catch (error) {
+      console.error('Failed to resolve team pretty link:', error)
+      tokenId = null
     }
   }
 
-  const { fetchTeamWithOwner } = await import('@/lib/team/teamDataService')
-  const nft = await fetchTeamWithOwner(chain, tokenId)
+  if (tokenId === undefined || tokenId === null) {
+    return { notFound: true }
+  }
+
+  let nft: Awaited<
+    ReturnType<typeof import('@/lib/team/teamDataService').fetchTeamWithOwner>
+  > | null = null
+  try {
+    const { fetchTeamWithOwner } = await import('@/lib/team/teamDataService')
+    nft = await fetchTeamWithOwner(chain, tokenId)
+  } catch (error) {
+    // Tableland or RPC failure while loading the team. Treat this as "not
+    // found" rather than crashing the route — a fresh request will retry.
+    console.error(`Failed to fetch team ${tokenId}:`, error)
+    return { notFound: true }
+  }
 
   if (!nft || BLOCKED_TEAMS.has(Number(nft.metadata.id))) {
-    return {
-      notFound: true,
-    }
+    return { notFound: true }
   }
 
-  const rpcUrl = getRpcUrlForChain({
-    client: serverClient,
-    chain: DEFAULT_CHAIN_V5,
-  })
-
-  const teamSafe = await Safe.init({
-    provider: rpcUrl,
-    safeAddress: nft.owner,
-  })
-
-  const safeOwners = await teamSafe.getOwners()
+  // Safe owners are best-effort: if the address isn't a Safe yet, or the
+  // RPC is degraded, render the team page with an empty signer list rather
+  // than 500-ing the entire route.
+  let safeOwners: string[] = []
+  if (nft.owner) {
+    try {
+      const rpcUrl = getRpcUrlForChain({
+        client: serverClient,
+        chain: DEFAULT_CHAIN_V5,
+      })
+      const teamSafe = await Safe.init({
+        provider: rpcUrl,
+        safeAddress: nft.owner,
+      })
+      safeOwners = await teamSafe.getOwners()
+    } catch (error) {
+      console.error(
+        `Failed to load Safe owners for team ${tokenId} (${nft.owner}):`,
+        (error as Error)?.message || error
+      )
+    }
+  }
 
   const imageIpfsLink = nft.metadata.image
 
-  //Check for a jobId in the url and get the queried job if it exists
+  // Optional ?job= and ?listing= query params hydrate the page with metadata
+  // for a specific job/listing (used for OG previews when sharing). They are
+  // best-effort: a Tableland or RPC failure here should not break the team
+  // page itself.
   const jobId = query?.job
   let queriedJob = null
   if (jobId !== undefined) {
-    const jobTableContract = getContract({
-      client: serverClient,
-      address: JOBS_TABLE_ADDRESSES[chainSlug],
-      abi: JobBoardTableABI as any,
-      chain: chain,
-    })
-    const jobTableName = await readContract({
-      contract: jobTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-    const jobTableStatement = `SELECT * FROM ${jobTableName} WHERE id = ${jobId}`
+    try {
+      const jobTableContract = getContract({
+        client: serverClient,
+        address: JOBS_TABLE_ADDRESSES[chainSlug],
+        abi: JobBoardTableABI as any,
+        chain: chain,
+      })
+      const jobTableName = await readContract({
+        contract: jobTableContract,
+        method: 'getTableName' as string,
+        params: [],
+      })
+      const jobTableStatement = `SELECT * FROM ${jobTableName} WHERE id = ${jobId}`
 
-    const jobData = await queryTable(chain, jobTableStatement)
-    queriedJob = jobData?.[0] || null
+      const jobData = await queryTable(chain, jobTableStatement)
+      queriedJob = jobData?.[0] || null
+    } catch (error) {
+      console.error(`Failed to load queried job ${jobId}:`, error)
+    }
   }
 
-  //Check for a listingId in the url and get the queried listing if it exists
   const listingId = query?.listing
   let queriedListing = null
   if (listingId !== undefined) {
-    const marketplaceTableContract = getContract({
-      client: serverClient,
-      address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-      abi: MarketplaceTableABI as any,
-      chain: chain,
-    })
-    const marketplaceTableName = await readContract({
-      contract: marketplaceTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-    const marketplaceTableStatement = `SELECT * FROM ${marketplaceTableName} WHERE id = ${listingId}`
+    try {
+      const marketplaceTableContract = getContract({
+        client: serverClient,
+        address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+        abi: MarketplaceTableABI as any,
+        chain: chain,
+      })
+      const marketplaceTableName = await readContract({
+        contract: marketplaceTableContract,
+        method: 'getTableName' as string,
+        params: [],
+      })
+      const marketplaceTableStatement = `SELECT * FROM ${marketplaceTableName} WHERE id = ${listingId}`
 
-    const marketplaceData = await queryTable(chain, marketplaceTableStatement)
-    queriedListing = marketplaceData?.[0] || null
+      const marketplaceData = await queryTable(chain, marketplaceTableStatement)
+      queriedListing = marketplaceData?.[0] || null
+    } catch (error) {
+      console.error(`Failed to load queried listing ${listingId}:`, error)
+    }
   }
 
   return {
