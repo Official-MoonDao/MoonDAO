@@ -88,9 +88,10 @@ contract QueueRefundViaExec is Script, Config {
         console.log("New ApprovalHook:", address(newApprovalHook));
 
         // ── 2. Enable refunds ──
+        // Wire approval hook to the new pay hook so they share refund state.
+        newApprovalHook.setPayHook(address(newPayHook));
         newPayHook.enableRefunds(true);
-        newApprovalHook.enableRefunds(true);
-        console.log("Refunds enabled on both hooks");
+        console.log("Refunds enabled (single flag on pay hook)");
 
         // ── 3. Build the refund ruleset config ──
         JBCurrencyAmount[] memory surplusAllowances = new JBCurrencyAmount[](1);

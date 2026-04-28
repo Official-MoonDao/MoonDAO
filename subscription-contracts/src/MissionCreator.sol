@@ -116,6 +116,10 @@ contract MissionCreator is Ownable, IERC721Receiver {
 
         LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
         LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal), to);
+        // Wire the approval hook to the pay hook so they share a single
+        // `refundsEnabled` flag. This must happen before any caller can
+        // toggle refunds, otherwise the two hooks could disagree.
+        launchPadApprovalHook.setPayHook(address(launchPadPayHook));
         // Ruleset 0 is funding/refunds
         // Ruleset 0 has a cashout hook that will only allow refunds if the deadline has passed and the funding goal has not been met.
         // Ruleset 0 has an approval hook that will automatically move to ruleset 1 if the funding goal is met and if the deadline has passed.

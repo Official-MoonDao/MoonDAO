@@ -970,7 +970,8 @@ contract MissionTest is Test, Config {
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
-        approvalHook.enableRefunds(true);
+        // Pay hook is the single source of truth for refunds; the approval
+        // hook reads the flag from it.
         payhook.enableRefunds(true);
         vm.stopPrank();
 
@@ -1074,7 +1075,8 @@ contract MissionTest is Test, Config {
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
-        approvalHook.enableRefunds(true);
+        // Pay hook is the single source of truth for refunds; the approval
+        // hook reads the flag from it.
         payhook.enableRefunds(true);
         vm.stopPrank();
 
@@ -1178,7 +1180,8 @@ contract MissionTest is Test, Config {
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
-        approvalHook.enableRefunds(true);
+        // Pay hook is the single source of truth for refunds; the approval
+        // hook reads the flag from it.
         payhook.enableRefunds(true);
         vm.stopPrank();
         skip(10 days);

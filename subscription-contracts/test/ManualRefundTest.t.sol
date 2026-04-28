@@ -315,9 +315,10 @@ contract ManualRefundTest is Test, Config {
             teamAddress // owner = team multisig
         );
 
-        // Enable refunds on the new hooks immediately
+        // Enable refunds on the new hooks immediately. The pay hook is the
+        // single source of truth; the approval hook reads the flag from it.
+        newApprovalHook.setPayHook(address(newPayHook));
         newPayHook.enableRefunds(true);
-        newApprovalHook.enableRefunds(true);
 
         // === Step 5: Queue the new refund ruleset ===
         // The team multisig owns the JB project NFT, so they can call queueRulesetsOf.
@@ -447,8 +448,8 @@ contract ManualRefundTest is Test, Config {
 
         // Enable refunds — this is critical because the funding goal IS met,
         // so without enableRefunds the pay hook would reject cash outs.
+        newApprovalHook.setPayHook(address(newPayHook));
         newPayHook.enableRefunds(true);
-        newApprovalHook.enableRefunds(true);
 
         // Queue the refund ruleset (Ruleset 1 has no approval hook, so auto-approved)
         JBRulesetConfig[] memory refundRuleset = _buildRefundRulesetConfig(
@@ -526,8 +527,8 @@ contract ManualRefundTest is Test, Config {
             fundingGoal, newDeadline, newRefundPeriod,
             JB_V5_TERMINAL_STORE, address(terminal), teamAddress
         );
+        newApprovalHook.setPayHook(address(newPayHook));
         newPayHook.enableRefunds(true);
-        newApprovalHook.enableRefunds(true);
 
         JBRulesetConfig[] memory refundRuleset = _buildRefundRulesetConfig(
             address(newPayHook), address(newApprovalHook), address(terminal)

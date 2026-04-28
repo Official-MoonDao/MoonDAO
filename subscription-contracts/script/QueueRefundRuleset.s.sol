@@ -98,10 +98,11 @@ contract QueueRefundRulesetScript is Script, Config {
         );
         console.log("New ApprovalHook deployed:", address(newApprovalHook));
 
-        // Enable refunds on both hooks
+        // Wire approval hook to the new pay hook (single source of truth
+        // for the `refundsEnabled` flag) and enable refunds on the pay hook.
+        newApprovalHook.setPayHook(address(newPayHook));
         newPayHook.enableRefunds(true);
-        newApprovalHook.enableRefunds(true);
-        console.log("Refunds enabled on both hooks");
+        console.log("Refunds enabled (single flag on pay hook)");
 
         // Build the refund ruleset config
         JBCurrencyAmount[] memory surplusAllowances = new JBCurrencyAmount[](1);

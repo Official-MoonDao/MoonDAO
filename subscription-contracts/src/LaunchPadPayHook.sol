@@ -5,6 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {JBPayHookSpecification} from "@nana-core-v5/structs/JBPayHookSpecification.sol";
 import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
 import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
+import {JBRulesetMetadataResolver} from "@nana-core-v5/libraries/JBRulesetMetadataResolver.sol";
 
 import {JBBeforePayRecordedContext} from "@nana-core-v5/structs/JBBeforePayRecordedContext.sol";
 import {JBBeforeCashOutRecordedContext} from "@nana-core-v5/structs/JBBeforeCashOutRecordedContext.sol";
@@ -22,6 +23,7 @@ import { JBConstants } from "@nana-core-v5/libraries/JBConstants.sol";
 //   • The beforePayRecordedWith function manipulates the weight to change number
 //     of tokens received per ETH based on the funding status.
 contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
+    using JBRulesetMetadataResolver for JBRuleset;
 
     uint256 public immutable fundingGoal;
     uint256 public immutable deadline;
@@ -104,14 +106,22 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         if (block.timestamp >= deadline + refundPeriod) {
             revert("Refund period has passed. Refunds are disabled.");
         }
-        // Refund amount = currentFunds * (userTokenCount / currentTokenSupply)
-        // Since reserved tokens are not eligible for refunds, and the reserve rate
-        // is 50%, we need to divide the currentTokenSupply by 2.
-        // context.totalSupply includes reserved tokens, so instead calculate the
-        // totalSupply as currentFunding * rateTier1.
-        uint256 weight = jbRulesets.getRulesetOf(context.projectId, context.rulesetId).weight;
+        // Refund amount = currentFunds * (userTokenCount / nonReservedSupply)
+        // Reserved tokens are not eligible for refunds. Rather than trusting
+        // the on-chain `totalSupply` (which would include any tokens minted via
+        // routes other than payments), we reconstruct the non-reserved supply
+        // from the funded ETH amount, the ruleset's issuance weight, and the
+        // ruleset's actual `reservedPercent` (read live, not hard-coded). This
+        // keeps the refund math correct even if the reserve rate is changed by
+        // a governance action between launch and refund.
+        JBRuleset memory ruleset = jbRulesets.getRulesetOf(context.projectId, context.rulesetId);
+        uint256 weight = ruleset.weight;
+        uint256 reservedPercent = ruleset.reservedPercent();
+        uint256 maxReserved = JBConstants.MAX_RESERVED_PERCENT;
+        // Tokens issued to payers per 1e18 of ETH = weight * (MAX - reservedPercent) / MAX.
+        // Total non-reserved supply = currentFunding * weight * (MAX - reservedPercent) / (MAX * 1e18).
         cashOutCount = context.cashOutCount;
-        totalSupply = (currentFunding * weight) / (2 * 1e18);
+        totalSupply = (currentFunding * weight * (maxReserved - reservedPercent)) / (maxReserved * 1e18);
     }
 
     function hasMintPermissionFor(uint256 projectId, JBRuleset memory ruleset, address addr) external view override returns (bool flag){
