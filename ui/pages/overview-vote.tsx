@@ -290,8 +290,34 @@ export default function OverviewDelegate({
       toast.error('Please select a citizen.', { style: toastStyle })
       return
     }
-    if (!userBalance || userBalance <= 0) {
-      toast.error('You have no $OVERVIEW tokens to delegate.', {
+    // Defensive: callers below feed `delegateAmount` straight into the
+    // Tableland mutate calldata, and any non-finite balance (NaN/Infinity —
+    // possible if `useWatchTokenBalance` hasn't resolved yet, or if a wallet
+    // RPC blip leaves the displayValue unparseable) propagates into ethers
+    // v5's `BigNumber.from(NaN)` deep inside the Privy signer, surfacing as
+    // the cryptic "invalid BigNumber string (value=\"NaN\")" toast. Reject
+    // here with copy the user can act on instead of bouncing them to the
+    // generic catch-all.
+    if (
+      userBalance == null ||
+      !Number.isFinite(userBalance) ||
+      userBalance <= 0
+    ) {
+      toast.error(
+        userBalance == null || !Number.isFinite(userBalance)
+          ? 'Your $OVERVIEW balance is still loading. Please wait a moment and try again.'
+          : 'You have no $OVERVIEW tokens to delegate.',
+        { style: toastStyle }
+      )
+      return
+    }
+    // The contract call uses the connected citizen's owner address as the
+    // JSON key. If the search result somehow yielded a malformed/empty owner
+    // we'd write garbage into Tableland (and the leaderboard would never
+    // attribute the vote). Validate up-front so the user gets a clear error.
+    const ownerLower = selectedCitizen.owner?.toLowerCase?.() ?? ''
+    if (!/^0x[a-f0-9]{40}$/.test(ownerLower)) {
+      toast.error('Selected citizen has an invalid wallet address.', {
         style: toastStyle,
       })
       return
@@ -304,7 +330,7 @@ export default function OverviewDelegate({
     }
 
     const delegateAmount = Math.floor(userBalance)
-    if (delegateAmount <= 0) {
+    if (!Number.isFinite(delegateAmount) || delegateAmount <= 0) {
       toast.error('You do not have enough $OVERVIEW tokens to delegate.', {
         style: toastStyle,
       })
@@ -451,6 +477,18 @@ export default function OverviewDelegate({
       ) {
         toastMessage =
           'Wallet is on the wrong network. Please switch to Arbitrum and try again.'
+      } else if (
+        // ethers v5 surface for "BigNumber.from(NaN)" — almost always means
+        // a numeric tx field (gas price / nonce / chain id) was missing or
+        // unparseable from the wallet's RPC response. The user can't fix
+        // the underlying ethers internals, but reconnecting / refreshing
+        // forces a fresh signer + provider hand-shake which clears it.
+        lower.includes('invalid bignumber') ||
+        lower.includes('value="nan"') ||
+        lower.includes("value='nan'")
+      ) {
+        toastMessage =
+          "Your wallet returned an unexpected value. Please refresh the page (or disconnect + reconnect your wallet) and try again."
       } else if (rawMessage) {
         toastMessage = `Failed to submit delegation: ${rawMessage.slice(0, 160)}`
       }

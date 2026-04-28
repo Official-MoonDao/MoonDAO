@@ -127,12 +127,20 @@ export default function useJBProjectData({
       const jbPid = normalizedJuiceboxProjectId(projectId)
       if (jbPid == null) return
       try {
-        const token: any = await readContract({
+        const result: any = await readContract({
           contract: jbTokensContract,
           method: 'tokenOf' as string,
           params: [jbPid],
         })
-        setToken((prev: any) => ({ ...prev, tokenAddress: token }))
+        // Defensive: under occasional RPC hiccups thirdweb's batched eth_call
+        // can resolve with `undefined`, which then crashes viem's
+        // `decodeAbiParameters` deep inside `createCursor` ("Cannot read
+        // properties of undefined (reading 'buffer')"). Treat anything that
+        // isn't a real address string as a no-op so we don't poison the
+        // existing token state (which may already contain a valid address
+        // from server-side props).
+        if (typeof result !== 'string' || !result.startsWith('0x')) return
+        setToken((prev: any) => ({ ...prev, tokenAddress: result }))
       } catch (err) {
         console.error('Failed to read Juicebox project token (tokenOf):', {
           projectId: jbPid,
@@ -141,8 +149,19 @@ export default function useJBProjectData({
       }
     }
 
+    // The server already resolves `tokenOf` in `fetchMissionContracts` and
+    // forwards the result via `_token.tokenAddress`. Skip the redundant
+    // client-side read whenever we already have a valid (non-zero) address —
+    // it eliminates an extra eth_call per mission load and avoids the noisy
+    // viem decode error users were seeing on the Overview Mission page.
+    const hasServerToken =
+      typeof token?.tokenAddress === 'string' &&
+      token.tokenAddress.startsWith('0x') &&
+      token.tokenAddress !== ZERO_ADDRESS
+    if (hasServerToken) return
+
     if (jbTokensContract && projectId) getProjectToken()
-  }, [projectId, jbTokensContract])
+  }, [projectId, jbTokensContract, token?.tokenAddress])
 
   //Token Data
   useEffect(() => {
