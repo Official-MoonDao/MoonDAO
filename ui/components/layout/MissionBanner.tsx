@@ -110,7 +110,7 @@ export default function MissionBanner() {
 
         @media (max-width: 640px) {
           .marquee-content {
-            animation: marquee 60s linear infinite;
+            animation: marquee 90s linear infinite;
           }
         }
 

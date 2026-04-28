@@ -277,7 +277,7 @@ describe('MissionPayRedeem — Refund Flow', () => {
 
       cy.get('#mission-pay-redeem-container').should('exist')
       cy.get('#mission-pay-container').should('exist')
-      cy.contains('You contribute').should('be.visible')
+      cy.contains('Enter contribution amount').should('be.visible')
       cy.contains('You receive').should('be.visible')
     })
 

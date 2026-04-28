@@ -156,7 +156,7 @@ export default function GovernanceProposalsPage({
                     </div>
                   </div>
                   {snapshotMaxPage > 1 && (
-                    <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
+                    <div className="mt-8">
                       <PaginationButtons
                         handlePageChange={setSnapshotPage}
                         maxPage={snapshotMaxPage}

@@ -340,12 +340,55 @@ export default function SignedInDashboard({
   return (
     <Container>
       <div className="max-w-7xl mx-auto px-4 py-4">
-        {/* Main Content - Facebook Style Three Column Layout */}
+
+        {/* ── Mobile-only hero bar ─────────────────────────── */}
+        <div className="lg:hidden flex items-center gap-3 mb-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
+          {/* Avatar */}
+          <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
+            {citizen?.metadata?.image ? (
+              <IPFSRenderer
+                src={citizen.metadata.image}
+                alt={citizen?.metadata?.name || 'Citizen'}
+                className="w-full h-full object-cover"
+                width={48}
+                height={48}
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                {citizen?.metadata?.name?.[0] || address?.[2] || 'M'}
+              </div>
+            )}
+          </div>
+          {/* Name + greeting */}
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold truncate">
+              {citizen?.metadata?.name || 'Welcome back'}
+            </p>
+            <p className="text-white/50 text-xs">MoonDAO Citizen</p>
+          </div>
+          {/* Edit profile link */}
+          <Link
+            href={
+              citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                ? `/citizen/${generatePrettyLinkWithId(
+                    citizen.metadata.name,
+                    citizen.metadata?.id ?? citizen.id
+                  )}`
+                : '/join'
+            }
+            className="flex-shrink-0 text-xs text-blue-300 hover:text-blue-200 transition-colors px-3 py-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20"
+          >
+            Profile
+          </Link>
+        </div>
+
+        {/* Main Content - Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-1 lg:order-1">
-            {/* Your Profile */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
+          {/* On mobile: rendered last (order-3) so wallet/feed come first */}
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-3 lg:order-1">
+            {/* Your Profile — hidden on mobile (replaced by hero bar above) */}
+            <div className="hidden lg:block bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-white text-lg">Your Profile</h3>
                 {citizen && (
@@ -437,7 +480,8 @@ export default function SignedInDashboard({
 
               <div className="flex flex-col gap-1 flex-1 min-h-0">
                 {newestCitizens && newestCitizens.length > 0 ? (
-                  newestCitizens.slice(0, 8).map((citizen: any) => {
+                  newestCitizens.slice(0, 8).map((citizen: any, cidx: number) => {
+                    const hiddenOnMobile = cidx >= 4
                     const metadata = getCitizenMetadata(citizen)
                     const bio = (citizen.description || citizen.metadata?.description || '')
                       .replace(/<[^>]*>/g, '')
@@ -451,7 +495,7 @@ export default function SignedInDashboard({
                             ? generatePrettyLinkWithId(citizen.name, citizen.id)
                             : citizen.id || 'anonymous'
                         }`}
-                        className="flex items-start gap-3 hover:bg-white/5 rounded-lg transition-all cursor-pointer p-2"
+                        className={`flex items-start gap-3 hover:bg-white/5 rounded-lg transition-all cursor-pointer p-2${hiddenOnMobile ? ' hidden lg:flex' : ''}`}
                       >
                         <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
                           {citizen.image || citizen.metadata?.image ? (
@@ -489,7 +533,7 @@ export default function SignedInDashboard({
           </div>
 
           {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-2 lg:order-2">
+          <div className="lg:col-span-6 flex flex-col space-y-6 h-full lg:min-h-[800px] order-2 lg:order-2">
             {/* Activity Feed */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
@@ -527,7 +571,7 @@ export default function SignedInDashboard({
                   clientNewsletters.slice(0, 4).map((newsletter: any, index: number) => (
                     <div
                       key={newsletter.id || index}
-                      className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
+                      className={`bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5${index >= 2 ? ' hidden sm:block' : ''}`}
                       onClick={() => {
                         if (
                           newsletter.url &&
@@ -643,7 +687,7 @@ export default function SignedInDashboard({
           </div>
 
           {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-3 lg:order-3 min-w-0">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full lg:min-h-[800px] order-1 lg:order-3 min-w-0">
             {/* Wallet Info Card */}
             {address && (
               <WalletInfoCard
@@ -677,12 +721,13 @@ export default function SignedInDashboard({
               <div className="flex flex-col gap-1 flex-1 min-h-0">
                 {filteredTeams && filteredTeams.length > 0 ? (
                   filteredTeams.slice(0, 8).map((team: any, index: number) => {
+                    const hiddenOnMobile = index >= 3
                     const metadata = getTeamMetadata(team)
                     return (
                       <Link
                         key={team.id || index}
                         href={`/team/${generatePrettyLink(team.name)}`}
-                        className="flex items-start gap-3 hover:bg-white/5 rounded-lg transition-all cursor-pointer p-2"
+                        className={`flex items-start gap-3 hover:bg-white/5 rounded-lg transition-all cursor-pointer p-2${hiddenOnMobile ? ' hidden lg:flex' : ''}`}
                       >
                         <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
                           {team.image ? (
@@ -997,7 +1042,7 @@ export default function SignedInDashboard({
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <NewspaperIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <CalendarDaysIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
                   <span className="leading-tight">Upcoming Events</span>
                 </h3>
                 <p className="text-gray-300 text-sm sm:text-base leading-tight">
@@ -1006,7 +1051,25 @@ export default function SignedInDashboard({
               </div>
             </div>
 
-            <div className="relative flex-1 min-h-[500px]">
+            {/* Mobile: simple CTA card instead of heavy iframe */}
+            <Link
+              href="https://lu.ma/moondao"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sm:hidden flex items-center gap-4 bg-black/20 hover:bg-black/40 border border-white/10 rounded-xl p-5 transition-all"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                <CalendarDaysIcon className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-semibold">View Community Calendar</p>
+                <p className="text-white/50 text-sm">Townhalls, AMAs & more</p>
+              </div>
+              <ArrowUpRightIcon className="w-5 h-5 text-white/40 flex-shrink-0" />
+            </Link>
+
+            {/* Desktop: full iframe */}
+            <div className="relative flex-1 min-h-[500px] hidden sm:block">
               <div
                 id="luma-loading-dashboard-small"
                 className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center"
@@ -1029,11 +1092,9 @@ export default function SignedInDashboard({
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="MoonDAO Events Calendar"
-                onLoad={(e) => {
+                onLoad={() => {
                   const loadingDiv = document.getElementById('luma-loading-dashboard-small')
-                  if (loadingDiv) {
-                    loadingDiv.style.display = 'none'
-                  }
+                  if (loadingDiv) loadingDiv.style.display = 'none'
                 }}
               />
             </div>
@@ -1131,8 +1192,42 @@ export default function SignedInDashboard({
             </StandardButton>
           </div>
 
+          {/* Mobile: lightweight stats grid + CTA instead of 3D globe */}
+          <div className="sm:hidden">
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+                <div className="text-2xl font-bold text-white">
+                  {citizensCount || countCitizensFromLocationData(citizensLocationData || []) || 0}
+                </div>
+                <div className="text-xs text-white/60 mt-1">Global Citizens</div>
+              </div>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+                <div className="text-2xl font-bold text-white">
+                  {countUniqueCountries(citizensLocationData)}
+                </div>
+                <div className="text-xs text-white/60 mt-1">Countries</div>
+              </div>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+                <div className="text-2xl font-bold text-white">24/7</div>
+                <div className="text-xs text-white/60 mt-1">Active Community</div>
+              </div>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+                <div className="text-2xl font-bold text-white">{filteredTeams?.length ?? 0}</div>
+                <div className="text-xs text-white/60 mt-1">Total Teams</div>
+              </div>
+            </div>
+            <Link
+              href="/map"
+              className="flex items-center justify-center gap-2 bg-teal-600/20 hover:bg-teal-600/30 border border-teal-500/30 rounded-xl py-4 transition-all text-teal-300 font-semibold"
+            >
+              <GlobeAmericasIcon className="w-5 h-5" />
+              Explore the Community Map
+            </Link>
+          </div>
+
+          {/* Desktop: full 3-D globe */}
           <div
-            className={`relative w-full h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[700px] ${networkCard.base} overflow-hidden`}
+            className={`relative w-full h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[700px] ${networkCard.base} overflow-hidden hidden sm:block`}
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex items-center justify-center">
@@ -1194,7 +1289,7 @@ export default function SignedInDashboard({
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">Total Teams</div>
               </div>
             </div>
-          </div>
+          </div>{/* /desktop globe */}
         </div>
       </div>
 
