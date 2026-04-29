@@ -38,24 +38,7 @@ interface ISafe {
     ) external payable returns (bool);
 }
 
-/// @title Mission4OwnerOnlyPayoutsForkTest
-/// @notice Live-state fork test of the Mission 4 / project 73 fix on Arbitrum.
-///
-/// Demonstrates the full BEFORE → APPLY → AFTER lifecycle:
-///   • BEFORE: a random EOA can call `sendPayoutsOf` and force the terminal
-///     to distribute funds (current vulnerability).
-///   • APPLY:  the Safe at 0xaA1B…B5EA executes the **exact JSON calldata**
-///     from `script/safe-tx-mission4-owner-only-payouts.json` through
-///     `execTransaction(...)` with 3 pre-approved-hash signatures.
-///   • AFTER:  the same random EOA reverts; the Safe (project owner) can
-///     still send payouts; ruleset metadata reads `ownerMustSendPayouts: true`.
-///
-/// READ-ONLY against mainnet: simulation only, never broadcasts.
-///
-/// Run:
-///   forge test --match-contract Mission4OwnerOnlyPayoutsForkTest \
-///     --fork-url https://arb1.arbitrum.io/rpc \
-///     --via-ir --optimizer-runs 200 --ffi -vv
+
 contract Mission4OwnerOnlyPayoutsForkTest is Test {
     // ── Live Arbitrum addresses ──
     address constant SAFE       = 0xaA1Bd6d001C0000420090EDb36bEAE0D9393B5EA;
@@ -102,11 +85,7 @@ contract Mission4OwnerOnlyPayoutsForkTest is Test {
         vm.revertTo(snap);
     }
 
-    /// @notice End-to-end fix: executes the JSON via the real Safe with 3
-    ///         pre-approved-hash signatures, then asserts both:
-    ///           - non-owner reverts on sendPayoutsOf
-    ///           - Safe (owner) can still send payouts
-    ///           - ruleset metadata reads `ownerMustSendPayouts: true`
+  
     function test_Fix_AfterSafeExecTransaction_BlocksAttacker_AllowsSafe() public {
         // ── APPLY: route the JSON calldata through Safe.execTransaction ──
         ISafe safe = ISafe(SAFE);
@@ -130,16 +109,13 @@ contract Mission4OwnerOnlyPayoutsForkTest is Test {
         );
         assertTrue(ok, "Safe execTransaction failed");
 
-        // The new ruleset has duration=0 → effective on the next block.
         vm.warp(block.timestamp + 1);
         vm.roll(block.number + 1);
 
-        // ── ASSERT 1: the metadata flag is now true ──
         (, JBRulesetMetadata memory meta) =
             IJBController(CONTROLLER).currentRulesetOf(PROJECT_ID);
         assertEq(meta.ownerMustSendPayouts, true, "AFTER fix: flag should be true");
 
-        // ── ASSERT 2: random EOA can no longer trigger payouts ──
         vm.prank(ATTACKER);
         vm.expectRevert(); // JBPermissioned: unauthorized
         IJBMultiTerminal(TERMINAL).sendPayoutsOf(
@@ -150,7 +126,6 @@ contract Mission4OwnerOnlyPayoutsForkTest is Test {
             0
         );
 
-        // ── ASSERT 3: Safe (project owner) CAN still trigger payouts ──
         vm.prank(SAFE);
         uint256 paid = IJBMultiTerminal(TERMINAL).sendPayoutsOf(
             PROJECT_ID,
