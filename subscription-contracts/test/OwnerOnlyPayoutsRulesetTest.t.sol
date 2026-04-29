@@ -35,12 +35,7 @@ import {JBFundAccessLimitGroup} from "@nana-core-v5/structs/JBFundAccessLimitGro
 import {JBCurrencyAmount} from "@nana-core-v5/structs/JBCurrencyAmount.sol";
 import "base/Config.sol";
 
-/// @title OwnerOnlyPayoutsRulesetTest
-/// @notice Tests the `ownerMustSendPayouts = true` ruleset queued onto a
-///         completed mission (per Jango's recommendation). When the flag is
-///         on, only the project owner (the team multisig) can call
-///         `sendPayoutsOf`; all other callers revert with
-///         `JBPermissioned_Unauthorized`.
+
 contract OwnerOnlyPayoutsRulesetTest is Test, Config {
 
     address zero = address(0);
@@ -146,7 +141,7 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
         );
     }
 
-    /// @dev Mirrors `_buildOwnerOnlyPayoutsRuleset` from the script.
+   
     function _buildOwnerOnlyPayoutsRuleset(
         uint256 missionId,
         address terminal
@@ -261,10 +256,7 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
         return rulesetConfigurations;
     }
 
-    /// @notice After queuing the owner-only payouts ruleset, a non-owner
-    ///         caller must NOT be able to call `sendPayoutsOf`, while the
-    ///         project owner still can — and the splits land in the same
-    ///         beneficiaries as the original ruleset 1.
+
     function testOwnerOnlyPayoutsBlocksNonOwners() public {
         _createTeam();
 
@@ -288,17 +280,7 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
             new bytes(0)
         );
 
-        // Goal met → stage 2; skip past deadline so Ruleset 1 is active.
-        assertEq(missionCreator.stage(missionId), 2);
-        skip(28 days);
 
-        // === Step 2: Sanity check — under Ruleset 1, ANY caller can call sendPayoutsOf ===
-        // Don't actually drain payouts here — just verify the gate is open by
-        // confirming the project owner is the team multisig (i.e. ruleset 1 is
-        // live). We'll prove the "anyone can" behaviour against a fresh mission
-        // in a second test below.
-
-        // === Step 3: Project owner queues the owner-only payouts ruleset ===
         vm.startPrank(teamAddress);
         JBRulesetConfig[] memory cfg = _buildOwnerOnlyPayoutsRuleset(missionId, address(terminal));
         uint256 newRulesetId = jbController.queueRulesetsOf(
@@ -309,15 +291,12 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
         assertGt(newRulesetId, 0, "New ruleset should be queued");
         vm.stopPrank();
 
-        // Ruleset 1 has duration=0 + no approval hook → queued ruleset takes
-        // effect immediately. Bump one block for clarity.
         skip(1);
 
         uint256 terminalBalance = jbTerminalStore.balanceOf(
             address(terminal), projectId, JBConstants.NATIVE_TOKEN
         );
 
-        // === Step 4: A random caller can NOT call sendPayoutsOf ===
         vm.prank(randomCaller);
         vm.expectRevert(); // JBPermissioned: unauthorized
         IJBMultiTerminal(address(terminal)).sendPayoutsOf(
@@ -328,7 +307,6 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
             0
         );
 
-        // === Step 5: The project owner CAN call sendPayoutsOf ===
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         address poolDeployerAddr = missionCreator.missionIdToPoolDeployer(missionId);
@@ -344,8 +322,7 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
         );
         assertGt(payoutAmount, 0, "Owner payout should succeed");
 
-        // Splits land where the original ruleset 1 would have sent them.
-        // JB splits have 7 decimals of precision, so check up to 6 decimals.
+    
         assertApproxEqRel(
             address(TREASURY).balance - treasuryBalanceBefore,
             terminalBalance * 25 / 1000,
@@ -363,10 +340,7 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
         );
     }
 
-    /// @notice Sanity check on the *baseline* behaviour: with the default
-    ///         MissionCreator ruleset 1 (`ownerMustSendPayouts = false`), a
-    ///         random EOA can trigger payouts. This is exactly the issue
-    ///         Jango flagged — the new ruleset closes it.
+
     function testBaselineAnyoneCanSendPayouts() public {
         _createTeam();
 
@@ -393,7 +367,7 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
             address(terminal), projectId, JBConstants.NATIVE_TOKEN
         );
 
-        // Baseline: a random caller successfully triggers payouts.
+      
         vm.prank(randomCaller);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
