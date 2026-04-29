@@ -190,13 +190,16 @@ export async function fetchFeaturedMissionData(
     return {
       mission: featuredMission,
       _stage: stage ? +stage.toString() : 1,
-      _deadline: deadline,
-      _refundPeriod: refundPeriod,
+      // Next.js refuses to serialize `undefined` values returned from
+      // getStaticProps; use `null` as the explicit "missing" marker so the
+      // page can still render without the deadline/refund period.
+      _deadline: deadline ?? null,
+      _refundPeriod: refundPeriod ?? null,
       _primaryTerminalAddress: primaryTerminalAddress,
       _token: tokenData,
       _fundingGoal: featuredMission.fundingGoal || 0,
       _ruleset: _ruleset as any[] | null,
-      projectMetadata: featuredMission.metadata,
+      projectMetadata: featuredMission.metadata ?? null,
     }
   } catch (error) {
     console.warn('Failed to fetch featured mission data:', error)

@@ -227,9 +227,11 @@ export default function useJBProjectData({
       const jbPid = normalizedJuiceboxProjectId(projectId)
       if (jbPid == null) return
 
-      let primaryTerminal: string = ZERO_ADDRESS
-
-      while (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
+      // Bounded retry.  Without a cap, a project that hasn't yet been wired
+      // up to a primary terminal (e.g. a freshly-deployed mission, or a
+      // bogus projectId) sends this effect into an infinite RPC loop.
+      const maxAttempts = 5
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
           const fetched: any = await readContract({
             contract: jbDirectoryContract,
@@ -242,7 +244,9 @@ export default function useJBProjectData({
             return
           }
           console.warn(
-            `Retrieved zero or invalid address for project ${projectId} (attempt ${attempt + 1}/${maxAttempts})`
+            `Retrieved zero or invalid address for project ${projectId} (attempt ${
+              attempt + 1
+            }/${maxAttempts})`
           )
         } catch (error) {
           console.error(

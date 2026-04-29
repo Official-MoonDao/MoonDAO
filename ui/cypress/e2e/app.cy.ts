@@ -109,6 +109,35 @@ describe('Main E2E Testing', () => {
     })
   })
 
+  describe('MoonDAO App | Launch', () => {
+    it('should load the launch page with non-empty mission data', () => {
+      // Regression: a refactor in `lib/launchpad/fetchMissions.ts` shipped with
+      // `abi: {} as any` for the mission table contract, which made every
+      // `getTableName` call throw "Could not resolve method", silently
+      // returning an empty mission list.  When that was fixed, a second
+      // regression surfaced: `fetchFeaturedMission.ts` returned `_deadline`
+      // and `_refundPeriod` as `undefined`, which Next.js refuses to
+      // serialize through getStaticProps and which 500's the page.  This
+      // test guards both: the launch page must respond 200 AND ship a
+      // non-empty `missions` array on `__NEXT_DATA__.props.pageProps`.
+      cy.visit('/launch', { timeout: 60000 })
+      cy.window().then((win) => {
+        const nextData = (win as any).__NEXT_DATA__
+        expect(nextData, '__NEXT_DATA__ should be present on /launch').to
+          .exist
+        const props = nextData && nextData.props ? nextData.props : {}
+        const pageProps = props.pageProps || {}
+        const missions = pageProps.missions
+        expect(missions, 'missions should be an array').to.be.an('array')
+        expect(
+          missions.length,
+          'missions array should not be empty — fetchMissions is failing ' +
+            'on the server'
+        ).to.be.greaterThan(0)
+      })
+    })
+  })
+
   describe('MoonDAO App | Map', () => {
     it('should load the map page', () => {
       cy.visit('/map', { timeout: 60000 })

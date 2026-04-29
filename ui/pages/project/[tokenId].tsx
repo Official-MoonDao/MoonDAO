@@ -36,6 +36,7 @@ import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import { isFetchableUrl } from '@/lib/utils/links'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -489,15 +490,19 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
     }
 
     let proposalJSON: any = {}
-    try {
-      const proposalResponse = await fetch(project.proposalIPFS)
-      if (!proposalResponse.ok) {
-        console.error(`Failed to fetch proposal IPFS: ${proposalResponse.status}`)
-      } else {
-        proposalJSON = await proposalResponse.json()
+    if (isFetchableUrl(project.proposalIPFS)) {
+      try {
+        const proposalResponse = await fetch(project.proposalIPFS)
+        if (!proposalResponse.ok) {
+          console.error(
+            `Failed to fetch proposal IPFS: ${proposalResponse.status}`
+          )
+        } else {
+          proposalJSON = await proposalResponse.json()
+        }
+      } catch (error) {
+        console.error('Error fetching proposal IPFS:', error)
       }
-    } catch (error) {
-      console.error('Error fetching proposal IPFS:', error)
     }
 
     let votes: DistributionVote[] = []
