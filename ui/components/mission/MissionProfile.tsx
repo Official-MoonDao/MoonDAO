@@ -33,6 +33,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { useDeadlineTracking } from '@/lib/mission/useDeadlineTracking'
+import type { MissionFundingStats } from '@/lib/mission/fetchMissionFundingStats'
 import {
   fetchNativeBalanceWei,
   pickChainWithMaxNativeBalance,
@@ -114,6 +115,11 @@ type MissionProfileProps = {
    *  with Frank explainer to show honest empty-state copy when the top 25
    *  isn't filled yet (vs. just claiming "fewer than 25"). */
   _overviewRankedCount?: number
+  /** Aggregated funding stats (count, unique backers, median contribution)
+   *  for the wrapped-up Overview Flight raise. Powers the success-metrics
+   *  panel + 30-day "seat procurement" countdown that replaced the live
+   *  progress bar / milestones / goal on the mission 4 header. */
+  _overviewStats?: MissionFundingStats | null
 }
 
 export default function MissionProfile({
@@ -130,6 +136,7 @@ export default function MissionProfile({
   _overviewLeaderboard,
   _overviewTop25Threshold,
   _overviewRankedCount,
+  _overviewStats,
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const router = useRouter()
@@ -444,6 +451,11 @@ export default function MissionProfile({
         setMissionMetadataModalEnabled={setMissionMetadataModalEnabled}
         setDeployTokenModalEnabled={setDeployTokenModalEnabled}
         token={token}
+        overviewStats={
+          mission?.id === 4 || String(mission?.id) === '4'
+            ? _overviewStats ?? null
+            : undefined
+        }
         contributeButton={
           !deadlinePassed && Number(stage) !== 3 && (
             <MissionPayRedeem
