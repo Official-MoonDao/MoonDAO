@@ -6,7 +6,8 @@ evm_version = "cancun"
 include_paths = ["../fee-hook/script", "../contracts/src"]
 ffi = true
 fs_permissions = [
-    { access = "read", path = "../contracts/deployments/"}
+    { access = "read", path = "../contracts/deployments/"},
+    { access = "read", path = "./script/safe-tx-mission4-owner-only-payouts.json"}
 ]
 # for deterministic deploys
 bytecode_hash = "none"
