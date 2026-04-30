@@ -252,7 +252,9 @@ export async function computeMemberVoteOutcome({
     for (const [projectId, value] of Object.entries(parsedDistribution)) {
       const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
       if (author && author === voterAddr) continue
-      distribution[projectId] = Number(value)
+      const numericValue = Number(value)
+      if (!Number.isFinite(numericValue) || numericValue < 0) continue
+      distribution[projectId] = numericValue
     }
     return { ...row, distribution }
   })
