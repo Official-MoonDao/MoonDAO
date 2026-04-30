@@ -276,7 +276,13 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  // Filter out projects whose Safe does not meet the 3/5 multisig requirement
+  // Audit each project's Safe against the 3-of-5 requirement, but DO NOT
+  // remove non-conforming projects from the tally. The EB will reach out to
+  // any flagged team after the vote so they can fix their treasury before
+  // funds move; gating the tally itself caused legitimate winners to be
+  // silently dropped when they had a smaller / lower-threshold Safe at vote
+  // close. The misconfigured projects are surfaced via console warnings
+  // and returned in the API response as `multisigFollowUps`.
   const MIN_SAFE_OWNERS = 5
   const MIN_SAFE_THRESHOLD = 3
   const projectContract = getContract({
@@ -286,10 +292,18 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     chain: chain,
   })
   const rpcUrl = getRpcUrlForChain({ client: serverClient, chain })
-  const skippedProjects: any[] = []
+  type MultisigAudit = {
+    projectId: string
+    MDP: number | string
+    name: string
+    safeAddress: string | null
+    owners: number | null
+    threshold: number | null
+    reason: string
+  }
+  const multisigFollowUps: MultisigAudit[] = []
 
-  for (let i = passedProjects.length - 1; i >= 0; i--) {
-    const project = passedProjects[i]
+  for (const project of passedProjects) {
     try {
       const safeAddress = await readContractWithRetry<string>(
         projectContract,
@@ -300,32 +314,54 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       const owners = await safe.getOwners()
       const threshold = await safe.getThreshold()
       if (owners.length < MIN_SAFE_OWNERS || threshold < MIN_SAFE_THRESHOLD) {
+        const reason = `Safe ${safeAddress} has ${owners.length} owner(s) with threshold ${threshold} (requires ${MIN_SAFE_OWNERS} owners and ${MIN_SAFE_THRESHOLD} threshold)`
         console.warn(
-          `[vote tally] Skipping project MDP-${project.MDP} "${project.name}": Safe ${safeAddress} has ${owners.length} owner(s) with threshold ${threshold} (requires ${MIN_SAFE_OWNERS} owners and ${MIN_SAFE_THRESHOLD} threshold)`
+          `[vote tally] Multisig follow-up needed for MDP-${project.MDP} "${project.name}": ${reason}`
         )
-        skippedProjects.push(project)
-        passedProjects.splice(i, 1)
+        multisigFollowUps.push({
+          projectId: String(project.id),
+          MDP: project.MDP,
+          name: project.name,
+          safeAddress,
+          owners: owners.length,
+          threshold,
+          reason,
+        })
       }
     } catch (error) {
+      const reason = `Failed to read Safe config: ${
+        error instanceof Error ? error.message : String(error)
+      }`
       console.error(
-        `[vote tally] Error checking Safe config for project MDP-${project.MDP} "${project.name}":`,
+        `[vote tally] Multisig audit error for MDP-${project.MDP} "${project.name}":`,
         error
       )
+      multisigFollowUps.push({
+        projectId: String(project.id),
+        MDP: project.MDP,
+        name: project.name,
+        safeAddress: null,
+        owners: null,
+        threshold: null,
+        reason,
+      })
     }
   }
 
-  if (skippedProjects.length > 0) {
-    console.log(
-      `[vote tally] ${skippedProjects.length} project(s) excluded due to insufficient multisig config: ${skippedProjects.map((p) => `MDP-${p.MDP}`).join(', ')}`
+  if (multisigFollowUps.length > 0) {
+    console.warn(
+      `\n[vote tally] ⚠️  ${multisigFollowUps.length} project(s) need a treasury follow-up (kept in tally):`
+    )
+    for (const audit of multisigFollowUps) {
+      console.warn(
+        `  - MDP-${audit.MDP} "${audit.name}" → ${audit.reason}`
+      )
+    }
+    console.warn(
+      `[vote tally] These projects WILL be tallied and (if approved) flipped to active. Reach out manually to fix their Safe before any treasury actions.\n`
     )
   }
-  console.log(`[vote tally] ${passedProjects.length} projects eligible for vote after multisig check`)
-
-  if (passedProjects.length === 0) {
-    return res.status(400).json({
-      error: `No projects have a properly configured multisig (${MIN_SAFE_OWNERS} signers with threshold ${MIN_SAFE_THRESHOLD} required).`,
-    })
-  }
+  console.log(`[vote tally] ${passedProjects.length} projects eligible for vote (multisig check is advisory only)`)
 
   const usdBudgets = Object.fromEntries(
     await Promise.all(
@@ -529,10 +565,29 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     console.log(`[vote tally] Updated project ${projectId}: active=${approved ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED} (tx: ${receipt.transactionHash})`)
   }
 
+  // Surface only the *approved* projects whose Safe still needs a fix —
+  // those are the ones that actually need a manual outreach before any
+  // treasury action. Failed projects with bad Safes don't matter (no funds
+  // will move to them) so we don't bother including them.
+  const approvedMultisigFollowUps = multisigFollowUps.filter(
+    (audit) => projectIdToApproved[audit.projectId] === true
+  )
+
+  if (approvedMultisigFollowUps.length > 0) {
+    console.warn(
+      `[vote tally] ⚠️  ${approvedMultisigFollowUps.length} APPROVED project(s) need a treasury fix before payout:`
+    )
+    for (const audit of approvedMultisigFollowUps) {
+      console.warn(`  - MDP-${audit.MDP} "${audit.name}" → ${audit.reason}`)
+    }
+  }
+
   return res.status(200).json({
     url: 'https://moondao.com/projects',
     outcome: outcome,
     approved: projectIdToApproved,
+    multisigFollowUps,
+    approvedMultisigFollowUps,
   })
 }
 export default withMiddleware(POST, rateLimit)
