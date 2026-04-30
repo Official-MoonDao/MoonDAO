@@ -655,8 +655,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
   // segments we hit a cached resolver so a single Tableland blip doesn't
   // 404 every team page at once.
   let tokenId: string | number | null = null
-  if (!Number.isNaN(Number(tokenIdOrName))) {
-    tokenId = tokenIdOrName
+  if (typeof tokenIdOrName === 'string' && /^\d+$/.test(tokenIdOrName)) {
+    tokenId = BigInt(tokenIdOrName).toString()
   } else if (typeof tokenIdOrName === 'string') {
     try {
       tokenId = await resolveTeamIdFromPrettyLink(chain, tokenIdOrName)
