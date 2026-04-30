@@ -34,7 +34,7 @@ async function refreshSnapshot(
 ): Promise<PrettyLinksSnapshot> {
   const rows = (await queryTable(
     chain,
-    `SELECT id, name FROM ${tableName}`
+    `SELECT id, name FROM ${tableName} ORDER BY id`
   )) as Array<{ id: string | number; name: string }>
 
   const { prettyLinks } = generatePrettyLinks(rows || [])
