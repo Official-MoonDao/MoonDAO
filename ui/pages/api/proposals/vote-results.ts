@@ -31,20 +31,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   try {
     const outcome = await computeMemberVoteOutcome({ chain, quarter, year })
-    if (!outcome) {
-      return res.status(200).json({ outcome: null, quarter, year })
-    }
 
     // Cache at the edge briefly. The underlying computation is heavy
     // (Tableland + multi-chain RPC + IPFS + vMOONEY snapshot) but the
     // result is deterministic for a given (quarter, year, vote-set), so a
     // short shared cache with stale-while-revalidate keeps the page snappy
-    // without serving wildly stale numbers.
+    // without serving wildly stale numbers. The `outcome: null` case
+    // (no votes yet, no eligible projects, etc.) is just as expensive to
+    // re-derive as the populated one — every traffic spike pre-vote
+    // would otherwise re-run the full pipeline — so it gets the same
+    // cache treatment.
     res.setHeader(
       'Cache-Control',
       'public, s-maxage=60, stale-while-revalidate=300'
     )
-    return res.status(200).json({ outcome, quarter, year })
+    return res.status(200).json({ outcome: outcome ?? null, quarter, year })
   } catch (error: any) {
     console.error('[vote-results] computeMemberVoteOutcome failed:', error)
     return res
