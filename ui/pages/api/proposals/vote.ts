@@ -281,8 +281,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   // any flagged team after the vote so they can fix their treasury before
   // funds move; gating the tally itself caused legitimate winners to be
   // silently dropped when they had a smaller / lower-threshold Safe at vote
-  // close. The misconfigured projects are surfaced via a console warning
-  // table and returned in the API response as `multisigFollowUps`.
+  // close. The misconfigured projects are surfaced via console warnings
+  // and returned in the API response as `multisigFollowUps`.
   const MIN_SAFE_OWNERS = 5
   const MIN_SAFE_THRESHOLD = 3
   const projectContract = getContract({
