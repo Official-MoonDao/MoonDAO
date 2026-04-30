@@ -18,15 +18,9 @@ import type { MemberVoteOutcome } from '@/lib/proposals/computeMemberVoteOutcome
 type Props = {
   quarter: number
   year: number
-  /** USD pool the budget cap is derived from — surfaced in the header for context. */
-  quarterBudgetUsd: number
 }
 
-export default function MemberVoteResults({
-  quarter,
-  year,
-  quarterBudgetUsd,
-}: Props) {
+export default function MemberVoteResults({ quarter, year }: Props) {
   // SWR with conservative refresh: results only change when the EB re-runs
   // the tally (rare). 60s dedupe matches the endpoint's `s-maxage=60`.
   const { data, error, isLoading } = useSWR<{
@@ -47,6 +41,11 @@ export default function MemberVoteResults({
   const totalApprovedBudget = outcome.results
     .filter((r) => r.approved)
     .reduce((sum, r) => sum + (r.budget || 0), 0)
+  // Source the pool size from the outcome itself rather than a separately-
+  // passed prop so the header can never disagree with the budget cap the
+  // tally pipeline actually applied (`getApprovedProjects` uses
+  // `outcome.quarterBudgetUsd` end-to-end).
+  const quarterBudgetUsd = outcome.quarterBudgetUsd
   const closeDate = new Date(outcome.voteCloseTimestamp * 1000)
 
   return (

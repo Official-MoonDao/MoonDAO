@@ -1601,11 +1601,13 @@ export function ProjectRewards({
                 {/* Member Vote results panel — renders only when there are
                     votes for the current proposal quarter. The component
                     self-hides during loading / error so it doesn't add a
-                    flicker on cold cache. */}
+                    flicker on cold cache. The quarter budget the panel
+                    displays comes from the API response itself, not from
+                    a prop, so the header can't drift from the budget cap
+                    the tally actually used. */}
                 <MemberVoteResults
                   quarter={proposalQuarter}
                   year={proposalYear}
-                  quarterBudgetUsd={USD_BUDGET}
                 />
                 <div className="flex flex-col gap-1.5 sm:gap-6">
                   {proposals && proposals.length > 0 ? (
