@@ -82,8 +82,12 @@ export default function MemberVoteResults({ quarter, year }: Props) {
 
       <div className="flex flex-col gap-1.5">
         {outcome.results.map((r) => {
-          const proposalLink =
-            r.MDP != null && r.MDP !== '' ? `/proposal/${r.MDP}` : null
+          // Link to the full project page (`/project/<MDP>`) rather than
+          // the legacy Nance-only proposal viewer (`/proposal/<MDP>`) so
+          // each row lands on the same surface the rest of the UI
+          // (dashboard, ProposalInfo, ProjectCard) navigates to.
+          const projectLink =
+            r.MDP != null && r.MDP !== '' ? `/project/${r.MDP}` : null
           return (
             <div
               key={r.projectId}
@@ -103,9 +107,9 @@ export default function MemberVoteResults({ quarter, year }: Props) {
                 {r.rank}
               </div>
               <div className="flex-1 min-w-0">
-                {proposalLink ? (
+                {projectLink ? (
                   <Link
-                    href={proposalLink}
+                    href={projectLink}
                     className={`text-sm font-medium hover:underline truncate block ${
                       r.approved ? 'text-white' : 'text-gray-300'
                     }`}
