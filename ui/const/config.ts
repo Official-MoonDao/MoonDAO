@@ -678,13 +678,21 @@ export const OPERATORS: string[] = [
 ]
 
 // Retroactive rewards payout token for the *currently-voting* cycle.
-// When set to 'ETH', the retro-rewards UI uses RETRO_ETH_BUDGET instead of
-// USD_BUDGET and labels the budget asset "ETH" (the airdrop CSV already
-// targets `native,,address,amount` rows, which is ETH on Arbitrum).
-export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = 'ETH'
+// Switch to 'ETH' (and use RETRO_ETH_BUDGET) when the cycle pays in ETH;
+// 'USDC' (and RETRO_USD_BUDGET) is the default for stablecoin retros.
+export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = 'USDC'
 
-// Q1 2026 retroactives: 2.215 ETH.
+// Q1 2026 retroactives (last cycle, ETH-paid): 2.215 ETH.
 // The quarter's total ETH budget was 11.6, of which 90% goes to projects
 // (10.44 ETH). 8.225 ETH was paid out upfront to funded projects, so the
 // remainder for retroactive distribution is (11.6 * 0.9) - 8.225 = 2.215 ETH.
 export const RETRO_ETH_BUDGET = 2.215
+
+// Q2 2026 retroactives (current cycle, USDC-paid): $3,513.10.
+// The quarter's total USD budget is $23,409 (NEXT_QUARTER_BUDGET_USD).
+// 90% goes to projects ($21,068.10); $17,555 was committed upfront to
+// the 5 Member-Vote winners (MDP-248 $3,000 + MDP-235 $3,600 + MDP-239
+// $4,300 + MDP-240 $3,955 + MDP-245 $2,700 — MDP-245 is the
+// author-agreed override, see lib/proposals/budgetOverrides.ts).
+// Retroactive remainder = ($23,409 * 0.9) - $17,555 = $3,513.10.
+export const RETRO_USD_BUDGET = 3513.1
