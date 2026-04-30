@@ -157,47 +157,65 @@ export async function computeMemberVoteOutcome({
   }
   if (passedProjects.length === 0) return null
 
-  // USD budgets pulled from each proposal's IPFS payload. We batch the
-  // fetches in small groups so the endpoint doesn't fan a hundred-plus
-  // concurrent requests at IPFS gateways every time it runs (the gateway
-  // often rate-limits or just collapses under the burst, which used to
-  // surface as zeroed-out budgets and a misranked outcome). The matching
-  // author-IPFS fetch below uses the same `BATCH_SIZE` for the same
-  // reason — keep them in sync if you tune one.
+  // Each proposal's IPFS payload is the source of truth for both the USD
+  // budget (used by the budget-cap inside `getApprovedProjects`) and the
+  // author address (used to strip self-votes). Fetch the payload once per
+  // project, derive both in the same pass, and batch in small groups so
+  // we don't fan a hundred-plus concurrent requests at the IPFS gateway —
+  // bursts there used to rate-limit us and surface as zeroed-out budgets
+  // / unstripped self-votes.
   const BATCH_SIZE = 5
-  const usdBudgetEntries: [string, number][] = []
+  const usdBudgets: Record<string, number> = {}
+  const projectIdToAuthorAddress: Record<string, string> = {}
+
+  function extractUsdBudget(proposal: any): number {
+    let budget = 0
+    if (proposal?.budget && Array.isArray(proposal.budget)) {
+      for (const item of proposal.budget) {
+        if (
+          item.token === 'USD' ||
+          item.token === 'USDC' ||
+          item.token === 'USDT' ||
+          item.token === 'DAI'
+        ) {
+          budget += Number(item.amount) || 0
+        }
+      }
+    }
+    return budget
+  }
+
   for (let i = 0; i < passedProjects.length; i += BATCH_SIZE) {
     const batch = passedProjects.slice(i, i + BATCH_SIZE)
-    const batchEntries = await Promise.all(
-      batch.map(async (project: any): Promise<[string, number]> => {
+    await Promise.all(
+      batch.map(async (project: any) => {
+        const projectId = String(project.id)
+        // Default the budget to 0 so a missing IPFS payload doesn't drop
+        // the project out of `getApprovedProjects`'s budget-cap loop —
+        // it'll just count as $0 toward the cap (same behavior as before).
+        usdBudgets[projectId] = 0
+        if (!project.proposalIPFS) return
         try {
           const proposalResponse = await fetch(project.proposalIPFS)
+          if (!proposalResponse.ok) return
           const proposal = await proposalResponse.json()
-          let budget = 0
-          if (proposal.budget) {
-            proposal.budget.forEach((item: any) => {
-              budget +=
-                item.token === 'USD' ||
-                item.token === 'USDC' ||
-                item.token === 'USDT' ||
-                item.token === 'DAI'
-                  ? Number(item.amount)
-                  : 0
-            })
+          usdBudgets[projectId] = extractUsdBudget(proposal)
+          if (
+            proposal &&
+            typeof proposal.authorAddress === 'string' &&
+            proposal.authorAddress.length > 0
+          ) {
+            projectIdToAuthorAddress[projectId] = proposal.authorAddress
           }
-          return [String(project.id), budget]
         } catch (error) {
           console.error(
-            `[computeMemberVoteOutcome] Failed to fetch budget for project ${project.id}:`,
+            `[computeMemberVoteOutcome] proposal IPFS fetch failed for project ${project.id}:`,
             error
           )
-          return [String(project.id), 0]
         }
       })
     )
-    usdBudgetEntries.push(...batchEntries)
   }
-  const usdBudgets = Object.fromEntries(usdBudgetEntries)
 
   const voteOpenTimestamp = Math.floor(
     getThirdThursdayOfQuarterTimestamp(quarter, year).getTime() / 1000
@@ -214,32 +232,6 @@ export async function computeMemberVoteOutcome({
       return [address.toLowerCase(), power]
     })
   )
-
-  // Resolve author addresses so we can strip self-votes from each row.
-  // Reuses the same `BATCH_SIZE` as the budget fetch above so we stay
-  // under the IPFS gateway's per-second cap on a single endpoint hit.
-  const projectIdToAuthorAddress: Record<string, string> = {}
-  for (let i = 0; i < passedProjects.length; i += BATCH_SIZE) {
-    const batch = passedProjects.slice(i, i + BATCH_SIZE)
-    await Promise.all(
-      batch.map(async (project: any) => {
-        if (!project.proposalIPFS) return
-        try {
-          const fetchRes = await fetch(project.proposalIPFS)
-          if (!fetchRes.ok) return
-          const json = await fetchRes.json()
-          if (json && typeof json.authorAddress === 'string' && json.authorAddress.length > 0) {
-            projectIdToAuthorAddress[String(project.id)] = json.authorAddress
-          }
-        } catch (error) {
-          console.error(
-            `[computeMemberVoteOutcome] author fetch failed for project ${project.id}:`,
-            error
-          )
-        }
-      })
-    )
-  }
 
   type VoteRow = DistributionVote & {
     distribution?: string | Record<string, number>
