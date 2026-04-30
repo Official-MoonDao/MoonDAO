@@ -72,9 +72,9 @@ contract MockStargate {
             // In a real scenario, this would happen on the destination chain
             // For testing, we simulate it happening immediately
             CrossChainPay(payable(mockCrossChainPay)).lzCompose{value: _sendParam.amountLD}(
-                address(0), // _from (origin)
+                address(this), // _from (origin) — mock acts as both router and endpoint
                 bytes32(0), // _guid
-                OFTComposeMsgCodec.encode(uint64(1), uint32(2), uint256(3),_sendParam.composeMsg),
+                OFTComposeMsgCodec.encode(uint64(1), uint32(2), uint256(_sendParam.amountLD), _sendParam.composeMsg),
                 address(0), // _executor
                 "" // _extraData
             );
@@ -160,7 +160,8 @@ contract CrossChainPayTest is Test {
         crossChainPay = new CrossChainPay(
             owner,
             address(mockJBTerminal),
-            address(mockStargate)
+            address(mockStargate),
+            address(mockStargate) // mock acts as both stargate router and lz endpoint
         );
         vm.stopPrank();
 
