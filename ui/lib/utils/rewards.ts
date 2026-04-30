@@ -504,13 +504,35 @@ export function getApprovedProjects(
     .sort((a, b) => {
       return b.percent - a.percent
     })
+  // Spec: "Top 50% of proposals get funded, capped so total project budgets
+  // stay under 3/4 of the quarterly budget."
+  // - "Top 50%": ceil(n/2), with a minimum floor of 3 (intentional — small
+  //   cycles always fund at least 3 projects so the senate-approved set
+  //   isn't reduced to 1–2 entries by rounding alone).
+  // - "Capped at 3/4 of the budget": evaluated knapsack-style. We walk
+  //   projects in rank order and approve each one whose budget *fits*
+  //   under the remaining cap; projects that would push the cumulative
+  //   total over 3/4 are skipped, but we KEEP CHECKING smaller projects
+  //   below them in the ranking. The previous greedy implementation
+  //   stopped as soon as one project pushed the total over the cap, which
+  //   could reject a popular small project just because a larger
+  //   higher-ranked one came first (and in the worst case rejected an
+  //   entire quarter when the rank-1 project alone exceeded 3/4).
   const numApprovedProjects = Math.min(Math.max(Math.ceil(projects.length / 2), 3), projects.length)
+  const budgetCap = (usdBudget * 3) / 4
   let approvedBudget = 0
+  let approvedCount = 0
   const projectIdToApproved: { [key: string]: boolean } = {}
   for (let i = 0; i < sortedOutcome.length; i++) {
     const projectId = sortedOutcome[i].projectId
-    approvedBudget += sortedOutcome[i].budget
-    const approved = i < numApprovedProjects && approvedBudget <= (usdBudget * 3) / 4
+    const projectBudget = sortedOutcome[i].budget
+    const fitsUnderCap = approvedBudget + projectBudget <= budgetCap
+    const fitsUnderCount = approvedCount < numApprovedProjects
+    const approved = fitsUnderCap && fitsUnderCount
+    if (approved) {
+      approvedBudget += projectBudget
+      approvedCount += 1
+    }
     projectIdToApproved[projectId] = approved
   }
   return projectIdToApproved
