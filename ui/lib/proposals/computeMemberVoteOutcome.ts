@@ -213,6 +213,7 @@ export async function computeMemberVoteOutcome({
           const proposal = await proposalResponse.json()
           usdBudgets[projectId] = extractUsdBudget(proposal, {
             stablecoinAddresses: stablecoinAddressSet,
+            MDP: project.MDP,
           })
           if (
             proposal &&

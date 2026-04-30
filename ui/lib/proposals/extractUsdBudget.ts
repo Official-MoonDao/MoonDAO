@@ -5,6 +5,10 @@
  * client so server-side consumers (the member-vote tally + display) report
  * the same number the rest of the UI shows. Resolution order:
  *
+ *   0. `BUDGET_OVERRIDES_USD[MDP]` — short-circuits everything else when
+ *      the caller supplies an `MDP`. Used for hand-negotiated post-submit
+ *      adjustments (e.g. an author trimming their request to fit under
+ *      the cap) so we don't have to re-pin the IPFS payload.
  *   1. `proposal.totalBudgetUSDC` — precomputed aggregate written by the
  *      proposal editor.
  *   2. `proposal.budget[]` — sum entries whose `token` is USD-like. The
@@ -19,6 +23,7 @@
  *
  * Returns `0` when nothing usable is found. Always non-negative.
  */
+import { getBudgetOverrideUSD } from '@/lib/proposals/budgetOverrides'
 
 const STABLECOIN_SYMBOLS = new Set(['usd', 'usdc', 'usdt', 'dai'])
 
@@ -186,8 +191,18 @@ export function extractUsdBudget(
      * symbol — the form `SafeTokenForm` actually writes today.
      */
     stablecoinAddresses?: ReadonlySet<string> | string[] | null
+    /**
+     * Optional MDP number for the proposal. When supplied, manual budget
+     * overrides (`BUDGET_OVERRIDES_USD`) for that MDP take precedence over
+     * everything below. Pass it whenever you have it so display and tally
+     * stay in lock-step with author-negotiated revisions.
+     */
+    MDP?: number | string | null
   }
 ): number {
+  const override = getBudgetOverrideUSD(options?.MDP)
+  if (override !== null) return override
+
   if (!proposal || typeof proposal !== 'object') return 0
 
   if (proposal.totalBudgetUSDC != null) {
