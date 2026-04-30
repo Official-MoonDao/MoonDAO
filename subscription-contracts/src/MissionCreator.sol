@@ -142,7 +142,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
                 allowSetController: false, // The project cannot set a new controller.
                 allowAddAccountingContext: false, // The project cannot add new accounting contexts to its terminals.
                 allowAddPriceFeed: false, // The project cannot add new price feeds.
-                ownerMustSendPayouts: false, // Anyone can send this project's payouts to the splits specified in the `splitGroups` property below.
+                ownerMustSendPayouts: true, // Payout distribution is initiated by the project owner.
                 holdFees: false, // Fees are not held.
                 useTotalSurplusForCashOuts: false, // Cash outs are made from each terminal independently.
                 useDataHookForPay: true,
@@ -172,7 +172,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
                 allowSetController: false, // The project cannot set a new controller.
                 allowAddAccountingContext: false, // The project cannot add new accounting contexts to its terminals.
                 allowAddPriceFeed: false, // The project cannot add new price feeds.
-                ownerMustSendPayouts: false, // Anyone can send this project's payouts to the splits specified in the `splitGroups` property below.
+                ownerMustSendPayouts: true, // Payout distribution is initiated by the project owner.
                 holdFees: false, // Fees are not held.
                 useTotalSurplusForCashOuts: false, // Cash outs are made from each terminal independently.
                 useDataHookForPay: true,

@@ -142,206 +142,12 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
     }
 
    
-    function _buildOwnerOnlyPayoutsRuleset(
-        uint256 missionId,
-        address terminal
-    ) internal view returns (JBRulesetConfig[] memory) {
-        address payHook = missionCreator.missionIdToPayHook(missionId);
-        address poolDeployer = missionCreator.missionIdToPoolDeployer(missionId);
-        address teamVesting = missionCreator.missionIdToTeamVesting(missionId);
-        address moonDAOVesting = missionCreator.missionIdToMoonDAOVesting(missionId);
-        address moonDAOTreasury = missionCreator.moonDAOTreasury();
 
-        JBRulesetConfig[] memory rulesetConfigurations = new JBRulesetConfig[](1);
-
-        JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
-        payoutLimits[0] = JBCurrencyAmount({
-            amount: uint224(128_000_000 * 10 ** 18),
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-        });
-
-        JBFundAccessLimitGroup[] memory fundAccessLimitGroups = new JBFundAccessLimitGroup[](1);
-        fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
-            terminal: terminal,
-            token: JBConstants.NATIVE_TOKEN,
-            payoutLimits: payoutLimits,
-            surplusAllowances: new JBCurrencyAmount[](0)
-        });
-
-        JBSplitGroup[] memory splitGroups = new JBSplitGroup[](2);
-
-        splitGroups[0] = JBSplitGroup({groupId: 0xEEEe, splits: new JBSplit[](3)});
-        splitGroups[0].splits[0] = JBSplit({
-            percent: 25_641_025,
-            projectId: 0,
-            preferAddToBalance: false,
-            beneficiary: payable(moonDAOTreasury),
-            lockedUntil: type(uint48).max,
-            hook: IJBSplitHook(address(0))
-        });
-        splitGroups[0].splits[1] = JBSplit({
-            percent: 51_282_051,
-            projectId: 0,
-            preferAddToBalance: false,
-            beneficiary: payable(poolDeployer),
-            lockedUntil: type(uint48).max,
-            hook: IJBSplitHook(address(0))
-        });
-        splitGroups[0].splits[2] = JBSplit({
-            percent: 923_076_923,
-            projectId: 0,
-            preferAddToBalance: false,
-            beneficiary: payable(teamAddress),
-            lockedUntil: type(uint48).max,
-            hook: IJBSplitHook(address(0))
-        });
-
-        splitGroups[1] = JBSplitGroup({groupId: 1, splits: new JBSplit[](3)});
-        splitGroups[1].splits[0] = JBSplit({
-            percent: 350_000_000,
-            projectId: 0,
-            preferAddToBalance: false,
-            beneficiary: payable(moonDAOVesting),
-            lockedUntil: type(uint48).max,
-            hook: IJBSplitHook(address(0))
-        });
-        splitGroups[1].splits[1] = JBSplit({
-            percent: 600_000_000,
-            projectId: 0,
-            preferAddToBalance: false,
-            beneficiary: payable(teamVesting),
-            lockedUntil: type(uint48).max,
-            hook: IJBSplitHook(address(0))
-        });
-        splitGroups[1].splits[2] = JBSplit({
-            percent: 50_000_000,
-            projectId: 0,
-            preferAddToBalance: false,
-            beneficiary: payable(poolDeployer),
-            lockedUntil: type(uint48).max,
-            hook: IJBSplitHook(address(0))
-        });
-
-        rulesetConfigurations[0] = JBRulesetConfig({
-            mustStartAtOrAfter: 0,
-            duration: 0,
-            weight: 2_000_000_000_000_000_000_000,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: JBRulesetMetadata({
-                reservedPercent: 5_000,
-                cashOutTaxRate: 0,
-                baseCurrency: 61166,
-                pausePay: false,
-                pauseCreditTransfers: false,
-                allowOwnerMinting: false,
-                allowSetCustomToken: false,
-                allowTerminalMigration: false,
-                allowSetTerminals: false,
-                allowSetController: false,
-                allowAddAccountingContext: false,
-                allowAddPriceFeed: false,
-                ownerMustSendPayouts: true, // ★ the gating flag
-                holdFees: false,
-                useTotalSurplusForCashOuts: false,
-                useDataHookForPay: true,
-                useDataHookForCashOut: true,
-                dataHook: payHook,
-                metadata: 0
-            }),
-            splitGroups: splitGroups,
-            fundAccessLimitGroups: fundAccessLimitGroups
-        });
-
-        return rulesetConfigurations;
-    }
-
-
-    function testOwnerOnlyPayoutsBlocksNonOwners() public {
-        _createTeam();
-
-        // === Step 1: Create + fully fund a mission, deadline passes ===
-        vm.startPrank(user1);
-        uint256 missionId = _createMission(1 ether, true);
-        vm.stopPrank();
-
-        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
-        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
-
-        uint256 payAmount = 10 ether;
-        vm.prank(contributor1);
-        terminal.pay{value: payAmount}(
-            projectId,
-            JBConstants.NATIVE_TOKEN,
-            0,
-            contributor1,
-            0,
-            "",
-            new bytes(0)
-        );
-
-
-        vm.startPrank(teamAddress);
-        JBRulesetConfig[] memory cfg = _buildOwnerOnlyPayoutsRuleset(missionId, address(terminal));
-        uint256 newRulesetId = jbController.queueRulesetsOf(
-            projectId,
-            cfg,
-            "Owner-only payouts (ownerMustSendPayouts = true)"
-        );
-        assertGt(newRulesetId, 0, "New ruleset should be queued");
-        vm.stopPrank();
-
-        skip(1);
-
-        uint256 terminalBalance = jbTerminalStore.balanceOf(
-            address(terminal), projectId, JBConstants.NATIVE_TOKEN
-        );
-
-        vm.prank(randomCaller);
-        vm.expectRevert(); // JBPermissioned: unauthorized
-        IJBMultiTerminal(address(terminal)).sendPayoutsOf(
-            projectId,
-            JBConstants.NATIVE_TOKEN,
-            terminalBalance,
-            uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            0
-        );
-
-        uint256 treasuryBalanceBefore = address(TREASURY).balance;
-        uint256 teamBalanceBefore = address(teamAddress).balance;
-        address poolDeployerAddr = missionCreator.missionIdToPoolDeployer(missionId);
-        uint256 poolDeployerBalanceBefore = address(poolDeployerAddr).balance;
-
-        vm.prank(teamAddress);
-        uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
-            projectId,
-            JBConstants.NATIVE_TOKEN,
-            terminalBalance,
-            uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            0
-        );
-        assertGt(payoutAmount, 0, "Owner payout should succeed");
-
-    
-        assertApproxEqRel(
-            address(TREASURY).balance - treasuryBalanceBefore,
-            terminalBalance * 25 / 1000,
-            0.0000001e18
-        );
-        assertApproxEqRel(
-            address(poolDeployerAddr).balance - poolDeployerBalanceBefore,
-            terminalBalance * 5 / 100,
-            0.0000001e18
-        );
-        assertApproxEqRel(
-            address(teamAddress).balance - teamBalanceBefore,
-            terminalBalance * 90 / 100,
-            0.0000001e18
-        );
-    }
-
-
-    function testBaselineAnyoneCanSendPayouts() public {
+    /// @notice Regression test: with the MissionCreator default of
+    ///         `ownerMustSendPayouts = true` for newly created missions, a
+    ///         random EOA must NOT be able to call `sendPayoutsOf`. Only the
+    ///         project owner (team Safe) can.
+    function testBaselineOwnerOnlyPayoutsByDefault() public {
         _createTeam();
 
         vm.startPrank(user1);
@@ -367,8 +173,19 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
             address(terminal), projectId, JBConstants.NATIVE_TOKEN
         );
 
-      
+        // Random caller is BLOCKED on freshly-created missions.
         vm.prank(randomCaller);
+        vm.expectRevert();
+        IJBMultiTerminal(address(terminal)).sendPayoutsOf(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            terminalBalance,
+            uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            0
+        );
+
+        // Project owner (team Safe) CAN still send payouts.
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -376,6 +193,6 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
             uint32(uint160(JBConstants.NATIVE_TOKEN)),
             0
         );
-        assertGt(payoutAmount, 0, "Random caller can trigger payouts on default rulesets");
+        assertGt(payoutAmount, 0, "Owner must still be able to send payouts");
     }
 }
