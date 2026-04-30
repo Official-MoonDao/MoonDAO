@@ -32,6 +32,7 @@ import {
 import { readContract, getContract } from 'thirdweb'
 import { getThirdThursdayOfQuarterTimestamp } from '@/lib/utils/dates'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
+import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -182,12 +183,10 @@ export async function computeMemberVoteOutcome({
 
   // The proposal editor's `SafeTokenForm` writes the budget item's `token`
   // field as the *contract address* of the selected token (USDC/DAI on the
-  // chain we're tallying), not as the symbol. So a strict symbol match like
-  // `item.token === 'USDC'` misses essentially every modern proposal and
-  // shows $0 in the Member Vote Results panel. Build a chain-specific set of
-  // known stablecoin addresses (lowercased) so we recognize both the legacy
-  // symbol form ('USD'/'USDC'/'USDT'/'DAI', any case) and the address form
-  // that the form actually emits today.
+  // chain we're tallying), not as the symbol. Build a chain-specific set of
+  // stablecoin addresses so the shared extractor (which mirrors the proposal
+  // hook's pipeline) recognizes both the legacy symbol form and the address
+  // form that the form actually emits today.
   const stablecoinAddressSet = new Set<string>(
     [
       USDC_ADDRESSES?.[chainSlug],
@@ -197,29 +196,6 @@ export async function computeMemberVoteOutcome({
       .filter((a): a is string => typeof a === 'string' && a.length > 0)
       .map((a) => a.toLowerCase())
   )
-  const stablecoinSymbolSet = new Set(['usd', 'usdc', 'usdt', 'dai'])
-
-  function isUsdLikeToken(token: unknown): boolean {
-    if (typeof token !== 'string') return false
-    const trimmed = token.trim()
-    if (!trimmed) return false
-    if (trimmed.startsWith('0x')) {
-      return stablecoinAddressSet.has(trimmed.toLowerCase())
-    }
-    return stablecoinSymbolSet.has(trimmed.toLowerCase())
-  }
-
-  function extractUsdBudget(proposal: any): number {
-    let budget = 0
-    if (proposal?.budget && Array.isArray(proposal.budget)) {
-      for (const item of proposal.budget) {
-        if (!isUsdLikeToken(item?.token)) continue
-        const amount = Number(item?.amount)
-        if (Number.isFinite(amount) && amount > 0) budget += amount
-      }
-    }
-    return budget
-  }
 
   for (let i = 0; i < passedProjects.length; i += BATCH_SIZE) {
     const batch = passedProjects.slice(i, i + BATCH_SIZE)
@@ -235,7 +211,9 @@ export async function computeMemberVoteOutcome({
           const proposalResponse = await fetch(project.proposalIPFS)
           if (!proposalResponse.ok) return
           const proposal = await proposalResponse.json()
-          usdBudgets[projectId] = extractUsdBudget(proposal)
+          usdBudgets[projectId] = extractUsdBudget(proposal, {
+            stablecoinAddresses: stablecoinAddressSet,
+          })
           if (
             proposal &&
             typeof proposal.authorAddress === 'string' &&
