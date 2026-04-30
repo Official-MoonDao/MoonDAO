@@ -83,14 +83,14 @@ contract QueueRefundViaExec is Script, Config {
             newRefundPeriod,
             JB_V5_TERMINAL_STORE,
             TERMINAL,
+            address(newPayHook),
             deployer
         );
         console.log("New ApprovalHook:", address(newApprovalHook));
 
-        // ── 2. Enable refunds ──
+        // ── 2. Enable refunds (single source of truth) ──
         newPayHook.enableRefunds(true);
-        newApprovalHook.enableRefunds(true);
-        console.log("Refunds enabled on both hooks");
+        console.log("Refunds enabled");
 
         // ── 3. Build the refund ruleset config ──
         JBCurrencyAmount[] memory surplusAllowances = new JBCurrencyAmount[](1);

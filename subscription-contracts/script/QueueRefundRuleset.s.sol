@@ -94,14 +94,14 @@ contract QueueRefundRulesetScript is Script, Config {
             newRefundPeriod,
             JB_V5_TERMINAL_STORE,
             terminalAddress,
+            address(newPayHook),
             deployer // owner = deployer (team multisig)
         );
         console.log("New ApprovalHook deployed:", address(newApprovalHook));
 
-        // Enable refunds on both hooks
+        // Enable refunds (single source of truth lives on the pay hook).
         newPayHook.enableRefunds(true);
-        newApprovalHook.enableRefunds(true);
-        console.log("Refunds enabled on both hooks");
+        console.log("Refunds enabled");
 
         // Build the refund ruleset config
         JBCurrencyAmount[] memory surplusAllowances = new JBCurrencyAmount[](1);
