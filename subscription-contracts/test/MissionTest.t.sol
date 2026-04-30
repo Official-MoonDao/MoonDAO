@@ -540,7 +540,7 @@ contract MissionTest is Test, Config {
         Vesting teamVesting = Vesting(missionCreator.missionIdToTeamVesting(missionId));
         Vesting moonDAOVesting = Vesting(missionCreator.missionIdToMoonDAOVesting(missionId));
         // Can only set token once
-        vm.expectRevert("Token already set");
+        vm.expectRevert("only factory");
         moonDAOVesting.setToken(address(0));
         uint256 tokensTeamVesting = jbTokens.totalBalanceOf(address(teamVesting), projectId);
         uint256 tokensMoonDAOVesting = jbTokens.totalBalanceOf(address(moonDAOVesting), projectId);
@@ -635,7 +635,7 @@ contract MissionTest is Test, Config {
         assertEq(used, payoutAmount);
 
         PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
-        vm.expectRevert("Token already set");
+        vm.expectRevert("only factory");
         poolDeployer.setToken(address(0));
         poolDeployer.setHookAddress(missionCreator.feeHookAddress());
 
@@ -970,7 +970,6 @@ contract MissionTest is Test, Config {
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
-        approvalHook.enableRefunds(true);
         payhook.enableRefunds(true);
         vm.stopPrank();
 
@@ -1074,7 +1073,6 @@ contract MissionTest is Test, Config {
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
-        approvalHook.enableRefunds(true);
         payhook.enableRefunds(true);
         vm.stopPrank();
 
@@ -1178,7 +1176,6 @@ contract MissionTest is Test, Config {
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
-        approvalHook.enableRefunds(true);
         payhook.enableRefunds(true);
         vm.stopPrank();
         skip(10 days);
