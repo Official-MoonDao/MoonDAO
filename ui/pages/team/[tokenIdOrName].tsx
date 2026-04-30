@@ -673,15 +673,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
   let nft: Awaited<
     ReturnType<typeof import('@/lib/team/teamDataService').fetchTeamWithOwner>
   > | null = null
-  try {
-    const { fetchTeamWithOwner } = await import('@/lib/team/teamDataService')
-    nft = await fetchTeamWithOwner(chain, tokenId)
-  } catch (error) {
-    // Tableland or RPC failure while loading the team. Treat this as "not
-    // found" rather than crashing the route — a fresh request will retry.
-    console.error(`Failed to fetch team ${tokenId}:`, error)
-    return { notFound: true }
-  }
+  const { fetchTeamWithOwner } = await import('@/lib/team/teamDataService')
+  nft = await fetchTeamWithOwner(chain, tokenId)
 
   if (!nft || BLOCKED_TEAMS.has(Number(nft.metadata.id))) {
     return { notFound: true }
