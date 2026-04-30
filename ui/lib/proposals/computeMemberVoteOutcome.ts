@@ -25,9 +25,13 @@ import {
   PROPOSALS_ADDRESSES,
   PROPOSALS_TABLE_NAMES,
   NEXT_QUARTER_BUDGET_USD,
+  USDC_ADDRESSES,
+  USDT_ADDRESSES,
+  DAI_ADDRESSES,
 } from 'const/config'
 import { readContract, getContract } from 'thirdweb'
 import { getThirdThursdayOfQuarterTimestamp } from '@/lib/utils/dates'
+import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -167,19 +171,51 @@ export async function computeMemberVoteOutcome({
   const BATCH_SIZE = 5
   const usdBudgets: Record<string, number> = {}
   const projectIdToAuthorAddress: Record<string, string> = {}
+  // Cache the bits of each IPFS payload that `getProjectDisplayName` needs so
+  // the UI can resolve "MDP-X: <real title>" instead of falling back to the
+  // Tableland `name` column, which is sometimes literally "Untitled" for rows
+  // that were created before the proposal title was finalized.
+  const projectIdToProposalTitleParts: Record<
+    string,
+    { title?: string; body?: string }
+  > = {}
+
+  // The proposal editor's `SafeTokenForm` writes the budget item's `token`
+  // field as the *contract address* of the selected token (USDC/DAI on the
+  // chain we're tallying), not as the symbol. So a strict symbol match like
+  // `item.token === 'USDC'` misses essentially every modern proposal and
+  // shows $0 in the Member Vote Results panel. Build a chain-specific set of
+  // known stablecoin addresses (lowercased) so we recognize both the legacy
+  // symbol form ('USD'/'USDC'/'USDT'/'DAI', any case) and the address form
+  // that the form actually emits today.
+  const stablecoinAddressSet = new Set<string>(
+    [
+      USDC_ADDRESSES?.[chainSlug],
+      USDT_ADDRESSES?.[chainSlug],
+      DAI_ADDRESSES?.[chainSlug],
+    ]
+      .filter((a): a is string => typeof a === 'string' && a.length > 0)
+      .map((a) => a.toLowerCase())
+  )
+  const stablecoinSymbolSet = new Set(['usd', 'usdc', 'usdt', 'dai'])
+
+  function isUsdLikeToken(token: unknown): boolean {
+    if (typeof token !== 'string') return false
+    const trimmed = token.trim()
+    if (!trimmed) return false
+    if (trimmed.startsWith('0x')) {
+      return stablecoinAddressSet.has(trimmed.toLowerCase())
+    }
+    return stablecoinSymbolSet.has(trimmed.toLowerCase())
+  }
 
   function extractUsdBudget(proposal: any): number {
     let budget = 0
     if (proposal?.budget && Array.isArray(proposal.budget)) {
       for (const item of proposal.budget) {
-        if (
-          item.token === 'USD' ||
-          item.token === 'USDC' ||
-          item.token === 'USDT' ||
-          item.token === 'DAI'
-        ) {
-          budget += Number(item.amount) || 0
-        }
+        if (!isUsdLikeToken(item?.token)) continue
+        const amount = Number(item?.amount)
+        if (Number.isFinite(amount) && amount > 0) budget += amount
       }
     }
     return budget
@@ -206,6 +242,10 @@ export async function computeMemberVoteOutcome({
             proposal.authorAddress.length > 0
           ) {
             projectIdToAuthorAddress[projectId] = proposal.authorAddress
+          }
+          projectIdToProposalTitleParts[projectId] = {
+            title: typeof proposal?.title === 'string' ? proposal.title : undefined,
+            body: typeof proposal?.body === 'string' ? proposal.body : undefined,
           }
         } catch (error) {
           console.error(
@@ -294,13 +334,20 @@ export async function computeMemberVoteOutcome({
   const results: MemberVoteResult[] = Object.entries(outcome)
     .map(([projectId, percentage]) => {
       const project = projectMeta[projectId]
+      const titleParts = projectIdToProposalTitleParts[projectId]
+      // Use the same resolution as `ProposalInfo`: prefer a real Tableland
+      // `name`, then the IPFS title, then the first meaningful body line, and
+      // only fall back to "Untitled Project" when nothing usable exists.
+      const displayName = project
+        ? getProjectDisplayName(project, titleParts)
+        : `Unknown (ID: ${projectId})`
       return {
         projectId,
         percentage: Number(percentage) || 0,
         approved: !!projectIdToApproved[projectId],
         budget: usdBudgets[projectId] || 0,
         MDP: project?.MDP ?? null,
-        name: project?.name ?? `Unknown (ID: ${projectId})`,
+        name: displayName,
         rank: 0,
       }
     })
