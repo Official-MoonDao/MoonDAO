@@ -195,7 +195,7 @@ export async function fetchFeaturedMissionData(
       // page can still render without the deadline/refund period.
       _deadline: deadline ?? null,
       _refundPeriod: refundPeriod ?? null,
-      _primaryTerminalAddress: primaryTerminalAddress,
+      _primaryTerminalAddress: primaryTerminalAddress ?? null,
       _token: tokenData,
       _fundingGoal: featuredMission.fundingGoal || 0,
       _ruleset: _ruleset as any[] | null,
