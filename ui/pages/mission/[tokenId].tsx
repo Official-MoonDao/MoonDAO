@@ -3,6 +3,10 @@ import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import dynamic from 'next/dynamic'
 import { fetchFromIPFSWithFallback, getIPFSGateway } from '@/lib/ipfs/gateway'
+import {
+  fetchMissionFundingStats,
+  type MissionFundingStats,
+} from '@/lib/mission/fetchMissionFundingStats'
 import { getMissionServerData } from '@/lib/mission/fetchMissionServerData'
 import { fetchTokenMetadata } from '@/lib/mission/fetchTokenServerData'
 import { fetchOverviewLeaderboard } from '@/lib/overview-delegate/fetchLeaderboard'
@@ -44,6 +48,11 @@ type ProjectProfileProps = {
    *  honest copy in the Fly with Frank explainer when the top 25 isn't
    *  full yet. Only provided for the Overview Flight mission. */
   _overviewRankedCount?: number
+  /** Aggregated funding stats (total contributions, unique backers, median
+   *  / mean / largest contribution amounts in wei) computed from the full
+   *  payEvents list at SSR time. Powers the wrapped-up "campaign success"
+   *  panel on the Overview Flight mission page. Only provided for mission 4. */
+  _overviewStats?: MissionFundingStats | null
 }
 
 /** Mission ID for the Overview Flight fundraiser; used to opportunistically
@@ -64,6 +73,7 @@ export default function MissionProfilePage({
   _overviewLeaderboard,
   _overviewTop25Threshold,
   _overviewRankedCount,
+  _overviewStats,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -89,6 +99,7 @@ export default function MissionProfilePage({
           _overviewLeaderboard={_overviewLeaderboard}
           _overviewTop25Threshold={_overviewTop25Threshold}
           _overviewRankedCount={_overviewRankedCount}
+          _overviewStats={_overviewStats}
         />
       </JuiceProviders>
     </>
@@ -195,6 +206,19 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
           })
         : Promise.resolve(undefined)
 
+      // The Overview Flight raise is wrapped up — its mission page now
+      // surfaces success metrics (total/unique backers, median contribution)
+      // instead of a live progress bar. Compute them at SSR time so they
+      // ship in the initial HTML and benefit from the page's s-maxage cache
+      // rather than triggering a separate client-side subgraph round-trip.
+      const overviewStatsPromise: Promise<MissionFundingStats | null | undefined> =
+        isOverviewMission
+          ? fetchMissionFundingStats(missionRow.projectId).catch((error) => {
+              console.warn('[mission/4] funding stats fetch failed:', error)
+              return null
+            })
+          : Promise.resolve(undefined)
+
       const metadata = await fetchFromIPFSWithFallback(ipfsHash).catch((error: any) => {
         console.warn('All IPFS gateways failed:', error)
         return {
@@ -222,7 +246,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
           ]
         : [{ weight: 0 }, { reservedPercent: 0 }]
 
-      const _overviewLeaderboardFull = await overviewLeaderboardPromise
+      const [_overviewLeaderboardFull, _overviewStatsResult] = await Promise.all([
+        overviewLeaderboardPromise,
+        overviewStatsPromise,
+      ])
 
       // Slice to the top 5 for the preview component (its existing UX),
       // pull the 25th-place backing total for the explainer's threshold
@@ -263,6 +290,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
             : {}),
           ...(_overviewRankedCount !== undefined
             ? { _overviewRankedCount }
+            : {}),
+          ...(_overviewStatsResult !== undefined
+            ? { _overviewStats: _overviewStatsResult }
             : {}),
         },
       }
