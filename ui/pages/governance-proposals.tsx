@@ -22,6 +22,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { isFetchableUrl } from '@/lib/utils/links'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import WebsiteHead from '@/components/layout/Head'
@@ -245,7 +246,7 @@ export const getStaticProps: GetStaticProps = async () => {
       projects.map(async (project: Project, index: number) => {
         if (BLOCKED_PROJECTS.has(project.id) || BLOCKED_MDPS.has(project.MDP)) return
 
-        if (!project.proposalIPFS) return
+        if (!isFetchableUrl(project.proposalIPFS)) return
 
         try {
           const proposalResponse = await fetch(project.proposalIPFS)

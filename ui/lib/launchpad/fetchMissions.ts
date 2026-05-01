@@ -1,4 +1,5 @@
 import JBV5Controller from 'const/abis/JBV5Controller.json'
+import MissionTableABI from 'const/abis/MissionTable.json'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { Chain, getContract, readContract } from 'thirdweb'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
@@ -17,7 +18,7 @@ export async function fetchMissions(
     const missionTableContract = getContract({
       client: serverClient,
       address: missionTableAddress,
-      abi: {} as any,
+      abi: MissionTableABI as any,
       chain: chain,
     })
 

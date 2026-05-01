@@ -19,8 +19,10 @@ export type Mission = {
 export type FeaturedMissionData = {
   mission: Mission
   _stage: number
-  _deadline?: number
-  _refundPeriod?: number
+  // `null` is the on-the-wire marker for "missing"; `undefined` cannot be
+  // serialized through getStaticProps.
+  _deadline: number | null
+  _refundPeriod: number | null
   _primaryTerminalAddress: string
   _token: {
     tokenAddress: string
@@ -30,7 +32,7 @@ export type FeaturedMissionData = {
   }
   _fundingGoal: number
   _ruleset: Array<{ weight: number; reservedPercent: number }> | null
-  projectMetadata: Mission['metadata']
+  projectMetadata: Mission['metadata'] | null
 }
 
 export type UserTeam = {
