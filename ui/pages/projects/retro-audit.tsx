@@ -532,7 +532,9 @@ function ProjectRow({
               hasShare ? 'text-white' : 'text-gray-300'
             }`}
           >
-            {outcomeRow.MDP != null ? `MDP-${outcomeRow.MDP}: ` : ''}
+            {outcomeRow.MDP != null && outcomeRow.MDP !== ''
+              ? `MDP-${outcomeRow.MDP}: `
+              : ''}
             {outcomeRow.name}
           </p>
           <p className="text-[11px] text-gray-500">
