@@ -442,5 +442,5 @@ SECTION 4 — Q2 2026 BUDGET BREAKDOWN
   Total quarterly pool:                 $23409.00
   − Community Circle (10%):             $2340.90
   = Project pool (90%):                 $21068.10
-    − Upfront (5 winners):              $15438.84
+    − Upfront (4 winners):              $15438.84
     = Retroactive Rewards:              $5629.26
