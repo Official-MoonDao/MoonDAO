@@ -53,25 +53,6 @@ const formatPrimary = (amount: number, asset: 'ETH' | 'USDC') =>
 const formatMooney = (amount: number) =>
   `${Number(amount.toPrecision(3)).toLocaleString()} MOONEY`
 
-// Compact unit-stripped variants for tight summary tiles where the
-// asset is already named in the label. ETH stays decimal; USDC and
-// MOONEY collapse to k/M suffixes so two values + a separator fit on
-// one line without truncation.
-const formatPrimaryCompact = (amount: number, asset: 'ETH' | 'USDC') => {
-  if (asset === 'ETH')
-    return amount.toLocaleString(undefined, { maximumFractionDigits: 4 })
-  return amount.toLocaleString(undefined, {
-    notation: 'compact',
-    maximumFractionDigits: 2,
-  })
-}
-
-const formatMooneyCompact = (amount: number) =>
-  amount.toLocaleString(undefined, {
-    notation: 'compact',
-    maximumFractionDigits: 2,
-  })
-
 export default function ProjectsRetroAuditPage() {
   const router = useRouter()
   // Default to the previous calendar quarter — the cohort currently
@@ -317,14 +298,6 @@ function AuditBody({
   totalCitizenPower: number
 }) {
   const closeDate = new Date(outcome.voteCloseTimestamp * 1000)
-  const allocatedPrimary = outcome.results.reduce(
-    (sum, r) => sum + (r.primaryShare || 0),
-    0
-  )
-  const allocatedMooney = outcome.results.reduce(
-    (sum, r) => sum + (r.mooneyShare || 0),
-    0
-  )
 
   return (
     <>
@@ -332,8 +305,6 @@ function AuditBody({
         outcome={outcome}
         closeDate={closeDate}
         voterCount={audit.voters.length}
-        allocatedPrimary={allocatedPrimary}
-        allocatedMooney={allocatedMooney}
       />
       <ProjectsList
         outcome={outcome}
@@ -350,14 +321,10 @@ function SummaryCard({
   outcome,
   closeDate,
   voterCount,
-  allocatedPrimary,
-  allocatedMooney,
 }: {
   outcome: RetroactiveOutcome
   closeDate: Date
   voterCount: number
-  allocatedPrimary: number
-  allocatedMooney: number
 }) {
   return (
     <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 rounded-lg sm:rounded-xl p-4 sm:p-6">
@@ -382,24 +349,14 @@ function SummaryCard({
         />
         <StatTile
           label={`Pool (${outcome.pool.primaryAsset})`}
-          value={`${formatPrimaryCompact(
-            allocatedPrimary,
-            outcome.pool.primaryAsset
-          )} / ${formatPrimaryCompact(
+          value={formatPrimary(
             outcome.pool.primaryAmount,
             outcome.pool.primaryAsset
-          )}`}
-          sub={`${formatPrimary(
-            allocatedPrimary,
-            outcome.pool.primaryAsset
-          )} allocated`}
+          )}
         />
         <StatTile
           label="Pool (MOONEY)"
-          value={`${formatMooneyCompact(
-            allocatedMooney
-          )} / ${formatMooneyCompact(outcome.pool.mooneyAmount)}`}
-          sub={`${formatMooney(allocatedMooney)} allocated`}
+          value={formatMooney(outcome.pool.mooneyAmount)}
         />
       </div>
     </div>
