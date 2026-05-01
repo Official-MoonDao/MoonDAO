@@ -227,10 +227,14 @@ export default function useJBProjectData({
       const jbPid = normalizedJuiceboxProjectId(projectId)
       if (jbPid == null) return
 
-      // Bounded retry.  Without a cap, a project that hasn't yet been wired
-      // up to a primary terminal (e.g. a freshly-deployed mission, or a
-      // bogus projectId) sends this effect into an infinite RPC loop.
+      // Bounded retry with exponential backoff.  Without a cap, a project
+      // that hasn't yet been wired up to a primary terminal (e.g. a freshly
+      // -deployed mission, or a bogus projectId) sends this effect into an
+      // infinite RPC loop.  The backoff also prevents a transient zero/error
+      // response from turning into a tight burst of 5 back-to-back RPC calls,
+      // matching the retry pattern used elsewhere (see `useTotalVMOONEY`).
       const maxAttempts = 5
+      const baseDelayMs = 250
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
           const fetched: any = await readContract({
@@ -252,6 +256,12 @@ export default function useJBProjectData({
           console.error(
             `Error getting primary terminal for project ${projectId}:`,
             error
+          )
+        }
+
+        if (attempt < maxAttempts - 1) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, baseDelayMs * Math.pow(2, attempt))
           )
         }
       }
