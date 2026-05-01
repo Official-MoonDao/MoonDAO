@@ -290,6 +290,7 @@ function AuditBody({
         outcome={outcome}
         audit={audit}
         addressToPower={addressToPower}
+        totalPower={totalPower}
       />
     </>
   )
@@ -456,10 +457,12 @@ function ProjectsList({
   outcome,
   audit,
   addressToPower,
+  totalPower,
 }: {
   outcome: MemberVoteOutcome
   audit: MemberVoteAudit
   addressToPower: Record<string, number>
+  totalPower: number
 }) {
   // Only one project expanded at a time. Multiple-open quickly turns into a
   // wall of voter rows that's hard to scan, and there's no real use case
@@ -493,6 +496,7 @@ function ProjectsList({
               setExpandedId(expanded ? null : r.projectId)
             }
             addressToPower={addressToPower}
+            totalPower={totalPower}
             authorAddress={audit.projectIdToAuthor[r.projectId] || ''}
           />
         )
@@ -507,6 +511,7 @@ function ProjectRow({
   expanded,
   onToggle,
   addressToPower,
+  totalPower,
   authorAddress,
 }: {
   outcomeRow: MemberVoteOutcome['results'][number]
@@ -514,15 +519,17 @@ function ProjectRow({
   expanded: boolean
   onToggle: () => void
   addressToPower: Record<string, number>
+  /** Total √vMOONEY across ALL voters in the cycle (not just this project's supporters). */
+  totalPower: number
   authorAddress: string
 }) {
   // Per-voter weighted contribution is in voting-power units:
   //   weighted = (normalizedPct / 100) × voter power
   // i.e. "the slice of this voter's power that went to this project".
   // Summed across the project's supporters, that gives the project's
-  // total weighted support; dividing by `Total power` (across all
-  // voters, not just supporters of this project) reproduces the
-  // project's outcome share.
+  // total weighted support. The outcome share is then that sum divided
+  // by the cycle's TOTAL voting power (across all voters), which is
+  // what the footer surfaces — and it matches the displayed final %.
   const totalWeighted = contributions.reduce(
     (sum, c) =>
       sum +
@@ -530,6 +537,12 @@ function ProjectRow({
         (addressToPower[c.voterAddress] || 0),
     0
   )
+  // Reproduce the displayed `outcomeRow.percentage` from first principles
+  // so an auditor can see the math, not just trust the server. Tiny
+  // floating-point drift is expected (≪0.01%) because the server
+  // renormalizes across all projects to sum to exactly 100 — we surface
+  // both the raw computation and the canonical final value.
+  const outcomeShare = totalPower > 0 ? (totalWeighted / totalPower) * 100 : 0
 
   const projectLink =
     outcomeRow.MDP != null && outcomeRow.MDP !== ''
@@ -630,85 +643,125 @@ function ProjectRow({
               No allocations after author self-vote stripping.
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-[11px] uppercase tracking-wider text-gray-400 font-RobotoMono">
-                    <th className="text-left py-2 px-2 sm:px-3">Voter</th>
-                    <th className="text-right py-2 px-2 sm:px-3">Power</th>
-                    <th
-                      className="text-right py-2 px-2 sm:px-3"
-                      title="What this voter wrote in their distribution before author self-vote stripping."
-                    >
-                      Raw %
-                    </th>
-                    <th
-                      className="text-right py-2 px-2 sm:px-3"
-                      title="What was counted after stripping + iterative normalization. For non-author voters whose row already sums to 100, this equals Raw %. For authors, the cell of their own project is imputed with the column average of the other voters; that imputation slightly reduces their other allocations on renormalization."
-                    >
-                      Normalized %
-                    </th>
-                    <th
-                      className="text-right py-2 px-2 sm:px-3"
-                      title="The slice of this voter's power that went to this project: (normalized % / 100) × power. Same units as the Power column. Summing this column for one project gives that project's total weighted support."
-                    >
-                      Weighted
-                    </th>
-                    <th className="text-right py-2 px-2 sm:px-3">Share</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contributions.map((c) => {
-                    const power = addressToPower[c.voterAddress] || 0
-                    const weighted = ((c.normalizedPct || 0) / 100) * power
-                    const share =
-                      totalWeighted > 0
-                        ? (weighted / totalWeighted) * 100
-                        : 0
-                    return (
-                      <tr
-                        key={c.voterAddress}
-                        className="border-t border-white/5 text-gray-200"
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[11px] uppercase tracking-wider text-gray-400 font-RobotoMono">
+                      <th className="text-left py-2 px-2 sm:px-3">Voter</th>
+                      <th className="text-right py-2 px-2 sm:px-3">Power</th>
+                      <th
+                        className="text-right py-2 px-2 sm:px-3"
+                        title="What this voter wrote in their distribution before author self-vote stripping."
                       >
-                        <td className="py-2 px-2 sm:px-3 font-RobotoMono text-xs">
-                          <a
-                            href={`https://arbiscan.io/address/${c.voterAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-blue-300 hover:underline"
-                          >
-                            {truncateAddress(c.voterAddress)}
-                          </a>
-                          {c.isAuthor && (
-                            <span className="ml-2 inline-block text-[10px] uppercase tracking-wider bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded">
-                              Author
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
-                          {formatNumber(power, 1)}
-                        </td>
-                        <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs text-gray-400">
-                          {c.rawPct == null ? '—' : `${c.rawPct.toFixed(1)}%`}
-                        </td>
-                        <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
-                          {c.normalizedPct.toFixed(2)}%
-                        </td>
-                        <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
-                          {formatNumber(weighted, 1)}
-                        </td>
-                        <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs text-emerald-200">
-                          {share.toFixed(1)}%
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        Raw %
+                      </th>
+                      <th
+                        className="text-right py-2 px-2 sm:px-3"
+                        title="What was counted after stripping + iterative normalization. For non-author voters whose row already sums to 100, this equals Raw %. For authors, the cell of their own project is imputed with the column average of the other voters; that imputation slightly reduces their other allocations on renormalization."
+                      >
+                        Normalized %
+                      </th>
+                      <th
+                        className="text-right py-2 px-2 sm:px-3"
+                        title="The slice of this voter's power that went to this project: (normalized % / 100) × power. Same units as the Power column."
+                      >
+                        Weighted
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contributions.map((c) => {
+                      const power = addressToPower[c.voterAddress] || 0
+                      const weighted = ((c.normalizedPct || 0) / 100) * power
+                      return (
+                        <tr
+                          key={c.voterAddress}
+                          className="border-t border-white/5 text-gray-200"
+                        >
+                          <td className="py-2 px-2 sm:px-3 font-RobotoMono text-xs">
+                            <a
+                              href={`https://arbiscan.io/address/${c.voterAddress}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-blue-300 hover:underline"
+                            >
+                              {truncateAddress(c.voterAddress)}
+                            </a>
+                            {c.isAuthor && (
+                              <span className="ml-2 inline-block text-[10px] uppercase tracking-wider bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded">
+                                Author
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
+                            {formatNumber(power, 1)}
+                          </td>
+                          <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs text-gray-400">
+                            {c.rawPct == null
+                              ? '—'
+                              : `${c.rawPct.toFixed(1)}%`}
+                          </td>
+                          <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
+                            {c.normalizedPct.toFixed(2)}%
+                          </td>
+                          <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
+                            {formatNumber(weighted, 1)}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <ProjectFooter
+                totalWeighted={totalWeighted}
+                totalPower={totalPower}
+                outcomeShare={outcomeShare}
+                finalPercentage={outcomeRow.percentage}
+              />
+            </>
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function ProjectFooter({
+  totalWeighted,
+  totalPower,
+  outcomeShare,
+  finalPercentage,
+}: {
+  totalWeighted: number
+  totalPower: number
+  outcomeShare: number
+  finalPercentage: number
+}) {
+  return (
+    <div className="mt-3 bg-black/30 border border-white/10 rounded-md px-3 py-2 sm:px-4 sm:py-3 font-RobotoMono text-xs text-gray-200">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <span className="text-gray-400">Σ weighted (this project)</span>
+        <span className="text-white">{formatNumber(totalWeighted, 2)}</span>
+      </div>
+      <div className="flex items-center justify-between gap-4 flex-wrap mt-1">
+        <span className="text-gray-400">Total voting power (all voters)</span>
+        <span className="text-white">{formatNumber(totalPower, 2)}</span>
+      </div>
+      <div className="border-t border-white/10 mt-2 pt-2 flex items-center justify-between gap-4 flex-wrap">
+        <span className="text-gray-400">
+          Outcome = Σ weighted ÷ total power
+        </span>
+        <span className="text-emerald-200">
+          {outcomeShare.toFixed(4)}%
+          {Math.abs(outcomeShare - finalPercentage) > 0.01 && (
+            <span className="ml-2 text-gray-400">
+              (renormalized to {finalPercentage.toFixed(4)}%)
+            </span>
+          )}
+        </span>
+      </div>
     </div>
   )
 }
