@@ -24,9 +24,12 @@ function buildPayEventsQuery(
   projectId: number,
   timestampCursor: number | null
 ): string {
+  // Use `timestamp_lte` (not `_lt`) so that we don't drop events that share
+  // the cursor's exact timestamp — block timestamps frequently tie. We
+  // dedupe by `id` across pages to absorb the resulting overlap.
   const cursorClause =
     timestampCursor != null && Number.isFinite(timestampCursor)
-      ? `, timestamp_lt: ${timestampCursor}`
+      ? `, timestamp_lte: ${timestampCursor}`
       : ''
   return `
     query {
@@ -41,6 +44,7 @@ function buildPayEventsQuery(
         }
       ) {
         items {
+          id
           amount
           beneficiary
           timestamp
@@ -51,6 +55,7 @@ function buildPayEventsQuery(
 }
 
 interface PayEventRow {
+  id: string | null | undefined
   amount: string | number | null | undefined
   beneficiary: string | null | undefined
   timestamp: number | null | undefined
@@ -63,9 +68,11 @@ interface PayEventRow {
  * (which would require an absolute URL during SSR).
  *
  * Returns null on any subgraph error so the caller can render a graceful
- * fallback. Pagination uses `timestamp_lt` cursors to walk the dataset
+ * fallback. Pagination uses `timestamp_lte` cursors to walk the dataset
  * deterministically without relying on offset (Bendystraw caps `limit` at
- * 1000 per query).
+ * 1000 per query). Because block timestamps often tie, we use `_lte` rather
+ * than `_lt` and dedupe by event `id` across pages so we never drop events
+ * that share the boundary timestamp.
  */
 export async function fetchMissionFundingStats(
   projectId: number | undefined
@@ -85,6 +92,7 @@ export async function fetchMissionFundingStats(
   }bendystraw.xyz/${apiKey}/graphql`
 
   const allEvents: PayEventRow[] = []
+  const seenIds = new Set<string>()
   let cursor: number | null = null
 
   for (let page = 0; page < MAX_PAGES; page++) {
@@ -125,17 +133,24 @@ export async function fetchMissionFundingStats(
 
     const items: PayEventRow[] = payload?.data?.payEvents?.items ?? []
     if (items.length === 0) break
-    allEvents.push(...items)
 
-    // Find the oldest timestamp in this page; use it as the next cursor
-    // (timestamp_lt strictly excludes equality, so we may miss events that
-    // share the exact same timestamp as the cursor — extremely unlikely for
-    // payments, but if it ever happens, the safety bound below kicks in).
+    // Track the oldest timestamp on this page and how many of its rows are
+    // genuinely new (vs. carried over from the previous page's `_lte` overlap).
     let oldest = Number.POSITIVE_INFINITY
+    let newRows = 0
     for (const ev of items) {
+      const id = typeof ev.id === 'string' ? ev.id : null
+      if (id && seenIds.has(id)) continue
+      if (id) seenIds.add(id)
+      allEvents.push(ev)
+      newRows++
       const ts = Number(ev.timestamp ?? NaN)
       if (Number.isFinite(ts) && ts < oldest) oldest = ts
     }
+
+    // If the entire page collapsed to duplicates we have no way to advance
+    // the cursor without revisiting the same events forever — bail out.
+    if (newRows === 0) break
     if (!Number.isFinite(oldest) || items.length < PAGE_SIZE) break
     cursor = oldest
   }
