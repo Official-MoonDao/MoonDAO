@@ -11,6 +11,9 @@ import {
   NEXT_QUARTER_BUDGET_USD,
   CITIZEN_TABLE_NAMES,
   PROJECT_TABLE_ADDRESSES,
+  USDC_ADDRESSES,
+  USDT_ADDRESSES,
+  DAI_ADDRESSES,
 } from 'const/config'
 import { getCurrentQuarter, getThirdThursdayOfQuarterTimestamp } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
@@ -19,6 +22,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
 import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
+import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -363,18 +367,40 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   }
   console.log(`[vote tally] ${passedProjects.length} projects eligible for vote (multisig check is advisory only)`)
 
+  // Build a chain-specific stablecoin address set so the shared extractor
+  // can recognize budget items whose `token` field stores a contract
+  // address (the form `SafeTokenForm` actually writes today) — not just
+  // the legacy 'USDC' / 'DAI' / 'USDT' / 'USD' symbol strings the old
+  // inline parser hardcoded. Mirrors `computeMemberVoteOutcome.ts` so the
+  // on-chain tally and the read-only display always derive identical
+  // budgets.
+  const stablecoinAddressSet = new Set<string>(
+    [
+      USDC_ADDRESSES?.[chainSlug],
+      USDT_ADDRESSES?.[chainSlug],
+      DAI_ADDRESSES?.[chainSlug],
+    ]
+      .filter((a): a is string => typeof a === 'string' && a.length > 0)
+      .map((a) => a.toLowerCase())
+  )
+
   const usdBudgets = Object.fromEntries(
     await Promise.all(
       passedProjects.map(async (project: any) => {
         try {
           const proposalResponse = await fetch(project.proposalIPFS)
           const proposal = await proposalResponse.json()
-          let budget = 0
-          if (proposal.budget) {
-            proposal.budget.forEach((item: any) => {
-              budget += item.token === 'USD' || item.token === 'USDC' || item.token === 'USDT' || item.token === 'DAI' ? Number(item.amount) : 0
-            })
-          }
+          // Delegate to the shared extractor so:
+          //   - chain-stablecoin addresses are matched (not just symbols),
+          //   - markdown body fallback runs for proposals with no
+          //     structured `budget[]`,
+          //   - manual `BUDGET_OVERRIDES_USD` (keyed by MDP) take
+          //     precedence — used when an author agrees post-submit to
+          //     trim their request to fit under the 3/4 budget cap.
+          const budget = extractUsdBudget(proposal, {
+            stablecoinAddresses: stablecoinAddressSet,
+            MDP: project.MDP,
+          })
           return [project.id, budget]
         } catch (error) {
           console.error(`[vote tally] Failed to fetch budget for project ${project.id}:`, error)
@@ -474,13 +500,22 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       { missingAuthorProjectIds }
     )
   }
-  // Strip each voter's allocation to their own proposal (author cannot vote on own)
+  // Strip each voter's allocation to their own proposal (author cannot vote on own).
+  //
+  // Two cases for "missing" cells, and they get distinct treatment so the
+  // iterative normalizer only imputes for authors (not for plain silence):
+  //   - Voter IS the author of project X → omit X from their dict so
+  //     `runIterativeNormalization` reads NaN and fills it with the column
+  //     average of the other voters.
+  //   - Voter ISN'T the author of project Y AND didn't allocate to Y →
+  //     write an explicit 0. Silence shouldn't synthesize support; previously
+  //     this got column-average imputation too, which inflated outcomes for
+  //     projects the voter never endorsed.
   type VoteRow = DistributionVote & { distribution?: string | Record<string, number>; quarter?: number; year?: number }
   const votesWithAuthorOwnExcluded: VoteRow[] = votes.map((v) => {
     const row = v as VoteRow
     const voterAddr = row.address?.toLowerCase()
     const raw = row.distribution
-    const distribution: Record<string, number> = {}
     let parsedDistribution: Record<string, number> = {}
     if (typeof raw === 'string') {
       try {
@@ -491,10 +526,18 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     } else if (raw && typeof raw === 'object') {
       parsedDistribution = raw as Record<string, number>
     }
-    for (const [projectId, value] of Object.entries(parsedDistribution)) {
+    const distribution: Record<string, number> = {}
+    for (const project of passedProjects) {
+      const projectId = String(project.id)
       const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
-      if (author && author === voterAddr) continue
-      distribution[projectId] = Number(value)
+      if (author && voterAddr && author === voterAddr) continue
+      const rawVal = parsedDistribution[projectId]
+      const numericValue = Number(rawVal)
+      if (rawVal != null && Number.isFinite(numericValue) && numericValue >= 0) {
+        distribution[projectId] = numericValue
+      } else {
+        distribution[projectId] = 0
+      }
     }
     return { ...row, distribution }
   })

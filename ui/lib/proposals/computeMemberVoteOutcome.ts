@@ -32,6 +32,7 @@ import {
 import { readContract, getContract } from 'thirdweb'
 import { getThirdThursdayOfQuarterTimestamp } from '@/lib/utils/dates'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
+import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -64,6 +65,45 @@ export type MemberVoteOutcome = {
   quarterBudgetUsd: number
   results: MemberVoteResult[]
   computedAt: number
+  /**
+   * Optional per-voter / per-project breakdown for the public audit page.
+   * Only populated when `computeMemberVoteOutcome` is called with
+   * `{ includeAudit: true }`. Heavy enough that the default
+   * `MemberVoteResults` panel doesn't need it.
+   */
+  audit?: MemberVoteAudit
+}
+
+export type MemberVoteAudit = {
+  voters: Array<{
+    address: string
+    /** vMOONEY balance at vote close, summed across all chains. */
+    vMOONEY: number
+    /** Quadratic voting power = √vMOONEY (clamped to 0 on NaN). */
+    power: number
+    /** What this address actually wrote to the Proposals table. */
+    rawDistribution: Record<string, number>
+  }>
+  /**
+   * For each project (keyed by Tableland projectId), the list of every
+   * voter's contribution after author self-vote stripping + iterative
+   * normalization. `normalizedPct × voter power` reproduces the unscaled
+   * outcome; the page renormalizes those across all projects to recover
+   * the displayed `percentage` field on `MemberVoteResult`.
+   */
+  contributions: Record<
+    string,
+    Array<{
+      voterAddress: string
+      isAuthor: boolean
+      /** Raw allocation before stripping; null if voter didn't allocate. */
+      rawPct: number | null
+      /** Post-strip + iterative normalization value (sums to 100 per row). */
+      normalizedPct: number
+    }>
+  >
+  /** projectId → author address (lowercased). For the per-project header. */
+  projectIdToAuthor: Record<string, string>
 }
 
 // Mirror of the same retry helper inside the POST handler — RPC reads against
@@ -101,10 +141,19 @@ export async function computeMemberVoteOutcome({
   chain,
   quarter,
   year,
+  includeAudit = false,
 }: {
   chain: any
   quarter: number
   year: number
+  /**
+   * When true, return the per-voter / per-project breakdown via
+   * `outcome.audit`. Adds no extra fetches — everything's already in
+   * memory from the tally — but doubles the response size, so the
+   * default lightweight endpoint (`/api/proposals/vote-results`) leaves
+   * it off and the audit endpoint opts in.
+   */
+  includeAudit?: boolean
 }): Promise<MemberVoteOutcome | null> {
   if (
     !Number.isInteger(quarter) ||
@@ -182,12 +231,10 @@ export async function computeMemberVoteOutcome({
 
   // The proposal editor's `SafeTokenForm` writes the budget item's `token`
   // field as the *contract address* of the selected token (USDC/DAI on the
-  // chain we're tallying), not as the symbol. So a strict symbol match like
-  // `item.token === 'USDC'` misses essentially every modern proposal and
-  // shows $0 in the Member Vote Results panel. Build a chain-specific set of
-  // known stablecoin addresses (lowercased) so we recognize both the legacy
-  // symbol form ('USD'/'USDC'/'USDT'/'DAI', any case) and the address form
-  // that the form actually emits today.
+  // chain we're tallying), not as the symbol. Build a chain-specific set of
+  // stablecoin addresses so the shared extractor (which mirrors the proposal
+  // hook's pipeline) recognizes both the legacy symbol form and the address
+  // form that the form actually emits today.
   const stablecoinAddressSet = new Set<string>(
     [
       USDC_ADDRESSES?.[chainSlug],
@@ -197,29 +244,6 @@ export async function computeMemberVoteOutcome({
       .filter((a): a is string => typeof a === 'string' && a.length > 0)
       .map((a) => a.toLowerCase())
   )
-  const stablecoinSymbolSet = new Set(['usd', 'usdc', 'usdt', 'dai'])
-
-  function isUsdLikeToken(token: unknown): boolean {
-    if (typeof token !== 'string') return false
-    const trimmed = token.trim()
-    if (!trimmed) return false
-    if (trimmed.startsWith('0x')) {
-      return stablecoinAddressSet.has(trimmed.toLowerCase())
-    }
-    return stablecoinSymbolSet.has(trimmed.toLowerCase())
-  }
-
-  function extractUsdBudget(proposal: any): number {
-    let budget = 0
-    if (proposal?.budget && Array.isArray(proposal.budget)) {
-      for (const item of proposal.budget) {
-        if (!isUsdLikeToken(item?.token)) continue
-        const amount = Number(item?.amount)
-        if (Number.isFinite(amount) && amount > 0) budget += amount
-      }
-    }
-    return budget
-  }
 
   for (let i = 0; i < passedProjects.length; i += BATCH_SIZE) {
     const batch = passedProjects.slice(i, i + BATCH_SIZE)
@@ -235,7 +259,10 @@ export async function computeMemberVoteOutcome({
           const proposalResponse = await fetch(project.proposalIPFS)
           if (!proposalResponse.ok) return
           const proposal = await proposalResponse.json()
-          usdBudgets[projectId] = extractUsdBudget(proposal)
+          usdBudgets[projectId] = extractUsdBudget(proposal, {
+            stablecoinAddresses: stablecoinAddressSet,
+            MDP: project.MDP,
+          })
           if (
             proposal &&
             typeof proposal.authorAddress === 'string' &&
@@ -278,11 +305,14 @@ export async function computeMemberVoteOutcome({
     quarter?: number
     year?: number
   }
+  // Keep the raw (pre-strip) distribution per voter so the audit page can
+  // surface the difference between what someone wrote vs. what got counted
+  // after author self-vote stripping. Map key is lowercased address.
+  const addressToRawDistribution: Record<string, Record<string, number>> = {}
   const votesWithAuthorOwnExcluded: VoteRow[] = votes.map((v) => {
     const row = v as VoteRow
     const voterAddr = row.address?.toLowerCase()
     const raw = row.distribution
-    const distribution: Record<string, number> = {}
     let parsedDistribution: Record<string, number> = {}
     if (typeof raw === 'string') {
       try {
@@ -293,12 +323,39 @@ export async function computeMemberVoteOutcome({
     } else if (raw && typeof raw === 'object') {
       parsedDistribution = raw as Record<string, number>
     }
-    for (const [projectId, value] of Object.entries(parsedDistribution)) {
+    if (voterAddr) {
+      const cleanRaw: Record<string, number> = {}
+      for (const [pid, value] of Object.entries(parsedDistribution)) {
+        const n = Number(value)
+        if (Number.isFinite(n) && n >= 0) cleanRaw[pid] = n
+      }
+      addressToRawDistribution[voterAddr] = cleanRaw
+    }
+    // Build the post-strip distribution that gets fed into the iterative
+    // normalizer. Two distinct cases for "missing" cells:
+    //   - Voter is the AUTHOR of the project: omit the key entirely so
+    //     `runIterativeNormalization` sees NaN and fills it with the column
+    //     average of the OTHER voters. Authors can't self-vote, so this
+    //     gives them the crowd's view of their own project as a stand-in.
+    //   - Voter is NOT the author and just didn't allocate: write an
+    //     explicit 0. Silence is NOT consent — we shouldn't synthesize
+    //     support for a project the voter didn't endorse, which is what
+    //     blanket column-average imputation would do.
+    // This is what makes "Raw % == Normalized %" hold for non-author voters
+    // whose explicit allocations already sum to 100; only the row-rescale
+    // changes things, never imputation.
+    const distribution: Record<string, number> = {}
+    for (const project of passedProjects) {
+      const projectId = String(project.id)
       const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
-      if (author && author === voterAddr) continue
-      const numericValue = Number(value)
-      if (!Number.isFinite(numericValue) || numericValue < 0) continue
-      distribution[projectId] = numericValue
+      if (author && voterAddr && author === voterAddr) continue
+      const rawVal = parsedDistribution[projectId]
+      const numericValue = Number(rawVal)
+      if (rawVal != null && Number.isFinite(numericValue) && numericValue >= 0) {
+        distribution[projectId] = numericValue
+      } else {
+        distribution[projectId] = 0
+      }
     }
     return { ...row, distribution }
   })
@@ -354,6 +411,89 @@ export async function computeMemberVoteOutcome({
     .sort((a, b) => b.percentage - a.percentage)
     .map((r, i) => ({ ...r, rank: i + 1 }))
 
+  let audit: MemberVoteAudit | undefined
+  if (includeAudit) {
+    const lowerAddrToVMOONEY: Record<string, number> = Object.fromEntries(
+      voteAddresses.map((address, index) => [
+        address.toLowerCase(),
+        Number(vMOONEYs[index]) || 0,
+      ])
+    )
+    const voters = voteAddresses
+      .map((address) => {
+        const lower = address.toLowerCase()
+        return {
+          address: lower,
+          vMOONEY: lowerAddrToVMOONEY[lower] || 0,
+          power: addressToQuadraticVotingPower[lower] || 0,
+          rawDistribution: addressToRawDistribution[lower] || {},
+        }
+      })
+      .sort((a, b) => b.power - a.power)
+
+    const projectIdToAuthorLower: Record<string, string> = Object.fromEntries(
+      Object.entries(projectIdToAuthorAddress).map(([pid, addr]) => [
+        pid,
+        (addr || '').toLowerCase(),
+      ])
+    )
+
+    // Build an address → normalized distribution map from the iterative
+    // normalization output. `runIterativeNormalization` returns rows shaped
+    // like the input (`{ address, distribution }`) with stripped projects
+    // dropped, so this mirrors what `runQuadraticVoting` actually consumed.
+    const lowerAddrToNormalized: Record<string, Record<string, number>> = {}
+    for (const d of normalizedDistributions as any[]) {
+      const lower = (d?.address || '').toLowerCase()
+      if (!lower) continue
+      lowerAddrToNormalized[lower] = (d?.distribution || {}) as Record<
+        string,
+        number
+      >
+    }
+
+    const contributions: MemberVoteAudit['contributions'] = {}
+    for (const project of passedProjects) {
+      const projectId = String(project.id)
+      const authorLower = projectIdToAuthorLower[projectId] || ''
+      const rows: MemberVoteAudit['contributions'][string] = []
+      for (const voter of voters) {
+        const rawVal = voter.rawDistribution[projectId]
+        const normalizedVal =
+          lowerAddrToNormalized[voter.address]?.[projectId] || 0
+        // Only surface voters who either allocated to this project (raw or
+        // normalized) — keeps each project row focused on its actual
+        // supporters instead of every voter showing 0%.
+        if (
+          (rawVal == null || rawVal === 0) &&
+          (!Number.isFinite(normalizedVal) || normalizedVal === 0)
+        ) {
+          continue
+        }
+        rows.push({
+          voterAddress: voter.address,
+          isAuthor: authorLower !== '' && authorLower === voter.address,
+          rawPct: typeof rawVal === 'number' ? rawVal : null,
+          normalizedPct: Number.isFinite(normalizedVal) ? normalizedVal : 0,
+        })
+      }
+      // Highest weighted contribution first so the page can spotlight the
+      // top supporters without re-sorting client-side.
+      rows.sort((a, b) => {
+        const aPower = addressToQuadraticVotingPower[a.voterAddress] || 0
+        const bPower = addressToQuadraticVotingPower[b.voterAddress] || 0
+        return b.normalizedPct * bPower - a.normalizedPct * aPower
+      })
+      contributions[projectId] = rows
+    }
+
+    audit = {
+      voters,
+      contributions,
+      projectIdToAuthor: projectIdToAuthorLower,
+    }
+  }
+
   return {
     quarter,
     year,
@@ -365,5 +505,6 @@ export async function computeMemberVoteOutcome({
     quarterBudgetUsd: NEXT_QUARTER_BUDGET_USD,
     results,
     computedAt: Math.floor(Date.now() / 1000),
+    ...(audit ? { audit } : {}),
   }
 }

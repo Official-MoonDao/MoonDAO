@@ -442,11 +442,21 @@ const ProjectCardContent = memo(
                     )}
                   </div>
                   {onToggleExpand ? (
-                    <Link href={`/project/${project?.MDP}`} passHref>
-                      <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
+                    // Invert the nesting so the anchor lives inside the
+                    // heading (`<h1><a/></h1>`) instead of wrapping it
+                    // (`<a><h1/></a>`). The latter is "transparent content"
+                    // per HTML5 but browsers' parsers re-arrange block
+                    // children of an inline `<a>` during parse, which causes
+                    // a hydration mismatch ("Expected server HTML to contain
+                    // a matching <div> in <a>") in dev mode.
+                    <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
+                      <Link
+                        href={`/project/${project?.MDP}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {displayName}
-                      </h1>
-                    </Link>
+                      </Link>
+                    </h1>
                   ) : (
                     <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
                       {displayName}
@@ -752,7 +762,17 @@ export default function ProjectCard({
           hideStatusBadge={hideStatusBadge}
         />
       ) : (
-        <Link href={`/project/${project?.MDP}`} passHref className="h-full">
+        // `ProjectCardContent` renders a top-level `<div>`, so wrapping it
+        // in a `<Link>` (which renders an `<a>`) produces `<a><div/></a>`.
+        // That's "transparent content" per HTML5, but browsers' parsers
+        // re-arrange the tree during parse, which surfaces in dev mode as a
+        // hydration error ("Expected server HTML to contain a matching
+        // <div> in <a>"). It also nests other anchors/buttons inside the
+        // outer `<a>`, which is invalid HTML. Mirror the imperative-
+        // navigation pattern used by the `linkToProjectPage` branch above
+        // so the card keeps its click-to-navigate affordance without the
+        // anchor wrapper.
+        <CardLinkWrapper mdp={project?.MDP} ariaLabel={project?.name || project?.MDP}>
           <ProjectCardContent
             project={project}
             userHasVotingPower={userHasVotingPower}
@@ -763,8 +783,53 @@ export default function ProjectCard({
             isSenateVote={isSenateVote}
             hideStatusBadge={hideStatusBadge}
           />
-        </Link>
+        </CardLinkWrapper>
       )}
+    </div>
+  )
+}
+
+// Click-to-navigate wrapper used by the default (non-vote, non-distribute)
+// `ProjectCard` branch. Avoids `<a><div/></a>` markup by rendering a `<div>`
+// with `role="link"` and pushing imperatively. Bails when the click
+// originates inside a real interactive descendant (anchor, button, form
+// control) so inner controls keep their own behavior.
+function CardLinkWrapper({
+  mdp,
+  ariaLabel,
+  children,
+}: {
+  mdp: number | string | undefined
+  ariaLabel: string | number | undefined
+  children: React.ReactNode
+}) {
+  const router = useRouter()
+  const navigate = () => {
+    if (mdp === undefined || mdp === null) return
+    router.push(`/project/${mdp}`)
+  }
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement | null
+    if (target?.closest('a, button, input, textarea, select, label')) return
+    navigate()
+  }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    const target = e.target as HTMLElement | null
+    if (target?.closest('a, button, input, textarea, select, label')) return
+    e.preventDefault()
+    navigate()
+  }
+  return (
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className="h-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-moon-orange/60 rounded-2xl"
+      aria-label={`Open project ${ariaLabel ?? ''}`}
+    >
+      {children}
     </div>
   )
 }
