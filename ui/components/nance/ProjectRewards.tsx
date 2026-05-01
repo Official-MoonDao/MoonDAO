@@ -1812,11 +1812,44 @@ export function ProjectRewards({
                 </div>
 
                 {/* Read-only retro tally panel: same shared compute the
-                    audit page uses, scoped to the same (quarter, year)
-                    the rewards-cycle window is currently distributing
-                    against. Self-hides during loading / error / empty
-                    so it doesn't flicker on cold cache. */}
-                <RetroactiveResults quarter={quarter} year={year} />
+                    audit page uses. Pinned to the cycle of the
+                    currently-eligible projects on screen so the panel
+                    always matches the cohort the user is looking at —
+                    independent of `IS_REWARDS_CYCLE` and of the page's
+                    own `quarter`/`year` (which shifts back to the
+                    current calendar quarter once the rewards cycle
+                    flag is off, even though the eligible projects
+                    belong to a prior quarter). Falls back to the
+                    previous calendar quarter when no eligible cohort
+                    exists yet so the audit endpoint at least gets a
+                    sensible default. Self-hides during loading / error
+                    / empty so it doesn't flicker on cold cache. */}
+                {(() => {
+                  const fallback = getRelativeQuarter(-1)
+                  // Eligible projects within a single cycle all share
+                  // the same (quarter, year). Take the first one so we
+                  // tally against the cohort the user can actually see;
+                  // if (in some odd transition) eligibility spans
+                  // multiple quarters, the audit page can be linked
+                  // directly with explicit `?quarter=&year=`.
+                  const seed = eligibleProjects?.[0] as
+                    | { quarter?: number; year?: number }
+                    | undefined
+                  const panelQuarter =
+                    seed?.quarter && Number.isFinite(seed.quarter)
+                      ? Number(seed.quarter)
+                      : fallback.quarter
+                  const panelYear =
+                    seed?.year && Number.isFinite(seed.year)
+                      ? Number(seed.year)
+                      : fallback.year
+                  return (
+                    <RetroactiveResults
+                      quarter={panelQuarter}
+                      year={panelYear}
+                    />
+                  )
+                })()}
 
                 {eligibleProjects && eligibleProjects.length > 0 ? (
                   <div className="flex flex-col gap-1.5 sm:gap-6">
