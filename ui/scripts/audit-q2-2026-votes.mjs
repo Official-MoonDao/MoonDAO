@@ -250,10 +250,12 @@ function runQuadraticVoting(filledVotes, projects, voterPowers) {
   console.log('SECTION 2 — PER-PROJECT VOTE BREAKDOWN')
   console.log('========================================================================')
   console.log('Each row = one voter\'s contribution to that project after author')
-  console.log('self-vote stripping + 20-pass iterative normalization + quadratic')
-  console.log('weighting (power = √vMOONEY). The per-project "weighted sum / total')
-  console.log('weight" produces the unscaled outcome, which then gets renormalized')
-  console.log('across all projects to sum to 100%.\n')
+  console.log('self-vote stripping + 20-pass iterative normalization. The "weighted"')
+  console.log('column is the slice of that voter\'s √vMOONEY power that went to')
+  console.log('this project: (normalized% / 100) × power. Same units as Power.')
+  console.log('Σ weighted (this project) ÷ total power across all voters = the')
+  console.log('project\'s outcome share, which then gets renormalized across all')
+  console.log('projects to sum to 100%.\n')
 
   const totalPower = voterPowers.reduce((a, b) => a + b, 0)
   for (const proj of sortedProjects) {
@@ -273,7 +275,10 @@ function runQuadraticVoting(filledVotes, projects, voterPowers) {
       const isAuthor = author && v.address.toLowerCase() === author.toLowerCase()
       const raw = v.distribution[pid]
       const norm = filled[i][projectIdx]
-      const weighted = norm * v.power
+      // Voting-power units: the slice of this voter's √power directed at
+      // this project. Sums to "total weighted support for this project";
+      // dividing by total voter power gives the project's share of the vote.
+      const weighted = (norm / 100) * v.power
       weightedSum += weighted
       const rawCell = isAuthor
         ? `(author) `
@@ -285,9 +290,9 @@ function runQuadraticVoting(filledVotes, projects, voterPowers) {
       )
     }
     console.log('  └─────────────────────────────────────────────┴──────────┴──────────┴──────────────┴──────────────┘')
-    console.log(`  Weighted sum:     ${weightedSum.toFixed(2)}`)
+    console.log(`  Weighted sum:     ${weightedSum.toFixed(2)}   (voting-power units)`)
     console.log(`  Total power:      ${totalPower.toFixed(2)}`)
-    console.log(`  Unscaled outcome: ${(weightedSum / totalPower).toFixed(4)}%   →  renormalized to ${proj.finalPct.toFixed(4)}%`)
+    console.log(`  Unscaled outcome: ${((weightedSum / totalPower) * 100).toFixed(4)}%   →  renormalized to ${proj.finalPct.toFixed(4)}%`)
     console.log('')
   }
 

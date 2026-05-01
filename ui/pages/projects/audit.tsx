@@ -516,11 +516,18 @@ function ProjectRow({
   addressToPower: Record<string, number>
   authorAddress: string
 }) {
-  // Total weighted contribution = Σ normalizedPct × voter power. This is
-  // the unscaled outcome that, when divided by total weighted across all
-  // projects, reproduces the displayed `percentage` post-quadratic-scaling.
+  // Per-voter weighted contribution is in voting-power units:
+  //   weighted = (normalizedPct / 100) × voter power
+  // i.e. "the slice of this voter's power that went to this project".
+  // Summed across the project's supporters, that gives the project's
+  // total weighted support; dividing by `Total power` (across all
+  // voters, not just supporters of this project) reproduces the
+  // project's outcome share.
   const totalWeighted = contributions.reduce(
-    (sum, c) => sum + (c.normalizedPct || 0) * (addressToPower[c.voterAddress] || 0),
+    (sum, c) =>
+      sum +
+      ((c.normalizedPct || 0) / 100) *
+        (addressToPower[c.voterAddress] || 0),
     0
   )
 
@@ -643,7 +650,7 @@ function ProjectRow({
                     </th>
                     <th
                       className="text-right py-2 px-2 sm:px-3"
-                      title="Normalized % × voter power. This is the contribution to the unscaled outcome before final renormalization."
+                      title="The slice of this voter's power that went to this project: (normalized % / 100) × power. Same units as the Power column. Summing this column for one project gives that project's total weighted support."
                     >
                       Weighted
                     </th>
@@ -653,7 +660,7 @@ function ProjectRow({
                 <tbody>
                   {contributions.map((c) => {
                     const power = addressToPower[c.voterAddress] || 0
-                    const weighted = (c.normalizedPct || 0) * power
+                    const weighted = ((c.normalizedPct || 0) / 100) * power
                     const share =
                       totalWeighted > 0
                         ? (weighted / totalWeighted) * 100
