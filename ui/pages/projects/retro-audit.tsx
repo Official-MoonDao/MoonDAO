@@ -91,9 +91,24 @@ export default function ProjectsRetroAuditPage() {
       ? `/api/proposals/retro-audit?quarter=${quarter}&year=${year}`
       : null,
     fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 60_000, errorRetryCount: 1 }
+    {
+      revalidateOnFocus: false,
+      // Always revalidate on mount so a stale `{outcome: null}` left over
+      // from an earlier failed compute (e.g. before the cohort detection
+      // was fixed) doesn't survive a navigation to the audit page.
+      revalidateOnMount: true,
+      revalidateIfStale: true,
+      dedupingInterval: 60_000,
+      errorRetryCount: 1,
+    }
   )
 
+  // Treat "router not ready" the same as "loading" — until the URL
+  // params are parsed and SWR has actually been keyed, we have no idea
+  // whether the requested cycle has data. Without this guard the
+  // "no data" ErrorState briefly renders on every fresh mount because
+  // `data` is undefined → `!outcome` is truthy.
+  const showLoading = !router.isReady || isLoading || (!data && !error)
   const outcome = data?.outcome
   const audit = outcome?.audit
 
@@ -168,11 +183,11 @@ export default function ProjectsRetroAuditPage() {
               onChange={updateUrl}
             />
 
-            {isLoading && <LoadingState />}
-            {error && !isLoading && (
+            {showLoading && <LoadingState />}
+            {error && !showLoading && (
               <ErrorState message="Could not load the audit data. Try again in a moment." />
             )}
-            {!isLoading && !error && outcome && audit && (
+            {!showLoading && !error && outcome && audit && (
               <AuditBody
                 outcome={outcome}
                 audit={audit}
@@ -180,7 +195,11 @@ export default function ProjectsRetroAuditPage() {
                 totalCitizenPower={totalCitizenPower}
               />
             )}
-            {!isLoading && !error && (!outcome || !audit) && (
+            {/* Only surface "no data" when we've actually received a
+                response (i.e. `data` is defined) — otherwise an
+                in-flight request would briefly flash the empty-state
+                message before the payload lands. */}
+            {!showLoading && !error && data && (!outcome || !audit) && (
               <ErrorState
                 message={`No retro tally data is available yet for Q${quarter} ${year}. Either no projects are eligible for retro rewards or no votes have been cast.`}
               />
