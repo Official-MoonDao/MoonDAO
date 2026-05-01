@@ -224,11 +224,11 @@ const MissionProfileHeader = React.memo(
         }
       })()
       if (wei === BigInt(0)) return 0
-      // Convert wei → ETH (float) → USD using the current ETH price. The
-      // raise spanned a price range so this is an approximation, but it's
-      // the same convention the headline "raised" number uses, which keeps
+      // Convert wei → ETH → USD using the current ETH price. The raise
+      // spanned a price range so this is an approximation, but it's the
+      // same convention the headline "raised" number uses, which keeps
       // the on-page numbers internally consistent.
-      const eth = Number(wei) / 1e18
+      const eth = weiBigintToEthNumber(wei)
       return eth * ethPrice
     }, [overviewStats, ethPrice])
 
