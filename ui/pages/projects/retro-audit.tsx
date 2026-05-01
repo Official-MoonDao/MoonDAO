@@ -399,11 +399,10 @@ function StatTile({ label, value }: { label: string; value: string }) {
 }
 
 function VotersTable({ voters }: { voters: RetroactiveAudit['voters'] }) {
-  // Default-collapsed: a 100+ voter table dumped above the project
+  // Default-collapsed: a long voter table dumped above the project
   // list would push the actual tally below the fold on mobile.
-  // Citizenship + power share is the audit-relevant column; raw
-  // vMOONEY balance + allocations cast are informational and live
-  // behind expand.
+  // Power share is the audit-relevant column; the per-project
+  // tables below carry per-voter raw/normalized %.
   const [expanded, setExpanded] = useState(false)
   const totalPower = voters.reduce((s, v) => s + v.power, 0)
   const citizenCount = voters.filter((v) => v.isCitizen).length
@@ -440,20 +439,14 @@ function VotersTable({ voters }: { voters: RetroactiveAudit['voters'] }) {
               <tr className="text-[11px] uppercase tracking-wider text-gray-400 font-RobotoMono">
                 <th className="text-left py-2 px-2 sm:px-3">#</th>
                 <th className="text-left py-2 px-2 sm:px-3">Address</th>
-                <th className="text-left py-2 px-2 sm:px-3">Cohort</th>
-                <th className="text-right py-2 px-2 sm:px-3">vMOONEY</th>
                 <th className="text-right py-2 px-2 sm:px-3">Power</th>
                 <th className="text-right py-2 px-2 sm:px-3">Share</th>
-                <th className="text-right py-2 px-2 sm:px-3">Allocations</th>
               </tr>
             </thead>
             <tbody>
               {voters.map((v, idx) => {
                 const share =
                   totalPower > 0 ? (v.power / totalPower) * 100 : 0
-                const nonZeroAlloc = Object.values(v.rawDistribution).filter(
-                  (n) => Number(n) > 0
-                ).length
                 return (
                   <tr
                     key={v.address}
@@ -471,29 +464,17 @@ function VotersTable({ voters }: { voters: RetroactiveAudit['voters'] }) {
                       >
                         {truncateAddress(v.address)}
                       </a>
-                    </td>
-                    <td className="py-2 px-2 sm:px-3 font-RobotoMono text-xs">
-                      {v.isCitizen ? (
-                        <span className="bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider">
-                          Citizen
-                        </span>
-                      ) : (
-                        <span className="bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider">
+                      {!v.isCitizen && (
+                        <span className="ml-2 inline-block text-[10px] uppercase tracking-wider bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded">
                           Non-citizen
                         </span>
                       )}
-                    </td>
-                    <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
-                      {formatNumber(v.vMOONEY, 0)}
                     </td>
                     <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
                       {formatNumber(v.power, 1)}
                     </td>
                     <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
                       {share.toFixed(2)}%
-                    </td>
-                    <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs text-gray-400">
-                      {nonZeroAlloc}
                     </td>
                   </tr>
                 )
