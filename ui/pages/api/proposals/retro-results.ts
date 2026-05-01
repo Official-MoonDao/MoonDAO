@@ -17,6 +17,7 @@ import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { computeRetroactiveOutcome } from '@/lib/proposals/computeRetroactiveOutcome'
+import { parseCycleParams } from '@/lib/proposals/parseCycleParams'
 
 const chain = DEFAULT_CHAIN_V5
 
@@ -31,8 +32,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   // being voted on; for retros the cycle being voted on belongs to the
   // prior quarter. Override with `?quarter=&year=` for older audits.
   const fallback = getRelativeQuarter(-1)
-  const quarter = req.query.quarter ? Number(req.query.quarter) : fallback.quarter
-  const year = req.query.year ? Number(req.query.year) : fallback.year
+  const parsed = parseCycleParams(req, fallback)
+  if (!parsed.ok) {
+    return res.status(400).json({ error: parsed.error })
+  }
+  const { quarter, year } = parsed.params
 
   try {
     const outcome = await computeRetroactiveOutcome({ chain, quarter, year })
