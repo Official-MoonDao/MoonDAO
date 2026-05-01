@@ -17,12 +17,7 @@
  */
 
 export const BUDGET_OVERRIDES_USD: Record<string, number> = {
-  // MDP-245 — "MoonDAO – Deployable Video Payload for Sounding Rocket".
-  // Original IPFS body parsed to $3,233.84 (Total Fixed Costs $2,233.84
-  // + Total Bounties $1,000). Author agreed to trim to $2,700 so the
-  // project fits under Q2 2026's remaining 3/4-cap headroom of $2,701.75
-  // and can be funded as the 5th Member-Vote winner. Applies to Q2 2026.
-  '245': 2700,
+  // No active overrides. See file header for the process to add one.
 }
 
 export function getBudgetOverrideUSD(

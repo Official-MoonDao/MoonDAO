@@ -201,7 +201,7 @@ MDP-235 — ACMA Ignites
 
 MDP-245 — Untitled
   project id 127  •  author 0x37E6c43aE0341304FF181dA55e8d2593f1728c45
-  Final %: 10.5767%   Budget: $2,700 (manual override)
+  Final %: 10.5767%   Budget: $3,233.84
   ┌─────────────────────────────────────────────┬──────────┬──────────┬──────────────┬──────────────┐
   │ Voter                                       │   raw %  │ √power   │ normalized % │ weighted     │
   ├─────────────────────────────────────────────┼──────────┼──────────┼──────────────┼──────────────┤
@@ -424,17 +424,17 @@ Rank │ MDP  │ Vote %  │ Budget   │ Cumulative │ Decision
 ─────┼──────┼─────────┼──────────┼────────────┼─────────────────────
    1 │  240 │ 21.21% │ $  3,955 │ $   3,955  │ ✅ APPROVED
    2 │  235 │ 16.76% │ $  3,600 │ $   7,555  │ ✅ APPROVED
-   3 │  245 │ 10.58% │ $  2,700 │ $  10,255  │ ✅ APPROVED
-   4 │  237 │  9.84% │ $  4,650 │ $  14,905  │ ✅ APPROVED
-   5 │  248 │  9.43% │ $  3,000 │ $  14,905  │ ❌ over budget cap
-   6 │  232 │  9.30% │ $  4,380 │ $  14,905  │ ❌ over budget cap
-   7 │  241 │  7.27% │ $  3,815 │ $  14,905  │ ❌ over budget cap
-   8 │  231 │  7.13% │ $  4,682 │ $  14,905  │ ❌ over budget cap
-   9 │  244 │  4.31% │ $  2,950 │ $  14,905  │ ❌ over budget cap
-  10 │  239 │  4.18% │ $  4,300 │ $  14,905  │ ❌ over budget cap
+   3 │  245 │ 10.58% │ $3,233.84 │ $10,788.84  │ ✅ APPROVED
+   4 │  237 │  9.84% │ $  4,650 │ $15,438.84  │ ✅ APPROVED
+   5 │  248 │  9.43% │ $  3,000 │ $15,438.84  │ ❌ over budget cap
+   6 │  232 │  9.30% │ $  4,380 │ $15,438.84  │ ❌ over budget cap
+   7 │  241 │  7.27% │ $  3,815 │ $15,438.84  │ ❌ over budget cap
+   8 │  231 │  7.13% │ $  4,682 │ $15,438.84  │ ❌ over budget cap
+   9 │  244 │  4.31% │ $  2,950 │ $15,438.84  │ ❌ over budget cap
+  10 │  239 │  4.18% │ $  4,300 │ $15,438.84  │ ❌ over budget cap
 
-Total upfront approved: $14,905
-Cap headroom remaining: $2651.75
+Total upfront approved: $15,438.84
+Cap headroom remaining: $2117.91
 
 ========================================================================
 SECTION 4 — Q2 2026 BUDGET BREAKDOWN
@@ -442,5 +442,5 @@ SECTION 4 — Q2 2026 BUDGET BREAKDOWN
   Total quarterly pool:                 $23409.00
   − Community Circle (10%):             $2340.90
   = Project pool (90%):                 $21068.10
-    − Upfront (5 winners):              $14905.00
-    = Retroactive Rewards:              $6163.10
+    − Upfront (5 winners):              $15438.84
+    = Retroactive Rewards:              $5629.26

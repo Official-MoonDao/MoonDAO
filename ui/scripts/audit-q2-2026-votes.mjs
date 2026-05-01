@@ -35,14 +35,15 @@ const YEAR = 2026
 const VOTE_CLOSE_TIMESTAMP = 1776729600 // April 21, 2026 00:00 UTC
 const NEXT_QUARTER_BUDGET_USD = 23409
 const BUDGET_CAP = NEXT_QUARTER_BUDGET_USD * 0.75
-const BUDGET_OVERRIDES_USD = { 245: 2700 }
+const BUDGET_OVERRIDES_USD = {}
 
 // Per-MDP authoritative budgets, mirroring what the shared `extractUsdBudget`
 // + `BUDGET_OVERRIDES_USD` produces. Filled out from a separate parse run so
 // we don't have to re-fetch + re-parse every IPFS payload here. Kept in
-// sync with the override map above.
+// sync with the override map above. MDP-245's value reflects the parsed
+// IPFS body ($2,233.84 fixed costs + $1,000 bounties = $3,233.84).
 const KNOWN_BUDGETS = {
-  248: 3000, 235: 3600, 239: 4300, 240: 3955, 245: 2700,
+  248: 3000, 235: 3600, 239: 4300, 240: 3955, 245: 3233.84,
   237: 4650, 241: 3815, 232: 4380, 231: 4682, 244: 2950,
 }
 
@@ -341,6 +342,6 @@ function runQuadraticVoting(filledVotes, projects, voterPowers) {
   console.log(`  Total quarterly pool:                 $${NEXT_QUARTER_BUDGET_USD.toFixed(2)}`)
   console.log(`  − Community Circle (10%):             $${community.toFixed(2)}`)
   console.log(`  = Project pool (90%):                 $${projectPool.toFixed(2)}`)
-  console.log(`    − Upfront (5 winners):              $${cum.toFixed(2)}`)
+  console.log(`    − Upfront (${count} winner${count === 1 ? '' : 's'}):              $${cum.toFixed(2)}`)
   console.log(`    = Retroactive Rewards:              $${retroactive.toFixed(2)}`)
 })()

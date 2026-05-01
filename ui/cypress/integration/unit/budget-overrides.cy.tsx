@@ -134,19 +134,4 @@ describe('budget overrides', () => {
       expect(extractUsdBudget(proposal, { MDP: 999999 })).to.equal(0)
     })
   })
-
-  describe('Q2 2026 expected state', () => {
-    it('MDP-245 resolves to the agreed $2,700 cap-fitting amount', () => {
-      // The point of the override: MDP-245's IPFS body parses to ~$3,234,
-      // which would push the Q2 2026 approved set over the 3/4 cap and
-      // reject the project. The override drops it to the $2,700 the
-      // author agreed to so it fits as the 5th Member-Vote winner.
-      const proposal = {
-        totalBudgetUSDC: 3234,
-        budget: [{ token: 'USDC', amount: 3234 }],
-      }
-      expect(extractUsdBudget(proposal, { MDP: 245 })).to.equal(2700)
-      expect(extractUsdBudget(proposal, { MDP: '245' })).to.equal(2700)
-    })
-  })
 })
