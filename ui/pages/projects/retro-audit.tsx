@@ -53,6 +53,25 @@ const formatPrimary = (amount: number, asset: 'ETH' | 'USDC') =>
 const formatMooney = (amount: number) =>
   `${Number(amount.toPrecision(3)).toLocaleString()} MOONEY`
 
+// Compact unit-stripped variants for tight summary tiles where the
+// asset is already named in the label. ETH stays decimal; USDC and
+// MOONEY collapse to k/M suffixes so two values + a separator fit on
+// one line without truncation.
+const formatPrimaryCompact = (amount: number, asset: 'ETH' | 'USDC') => {
+  if (asset === 'ETH')
+    return amount.toLocaleString(undefined, { maximumFractionDigits: 4 })
+  return amount.toLocaleString(undefined, {
+    notation: 'compact',
+    maximumFractionDigits: 2,
+  })
+}
+
+const formatMooneyCompact = (amount: number) =>
+  amount.toLocaleString(undefined, {
+    notation: 'compact',
+    maximumFractionDigits: 2,
+  })
+
 export default function ProjectsRetroAuditPage() {
   const router = useRouter()
   // Default to the previous calendar quarter — the cohort currently
@@ -356,44 +375,59 @@ function SummaryCard({
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        <StatTile
-          label="Voters"
-          value={`${voterCount} (${outcome.citizenVoterCount} citizen)`}
-        />
+        <StatTile label="Voters" value={String(voterCount)} />
         <StatTile
           label="Citizen power"
           value={formatNumber(outcome.totalCitizenPower, 0)}
         />
         <StatTile
           label={`Pool (${outcome.pool.primaryAsset})`}
-          value={`${formatPrimary(
+          value={`${formatPrimaryCompact(
             allocatedPrimary,
             outcome.pool.primaryAsset
-          )} / ${formatPrimary(
+          )} / ${formatPrimaryCompact(
             outcome.pool.primaryAmount,
             outcome.pool.primaryAsset
           )}`}
+          sub={`${formatPrimary(
+            allocatedPrimary,
+            outcome.pool.primaryAsset
+          )} allocated`}
         />
         <StatTile
           label="Pool (MOONEY)"
-          value={`${formatMooney(allocatedMooney)} / ${formatMooney(
-            outcome.pool.mooneyAmount
-          )}`}
+          value={`${formatMooneyCompact(
+            allocatedMooney
+          )} / ${formatMooneyCompact(outcome.pool.mooneyAmount)}`}
+          sub={`${formatMooney(allocatedMooney)} allocated`}
         />
       </div>
     </div>
   )
 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
+function StatTile({
+  label,
+  value,
+  sub,
+}: {
+  label: string
+  value: string
+  sub?: string
+}) {
   return (
     <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
       <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
         {label}
       </div>
-      <div className="mt-0.5 sm:mt-1 font-GoodTimes text-base sm:text-lg tracking-wider text-white truncate">
+      <div className="mt-0.5 sm:mt-1 font-GoodTimes text-sm sm:text-base tracking-wider text-white truncate">
         {value}
       </div>
+      {sub && (
+        <div className="mt-0.5 text-[10px] font-RobotoMono text-gray-500 truncate">
+          {sub}
+        </div>
+      )}
     </div>
   )
 }
