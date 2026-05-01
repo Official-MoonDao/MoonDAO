@@ -688,11 +688,13 @@ export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = 'USDC'
 // remainder for retroactive distribution is (11.6 * 0.9) - 8.225 = 2.215 ETH.
 export const RETRO_ETH_BUDGET = 2.215
 
-// Q2 2026 retroactives (current cycle, USDC-paid): $3,513.10.
+// Q2 2026 retroactives (current cycle, USDC-paid): $6,163.10.
 // The quarter's total USD budget is $23,409 (NEXT_QUARTER_BUDGET_USD).
-// 90% goes to projects ($21,068.10); $17,555 was committed upfront to
-// the 5 Member-Vote winners (MDP-248 $3,000 + MDP-235 $3,600 + MDP-239
-// $4,300 + MDP-240 $3,955 + MDP-245 $2,700 — MDP-245 is the
-// author-agreed override, see lib/proposals/budgetOverrides.ts).
-// Retroactive remainder = ($23,409 * 0.9) - $17,555 = $3,513.10.
-export const RETRO_USD_BUDGET = 3513.1
+// 90% goes to projects ($21,068.10); $14,905 was committed upfront to
+// the 4 Member-Vote winners (MDP-240 $3,955 + MDP-235 $3,600 + MDP-245
+// $2,700 + MDP-237 $4,650 — MDP-245 is the author-agreed override,
+// see lib/proposals/budgetOverrides.ts). The cycle approved 4 winners
+// (not 5) because rank-5 MDP-248 ($3,000) would have pushed cumulative
+// upfront past the 3/4 cap of $17,556.75.
+// Retroactive remainder = ($23,409 * 0.9) - $14,905 = $6,163.10.
+export const RETRO_USD_BUDGET = 6163.1

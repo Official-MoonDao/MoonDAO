@@ -78,6 +78,11 @@ async function getTotalVMooney(address) {
 // =============================================================================
 
 function fillInZerosAndStripAuthors(distributions, projects, projectIdToAuthor) {
+  // NaN means "impute via column average" downstream. Two cases:
+  //   - voter == author of pid → NaN (can't self-vote; use crowd's view)
+  //   - voter just didn't allocate to pid → 0 (silence ≠ implicit support)
+  // The previous version returned NaN for both, which inflated outcomes
+  // for projects that voters never explicitly endorsed.
   const projectIds = projects.map((p) => String(p.id))
   return distributions.map((d) => {
     const voter = d.address.toLowerCase()
@@ -85,7 +90,7 @@ function fillInZerosAndStripAuthors(distributions, projects, projectIdToAuthor) 
       const author = projectIdToAuthor[pid]?.toLowerCase()
       if (author && author === voter) return NaN
       const v = d.distribution[pid]
-      if (v == null || isNaN(Number(v))) return NaN
+      if (v == null || isNaN(Number(v))) return 0
       return Number(v)
     })
   })

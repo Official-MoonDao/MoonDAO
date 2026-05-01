@@ -500,13 +500,22 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       { missingAuthorProjectIds }
     )
   }
-  // Strip each voter's allocation to their own proposal (author cannot vote on own)
+  // Strip each voter's allocation to their own proposal (author cannot vote on own).
+  //
+  // Two cases for "missing" cells, and they get distinct treatment so the
+  // iterative normalizer only imputes for authors (not for plain silence):
+  //   - Voter IS the author of project X → omit X from their dict so
+  //     `runIterativeNormalization` reads NaN and fills it with the column
+  //     average of the other voters.
+  //   - Voter ISN'T the author of project Y AND didn't allocate to Y →
+  //     write an explicit 0. Silence shouldn't synthesize support; previously
+  //     this got column-average imputation too, which inflated outcomes for
+  //     projects the voter never endorsed.
   type VoteRow = DistributionVote & { distribution?: string | Record<string, number>; quarter?: number; year?: number }
   const votesWithAuthorOwnExcluded: VoteRow[] = votes.map((v) => {
     const row = v as VoteRow
     const voterAddr = row.address?.toLowerCase()
     const raw = row.distribution
-    const distribution: Record<string, number> = {}
     let parsedDistribution: Record<string, number> = {}
     if (typeof raw === 'string') {
       try {
@@ -517,10 +526,18 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     } else if (raw && typeof raw === 'object') {
       parsedDistribution = raw as Record<string, number>
     }
-    for (const [projectId, value] of Object.entries(parsedDistribution)) {
+    const distribution: Record<string, number> = {}
+    for (const project of passedProjects) {
+      const projectId = String(project.id)
       const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
-      if (author && author === voterAddr) continue
-      distribution[projectId] = Number(value)
+      if (author && voterAddr && author === voterAddr) continue
+      const rawVal = parsedDistribution[projectId]
+      const numericValue = Number(rawVal)
+      if (rawVal != null && Number.isFinite(numericValue) && numericValue >= 0) {
+        distribution[projectId] = numericValue
+      } else {
+        distribution[projectId] = 0
+      }
     }
     return { ...row, distribution }
   })

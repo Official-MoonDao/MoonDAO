@@ -73,8 +73,14 @@
  *                                                  [CONFIRMED INTENTIONAL]
  *          - Author's allocation to their own project is removed.
  *          - Their allocations to OTHER projects are kept and renormalized.
- *          - Their own-project value is then filled by the column average
- *            of the OTHER voters during iterative normalization.
+ *          - Their own-project cell is the ONLY cell that gets imputed
+ *            with the column average of the other voters during iterative
+ *            normalization. Non-author cells that the voter just didn't
+ *            allocate to are pre-filled with 0 by the call site (vote.ts /
+ *            computeMemberVoteOutcome.ts), NOT imputed. Silence ≠ implicit
+ *            support — an earlier version of the pipeline imputed every
+ *            missing key, which silently inflated outcomes for projects
+ *            voters never endorsed.
  *        Authors still influence other projects' rankings; their row's
  *        own-project cell is attributed at the rate other voters rated
  *        that project. (Confirmed: dropping the entire row would punish
@@ -698,9 +704,11 @@ describe('Vote tally / Layer 2 — full in-memory pipeline', () => {
   //
   // Pipeline steps:
   //   (1) start with raw votes (per-voter distribution maps).
-  //   (2) strip each voter's allocation to their own project.
-  //   (3) iterative normalization: fill missing keys with column avg,
-  //       row-renormalize to 100, repeat 20×.
+  //   (2) strip each voter's allocation to their own project AND fill
+  //       explicit 0s for any non-author project they didn't allocate to.
+  //       Only author-stripped cells are left absent (→ NaN downstream).
+  //   (3) iterative normalization: NaN cells get the column average of
+  //       OTHER voters; row-renormalize to 100, repeat 20×.
   //   (4) quadratic voting: power-weighted average, then normalize to 100.
   //   (5) approval: top-N (with floor of 3) AND cumulative budget ≤ 3/4.
 
@@ -719,17 +727,22 @@ describe('Vote tally / Layer 2 — full in-memory pipeline', () => {
     usdBudgets: Record<string, number>
     quarterlyBudget: number
   }) {
-    // (2) Strip author own-votes (mirrors the loop in vote.ts /
-    // computeMemberVoteOutcome.ts).
+    // (2) Strip author own-votes AND fill explicit 0s for non-author
+    // omissions (mirrors the loop in vote.ts / computeMemberVoteOutcome.ts
+    // so this pipeline matches production exactly).
     const votesWithAuthorOwnExcluded = rawVotes.map((v) => {
       const voterAddr = v.address?.toLowerCase()
       const distribution: Record<string, number> = {}
-      for (const [projectId, value] of Object.entries(v.distribution)) {
+      for (const project of projects) {
+        const projectId = String(project.id)
         const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
-        if (author && author === voterAddr) continue
-        const numeric = Number(value)
-        if (!Number.isFinite(numeric) || numeric < 0) continue
-        distribution[projectId] = numeric
+        if (author && voterAddr && author === voterAddr) continue
+        const rawVal = v.distribution[projectId]
+        const numeric = Number(rawVal)
+        distribution[projectId] =
+          rawVal != null && Number.isFinite(numeric) && numeric >= 0
+            ? numeric
+            : 0
       }
       return { ...v, distribution }
     })

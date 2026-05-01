@@ -133,7 +133,10 @@ export default function ProjectsAuditPage() {
             <p>
               Public, reproducible breakdown of the quarterly Member Vote
               tally — voters and their voting power, every project&apos;s
-              supporters, and the knapsack-style budget approval.{' '}
+              supporters, and the knapsack-style budget approval. Voting
+              power is √vMOONEY at vote close; an author&apos;s own
+              project is filled with the column average of the other
+              voters; non-author silence counts as 0.{' '}
               <Link
                 href="/projects"
                 className="underline text-blue-300 hover:text-blue-200"
@@ -634,7 +637,7 @@ function ProjectRow({
                     </th>
                     <th
                       className="text-right py-2 px-2 sm:px-3"
-                      title="What was counted after stripping + iterative normalization."
+                      title="What was counted after stripping + iterative normalization. For non-author voters whose row already sums to 100, this equals Raw %. For authors, the cell of their own project is imputed with the column average of the other voters; that imputation slightly reduces their other allocations on renormalization."
                     >
                       Normalized %
                     </th>

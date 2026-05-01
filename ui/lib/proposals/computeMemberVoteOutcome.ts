@@ -313,7 +313,6 @@ export async function computeMemberVoteOutcome({
     const row = v as VoteRow
     const voterAddr = row.address?.toLowerCase()
     const raw = row.distribution
-    const distribution: Record<string, number> = {}
     let parsedDistribution: Record<string, number> = {}
     if (typeof raw === 'string') {
       try {
@@ -332,12 +331,31 @@ export async function computeMemberVoteOutcome({
       }
       addressToRawDistribution[voterAddr] = cleanRaw
     }
-    for (const [projectId, value] of Object.entries(parsedDistribution)) {
+    // Build the post-strip distribution that gets fed into the iterative
+    // normalizer. Two distinct cases for "missing" cells:
+    //   - Voter is the AUTHOR of the project: omit the key entirely so
+    //     `runIterativeNormalization` sees NaN and fills it with the column
+    //     average of the OTHER voters. Authors can't self-vote, so this
+    //     gives them the crowd's view of their own project as a stand-in.
+    //   - Voter is NOT the author and just didn't allocate: write an
+    //     explicit 0. Silence is NOT consent — we shouldn't synthesize
+    //     support for a project the voter didn't endorse, which is what
+    //     blanket column-average imputation would do.
+    // This is what makes "Raw % == Normalized %" hold for non-author voters
+    // whose explicit allocations already sum to 100; only the row-rescale
+    // changes things, never imputation.
+    const distribution: Record<string, number> = {}
+    for (const project of passedProjects) {
+      const projectId = String(project.id)
       const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
-      if (author && author === voterAddr) continue
-      const numericValue = Number(value)
-      if (!Number.isFinite(numericValue) || numericValue < 0) continue
-      distribution[projectId] = numericValue
+      if (author && voterAddr && author === voterAddr) continue
+      const rawVal = parsedDistribution[projectId]
+      const numericValue = Number(rawVal)
+      if (rawVal != null && Number.isFinite(numericValue) && numericValue >= 0) {
+        distribution[projectId] = numericValue
+      } else {
+        distribution[projectId] = 0
+      }
     }
     return { ...row, distribution }
   })
