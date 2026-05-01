@@ -1,0 +1,566 @@
+/**
+ * Read-only counterpart to the retroactive-rewards tally that lives
+ * client-side in `components/nance/ProjectRewards.tsx`.
+ *
+ * Replays the same `computeRewardPercentages` pipeline used by the
+ * Retroactive Rewards tab so the outcome can be displayed on `/projects`
+ * (and previewed by anyone before the cycle closes) WITHOUT touching
+ * the chain. Mirrors the structure of `computeMemberVoteOutcome.ts`:
+ *
+ *   - Pulls eligible projects + retro distributions from Tableland.
+ *   - Splits voters into citizens / non-citizens via the Citizen NFT
+ *     contract (same `getOwnedToken` probe `useCitizens` uses).
+ *   - Snapshots √vMOONEY across all chains at the rewards-cycle close.
+ *   - Feeds the result into the shared `computeRewardPercentages`
+ *     pipeline (fill-in-zeros → zero-out-contributors → iterative
+ *     normalization → best-fit projection for non-citizens →
+ *     quadratic voting).
+ *   - Annotates each project with its ETH and MOONEY share for the
+ *     configured pool.
+ *
+ * Differences vs. the client tally in `ProjectRewards.tsx`:
+ *   - No on-chain transaction or CSV generation; this is purely a
+ *     read-only computation for the audit/preview UI.
+ *   - The contributor-payout logic in `getPayouts` (per-address
+ *     splits, MOONEY/USD upfront overlays) is intentionally skipped
+ *     because projects are now funded directly — the audit only
+ *     surfaces the per-project pool share, not per-contributor wires.
+ *
+ * Keep this in sync with `computeRewardPercentages` / `getPayouts` /
+ * the retro pool config in `ProjectRewards.tsx` if the math changes.
+ */
+import CitizenABI from 'const/abis/Citizen.json'
+import {
+  CITIZEN_ADDRESSES,
+  DISTRIBUTION_TABLE_NAMES,
+  PROJECT_TABLE_NAMES,
+  RETRO_ETH_BUDGET,
+  RETRO_PAYOUT_TOKEN,
+  RETRO_USD_BUDGET,
+} from 'const/config'
+import { getContract, readContract } from 'thirdweb'
+import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
+import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import {
+  computeRewardPercentages,
+  normalizeJsonString,
+} from '@/lib/utils/rewards'
+
+// MOONEY budget per quarter: identical to `getBudget()` in
+// `lib/utils/rewards.ts` so the audit pool matches what the live UI
+// shows. Kept here so this file doesn't need to assemble the full
+// treasury-tokens array (which is browser-only via `useAssets`).
+const MOONEY_INITIAL_BUDGET = 15_000_000
+const MOONEY_DECAY_RATE = 0.95
+
+function getMooneyBudgetForCycle(year: number, quarter: number): number {
+  const numQuartersPastQ4Y2022 = (year - 2023) * 4 + quarter
+  return MOONEY_INITIAL_BUDGET * MOONEY_DECAY_RATE ** numQuartersPastQ4Y2022
+}
+
+/**
+ * Mirror of `getRetroVoteCloseTimestamp` semantics from `isRewardsCycle`:
+ * the rewards window for a (quarter, year) cycle ends on the first
+ * Tuesday on or after 14 days into the *following* quarter. Using that
+ * close as the vMOONEY snapshot means the audit reproduces the same
+ * power values the on-chain tally would have used.
+ */
+function getRetroVoteCloseTimestamp(quarter: number, year: number): number {
+  const nextQuarterIndex = quarter % 4 // 0..3
+  const nextQuarterYear = quarter === 4 ? year + 1 : year
+  const nextQuarterStart = new Date(Date.UTC(nextQuarterYear, nextQuarterIndex * 3, 1))
+  const fourteenIn = new Date(nextQuarterStart)
+  fourteenIn.setUTCDate(fourteenIn.getUTCDate() + 14)
+  const TUESDAY = 2
+  const dow = fourteenIn.getUTCDay()
+  const daysUntilTuesday = ((TUESDAY - dow + 7) % 7) || 7
+  const close = new Date(fourteenIn)
+  close.setUTCDate(close.getUTCDate() + daysUntilTuesday)
+  return Math.floor(close.getTime() / 1000)
+}
+
+// Sequential read with retry so a transient RPC blip on the citizen
+// probe doesn't flip a real citizen into "non-citizen" (which would
+// silently move them into the best-fit cohort and skew the tally).
+async function readContractWithRetry<T>(
+  contract: any,
+  method: string,
+  params: any[],
+  maxRetries = 3,
+  baseDelayMs = 400
+): Promise<T> {
+  let lastError: any
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await readContract({ contract, method, params })
+      return result as T
+    } catch (error) {
+      lastError = error
+      const isRetryable =
+        error instanceof TypeError &&
+        String(error.message).includes('buffer')
+      if (!isRetryable || attempt === maxRetries - 1) throw error
+      await new Promise((r) => setTimeout(r, baseDelayMs * Math.pow(2, attempt)))
+    }
+  }
+  throw lastError
+}
+
+// Same hard-coded "citizen-equivalent voting addresses" allowlist as
+// `ProjectRewards.tsx` — payout addresses for citizens whose primary
+// wallet differs from the one they vote with. Kept in sync by hand;
+// adding a new entry here AND in the component is a small ask given
+// how rarely the list changes.
+const CITIZEN_VOTING_ADDRESSES = new Set<string>([
+  '0x78176eaabcb3255e898079dc67428e15149cdc99',
+  '0x9fdf876a50ea8f95017dcfc7709356887025b5bb',
+])
+
+export type RetroactiveResult = {
+  rank: number
+  projectId: string
+  MDP: number | string | null
+  name: string
+  /** Quadratic-voting % of the project pool. Sums (across all results) to ≤ 90 because `runQuadraticVoting` reserves 10% for the community circle. */
+  percentage: number
+  /** Project's slice of the configured retro pool (ETH or USDC, depending on `RETRO_PAYOUT_TOKEN`). */
+  primaryShare: number
+  /** Project's slice of the MOONEY pool. */
+  mooneyShare: number
+}
+
+export type RetroactiveAudit = {
+  voters: Array<{
+    address: string
+    isCitizen: boolean
+    /** vMOONEY balance at vote close, summed across all chains. */
+    vMOONEY: number
+    /** Quadratic voting power = √vMOONEY (clamped to 0 on NaN). */
+    power: number
+    /** Raw allocation as written to the Distribution table, before any normalization. */
+    rawDistribution: Record<string, number>
+  }>
+  /**
+   * Per-project supporter list. For citizen voters this surfaces the
+   * post-zero-out + iterative-normalization weight that actually fed
+   * the quadratic tally. Non-citizen voters are NOT included here:
+   * their contribution is projected through `getBestFitDistributions`
+   * (an L1-minimization onto the citizen-vote basis), which produces
+   * coefficients over citizens rather than per-project weights — there's
+   * no honest per-project number to show. They still appear in `voters`
+   * with their raw distribution so auditors can see what they wrote.
+   */
+  contributions: Record<
+    string,
+    Array<{
+      voterAddress: string
+      isContributor: boolean
+      /** Raw allocation before zero-out / normalization. null if voter didn't allocate. */
+      rawPct: number | null
+      /** Post-zero-out + iterative-normalization value (sums to 100 per row across non-contributor cells). */
+      normalizedPct: number
+    }>
+  >
+  /** projectId → lowercased contributor address set, for the per-project header. */
+  projectIdToContributors: Record<string, string[]>
+}
+
+export type RetroactiveOutcome = {
+  quarter: number
+  year: number
+  voteCount: number
+  voterCount: number
+  citizenVoterCount: number
+  voteCloseTimestamp: number
+  totalCitizenPower: number
+  totalPower: number
+  pool: {
+    primaryAsset: 'ETH' | 'USDC'
+    primaryAmount: number
+    mooneyAmount: number
+  }
+  results: RetroactiveResult[]
+  computedAt: number
+  /**
+   * Optional per-voter / per-project breakdown for the public audit
+   * page. Only populated when `computeRetroactiveOutcome` is called
+   * with `{ includeAudit: true }`. Same trade-off as the member-vote
+   * audit — heavy enough that the lightweight panel endpoint leaves
+   * it off and the audit endpoint opts in.
+   */
+  audit?: RetroactiveAudit
+}
+
+export async function computeRetroactiveOutcome({
+  chain,
+  quarter,
+  year,
+  includeAudit = false,
+}: {
+  chain: any
+  quarter: number
+  year: number
+  includeAudit?: boolean
+}): Promise<RetroactiveOutcome | null> {
+  if (
+    !Number.isInteger(quarter) ||
+    !Number.isInteger(year) ||
+    quarter < 1 ||
+    quarter > 4 ||
+    year < 2020
+  ) {
+    return null
+  }
+
+  const chainSlug = getChainSlug(chain)
+  const projectTableName = PROJECT_TABLE_NAMES[chainSlug]
+  const distributionTableName = DISTRIBUTION_TABLE_NAMES[chainSlug]
+  const citizenAddress = CITIZEN_ADDRESSES[chainSlug]
+  if (!projectTableName || !distributionTableName || !citizenAddress) {
+    return null
+  }
+
+  // Eligible projects only. Retro distributions in the UI are scoped to
+  // the eligible cohort (`currentProjects.filter(p => p.eligible)`) and
+  // ineligible projects don't enter `computeRewardPercentages` either.
+  // Mirror that here so audit numbers match the live tab.
+  const projectStatement = `SELECT * FROM ${projectTableName} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
+  const allProjects = (await queryTable(chain, projectStatement)) || []
+  const eligibleProjects = allProjects.filter((p: any) => !!p?.eligible)
+  if (eligibleProjects.length === 0) return null
+
+  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE quarter = ${quarter} AND year = ${year}`
+  const rawDistributions = (await queryTable(chain, distributionStatement)) || []
+  if (rawDistributions.length === 0) return null
+
+  // Normalize the on-chain distribution column (sometimes object,
+  // sometimes JSON string) to an object up front so downstream callers
+  // (`computeRewardPercentages`, the audit collector below) don't each
+  // need to redo the same parse.
+  type NormalizedDistRow = {
+    id?: number | string
+    address: string
+    year: number
+    quarter: number
+    distribution: Record<string, number>
+  }
+  const distributions: NormalizedDistRow[] = rawDistributions
+    .map((d: any) => {
+      const address = typeof d?.address === 'string' ? d.address : ''
+      if (!address) return null
+      const parsed = normalizeJsonString(d.distribution)
+      const cleaned: Record<string, number> = {}
+      for (const [pid, value] of Object.entries(parsed || {})) {
+        const n = Number(value)
+        if (Number.isFinite(n)) cleaned[pid] = n
+      }
+      return {
+        id: d?.id,
+        address,
+        year: Number(d?.year) || year,
+        quarter: Number(d?.quarter) || quarter,
+        distribution: cleaned,
+      } as NormalizedDistRow
+    })
+    .filter((d: NormalizedDistRow | null): d is NormalizedDistRow => !!d)
+
+  if (distributions.length === 0) return null
+
+  const voteAddresses = distributions.map((d) => d.address)
+
+  // Citizen membership at compute-time. We probe `getOwnedToken` on the
+  // Citizen NFT contract for each voter — same exact check `useCitizens`
+  // does in the browser — and merge in the hard-coded payout-address
+  // allowlist so designated citizen-equivalent wallets still count as
+  // citizens for the tally. A revert means "no token owned" → not a
+  // citizen; any other unexpected error is logged and the voter falls
+  // back to non-citizen so they go through the best-fit path rather
+  // than getting their distribution counted as a citizen on a transient
+  // RPC error.
+  const citizenContract = getContract({
+    client: serverClient,
+    address: citizenAddress,
+    abi: CitizenABI as any,
+    chain,
+  })
+  const isCitizenByAddress: Record<string, boolean> = {}
+  for (const address of voteAddresses) {
+    const lower = address.toLowerCase()
+    if (CITIZEN_VOTING_ADDRESSES.has(lower)) {
+      isCitizenByAddress[lower] = true
+      continue
+    }
+    try {
+      const ownedTokenId = await readContractWithRetry<any>(
+        citizenContract,
+        'getOwnedToken',
+        [address]
+      )
+      isCitizenByAddress[lower] = !!ownedTokenId
+    } catch (error: any) {
+      // `getOwnedToken` reverts with "No token owned" for non-citizens;
+      // surface only unexpected failures so they don't silently count
+      // as anything other than non-citizen.
+      const reason: string | undefined = error?.reason || error?.shortMessage
+      if (typeof reason === 'string' && /no token owned/i.test(reason)) {
+        isCitizenByAddress[lower] = false
+      } else {
+        console.warn(
+          `[computeRetroactiveOutcome] citizen probe failed for ${address}; treating as non-citizen.`,
+          error
+        )
+        isCitizenByAddress[lower] = false
+      }
+    }
+  }
+
+  const voteCloseTimestamp = getRetroVoteCloseTimestamp(quarter, year)
+
+  // vMOONEY snapshot at vote close. This intentionally uses the same
+  // multi-chain summed `√vMOONEY` calculation as `useTotalVPs` so the
+  // audit reproduces what the on-chain tally would have used. A
+  // failure to fetch returns 0s rather than throwing, mirroring the
+  // production hook's behavior.
+  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
+  if (!vMOONEYs || vMOONEYs.length === 0) return null
+
+  const addressToVMOONEY: Record<string, number> = {}
+  const addressToQuadraticVotingPower: Record<string, number> = {}
+  for (let i = 0; i < voteAddresses.length; i++) {
+    const lower = voteAddresses[i].toLowerCase()
+    const v = Number(vMOONEYs[i]) || 0
+    addressToVMOONEY[lower] = v
+    addressToQuadraticVotingPower[lower] = isNaN(v) ? 0 : Math.sqrt(v)
+  }
+
+  // Split votes by citizen status. The shared compute fn expects the
+  // two cohorts separately and runs different pipelines on each.
+  const citizenDistributions = distributions.filter(
+    (d) => isCitizenByAddress[d.address.toLowerCase()]
+  )
+  const nonCitizenDistributions = distributions.filter(
+    (d) => !isCitizenByAddress[d.address.toLowerCase()]
+  )
+
+  // The shared `computeRewardPercentages` keys voting power by the
+  // *original* address (not lowercased). Build a parallel map so the
+  // citizen / non-citizen rows downstream find the right power.
+  const addressToPowerOriginalCase: Record<string, number> = {}
+  for (const d of distributions) {
+    addressToPowerOriginalCase[d.address] =
+      addressToQuadraticVotingPower[d.address.toLowerCase()] || 0
+  }
+
+  const projectIdToEstimatedPercentage = computeRewardPercentages(
+    citizenDistributions,
+    nonCitizenDistributions,
+    eligibleProjects,
+    addressToPowerOriginalCase
+  )
+
+  // Drop bogus keys produced by the non-citizen best-fit path. That
+  // helper returns array-shaped distributions, so when fed back into
+  // `runQuadraticVoting` they get bucketed under integer index keys
+  // ("0", "1", "2", …) that don't correspond to real Tableland project
+  // ids. Filter the outcome to the eligible cohort so the rendered
+  // results only reflect actual projects.
+  const eligibleIdSet = new Set(eligibleProjects.map((p: any) => String(p.id)))
+  const cleanedOutcome: Record<string, number> = {}
+  for (const [pid, pct] of Object.entries(projectIdToEstimatedPercentage)) {
+    if (eligibleIdSet.has(String(pid))) cleanedOutcome[String(pid)] = pct
+  }
+
+  const totalCitizenPower = citizenDistributions.reduce(
+    (sum, d) => sum + (addressToQuadraticVotingPower[d.address.toLowerCase()] || 0),
+    0
+  )
+  const totalPower = Object.values(addressToQuadraticVotingPower).reduce(
+    (sum, v) => sum + v,
+    0
+  )
+
+  // Pool sizes. We surface both cycle-config values plus a flag so the
+  // panel/audit can render the active pool unit (ETH vs USDC). For
+  // historical quarters this still shows the *current* config — there's
+  // no per-quarter pool ledger yet — but the response carries the
+  // numbers explicitly so a future fix can swap in archived values.
+  const isEthPayoutCycle = RETRO_PAYOUT_TOKEN === 'ETH'
+  const primaryAmount = isEthPayoutCycle ? RETRO_ETH_BUDGET : RETRO_USD_BUDGET
+  const mooneyAmount = getMooneyBudgetForCycle(year, quarter)
+
+  const projectMeta = Object.fromEntries(
+    eligibleProjects.map((p: any) => [String(p.id), p])
+  )
+
+  const unrankedResults: RetroactiveResult[] = eligibleProjects.map(
+    (project: any): RetroactiveResult => {
+      const projectId = String(project.id)
+      const percentage = Number(cleanedOutcome[projectId] || 0)
+      const displayName = getProjectDisplayName(projectMeta[projectId])
+      return {
+        projectId,
+        percentage,
+        primaryShare: (percentage / 100) * primaryAmount,
+        mooneyShare: (percentage / 100) * mooneyAmount,
+        MDP: project?.MDP ?? null,
+        name: displayName,
+        rank: 0,
+      }
+    }
+  )
+  const results: RetroactiveResult[] = unrankedResults
+    .sort((a, b) => b.percentage - a.percentage)
+    .map((r, i) => ({ ...r, rank: i + 1 }))
+
+  let audit: RetroactiveAudit | undefined
+  if (includeAudit) {
+    // Build a citizen-only normalized matrix the same way
+    // `computeRewardPercentages` does internally so per-project
+    // contributions reflect what the quadratic tally actually saw.
+    // Inlined here (rather than threaded through the shared helper)
+    // because the shared helper returns only the final per-project
+    // percentages — not the intermediate per-voter weights.
+    const {
+      runIterativeNormalization,
+    } = await import('@/lib/utils/rewards')
+
+    const fillInZeros = (rows: NormalizedDistRow[]) =>
+      rows.map((d) => {
+        const newDist: Record<string, number> = {}
+        for (const project of eligibleProjects) {
+          const pid = String(project.id)
+          newDist[pid] = pid in d.distribution ? d.distribution[pid] : 0
+        }
+        return { ...d, distribution: newDist }
+      })
+
+    const projectIdToContributors: Record<string, string[]> = {}
+    for (const project of eligibleProjects) {
+      const pid = String(project.id)
+      const contributors = normalizeJsonString(project.rewardDistribution) as Record<
+        string,
+        number
+      >
+      projectIdToContributors[pid] = Object.keys(contributors || {}).map((a) =>
+        a.toLowerCase()
+      )
+    }
+
+    // Mirror `zeroOutDistributionForContributors`: contributors get NaN
+    // on their own project (filled with column average by iterative
+    // normalization), then each row is rescaled so the surviving cells
+    // sum to 100. Doing this inline (instead of importing the private
+    // helper from `rewards.ts`) keeps the audit shape decoupled from
+    // the unexported pipeline internals.
+    const filledCitizen = fillInZeros(citizenDistributions)
+    const zeroedForContributors = filledCitizen.map((d) => {
+      const lower = d.address.toLowerCase()
+      const newDist: Record<string, number> = {}
+      for (const [pid, value] of Object.entries(d.distribution)) {
+        const contributors = projectIdToContributors[pid] || []
+        if (contributors.includes(lower)) {
+          newDist[pid] = NaN
+        } else {
+          newDist[pid] = value
+        }
+      }
+      // Renormalize across surviving cells to sum to 100, matching
+      // the helper's behavior so iterative normalization receives a
+      // pre-normalized row.
+      const rowSum = Object.values(newDist)
+        .filter((n) => Number.isFinite(n))
+        .reduce((s, n) => s + n, 0)
+      const normRow: Record<string, number> = {}
+      for (const [pid, val] of Object.entries(newDist)) {
+        if (!Number.isFinite(val)) continue
+        normRow[pid] = rowSum > 0 ? (val / rowSum) * 100 : 0
+      }
+      return { ...d, distribution: normRow }
+    })
+
+    const [normalizedCitizenRows] = runIterativeNormalization(
+      zeroedForContributors,
+      eligibleProjects
+    )
+
+    const lowerToNormalized: Record<string, Record<string, number>> = {}
+    for (const row of normalizedCitizenRows as any[]) {
+      const lower = (row?.address || '').toLowerCase()
+      if (!lower) continue
+      lowerToNormalized[lower] = (row?.distribution || {}) as Record<string, number>
+    }
+
+    const voters = distributions
+      .map((d) => {
+        const lower = d.address.toLowerCase()
+        return {
+          address: lower,
+          isCitizen: !!isCitizenByAddress[lower],
+          vMOONEY: addressToVMOONEY[lower] || 0,
+          power: addressToQuadraticVotingPower[lower] || 0,
+          rawDistribution: { ...d.distribution },
+        }
+      })
+      .sort((a, b) => b.power - a.power)
+
+    const contributions: RetroactiveAudit['contributions'] = {}
+    for (const project of eligibleProjects) {
+      const projectId = String(project.id)
+      const contributorSet = new Set(projectIdToContributors[projectId] || [])
+      const rows: RetroactiveAudit['contributions'][string] = []
+      for (const voter of voters) {
+        if (!voter.isCitizen) continue // see RetroactiveAudit doc for rationale
+        const rawVal = voter.rawDistribution[projectId]
+        const normalizedVal = lowerToNormalized[voter.address]?.[projectId] || 0
+        if (
+          (rawVal == null || rawVal === 0) &&
+          (!Number.isFinite(normalizedVal) || normalizedVal === 0)
+        ) {
+          continue
+        }
+        rows.push({
+          voterAddress: voter.address,
+          isContributor: contributorSet.has(voter.address),
+          rawPct: typeof rawVal === 'number' ? rawVal : null,
+          normalizedPct: Number.isFinite(normalizedVal) ? normalizedVal : 0,
+        })
+      }
+      // Highest weighted contribution first so the audit page can
+      // spotlight the top supporters without re-sorting client-side.
+      rows.sort((a, b) => {
+        const aPower = addressToQuadraticVotingPower[a.voterAddress] || 0
+        const bPower = addressToQuadraticVotingPower[b.voterAddress] || 0
+        return b.normalizedPct * bPower - a.normalizedPct * aPower
+      })
+      contributions[projectId] = rows
+    }
+
+    audit = {
+      voters,
+      contributions,
+      projectIdToContributors,
+    }
+  }
+
+  return {
+    quarter,
+    year,
+    voteCount: distributions.length,
+    voterCount: voteAddresses.length,
+    citizenVoterCount: citizenDistributions.length,
+    voteCloseTimestamp,
+    totalCitizenPower,
+    totalPower,
+    pool: {
+      primaryAsset: isEthPayoutCycle ? 'ETH' : 'USDC',
+      primaryAmount,
+      mooneyAmount,
+    },
+    results,
+    computedAt: Math.floor(Date.now() / 1000),
+    ...(audit ? { audit } : {}),
+  }
+}

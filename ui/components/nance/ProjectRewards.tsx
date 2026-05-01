@@ -63,6 +63,7 @@ import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Tooltip from '@/components/layout/Tooltip'
 import MemberVoteResults from '@/components/nance/MemberVoteResults'
+import RetroactiveResults from '@/components/nance/RetroactiveResults'
 import OperatorPanel from '@/components/operator/OperatorPanel'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import PastProjects, { hasFinalReport } from '@/components/project/PastProjects'
@@ -1809,6 +1810,13 @@ export function ProjectRewards({
                     </span>
                   </div>
                 </div>
+
+                {/* Read-only retro tally panel: same shared compute the
+                    audit page uses, scoped to the same (quarter, year)
+                    the rewards-cycle window is currently distributing
+                    against. Self-hides during loading / error / empty
+                    so it doesn't flicker on cold cache. */}
+                <RetroactiveResults quarter={quarter} year={year} />
 
                 {eligibleProjects && eligibleProjects.length > 0 ? (
                   <div className="flex flex-col gap-1.5 sm:gap-6">
