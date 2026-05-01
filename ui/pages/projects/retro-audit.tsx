@@ -316,12 +316,12 @@ function AuditBody({
         allocatedPrimary={allocatedPrimary}
         allocatedMooney={allocatedMooney}
       />
-      <VotersTable voters={audit.voters} />
       <ProjectsList
         outcome={outcome}
         audit={audit}
         addressToPower={addressToPower}
         totalCitizenPower={totalCitizenPower}
+        totalPower={outcome.totalPower}
       />
     </>
   )
@@ -398,105 +398,18 @@ function StatTile({ label, value }: { label: string; value: string }) {
   )
 }
 
-function VotersTable({ voters }: { voters: RetroactiveAudit['voters'] }) {
-  // Default-collapsed: a long voter table dumped above the project
-  // list would push the actual tally below the fold on mobile.
-  // Power share is the audit-relevant column; the per-project
-  // tables below carry per-voter raw/normalized %.
-  const [expanded, setExpanded] = useState(false)
-  const totalPower = voters.reduce((s, v) => s + v.power, 0)
-  const citizenCount = voters.filter((v) => v.isCitizen).length
-
-  return (
-    <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 rounded-lg sm:rounded-xl">
-      <button
-        type="button"
-        onClick={() => setExpanded((e) => !e)}
-        className="w-full flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 text-left hover:bg-white/5 rounded-lg sm:rounded-xl transition-colors"
-      >
-        <div>
-          <h3 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
-            Voters ({voters.length}, {citizenCount} citizen)
-          </h3>
-          <p className="text-xs text-gray-400 mt-1">
-            Voting power per address at vote close. √vMOONEY summed
-            across chains. Non-citizen rows have power but go through
-            the L1 best-fit projection rather than the iterative
-            normalizer.
-          </p>
-        </div>
-        {expanded ? (
-          <ChevronUpIcon className="w-5 h-5 text-gray-300 shrink-0" />
-        ) : (
-          <ChevronDownIcon className="w-5 h-5 text-gray-300 shrink-0" />
-        )}
-      </button>
-
-      {expanded && (
-        <div className="border-t border-white/10 p-3 sm:p-4 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-[11px] uppercase tracking-wider text-gray-400 font-RobotoMono">
-                <th className="text-left py-2 px-2 sm:px-3">#</th>
-                <th className="text-left py-2 px-2 sm:px-3">Address</th>
-                <th className="text-right py-2 px-2 sm:px-3">Power</th>
-                <th className="text-right py-2 px-2 sm:px-3">Share</th>
-              </tr>
-            </thead>
-            <tbody>
-              {voters.map((v, idx) => {
-                const share =
-                  totalPower > 0 ? (v.power / totalPower) * 100 : 0
-                return (
-                  <tr
-                    key={v.address}
-                    className="border-t border-white/5 text-gray-200"
-                  >
-                    <td className="py-2 px-2 sm:px-3 text-gray-500">
-                      {idx + 1}
-                    </td>
-                    <td className="py-2 px-2 sm:px-3 font-RobotoMono text-xs">
-                      <a
-                        href={`https://arbiscan.io/address/${v.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-blue-300 hover:underline"
-                      >
-                        {truncateAddress(v.address)}
-                      </a>
-                      {!v.isCitizen && (
-                        <span className="ml-2 inline-block text-[10px] uppercase tracking-wider bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded">
-                          Non-citizen
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
-                      {formatNumber(v.power, 1)}
-                    </td>
-                    <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
-                      {share.toFixed(2)}%
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function ProjectsList({
   outcome,
   audit,
   addressToPower,
   totalCitizenPower,
+  totalPower,
 }: {
   outcome: RetroactiveOutcome
   audit: RetroactiveAudit
   addressToPower: Record<string, number>
   totalCitizenPower: number
+  totalPower: number
 }) {
   // Single-expand for the same reason as the member-vote audit page —
   // multiple-open is hard to scan on mobile and there's no real
@@ -527,6 +440,7 @@ function ProjectsList({
             onToggle={() => setExpandedId(expanded ? null : r.projectId)}
             addressToPower={addressToPower}
             totalCitizenPower={totalCitizenPower}
+            totalPower={totalPower}
             contributorAddresses={
               audit.projectIdToContributors[r.projectId] || []
             }
@@ -545,6 +459,7 @@ function ProjectRow({
   onToggle,
   addressToPower,
   totalCitizenPower,
+  totalPower,
   contributorAddresses,
 }: {
   outcomeRow: RetroactiveOutcome['results'][number]
@@ -555,16 +470,14 @@ function ProjectRow({
   addressToPower: Record<string, number>
   /** Total √vMOONEY across all CITIZEN voters in the cycle. */
   totalCitizenPower: number
+  /** Total √vMOONEY across ALL voters (citizen + non-citizen) in the cycle. */
+  totalPower: number
   contributorAddresses: string[]
 }) {
   // Per-voter weighted contribution (citizens only) is in voting-power
   // units: weighted = (normalizedPct / 100) × voter power. Summed
   // across the project's citizen supporters, that gives the project's
-  // total weighted citizen support. The citizen-only share = sum ÷
-  // total citizen power; this is the dominant component of the final
-  // outcome share but doesn't include the non-citizen best-fit
-  // contribution (which is hard to surface honestly per project, see
-  // RetroactiveAudit doc).
+  // total weighted citizen support feeding into `runQuadraticVoting`.
   const totalWeighted = contributions.reduce(
     (sum, c) =>
       sum +
@@ -572,8 +485,26 @@ function ProjectRow({
         (addressToPower[c.voterAddress] || 0),
     0
   )
-  const citizenShare =
-    totalCitizenPower > 0 ? (totalWeighted / totalCitizenPower) * 100 : 0
+  // Reproduce `outcomeRow.percentage` from first principles so the
+  // footer reconciles with the value shown at the top of the row.
+  // Derivation: `runQuadraticVoting` (rewards.ts) computes raw
+  // weighted shares for every key fed in (real project ids from
+  // citizen rows + integer indices from the non-citizen best-fit
+  // projection), then renormalizes the whole vector so it sums to
+  // 90 (10% community-circle reservation). For a real project P:
+  //   raw[P] = Σ_citizens (norm_pct[c,P] × power[c]) / votingPowerSum
+  // The renormalizer's sum is dominated by citizens because each
+  // citizen row sums to 100 while each non-citizen best-fit row sums
+  // to 1 (`minimizeL1Distance` constraint), so:
+  //   sum = (100·citizenPower + nonCitizenPower) / votingPowerSum
+  //   final[P] = raw[P] / sum × 90
+  //            = totalWeighted × 9000
+  //              / (100·citizenPower + nonCitizenPower)
+  // (totalWeighted absorbs the /100 already, so multiply by 100·90
+  //  in the numerator.)
+  const denom = 100 * totalCitizenPower + (totalPower - totalCitizenPower)
+  const reproducedFinal =
+    denom > 0 ? (totalWeighted * 100 * 90) / denom : 0
 
   const projectLink =
     outcomeRow.MDP != null && outcomeRow.MDP !== ''
@@ -744,7 +675,8 @@ function ProjectRow({
               <ProjectFooter
                 totalWeighted={totalWeighted}
                 totalCitizenPower={totalCitizenPower}
-                citizenShare={citizenShare}
+                totalNonCitizenPower={totalPower - totalCitizenPower}
+                reproducedFinal={reproducedFinal}
                 finalPercentage={outcomeRow.percentage}
               />
             </>
@@ -758,20 +690,25 @@ function ProjectRow({
 function ProjectFooter({
   totalWeighted,
   totalCitizenPower,
-  citizenShare,
+  totalNonCitizenPower,
+  reproducedFinal,
   finalPercentage,
 }: {
   totalWeighted: number
   totalCitizenPower: number
-  citizenShare: number
+  totalNonCitizenPower: number
+  reproducedFinal: number
   finalPercentage: number
 }) {
+  // Tiny float drift between the from-first-principles reproduction
+  // and what the server sent is fine — flag a visible mismatch only
+  // when the gap is large enough to indicate a real audit failure.
+  const drift = Math.abs(reproducedFinal - finalPercentage)
+  const matches = drift < 0.01
   return (
     <div className="mt-3 bg-black/30 border border-white/10 rounded-md px-3 py-2 sm:px-4 sm:py-3 font-RobotoMono text-xs text-gray-200">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <span className="text-gray-400">
-          Σ weighted (citizens only, this project)
-        </span>
+        <span className="text-gray-400">Σ weighted (this project)</span>
         <span className="text-white">{formatNumber(totalWeighted, 2)}</span>
       </div>
       <div className="flex items-center justify-between gap-4 flex-wrap mt-1">
@@ -780,16 +717,30 @@ function ProjectFooter({
           {formatNumber(totalCitizenPower, 2)}
         </span>
       </div>
+      {totalNonCitizenPower > 0 && (
+        <div className="flex items-center justify-between gap-4 flex-wrap mt-1">
+          <span className="text-gray-400">
+            Total non-citizen power (× 0.01 vs. citizens via L1 best-fit)
+          </span>
+          <span className="text-white">
+            {formatNumber(totalNonCitizenPower, 2)}
+          </span>
+        </div>
+      )}
       <div className="border-t border-white/10 mt-2 pt-2 flex items-center justify-between gap-4 flex-wrap">
         <span className="text-gray-400">
-          Citizen share = Σ weighted ÷ total citizen power
+          Final share = Σ weighted × 9000 ÷ (100 × citizen power +
+          non-citizen power)
         </span>
-        <span className="text-emerald-200">
-          {citizenShare.toFixed(4)}%
-          {Math.abs(citizenShare - finalPercentage) > 0.5 && (
+        <span className={matches ? 'text-emerald-200' : 'text-amber-200'}>
+          {reproducedFinal.toFixed(4)}%
+          {matches ? (
+            <span className="ml-2 text-gray-500">
+              (matches {finalPercentage.toFixed(2)}% above)
+            </span>
+          ) : (
             <span className="ml-2 text-gray-400">
-              (final {finalPercentage.toFixed(4)}% — non-citizen best-fit
-              + 90% pool cap account for the gap)
+              (server reported {finalPercentage.toFixed(4)}%)
             </span>
           )}
         </span>
