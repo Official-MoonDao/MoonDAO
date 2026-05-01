@@ -162,6 +162,60 @@ describe('MissionProfileHeader — Overview Flight (mission 4) wrapped-up layout
     ).should('exist')
   })
 
+  it('renders the "Back a Citizen" CTA between the closed banner and the procurement panel, with a live countdown and link to the leaderboard', () => {
+    const deadline = Date.now() - 5 * 86400000 // 5 days ago — 9 days left in the 14-day window
+    cy.mount(
+      <TestnetProviders>
+        <MissionProfileHeader {...buildOverviewProps({ deadline })} />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="overview-back-a-citizen-cta"]').should('be.visible')
+    cy.contains('Back a Citizen').should('be.visible')
+    cy.contains(/14 days from the close of the raise/).should('be.visible')
+    const endLabel = new Date(deadline + 14 * 86400000).toLocaleDateString(
+      'en-US',
+      { month: 'long', day: 'numeric', year: 'numeric' }
+    )
+    cy.contains(`Voting ends ${endLabel}`).should('be.visible')
+    cy.get('[data-testid="overview-back-a-citizen-countdown"]').should(
+      ($el) => {
+        expect($el.text()).to.match(/^\d+d\s+\d+h$/)
+      }
+    )
+    cy.get('[data-testid="overview-back-a-citizen-cta-link"]')
+      .should('have.attr', 'href', '/overview-vote')
+      .and('contain.text', 'Open the leaderboard')
+    // Must sit between the closed banner and the procurement panel so the
+    // page reads: closed → here's what you can still do → procurement window.
+    cy.get(
+      '[data-testid="overview-contributions-closed-banner"] ~ [data-testid="overview-back-a-citizen-cta"] ~ [data-testid="overview-seat-procurement-panel"]'
+    ).should('exist')
+  })
+
+  it('flips the Back a Citizen CTA to "Voting Closed" once the 14-day window has elapsed and hides the leaderboard link', () => {
+    // Deadline 20 days ago → past the 14-day backing window but still
+    // within the 30-day procurement window so we can verify the two
+    // panels independently flip.
+    const deadline = Date.now() - 20 * 86400000
+    cy.mount(
+      <TestnetProviders>
+        <MissionProfileHeader {...buildOverviewProps({ deadline })} />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="overview-back-a-citizen-cta"]').should('exist')
+    cy.contains('Voting Closed').should('be.visible')
+    cy.contains(/14-day backing window has closed/).should('be.visible')
+    cy.get('[data-testid="overview-back-a-citizen-countdown"]').should(
+      'not.exist'
+    )
+    cy.get('[data-testid="overview-back-a-citizen-cta-link"]').should(
+      'not.exist'
+    )
+    // Procurement panel should still be live (30 - 20 = 10 days left).
+    cy.get('[data-testid="overview-seat-procurement-panel"]').should('exist')
+    cy.contains('Period Closed').should('not.exist')
+  })
+
   it('renders the 30-day Seat Procurement Period panel with a live countdown', () => {
     const deadline = Date.now() - 5 * 86400000 // 5 days ago
     cy.mount(

@@ -97,6 +97,12 @@ interface MissionProfileHeaderProps {
 const SEAT_PROCUREMENT_DAYS = 30
 const SEAT_PROCUREMENT_MS = SEAT_PROCUREMENT_DAYS * 24 * 60 * 60 * 1000
 
+/** 14-day post-deadline window during which contributors can back a citizen
+ *  on the Fly with Frank leaderboard with their earned $OVERVIEW tokens.
+ *  After this window closes the leaderboard is finalized for selection. */
+const BACKING_WINDOW_DAYS = 14
+const BACKING_WINDOW_MS = BACKING_WINDOW_DAYS * 24 * 60 * 60 * 1000
+
 const MissionProfileHeader = React.memo(
   ({
     mission,
@@ -212,6 +218,35 @@ const MissionProfileHeader = React.memo(
         periodElapsed,
         countdownLabel,
       }
+    }, [isOverviewMission, deadline, now])
+
+    /** Mirrors `seatProcurement` but for the 14-day "back a citizen" window.
+     *  Computed off the same `now` ticker so the countdown stays in sync
+     *  with the procurement panel and we don't spin up a second interval. */
+    const backingWindow = useMemo(() => {
+      if (!isOverviewMission || deadline == null || deadline <= 0) return null
+      const endMs = deadline + BACKING_WINDOW_MS
+      const endLabel = new Date(endMs).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })
+      const elapsed = now != null && now >= endMs
+      let countdownLabel: string | null = null
+      if (now != null && !elapsed) {
+        const msLeft = Math.max(0, endMs - now)
+        const totalMinutes = Math.floor(msLeft / 60_000)
+        const days = Math.floor(totalMinutes / (60 * 24))
+        const hours = Math.floor((totalMinutes % (60 * 24)) / 60)
+        const minutes = totalMinutes % 60
+        countdownLabel =
+          days >= 1
+            ? `${days}d ${hours}h`
+            : hours >= 1
+            ? `${hours}h ${minutes}m`
+            : `${minutes}m`
+      }
+      return { endMs, endLabel, elapsed, countdownLabel }
     }, [isOverviewMission, deadline, now])
 
     const overviewMedianUsd = useMemo(() => {
@@ -569,6 +604,70 @@ const MissionProfileHeader = React.memo(
                         contributions are being accepted.
                       </p>
                     </div>
+                  </div>
+                )}
+
+                {/* Back-a-Citizen CTA — Overview Flight only. Sits between
+                    the contributions-closed banner and the Seat Procurement
+                    Period panel so the page reads: raise closed → here's
+                    what you can still do (back a citizen) → meanwhile
+                    Frank's team is working on the seat. Emerald accent
+                    distinguishes this action panel from the indigo
+                    informational procurement panel below. */}
+                {isOverviewMission && backingWindow && (
+                  <div
+                    data-testid="overview-back-a-citizen-cta"
+                    className="mb-3 rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-4 sm:p-5"
+                  >
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-emerald-300/90">
+                            Back a Citizen
+                          </span>
+                          <Tooltip
+                            compact
+                            text={`Contributors have a ${BACKING_WINDOW_DAYS}-day window after the raise closes to pledge their earned $OVERVIEW tokens to a citizen on the Fly with Frank leaderboard. Your tokens stay in your wallet — only your voting power is recorded.`}
+                            buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                          >
+                            ?
+                          </Tooltip>
+                        </div>
+                        <p className="text-white font-GoodTimes text-base sm:text-lg leading-tight mt-1">
+                          {backingWindow.elapsed
+                            ? 'Voting Closed'
+                            : `Voting ends ${backingWindow.endLabel}`}
+                        </p>
+                      </div>
+                      {!backingWindow.elapsed && (
+                        <div className="text-right">
+                          <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-gray-400">
+                            Time Remaining
+                          </span>
+                          <p
+                            data-testid="overview-back-a-citizen-countdown"
+                            className="text-white font-GoodTimes text-base sm:text-lg leading-tight mt-1"
+                          >
+                            {backingWindow.countdownLabel ?? '\u2014'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-gray-300/90 text-xs sm:text-sm leading-relaxed mt-3">
+                      {backingWindow.elapsed
+                        ? `The ${BACKING_WINDOW_DAYS}-day backing window has closed and the leaderboard is now finalized for selection.`
+                        : `Use your $OVERVIEW tokens to back the citizen you want flying alongside Frank. You have ${BACKING_WINDOW_DAYS} days from the close of the raise to cast your vote.`}
+                    </p>
+                    {!backingWindow.elapsed && (
+                      <Link
+                        href="/overview-vote"
+                        data-testid="overview-back-a-citizen-cta-link"
+                        className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 hover:border-emerald-400/50 px-3 py-1.5 text-emerald-200 hover:text-emerald-100 text-xs sm:text-sm font-medium transition-colors"
+                      >
+                        Open the leaderboard
+                        <span aria-hidden="true">→</span>
+                      </Link>
+                    )}
                   </div>
                 )}
 
