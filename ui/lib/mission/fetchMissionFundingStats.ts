@@ -94,6 +94,7 @@ export async function fetchMissionFundingStats(
   const allEvents: PayEventRow[] = []
   const seenIds = new Set<string>()
   let cursor: number | null = null
+  let exhausted = false
 
   for (let page = 0; page < MAX_PAGES; page++) {
     let res: Response
@@ -132,7 +133,10 @@ export async function fetchMissionFundingStats(
     }
 
     const items: PayEventRow[] = payload?.data?.payEvents?.items ?? []
-    if (items.length === 0) break
+    if (items.length === 0) {
+      exhausted = true
+      break
+    }
 
     // Track the oldest timestamp on this page and how many of its rows are
     // genuinely new (vs. carried over from the previous page's `_lte` overlap).
@@ -150,9 +154,27 @@ export async function fetchMissionFundingStats(
 
     // If the entire page collapsed to duplicates we have no way to advance
     // the cursor without revisiting the same events forever — bail out.
-    if (newRows === 0) break
-    if (!Number.isFinite(oldest) || items.length < PAGE_SIZE) break
+    // Treat this as exhausted: the only way we'd still be missing rows is
+    // > PAGE_SIZE events sharing one timestamp, which is not a real scenario.
+    if (newRows === 0) {
+      exhausted = true
+      break
+    }
+    if (!Number.isFinite(oldest) || items.length < PAGE_SIZE) {
+      exhausted = true
+      break
+    }
     cursor = oldest
+  }
+
+  // If we ran out the safety bound without ever seeing a short page, the
+  // dataset is larger than we can safely page through and any aggregate we
+  // return would silently undercount. Refuse to publish partial stats.
+  if (!exhausted) {
+    console.warn(
+      `[fetchMissionFundingStats] hit MAX_PAGES (${MAX_PAGES}) cap for project ${projectId}; refusing to return partial aggregates`
+    )
+    return null
   }
 
   if (allEvents.length === 0) {
