@@ -290,7 +290,7 @@ export async function computeRetroactiveOutcome({
       const cleaned: Record<string, number> = {}
       for (const [pid, value] of Object.entries(parsed || {})) {
         const n = Number(value)
-        if (Number.isFinite(n)) cleaned[pid] = n
+        if (Number.isFinite(n) && n >= 0 && n <= 100) cleaned[pid] = n
       }
       return {
         id: d?.id,
