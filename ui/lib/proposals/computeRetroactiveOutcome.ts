@@ -61,6 +61,23 @@ function getMooneyBudgetForCycle(year: number, quarter: number): number {
   return MOONEY_INITIAL_BUDGET * MOONEY_DECAY_RATE ** numQuartersPastQ4Y2022
 }
 
+// Frozen per-cycle retro pool snapshots. We can't infer historical
+// pools from `RETRO_PAYOUT_TOKEN` / `RETRO_*_BUDGET` because those
+// constants only ever describe the *current* cycle — once the EB rolls
+// the config forward they no longer reflect what the prior cycle
+// actually paid out. Each completed cycle gets pinned here so audits
+// of past quarters render their real pool. New cycles fall through
+// to the live config values; when a cycle closes, copy its config
+// snapshot into a new entry below.
+const HISTORICAL_RETRO_POOLS: Record<
+  string,
+  { primaryAsset: 'ETH' | 'USDC'; primaryAmount: number }
+> = {
+  // Q1 2026 retroactives (paid in ETH, voting closed Apr 21, 2026).
+  // Source: `RETRO_ETH_BUDGET` doc comment in `const/config.ts`.
+  '2026-Q1': { primaryAsset: 'ETH', primaryAmount: 2.215 },
+}
+
 /**
  * Mirror of `getRetroVoteCloseTimestamp` semantics from `isRewardsCycle`:
  * the rewards window for a (quarter, year) cycle ends on the first
@@ -223,18 +240,36 @@ export async function computeRetroactiveOutcome({
     return null
   }
 
-  // Eligible projects only. Retro distributions in the UI are scoped to
-  // the eligible cohort (`currentProjects.filter(p => p.eligible)`) and
-  // ineligible projects don't enter `computeRewardPercentages` either.
-  // Mirror that here so audit numbers match the live tab.
-  const projectStatement = `SELECT * FROM ${projectTableName} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
-  const allProjects = (await queryTable(chain, projectStatement)) || []
-  const eligibleProjects = allProjects.filter((p: any) => !!p?.eligible)
-  if (eligibleProjects.length === 0) return null
-
+  // The (quarter, year) parameter is the *voting cycle* (when distributions
+  // were submitted) — NOT the cohort's project quarter. The eligible projects
+  // voted on usually belong to a prior cycle (e.g. Q1 2026 voting tallies
+  // Q4 2025 projects), and the project table's `eligible` column is mutable
+  // state that gets reused across cycles, so neither the voting (quarter,
+  // year) nor the current `eligible` flag is reliable for picking the
+  // tally cohort. Instead, derive the cohort from the project ids actually
+  // referenced in this cycle's distribution rows — those are the projects
+  // that were eligible at vote time, and the set is immutable after the
+  // fact (distributions can be edited but only across the same project
+  // surface a voter saw).
   const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE quarter = ${quarter} AND year = ${year}`
   const rawDistributions = (await queryTable(chain, distributionStatement)) || []
   if (rawDistributions.length === 0) return null
+
+  const referencedProjectIds = new Set<string>()
+  for (const d of rawDistributions) {
+    const parsed = normalizeJsonString(d?.distribution) as Record<string, unknown>
+    for (const pid of Object.keys(parsed || {})) referencedProjectIds.add(String(pid))
+  }
+  if (referencedProjectIds.size === 0) return null
+
+  const idList = [...referencedProjectIds]
+    .filter((pid) => /^\d+$/.test(pid))
+    .map((pid) => Number(pid))
+  if (idList.length === 0) return null
+
+  const projectStatement = `SELECT * FROM ${projectTableName} WHERE id IN (${idList.join(',')})`
+  const eligibleProjects = (await queryTable(chain, projectStatement)) || []
+  if (eligibleProjects.length === 0) return null
 
   // Normalize the on-chain distribution column (sometimes object,
   // sometimes JSON string) to an object up front so downstream callers
@@ -382,13 +417,24 @@ export async function computeRetroactiveOutcome({
     0
   )
 
-  // Pool sizes. We surface both cycle-config values plus a flag so the
-  // panel/audit can render the active pool unit (ETH vs USDC). For
-  // historical quarters this still shows the *current* config — there's
-  // no per-quarter pool ledger yet — but the response carries the
-  // numbers explicitly so a future fix can swap in archived values.
-  const isEthPayoutCycle = RETRO_PAYOUT_TOKEN === 'ETH'
-  const primaryAmount = isEthPayoutCycle ? RETRO_ETH_BUDGET : RETRO_USD_BUDGET
+  // Pool sizes per voting cycle. Each completed cycle gets a frozen
+  // entry in `HISTORICAL_RETRO_POOLS` so audits of past quarters render
+  // their actual pool (asset + amount) rather than the live config
+  // values. The current cycle falls through to `RETRO_PAYOUT_TOKEN` /
+  // `RETRO_*_BUDGET`, which is what `ProjectRewards.tsx` reads when
+  // showing the live retro tab. When a cycle is closed and the next
+  // one's config goes in, copy the now-historical `RETRO_*_BUDGET`
+  // values into a new entry below.
+  const cycleKey = `${year}-Q${quarter}`
+  const historicalPool = HISTORICAL_RETRO_POOLS[cycleKey]
+  const isEthPayoutCycle = historicalPool
+    ? historicalPool.primaryAsset === 'ETH'
+    : RETRO_PAYOUT_TOKEN === 'ETH'
+  const primaryAmount = historicalPool
+    ? historicalPool.primaryAmount
+    : isEthPayoutCycle
+    ? RETRO_ETH_BUDGET
+    : RETRO_USD_BUDGET
   const mooneyAmount = getMooneyBudgetForCycle(year, quarter)
 
   const projectMeta = Object.fromEntries(
