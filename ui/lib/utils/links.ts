@@ -64,12 +64,21 @@ function isDisallowedFetchHostname(hostname: string): boolean {
 }
 
 /**
- * Returns true when `value` is a string that is safe for server-side
- * `fetch()` in this application: either a valid ipfs:// or ipns:// URI, or
- * a public http(s):// URL that does not target localhost or private/link-
- * local network addresses. Malformed values and internal-only destinations
- * are rejected so callers can skip them without risking `ERR_INVALID_URL`
- * or SSRF to local infrastructure.
+ * Returns true when `value` is a string that is safe to hand directly to
+ * `fetch()` in this application: a public http(s):// URL that does not
+ * target localhost or private / link-local network addresses.
+ *
+ * Note: `ipfs://` and `ipns://` URIs are intentionally rejected. The
+ * platform `fetch()` (both browser and Node) does not understand those
+ * schemes — passing one through would throw at runtime, which is the exact
+ * failure mode this helper exists to prevent. Callers that need to read
+ * IPFS content should resolve the CID through `getIPFSGateway()` (or
+ * `fetchFromIPFSWithFallback()`) in `lib/ipfs/gateway.ts` first and feed
+ * the resulting https:// gateway URL back through this guard.
+ *
+ * Malformed values and internal-only destinations are rejected so callers
+ * can skip them without risking `ERR_INVALID_URL` or SSRF to local
+ * infrastructure.
  */
 export function isFetchableUrl(value: unknown): value is string {
   if (typeof value !== 'string') return false
@@ -82,10 +91,6 @@ export function isFetchableUrl(value: unknown): value is string {
     parsed = new URL(trimmed)
   } catch {
     return false
-  }
-
-  if (parsed.protocol === 'ipfs:' || parsed.protocol === 'ipns:') {
-    return (parsed.hostname + parsed.pathname).length > 0
   }
 
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {

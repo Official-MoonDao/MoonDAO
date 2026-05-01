@@ -15,14 +15,22 @@ describe('isFetchableUrl', () => {
     expect(isFetchableUrl('http://example.com/foo')).to.be.true
   })
 
-  it('accepts an ipfs:// URI', () => {
+  it('rejects an ipfs:// URI (platform fetch cannot resolve it; caller must rewrite via getIPFSGateway first)', () => {
     expect(
       isFetchableUrl('ipfs://bafybeibogusbogusbogusbogusbogusbogusbogusbogusbogu')
-    ).to.be.true
+    ).to.be.false
   })
 
-  it('accepts an ipns:// URI', () => {
-    expect(isFetchableUrl('ipns://k51qzi5uqu5dh7yxzfqonrhuumbk7c')).to.be.true
+  it('rejects an ipns:// URI (platform fetch cannot resolve it; caller must rewrite via getIPFSGateway first)', () => {
+    expect(isFetchableUrl('ipns://k51qzi5uqu5dh7yxzfqonrhuumbk7c')).to.be.false
+  })
+
+  it('accepts an https:// IPFS gateway URL (the canonical way to fetch pinned content)', () => {
+    expect(
+      isFetchableUrl(
+        'https://gateway.pinata.cloud/ipfs/bafybeibogusbogusbogusbogusbogusbogusbogusbogusbogu'
+      )
+    ).to.be.true
   })
 
   it('rejects empty string', () => {
