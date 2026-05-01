@@ -11,6 +11,7 @@ type Props = {
 }
 
 type SignStatus = 'idle' | 'submitting' | 'success' | 'error'
+type EligibleAction = 'noop' | 'set' | 'clear'
 
 function tryParseJson(value: string): unknown | null {
   if (!value?.trim()) return null
@@ -27,7 +28,12 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
     project.rewardDistribution || ''
   )
   const [upfrontPayments, setUpfrontPayments] = useState(project.upfrontPayments || '')
-  const [markEligible, setMarkEligible] = useState(project.eligible !== 1)
+  // Default: if the project isn't yet eligible, propose adding it; if it
+  // already is, propose no change (the operator can flip to "clear" to
+  // retire it from the closed cycle's cohort).
+  const [eligibleAction, setEligibleAction] = useState<EligibleAction>(
+    project.eligible === 1 ? 'noop' : 'set'
+  )
   const [markActive, setMarkActive] = useState(project.active !== 2)
   const [status, setStatus] = useState<SignStatus>('idle')
   const [resultTxs, setResultTxs] = useState<Array<{ label: string; hash: string }>>([])
@@ -50,7 +56,7 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
       !finalReportLink &&
       !rewardDistribution &&
       !upfrontPayments &&
-      !markEligible &&
+      eligibleAction === 'noop' &&
       !markActive
     ) {
       toast.error('Nothing to update — fill in at least one field or toggle.', {
@@ -64,9 +70,10 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
     try {
       const body: Record<string, any> = {
         projectId: project.id,
-        markEligible,
         markActive,
       }
+      if (eligibleAction === 'set') body.markEligible = true
+      else if (eligibleAction === 'clear') body.markEligible = false
       if (finalReportLink) body.finalReportLink = finalReportLink
       if (rewardDistribution) body.rewardDistribution = rewardDistribution
       if (upfrontPayments) body.upfrontPayments = upfrontPayments
@@ -174,19 +181,62 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
           )}
         </label>
 
-        <div className="flex flex-col gap-2 bg-white/5 rounded-lg p-4 border border-white/10">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={markEligible}
-              onChange={(e) => setMarkEligible(e.target.checked)}
-              disabled={isSubmitting}
-            />
-            <span className="text-gray-200">Set <code>eligible = 1</code></span>
-            {project.eligible === 1 && (
-              <span className="text-[11px] text-green-400">already eligible</span>
-            )}
-          </label>
+        <div className="flex flex-col gap-3 bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs uppercase tracking-wider text-gray-400 flex items-center gap-2">
+              Eligible flag
+              <span className="text-[11px] normal-case tracking-normal text-gray-500">
+                current: <code>{String(project.eligible)}</code>
+              </span>
+            </span>
+            <div className="flex flex-col gap-1 mt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="eligible-action"
+                  value="noop"
+                  checked={eligibleAction === 'noop'}
+                  onChange={() => setEligibleAction('noop')}
+                  disabled={isSubmitting}
+                />
+                <span className="text-gray-200">Leave unchanged</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="eligible-action"
+                  value="set"
+                  checked={eligibleAction === 'set'}
+                  onChange={() => setEligibleAction('set')}
+                  disabled={isSubmitting}
+                />
+                <span className="text-gray-200">
+                  Add to retro cohort (<code>eligible = 1</code>)
+                </span>
+                {project.eligible === 1 && (
+                  <span className="text-[11px] text-green-400">already 1</span>
+                )}
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="eligible-action"
+                  value="clear"
+                  checked={eligibleAction === 'clear'}
+                  onChange={() => setEligibleAction('clear')}
+                  disabled={isSubmitting}
+                />
+                <span className="text-gray-200">
+                  Remove from retro cohort (<code>eligible = 0</code>)
+                </span>
+                {project.eligible !== 1 && (
+                  <span className="text-[11px] text-amber-400">
+                    not currently 1
+                  </span>
+                )}
+              </label>
+            </div>
+          </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
