@@ -137,7 +137,7 @@ export default function RetroactiveResults({ quarter, year }: Props) {
                       hasShare ? 'text-white' : 'text-gray-300'
                     }`}
                   >
-                    {r.MDP != null ? `MDP-${r.MDP}: ` : ''}
+                    {r.MDP != null && r.MDP !== '' ? `MDP-${r.MDP}: ` : ''}
                     {r.name}
                   </Link>
                 ) : (
