@@ -79,11 +79,14 @@ const HISTORICAL_RETRO_POOLS: Record<
 }
 
 /**
- * Mirror of `getRetroVoteCloseTimestamp` semantics from `isRewardsCycle`:
+ * Mirror of `isRewardsCycle` (lib/utils/dates.ts) cycle-close semantics:
  * the rewards window for a (quarter, year) cycle ends on the first
- * Tuesday on or after 14 days into the *following* quarter. Using that
- * close as the vMOONEY snapshot means the audit reproduces the same
- * power values the on-chain tally would have used.
+ * Tuesday strictly after the date 14 days into the *following* quarter.
+ * The "strictly after" comes from `daysUntilDay`'s
+ * `daysUntil === 0 ? 7 : daysUntil` rule — if day-14 itself lands on a
+ * Tuesday, the close jumps to the following Tuesday, exactly like the
+ * on-chain tally does. Using that close as the vMOONEY snapshot means
+ * the audit reproduces the same power values the on-chain tally used.
  */
 function getRetroVoteCloseTimestamp(quarter: number, year: number): number {
   const nextQuarterIndex = quarter % 4 // 0..3
@@ -93,6 +96,9 @@ function getRetroVoteCloseTimestamp(quarter: number, year: number): number {
   fourteenIn.setUTCDate(fourteenIn.getUTCDate() + 14)
   const TUESDAY = 2
   const dow = fourteenIn.getUTCDay()
+  // `|| 7` mirrors `daysUntilDay`'s `daysUntil === 0 ? 7 : daysUntil`:
+  // when day-14 itself is a Tuesday, advance to the next Tuesday so the
+  // snapshot timestamp matches `isRewardsCycle`'s window edge.
   const daysUntilTuesday = ((TUESDAY - dow + 7) % 7) || 7
   const close = new Date(fourteenIn)
   close.setUTCDate(close.getUTCDate() + daysUntilTuesday)
