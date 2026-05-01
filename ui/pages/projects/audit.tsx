@@ -469,8 +469,8 @@ function ProjectsList({
   // for comparing two projects' supporter lists side-by-side mid-audit.
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  // Pre-sort outcome by rank ascending (server already sorts but defensive
-  // — `outcome.results` is canonical and shouldn't be re-sorted).
+  // Use the canonical server-provided rank order as-is; `outcome.results`
+  // is already sorted by rank ascending and should not be re-sorted here.
   const ranked = outcome.results
 
   return (
