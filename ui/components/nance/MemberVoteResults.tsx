@@ -77,6 +77,12 @@ export default function MemberVoteResults({ quarter, year }: Props) {
             ${totalApprovedBudget.toLocaleString()} of $
             {quarterBudgetUsd.toLocaleString()}
           </span>
+          <Link
+            href={`/projects/audit?quarter=${outcome.quarter}&year=${outcome.year}`}
+            className="bg-white/5 border border-white/15 text-gray-200 px-2 py-1 rounded hover:bg-white/10 hover:text-white transition-colors"
+          >
+            View audit →
+          </Link>
         </div>
       </div>
 
