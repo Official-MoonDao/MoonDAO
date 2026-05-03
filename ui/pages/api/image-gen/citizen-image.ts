@@ -1,12 +1,51 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { v4 } from 'uuid'
 
+const COMFY_WORKFLOW_URL =
+  'https://comfy.icu/api/v1/workflows/8BYQ3mpiFVlTjWOatIUAc/runs'
+
+// Comfy.icu's API can occasionally take a while to accept a job, so give it
+// plenty of time before we abort the request.
+const COMFY_REQUEST_TIMEOUT_MS = 45_000
+
+async function fetchComfy(
+  init: RequestInit & { method: 'POST' | 'GET' }
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    COMFY_REQUEST_TIMEOUT_MS
+  )
+  try {
+    return await fetch(COMFY_WORKFLOW_URL, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        authorization: `Bearer ${process.env.COMFYICU_API_KEY}`,
+        ...(init.headers || {}),
+      },
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (!process.env.COMFYICU_API_KEY) {
+    console.error('COMFYICU_API_KEY is not configured')
+    return res.status(500).json({ error: 'Image generation is not configured' })
+  }
+
   if (req.method === 'POST') {
-    const { url } = req.body
+    const { url } = req.body || {}
+    if (typeof url !== 'string' || !url) {
+      return res.status(400).json({ error: 'Missing url' })
+    }
     const uuid = v4()
     const files: { [key: string]: string } = {}
     files[`/input/${uuid}.jpg`] = url
@@ -16,15 +55,9 @@ export default async function handler(
     for (let i = 0; i < 15; i++) {
       seed += Math.floor(Math.random() * 10)
     }
-    const jobId = await fetch(
-      'https://comfy.icu/api/v1/workflows/8BYQ3mpiFVlTjWOatIUAc/runs',
-      {
+    try {
+      const comfyRes = await fetchComfy({
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          authorization: `Bearer ${process.env.COMFYICU_API_KEY}`,
-        },
         body: JSON.stringify({
           prompt: {
             '3': {
@@ -104,25 +137,49 @@ export default async function handler(
           files,
           accelerator: 'L4',
         }),
+      })
+
+      if (!comfyRes.ok) {
+        const body = await comfyRes.text().catch(() => '')
+        console.error(
+          `Comfy.icu run create failed: ${comfyRes.status} ${body}`
+        )
+        return res
+          .status(comfyRes.status >= 500 ? 502 : comfyRes.status)
+          .json({ error: 'Failed to create comfy.icu job' })
       }
-    )
-      .then(async (res) => await res.json())
-      .catch((e) => console.error(e))
-    return res.send(jobId)
+
+      const jobId = await comfyRes.json()
+      return res.status(200).json(jobId)
+    } catch (err: any) {
+      const isAbort = err?.name === 'AbortError'
+      console.error('Comfy.icu run create error:', err)
+      return res
+        .status(isAbort ? 504 : 502)
+        .json({ error: 'Failed to create comfy.icu job' })
+    }
   } else if (req.method === 'GET') {
-    const jobs = await fetch(
-      'https://comfy.icu/api/v1/workflows/8BYQ3mpiFVlTjWOatIUAc/runs',
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          authorization: `Bearer ${process.env.COMFYICU_API_KEY}`,
-        },
+    try {
+      const comfyRes = await fetchComfy({ method: 'GET' })
+      if (!comfyRes.ok) {
+        const body = await comfyRes.text().catch(() => '')
+        console.error(
+          `Comfy.icu list runs failed: ${comfyRes.status} ${body}`
+        )
+        return res
+          .status(comfyRes.status >= 500 ? 502 : comfyRes.status)
+          .json({ error: 'Failed to fetch comfy.icu jobs' })
       }
-    ).then((res) => res.json())
-    return res.send(jobs)
+      const jobs = await comfyRes.json()
+      return res.status(200).json(jobs)
+    } catch (err: any) {
+      const isAbort = err?.name === 'AbortError'
+      console.error('Comfy.icu list runs error:', err)
+      return res
+        .status(isAbort ? 504 : 502)
+        .json({ error: 'Failed to fetch comfy.icu jobs' })
+    }
   } else {
-    return res.status(400)
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 }
