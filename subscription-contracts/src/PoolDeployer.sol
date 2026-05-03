@@ -54,7 +54,7 @@ contract PoolDeployer is Ownable {
         hookAddress = _hookAddress;
     }
 
-    function createAndAddLiquidity() external onlyOwner {
+    function createAndAddLiquidity() external {
         uint256 amount0 = address(this).balance - 1 wei;
         uint256 amount1 = token.balanceOf(address(this)) - 1 wei;
         require(amount0 > 0 && amount1 > 0, "no funds to deploy");
