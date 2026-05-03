@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { fitImage } from '../utils/images'
+import { compressImageForUpload, fitImage } from '../utils/images'
 
 // Tunables for the comfy.icu polling pipeline. These default to fairly generous
 // values because the underlying GPU service is occasionally slow to accept jobs
@@ -52,8 +52,15 @@ export default function useImageGenerator(
     for (let attempt = 1; attempt <= UPLOAD_MAX_ATTEMPTS; attempt++) {
       let response: Response
       try {
+        // Vercel serverless functions cap request bodies at ~4.5 MB; downscale
+        // large photos client-side before they ever hit the upload route.
+        const prepared = await compressImageForUpload(file)
         const formData = new FormData()
-        formData.append('file', file)
+        formData.append(
+          'file',
+          prepared,
+          (prepared as File).name || file.name
+        )
         response = await fetchWithTimeout(
           '/api/google/storage/upload',
           { method: 'POST', body: formData },
