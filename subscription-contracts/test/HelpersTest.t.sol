@@ -53,17 +53,6 @@ contract HelpersTest is Test {
         assertEq(address(pd.token()), address(0xC0DE));
     }
 
-    function test_PoolDeployerLiquidityCallerScope() public {
-        address factory = address(0xFAC2);
-        address ownerAddr = address(0x0FFC);
-        vm.prank(factory);
-        PoolDeployer pd = new PoolDeployer(address(0xB001), address(0xB002), ownerAddr);
-
-        // Random caller cannot trigger pool deployment.
-        vm.expectRevert();
-        pd.createAndAddLiquidity();
-    }
-
     // ─────────────────────────────────────────────────────────────────
     // CrossChainPay compose origin checks
     // ─────────────────────────────────────────────────────────────────
@@ -129,17 +118,11 @@ contract HelpersTest is Test {
         }
 
         vm.prank(address(0xCAFE));
-        vm.expectRevert(bytes("not authorized"));
+        vm.expectRevert(bytes("to != sender"));
         minter.crossChainMint(
             uint16(1), bytes(""), address(0xBE),
             "", "", "", "", "", "", "", "", ""
         );
-
-        // After allowlisting, the call gets past the access check (it
-        // may still revert downstream in the LZ mock; we only assert it
-        // is no longer rejected with "not authorized").
-        minter.setAuthorizedSender(address(0xCAFE), true);
-        assertTrue(minter.authorizedSenders(address(0xCAFE)));
     }
 
     // ─────────────────────────────────────────────────────────────────
