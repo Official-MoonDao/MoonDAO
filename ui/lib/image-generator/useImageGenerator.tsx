@@ -41,29 +41,82 @@ export default function useImageGenerator(
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>()
 
-  // Upload image to Google Cloud Storage
+  // Upload image to Google Cloud Storage. Retries on transient errors
+  // (network blips / 5xx) but bails immediately on auth/validation failures.
+  const UPLOAD_MAX_ATTEMPTS = 3
+
   async function uploadToGoogleStorage(
     file: File
   ): Promise<{ url: string; filename: string }> {
-    const formData = new FormData()
-    formData.append('file', file)
+    let lastError: any
+    for (let attempt = 1; attempt <= UPLOAD_MAX_ATTEMPTS; attempt++) {
+      let response: Response
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        response = await fetchWithTimeout(
+          '/api/google/storage/upload',
+          { method: 'POST', body: formData },
+          60_000
+        )
+      } catch (err: any) {
+        lastError = err
+        if (attempt < UPLOAD_MAX_ATTEMPTS) {
+          await sleep(1500 * attempt)
+          continue
+        }
+        throw new Error(
+          `Failed to upload image to Google Storage: ${
+            err?.message || 'network error'
+          }`
+        )
+      }
 
-    const response = await fetch('/api/google/storage/upload', {
-      method: 'POST',
-      body: formData,
-    })
+      if (response.ok) {
+        const result = await response.json().catch(() => null)
+        if (!result?.url) {
+          throw new Error(
+            'Failed to upload image to Google Storage: malformed response'
+          )
+        }
+        const urlParts = result.url.split('/')
+        const filename = urlParts.slice(4).join('/')
+        return { url: result.url, filename }
+      }
 
-    if (!response.ok) {
-      throw new Error('Failed to upload image to Google Storage')
+      // Try to surface the server-side reason.
+      let detail = ''
+      try {
+        const body = await response.clone().json()
+        detail = body?.details || body?.error || ''
+      } catch {
+        try {
+          detail = await response.text()
+        } catch {
+          /* ignore */
+        }
+      }
+
+      // Don't retry on auth or client errors — they won't get better.
+      if (response.status < 500 || attempt === UPLOAD_MAX_ATTEMPTS) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error(
+            'You need to be signed in to generate an image. Please sign in and try again.'
+          )
+        }
+        throw new Error(
+          `Failed to upload image to Google Storage (${response.status})${
+            detail ? `: ${detail}` : ''
+          }`
+        )
+      }
+
+      lastError = new Error(
+        `Upload failed (${response.status})${detail ? `: ${detail}` : ''}`
+      )
+      await sleep(1500 * attempt)
     }
-
-    const result = await response.json()
-
-    // Extract filename from URL for later deletion
-    const urlParts = result.url.split('/')
-    const filename = urlParts.slice(4).join('/') // Everything after bucket name
-
-    return { url: result.url, filename }
+    throw lastError ?? new Error('Failed to upload image to Google Storage')
   }
 
   // Delete image from Google Cloud Storage
@@ -165,7 +218,17 @@ export default function useImageGenerator(
       } catch (fitErr) {
         console.error('Failed to fall back to fitted image:', fitErr)
       }
-      setError('Unable to generate an image, please try again later.')
+      // If the upload helper produced a user-actionable message, surface it.
+      const message: string =
+        typeof err?.message === 'string' && err.message
+          ? err.message
+          : 'Unable to generate an image, please try again later.'
+      setError(
+        message.startsWith('Failed to upload') ||
+          message.startsWith('You need to be signed in')
+          ? message
+          : 'Unable to generate an image, please try again later.'
+      )
       setIsLoading(false)
     }
   }
