@@ -31,17 +31,9 @@ destination address and destination endpoint id.
 */
 contract CrossChainMinter is OApp {
     address public citizenAddress;
-    mapping(address => bool) public authorizedSenders;
-
-    event AuthorizedSenderUpdated(address indexed sender, bool allowed);
 
     constructor(address _endpoint, address _citizenContract) OApp(_endpoint, msg.sender) Ownable(msg.sender) {
         citizenAddress = _citizenContract;
-    }
-
-    function setAuthorizedSender(address _sender, bool _allowed) external onlyOwner {
-        authorizedSenders[_sender] = _allowed;
-        emit AuthorizedSenderUpdated(_sender, _allowed);
     }
 
     function crossChainMint(
@@ -58,7 +50,7 @@ contract CrossChainMinter is OApp {
         string memory _view,
         string memory formId
     ) external payable {
-        require(authorizedSenders[msg.sender] || msg.sender == owner(), "not authorized");
+        require(to == msg.sender, "to != sender");
         bytes memory payload = abi.encode(
             to,
             name,
