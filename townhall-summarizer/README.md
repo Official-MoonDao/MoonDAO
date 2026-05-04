@@ -196,6 +196,39 @@ Process multiple historical townhall videos retroactively using the retro script
 
 **Note**: Broadcasts are created as drafts in ConvertKit and require manual review and sending. The script automatically skips videos that have already been processed (checks for existing ConvertKit broadcasts).
 
+### Finding Missing Summaries
+
+To check which recent town hall videos do NOT yet have a ConvertKit broadcast (e.g. when the weekly cron hasn't fired or has failed), run:
+
+```bash
+# Default: 60-day lookback, up to 50 videos
+yarn missing
+
+# Customize lookback / max
+yarn missing --days=180 --max=100
+```
+
+The script:
+1. Queries the configured YouTube channel for recent completed live streams + "town hall" uploads
+2. For each candidate video, checks ConvertKit for an existing broadcast tagged with `TOWNHALL_VIDEO_ID:<id>`
+3. Prints a clean list of missing video IDs and a ready-to-paste `yarn retro …` command (sorted oldest → newest so summaries are processed in chronological order)
+
+Required env vars: `YOUTUBE_API_KEY`, `YOUTUBE_CHANNEL_ID` (or `ALLOWED_YOUTUBE_CHANNEL_ID`), and `CONVERT_KIT_API_KEY` / `CONVERT_KIT_V4_API_KEY`.
+
+### Vercel Cron
+
+The townhall summarizer is automatically triggered every Friday at 12:00 UTC (after the Thursday town hall) by `vercel.json`:
+
+```json
+{
+  "crons": [
+    { "path": "/api/townhall/process", "schedule": "0 12 * * 5" }
+  ]
+}
+```
+
+The `/api/townhall/process` Vercel handler synchronously calls the Cloud Run `/process` endpoint, which immediately returns 202 and continues the long-running pipeline in the background. On failure (e.g. expired YouTube cookies), an alert is posted to the configured `DISCORD_WEBHOOK_URL`.
+
 ### Video Processing Order
 
 **Important**: When processing multiple retro videos, they will be automatically sorted by their YouTube published date (oldest first) to ensure they appear in the correct chronological order on the website.

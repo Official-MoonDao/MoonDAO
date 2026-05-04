@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/townhall/process",
-      "schedule": "0 0 * * 1"
+      "schedule": "0 12 * * 5"
     }
   ]
 }
