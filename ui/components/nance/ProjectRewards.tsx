@@ -1106,12 +1106,19 @@ export function ProjectRewards({
       />
       <Container>
         <ContentLayout
+          header="Projects"
+          headerSize="max(20px, 3vw)"
+          description={
+            <>
+              View active projects and allocate retroactive rewards to completed projects and their
+              contributors based on impact and results.
+            </>
+          }
           preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"
           popOverEffect={false}
           isProfile
-          branded={false}
         >
           <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6">
             {/* Operator Panel — only renders for Executive Branch members */}
