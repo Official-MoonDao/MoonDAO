@@ -23,6 +23,7 @@ export default function useNavigation(citizen: any) {
             },
           ]
         : [{ name: 'Become a Citizen', href: '/citizen' }]),
+      { name: 'Join the Network', href: '/join' },
       { name: 'Submit a Contribution', href: '/contributions' },
       { name: 'View Citizens', href: '/network?tab=citizens' },
       { name: 'Explore the Map', href: '/map' },
