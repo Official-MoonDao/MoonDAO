@@ -1120,7 +1120,7 @@ export function ProjectRewards({
           popOverEffect={false}
           isProfile
         >
-          <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6">
+          <div className="mt-2 flex flex-col gap-3 sm:gap-6">
             {/* Operator Panel — only renders for Executive Branch members */}
             <OperatorPanel
               proposals={proposals}
