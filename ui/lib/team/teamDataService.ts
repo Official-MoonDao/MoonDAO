@@ -160,7 +160,16 @@ export async function fetchTeamsWithOwners(
 }
 
 /**
- * Fetch a single team with owner data
+ * Fetch a single team with owner data.
+ *
+ * Returns `null` only when the team genuinely does not exist (i.e. the
+ * Tableland row is missing or the team is on the blocklist). Infrastructure
+ * failures while talking to Tableland are propagated to the caller so they
+ * can be surfaced as a server error rather than masked as a 404.
+ *
+ * Failures while resolving the on-chain `ownerOf` are tolerated: the team
+ * is returned with `owner: ''` so the page can still render basic metadata
+ * even when the RPC is degraded.
  */
 export async function fetchTeamWithOwner(
   chain: Chain,
@@ -168,55 +177,62 @@ export async function fetchTeamWithOwner(
 ): Promise<TeamWithOwner | null> {
   const chainSlug = getChainSlug(chain)
 
-  try {
-    let teamTableName = TEAM_TABLE_NAMES[chainSlug]
-    if (!teamTableName && TEAM_TABLE_ADDRESSES[chainSlug]) {
-      const teamTableContract = getContract({
-        client: serverClient,
-        address: TEAM_TABLE_ADDRESSES[chainSlug],
-        chain,
-        abi: TeamTableABI as any,
-      })
-      teamTableName = (await readContract({
-        contract: teamTableContract,
-        method: 'getTableName',
-      })) as string
-    }
-
-    if (!teamTableName) {
-      return null
-    }
-
-    const teamStatement = `SELECT * FROM ${teamTableName} WHERE id = ${teamId}`
-    const teamRows: any = await queryTable(chain, teamStatement)
-
-    if (!teamRows || teamRows.length === 0 || BLOCKED_TEAMS.has(Number(teamId))) {
-      return null
-    }
-
-    const team = teamRowToNFT(teamRows[0] as TeamRow)
-
-    const teamContract = getContract({
+  let teamTableName = TEAM_TABLE_NAMES[chainSlug]
+  if (!teamTableName && TEAM_TABLE_ADDRESSES[chainSlug]) {
+    const teamTableContract = getContract({
       client: serverClient,
-      address: TEAM_ADDRESSES[chainSlug],
-      abi: TeamABI as any,
+      address: TEAM_TABLE_ADDRESSES[chainSlug],
       chain,
+      abi: TeamTableABI as any,
     })
+    teamTableName = (await readContract({
+      contract: teamTableContract,
+      method: 'getTableName',
+    })) as string
+  }
 
-    const owner = await readContract({
+  if (!teamTableName) {
+    return null
+  }
+
+  if (BLOCKED_TEAMS.has(Number(teamId))) {
+    return null
+  }
+
+  const teamStatement = `SELECT * FROM ${teamTableName} WHERE id = ${teamId}`
+  const teamRows: any = await queryTable(chain, teamStatement)
+
+  if (!teamRows || teamRows.length === 0) {
+    return null
+  }
+
+  const team = teamRowToNFT(teamRows[0] as TeamRow)
+
+  const teamContract = getContract({
+    client: serverClient,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+    chain,
+  })
+
+  let owner = ''
+  try {
+    owner = (await readContract({
       contract: teamContract,
       method: 'ownerOf',
       params: [teamId],
-    })
-
-    return {
-      ...team,
-      owner: owner as string,
-    } as TeamWithOwner
+    })) as string
   } catch (error) {
-    console.error(`Error fetching team ${teamId}:`, error)
-    return null
+    console.error(
+      `Failed to read ownerOf for team ${teamId} – rendering without owner:`,
+      (error as Error)?.message || error
+    )
   }
+
+  return {
+    ...team,
+    owner,
+  } as TeamWithOwner
 }
 
 /**
