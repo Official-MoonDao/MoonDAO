@@ -667,7 +667,7 @@ export const EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE = true
 // Set IS_REWARDS_CYCLE to true during the retroactive rewards distribution
 // window. When true, the projects page treats the prior quarter as the active
 // retro cycle and surfaces the Citizen / Voting Member distribution UI.
-export const IS_REWARDS_CYCLE = false
+export const IS_REWARDS_CYCLE = true
 
 // Quarterly budget in USD (stablecoins)
 // 5% of liquid non-MOONEY assets, denominated in USD
