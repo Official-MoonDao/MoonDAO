@@ -650,6 +650,27 @@ export const PROJECT_SYSTEM_CONFIG = {
 export const IS_SENATE_VOTE = false
 export const IS_MEMBER_VOTE = true
 
+// When false, the Member Vote phase is still on (results panel, "Member
+// Vote" badge, etc. still render) but the actual submit/edit Distribution
+// UI on the proposals tab is hidden. Used to close member-vote submissions
+// while keeping the rest of the cycle UI intact.
+export const MEMBER_VOTE_SUBMISSIONS_OPEN = false
+
+// Addresses (lowercase) whose Member Vote distribution should be dropped
+// from the *current* calendar quarter's tally — both the read-only
+// display in `computeMemberVoteOutcome` and the on-chain close in
+// `/api/proposals/vote`. Past-quarter audits/tallies are unaffected, so
+// historical results stay reproducible. Use this for one-off
+// disqualifications (e.g. a vote ruled invalid post-hoc); the wallet's
+// row stays in the proposals table for the audit trail, it just
+// doesn't count toward the outcome.
+//
+// Q2 2026:
+//   - 0x47cc...be05 (e-Cat) excluded by EB decision.
+export const MEMBER_VOTE_EXCLUDED_ADDRESSES: string[] = [
+  '0x47cc4c7fef42187f9f7901838f316b033e92be05',
+]
+
 // Set IS_REWARDS_CYCLE to true during the retroactive rewards distribution
 // window. When true, the projects page treats the prior quarter as the active
 // retro cycle and surfaces the Citizen / Voting Member distribution UI.
