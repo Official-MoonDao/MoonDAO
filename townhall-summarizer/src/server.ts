@@ -8,6 +8,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import {
   transcribeAudio,
+  getTranscript,
   summarizeTranscript,
   formatSummaryForConvertKit,
   getYtDlpCookieArgs,
@@ -17,7 +18,11 @@ import {
   ConvertKitBroadcast,
 } from "./utils/convertkit";
 import { getVideoMetadata, validateVideoChannel } from "./utils/youtube";
-import { sendDiscordNotification, stripHtml } from "./utils/discord";
+import {
+  sendDiscordNotification,
+  sendDiscordErrorNotification,
+  stripHtml,
+} from "./utils/discord";
 
 const execAsync = promisify(exec);
 
@@ -49,167 +54,237 @@ interface ProcessResponse {
   testMode: boolean;
 }
 
+/**
+ * Run the full transcribe → summarize → broadcast pipeline.
+ *
+ * Returns the result on success, or throws on any failure. Discord
+ * notifications (success + error) happen here so callers don't need to
+ * special-case them.
+ */
+async function runPipeline(args: {
+  videoId: string;
+  videoTitle?: string;
+  videoDate?: string;
+  groqModel: string;
+  whisperModel: string;
+  convertKitApiKey?: string;
+  testMode: boolean;
+}): Promise<ProcessResponse> {
+  const {
+    videoId,
+    videoTitle,
+    videoDate,
+    groqModel,
+    whisperModel,
+    convertKitApiKey,
+    testMode,
+  } = args;
+
+  let resolvedVideoDate = videoDate;
+  let resolvedVideoTitle = videoTitle;
+  const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+
+  if (youtubeApiKey) {
+    const videoMetadata = await getVideoMetadata(videoId, youtubeApiKey);
+    if (!videoMetadata) {
+      throw new Error("Video not found on YouTube");
+    }
+
+    if (!resolvedVideoDate && videoMetadata.publishedAt) {
+      resolvedVideoDate = videoMetadata.publishedAt;
+      console.log(`Using YouTube publish date: ${resolvedVideoDate}`);
+    }
+
+    if (!resolvedVideoTitle && videoMetadata.title) {
+      resolvedVideoTitle = videoMetadata.title;
+      console.log(`Using YouTube title: ${resolvedVideoTitle}`);
+    }
+
+    const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
+    if (allowedChannelId) {
+      const isValidChannel = await validateVideoChannel(
+        videoMetadata,
+        allowedChannelId
+      );
+      if (!isValidChannel) {
+        throw new Error(
+          `Video is not from the allowed YouTube channel: ${videoMetadata.channelTitle} (${videoMetadata.channelId})`
+        );
+      }
+    }
+  } else {
+    console.warn("YOUTUBE_API_KEY not set, skipping metadata lookup");
+  }
+
+  resolvedVideoDate = resolvedVideoDate || new Date().toISOString();
+  resolvedVideoTitle = resolvedVideoTitle || "Town Hall";
+
+  console.log(`Starting full pipeline for video: ${videoId}`);
+
+  const transcript = await getTranscript(videoId, groq, whisperModel);
+  if (!transcript || transcript.trim().length === 0) {
+    throw new Error("Empty transcript received");
+  }
+
+  const summary = await summarizeTranscript(transcript, groq, groqModel);
+  if (!summary) {
+    throw new Error("Failed to generate summary");
+  }
+
+  const formattedSummary = await formatSummaryForConvertKit(
+    summary,
+    resolvedVideoTitle,
+    resolvedVideoDate,
+    videoId
+  );
+
+  const broadcastSubject = `Town Hall Summary - ${new Date(
+    resolvedVideoDate
+  ).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })}`;
+
+  let broadcast: ConvertKitBroadcast | null = null;
+  if (!testMode) {
+    broadcast = await createConvertKitBroadcast(
+      broadcastSubject,
+      formattedSummary,
+      convertKitApiKey!
+    );
+  } else {
+    console.log("Test mode: Skipping ConvertKit broadcast creation");
+  }
+
+  const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+  if (discordWebhookUrl && !testMode) {
+    try {
+      const summaryPreview = stripHtml(summary);
+      await sendDiscordNotification(discordWebhookUrl, {
+        videoTitle: resolvedVideoTitle,
+        videoDate: resolvedVideoDate,
+        videoId,
+        summaryPreview,
+        broadcastUrl: broadcast?.public_url,
+      });
+    } catch (discordError) {
+      console.error(
+        "Discord notification failed (non-fatal):",
+        discordError
+      );
+    }
+  }
+
+  console.log(`Pipeline completed successfully for video: ${videoId}`);
+
+  return {
+    success: true,
+    videoId,
+    broadcastId: broadcast?.id || null,
+    summary: summary.substring(0, 200) + "...",
+    fullSummary: testMode ? summary : undefined,
+    formattedSummary: testMode ? formattedSummary : undefined,
+    transcript: testMode ? transcript.substring(0, 500) + "..." : undefined,
+    testMode,
+  };
+}
+
 app.post(
   "/process",
   async (
     req: Request<{}, ProcessResponse, ProcessRequestBody>,
     res: Response
   ) => {
-    try {
-      const {
-        videoId,
-        videoTitle,
-        videoDate,
-        groqModel = "llama-3.3-70b-versatile",
-        whisperModel = "whisper-large-v3",
-        convertKitApiKey,
-        testMode = false,
-      } = req.body;
+    const {
+      videoId,
+      videoTitle,
+      videoDate,
+      groqModel = "llama-3.3-70b-versatile",
+      whisperModel = "whisper-large-v3",
+      convertKitApiKey,
+      testMode = false,
+    } = req.body;
 
-      if (!videoId) {
-        return res.status(400).json({ error: "videoId is required" } as any);
+    if (!videoId) {
+      return res.status(400).json({ error: "videoId is required" } as any);
+    }
+
+    if (!testMode && !convertKitApiKey) {
+      return res
+        .status(400)
+        .json({ error: "convertKitApiKey is required" } as any);
+    }
+
+    // Test mode: run synchronously so callers get the transcript/summary back.
+    if (testMode) {
+      try {
+        const result = await runPipeline({
+          videoId,
+          videoTitle,
+          videoDate,
+          groqModel,
+          whisperModel,
+          convertKitApiKey,
+          testMode: true,
+        });
+        return res.status(200).json(result);
+      } catch (error) {
+        console.error("Error in process pipeline (test mode):", error);
+        return res.status(500).json({
+          error: "Pipeline failed",
+          message: error instanceof Error ? error.message : "Unknown error",
+        } as any);
       }
+    }
 
-      if (!testMode && !convertKitApiKey) {
-        return res
-          .status(400)
-          .json({ error: "convertKitApiKey is required" } as any);
-      }
+    // Production: respond 202 immediately so callers (e.g. Vercel cron) don't
+    // have to keep their connection open for ~10–15 minutes. The actual work
+    // runs in the background; Discord notifies on success/failure.
+    res.status(202).json({
+      success: true,
+      videoId,
+      broadcastId: null,
+      summary: "Processing in background",
+      testMode: false,
+    });
 
-      // Fetch YouTube metadata for channel validation and date/title resolution
-      let resolvedVideoDate = videoDate;
-      let resolvedVideoTitle = videoTitle;
-      const youtubeApiKey = process.env.YOUTUBE_API_KEY;
-
-      if (youtubeApiKey) {
-        const videoMetadata = await getVideoMetadata(videoId, youtubeApiKey);
-        if (!videoMetadata) {
-          return res.status(404).json({ error: "Video not found" } as any);
-        }
-
-        // Use YouTube publish date if no date was provided
-        if (!resolvedVideoDate && videoMetadata.publishedAt) {
-          resolvedVideoDate = videoMetadata.publishedAt;
-          console.log(`Using YouTube publish date: ${resolvedVideoDate}`);
-        }
-
-        // Use YouTube title if no title was provided
-        if (!resolvedVideoTitle && videoMetadata.title) {
-          resolvedVideoTitle = videoMetadata.title;
-          console.log(`Using YouTube title: ${resolvedVideoTitle}`);
-        }
-
-        // Validate channel if configured
-        const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
-        if (allowedChannelId) {
-          const isValidChannel = await validateVideoChannel(
-            videoMetadata,
-            allowedChannelId
-          );
-          if (!isValidChannel) {
-            return res.status(403).json({
-              error: "Video is not from the allowed YouTube channel",
-              channelId: videoMetadata.channelId,
-              channelTitle: videoMetadata.channelTitle,
-            } as any);
+    runPipeline({
+      videoId,
+      videoTitle,
+      videoDate,
+      groqModel,
+      whisperModel,
+      convertKitApiKey,
+      testMode: false,
+    })
+      .then((result) => {
+        console.log(
+          `Background pipeline finished for ${videoId} (broadcast: ${result.broadcastId})`
+        );
+      })
+      .catch(async (error) => {
+        console.error(
+          `Background pipeline failed for ${videoId}:`,
+          error
+        );
+        const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+        if (discordWebhookUrl) {
+          try {
+            await sendDiscordErrorNotification(discordWebhookUrl, {
+              videoId,
+              videoTitle,
+              videoDate,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          } catch (notifyError) {
+            console.error(
+              "Failed to send Discord error notification:",
+              notifyError
+            );
           }
         }
-      } else {
-        console.warn("YOUTUBE_API_KEY not set, skipping metadata lookup");
-      }
-
-      // Fall back to defaults
-      resolvedVideoDate = resolvedVideoDate || new Date().toISOString();
-      resolvedVideoTitle = resolvedVideoTitle || "Town Hall";
-
-      console.log(`Starting full pipeline for video: ${videoId}`);
-
-      // Step 1: Download and transcribe audio
-      const transcript = await transcribeAudio(videoId, groq, whisperModel);
-
-      if (!transcript || transcript.trim().length === 0) {
-        return res
-          .status(500)
-          .json({ error: "Empty transcript received" } as any);
-      }
-
-      // Step 3: Summarize
-      const summary = await summarizeTranscript(
-        transcript,
-        groq,
-        groqModel
-      );
-
-      if (!summary) {
-        return res
-          .status(500)
-          .json({ error: "Failed to generate summary" } as any);
-      }
-
-      // Step 4: Format summary
-      const formattedSummary = formatSummaryForConvertKit(
-        summary,
-        resolvedVideoTitle,
-        resolvedVideoDate,
-        videoId
-      );
-
-      const broadcastSubject = `Town Hall Summary - ${new Date(
-        resolvedVideoDate
-      ).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })}`;
-
-      // Step 5: Create broadcast draft (skip in test mode)
-      let broadcast: ConvertKitBroadcast | null = null;
-      if (!testMode) {
-        broadcast = await createConvertKitBroadcast(
-          broadcastSubject,
-          formattedSummary,
-          convertKitApiKey!
-        );
-      } else {
-        console.log("Test mode: Skipping ConvertKit broadcast creation");
-      }
-
-      // Step 6: Send Discord notification (non-blocking — don't fail the pipeline)
-      const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
-      if (discordWebhookUrl && !testMode) {
-        try {
-          const summaryPreview = stripHtml(summary);
-          await sendDiscordNotification(discordWebhookUrl, {
-            videoTitle: resolvedVideoTitle,
-            videoDate: resolvedVideoDate,
-            videoId,
-            summaryPreview,
-            broadcastUrl: broadcast?.public_url,
-          });
-        } catch (discordError) {
-          console.error("Discord notification failed (non-fatal):", discordError);
-        }
-      }
-
-      console.log(`Pipeline completed successfully for video: ${videoId}`);
-
-      return res.status(200).json({
-        success: true,
-        videoId: videoId,
-        broadcastId: broadcast?.id || null,
-        summary: summary.substring(0, 200) + "...",
-        fullSummary: testMode ? summary : undefined,
-        formattedSummary: testMode ? formattedSummary : undefined,
-        transcript: testMode ? transcript.substring(0, 500) + "..." : undefined,
-        testMode: testMode,
       });
-    } catch (error) {
-      console.error("Error in process pipeline:", error);
-      return res.status(500).json({
-        error: "Pipeline failed",
-        message: error instanceof Error ? error.message : "Unknown error",
-      } as any);
-    }
   }
 );
 

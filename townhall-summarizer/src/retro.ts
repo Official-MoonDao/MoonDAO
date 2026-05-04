@@ -9,7 +9,7 @@ import {
   createConvertKitBroadcast,
 } from "./utils/convertkit";
 import {
-  transcribeAudio,
+  getTranscript,
   summarizeTranscript,
   formatSummaryForConvertKit,
 } from "./utils/processing";
@@ -86,9 +86,9 @@ async function processVideo(
 
     console.log(`\nProcessing video: ${videoMetadata.title} (${videoId})`);
 
-    const transcript = await transcribeAudio(videoId, groq, whisperModel);
+    const transcript = await getTranscript(videoId, groq, whisperModel);
     const summary = await summarizeTranscript(transcript, groq, groqModel);
-    const formattedSummary = formatSummaryForConvertKit(
+    const formattedSummary = await formatSummaryForConvertKit(
       summary,
       videoMetadata.title,
       videoMetadata.publishedAt,
