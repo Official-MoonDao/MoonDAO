@@ -152,10 +152,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  if (body.markEligible) {
+  // Tri-state: `true` → set eligible=1 (mark for retro), `false` → set
+  // eligible=0 (clear at cycle end), `undefined` → leave column alone.
+  // The explicit-false branch is what the operator panel's "clear cohort"
+  // bulk action uses to retire a closed cycle's projects.
+  if (body.markEligible === true) {
     calls.push({
       label: 'updateTableCol(eligible=1)',
       data: iface.encodeFunctionData('updateTableCol', [projectId, 'eligible', '1']),
+    })
+  } else if (body.markEligible === false) {
+    calls.push({
+      label: 'updateTableCol(eligible=0)',
+      data: iface.encodeFunctionData('updateTableCol', [projectId, 'eligible', '0']),
     })
   }
 

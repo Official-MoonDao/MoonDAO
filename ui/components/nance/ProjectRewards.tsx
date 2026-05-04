@@ -63,6 +63,7 @@ import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Tooltip from '@/components/layout/Tooltip'
 import MemberVoteResults from '@/components/nance/MemberVoteResults'
+import RetroactiveResults from '@/components/nance/RetroactiveResults'
 import OperatorPanel from '@/components/operator/OperatorPanel'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import PastProjects, { hasFinalReport } from '@/components/project/PastProjects'
@@ -360,10 +361,15 @@ export function ProjectRewards({
     if (!currentProjects?.length) return new Set<string>()
     return new Set(
       currentProjects
-        .filter((p: any) => p.eligible)
+        .filter(
+          (p: any) =>
+            p.eligible &&
+            Number(p.quarter) === quarter &&
+            Number(p.year) === year
+        )
         .map((p: any) => String(p.id))
     )
-  }, [currentProjects])
+  }, [currentProjects, quarter, year])
 
   // Helper: keep only the entries whose key appears in `validKeys`. Used to
   // strip orphan project ids from a distribution loaded out of the
@@ -715,14 +721,35 @@ export function ProjectRewards({
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
   const nonCitizenDistributions = distributions?.filter((_, i) => !isCitizens[i])
 
+  // Scope the eligible / ineligible cohorts to the cycle the page is
+  // currently showing. `quarter`/`year` already adapt:
+  //   - IS_REWARDS_CYCLE = true  → previous calendar quarter (the cohort
+  //     being voted on right now).
+  //   - IS_REWARDS_CYCLE = false → current calendar quarter (the cohort
+  //     whose retros will be voted on next).
+  // Without this filter, projects from a closed cycle whose `eligible = 1`
+  // flag was never cleared keep appearing in the live retro tab and the
+  // active-projects empty-state hint, which mixes cohorts.
   const eligibleProjects = useMemo(
-    () => currentProjects.filter((p) => p.eligible),
-    [currentProjects]
+    () =>
+      currentProjects.filter(
+        (p) =>
+          p.eligible &&
+          Number(p.quarter) === quarter &&
+          Number(p.year) === year
+      ),
+    [currentProjects, quarter, year]
   )
 
   const ineligibleProjects = useMemo(
-    () => currentProjects.filter((p) => !p.eligible),
-    [currentProjects]
+    () =>
+      currentProjects.filter(
+        (p) =>
+          !p.eligible &&
+          Number(p.quarter) === quarter &&
+          Number(p.year) === year
+      ),
+    [currentProjects, quarter, year]
   )
   // All projects need at least one citizen distribution to do iterative normalization
   const allProjectsHaveCitizenDistribution = eligibleProjects?.every(({ id }) =>
@@ -1963,13 +1990,93 @@ export function ProjectRewards({
                     })()}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    <p>No projects are eligible for retroactive rewards yet.</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Operators can mark a project eligible from the panel above.
+                  <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 rounded-lg sm:rounded-xl p-4 sm:p-6 text-sm text-gray-300 space-y-3">
+                    <h2 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
+                      No projects in the current cycle yet
+                    </h2>
+                    <p>
+                      Q{quarter} {year} retroactives don&apos;t have any
+                      projects yet — no team has submitted a final report for
+                      this cohort, so there&apos;s nothing for Citizens and
+                      Voting Members to allocate against.
                     </p>
+                    <div className="bg-black/30 border border-white/10 rounded-md p-3 sm:p-4 space-y-2 text-xs sm:text-sm text-gray-300">
+                      <p className="font-RobotoMono uppercase tracking-wider text-[11px] text-gray-400">
+                        How retroactive rewards work
+                      </p>
+                      <ol className="list-decimal pl-5 space-y-1">
+                        <li>
+                          Project teams complete their funded work during the
+                          quarter and submit a final report.
+                        </li>
+                        <li>
+                          The Executive Branch reviews the report and marks
+                          the project <code>eligible = 1</code> via the
+                          operator panel.
+                        </li>
+                        <li>
+                          Once the cycle&apos;s voting window opens, Citizens
+                          and Voting Members distribute 100% of their voting
+                          power across the eligible cohort.
+                        </li>
+                        <li>
+                          A quadratic tally splits the cycle&apos;s ETH/USDC +
+                          MOONEY pool between projects in proportion to the
+                          weighted vote.
+                        </li>
+                      </ol>
+                      <p className="text-[11px] text-gray-500 pt-1">
+                        Read the full mechanism in the{' '}
+                        <Link
+                          href="https://docs.moondao.com/Projects/Project-System#retroactive-rewards"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline text-blue-300 hover:text-blue-200"
+                        >
+                          docs
+                        </Link>
+                        .
+                      </p>
+                    </div>
                   </div>
                 )}
+
+                {/* Previous cycle results — always rendered below the
+                    current-cycle block, regardless of whether the current
+                    cycle has any projects yet. Self-hides on loading /
+                    error / empty so it doesn't flicker on cold cache.
+                    The (quarter, year) is one cohort behind whatever's
+                    being shown above:
+                      - voting active  → shown cohort = Q-1, prev = Q-2
+                      - between cycles → shown cohort = Q0,  prev = Q-1
+                    `RetroactiveResults` already links out to the public
+                    audit page (`/projects/retro-audit`). */}
+                {(() => {
+                  const prev = getRelativeQuarter(
+                    rewardVotingActive ? -2 : -1
+                  )
+                  return (
+                    <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10">
+                      <div className="px-1 sm:px-0 mb-3 sm:mb-4">
+                        <h2 className="font-GoodTimes text-sm sm:text-base text-white/80 tracking-wider uppercase">
+                          Previous Cycle Results
+                          <span className="ml-2 text-xs font-normal text-gray-400 normal-case">
+                            Q{prev.quarter} {prev.year}
+                          </span>
+                        </h2>
+                        <p className="text-[11px] sm:text-xs text-gray-400 mt-1">
+                          Final per-project breakdown of the most recently
+                          completed retro tally, plus a link to the full
+                          public audit.
+                        </p>
+                      </div>
+                      <RetroactiveResults
+                        quarter={prev.quarter}
+                        year={prev.year}
+                      />
+                    </div>
+                  )
+                })()}
               </div>
             )}
             {activeTab === 'past' && (
