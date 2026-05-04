@@ -14,6 +14,7 @@ import {
   USDC_ADDRESSES,
   USDT_ADDRESSES,
   DAI_ADDRESSES,
+  EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE,
 } from 'const/config'
 import { getCurrentQuarter, getThirdThursdayOfQuarterTimestamp } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
@@ -170,7 +171,36 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   console.log(`[vote tally] Starting tally for Q${quarter} ${year}`)
   
   const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE quarter = ${quarter} AND year = ${year}`
-  const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+  let votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+
+  // Optional one-shot exclusion: drop the most-recently submitted vote
+  // (highest auto-increment `id` for this quarter) from the tally. Only
+  // applies when the requested (quarter, year) matches the *current*
+  // calendar quarter so backfills/audits of historical cycles still
+  // reproduce their original outcome exactly. The Tableland row carries
+  // an `id` column not declared on `DistributionVote`, so cast through
+  // `any` for the comparison.
+  const current = getCurrentQuarter()
+  if (
+    EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE &&
+    quarter === current.quarter &&
+    year === current.year &&
+    votes.length > 0
+  ) {
+    const maxId = votes.reduce((max, v) => {
+      const id = Number((v as any).id)
+      return Number.isFinite(id) && id > max ? id : max
+    }, -Infinity)
+    if (Number.isFinite(maxId)) {
+      const dropped = votes.find((v) => Number((v as any).id) === maxId)
+      votes = votes.filter((v) => Number((v as any).id) !== maxId)
+      console.log(
+        `[vote tally] Excluding latest vote id=${maxId} from tally`,
+        dropped ? { address: dropped.address } : null
+      )
+    }
+  }
+
   const voteAddresses = votes.map((pv) => pv.address)
 
   console.log(`[vote tally] Found ${votes.length} votes from ${voteAddresses.length} addresses`)

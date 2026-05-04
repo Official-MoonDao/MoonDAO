@@ -650,10 +650,24 @@ export const PROJECT_SYSTEM_CONFIG = {
 export const IS_SENATE_VOTE = false
 export const IS_MEMBER_VOTE = true
 
+// When false, the Member Vote phase is still on (results panel, "Member
+// Vote" badge, etc. still render) but the actual submit/edit Distribution
+// UI on the proposals tab is hidden. Used to close member-vote submissions
+// while keeping the rest of the cycle UI intact.
+export const MEMBER_VOTE_SUBMISSIONS_OPEN = false
+
+// When true, the Member Vote tally (both the read-only display in
+// `computeMemberVoteOutcome` and the on-chain close in `/api/proposals/vote`)
+// drops the most-recently-submitted distribution row (the one with the
+// highest `id`) from the proposals table for the *current* calendar
+// quarter only. Past-quarter audits/tallies are unaffected. Use to
+// exclude a late or otherwise-excluded vote from this cycle's results.
+export const EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE = true
+
 // Set IS_REWARDS_CYCLE to true during the retroactive rewards distribution
 // window. When true, the projects page treats the prior quarter as the active
 // retro cycle and surfaces the Citizen / Voting Member distribution UI.
-export const IS_REWARDS_CYCLE = true
+export const IS_REWARDS_CYCLE = false
 
 // Quarterly budget in USD (stablecoins)
 // 5% of liquid non-MOONEY assets, denominated in USD

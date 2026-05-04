@@ -17,6 +17,7 @@ import {
   USD_BUDGET,
   IS_SENATE_VOTE,
   IS_MEMBER_VOTE,
+  MEMBER_VOTE_SUBMISSIONS_OPEN,
   IS_REWARDS_CYCLE,
   RETRO_PAYOUT_TOKEN,
   RETRO_ETH_BUDGET,
@@ -288,6 +289,10 @@ export function ProjectRewards({
   const [approvalVotingActive, setApprovalVotingActive] = useState(false)
   const isSenateVote = IS_SENATE_VOTE
   const isMemberVote = IS_MEMBER_VOTE
+  // Member-vote submissions are gated separately so we can keep the rest
+  // of the Member Vote UI (badge, results panel, phase callout) live while
+  // closing off new distribution submits/edits at the end of the window.
+  const memberVoteSubmissionsOpen = isMemberVote && MEMBER_VOTE_SUBMISSIONS_OPEN
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
   // The proposals being voted on right now belong to the current calendar
@@ -1622,9 +1627,15 @@ export function ProjectRewards({
                     </>
                   )}
                 </h2>
-                {isMemberVote && !isSenateVote && (
+                {isMemberVote && !isSenateVote && memberVoteSubmissionsOpen && (
                   <p className="mb-4">
                     Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.
+                  </p>
+                )}
+                {isMemberVote && !isSenateVote && !memberVoteSubmissionsOpen && (
+                  <p className="mb-4 text-gray-400 text-sm">
+                    Member Vote submissions are closed for this cycle. Final
+                    results are tallied below.
                   </p>
                 )}
                 {!isSenateVote && !isMemberVote && (
@@ -1667,13 +1678,13 @@ export function ProjectRewards({
                             project={project}
                             projectContract={projectContract}
                             hatsContract={hatsContract}
-                            distribute={approvalVotingActive && (isSenateVote || isMemberVote)}
-                            distribution={userHasVotingPower && (isSenateVote || isMemberVote) ? proposalDistribution : undefined}
+                            distribute={approvalVotingActive && (isSenateVote || memberVoteSubmissionsOpen)}
+                            distribution={userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen) ? proposalDistribution : undefined}
                             handleDistributionChange={
-                              userHasVotingPower && (isSenateVote || isMemberVote) ? handleProposalDistributionChange : undefined
+                              userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen) ? handleProposalDistributionChange : undefined
                             }
                             userHasVotingPower={userHasVotingPower}
-                            isVotingPeriod={approvalVotingActive && (isSenateVote || isMemberVote)}
+                            isVotingPeriod={approvalVotingActive && (isSenateVote || memberVoteSubmissionsOpen)}
                             active={false}
                             isSenateVote={isSenateVote}
                           />
@@ -1687,7 +1698,7 @@ export function ProjectRewards({
                       </p>
                     </div>
                   )}
-                  {approvalVotingActive && isMemberVote && proposals && proposals.length > 0 && (() => {
+                  {approvalVotingActive && memberVoteSubmissionsOpen && proposals && proposals.length > 0 && (() => {
                     const proposalAllocatedPct = _.sum(
                       Object.entries(proposalDistribution)
                         .filter(([id]) => validProposalIds.has(id))

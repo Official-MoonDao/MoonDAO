@@ -28,9 +28,13 @@ import {
   USDC_ADDRESSES,
   USDT_ADDRESSES,
   DAI_ADDRESSES,
+  EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE,
 } from 'const/config'
 import { readContract, getContract } from 'thirdweb'
-import { getThirdThursdayOfQuarterTimestamp } from '@/lib/utils/dates'
+import {
+  getCurrentQuarter,
+  getThirdThursdayOfQuarterTimestamp,
+} from '@/lib/utils/dates'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import queryTable from '@/lib/tableland/queryTable'
@@ -174,8 +178,31 @@ export async function computeMemberVoteOutcome({
   }
 
   const voteStatement = `SELECT * FROM ${proposalsTableName} WHERE quarter = ${quarter} AND year = ${year}`
-  const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+  let votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
   if (!votes || votes.length === 0) return null
+
+  // Mirror of the `vote.ts` POST handler's one-shot exclusion: drop the
+  // highest-`id` row for the *current* calendar quarter only. Keeps the
+  // read-only display in sync with what the on-chain tally will compute,
+  // while leaving historical-cycle audits identical to their original
+  // outcomes.
+  const current = getCurrentQuarter()
+  if (
+    EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE &&
+    quarter === current.quarter &&
+    year === current.year &&
+    votes.length > 0
+  ) {
+    const maxId = votes.reduce((max, v) => {
+      const id = Number((v as any).id)
+      return Number.isFinite(id) && id > max ? id : max
+    }, -Infinity)
+    if (Number.isFinite(maxId)) {
+      votes = votes.filter((v) => Number((v as any).id) !== maxId)
+    }
+  }
+
+  if (votes.length === 0) return null
   const voteAddresses = votes.map((pv) => pv.address)
 
   const projectStatement = `SELECT * FROM ${projectTableName} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
