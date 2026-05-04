@@ -17,6 +17,7 @@ import {
   USD_BUDGET,
   IS_SENATE_VOTE,
   IS_MEMBER_VOTE,
+  MEMBER_VOTE_SUBMISSIONS_OPEN,
   IS_REWARDS_CYCLE,
   RETRO_PAYOUT_TOKEN,
   RETRO_ETH_BUDGET,
@@ -288,6 +289,10 @@ export function ProjectRewards({
   const [approvalVotingActive, setApprovalVotingActive] = useState(false)
   const isSenateVote = IS_SENATE_VOTE
   const isMemberVote = IS_MEMBER_VOTE
+  // Member-vote submissions are gated separately so we can keep the rest
+  // of the Member Vote UI (badge, results panel, phase callout) live while
+  // closing off new distribution submits/edits at the end of the window.
+  const memberVoteSubmissionsOpen = isMemberVote && MEMBER_VOTE_SUBMISSIONS_OPEN
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
   // The proposals being voted on right now belong to the current calendar
@@ -1558,11 +1563,18 @@ export function ProjectRewards({
                 <div className="mb-4 sm:mb-6 px-1 sm:px-0">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4">
                     <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${currentQuarter}: ${currentYear} Rewards`}</h1>
-                    {/* Permission-check warning is suppressed for everyday
-                        users because they would never see the "Close voting"
-                        button anyway. The error is still logged to the
-                        console for the Proposals contract owner / EB. */}
-                    {isSenateVote && isProposalsContractOwner && (
+                    {/* "Close voting" triggers the Member Vote tally
+                        (`POST /api/proposals/vote`), which is the call that
+                        flips approved proposals to PROJECT_ACTIVE on the
+                        Project table. So it has to be visible during the
+                        Member Vote phase, not the Senate phase — Senate
+                        closes happen on-chain per-MDP via
+                        `Proposals.tallyVotes(mdp)` and don't need a UI
+                        button. Only the Proposals contract owner sees it
+                        either way; everyday users never render this branch.
+                        The permission error is still logged to the console
+                        for the EB if their wallet doesn't match. */}
+                    {isMemberVote && isProposalsContractOwner && (
                       <button
                         onClick={tallyVotes}
                         className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
@@ -1622,9 +1634,15 @@ export function ProjectRewards({
                     </>
                   )}
                 </h2>
-                {isMemberVote && !isSenateVote && (
+                {isMemberVote && !isSenateVote && memberVoteSubmissionsOpen && (
                   <p className="mb-4">
                     Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.
+                  </p>
+                )}
+                {isMemberVote && !isSenateVote && !memberVoteSubmissionsOpen && (
+                  <p className="mb-4 text-gray-400 text-sm">
+                    Member Vote submissions are closed for this cycle. Final
+                    results are tallied below.
                   </p>
                 )}
                 {!isSenateVote && !isMemberVote && (
@@ -1667,13 +1685,13 @@ export function ProjectRewards({
                             project={project}
                             projectContract={projectContract}
                             hatsContract={hatsContract}
-                            distribute={approvalVotingActive && (isSenateVote || isMemberVote)}
-                            distribution={userHasVotingPower && (isSenateVote || isMemberVote) ? proposalDistribution : undefined}
+                            distribute={approvalVotingActive && (isSenateVote || memberVoteSubmissionsOpen)}
+                            distribution={userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen) ? proposalDistribution : undefined}
                             handleDistributionChange={
-                              userHasVotingPower && (isSenateVote || isMemberVote) ? handleProposalDistributionChange : undefined
+                              userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen) ? handleProposalDistributionChange : undefined
                             }
                             userHasVotingPower={userHasVotingPower}
-                            isVotingPeriod={approvalVotingActive && (isSenateVote || isMemberVote)}
+                            isVotingPeriod={approvalVotingActive && (isSenateVote || memberVoteSubmissionsOpen)}
                             active={false}
                             isSenateVote={isSenateVote}
                           />
@@ -1687,7 +1705,7 @@ export function ProjectRewards({
                       </p>
                     </div>
                   )}
-                  {approvalVotingActive && isMemberVote && proposals && proposals.length > 0 && (() => {
+                  {approvalVotingActive && memberVoteSubmissionsOpen && proposals && proposals.length > 0 && (() => {
                     const proposalAllocatedPct = _.sum(
                       Object.entries(proposalDistribution)
                         .filter(([id]) => validProposalIds.has(id))

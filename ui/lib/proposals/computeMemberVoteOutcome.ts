@@ -28,10 +28,12 @@ import {
   USDC_ADDRESSES,
   USDT_ADDRESSES,
   DAI_ADDRESSES,
+  EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE,
 } from 'const/config'
 import { readContract, getContract } from 'thirdweb'
 import { getThirdThursdayOfQuarterTimestamp } from '@/lib/utils/dates'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
+import { excludeLatestMemberVoteIfApplicable } from '@/lib/proposals/excludeLatestMemberVote'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
@@ -174,8 +176,21 @@ export async function computeMemberVoteOutcome({
   }
 
   const voteStatement = `SELECT * FROM ${proposalsTableName} WHERE quarter = ${quarter} AND year = ${year}`
-  const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
-  if (!votes || votes.length === 0) return null
+  const rawVotes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+  if (!rawVotes || rawVotes.length === 0) return null
+
+  // Mirror of the `vote.ts` POST handler. Same shared helper, same gate
+  // — keeps the read-only display in sync with what the on-chain tally
+  // will compute, while leaving historical-cycle audits identical to
+  // their original outcomes.
+  const { votes } = excludeLatestMemberVoteIfApplicable({
+    votes: rawVotes,
+    quarter,
+    year,
+    enabled: EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE,
+  })
+
+  if (votes.length === 0) return null
   const voteAddresses = votes.map((pv) => pv.address)
 
   const projectStatement = `SELECT * FROM ${projectTableName} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
