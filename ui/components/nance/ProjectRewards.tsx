@@ -1563,11 +1563,18 @@ export function ProjectRewards({
                 <div className="mb-4 sm:mb-6 px-1 sm:px-0">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4">
                     <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${currentQuarter}: ${currentYear} Rewards`}</h1>
-                    {/* Permission-check warning is suppressed for everyday
-                        users because they would never see the "Close voting"
-                        button anyway. The error is still logged to the
-                        console for the Proposals contract owner / EB. */}
-                    {isSenateVote && isProposalsContractOwner && (
+                    {/* "Close voting" triggers the Member Vote tally
+                        (`POST /api/proposals/vote`), which is the call that
+                        flips approved proposals to PROJECT_ACTIVE on the
+                        Project table. So it has to be visible during the
+                        Member Vote phase, not the Senate phase — Senate
+                        closes happen on-chain per-MDP via
+                        `Proposals.tallyVotes(mdp)` and don't need a UI
+                        button. Only the Proposals contract owner sees it
+                        either way; everyday users never render this branch.
+                        The permission error is still logged to the console
+                        for the EB if their wallet doesn't match. */}
+                    {isMemberVote && isProposalsContractOwner && (
                       <button
                         onClick={tallyVotes}
                         className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
