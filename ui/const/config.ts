@@ -656,13 +656,20 @@ export const IS_MEMBER_VOTE = true
 // while keeping the rest of the cycle UI intact.
 export const MEMBER_VOTE_SUBMISSIONS_OPEN = false
 
-// When true, the Member Vote tally (both the read-only display in
-// `computeMemberVoteOutcome` and the on-chain close in `/api/proposals/vote`)
-// drops the most-recently-submitted distribution row (the one with the
-// highest `id`) from the proposals table for the *current* calendar
-// quarter only. Past-quarter audits/tallies are unaffected. Use to
-// exclude a late or otherwise-excluded vote from this cycle's results.
-export const EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE = true
+// Addresses (lowercase) whose Member Vote distribution should be dropped
+// from the *current* calendar quarter's tally — both the read-only
+// display in `computeMemberVoteOutcome` and the on-chain close in
+// `/api/proposals/vote`. Past-quarter audits/tallies are unaffected, so
+// historical results stay reproducible. Use this for one-off
+// disqualifications (e.g. a vote ruled invalid post-hoc); the wallet's
+// row stays in the proposals table for the audit trail, it just
+// doesn't count toward the outcome.
+//
+// Q2 2026:
+//   - 0x47cc...be05 (e-Cat) excluded by EB decision.
+export const MEMBER_VOTE_EXCLUDED_ADDRESSES: string[] = [
+  '0x47cc4c7fef42187f9f7901838f316b033e92be05',
+]
 
 // Set IS_REWARDS_CYCLE to true during the retroactive rewards distribution
 // window. When true, the projects page treats the prior quarter as the active

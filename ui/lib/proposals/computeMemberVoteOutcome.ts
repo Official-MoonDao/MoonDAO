@@ -28,12 +28,12 @@ import {
   USDC_ADDRESSES,
   USDT_ADDRESSES,
   DAI_ADDRESSES,
-  EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE,
+  MEMBER_VOTE_EXCLUDED_ADDRESSES,
 } from 'const/config'
 import { readContract, getContract } from 'thirdweb'
 import { getThirdThursdayOfQuarterTimestamp } from '@/lib/utils/dates'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
-import { excludeLatestMemberVoteIfApplicable } from '@/lib/proposals/excludeLatestMemberVote'
+import { excludeMemberVotesByAddress } from '@/lib/proposals/excludeMemberVotes'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
@@ -183,11 +183,11 @@ export async function computeMemberVoteOutcome({
   // — keeps the read-only display in sync with what the on-chain tally
   // will compute, while leaving historical-cycle audits identical to
   // their original outcomes.
-  const { votes } = excludeLatestMemberVoteIfApplicable({
+  const { votes } = excludeMemberVotesByAddress({
     votes: rawVotes,
     quarter,
     year,
-    enabled: EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE,
+    excludedAddresses: MEMBER_VOTE_EXCLUDED_ADDRESSES,
   })
 
   if (votes.length === 0) return null

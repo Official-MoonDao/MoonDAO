@@ -14,7 +14,7 @@ import {
   USDC_ADDRESSES,
   USDT_ADDRESSES,
   DAI_ADDRESSES,
-  EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE,
+  MEMBER_VOTE_EXCLUDED_ADDRESSES,
 } from 'const/config'
 import { getCurrentQuarter, getThirdThursdayOfQuarterTimestamp } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
@@ -23,7 +23,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
 import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
-import { excludeLatestMemberVoteIfApplicable } from '@/lib/proposals/excludeLatestMemberVote'
+import { excludeMemberVotesByAddress } from '@/lib/proposals/excludeMemberVotes'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
@@ -175,19 +175,19 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   const rawVotes = (await queryTable(chain, voteStatement)) as DistributionVote[]
 
   // Defer to the shared helper so the on-chain close and the read-only
-  // `computeMemberVoteOutcome` can never disagree on which row gets
-  // excluded. The helper is a no-op for past-quarter tallies and when
-  // the flag is off, so this stays safe to call unconditionally here.
-  const { votes, excluded } = excludeLatestMemberVoteIfApplicable({
+  // `computeMemberVoteOutcome` can never disagree on who gets dropped.
+  // No-ops for past-quarter tallies and when the address list is empty,
+  // so this is safe to call unconditionally here.
+  const { votes, excluded } = excludeMemberVotesByAddress({
     votes: rawVotes,
     quarter,
     year,
-    enabled: EXCLUDE_LATEST_MEMBER_VOTE_FOR_CURRENT_CYCLE,
+    excludedAddresses: MEMBER_VOTE_EXCLUDED_ADDRESSES,
   })
-  if (excluded) {
+  for (const v of excluded) {
     console.log(
-      `[vote tally] Excluding latest vote id=${excluded.id} from tally`,
-      { address: excluded.address }
+      `[vote tally] Excluding disqualified vote id=${v.id} from tally`,
+      { address: v.address }
     )
   }
 
