@@ -27,7 +27,20 @@ export async function fetchYouTubeCaptionsTranscript(
 
   try {
     console.log(`Fetching transcript for ${videoId} via YouTube API...`);
-    const segments: TranscriptResponse[] = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
+    // Try each common English locale in order — some videos publish captions as
+    // en-US, en-GB, or en-orig rather than plain "en".
+    const langCandidates = ["en", "en-US", "en-GB", "en-orig"];
+    let segments: TranscriptResponse[] = [];
+    let lastError: any;
+    for (const lang of langCandidates) {
+      try {
+        segments = await YoutubeTranscript.fetchTranscript(videoId, { lang });
+        if (segments && segments.length > 0) break;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    if (segments.length === 0 && lastError) throw lastError;
 
     if (!segments || segments.length === 0) {
       console.warn(`No transcript segments returned for ${videoId}.`);
