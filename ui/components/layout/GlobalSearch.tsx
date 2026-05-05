@@ -4,143 +4,320 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 
 // Search mappings for intelligent routing
 const searchMappings = [
-  // Constitution & Governance
+  // ── Governance ────────────────────────────────────────────────────────────
   {
-    keywords: ['constitution', 'rules', 'laws', 'governance', 'govern', 'charter', 'bylaws', 'founding', 'principles', 'structure'],
-    title: 'Constitution',
-    description: 'Read MoonDAO\'s founding principles and governance structure',
-    link: '/constitution',
-    category: 'Governance'
-  },
-  {
-    keywords: ['vote', 'voting', 'proposal', 'proposals', 'governance', 'ballot', 'election', 'participate', 'decision', 'choose'],
-    title: 'Vote on Proposals',
-    description: 'Participate in MoonDAO governance by voting on proposals',
-    link: '/projects',
-    category: 'Governance'
-  },
-  {
-    keywords: ['governance', 'govern', 'dao', 'decentralized', 'decision', 'community', 'hub', 'system'],
-    title: 'Governance Hub',
-    description: 'Learn about MoonDAO\'s governance system',
+    keywords: [
+      'governance', 'govern', 'dao', 'decentralized', 'voting hub', 'treasury governance',
+      'citizen governance', 'community decisions', 'how governance works', 'city hall',
+    ],
+    title: 'Governance',
+    description: "MoonDAO's governance hub — project proposals, governance votes, constitution and more",
     link: '/governance',
-    category: 'Governance'
-  },
-
-  // Token & Economy
-  {
-    keywords: ['mooney', 'token', 'buy', 'purchase', 'get', 'acquire', 'currency', 'where can i buy', 'how to buy', 'buying', 'purchasing', 'obtain', 'find', 'exchange', 'trade', 'swap'],
-    title: 'Get $MOONEY',
-    description: 'Buy MOONEY tokens to participate in the ecosystem',
-    link: '/get-mooney',
-    category: 'Token'
+    category: 'Governance',
   },
   {
-    keywords: ['lock', 'locking', 'vmooney', 'voting power', 'stake', 'staking', 'escrow', 'earn', 'rewards', 'vote power', 'lock tokens', 'staking tokens'],
-    title: 'Lock Tokens',
-    description: 'Lock MOONEY tokens to earn voting power',
-    link: '/lock',
-    category: 'Token'
-  },
-
-  // Network & Community
-  {
-    keywords: ['network', 'community', 'members', 'citizens', 'teams', 'explore', 'discover', 'people', 'users', 'acceleration network', 'space network'],
-    title: 'Explore Network',
-    description: 'Discover citizens and teams in the Space Acceleration Network',
-    link: '/network',
-    category: 'Network'
+    keywords: [
+      'constitution', 'rules', 'laws', 'charter', 'bylaws', 'founding principles',
+      'governance structure', 'how moondao works', 'operating agreement',
+    ],
+    title: 'Constitution',
+    description: "Read MoonDAO's Constitution — our founding principles and governance rules",
+    link: '/constitution',
+    category: 'Governance',
   },
   {
-    keywords: ['join', 'citizen', 'membership', 'become', 'participate', 'register', 'sign up', 'how to join', 'become member', 'citizen registration'],
-    title: 'Join the Network',
-    description: 'Become a citizen and join the space community',
-    link: '/join',
-    category: 'Network'
+    keywords: [
+      'governance proposals', 'governance vote', 'non-project proposal', 'policy change',
+      'amendment', 'snapshot vote', 'offchain vote', 'governance ballot',
+    ],
+    title: 'Governance Proposals',
+    description: 'Vote on non-project governance proposals — amendments, policy changes, and more',
+    link: '/governance-proposals',
+    category: 'Governance',
   },
   {
-    keywords: ['team', 'teams', 'create team', 'organization', 'group', 'collaborate', 'form team', 'start team', 'make team', 'teamwork'],
-    title: 'Create a Team',
-    description: 'Form a team to work on space projects together',
-    link: '/team',
-    category: 'Network'
+    keywords: [
+      'propose project', 'submit proposal', 'project proposal', 'request funding',
+      'get funded', 'create proposal', 'nance', 'new proposal', 'project application',
+    ],
+    title: 'Propose a Project',
+    description: 'Submit a proposal to receive financing or permissions from the MoonDAO community',
+    link: '/proposals',
+    category: 'Governance',
   },
-
-  // Projects & Jobs
   {
-    keywords: ['projects', 'project', 'rewards', 'funding', 'grants', 'proposals', 'space projects', 'fund projects', 'project funding', 'discovery'],
+    keywords: [
+      'projects', 'project rewards', 'fund project', 'active projects', 'current projects',
+      'project voting', 'vote project', 'project funding', 'rewards cycle', 'distributions',
+    ],
     title: 'Project Rewards',
-    description: 'Discover and fund space exploration projects',
+    description: 'Browse active and past projects — vote on funding distributions each quarter',
     link: '/projects',
-    category: 'Projects'
+    category: 'Governance',
+  },
+
+  // ── Token & Economy ───────────────────────────────────────────────────────
+  {
+    keywords: [
+      'get mooney', 'buy mooney', 'purchase mooney', 'acquire mooney', 'swap for mooney',
+      'how to buy', 'where to buy', 'mooney token swap', 'buy token', 'get token',
+    ],
+    title: 'Get $MOONEY',
+    description: 'Swap for MOONEY tokens — available on Ethereum, Arbitrum, Polygon and Base',
+    link: '/get-mooney',
+    category: 'Token',
   },
   {
-    keywords: ['launchpad', 'launch pad', 'startup', 'accelerator', 'launch', 'new projects', 'venture', 'fundraise', 'mission'],
+    keywords: [
+      'mooney', 'token', 'tokenomics', 'fixed supply', 'mooney info', 'what is mooney',
+      'token details', 'multi-chain token', 'mooney overview', 'quadratic voting token',
+    ],
+    title: 'MOONEY Token',
+    description: 'Learn about MOONEY — fixed supply of 2.53B, quadratic voting, multi-chain',
+    link: '/mooney',
+    category: 'Token',
+  },
+  {
+    keywords: [
+      'lock mooney', 'locking', 'vmooney', 'voting power', 'stake', 'staking', 'escrow',
+      'earn voting power', 've token', 'lock tokens', 'get vmooney',
+    ],
+    title: 'Lock $MOONEY',
+    description: 'Lock MOONEY to earn vMOONEY voting power for governance participation',
+    link: '/lock',
+    category: 'Token',
+  },
+  {
+    keywords: [
+      'bridge', 'bridge mooney', 'arbitrum bridge', 'ethereum to arbitrum', 'cross chain',
+      'transfer mooney', 'move tokens', 'layer 2', 'faster transactions', 'lower fees',
+    ],
+    title: 'Bridge MOONEY',
+    description: 'Bridge MOONEY from Ethereum mainnet to Arbitrum for faster, cheaper transactions',
+    link: '/bridge',
+    category: 'Token',
+  },
+
+  // ── Network & Community ───────────────────────────────────────────────────
+  {
+    keywords: [
+      'network', 'explore network', 'community', 'citizens', 'teams', 'members',
+      'space acceleration network', 'san', 'discover people', 'browse members',
+    ],
+    title: 'Explore Network',
+    description: 'Discover citizens and teams building the future of space exploration',
+    link: '/network',
+    category: 'Network',
+  },
+  {
+    keywords: [
+      'join', 'become citizen', 'citizenship', 'membership', 'register', 'sign up',
+      'join moondao', 'how to join', 'citizen nft', 'citizen pass', 'get citizen',
+    ],
+    title: 'Join MoonDAO',
+    description: 'Become a Citizen of the Space Acceleration Network',
+    link: '/join',
+    category: 'Network',
+  },
+  {
+    keywords: [
+      'team', 'create team', 'form team', 'start team', 'organization', 'group',
+      'collaborate', 'team nft', 'moondao team', 'build team',
+    ],
+    title: 'Create a Team',
+    description: 'Form a team to collaborate on space projects within MoonDAO',
+    link: '/team',
+    category: 'Network',
+  },
+  {
+    keywords: [
+      'map', 'member map', 'citizen map', 'world map', 'interactive globe', 'earth map',
+      'moon map', 'where are citizens', 'citizen locations', 'globe', 'find nearby',
+    ],
+    title: 'Network Map',
+    description: 'Interactive globe showing where citizens in the Space Acceleration Network are located',
+    link: '/map',
+    category: 'Network',
+  },
+
+  // ── Launchpad & Missions ──────────────────────────────────────────────────
+  {
+    keywords: [
+      'launchpad', 'launch', 'mission', 'create mission', 'start mission', 'fundraise',
+      'space venture', 'mission creator', 'launch mission', 'fund mission', 'raise capital',
+    ],
     title: 'Launchpad',
-    description: 'Launch your space venture with MoonDAO support',
-    link: '/launchpad',
-    category: 'Projects'
+    description: 'Launch a space mission or venture and raise funding from the MoonDAO community',
+    link: '/launch',
+    category: 'Launchpad',
   },
   {
-    keywords: ['overview', 'delegate', 'delegation', 'frank white', 'overview token', 'leaderboard', 'astronaut', 'back', 'fly', 'space', 'candidate'],
-    title: 'Fly to Space with Frank White',
-    description: 'Help fund the mission to send Frank White to space. Vote for the citizen you want to fly alongside him.',
+    keywords: [
+      'overview vote', 'frank white', 'fly to space', 'send citizen to space', 'astronaut vote',
+      'overview token', 'overview delegation', 'space ticket', 'vote astronaut', 'overview mission',
+      'leaderboard', 'citizen vote space',
+    ],
+    title: 'Fly to Space — Overview Vote',
+    description: 'Vote for a citizen to fly to space alongside Frank White using Overview tokens',
     link: '/overview-vote',
-    category: 'Projects'
+    category: 'Launchpad',
   },
+
+  // ── Contribute & Earn ─────────────────────────────────────────────────────
   {
-    keywords: ['jobs', 'careers', 'work', 'employment', 'opportunities', 'hiring', 'job board', 'find work', 'career opportunities', 'space jobs', 'space careers'],
-    title: 'Jobs Board',
-    description: 'Find career opportunities in the space industry',
-    link: '/jobs',
-    category: 'Jobs'
-  },
-  {
-    keywords: ['contribute', 'contribution', 'submit', 'work', 'help', 'skills', 'contribute skills', 'how to help', 'volunteer', 'participate'],
+    keywords: [
+      'contribute', 'contribution', 'retroactive rewards', 'community rewards', 'quarterly rewards',
+      'submit work', 'submit contribution', 'earn eth', 'earn vmooney', 'impact reward',
+    ],
     title: 'Submit Contribution',
-    description: 'Contribute your skills to MoonDAO projects',
+    description: 'Submit mission-aligned work for quarterly retroactive community rewards in ETH & vMOONEY',
     link: '/contributions',
-    category: 'Projects'
+    category: 'Contribute',
+  },
+  {
+    keywords: [
+      'submit', 'collaborate', 'contribute page', 'how to contribute', 'participate',
+      'submit proposal or contribution',
+    ],
+    title: 'Collaborate & Contribute',
+    description: 'Submit project proposals or contribution reports — two ways to work with MoonDAO',
+    link: '/submit',
+    category: 'Contribute',
+  },
+  {
+    keywords: [
+      'final report', 'project report', 'submit report', 'project completion', 'deliverables',
+      'project outcomes', 'close project', 'end project',
+    ],
+    title: 'Submit Project Report',
+    description: 'Submit a final report for your completed project — outcomes and deliverables',
+    link: '/final-reports',
+    category: 'Contribute',
+  },
+  {
+    keywords: [
+      'quests', 'quest', 'xp', 'experience points', 'earn xp', 'missions tasks', 'challenges',
+      'reputation', 'contributor reputation', 'multiplanetary',
+    ],
+    title: 'Quests',
+    description: 'Complete quests to earn XP and build your reputation in the Space Acceleration Network',
+    link: '/quests',
+    category: 'Contribute',
+  },
+  {
+    keywords: [
+      'jobs', 'job board', 'careers', 'employment', 'work', 'opportunities', 'hiring',
+      'space jobs', 'space careers', 'find work', 'team jobs',
+    ],
+    title: 'Jobs Board',
+    description: 'Find job opportunities with teams building the future of space exploration',
+    link: '/jobs',
+    category: 'Contribute',
   },
 
-  // Learn & Info
+  // ── Learn & Info ──────────────────────────────────────────────────────────
   {
-    keywords: ['about', 'mission', 'vision', 'story', 'history', 'what is', 'what is moondao', 'about moondao', 'mission statement', 'goals'],
+    keywords: [
+      'about', 'about moondao', 'what is moondao', 'mission', 'vision', 'story', 'history',
+      'internet space program', 'lunar settlement', 'multiplanetary', 'who is moondao',
+    ],
     title: 'About MoonDAO',
-    description: 'Learn about MoonDAO\'s mission and vision',
+    description: "Learn about MoonDAO — the internet's space program building toward a lunar settlement",
     link: '/about',
-    category: 'Learn'
+    category: 'Learn',
   },
   {
-    keywords: ['news', 'updates', 'blog', 'announcements', 'articles', 'latest news', 'recent updates', 'current news', 'what\'s new'],
-    title: 'Latest News',
-    description: 'Stay updated with MoonDAO news and announcements',
+    keywords: [
+      'info', 'information center', 'information', 'news updates', 'town hall summaries',
+      'treasury info', 'faq info', 'learn more',
+    ],
+    title: 'Information Center',
+    description: 'MoonDAO information hub — news, town halls, treasury and FAQs all in one place',
+    link: '/info',
+    category: 'Learn',
+  },
+  {
+    keywords: [
+      'townhall', 'town hall', 'town hall meeting', 'weekly meeting', 'community call',
+      'meeting recording', 'meeting summary', 'watch meeting', 'town hall video',
+    ],
+    title: 'Town Hall Summaries',
+    description: 'Watch recordings and read AI summaries of MoonDAO weekly town hall meetings',
+    link: '/townhall',
+    category: 'Learn',
+  },
+  {
+    keywords: [
+      'roadmap', 'milestones', 'phases', 'timeline', 'future plans', 'upcoming', 'schedule',
+      'genesis phase', 'phase 0', 'what is next', 'moondao plan',
+    ],
+    title: 'Roadmap',
+    description: "Explore MoonDAO's phased roadmap from genesis to lunar settlement",
+    link: '/roadmap',
+    category: 'Learn',
+  },
+  {
+    keywords: [
+      'resources', 'space resources', 'space data', 'nasa', 'space links', 'reference',
+      'documentation', 'external links', 'space archives', 'research',
+    ],
+    title: 'Resources',
+    description: 'Curated space research resources — NASA data, archives and external tools',
+    link: '/resources',
+    category: 'Learn',
+  },
+  {
+    keywords: [
+      'news', 'announcements', 'blog', 'articles', 'updates', 'latest news',
+      'recent updates', "what's new", 'press',
+    ],
+    title: 'News',
+    description: 'Stay updated with the latest MoonDAO news and announcements',
     link: '/news',
-    category: 'Learn'
+    category: 'Learn',
   },
   {
-    keywords: ['analytics', 'treasury', 'data', 'statistics', 'metrics', 'dashboard', 'stats', 'numbers', 'tracking', 'performance', 'finances', 'funds'],
-    title: 'Treasury Dashboard',
-    description: 'View MoonDAO treasury metrics and analytics',
+    keywords: [
+      'treasury', 'analytics', 'finances', 'funds', 'budget', 'financial health',
+      'treasury holdings', 'aum', 'transaction history', 'moondao money',
+    ],
+    title: 'Treasury',
+    description: 'Transparent analytics on treasury holdings, transaction history and financial health',
     link: '/treasury',
-    category: 'Learn'
+    category: 'Learn',
   },
   {
-    keywords: ['faq', 'help', 'questions', 'support', 'guide', 'how to', 'frequently asked', 'common questions', 'assistance', 'tutorial'],
-    title: 'FAQ & Help',
-    description: 'Get answers to frequently asked questions',
+    keywords: [
+      'faq', 'frequently asked questions', 'help', 'support', 'common questions',
+      'how to', 'tutorial', 'guide', 'getting started', 'assistance',
+    ],
+    title: 'FAQ',
+    description: 'Answers to frequently asked questions about MoonDAO',
     link: '/faq',
-    category: 'Learn'
+    category: 'Learn',
+  },
+  {
+    keywords: [
+      'project system', 'project docs', 'project documentation', 'how projects work',
+      'project guide', 'project lifecycle', 'project incentives', 'project tracking',
+    ],
+    title: 'Project System Docs',
+    description: 'Learn how the MoonDAO project funding, tracking and incentive system works',
+    link: '/project-system-docs',
+    category: 'Learn',
   },
 
-  // Marketplace
+  // ── Marketplace ───────────────────────────────────────────────────────────
   {
-    keywords: ['shop', 'store', 'marketplace', 'buy', 'merchandise', 'products', 'shopping', 'items', 'goods', 'purchase items', 'sell'],
+    keywords: [
+      'marketplace', 'shop', 'store', 'merchandise', 'products', 'nft listings',
+      'buy items', 'sell items', 'shopping', 'goods', 'moondao merch',
+    ],
     title: 'Marketplace',
-    description: 'Shop for MoonDAO merchandise and products',
+    description: 'Buy and sell MoonDAO merchandise and NFT listings',
     link: '/marketplace',
-    category: 'Shop'
-  }
+    category: 'Shop',
+  },
 ]
 
 // Enhanced fuzzy matching function
