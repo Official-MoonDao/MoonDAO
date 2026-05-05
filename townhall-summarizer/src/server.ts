@@ -238,53 +238,29 @@ app.post(
       }
     }
 
-    // Production: respond 202 immediately so callers (e.g. Vercel cron) don't
-    // have to keep their connection open for ~10–15 minutes. The actual work
-    // runs in the background; Discord notifies on success/failure.
-    res.status(202).json({
-      success: true,
-      videoId,
-      broadcastId: null,
-      summary: "Processing in background",
-      testMode: false,
-    });
-
-    runPipeline({
-      videoId,
-      videoTitle,
-      videoDate,
-      groqModel,
-      whisperModel,
-      convertKitApiKey,
-      testMode: false,
-    })
-      .then((result) => {
-        console.log(
-          `Background pipeline finished for ${videoId} (broadcast: ${result.broadcastId})`
-        );
-      })
-      .catch(async (error) => {
-        console.error(
-          `Background pipeline failed for ${videoId}:`,
-          error
-        );
-        const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
-        if (discordWebhookUrl) {
-          try {
-            await sendDiscordErrorNotification(discordWebhookUrl, {
-              videoId,
-              videoTitle,
-              videoDate,
-              error: error instanceof Error ? error.message : String(error),
-            });
-          } catch (notifyError) {
-            console.error(
-              "Failed to send Discord error notification:",
-              notifyError
-            );
-          }
-        }
+    // Production: run synchronously and hold the connection open.
+    // Cloud Run supports up to 60-min request timeouts, so this is safe.
+    // The automated path (GitHub Actions) calls ts-node directly and never
+    // hits this endpoint — it is only used for manual/ad-hoc triggers.
+    try {
+      const result = await runPipeline({
+        videoId,
+        videoTitle,
+        videoDate,
+        groqModel,
+        whisperModel,
+        convertKitApiKey,
+        testMode: false,
       });
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error(`Pipeline failed for ${videoId}:`, error);
+      // Discord notification already sent inside runPipeline
+      return res.status(500).json({
+        error: "Pipeline failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
 );
 
