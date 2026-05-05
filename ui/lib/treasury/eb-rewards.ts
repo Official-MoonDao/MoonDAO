@@ -1,4 +1,4 @@
-import { getAUMHistory } from '../coinstats'
+import { getAUMHistoryOnchain } from './aum-onchain'
 import { getETHPrice } from '../etherscan'
 import { getHistoricalRevenue } from './revenue'
 
@@ -67,7 +67,12 @@ export async function getQuarterlyAverageValue(
   const daysInRange = Math.ceil((endTimestamp - startTimestamp) / (1000 * 60 * 60 * 24))
 
   try {
-    const { aumHistory } = await getAUMHistory(Math.max(daysInRange + 30, 365))
+    // Fetch AUM history for this specific quarter's date range
+    const { aumHistory } = await getAUMHistoryOnchain(
+      daysInRange + 30,
+      startTimestamp - 7 * 24 * 60 * 60 * 1000, // start a week early for buffer
+      endTimestamp
+    )
 
     const relevantDataPoints = aumHistory.filter((point) => {
       const pointTimestamp = point.timestamp * 1000
@@ -129,7 +134,7 @@ async function getQuarterlyRevenue(quarter: number, year: number): Promise<numbe
   const now = Date.now()
 
   try {
-    const { defiData } = await getAUMHistory(365)
+    const { defiData } = await getAUMHistoryOnchain(365)
     const revenueData = await getHistoricalRevenue(defiData, 365)
 
     if (revenueData.revenueHistory.length === 0) {
@@ -257,7 +262,7 @@ export async function calculateRevenueReward(
   ethPrice: number
 ): Promise<RevenueReward> {
   try {
-    const { aumHistory, defiData } = await getAUMHistory(365)
+    const { aumHistory, defiData } = await getAUMHistoryOnchain(365)
 
     const revenueData = await getHistoricalRevenue(defiData, 365)
 
