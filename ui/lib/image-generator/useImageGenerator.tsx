@@ -1,5 +1,37 @@
 import { useState } from 'react'
-import { fitImage } from '../utils/images'
+import { compressImageForUpload, fitImage } from '../utils/images'
+
+// Tunables for the comfy.icu polling pipeline. These default to fairly generous
+// values because the underlying GPU service is occasionally slow to accept jobs
+// and to start running them, especially during a cold start. Anything tighter
+// than this caused the "Unable to generate an image" error to fire on jobs that
+// would otherwise have completed successfully.
+const CREATE_JOB_TIMEOUT_MS = 45_000 // POST /api/image-gen/<route>
+const CREATE_JOB_MAX_RETRIES = 2 // 1 initial attempt + this many retries
+const POLL_INTERVAL_MS = 5_000
+const POLL_MAX_ATTEMPTS = 90 // ≈ 7.5 minutes
+const POLL_TRANSIENT_ERROR_LIMIT = 6 // consecutive failed polls before giving up
+const GET_IMAGE_MAX_RETRIES = 3
+
+const PENDING_STATUSES = new Set(['QUEUED', 'STARTED', 'INIT', 'PENDING'])
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function fetchWithTimeout(
+  input: RequestInfo,
+  init: RequestInit = {},
+  timeoutMs = 30_000
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
 
 export default function useImageGenerator(
   generateApiRoute: string,
@@ -9,29 +41,89 @@ export default function useImageGenerator(
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>()
 
-  // Upload image to Google Cloud Storage
+  // Upload image to Google Cloud Storage. Retries on transient errors
+  // (network blips / 5xx) but bails immediately on auth/validation failures.
+  const UPLOAD_MAX_ATTEMPTS = 3
+
   async function uploadToGoogleStorage(
     file: File
   ): Promise<{ url: string; filename: string }> {
-    const formData = new FormData()
-    formData.append('file', file)
+    let lastError: any
+    for (let attempt = 1; attempt <= UPLOAD_MAX_ATTEMPTS; attempt++) {
+      let response: Response
+      try {
+        // Vercel serverless functions cap request bodies at ~4.5 MB; downscale
+        // large photos client-side before they ever hit the upload route.
+        const prepared = await compressImageForUpload(file)
+        const formData = new FormData()
+        formData.append(
+          'file',
+          prepared,
+          (prepared as File).name || file.name
+        )
+        response = await fetchWithTimeout(
+          '/api/google/storage/upload',
+          { method: 'POST', body: formData },
+          60_000
+        )
+      } catch (err: any) {
+        lastError = err
+        if (attempt < UPLOAD_MAX_ATTEMPTS) {
+          await sleep(1500 * attempt)
+          continue
+        }
+        throw new Error(
+          `Failed to upload image to Google Storage: ${
+            err?.message || 'network error'
+          }`
+        )
+      }
 
-    const response = await fetch('/api/google/storage/upload', {
-      method: 'POST',
-      body: formData,
-    })
+      if (response.ok) {
+        const result = await response.json().catch(() => null)
+        if (!result?.url) {
+          throw new Error(
+            'Failed to upload image to Google Storage: malformed response'
+          )
+        }
+        const urlParts = result.url.split('/')
+        const filename = urlParts.slice(4).join('/')
+        return { url: result.url, filename }
+      }
 
-    if (!response.ok) {
-      throw new Error('Failed to upload image to Google Storage')
+      // Try to surface the server-side reason.
+      let detail = ''
+      try {
+        const body = await response.clone().json()
+        detail = body?.details || body?.error || ''
+      } catch {
+        try {
+          detail = await response.text()
+        } catch {
+          /* ignore */
+        }
+      }
+
+      // Don't retry on auth or client errors — they won't get better.
+      if (response.status < 500 || attempt === UPLOAD_MAX_ATTEMPTS) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error(
+            'You need to be signed in to generate an image. Please sign in and try again.'
+          )
+        }
+        throw new Error(
+          `Failed to upload image to Google Storage (${response.status})${
+            detail ? `: ${detail}` : ''
+          }`
+        )
+      }
+
+      lastError = new Error(
+        `Upload failed (${response.status})${detail ? `: ${detail}` : ''}`
+      )
+      await sleep(1500 * attempt)
     }
-
-    const result = await response.json()
-
-    // Extract filename from URL for later deletion
-    const urlParts = result.url.split('/')
-    const filename = urlParts.slice(4).join('/') // Everything after bucket name
-
-    return { url: result.url, filename }
+    throw lastError ?? new Error('Failed to upload image to Google Storage')
   }
 
   // Delete image from Google Cloud Storage
@@ -50,119 +142,224 @@ export default function useImageGenerator(
     }
   }
 
-  async function generateImage() {
+  // Create the comfy.icu job, retrying on transient failures.
+  async function createJob(url: string): Promise<string> {
+    let lastError: any
+    for (let attempt = 0; attempt <= CREATE_JOB_MAX_RETRIES; attempt++) {
+      try {
+        const res = await fetchWithTimeout(
+          generateApiRoute,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url }),
+          },
+          CREATE_JOB_TIMEOUT_MS
+        )
+
+        if (!res.ok) {
+          // 5xx is potentially transient; 4xx is not.
+          const body = await res.text().catch(() => '')
+          const err = new Error(
+            `Job creation failed (${res.status}): ${body || res.statusText}`
+          )
+          if (res.status >= 500 && attempt < CREATE_JOB_MAX_RETRIES) {
+            lastError = err
+            await sleep(1500 * (attempt + 1))
+            continue
+          }
+          throw err
+        }
+
+        const data = await res.json().catch(() => null)
+        if (!data?.id) {
+          throw new Error('Comfy.icu did not return a job id')
+        }
+        return data.id
+      } catch (err: any) {
+        lastError = err
+        const isAbort = err?.name === 'AbortError'
+        const isNetwork = err instanceof TypeError
+        if (
+          (isAbort || isNetwork) &&
+          attempt < CREATE_JOB_MAX_RETRIES
+        ) {
+          await sleep(1500 * (attempt + 1))
+          continue
+        }
+        throw err
+      }
+    }
+    throw lastError ?? new Error('Failed to create a comfy.icu job')
+  }
+
+  async function generateImage(overrideInput?: File) {
+    const sourceImage = overrideInput ?? inputImage
+    if (!sourceImage) {
+      console.error('inputImage is not defined')
+      return
+    }
+
+    setError(undefined)
     setIsLoading(true)
     let uploadedFilename: string | null = null
 
-    if (!inputImage) {
-      return console.error('inputImage is not defined')
-    }
-
     try {
       // Upload to Google Cloud Storage
-      const { url, filename } = await uploadToGoogleStorage(inputImage)
+      const { url, filename } = await uploadToGoogleStorage(sourceImage)
       uploadedFilename = filename
 
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-      const jobId = await Promise.race([
-        fetch(generateApiRoute, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ url }),
-          signal: controller.signal,
-        }).then((res) => res.json()),
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error('Request timed out after 5 seconds')),
-            5000
-          )
-        ),
-      ]).finally(() => clearTimeout(timeoutId))
-
-      if (!jobId?.id) {
-        throw new Error('Failed to create a comfy icu job')
-      }
-
-      await checkJobStatus(jobId.id, uploadedFilename)
+      const jobId = await createJob(url)
+      await checkJobStatus(jobId, uploadedFilename, sourceImage)
     } catch (err: any) {
-      console.log(err)
-      setIsLoading(false)
+      console.error('Image generation failed:', err)
 
       // Clean up uploaded file on error
       if (uploadedFilename) {
         await deleteFromGoogleStorage(uploadedFilename)
       }
 
-      const fittedImage = await fitImage(inputImage, 1024, 1024)
-      setImage(fittedImage)
-      setError('Unable to generate an image, please try again later.')
+      try {
+        const fittedImage = await fitImage(sourceImage, 1024, 1024)
+        setImage(fittedImage)
+      } catch (fitErr) {
+        console.error('Failed to fall back to fitted image:', fitErr)
+      }
+      // If the upload helper produced a user-actionable message, surface it.
+      const message: string =
+        typeof err?.message === 'string' && err.message
+          ? err.message
+          : 'Unable to generate an image, please try again later.'
+      setError(
+        message.startsWith('Failed to upload') ||
+          message.startsWith('You need to be signed in')
+          ? message
+          : 'Unable to generate an image, please try again later.'
+      )
+      setIsLoading(false)
     }
   }
 
-  const checkJobStatus = async (jobId: string, uploadedFilename: string) => {
-    let jobs = await fetch(generateApiRoute).then((res) => res.json())
-    let job = jobs.find((job: any) => job.id === jobId)
-
-    while (
-      job.status === 'QUEUED' ||
-      job.status === 'STARTED' ||
-      job.status === 'INIT'
-    ) {
-      await new Promise((resolve) => setTimeout(resolve, 7000))
-      jobs = await fetch(generateApiRoute).then((res) => res.json())
-      job = jobs.find((job: any) => job.id === jobId)
-      console.log(job)
+  // Poll comfy.icu via our proxy route, tolerating transient network errors.
+  async function fetchJob(jobId: string): Promise<any> {
+    const res = await fetchWithTimeout(generateApiRoute, {}, 20_000)
+    if (!res.ok) {
+      throw new Error(`Job status request failed (${res.status})`)
     }
+    const jobs = await res.json()
+    if (!Array.isArray(jobs)) {
+      throw new Error('Unexpected job status response shape')
+    }
+    return jobs.find((j: any) => j?.id === jobId)
+  }
 
-    if (job.status === 'ERROR') {
-      console.error('job failed')
-      setError(
-        'Unable to generate an image, please try again with a different picture.'
-      )
-      if (inputImage) {
-        const fittedImage = await fitImage(inputImage, 1024, 1024)
-        setImage(fittedImage)
+  const checkJobStatus = async (
+    jobId: string,
+    uploadedFilename: string,
+    sourceImage: File
+  ) => {
+    let job: any
+    let consecutiveErrors = 0
+    let attempts = 0
+
+    try {
+      while (attempts < POLL_MAX_ATTEMPTS) {
+        attempts++
+        try {
+          job = await fetchJob(jobId)
+          consecutiveErrors = 0
+        } catch (pollErr) {
+          consecutiveErrors++
+          console.warn(
+            `Poll error (${consecutiveErrors}/${POLL_TRANSIENT_ERROR_LIMIT}):`,
+            pollErr
+          )
+          if (consecutiveErrors >= POLL_TRANSIENT_ERROR_LIMIT) {
+            throw pollErr
+          }
+          await sleep(POLL_INTERVAL_MS)
+          continue
+        }
+
+        // Job not yet visible in the runs list — keep polling.
+        if (!job) {
+          await sleep(POLL_INTERVAL_MS)
+          continue
+        }
+
+        if (PENDING_STATUSES.has(job.status)) {
+          await sleep(POLL_INTERVAL_MS)
+          continue
+        }
+
+        // Terminal status reached.
+        break
       }
-      // Clean up uploaded file
-      await deleteFromGoogleStorage(uploadedFilename)
-      setIsLoading(false) // Add this line
-    }
 
-    if (job.status === 'INSUFFICIENT_CREDIT') {
-      setError(
-        'There was an error generating your image, please contact support.'
-      )
-      if (inputImage) {
-        const fittedImage = await fitImage(inputImage, 1024, 1024)
-        setImage(fittedImage)
+      if (!job || PENDING_STATUSES.has(job?.status)) {
+        throw new Error('Image generation timed out')
       }
-      // Clean up uploaded file
+
+      if (job.status === 'COMPLETED') {
+        const outputUrl = job?.output?.[0]?.url
+        if (!outputUrl) {
+          throw new Error('Job completed without an output image')
+        }
+
+        let lastErr: any
+        for (let attempt = 0; attempt < GET_IMAGE_MAX_RETRIES; attempt++) {
+          try {
+            const res = await fetchWithTimeout(
+              '/api/image-gen/get-image',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: outputUrl }),
+              },
+              30_000
+            )
+            if (!res.ok) {
+              throw new Error(`Image fetch failed (${res.status})`)
+            }
+            const blob = await res.blob()
+            const fileName = `image_${jobId}.png`
+            const file = new File([blob], fileName, { type: blob.type })
+            setImage(file)
+            return
+          } catch (err) {
+            lastErr = err
+            await sleep(1500 * (attempt + 1))
+          }
+        }
+        throw lastErr ?? new Error('Failed to download generated image')
+      }
+
+      if (job.status === 'INSUFFICIENT_CREDIT') {
+        setError(
+          'There was an error generating your image, please contact support.'
+        )
+      } else {
+        // ERROR, FAILED, CANCELED, or any unknown terminal status
+        console.error('Job failed with status:', job.status)
+        setError(
+          'Unable to generate an image, please try again with a different picture.'
+        )
+      }
+
+      const fittedImage = await fitImage(sourceImage, 1024, 1024)
+      setImage(fittedImage)
+    } catch (err: any) {
+      console.error('Image generation polling failed:', err)
+      setError('Unable to generate an image, please try again later.')
+      try {
+        const fittedImage = await fitImage(sourceImage, 1024, 1024)
+        setImage(fittedImage)
+      } catch (fitErr) {
+        console.error('Failed to fall back to fitted image:', fitErr)
+      }
+    } finally {
       await deleteFromGoogleStorage(uploadedFilename)
-      setIsLoading(false) // Add this line
-    }
-
-    if (job.status === 'COMPLETED') {
-      const res = await fetch('/api/image-gen/get-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url: job.output[0].url }),
-      })
-
-      const blob = await res.blob()
-      const fileName = `image_${jobId}.png`
-      const file = new File([blob], fileName, { type: blob.type })
-
-      setImage(file)
       setIsLoading(false)
-
-      // Clean up uploaded file after successful generation
-      await deleteFromGoogleStorage(uploadedFilename)
     }
   }
 
