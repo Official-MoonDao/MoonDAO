@@ -215,18 +215,6 @@ const searchMappings = [
     category: 'Contribute',
   },
 
-  // ── Dashboard & Account ───────────────────────────────────────────────────
-  {
-    keywords: [
-      'dashboard', 'my dashboard', 'my account', 'my tokens', 'my voting power', 'profile',
-      'signed in', 'personal', 'account overview', 'holdings', 'my mooney',
-    ],
-    title: 'My Dashboard',
-    description: 'Your personal MoonDAO dashboard — tokens, voting power, projects and more',
-    link: '/dashboard',
-    category: 'Account',
-  },
-
   // ── Learn & Info ──────────────────────────────────────────────────────────
   {
     keywords: [
