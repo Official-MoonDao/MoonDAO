@@ -72,7 +72,7 @@ export async function fetchYouTubeCaptionsTranscript(
   } catch (error: any) {
     const msg: string = error?.message ?? String(error);
 
-    // Expected "no transcript" errors — not fatal
+    // Expected "no transcript available" — not a real error, caller falls back to audio
     if (
       msg.includes("No captions") ||
       msg.includes("disabled") ||
@@ -83,10 +83,8 @@ export async function fetchYouTubeCaptionsTranscript(
       return null;
     }
 
-    // Any other error: log and fall through to audio path
-    console.warn(
-      `Transcript fetch failed for ${videoId}: ${msg} — will fall back to audio.`
-    );
-    return null;
+    // Unexpected error (network failure, parse error, etc.) — re-throw so the
+    // caller can distinguish a real outage from "captions not ready yet".
+    throw new Error(`Transcript fetch failed for ${videoId}: ${msg}`);
   }
 }
