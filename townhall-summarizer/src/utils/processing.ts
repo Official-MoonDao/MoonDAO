@@ -49,6 +49,7 @@ export async function getTranscript(
   }
 
   // captions or auto
+  let captionFetchError: Error | null = null;
   try {
     const captions = await fetchYouTubeCaptionsTranscript(videoId);
     if (captions) {
@@ -60,14 +61,14 @@ export async function getTranscript(
       return correctSpellings(captions.transcript);
     }
   } catch (error) {
-    console.warn(
-      `Caption fetch failed: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
+    captionFetchError = error instanceof Error ? error : new Error(String(error));
+    console.warn(`Caption fetch failed: ${captionFetchError.message}`);
   }
 
   if (source === "captions") {
+    // Re-throw fetch errors verbatim so the outage is visible; only use the
+    // "no track available" message when captions returned null (not ready yet).
+    if (captionFetchError) throw captionFetchError;
     throw new Error(
       `No caption track available for video ${videoId} and TRANSCRIPT_SOURCE=captions. ` +
         `Wait for YouTube auto-captions to finish processing (usually a few hours after a live stream ends), ` +
