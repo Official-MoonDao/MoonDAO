@@ -1,0 +1,56 @@
+name: Townhall Summarizer
+
+on:
+  schedule:
+    # Run every Friday at 12:00 UTC (~14h after Thursday town halls)
+    - cron: '0 12 * * 5'
+  workflow_dispatch:
+    inputs:
+      video_ids:
+        description: 'Space-separated video IDs to process (leave empty for auto-detect)'
+        required: false
+        default: ''
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: townhall-summarizer
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: townhall-summarizer/yarn.lock
+
+      - name: Install yt-dlp
+        run: |
+          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
+          yt-dlp --version
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run summarizer
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
+          ALLOWED_YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
+          CONVERT_KIT_V4_API_KEY: ${{ secrets.CONVERT_KIT_V4_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TRANSCRIPT_SOURCE: captions
+        run: |
+          if [ -n "${{ github.event.inputs.video_ids }}" ]; then
+            echo "Processing specified video(s): ${{ github.event.inputs.video_ids }}"
+            yarn ts-node src/retro.ts ${{ github.event.inputs.video_ids }}
+          else
+            echo "Auto-detecting latest unprocessed town hall..."
+            yarn ts-node src/find-missing.ts --days=14 --auto-run
+          fi

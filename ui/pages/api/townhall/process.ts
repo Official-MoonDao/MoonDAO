@@ -69,45 +69,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
-    // Call the Cloud Run service to handle the full pipeline
-    // Fire-and-forget: don't wait for response to avoid Vercel timeout limits
-    // Use AbortController with a generous timeout to ensure the request is actually sent
+    // Call the Cloud Run service to handle the full pipeline.
+    //
+    // The service responds with 202 as soon as the request is validated and
+    // does the actual transcription/summarization in the background. We can
+    // therefore safely AWAIT the call here — it returns in well under a
+    // second, which is critical because Vercel serverless functions freeze
+    // (and can drop in-flight requests) the moment the handler returns.
+    // The previous fire-and-forget approach was unreliable on Vercel and is
+    // the most likely reason the cron silently stopped processing town halls.
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 30000) // 30s to ensure request reaches Cloud Run
+    const timeout = setTimeout(() => controller.abort(), 30000)
 
-    fetch(`${processingServiceUrl}/process`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
+    let cloudRunStatus: number | null = null
+    let cloudRunBody: any = null
+    try {
+      const resp = await fetch(`${processingServiceUrl}/process`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          videoId: latestVideo.id,
+          videoTitle: videoMetadata.title,
+          videoDate: videoMetadata.publishedAt,
+          groqModel: groqModel,
+          whisperModel: whisperModel,
+          convertKitApiKey:
+            process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY,
+        }),
+      })
+      cloudRunStatus = resp.status
+      try {
+        cloudRunBody = await resp.json()
+      } catch {
+        cloudRunBody = await resp.text().catch(() => null)
+      }
+      console.log(`Processing service responded with status: ${resp.status}`)
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        console.error(
+          'Processing request timed out after 30s — Cloud Run did not acknowledge the trigger.'
+        )
+      } else {
+        console.error('Error triggering processing service:', error)
+      }
+      return res.status(502).json({
+        message: 'Failed to reach processing service',
         videoId: latestVideo.id,
-        videoTitle: videoMetadata.title,
-        videoDate: videoMetadata.publishedAt,
-        groqModel: groqModel,
-        whisperModel: whisperModel,
-        convertKitApiKey: process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY,
-      }),
-    })
-      .then((resp) => {
-        clearTimeout(timeout)
-        console.log(`Processing service responded with status: ${resp.status}`)
+        error: error?.message || 'Unknown error',
       })
-      .catch((error) => {
-        clearTimeout(timeout)
-        // Log errors but don't block the response
-        if (error.name === 'AbortError') {
-          console.log('Processing request timed out waiting for response; delivery to Cloud Run is unconfirmed (expected for long-running processing)')
-        } else {
-          console.error('Error triggering processing service (non-blocking):', error)
-        }
+    } finally {
+      clearTimeout(timeout)
+    }
+
+    if (!cloudRunStatus || cloudRunStatus >= 400) {
+      return res.status(502).json({
+        message: 'Processing service returned an error',
+        videoId: latestVideo.id,
+        cloudRunStatus,
+        cloudRunBody,
       })
+    }
 
     return res.status(202).json({
       message: 'Town hall processing started successfully!',
       videoId: latestVideo.id,
-      note: 'Processing is running in the background. This may take 10-15 minutes for long videos.',
+      cloudRunStatus,
+      note: 'Processing is running in the background on Cloud Run. This may take 10-15 minutes for long videos.',
     })
   } catch (error) {
     console.error('Error processing town hall:', error)

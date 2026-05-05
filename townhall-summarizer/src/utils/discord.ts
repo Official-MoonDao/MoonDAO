@@ -99,6 +99,64 @@ export async function sendDiscordNotification(
   console.log("Discord notification sent successfully");
 }
 
+export interface DiscordErrorNotificationOptions {
+  videoId: string;
+  videoTitle?: string;
+  videoDate?: string;
+  error: string;
+}
+
+/**
+ * Sends a failure alert to Discord so the team is notified when the
+ * townhall pipeline crashes (cookies expired, GROQ down, etc.).
+ *
+ * Posts as a plain message (no @everyone) to a webhook channel.
+ */
+export async function sendDiscordErrorNotification(
+  webhookUrl: string,
+  options: DiscordErrorNotificationOptions
+): Promise<void> {
+  const { videoId, videoTitle, videoDate, error } = options;
+
+  const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const truncatedError =
+    error.length > 1500 ? error.substring(0, 1497) + "..." : error;
+
+  const payload = {
+    content: `⚠️ **Town Hall Summarizer failed** for [${
+      videoTitle || videoId
+    }](${youtubeUrl})`,
+    embeds: [
+      {
+        title: "Pipeline Error",
+        description: `\`\`\`\n${truncatedError}\n\`\`\``,
+        color: 0xe53935, // red
+        fields: [
+          { name: "Video ID", value: videoId, inline: true },
+          ...(videoDate
+            ? [{ name: "Date", value: videoDate, inline: true }]
+            : []),
+        ],
+        footer: { text: "MoonDAO Town Hall Summarizer" },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+
+  const response = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Discord error webhook failed (${response.status}): ${body}`
+    );
+  }
+}
+
 /**
  * Strip HTML tags from a string to produce plain text for the Discord preview.
  */
