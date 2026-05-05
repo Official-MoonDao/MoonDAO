@@ -25,6 +25,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
@@ -507,14 +508,31 @@ export default function OverviewDelegate({
   const isOverviewMission = missionId === '4'
 
   return (
-    <section className="overflow-visible">
+    <div className="animate-fadeIn flex flex-col items-center">
       <Head
         title="Fly to Space with Frank White"
         description="Help fund the mission to send Frank White to space. Earn $OVERVIEW tokens to vote for the citizen you want to fly alongside him."
       />
       <Container>
-        <div className="w-full">
-          <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[900px] mx-auto px-4 md:px-6 lg:px-0 py-8 md:py-12">
+        <ContentLayout
+          header={
+            <span style={{ fontSize: 'max(22px, min(3vw, 56px))' }} className="sm:whitespace-nowrap">
+              Fly to Space with Frank White
+            </span>
+          }
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+          description={
+            <>
+              Help fund the mission to send Frank White to space. Earn $OVERVIEW tokens to help
+              govern decision-making, including voting for the citizen you want to fly alongside him.
+            </>
+          }
+          preFooter={<NoticeFooter />}
+        >
+        <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[900px] mx-auto">
             {/* Contextual banner when arriving from Overview mission (mission 4) contribution */}
             {fromMission && isOverviewMission && (
               <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-4 sm:p-5 flex items-start gap-4">
@@ -539,15 +557,6 @@ export default function OverviewDelegate({
                 </div>
               </div>
             )}
-            {/* Page Header */}
-            <div className="pt-6 sm:pt-8">
-              <h1 className="font-GoodTimes text-white leading-tight text-2xl sm:text-3xl md:text-4xl">
-                Fly to Space with Frank White
-              </h1>
-              <p className="text-gray-300 text-sm sm:text-base mt-3 sm:mt-4 leading-relaxed">
-                Help fund the mission to send Frank White to space. Earn $OVERVIEW tokens to help govern decision-making, including voting for the citizen you want to fly alongside him.
-              </p>
-            </div>
             {/* Delegation Form */}
             <div className="relative z-10 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-visible">
               <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
@@ -879,10 +888,9 @@ export default function OverviewDelegate({
               </Link>
             </div>
           </div>
-          <NoticeFooter />
-        </div>
+        </ContentLayout>
       </Container>
-    </section>
+    </div>
   )
 }
 

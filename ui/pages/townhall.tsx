@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { getSummaries, type TownHallSummary } from '../lib/townhall/summaries'
 import WebsiteHead from '../components/layout/Head'
 import { LoadingSpinner } from '../components/layout/LoadingSpinner'
+import Container from '../components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
 import Search from '../components/layout/Search'
 import Tooltip from '../components/layout/Tooltip'
 import NextTownHall from '../components/townhall/NextTownHall'
@@ -86,24 +88,29 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
   }
 
   return (
-    <>
+    <div className="animate-fadeIn flex flex-col items-center">
       <WebsiteHead
         title="Town Hall"
         description="Weekly Town Hall meetings with key topics, decisions, and action items for the MoonDAO community."
         image="/assets/townhall-metadata.png"
       />
-      <div className="min-h-screen relative">
-        {/* Main content */}
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-          {/* Header section */}
-          <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-GoodTimes text-white mb-4 leading-tight">
-              Town Hall
-            </h1>
-            <p className="text-lg md:text-xl text-slate-200 max-w-3xl leading-relaxed mb-6">
-              Weekly Town Hall meetings with key topics discussed, decisions made, action items, and
-              important updates for community members.
-            </p>
+      <Container>
+        <ContentLayout
+          header="Town Hall"
+          headerSize="max(20px, 3vw)"
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+          description={
+            <>
+              Weekly Town Hall meetings with key topics discussed, decisions made, action items,
+              and important updates for community members.
+            </>
+          }
+          preFooter={<NoticeFooter />}
+        >
+        <div className="max-w-6xl mx-auto w-full">
 
             {/* Enhanced info section */}
             <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 mb-6 shadow-xl">
@@ -163,7 +170,7 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
           </div>
 
           {/* Summaries list */}
-          <div className="space-y-6">
+          <div className="max-w-6xl mx-auto w-full mt-6 space-y-6">
             {searchLoading ? (
               <div className="flex justify-center items-center py-12">
                 <LoadingSpinner width="w-8" height="h-8" />
@@ -233,10 +240,9 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
               formatting errors and may be retroactively regenerated or edited for better quality.
             </p>
           </div>
-        </div>
-        <NoticeFooter />
-      </div>
-    </>
+        </ContentLayout>
+      </Container>
+    </div>
   )
 }
 

@@ -21,6 +21,7 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { networkCard } from '@/lib/layout/styles'
 import Container from '../components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
 import CardGridContainer from '@/components/layout/CardGridContainer'
@@ -174,17 +175,33 @@ export default function Network({
       />
 
       <Container>
+        <ContentLayout
+          header="Explore the Network"
+          headerSize="max(20px, 3vw)"
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+          description={
+            <>
+              Discover and connect with citizens and teams building the future of space exploration.
+            </>
+          }
+          preFooter={
+            <>
+              <NoticeFooter
+                defaultImage="../assets/MoonDAO-Logo-White.svg"
+                defaultTitle="Need Help?"
+                defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+                defaultButtonText="Submit a Ticket"
+                defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+                imageWidth={200}
+                imageHeight={200}
+              />
+            </>
+          }
+        >
         <Frame noPadding>
-          <div className="relative py-8 px-6">
-            <div className="max-w-6xl mx-auto text-center">
-              <h1 className="header font-GoodTimes text-white mb-3">Explore the Network</h1>
-              <p className="sub-header text-white/80 max-w-3xl mx-auto mb-6">
-                Discover and connect with citizens and teams building the future of space
-                exploration
-              </p>
-            </div>
-          </div>
-
           <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div
@@ -312,18 +329,7 @@ export default function Network({
             )}
           </div>
         </Frame>
-
-        <div className="flex justify-center w-full">
-          <NoticeFooter
-            defaultImage="../assets/MoonDAO-Logo-White.svg"
-            defaultTitle="Need Help?"
-            defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
-            defaultButtonText="Submit a Ticket"
-            defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
-            imageWidth={200}
-            imageHeight={200}
-          />
-        </div>
+        </ContentLayout>
       </Container>
     </div>
   )

@@ -18,13 +18,13 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import viemChains from '@/lib/viem/viemChains'
 import Container from '../components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '../components/layout/Head'
 import { LockData } from '../components/lock/LockData'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import Input from '@/components/layout/Input'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import SpaceBackground from '@/components/layout/SpaceBackground'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import RetroactiveRewards from '@/components/tokens/RetroactiveRewards'
 import ERC20ABI from '../const/abis/ERC20.json'
@@ -153,6 +153,7 @@ export default function Lock() {
   useEffect(() => {
     if (hasLock && VMOONEYLock && lockTime?.formatted) {
       const lockEnd = bigNumberToDate(BigNumber.from(VMOONEYLock[1]))
+      if (!lockEnd) return
       const minExtendDate = new Date(lockEnd.getTime())
       minExtendDate.setDate(minExtendDate.getDate() + 1)
       if (Date.parse(lockTime.formatted) < minExtendDate.getTime()) {
@@ -206,23 +207,31 @@ export default function Lock() {
   const { t } = useTranslation('common')
 
   return (
-    <>
+    <div className="animate-fadeIn flex flex-col items-center">
       <Head title="Lock $MOONEY" />
-
-      <Container is_fullwidth={true}>
-        <SpaceBackground />
-        <div className="min-h-screen text-white w-full relative z-10">
-          {/* Lock MOONEY Section */}
-          <section className="pt-10 sm:pt-16 pb-4 sm:pb-6 px-4 sm:px-6 w-full min-h-[100dvh] flex flex-col">
-            <div className="max-w-2xl mx-auto w-full">
-              <div className="mb-3 sm:mb-4">
-                <h1 className="text-2xl sm:text-3xl font-bold font-GoodTimes text-white mb-1 sm:mb-2">
-                  Lock MOONEY
-                </h1>
-                <p className="text-sm sm:text-base text-gray-300">
-                  Lock MOONEY to receive vMOONEY and gain voting power in MoonDAO governance.
-                </p>
-              </div>
+      <Container>
+        <ContentLayout
+          header="Lock $MOONEY"
+          headerSize="max(20px, 3vw)"
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+          description={
+            <>
+              Lock MOONEY to receive vMOONEY and gain voting power in MoonDAO governance.
+            </>
+          }
+          preFooter={
+            <NoticeFooter
+              defaultTitle="Need Help?"
+              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+              defaultButtonText="Submit a Ticket"
+              defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+            />
+          }
+        >
+          <div className="max-w-2xl mx-auto w-full">
 
               {/* vMOONEY Withdraw Section */}
               <div className="mb-4 sm:mb-6">
@@ -717,7 +726,7 @@ export default function Lock() {
               </div>
 
               {/* Next Steps */}
-              <div className="max-w-2xl mx-auto">
+              <div className="mt-6">
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-bold text-white mb-2">After Locking</h3>
                   <p className="text-gray-300 text-sm">
@@ -746,22 +755,8 @@ export default function Lock() {
                 </div>
               </div>
             </div>
-          </section>
-
-          {/* Footer */}
-          <div className="flex justify-center w-full">
-            <NoticeFooter
-              defaultImage="../assets/MoonDAO-Logo-White.svg"
-              defaultTitle="Need Help?"
-              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
-              defaultButtonText="Submit a Ticket"
-              defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
-              imageWidth={200}
-              imageHeight={200}
-            />
-          </div>
-        </div>
+        </ContentLayout>
       </Container>
-    </>
+    </div>
   )
 }

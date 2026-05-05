@@ -57,7 +57,7 @@ export function TeamsNavDropdown({ variant, onNavigate }: TeamsNavDropdownProps)
   return (
     <>
       {wrapMobile(
-        <Link href="/join" className={baseLinkClass} onClick={onNavigate}>
+        <Link href="/team" className={baseLinkClass} onClick={onNavigate}>
           Create a Team
         </Link>
       )}
