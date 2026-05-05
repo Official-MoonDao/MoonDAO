@@ -726,15 +726,20 @@ export function ProjectRewards({
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
   const nonCitizenDistributions = distributions?.filter((_, i) => !isCitizens[i])
 
-  // Scope the eligible / ineligible cohorts to the cycle the page is
-  // currently showing. `quarter`/`year` already adapt:
-  //   - IS_REWARDS_CYCLE = true  → previous calendar quarter (the cohort
-  //     being voted on right now).
-  //   - IS_REWARDS_CYCLE = false → current calendar quarter (the cohort
-  //     whose retros will be voted on next).
-  // Without this filter, projects from a closed cycle whose `eligible = 1`
-  // flag was never cleared keep appearing in the live retro tab and the
-  // active-projects empty-state hint, which mixes cohorts.
+  // `eligibleProjects` is cohort-scoped on purpose: the Retroactive
+  // Rewards tab votes on a *specific* cycle's eligible cohort, so it has
+  // to track `quarter`/`year` (which adapt to the rewards-cycle flag).
+  // Otherwise projects from a closed cycle whose `eligible = 1` was
+  // never cleared would bleed into the live retro tab.
+  //
+  // `ineligibleProjects` (the Active Projects tab body) is intentionally
+  // NOT cohort-scoped. A project being "active and not yet eligible for
+  // retro" is a property of the project, not of the cycle the page is
+  // currently focused on. Scoping it to a single quarter caused the
+  // freshly-approved cohort to disappear from the Active Projects tab
+  // immediately after a Member Vote close — they're `active = 2` on
+  // chain but their quarter doesn't match the rewards-cycle quarter
+  // the page is otherwise viewing.
   const eligibleProjects = useMemo(
     () =>
       currentProjects.filter(
@@ -747,14 +752,8 @@ export function ProjectRewards({
   )
 
   const ineligibleProjects = useMemo(
-    () =>
-      currentProjects.filter(
-        (p) =>
-          !p.eligible &&
-          Number(p.quarter) === quarter &&
-          Number(p.year) === year
-      ),
-    [currentProjects, quarter, year]
+    () => currentProjects.filter((p) => !p.eligible),
+    [currentProjects]
   )
   // All projects need at least one citizen distribution to do iterative normalization
   const allProjectsHaveCitizenDistribution = eligibleProjects?.every(({ id }) =>
