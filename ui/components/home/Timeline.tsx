@@ -53,7 +53,7 @@ const timelineEvents: TimelineEvent[] = [
     year: 2024,
     title: 'Zero Gravity',
     description:
-      'Organized a zero gravity flight experience with three astronauts, advancing space training and research capabilities.',
+      'Organized a zero-gravity flight experience with three astronauts, advancing space training and research capabilities.',
     icon: '/assets/icon-plane.svg',
     iconAlt: 'Zero Gravity',
   },

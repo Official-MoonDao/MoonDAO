@@ -337,7 +337,7 @@ export default function Join({
                       </div>
                       <div className="text-sm text-slate-400">({CITIZEN_PRICE} Arbitrum ETH)</div>
                       <div className="text-green-400 text-sm font-medium mt-2">
-                        ✓ 12 Month Passport
+                        ✓ 12-Month Passport
                       </div>
                     </div>
                     <StandardButton
@@ -377,7 +377,7 @@ export default function Join({
                       </div>
                       <div className="text-sm text-slate-400">({TEAM_PRICE} Arbitrum ETH)</div>
                       <div className="text-green-400 text-sm font-medium mt-2">
-                        ✓ 12 Month Passport
+                        ✓ 12-Month Passport
                       </div>
                     </div>
                     <StandardButton

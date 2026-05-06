@@ -18,7 +18,7 @@ const features = [
   },
   {
     title: 'Battle Tested',
-    description: 'Powered by Juicebox, a proven and audited platform with over 1,000+ projects and over $200,000,000+ raised.',
+    description: 'Powered by Juicebox, a proven and audited platform with 1,000+ projects and over $200,000,000 raised.',
     icon: '/assets/icon-checkmark.svg',
     gradientFrom: 'from-[#5159CC]',
     gradientTo: 'to-[#4660E7]',
