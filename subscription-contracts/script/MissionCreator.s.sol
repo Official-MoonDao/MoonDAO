@@ -41,6 +41,10 @@ contract MyScript is Script, Config {
         MissionTable missionTable = MissionTable(MISSION_TABLE_ADDRESSES[block.chainid]);
         missionTable.setMissionCreator(address(missionCreator));
 
+        // Transfer MissionTable ownership to the dev wallet so future
+        // redeploys can be run without the original deployer key.
+        missionTable.transferOwnership(0x31CDb419E4A7998367627faa24cEe15941795827);
+
         vm.stopBroadcast();
     }
 }
