@@ -36,6 +36,7 @@ import {
   PROJECT_TABLE_NAMES,
   RETRO_ETH_BUDGET,
   RETRO_PAYOUT_TOKEN,
+  RETRO_PRIMARY_COMMUNITY_CIRCLE,
   RETRO_USD_BUDGET,
 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
@@ -61,6 +62,28 @@ function getMooneyBudgetForCycle(year: number, quarter: number): number {
   return MOONEY_INITIAL_BUDGET * MOONEY_DECAY_RATE ** numQuartersPastQ4Y2022
 }
 
+// Standard 90/10 split between project rewards and the community circle,
+// expressed as a fraction of the original quarterly budget (before any
+// upfront project funding). Used to derive the live cycle's defaults
+// when a (quarter, year) hasn't been frozen into `HISTORICAL_RETRO_POOLS`
+// yet. The community circle reservation is taken off the original
+// quarterly budget — NOT the post-upfront retro remainder — so it does
+// NOT scale down when projects get funded upfront.
+const COMMUNITY_CIRCLE_FRACTION = 0.1
+const PROJECT_REWARDS_FRACTION = 0.9
+
+type FrozenRetroPool = {
+  primaryAsset: 'ETH' | 'USDC'
+  /** ETH/USDC distributed to projects via the retro vote (post-upfront remainder). */
+  primaryProjectsAmount: number
+  /** MOONEY distributed to projects via the retro vote. */
+  mooneyProjectsAmount: number
+  /** Community circle's slice of the primary asset for the cycle. */
+  communityCirclePrimary: number
+  /** Community circle's slice of MOONEY for the cycle. */
+  communityCircleMooney: number
+}
+
 // Frozen per-cycle retro pool snapshots. We can't infer historical
 // pools from `RETRO_PAYOUT_TOKEN` / `RETRO_*_BUDGET` because those
 // constants only ever describe the *current* cycle — once the EB rolls
@@ -68,14 +91,23 @@ function getMooneyBudgetForCycle(year: number, quarter: number): number {
 // actually paid out. Each completed cycle gets pinned here so audits
 // of past quarters render their real pool. New cycles fall through
 // to the live config values; when a cycle closes, copy its config
-// snapshot into a new entry below.
-const HISTORICAL_RETRO_POOLS: Record<
-  string,
-  { primaryAsset: 'ETH' | 'USDC'; primaryAmount: number }
-> = {
+// snapshot into a new entry below — including the community circle
+// amounts so the audit page can show every cent the cycle paid out.
+const HISTORICAL_RETRO_POOLS: Record<string, FrozenRetroPool> = {
   // Q1 2026 retroactives (paid in ETH, voting closed Apr 21, 2026).
-  // Source: `RETRO_ETH_BUDGET` doc comment in `const/config.ts`.
-  '2026-Q1': { primaryAsset: 'ETH', primaryAmount: 2.215 },
+  // Quarterly total: 11.6 ETH + 7,700,000 MOONEY.
+  //   - 90% projects (10.44 ETH / 6,930,000 MOONEY).
+  //     8.225 ETH was paid upfront to funded projects, leaving
+  //     2.215 ETH for retro distribution. MOONEY had no upfront
+  //     payouts so the full 6,930,000 went to retro.
+  //   - 10% community circle (1.16 ETH / 770,000 MOONEY).
+  '2026-Q1': {
+    primaryAsset: 'ETH',
+    primaryProjectsAmount: 2.215,
+    mooneyProjectsAmount: 6_930_000,
+    communityCirclePrimary: 1.16,
+    communityCircleMooney: 770_000,
+  },
 }
 
 /**
@@ -147,11 +179,18 @@ export type RetroactiveResult = {
   projectId: string
   MDP: number | string | null
   name: string
-  /** Quadratic-voting % of the project pool. Sums (across all results) to ≤ 90 because `runQuadraticVoting` reserves 10% for the community circle. */
+  /**
+   * Project's share of the retro project pool, expressed as a percentage.
+   * Sums to 100 across all results in the cycle (modulo float drift).
+   * The community-circle slice is tracked separately on `outcome.pool`
+   * — it's a parallel cohort, NOT a slice of this same pool — so this
+   * percentage is renormalized over eligible projects only after the
+   * shared `runQuadraticVoting` carve-out is filtered out.
+   */
   percentage: number
-  /** Project's slice of the configured retro pool (ETH or USDC, depending on `RETRO_PAYOUT_TOKEN`). */
+  /** Project's slice of the retro primary-asset pool (ETH or USDC, depending on `pool.primaryAsset`). */
   primaryShare: number
-  /** Project's slice of the MOONEY pool. */
+  /** Project's slice of the retro MOONEY pool. */
   mooneyShare: number
 }
 
@@ -202,8 +241,22 @@ export type RetroactiveOutcome = {
   totalPower: number
   pool: {
     primaryAsset: 'ETH' | 'USDC'
+    /** ETH/USDC distributed to projects via the retro vote (post-upfront). */
     primaryAmount: number
+    /** MOONEY distributed to projects via the retro vote. */
     mooneyAmount: number
+    /**
+     * Community circle's slice of the primary asset for this cycle.
+     * Tracked alongside the project pool so audits can show every cent
+     * the cycle paid out. The community circle is a parallel cohort
+     * (10% of the original quarterly budget, set aside before upfront
+     * project funding) — it's NOT carved out of `primaryAmount`, so
+     * the two values do NOT sum to a fixed total once upfront payouts
+     * have shifted the project pool.
+     */
+    communityCirclePrimary: number
+    /** Community circle's slice of the MOONEY pool for this cycle. */
+    communityCircleMooney: number
   }
   results: RetroactiveResult[]
   computedAt: number
@@ -402,16 +455,32 @@ export async function computeRetroactiveOutcome({
     addressToPowerOriginalCase
   )
 
-  // Drop bogus keys produced by the non-citizen best-fit path. That
-  // helper returns array-shaped distributions, so when fed back into
-  // `runQuadraticVoting` they get bucketed under integer index keys
-  // ("0", "1", "2", …) that don't correspond to real Tableland project
-  // ids. Filter the outcome to the eligible cohort so the rendered
-  // results only reflect actual projects.
+  // Drop bogus keys produced by the non-citizen best-fit path AND
+  // renormalize across eligible projects so the resulting percentages
+  // describe each project's share of the *retro project pool* (which
+  // is what `pool.primaryAmount` / `pool.mooneyAmount` represent).
+  //
+  // Why renormalize? `runQuadraticVoting` reserves a 10% slice for
+  // the community circle by normalizing its output to sum to 90
+  // across every key it sees — including integer-indexed keys that
+  // come out of the non-citizen best-fit projection (the helper
+  // returns an array, and `Object.entries` exposes it under '0',
+  // '1', '2', …). Those bogus keys aren't projects, and the community
+  // circle is now tracked as its own pool on `outcome.pool` (see
+  // `HISTORICAL_RETRO_POOLS`), so neither belongs in the per-project
+  // percentage. Filtering to `eligibleIdSet` and rescaling to sum to
+  // 100 gives a clean "% of project pool" that matches the displayed
+  // ETH/MOONEY shares (which are computed as `pct * primaryAmount`
+  // and `pct * mooneyAmount`).
   const eligibleIdSet = new Set(eligibleProjects.map((p: any) => String(p.id)))
-  const cleanedOutcome: Record<string, number> = {}
+  const filteredOutcome: Record<string, number> = {}
   for (const [pid, pct] of Object.entries(projectIdToEstimatedPercentage)) {
-    if (eligibleIdSet.has(String(pid))) cleanedOutcome[String(pid)] = pct
+    if (eligibleIdSet.has(String(pid))) filteredOutcome[String(pid)] = pct
+  }
+  const filteredSum = Object.values(filteredOutcome).reduce((s, v) => s + v, 0)
+  const cleanedOutcome: Record<string, number> = {}
+  for (const [pid, pct] of Object.entries(filteredOutcome)) {
+    cleanedOutcome[pid] = filteredSum > 0 ? (pct / filteredSum) * 100 : 0
   }
 
   const totalCitizenPower = citizenDistributions.reduce(
@@ -425,23 +494,36 @@ export async function computeRetroactiveOutcome({
 
   // Pool sizes per voting cycle. Each completed cycle gets a frozen
   // entry in `HISTORICAL_RETRO_POOLS` so audits of past quarters render
-  // their actual pool (asset + amount) rather than the live config
-  // values. The current cycle falls through to `RETRO_PAYOUT_TOKEN` /
-  // `RETRO_*_BUDGET`, which is what `ProjectRewards.tsx` reads when
-  // showing the live retro tab. When a cycle is closed and the next
-  // one's config goes in, copy the now-historical `RETRO_*_BUDGET`
-  // values into a new entry below.
+  // their actual pool (project + community circle, in both the primary
+  // asset and MOONEY) rather than the live config values. The current
+  // cycle falls through to `RETRO_PAYOUT_TOKEN` / `RETRO_*_BUDGET` /
+  // `RETRO_PRIMARY_COMMUNITY_CIRCLE`, which is what `ProjectRewards.tsx`
+  // reads when showing the live retro tab. When a cycle closes and
+  // config rolls forward to the next cycle, copy the now-historical
+  // values (including the community circle) into a new entry above.
   const cycleKey = `${year}-Q${quarter}`
   const historicalPool = HISTORICAL_RETRO_POOLS[cycleKey]
   const isEthPayoutCycle = historicalPool
     ? historicalPool.primaryAsset === 'ETH'
     : RETRO_PAYOUT_TOKEN === 'ETH'
+  // For the live cycle, MOONEY has no upfront carve-out (we only spend
+  // MOONEY via retro), so projects get the full 90% slice of the
+  // quarterly MOONEY budget and the community circle gets 10%.
+  const liveMooneyTotal = getMooneyBudgetForCycle(year, quarter)
   const primaryAmount = historicalPool
-    ? historicalPool.primaryAmount
+    ? historicalPool.primaryProjectsAmount
     : isEthPayoutCycle
     ? RETRO_ETH_BUDGET
     : RETRO_USD_BUDGET
-  const mooneyAmount = getMooneyBudgetForCycle(year, quarter)
+  const mooneyAmount = historicalPool
+    ? historicalPool.mooneyProjectsAmount
+    : liveMooneyTotal * PROJECT_REWARDS_FRACTION
+  const communityCirclePrimary = historicalPool
+    ? historicalPool.communityCirclePrimary
+    : RETRO_PRIMARY_COMMUNITY_CIRCLE
+  const communityCircleMooney = historicalPool
+    ? historicalPool.communityCircleMooney
+    : liveMooneyTotal * COMMUNITY_CIRCLE_FRACTION
 
   const projectMeta = Object.fromEntries(
     eligibleProjects.map((p: any) => [String(p.id), p])
@@ -610,6 +692,8 @@ export async function computeRetroactiveOutcome({
       primaryAsset: isEthPayoutCycle ? 'ETH' : 'USDC',
       primaryAmount,
       mooneyAmount,
+      communityCirclePrimary,
+      communityCircleMooney,
     },
     results,
     computedAt: Math.floor(Date.now() / 1000),

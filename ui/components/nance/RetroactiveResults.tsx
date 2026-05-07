@@ -93,9 +93,26 @@ export default function RetroactiveResults({ quarter, year }: Props) {
             {outcome.citizenVoterCount} citizen
             {outcome.citizenVoterCount === 1 ? '' : 's'})
           </span>
-          <span className="bg-blue-500/10 border border-blue-400/30 text-blue-200 px-2 py-1 rounded">
-            Pool: {formatPrimary(outcome.pool.primaryAmount, outcome.pool.primaryAsset)}{' '}
-            + {formatMooney(outcome.pool.mooneyAmount)}
+          <span
+            className="bg-blue-500/10 border border-blue-400/30 text-blue-200 px-2 py-1 rounded"
+            title="The pool distributed to projects via this retroactive tally (post-upfront remainder of the quarterly project budget)."
+          >
+            Project pool:{' '}
+            {formatPrimary(outcome.pool.primaryAmount, outcome.pool.primaryAsset)}
+            {' + '}
+            {formatMooney(outcome.pool.mooneyAmount)}
+          </span>
+          <span
+            className="bg-purple-500/10 border border-purple-400/30 text-purple-200 px-2 py-1 rounded"
+            title="The community circle's parallel slice (10% of the original quarterly budget, set aside before upfront project funding). Distributed separately and not part of this tally."
+          >
+            Community circle:{' '}
+            {formatPrimary(
+              outcome.pool.communityCirclePrimary,
+              outcome.pool.primaryAsset
+            )}
+            {' + '}
+            {formatMooney(outcome.pool.communityCircleMooney)}
           </span>
           <Link
             href={`/projects/retro-audit?quarter=${outcome.quarter}&year=${outcome.year}`}
@@ -177,10 +194,11 @@ export default function RetroactiveResults({ quarter, year }: Props) {
       </div>
 
       {/* Footer summary — totals across all projects so an auditor can
-          eyeball that "% of pool" sums to ~90 (the 10% community-circle
-          carve-out is invisible here because the panel only ranks
-          projects), and that the per-project pool shares add up to the
-          headline pool minus that 10%. */}
+          eyeball that "% of pool" sums to ~100 (each project's share of
+          the project pool — community circle is tracked separately on
+          the header chip, so it's intentionally NOT included in this
+          allocation), and that the per-project pool shares add up to
+          the headline project pool. */}
       <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-2 sm:gap-3 text-[11px] font-RobotoMono">
         <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 min-w-0">
           <div className="text-[10px] uppercase tracking-wider text-gray-400 truncate">
