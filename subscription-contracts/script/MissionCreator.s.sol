@@ -7,8 +7,12 @@ import "base/Config.sol";
 /// @title DeployMissionCreator
 /// @notice Deploys a fresh MissionCreator with the latest source — notably
 ///         `ownerMustSendPayouts = true` baked into both rulesets so future
-///         missions are gated by default — and re-points the existing
-///         MissionTable at the new MissionCreator.
+///         missions are gated by default.
+///
+/// This script ONLY deploys the contract. Wiring the new MissionCreator into
+/// the existing MissionTable (`setMissionCreator`) and transferring table
+/// ownership are owner-gated calls and must be executed by the current
+/// MissionTable owner directly (e.g. via Arbiscan).
 ///
 /// No legacy missions are migrated. Mission 4's ruleset has already been
 /// fixed on-chain, and the earlier missions are stale.
@@ -37,14 +41,12 @@ contract MyScript is Script, Config {
             POSITION_MANAGERS[block.chainid]
         );
 
-        // Re-point the existing MissionTable at the new MissionCreator.
-        MissionTable missionTable = MissionTable(MISSION_TABLE_ADDRESSES[block.chainid]);
-        missionTable.setMissionCreator(address(missionCreator));
-
-        // Transfer MissionTable ownership to the dev wallet so future
-        // redeploys can be run without the original deployer key.
-        missionTable.transferOwnership(0x31CDb419E4A7998367627faa24cEe15941795827);
-
         vm.stopBroadcast();
+
+        console.log("New MissionCreator deployed:", address(missionCreator));
+        console.log("Next steps (call from MissionTable owner):");
+        console.log("  MissionTable.setMissionCreator(%s)", address(missionCreator));
+        console.log("  MissionTable.transferOwnership(0x31CDb419E4A7998367627faa24cEe15941795827)");
+        console.log("MissionTable address:", MISSION_TABLE_ADDRESSES[block.chainid]);
     }
 }
