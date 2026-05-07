@@ -31,6 +31,7 @@ destination address and destination endpoint id.
 */
 contract CrossChainMinter is OApp {
     address public citizenAddress;
+
     constructor(address _endpoint, address _citizenContract) OApp(_endpoint, msg.sender) Ownable(msg.sender) {
         citizenAddress = _citizenContract;
     }
@@ -49,6 +50,7 @@ contract CrossChainMinter is OApp {
         string memory _view,
         string memory formId
     ) external payable {
+        require(to == msg.sender, "to != sender");
         bytes memory payload = abi.encode(
             to,
             name,

@@ -10,6 +10,7 @@ interface IERC20 {
 contract Vesting {
     IERC20 public token;
     address public beneficiary;
+    address public immutable factory;
     uint256 public immutable start;
     uint256 public immutable cliffDuration;      // 1-year cliff
     uint256 public constant vestingDuration = 4 * 365 days;  // 4-year vesting
@@ -17,6 +18,7 @@ contract Vesting {
 
     constructor(address _beneficiary) {
         beneficiary = _beneficiary;
+        factory = msg.sender;
         if (block.chainid != 11155111){
             cliffDuration = 365 days; // 1-year cliff
         } else {
@@ -25,8 +27,9 @@ contract Vesting {
         start = block.timestamp; // Vesting starts immediately upon deployment
     }
 
-    // Set the token to be vested (only once)
+    // Set the token to be vested (only once, only by the deploying factory)
     function setToken(address _token) external {
+        require(msg.sender == factory, "only factory");
         require(address(token) == address(0), "Token already set");
         token = IERC20(_token);
     }
