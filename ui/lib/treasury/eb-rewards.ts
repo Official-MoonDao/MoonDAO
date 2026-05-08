@@ -1,6 +1,7 @@
 import { getAUMHistoryOnchain } from './aum-onchain'
 import { getETHPrice } from '../etherscan'
 import { getHistoricalRevenue } from './revenue'
+import { getCanonicalSubscriptionRevenue } from './canonicalRevenue'
 
 export interface QuarterlyData {
   quarter: number
@@ -128,6 +129,30 @@ export async function getQuarterlyAverageValue(
 }
 
 async function getQuarterlyRevenue(quarter: number, year: number): Promise<number> {
+  const { startDate, endDate } = getQuarterDateRange(quarter, year)
+  const startTimestamp = startDate.getTime()
+  const endTimestamp = endDate.getTime()
+  const now = Date.now()
+
+  try {
+    // Canonical: pull subscription txs straight from Etherscan v2 (no cache).
+    const ethPrice = await getETHPrice()
+    const canonical = await getCanonicalSubscriptionRevenue(
+      startTimestamp,
+      Math.min(endTimestamp, now),
+      ethPrice
+    )
+    return canonical.totalUSD
+  } catch (error) {
+    console.error(`Error fetching quarterly revenue for Q${quarter} ${year}:`, error)
+    return 0
+  }
+}
+
+// Legacy (cumulative-history) implementation kept below for reference; no
+// longer used because it depended on a cached pipeline that could silently
+// return $0 on rate-limited Etherscan responses.
+async function _legacyQuarterlyRevenueFromHistory(quarter: number, year: number): Promise<number> {
   const { startDate, endDate } = getQuarterDateRange(quarter, year)
   const startTimestamp = startDate.getTime()
   const endTimestamp = endDate.getTime()
@@ -262,44 +287,26 @@ export async function calculateRevenueReward(
   ethPrice: number
 ): Promise<RevenueReward> {
   try {
-    const { aumHistory, defiData } = await getAUMHistoryOnchain(365)
+    const { defiData } = await getAUMHistoryOnchain(365)
 
-    const revenueData = await getHistoricalRevenue(defiData, 365)
+    // Subscription revenue: pull canonical on-chain numbers (no cache) so
+    // a transient Etherscan failure can never silently zero this out.
+    const now = Date.now()
+    const yearAgo = now - 365 * 86400000
+    const [annualSubs, revenueData] = await Promise.all([
+      getCanonicalSubscriptionRevenue(yearAgo, now, ethPrice),
+      // Still need defi fees + staking from the existing pipeline
+      // (Uniswap subgraph + beacon chain — both deterministic).
+      getHistoricalRevenue(defiData, 365),
+    ])
 
-    const currentYear = new Date().getFullYear()
-
-    // If selected year is in the future, use current year's data
-    const yearToUse = year > currentYear ? currentYear : year
-
-    // Use the annual totals directly from getHistoricalRevenue
-    // These represent the total revenue from all available history (last 365 days)
-    // For annual revenue, we use the sum of all revenue components
     const annualRevenueUSD =
-      revenueData.citizenRevenue +
-      revenueData.teamRevenue +
+      annualSubs.citizen.totalUSD +
+      annualSubs.team.totalUSD +
       revenueData.defiRevenue +
       revenueData.stakingRevenue
 
-    // If we have revenue history points, we can filter by year
-    // Otherwise, use the annual totals (which represent the last 365 days)
-    let annualRevenueFromHistory = 0
-    if (revenueData.revenueHistory.length > 0) {
-      const yearStart = new Date(Date.UTC(yearToUse, 0, 1, 0, 0, 0, 0)).getTime()
-      const yearEnd =
-        yearToUse === currentYear
-          ? new Date().getTime()
-          : new Date(Date.UTC(yearToUse, 11, 31, 23, 59, 59, 999)).getTime()
-
-      const relevantRevenue = revenueData.revenueHistory.filter((point) => {
-        return point.timestamp >= yearStart && point.timestamp <= yearEnd
-      })
-
-      annualRevenueFromHistory = relevantRevenue.reduce((sum, point) => sum + point.totalRevenue, 0)
-    }
-
-    // Use history-based calculation if available, otherwise use annual totals
-    const finalAnnualRevenueUSD =
-      annualRevenueFromHistory > 0 ? annualRevenueFromHistory : annualRevenueUSD
+    const finalAnnualRevenueUSD = annualRevenueUSD
 
     const rewardUSD = finalAnnualRevenueUSD * 0.1
     const rewardETH = ethPrice > 0 ? rewardUSD / ethPrice : 0
