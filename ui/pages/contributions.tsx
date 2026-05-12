@@ -1,8 +1,113 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import type { Contribution } from './api/contributions/feed'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
+
+function ContributionFeed() {
+  const [contributions, setContributions] = useState<Contribution[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({})
+
+  useEffect(() => {
+    fetch('/api/contributions/feed')
+      .then((r) => r.json())
+      .then((data) => setContributions(data.contributions || []))
+      .catch(() => setContributions([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-10 text-white/40 text-sm">
+        Loading recent contributions…
+      </div>
+    )
+  }
+
+  if (!contributions.length) {
+    return (
+      <div className="mt-10">
+        <h3 className="text-white font-GoodTimes text-lg mb-4">Recent Contributions</h3>
+        <div className="flex flex-col items-center justify-center py-10 bg-black/20 border border-white/10 rounded-xl text-center gap-2">
+          <p className="text-white/50 text-sm">No contributions have been submitted yet this quarter.</p>
+          <p className="text-white/30 text-xs">Be the first — submit your work using the button above!</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Group by submitter name / wallet
+  const grouped = contributions.reduce<Record<string, Contribution[]>>((acc, c) => {
+    const key = c.name || c.walletAddress || 'Anonymous'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(c)
+    return acc
+  }, {})
+
+  const entries = Object.entries(grouped)
+
+  return (
+    <div className="mt-10 flex flex-col gap-4">
+      <h3 className="text-white font-GoodTimes text-lg">Recent Contributions</h3>
+      {entries.map(([name, items], idx) => {
+        const open = expanded[idx]
+        return (
+          <div
+            key={idx}
+            className="bg-black/20 border border-white/10 rounded-xl overflow-hidden"
+          >
+            <button
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors"
+              onClick={() => setExpanded((prev) => ({ ...prev, [idx]: !prev[idx] }))}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  {name[0]?.toUpperCase() || '?'}
+                </div>
+                <span className="text-white font-medium truncate">{name}</span>
+                <span className="text-white/40 text-sm flex-shrink-0">
+                  {items.length} contribution{items.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <svg
+                className={`w-4 h-4 text-white/40 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {open && (
+              <div className="border-t border-white/10 divide-y divide-white/5">
+                {items.map((c, cidx) => (
+                  <div key={cidx} className="px-5 py-4">
+                    {c.quarter && (
+                      <span className="text-xs text-blue-400 font-medium mb-1 block">{c.quarter}</span>
+                    )}
+                    <p className="text-gray-300 text-sm leading-relaxed">{c.description}</p>
+                    {c.links && (
+                      <a
+                        href={c.links.startsWith('http') ? c.links : `https://${c.links}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-400 hover:text-blue-300 text-xs underline mt-2 block truncate"
+                      >
+                        {c.links}
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 export default function ContributionsPage() {
   const title = 'Submit Your Contribution'
@@ -64,6 +169,7 @@ export default function ContributionsPage() {
                   </svg>
                 </a>
               </div>
+              <ContributionFeed />
             </div>
           </ContentLayout>
           <NoticeFooter 
