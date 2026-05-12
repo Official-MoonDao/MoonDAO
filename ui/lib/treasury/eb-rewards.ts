@@ -343,9 +343,9 @@ export async function calculateEBRewards(quarter: number, year: number): Promise
       throw new Error('Unable to fetch ETH price')
     }
 
-    // Calculate quarterly revenue once and use it for both calculations
+    // Quarter revenue used only to strip out revenue inflows from AUM growth
     const quarterRevenueUSD = await getQuarterlyRevenue(quarter, year)
-    
+
     const treasuryGrowth = await calculateTreasuryGrowthReward(
       quarter,
       year,
@@ -353,12 +353,13 @@ export async function calculateEBRewards(quarter: number, year: number): Promise
       quarterRevenueUSD
     )
 
-    // EB gets 10% of quarterly revenue
-    const revenueRewardUSD = quarterRevenueUSD * 0.1
-    const revenueRewardETH = ethPrice > 0 ? revenueRewardUSD / ethPrice : 0
+    // Revenue reward = 10% of TRAILING 365-DAY annual revenue (not just this quarter)
+    const revenueReward = await calculateRevenueReward(year, ethPrice)
+    const revenueRewardUSD = revenueReward.rewardUSD
+    const revenueRewardETH = revenueReward.rewardETH
 
     const revenue = {
-      annualRevenueUSD: quarterRevenueUSD,
+      annualRevenueUSD: revenueReward.annualRevenueUSD,
       rewardUSD: revenueRewardUSD,
       rewardETH: revenueRewardETH,
     }
