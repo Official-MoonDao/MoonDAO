@@ -382,6 +382,26 @@ export default function SignedInDashboard({
           </Link>
         </div>
 
+        {/* Community Circle CTA */}
+        <div className="mb-6 flex items-center justify-between gap-4 bg-gradient-to-r from-blue-900/40 to-purple-900/30 backdrop-blur-xl border border-blue-500/20 rounded-2xl px-5 py-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <TrophyIcon className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-white font-semibold text-sm">Submit a Contribution</p>
+              <p className="text-white/50 text-xs truncate">Share work that advances MoonDAO's mission — earn ETH &amp; vMOONEY rewards each quarter.</p>
+            </div>
+          </div>
+          <Link
+            href="/contributions"
+            className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white text-sm font-semibold rounded-xl transition-all duration-200 whitespace-nowrap"
+          >
+            Submit
+            <ArrowUpRightIcon className="w-4 h-4" />
+          </Link>
+        </div>
+
         {/* Main Content - Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
