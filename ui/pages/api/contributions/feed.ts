@@ -17,27 +17,47 @@ export type Contribution = {
 
 function parseCSV(csv: string): string[][] {
   const rows: string[][] = []
-  const lines = csv.split('\n')
-  for (const line of lines) {
-    if (!line.trim()) continue
-    // Simple CSV split — handles quoted fields containing commas
-    const cols: string[] = []
-    let current = ''
-    let inQuotes = false
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i]
-      if (ch === '"') {
-        inQuotes = !inQuotes
-      } else if (ch === ',' && !inQuotes) {
-        cols.push(current.trim())
-        current = ''
-      } else {
-        current += ch
-      }
-    }
+  let current = ''
+  let inQuotes = false
+  const cols: string[] = []
+
+  const flush = () => {
     cols.push(current.trim())
-    rows.push(cols)
+    current = ''
   }
+
+  for (let i = 0; i < csv.length; i++) {
+    const ch = csv[i]
+    const next = csv[i + 1]
+
+    if (ch === '"') {
+      if (inQuotes && next === '"') {
+        // escaped quote inside quoted field
+        current += '"'
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+    } else if (ch === ',' && !inQuotes) {
+      flush()
+    } else if ((ch === '\r' && next === '\n' || ch === '\n') && !inQuotes) {
+      if (ch === '\r') i++ // skip \n of \r\n
+      flush()
+      if (cols.length > 1 || cols[0] !== '') {
+        rows.push([...cols])
+      }
+      cols.length = 0
+    } else {
+      current += ch
+    }
+  }
+
+  // flush last field/row
+  if (current || cols.length > 0) {
+    flush()
+    rows.push([...cols])
+  }
+
   return rows
 }
 
@@ -61,18 +81,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ contributions: [] })
     }
 
-    // Expected columns (0-indexed):
-    // 0: Timestamp, 1: Wallet Address, 2: Name / Handle, 3: Description, 4: Links, 5: Quarter
-    // Adjust indices below if the sheet columns differ.
+    // Sheet columns (0-indexed):
+    // 0: Timestamp, 1: Name/Username, 2: Email, 3: Citizen?, 4: Wallet Address,
+    // 5: Area, 6: Description, 7: Time Commitment, 8: Links
     const [_header, ...dataRows] = rows
     const contributions: Contribution[] = dataRows
-      .filter((row) => row[3]) // must have a description
+      .filter((row) => row[6]) // must have a description
       .map((row) => ({
         timestamp: row[0] || '',
-        walletAddress: row[1] || '',
-        name: row[2] || 'Anonymous',
-        description: row[3] || '',
-        links: row[4] || '',
+        walletAddress: row[4] || '',
+        name: row[1] || 'Anonymous',
+        description: row[6] || '',
+        links: row[8] || '',
         quarter: row[5] || '',
       }))
       .reverse() // newest first

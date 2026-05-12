@@ -67,9 +67,6 @@ function ContributionFeed() {
                   {name[0]?.toUpperCase() || '?'}
                 </div>
                 <span className="text-white font-medium truncate">{name}</span>
-                <span className="text-white/40 text-sm flex-shrink-0">
-                  {items.length} contribution{items.length !== 1 ? 's' : ''}
-                </span>
               </div>
               <svg
                 className={`w-4 h-4 text-white/40 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
