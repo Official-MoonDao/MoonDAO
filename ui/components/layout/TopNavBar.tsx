@@ -119,7 +119,6 @@ const TopNavBar = ({
                   (router.pathname.startsWith('/project') ||
                     router.pathname === '/projects' ||
                     router.pathname === '/proposals' ||
-                    router.pathname === '/contributions' ||
                     router.pathname === '/projects-overview'))
 
               return (
