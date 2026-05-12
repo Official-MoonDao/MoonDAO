@@ -11,7 +11,7 @@ export default function ContributionsPage() {
     <>
       <WebsiteHead 
         title={title} 
-        description="Submit your mission-aligned work and accomplishments to earn ETH financial rewards and vMOONEY voting power. Document your contributions to MoonDAO's lunar settlement mission." 
+        description="Submit your mission-aligned work and accomplishments to earn ETH financial rewards and vMOONEY voting power. Senators evaluate all submissions each quarter to distribute rewards." 
       />
       <section className="flex flex-col justify-start px-5 mt-5 items-start animate-fadeIn w-[90vw] md:w-full">
         <Container>
@@ -20,7 +20,7 @@ export default function ContributionsPage() {
             headerSize="40px"
             description={
               <div className="text-gray-300 text-lg leading-relaxed">
-                Submit your contributions to participate in MoonDAO's quarterly retroactive rewards cycle. The community evaluates all submissions and votes on their impact. Rewards in ETH and vMOONEY are distributed from a community pool based on these votes.
+                Submit your contributions to participate in MoonDAO's quarterly retroactive rewards cycle. MoonDAO senators evaluate all submissions and distribute rewards based on impact. Rewards in ETH and vMOONEY are paid out from a community pool each quarter.
               </div>
             }
             mainPadding
@@ -34,7 +34,7 @@ export default function ContributionsPage() {
                   MoonDAO runs quarterly retroactive reward cycles. Submit any work that advances our mission to establish a lunar settlement—directly tied to MoonDAO or not, if it accelerates our multiplanetary future, it counts!
                 </p>
                 <p className="text-gray-300 leading-relaxed text-center mb-3">
-                  Each quarter, the community votes to evaluate the impact of all submitted contributions. A shared reward pool (funded with ETH and vMOONEY) is then distributed based on these community votes. Higher-impact contributions receive a larger share of the pool.
+                  Each quarter, MoonDAO senators independently evaluate all submitted contributions and distribute a shared reward pool (funded with ETH and vMOONEY) based on impact. Higher-impact contributions receive a larger share of the pool.
                 </p>
                 <p className="text-gray-300 leading-relaxed text-center">
                   Learn more in{' '}
