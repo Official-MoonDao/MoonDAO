@@ -66,7 +66,7 @@ const resourceCategories = [
       },
       {
         name: 'Celestrak',
-        url: 'https://celestrak.com/',
+        url: 'https://celestrak.org/',
         description: 'Satellite tracking data, orbital elements, and space situational awareness information.'
       },
       {

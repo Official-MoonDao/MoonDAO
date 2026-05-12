@@ -66,7 +66,7 @@ export default function FinalReportsPage({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Google doc template
+                    Google Doc template
                   </Link>
                   .
                 </p>

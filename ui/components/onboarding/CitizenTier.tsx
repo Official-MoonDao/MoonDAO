@@ -67,7 +67,7 @@ const CitizenTier = ({
         points={[
           'Unique Identity: Create a personalized, AI-generated passport image representing your on-chain identity.',
           'Professional Networking: Connect with top space startups, non-profits, and ambitious teams.',
-          'Career Advancement: Access jobs, gigs, hackathons, and more; building on-chain credentials to showcase your experience.',
+          'Career Advancement: Access jobs, gigs, hackathons, and more, building on-chain credentials to showcase your experience.',
           'Early Project Access: Engage in space projects, earn money, and advance your career.',
         ]}
         buttoncta={compact ? 'Learn More' : 'Become a Citizen'}

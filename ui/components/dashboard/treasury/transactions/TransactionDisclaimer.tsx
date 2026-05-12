@@ -34,9 +34,9 @@ const TransactionDisclaimer = () => {
               </p>
               <br/>
               <p>
-                Like many other web3 Organizations & DAOs, MoonDAO gets
-                targetted by scammers. They use the tactic of sending tokens
-                that can drain a wallet if it's owner interacts with them.
+                Like many other web3 organizations and DAOs, MoonDAO gets
+                targeted by scammers. They use the tactic of sending tokens
+                that can drain a wallet if its owner interacts with them.
               </p>
             </Disclosure.Panel>
           </>

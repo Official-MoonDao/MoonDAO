@@ -32,7 +32,7 @@ const FAQS = [
   {
     question: 'How much does it cost to launch a campaign?',
     answer:
-      'There is no upfront cost to create a Mission, but standard Ethereum network (gas) fees apply when deploying smart contracts. Additionally, MoonDAO/Juicebox receive a small percentage (10% in total) of successfully raised funds to sustain the platform and support other space related projects within the community governed treasury. Likewise, 10% of the tokens created for a Mission will be reserved for the MoonDAO treasury to align long term interests, with a 1-year cliff and three years streaming, meaning that tokens cannot be immediately sold. Furthermore, any outlays from the MoonDAO treasury require a vote.',
+      'There is no upfront cost to create a Mission, but standard Ethereum network (gas) fees apply when deploying smart contracts. Additionally, MoonDAO/Juicebox receive a small percentage (10% in total) of successfully raised funds to sustain the platform and support other space-related projects within the community-governed treasury. Likewise, 10% of the tokens created for a Mission will be reserved for the MoonDAO treasury to align long-term interests, with a 1-year cliff and three years of streaming, meaning that tokens cannot be immediately sold. Furthermore, any outlays from the MoonDAO treasury require a vote.',
   },
   {
     question: 'How does the cliff and streaming work?',
@@ -40,7 +40,7 @@ const FAQS = [
       "Funds raised through the MoonDAO Launch Pad are subject to a 1-year cliff, meaning they remain locked for the first year. After this period, they stream gradually over three years, ensuring sustainable, long-term funding. This applies to both the project's funds and MoonDAO's 10% reserve allocation, preventing immediate sell-offs and promoting ecosystem stability.",
   },
   {
-    question: 'Should I create an erc-20 token for my campaign?',
+    question: 'Should I create an ERC-20 token for my campaign?',
     answer:
       "It depends on your project's goals. An ERC-20 token can provide liquidity, community ownership, and governance features, but it also introduces risks like speculation and regulatory concerns. Tokens allow for tradability on decentralized exchanges, enabling supporters to buy, sell, or hold them as part of the project's ecosystem. They can also incentivize engagement through governance rights or utility within the project. However, speculative trading can create volatility, potentially impacting long-term sustainability.",
   },

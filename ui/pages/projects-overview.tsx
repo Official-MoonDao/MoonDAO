@@ -546,7 +546,7 @@ const ProjectsOverview: React.FC<{
                       <div>
                         <h5 className="font-bold text-white mb-1">Present & Vote</h5>
                         <p className="text-sm text-gray-300">
-                          Present at the Townhall meeting. Members vote to allocate funding. Top 50%
+                          Present at the Town Hall meeting. Members vote to allocate funding. Top 50%
                           of proposals get funded (budget permitting).
                         </p>
                       </div>

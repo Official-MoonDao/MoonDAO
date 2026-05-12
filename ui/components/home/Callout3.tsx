@@ -62,7 +62,7 @@ const indexCardData = [
     paragraph: (
       <>
         Established a constitution for self-governance, which landed on
-        the surface of the Moon in early-2025.
+        the surface of the Moon in early 2025.
       </>
     ),
   },
