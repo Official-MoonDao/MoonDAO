@@ -74,7 +74,7 @@ function ContributionFeed() {
             </button>
 
             {open && (
-              <div className="px-5 pb-5 pt-1 border-t border-white/10">
+              <div className="px-5 pb-5 pt-4 border-t border-white/10">
                 {items.map((c, cidx) => (
                   <div key={cidx}>
                     <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">{c.description}</p>
