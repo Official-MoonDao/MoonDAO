@@ -87,6 +87,19 @@ function parseArgs() {
   //                          debugging or pinning a future cycle whose
   //                          historical block doesn't exist yet.
   const method = args.method || 'historical'
+  // Override for the auto-derived vote-close timestamp. The default
+  // formula in this script (`getMemberVoteCloseTimestamp` /
+  // `getRetroVoteCloseTimestamp`) mirrors what the production compute
+  // pipeline derives, but the *actual* governance close moment can
+  // diverge — e.g. Q2 2026's member vote actually closed 2026-05-01,
+  // not the formula's 2026-04-21. Pass the real close as a unix
+  // timestamp (seconds) and the snapshot pins it both in
+  // `voteCloseTimestamp` (so the audit page displays the right date)
+  // and as the `balanceOfAt` block-resolution target (so the values
+  // reflect what actually counted).
+  const voteCloseOverride = args['vote-close-timestamp']
+    ? Number(args['vote-close-timestamp'])
+    : null
   if (!['member', 'retro'].includes(kind)) {
     console.error(`Invalid --kind="${kind}" (expected "member" or "retro").`)
     process.exit(1)
@@ -105,7 +118,17 @@ function parseArgs() {
     )
     process.exit(1)
   }
-  return { kind, quarter, year, method }
+  if (
+    voteCloseOverride != null &&
+    (!Number.isFinite(voteCloseOverride) || voteCloseOverride <= 0)
+  ) {
+    console.error(
+      `Invalid --vote-close-timestamp="${args['vote-close-timestamp']}" ` +
+        `(expected a positive unix timestamp in seconds).`
+    )
+    process.exit(1)
+  }
+  return { kind, quarter, year, method, voteCloseOverride }
 }
 
 // =============================================================================
@@ -353,17 +376,26 @@ function getRetroVoteCloseTimestamp(quarter, year) {
 // Main
 // =============================================================================
 ;(async () => {
-  const { kind, quarter, year, method } = parseArgs()
-  const voteCloseTimestamp =
+  const { kind, quarter, year, method, voteCloseOverride } = parseArgs()
+  const derivedVoteClose =
     kind === 'member'
       ? getMemberVoteCloseTimestamp(quarter, year)
       : getRetroVoteCloseTimestamp(quarter, year)
+  const voteCloseTimestamp = voteCloseOverride ?? derivedVoteClose
 
   const closeIso = new Date(voteCloseTimestamp * 1000).toISOString()
   console.error(
     `[snapshot-vmooney] kind=${kind} cycle=Q${quarter} ${year} ` +
       `voteCloseTimestamp=${voteCloseTimestamp} (${closeIso}) method=${method}`
   )
+  if (voteCloseOverride != null && voteCloseOverride !== derivedVoteClose) {
+    const derivedIso = new Date(derivedVoteClose * 1000).toISOString()
+    console.error(
+      `[snapshot-vmooney] using --vote-close-timestamp=${voteCloseOverride} ` +
+        `instead of derived ${derivedVoteClose} (${derivedIso}). ` +
+        `The pinned snapshot will record the override so the audit displays it.`
+    )
+  }
 
   const now = Math.floor(Date.now() / 1000)
   if (now < voteCloseTimestamp && method === 'historical') {

@@ -306,8 +306,6 @@ export async function computeMemberVoteOutcome({
   const voteOpenTimestamp = Math.floor(
     getThirdThursdayOfQuarterTimestamp(quarter, year).getTime() / 1000
   )
-  const voteCloseTimestamp = voteOpenTimestamp + 60 * 60 * 24 * 5
-
   // Voting power resolution. Past cycles read from a frozen snapshot in
   // `vMooneySnapshots.ts` so the audit doesn't drift when voters touch
   // their lock after vote close — see that file's header for the full
@@ -318,7 +316,20 @@ export async function computeMemberVoteOutcome({
   // after the on-chain tally fires — so we still need the live RPC path
   // to power the in-flight preview. Once the cycle's snapshot lands in
   // the constants file and ships, the audit for that quarter freezes.
+  //
+  // The default `voteCloseTimestamp` formula (third Thursday + 5 days)
+  // matches the on-chain `vote.ts` close calculation, but the *actual*
+  // governance close moment can diverge — e.g. Q2 2026 actually closed
+  // 2026-05-01, not the formula's 2026-04-21 (the formula treats the
+  // submission deadline as the vote-open, but voting actually starts
+  // after the Senate phase). When a snapshot is present and pins its
+  // own `voteCloseTimestamp`, we use THAT for the displayed close date
+  // so the audit page is internally consistent (values come from the
+  // snapshot, displayed close date matches when those values were
+  // captured).
   const snapshot = getMemberVoteVMooneySnapshot(quarter, year)
+  const voteCloseTimestamp =
+    snapshot?.voteCloseTimestamp ?? voteOpenTimestamp + 60 * 60 * 24 * 5
   const vMOONEYs = snapshot
     ? resolveSnapshotVMooney(snapshot, voteAddresses)
     : await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)

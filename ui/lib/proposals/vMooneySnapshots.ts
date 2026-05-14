@@ -147,41 +147,45 @@ const cycleKey = (quarter: number, year: number) => `${year}-Q${quarter}`
  * Thursday of the quarter + 5 days).
  */
 export const MEMBER_VOTE_VMOONEY_SNAPSHOTS: Record<string, VMooneySnapshot> = {
-  // Q2 2026 member vote (closed 2026-04-21 07:00:00 UTC). Recovered via
-  // `balanceOfAt(addr, blockNumber)` against the block at vote close on
-  // each chain — see `blockAtClose` for the exact heights so an auditor
-  // can re-derive these numbers from any explorer / archive node.
-  // Captured by `snapshot-vmooney.mjs --method=historical` after the
-  // audit had drifted from post-vote lock activity; pasting this entry
-  // restores the original at-vote-close numbers.
+  // Q2 2026 member vote (closed 2026-05-01 00:00:00 UTC). The default
+  // `getThirdThursdayOfQuarterTimestamp + 5 days` formula in
+  // `dates.ts` would put close at 2026-04-21, but that formula treats
+  // the *submission* deadline as the vote-open; the actual Member Vote
+  // starts after the Senate phase and ran through 2026-05-01 for this
+  // cycle. The override was passed into the snapshot script via
+  // `--vote-close-timestamp=1777593600` so the recovered values
+  // reflect the real close moment, and `voteCloseTimestamp` here is
+  // the authoritative value the compute pipeline uses for display.
+  // Recovered via `balanceOfAt(addr, blockNumber)` against the block
+  // at the actual close on each chain — see `blockAtClose`.
   '2026-Q2': {
     quarter: 2,
     year: 2026,
-    voteCloseTimestamp: 1776754800,
-    snapshotTakenAt: 1778791147,
+    voteCloseTimestamp: 1777593600,
+    snapshotTakenAt: 1778794568,
     method: 'historical',
     blockAtClose: {
-      arbitrum: 454734421,
-      ethereum: 24926655,
-      polygon: 85817378,
-      base: 44982726,
+      arbitrum: 458085627,
+      ethereum: 24996367,
+      polygon: 86236778,
+      base: 45402126,
     },
     vMOONEY: {
       '0x37e6c43ae0341304ff181da55e8d2593f1728c45': 0,
-      '0x45142255717c78503d585d50a46e84d63473d4b8': 0,
+      '0x45142255717c78503d585d50a46e84d63473d4b8': 9965.754455225715,
       '0x47cc4c7fef42187f9f7901838f316b033e92be05': 0,
-      '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 286193.1284880771,
+      '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 282897.45846017246,
       '0x59041d70deaefe849a48e77e0b273ddd072ea9e4': 0,
-      '0x679d87d8640e66778c3419d164998e720d7495f6': 2361115.788305429,
+      '0x679d87d8640e66778c3419d164998e720d7495f6': 2294521.578513445,
       '0x6dfd4a0a88832d88532167f83f796fbed4752e55': 0,
       '0x78b9faab8fb5de5c7902f0b0cf1d1c17340ce207': 0,
       '0x7f79a7aaf569f350806813d41aeba544cbd017f4': 0,
-      '0xa64f2228ccec96076c82abb903021c33859082f8': 73958.00109398781,
-      '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 18069.294486325136,
-      '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 2116337.1746226996,
+      '0xa64f2228ccec96076c82abb903021c33859082f8': 70561.69639459664,
+      '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 17921.87488410862,
+      '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 2100638.48881926,
       '0xb3d7efd33cb72d63a3490c7b03907c05f1897109': 0,
       '0xc0f91468116d88ee2615ef71697a400be7858544': 0,
-      '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 38705.813401070394,
+      '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 38286.3934775663,
       '0xf2befa4b9489c1ef75e069d16a6f829f71b4b988': 0,
     },
   },
