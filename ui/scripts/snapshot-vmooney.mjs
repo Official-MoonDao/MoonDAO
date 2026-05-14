@@ -52,8 +52,12 @@
  *
  *   1. After vote close (member: third Thursday of quarter + 5 days;
  *      retro: see `getRetroVoteCloseTimestamp`), run this script.
- *   2. It prints a JSON block ready to paste under the appropriate
- *      `*_VMOONEY_SNAPSHOTS` map in `lib/proposals/vMooneySnapshots.ts`.
+ *   2. It prints a JSON block (with `vMOONEY` per-voter balances AND
+ *      `distributions` per-voter Tableland row) ready to paste under
+ *      the appropriate `*_VMOONEY_SNAPSHOTS` map in
+ *      `lib/proposals/vMooneySnapshots.ts`. Pinning both keeps the
+ *      audit drift-proof against vMOONEY lock changes AND post-close
+ *      Tableland row edits.
  *   3. Open the file, paste the entry keyed by `${year}-Q${quarter}`,
  *      commit, and deploy. From that deploy onward the audit for that
  *      cycle is frozen.
@@ -148,9 +152,20 @@ const DISTRIBUTION_TABLE = 'DISTRIBUTION_42161_104'
 
 const TABLELAND_QUERY_URL = 'https://tableland.network/api/v1/query'
 
-async function fetchVoteAddresses(kind, quarter, year) {
+/**
+ * Fetch the (address, distribution) rows for a cycle. Returns
+ * { addresses, distributions } where:
+ *
+ *   addresses     unique lowercased voter addresses, in row order
+ *   distributions { lowercased address → { projectId → percent } }
+ *
+ * The distributions are returned alongside the addresses so the caller
+ * can pin them in the snapshot, freezing the audit against post-close
+ * Tableland edits in the same way `vMOONEY` freezes voting power.
+ */
+async function fetchVoteRows(kind, quarter, year) {
   const table = kind === 'member' ? PROPOSALS_TABLE : DISTRIBUTION_TABLE
-  const statement = `SELECT address FROM ${table} WHERE quarter=${quarter} AND year=${year}`
+  const statement = `SELECT address, distribution FROM ${table} WHERE quarter=${quarter} AND year=${year}`
   const url = `${TABLELAND_QUERY_URL}?statement=${encodeURIComponent(statement)}`
   const res = await fetch(url)
   if (!res.ok) {
@@ -170,14 +185,34 @@ async function fetchVoteAddresses(kind, quarter, year) {
   // different code path.
   const seen = new Set()
   const addresses = []
+  const distributions = {}
   for (const r of rows) {
     const addr = typeof r?.address === 'string' ? r.address.toLowerCase() : ''
-    if (addr && !seen.has(addr)) {
-      seen.add(addr)
-      addresses.push(addr)
+    if (!addr || seen.has(addr)) continue
+    seen.add(addr)
+    addresses.push(addr)
+
+    // The Tableland gateway returns the JSON column as a parsed object
+    // for some validators and as a string for others. Handle both, and
+    // strip any non-finite/negative values so the pinned snapshot only
+    // contains the cleaned shape the compute pipeline expects.
+    const raw = r.distribution
+    let parsed
+    if (typeof raw === 'string') {
+      try { parsed = JSON.parse(raw) } catch { parsed = {} }
+    } else if (raw && typeof raw === 'object') {
+      parsed = raw
+    } else {
+      parsed = {}
     }
+    const clean = {}
+    for (const [pid, value] of Object.entries(parsed)) {
+      const n = Number(value)
+      if (Number.isFinite(n) && n >= 0) clean[pid] = n
+    }
+    distributions[addr] = clean
   }
-  return addresses
+  return { addresses, distributions }
 }
 
 // =============================================================================
@@ -408,7 +443,7 @@ function getRetroVoteCloseTimestamp(quarter, year) {
     process.exit(1)
   }
 
-  const addresses = await fetchVoteAddresses(kind, quarter, year)
+  const { addresses, distributions } = await fetchVoteRows(kind, quarter, year)
   console.error(
     `[snapshot-vmooney] ${addresses.length} unique voter address(es) to snapshot.`
   )
@@ -452,6 +487,14 @@ function getRetroVoteCloseTimestamp(quarter, year) {
           )
         : undefined,
     vMOONEY,
+    // Frozen distributions captured alongside vMOONEY. Including these
+    // makes the audit fully drift-proof: even if a voter's Tableland
+    // row is later edited (re-opened submissions window, manual owner
+    // write, etc.), the compute pipeline reads from this map instead.
+    // The map is in lowercased-address → projectId → percent shape and
+    // is a verbatim copy of what the Proposals/DISTRIBUTION_ table
+    // returned at capture time.
+    distributions,
   }
 
   const mapName =

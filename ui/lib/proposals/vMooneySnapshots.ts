@@ -102,6 +102,14 @@
  *                       Quadratic voting power is computed downstream as
  *                       √vMOONEY (clamped to 0 on NaN), so we store the
  *                       pre-sqrt value to keep the snapshot interpretable.
+ *   distributions       { lowercased address → { projectId → percent } }.
+ *                       OPTIONAL. When present, the compute pipeline reads
+ *                       distributions from here instead of querying
+ *                       Tableland live, so post-close edits to the
+ *                       Tableland row can no longer drift the audit. Use
+ *                       it for any closed cycle. Omit for the active
+ *                       cycle (where distributions are still being cast)
+ *                       — the pipeline will fall back to live Tableland.
  *
  * Addresses are stored lowercased for case-insensitive lookup. Missing
  * voters resolve to 0 vMOONEY (matches the live fetcher's failure mode).
@@ -137,6 +145,19 @@ export type VMooneySnapshot = {
   blockAtClose?: Record<string, number>
   /** Lowercased address → vMOONEY (whole tokens, summed across all chains). */
   vMOONEY: Record<string, number>
+  /**
+   * Frozen per-voter distributions captured at vote close. Lowercased
+   * address → projectId → percent (raw, pre-author-strip, pre-
+   * normalization — matches what's written to Tableland). When this
+   * field is present the compute pipeline reads from here instead of
+   * the live Tableland row, so post-close edits can't drift the audit.
+   *
+   * Optional for backward compat with the pre-distribution snapshots —
+   * absent means "fall back to live Tableland" (correct for the
+   * currently-active cycle, but past cycles should always pin
+   * distributions to be fully drift-proof).
+   */
+  distributions?: Record<string, Record<string, number>>
 }
 
 const cycleKey = (quarter: number, year: number) => `${year}-Q${quarter}`
@@ -147,46 +168,78 @@ const cycleKey = (quarter: number, year: number) => `${year}-Q${quarter}`
  * Thursday of the quarter + 5 days).
  */
 export const MEMBER_VOTE_VMOONEY_SNAPSHOTS: Record<string, VMooneySnapshot> = {
-  // Q2 2026 member vote (closed 2026-05-01 00:00:00 UTC). The default
+  // Q2 2026 member vote (snapshot moment 2026-05-04 00:00:00 UTC, the
+  // governance-canonical close moment per EB direction). The default
   // `getThirdThursdayOfQuarterTimestamp + 5 days` formula in
   // `dates.ts` would put close at 2026-04-21, but that formula treats
-  // the *submission* deadline as the vote-open; the actual Member Vote
-  // starts after the Senate phase and ran through 2026-05-01 for this
-  // cycle. The override was passed into the snapshot script via
-  // `--vote-close-timestamp=1777593600` so the recovered values
-  // reflect the real close moment, and `voteCloseTimestamp` here is
-  // the authoritative value the compute pipeline uses for display.
+  // the *submission* deadline as vote-open. The actual Member Vote
+  // ran past the formula's date and the EB designated 2026-05-04 as
+  // the canonical close-of-cycle moment for this quarter; we override
+  // the formula here so the recovered values and the displayed close
+  // date both reflect that decision.
   // Recovered via `balanceOfAt(addr, blockNumber)` against the block
-  // at the actual close on each chain — see `blockAtClose`.
+  // at the override timestamp on each chain — see `blockAtClose`.
+  // This is true historical: each value is decayed from the
+  // `user_point_history` entry that was current at the per-chain
+  // close-block, NOT from the voter's *latest* point as the buggy
+  // `balanceOf(addr, _t)` extrapolation does.
   '2026-Q2': {
     quarter: 2,
     year: 2026,
-    voteCloseTimestamp: 1777593600,
-    snapshotTakenAt: 1778794568,
+    voteCloseTimestamp: 1777852800,
+    snapshotTakenAt: 1778800875,
     method: 'historical',
     blockAtClose: {
-      arbitrum: 458085627,
-      ethereum: 24996367,
-      polygon: 86236778,
-      base: 45402126,
+      arbitrum: 459112764,
+      ethereum: 25017913,
+      polygon: 86366378,
+      base: 45531726,
     },
     vMOONEY: {
       '0x37e6c43ae0341304ff181da55e8d2593f1728c45': 0,
-      '0x45142255717c78503d585d50a46e84d63473d4b8': 9965.754455225715,
+      '0x45142255717c78503d585d50a46e84d63473d4b8': 9945.195015220641,
       '0x47cc4c7fef42187f9f7901838f316b033e92be05': 0,
-      '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 282897.45846017246,
+      '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 281881.64320142055,
       '0x59041d70deaefe849a48e77e0b273ddd072ea9e4': 0,
-      '0x679d87d8640e66778c3419d164998e720d7495f6': 2294521.578513445,
+      '0x679d87d8640e66778c3419d164998e720d7495f6': 2273962.1385083715,
       '0x6dfd4a0a88832d88532167f83f796fbed4752e55': 0,
       '0x78b9faab8fb5de5c7902f0b0cf1d1c17340ce207': 0,
       '0x7f79a7aaf569f350806813d41aeba544cbd017f4': 0,
-      '0xa64f2228ccec96076c82abb903021c33859082f8': 70561.69639459664,
-      '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 17921.87488410862,
-      '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 2100638.48881926,
+      '0xa64f2228ccec96076c82abb903021c33859082f8': 69513.16495433789,
+      '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 17876.36245176939,
+      '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 2095791.8784316229,
       '0xb3d7efd33cb72d63a3490c7b03907c05f1897109': 0,
       '0xc0f91468116d88ee2615ef71697a400be7858544': 0,
-      '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 38286.3934775663,
+      '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 38156.915816039094,
       '0xf2befa4b9489c1ef75e069d16a6f829f71b4b988': 0,
+    },
+    // Distributions captured at the May 4 close. Each row is the
+    // post-close state of the voter's `Proposals_42161_157` row,
+    // reproducing exactly what Tableland would return today (verified
+    // via `scripts/verify-q2-2026-snapshot.mjs`). On-chain history
+    // (`RunSQL` events on the Tableland registry) confirms no voter
+    // recast their distribution after the close moment, so this is
+    // identical to the live Tableland state at capture time. Pinning
+    // here makes the audit drift-proof against any future row edit
+    // (whether through a re-opened submissions window or a manual
+    // owner-side write to the Proposals contract).
+    distributions: {
+      '0x37e6c43ae0341304ff181da55e8d2593f1728c45': { '113': 10, '114': 10, '117': 80 },
+      '0x45142255717c78503d585d50a46e84d63473d4b8': { '114': 100 },
+      '0x47cc4c7fef42187f9f7901838f316b033e92be05': { '113': 0, '114': 0, '117': 0, '119': 0, '122': 0, '123': 0, '126': 0, '127': 0, '130': 100 },
+      '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': { '113': 5, '117': 20, '121': 5, '122': 15, '126': 15, '127': 40 },
+      '0x59041d70deaefe849a48e77e0b273ddd072ea9e4': { '113': 5, '117': 15, '119': 5, '121': 5, '122': 5, '123': 5, '126': 5, '127': 5, '130': 50 },
+      '0x679d87d8640e66778c3419d164998e720d7495f6': { '113': 10, '114': 11, '117': 10, '119': 10, '121': 10, '122': 10, '123': 10, '126': 10, '127': 10, '130': 9 },
+      '0x6dfd4a0a88832d88532167f83f796fbed4752e55': { '122': 100 },
+      '0x78b9faab8fb5de5c7902f0b0cf1d1c17340ce207': { '113': 55, '117': 20, '130': 25 },
+      '0x7f79a7aaf569f350806813d41aeba544cbd017f4': { '130': 100 },
+      '0xa64f2228ccec96076c82abb903021c33859082f8': { '114': 80, '127': 20 },
+      '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': { '113': 0, '114': 20, '117': 0, '119': 0, '121': 20, '123': 15, '126': 5, '127': 20, '130': 20 },
+      '0xb2d3900807094d4fe47405871b0c8adb58e10d42': { '113': 10, '114': 5, '117': 25, '119': 25, '122': 15, '123': 11, '126': 0, '127': 9 },
+      '0xb3d7efd33cb72d63a3490c7b03907c05f1897109': { '113': 25, '114': 25, '123': 50 },
+      '0xc0f91468116d88ee2615ef71697a400be7858544': { '113': 5, '117': 25, '121': 35, '122': 10, '127': 10, '130': 15 },
+      '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': { '117': 10, '122': 90 },
+      '0xf2befa4b9489c1ef75e069d16a6f829f71b4b988': { '114': 10, '119': 10, '122': 25, '123': 30, '126': 25 },
     },
   },
 }
@@ -413,4 +466,55 @@ export function resolveSnapshotVMooney(
       ? value
       : 0
   })
+}
+
+/**
+ * Returns true when a snapshot has frozen distributions pinned (so the
+ * compute pipeline can read distributions from the snapshot instead of
+ * Tableland). Cycles that pre-date the distribution-pinning feature
+ * still snapshot voting power but not distributions; the pipeline must
+ * fall back to live Tableland for those.
+ */
+export function snapshotHasDistributions(
+  snapshot: VMooneySnapshot | null | undefined
+): boolean {
+  if (!snapshot || !snapshot.distributions) return false
+  return Object.keys(snapshot.distributions).length > 0
+}
+
+/**
+ * Vote row shape returned by `queryTable` for the Proposals_* and
+ * DISTRIBUTION_* tables. Mirrors what the compute pipelines already
+ * destructure.
+ */
+type SnapshotVoteRow = {
+  address: string
+  distribution: Record<string, number>
+  quarter: number
+  year: number
+}
+
+/**
+ * Materialize per-voter votes from the snapshot's frozen distributions.
+ * Produces rows in the same shape as `queryTable(... Proposals_*)` so
+ * the rest of the pipeline can consume them transparently.
+ *
+ * Voters with no entry in the snapshot are dropped — they didn't vote
+ * at the captured close moment, so they shouldn't appear in the tally.
+ */
+export function resolveSnapshotDistributions(
+  snapshot: VMooneySnapshot
+): SnapshotVoteRow[] {
+  if (!snapshot.distributions) return []
+  const rows: SnapshotVoteRow[] = []
+  for (const [address, distribution] of Object.entries(snapshot.distributions)) {
+    if (!address || !distribution) continue
+    rows.push({
+      address: address.toLowerCase(),
+      distribution: { ...distribution },
+      quarter: snapshot.quarter,
+      year: snapshot.year,
+    })
+  }
+  return rows
 }

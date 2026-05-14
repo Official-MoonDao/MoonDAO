@@ -42,7 +42,9 @@ import { getContract, readContract } from 'thirdweb'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import {
   getRetroVMooneySnapshot,
+  resolveSnapshotDistributions,
   resolveSnapshotVMooney,
+  snapshotHasDistributions,
 } from '@/lib/proposals/vMooneySnapshots'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -261,8 +263,18 @@ export async function computeRetroactiveOutcome({
   // that were eligible at vote time, and the set is immutable after the
   // fact (distributions can be edited but only across the same project
   // surface a voter saw).
-  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE quarter = ${quarter} AND year = ${year}`
-  const rawDistributions = (await queryTable(chain, distributionStatement)) || []
+  // Distribution resolution. Past cycles read from the same frozen
+  // snapshot in `vMooneySnapshots.ts` that pins voting power, so the
+  // audit is fully drift-proof. Active cycle (no snapshot yet) still
+  // queries Tableland live for the in-flight preview.
+  const retroSnapshot = getRetroVMooneySnapshot(quarter, year)
+  let rawDistributions: any[]
+  if (snapshotHasDistributions(retroSnapshot)) {
+    rawDistributions = resolveSnapshotDistributions(retroSnapshot!)
+  } else {
+    const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE quarter = ${quarter} AND year = ${year}`
+    rawDistributions = (await queryTable(chain, distributionStatement)) || []
+  }
   if (rawDistributions.length === 0) return null
 
   const referencedProjectIds = new Set<string>()
@@ -378,7 +390,8 @@ export async function computeRetroactiveOutcome({
   // in-flight preview but can diverge from the actual governance close
   // moment. Prefer the snapshot's value so the audit page's displayed
   // close date matches when the pinned values were captured.
-  const snapshot = getRetroVMooneySnapshot(quarter, year)
+  // Reuse the snapshot binding from the distribution lookup above.
+  const snapshot = retroSnapshot
   const voteCloseTimestamp =
     snapshot?.voteCloseTimestamp ?? getRetroVoteCloseTimestamp(quarter, year)
   const vMOONEYs = snapshot

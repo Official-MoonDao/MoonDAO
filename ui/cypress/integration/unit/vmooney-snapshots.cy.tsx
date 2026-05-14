@@ -18,7 +18,9 @@ import {
   RETRO_VMOONEY_SNAPSHOTS,
   getMemberVoteVMooneySnapshot,
   getRetroVMooneySnapshot,
+  resolveSnapshotDistributions,
   resolveSnapshotVMooney,
+  snapshotHasDistributions,
 } from '../../../lib/proposals/vMooneySnapshots'
 import type { VMooneySnapshot } from '../../../lib/proposals/vMooneySnapshots'
 
@@ -223,6 +225,153 @@ describe('vMooneySnapshots / lookup helpers', () => {
           expect(value, `negative vMOONEY for ${addr}`).to.be.at.least(0)
         }
       }
+    })
+
+    it('snapshots that pin distributions store lowercased addresses too', () => {
+      // Same diffability / dedupe argument as for vMOONEY addresses.
+      // Pinning distributions only helps if the lookup is consistent.
+      const all = [
+        ...Object.values(MEMBER_VOTE_VMOONEY_SNAPSHOTS),
+        ...Object.values(RETRO_VMOONEY_SNAPSHOTS),
+      ]
+      for (const snap of all) {
+        if (!snap.distributions) continue
+        for (const addr of Object.keys(snap.distributions)) {
+          expect(addr, `distribution address not lowercased: ${addr}`).to.equal(
+            addr.toLowerCase()
+          )
+        }
+      }
+    })
+
+    it('every snapshotted distribution percent is a finite non-negative number', () => {
+      const all = [
+        ...Object.values(MEMBER_VOTE_VMOONEY_SNAPSHOTS),
+        ...Object.values(RETRO_VMOONEY_SNAPSHOTS),
+      ]
+      for (const snap of all) {
+        if (!snap.distributions) continue
+        for (const [addr, dist] of Object.entries(snap.distributions)) {
+          for (const [pid, value] of Object.entries(dist)) {
+            expect(
+              Number.isFinite(value),
+              `non-finite distribution[${pid}] for ${addr}: ${value}`
+            ).to.equal(true)
+            expect(
+              value,
+              `negative distribution[${pid}] for ${addr}`
+            ).to.be.at.least(0)
+          }
+        }
+      }
+    })
+
+    it('every voter in `distributions` also appears in `vMOONEY` (no orphan rows)', () => {
+      // The compute pipeline exclusively iterates voters from the
+      // distribution rows, so a voter pinned in `distributions` but
+      // missing from `vMOONEY` would silently get 0 power. Catch the
+      // paste-typo case where someone pins a distributions map for a
+      // larger voter set than they captured vMOONEY for.
+      const all = [
+        ...Object.entries(MEMBER_VOTE_VMOONEY_SNAPSHOTS),
+        ...Object.entries(RETRO_VMOONEY_SNAPSHOTS),
+      ]
+      for (const [key, snap] of all) {
+        if (!snap.distributions) continue
+        for (const addr of Object.keys(snap.distributions)) {
+          expect(
+            snap.vMOONEY,
+            `${key}: distribution voter ${addr} missing from vMOONEY map`
+          ).to.have.property(addr)
+        }
+      }
+    })
+  })
+
+  describe('snapshotHasDistributions', () => {
+    it('returns false for null / undefined / empty / no field', () => {
+      expect(snapshotHasDistributions(null)).to.equal(false)
+      expect(snapshotHasDistributions(undefined)).to.equal(false)
+      expect(snapshotHasDistributions(sampleSnapshot)).to.equal(false)
+      expect(
+        snapshotHasDistributions({
+          ...sampleSnapshot,
+          distributions: {},
+        })
+      ).to.equal(false)
+    })
+
+    it('returns true for a snapshot with at least one pinned distribution', () => {
+      expect(
+        snapshotHasDistributions({
+          ...sampleSnapshot,
+          distributions: { '0xaaaa000000000000000000000000000000000001': { '1': 100 } },
+        })
+      ).to.equal(true)
+    })
+  })
+
+  describe('resolveSnapshotDistributions', () => {
+    it('returns rows in the queryTable shape with quarter/year propagated', () => {
+      const snap: VMooneySnapshot = {
+        ...sampleSnapshot,
+        distributions: {
+          '0xaaaa000000000000000000000000000000000001': { '10': 50, '11': 50 },
+          '0xaaaa000000000000000000000000000000000002': { '12': 100 },
+        },
+      }
+      const rows = resolveSnapshotDistributions(snap)
+      expect(rows).to.have.length(2)
+      // Order isn't part of the contract, but every row should carry
+      // the snapshot's (quarter, year) pair so the existing
+      // `excludeMemberVotesByAddress` filter (which keys on these
+      // fields) keeps working.
+      for (const row of rows) {
+        expect(row.quarter).to.equal(99)
+        expect(row.year).to.equal(2099)
+        expect(row.address).to.equal(row.address.toLowerCase())
+      }
+    })
+
+    it('returns an empty array when distributions are absent or empty', () => {
+      expect(resolveSnapshotDistributions(sampleSnapshot)).to.deep.equal([])
+      expect(
+        resolveSnapshotDistributions({ ...sampleSnapshot, distributions: {} })
+      ).to.deep.equal([])
+    })
+
+    it('clones the inner distribution objects (mutation-safe)', () => {
+      const snap: VMooneySnapshot = {
+        ...sampleSnapshot,
+        distributions: {
+          '0xaaaa000000000000000000000000000000000001': { '10': 50, '11': 50 },
+        },
+      }
+      const rows = resolveSnapshotDistributions(snap)
+      // Mutating a returned row's distribution must not bleed back
+      // into the snapshot — otherwise the audit could mutate the
+      // pinned constant on subsequent calls.
+      rows[0].distribution['10'] = 999
+      expect(
+        snap.distributions!['0xaaaa000000000000000000000000000000000001']['10']
+      ).to.equal(50)
+    })
+
+    it('skips rows with falsy address keys', () => {
+      // Defensive — `Object.entries` on a paste-typo with an empty
+      // string key shouldn't surface as an unaddressable voter row.
+      const snap: VMooneySnapshot = {
+        ...sampleSnapshot,
+        distributions: {
+          '': { '10': 100 } as any,
+          '0xaaaa000000000000000000000000000000000001': { '11': 100 },
+        },
+      }
+      const rows = resolveSnapshotDistributions(snap)
+      expect(rows).to.have.length(1)
+      expect(rows[0].address).to.equal(
+        '0xaaaa000000000000000000000000000000000001'
+      )
     })
   })
 })

@@ -478,23 +478,61 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   // Action for the EB: copy the JSON object below into
   // `MEMBER_VOTE_VMOONEY_SNAPSHOTS` in `lib/proposals/vMooneySnapshots.ts`,
   // commit, and deploy. The audit for this quarter will then be static.
+  // Distributions snapshot: pin each voter's distribution at this
+  // exact moment so post-close edits to the Tableland row can't drift
+  // the audit. The compute pipeline already prefers a snapshot's
+  // `distributions` field over live Tableland (see
+  // `vMooneySnapshots.ts`), so persisting these here completes the
+  // freeze. Without this, the vMOONEY snapshot freezes voting power
+  // but the live `Proposals_*` row could still be edited and shift
+  // outcomes.
+  const snapshotDistributions: Record<string, Record<string, number>> = {}
+  for (const v of votes) {
+    const addr = (v as any).address?.toLowerCase()
+    if (!addr) continue
+    const raw = (v as any).distribution
+    let parsed: Record<string, number>
+    if (typeof raw === 'string') {
+      try {
+        parsed = JSON.parse(raw) as Record<string, number>
+      } catch {
+        parsed = {}
+      }
+    } else if (raw && typeof raw === 'object') {
+      parsed = raw as Record<string, number>
+    } else {
+      parsed = {}
+    }
+    const clean: Record<string, number> = {}
+    for (const [pid, value] of Object.entries(parsed)) {
+      const n = Number(value)
+      if (Number.isFinite(n) && n >= 0) clean[pid] = n
+    }
+    snapshotDistributions[addr] = clean
+  }
   const snapshotEntry = {
     quarter,
     year,
     voteCloseTimestamp,
     snapshotTakenAt: Math.floor(Date.now() / 1000),
+    method: 'projected' as const,
     vMOONEY: Object.fromEntries(
       voteAddresses.map((address, index) => [
         address.toLowerCase(),
         Number(vMOONEYs[index]) || 0,
       ])
     ),
+    distributions: snapshotDistributions,
   }
   console.log(
-    `[vote tally] ===== vMOONEY SNAPSHOT (paste into vMooneySnapshots.ts under MEMBER_VOTE_VMOONEY_SNAPSHOTS['${year}-Q${quarter}']) =====`
+    `[vote tally] ===== SNAPSHOT (paste into vMooneySnapshots.ts under MEMBER_VOTE_VMOONEY_SNAPSHOTS['${year}-Q${quarter}']) =====`
   )
   console.log(JSON.stringify(snapshotEntry, null, 2))
-  console.log('[vote tally] ===== END vMOONEY SNAPSHOT =====')
+  console.log('[vote tally] ===== END SNAPSHOT =====')
+  console.log(
+    '[vote tally] NOTE: this is a `projected` capture (vMOONEY uses `balanceOf(addr,_t)`, not `balanceOfAt`). Re-run `npm --prefix ui run snapshot:vmooney -- --kind=member --quarter=' +
+      quarter + ' --year=' + year + '` after this tally lands to upgrade vMOONEY to a `historical` capture before pinning. Distributions in this log are correct as-is.'
+  )
 
   // Build project id -> author address so we exclude author's vote on their own proposal
   const projectIdToAuthorAddress: Record<string, string> = {}

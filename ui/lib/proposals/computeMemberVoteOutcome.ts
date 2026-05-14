@@ -37,7 +37,9 @@ import { excludeMemberVotesByAddress } from '@/lib/proposals/excludeMemberVotes'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import {
   getMemberVoteVMooneySnapshot,
+  resolveSnapshotDistributions,
   resolveSnapshotVMooney,
+  snapshotHasDistributions,
 } from '@/lib/proposals/vMooneySnapshots'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
@@ -179,8 +181,21 @@ export async function computeMemberVoteOutcome({
     return null
   }
 
-  const voteStatement = `SELECT * FROM ${proposalsTableName} WHERE quarter = ${quarter} AND year = ${year}`
-  const rawVotes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+  // Distribution resolution. Past cycles read from the same frozen
+  // snapshot in `vMooneySnapshots.ts` that pins voting power, so the
+  // audit is fully drift-proof: neither vMOONEY changes nor post-close
+  // Tableland edits (the wrapper contract still allows owner-side
+  // updates and a row-edit middleware can fail open) can shift the
+  // numbers. The active cycle has no snapshot yet, so we still query
+  // Tableland live for the in-flight preview.
+  const memberSnapshot = getMemberVoteVMooneySnapshot(quarter, year)
+  let rawVotes: DistributionVote[]
+  if (snapshotHasDistributions(memberSnapshot)) {
+    rawVotes = resolveSnapshotDistributions(memberSnapshot!) as DistributionVote[]
+  } else {
+    const voteStatement = `SELECT * FROM ${proposalsTableName} WHERE quarter = ${quarter} AND year = ${year}`
+    rawVotes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+  }
   if (!rawVotes || rawVotes.length === 0) return null
 
   // Mirror of the `vote.ts` POST handler. Same shared helper, same gate
@@ -327,7 +342,11 @@ export async function computeMemberVoteOutcome({
   // so the audit page is internally consistent (values come from the
   // snapshot, displayed close date matches when those values were
   // captured).
-  const snapshot = getMemberVoteVMooneySnapshot(quarter, year)
+  // Reuse the snapshot already fetched at the top of the function for
+  // the distribution lookup. Lookup is a constant-time map read so a
+  // second call would also be cheap, but reusing the binding makes the
+  // dependency between the two reads explicit.
+  const snapshot = memberSnapshot
   const voteCloseTimestamp =
     snapshot?.voteCloseTimestamp ?? voteOpenTimestamp + 60 * 60 * 24 * 5
   const vMOONEYs = snapshot
