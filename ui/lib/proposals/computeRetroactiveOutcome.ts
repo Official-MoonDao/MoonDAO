@@ -40,6 +40,10 @@ import {
 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
+import {
+  getRetroVMooneySnapshot,
+  resolveSnapshotVMooney,
+} from '@/lib/proposals/vMooneySnapshots'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
@@ -360,12 +364,20 @@ export async function computeRetroactiveOutcome({
 
   const voteCloseTimestamp = getRetroVoteCloseTimestamp(quarter, year)
 
-  // vMOONEY snapshot at vote close. This intentionally uses the same
-  // multi-chain summed `√vMOONEY` calculation as `useTotalVPs` so the
-  // audit reproduces what the on-chain tally would have used. A
-  // failure to fetch returns 0s rather than throwing, mirroring the
-  // production hook's behavior.
-  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
+  // vMOONEY snapshot at vote close. Past cycles read from a frozen
+  // snapshot in `vMooneySnapshots.ts` so the audit doesn't drift when
+  // voters touch their lock after vote close — the on-chain
+  // `balanceOf(addr, _t)` extrapolates from the LATEST user point, not a
+  // truly historical one, so re-querying it post-cycle silently moves
+  // the numbers around (see `vMooneySnapshots.ts` header).
+  //
+  // The active cycle has no snapshot yet, so we still call the live
+  // multi-chain `√vMOONEY` fetcher to drive the in-flight preview.
+  // Failures return 0s (matching the production hook's behavior).
+  const snapshot = getRetroVMooneySnapshot(quarter, year)
+  const vMOONEYs = snapshot
+    ? resolveSnapshotVMooney(snapshot, voteAddresses)
+    : await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
   if (!vMOONEYs || vMOONEYs.length === 0) return null
 
   const addressToVMOONEY: Record<string, number> = {}

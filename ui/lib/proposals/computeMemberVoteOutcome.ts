@@ -35,6 +35,10 @@ import { getThirdThursdayOfQuarterTimestamp } from '@/lib/utils/dates'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { excludeMemberVotesByAddress } from '@/lib/proposals/excludeMemberVotes'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
+import {
+  getMemberVoteVMooneySnapshot,
+  resolveSnapshotVMooney,
+} from '@/lib/proposals/vMooneySnapshots'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -304,7 +308,20 @@ export async function computeMemberVoteOutcome({
   )
   const voteCloseTimestamp = voteOpenTimestamp + 60 * 60 * 24 * 5
 
-  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
+  // Voting power resolution. Past cycles read from a frozen snapshot in
+  // `vMooneySnapshots.ts` so the audit doesn't drift when voters touch
+  // their lock after vote close — see that file's header for the full
+  // rationale (`balanceOf(addr, _t)` extrapolates from the LATEST user
+  // point, so it's not actually a historical lookup).
+  //
+  // The active cycle has no snapshot yet — it gets captured by the EB
+  // after the on-chain tally fires — so we still need the live RPC path
+  // to power the in-flight preview. Once the cycle's snapshot lands in
+  // the constants file and ships, the audit for that quarter freezes.
+  const snapshot = getMemberVoteVMooneySnapshot(quarter, year)
+  const vMOONEYs = snapshot
+    ? resolveSnapshotVMooney(snapshot, voteAddresses)
+    : await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
   if (!vMOONEYs || vMOONEYs.length === 0) return null
 
   const addressToQuadraticVotingPower: Record<string, number> = Object.fromEntries(

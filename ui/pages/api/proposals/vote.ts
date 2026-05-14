@@ -465,6 +465,37 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   )
 
+  // Emit a paste-ready vMOONEY snapshot for this cycle. The audit page
+  // currently re-queries `balanceOf(addr, voteCloseTimestamp)` on every
+  // load, but that contract method extrapolates from the LATEST user
+  // point — so post-vote lock changes silently shift past-cycle results.
+  // The fix is to freeze each cycle's voting power into
+  // `lib/proposals/vMooneySnapshots.ts` once vote close has fired.
+  // Capturing the values right here (during the on-chain tally) means we
+  // sample at the exact moment the tally consumed them, even if the EB
+  // doesn't run the standalone snapshot script until later.
+  //
+  // Action for the EB: copy the JSON object below into
+  // `MEMBER_VOTE_VMOONEY_SNAPSHOTS` in `lib/proposals/vMooneySnapshots.ts`,
+  // commit, and deploy. The audit for this quarter will then be static.
+  const snapshotEntry = {
+    quarter,
+    year,
+    voteCloseTimestamp,
+    snapshotTakenAt: Math.floor(Date.now() / 1000),
+    vMOONEY: Object.fromEntries(
+      voteAddresses.map((address, index) => [
+        address.toLowerCase(),
+        Number(vMOONEYs[index]) || 0,
+      ])
+    ),
+  }
+  console.log(
+    `[vote tally] ===== vMOONEY SNAPSHOT (paste into vMooneySnapshots.ts under MEMBER_VOTE_VMOONEY_SNAPSHOTS['${year}-Q${quarter}']) =====`
+  )
+  console.log(JSON.stringify(snapshotEntry, null, 2))
+  console.log('[vote tally] ===== END vMOONEY SNAPSHOT =====')
+
   // Build project id -> author address so we exclude author's vote on their own proposal
   const projectIdToAuthorAddress: Record<string, string> = {}
   const missingAuthorProjectIds: string[] = []
