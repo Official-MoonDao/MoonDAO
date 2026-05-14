@@ -12,7 +12,7 @@ export type Contribution = {
   name: string
   description: string
   links: string
-  quarter: string
+  area: string
 }
 
 function parseCSV(csv: string): string[][] {
@@ -71,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await fetch(SHEET_CSV_URL, { next: { revalidate: 300 } } as any)
+    const response = await fetch(SHEET_CSV_URL)
     if (!response.ok) {
       throw new Error(`Sheet fetch failed: ${response.status}`)
     }
@@ -93,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         name: row[1] || 'Anonymous',
         description: row[6] || '',
         links: row[8] || '',
-        quarter: row[5] || '',
+        area: row[5] || '',
       }))
       .reverse() // newest first
 

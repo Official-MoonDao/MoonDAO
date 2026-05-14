@@ -8,13 +8,19 @@ import { NoticeFooter } from '../components/layout/NoticeFooter'
 function ContributionFeed() {
   const [contributions, setContributions] = useState<Contribution[]>([])
   const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({})
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     fetch('/api/contributions/feed')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Feed request failed: ${r.status}`)
+        return r.json()
+      })
       .then((data) => setContributions(data.contributions || []))
-      .catch(() => setContributions([]))
+      .catch((err) => {
+        console.error('[ContributionFeed]', err)
+        setContributions([])
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -46,13 +52,16 @@ function ContributionFeed() {
 
   return (
     <div className="flex flex-col gap-3">
-      {entries.map(([name, items], idx) => {
-        const open = expanded[idx]
+      {entries.map(([name, items]) => {
+        const open = expanded[name]
         return (
-          <div key={idx} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-all">
+          <div key={name} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-all">
             <button
+              type="button"
+              aria-expanded={!!open}
+              aria-controls={`contributions-panel-${name}`}
               className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors gap-4"
-              onClick={() => setExpanded((prev) => ({ ...prev, [idx]: !prev[idx] }))}
+              onClick={() => setExpanded((prev) => ({ ...prev, [name]: !prev[name] }))}
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
@@ -60,8 +69,8 @@ function ContributionFeed() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-white font-semibold text-sm truncate">{name}</p>
-                  {items[0]?.quarter && (
-                    <p className="text-blue-400 text-xs truncate">{items[0].quarter}</p>
+                  {items[0]?.area && (
+                    <p className="text-blue-400 text-xs truncate">{items[0].area}</p>
                   )}
                 </div>
               </div>
@@ -74,9 +83,9 @@ function ContributionFeed() {
             </button>
 
             {open && (
-              <div className="px-5 pb-5 pt-4 border-t border-white/10">
-                {items.map((c, cidx) => (
-                  <div key={cidx}>
+              <div id={`contributions-panel-${name}`} className="px-5 pb-5 pt-4 border-t border-white/10">
+                {items.map((c) => (
+                  <div key={`${c.walletAddress || 'anonymous'}:${c.timestamp}:${c.description}`}>
                     <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">{c.description}</p>
                     {c.links && (
                       <a
