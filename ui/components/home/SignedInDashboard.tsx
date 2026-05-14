@@ -383,12 +383,12 @@ export default function SignedInDashboard({
         </div>
 
         {/* Main Content - Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-stretch lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
           {/* On mobile: rendered last (order-3) so wallet/feed come first */}
           <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-3 lg:order-1">
             {/* Your Profile — hidden on mobile (replaced by hero bar above) */}
-            <div className="hidden lg:block bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
+            <div className="hidden lg:block bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-white text-lg">Your Profile</h3>
                 {citizen && (
@@ -461,13 +461,20 @@ export default function SignedInDashboard({
               )}
             </div>
 
+            {/* Retroactive Rewards - Under profile card */}
+            {address && (
+              <div className="hidden lg:block">
+                <ClaimRewardsSection />
+              </div>
+            )}
+
             {/* Weekly Reward Pool - Enhanced UI */}
             <div className="order-2">
               <WeeklyRewardPool />
             </div>
 
             {/* New Citizens */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-grow flex flex-col min-h-[320px] order-5">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-grow flex flex-col order-5">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-white text-xl">New Citizens</h3>
                 <StandardButton
@@ -703,11 +710,8 @@ export default function SignedInDashboard({
               />
             )}
 
-            {/* Retroactive Rewards Section - Moved from left sidebar */}
-            {address && <ClaimRewardsSection />}
-
             {/* Featured Teams */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-grow flex flex-col min-h-[320px]">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-grow flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-white text-xl">Featured Teams</h3>
                 <StandardButton
