@@ -311,7 +311,6 @@ function AuditBody({
         audit={audit}
         addressToPower={addressToPower}
         totalCitizenPower={totalCitizenPower}
-        totalPower={outcome.totalPower}
       />
     </>
   )
@@ -341,22 +340,38 @@ function SummaryCard({
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
         <StatTile label="Voters" value={String(voterCount)} />
         <StatTile
           label="Citizen power"
           value={formatNumber(outcome.totalCitizenPower, 0)}
+          sub="√vMOONEY at vote close"
         />
         <StatTile
-          label={`Pool (${outcome.pool.primaryAsset})`}
+          label={`Project pool (${outcome.pool.primaryAsset})`}
           value={formatPrimary(
             outcome.pool.primaryAmount,
             outcome.pool.primaryAsset
           )}
+          sub="Distributed via this tally"
         />
         <StatTile
-          label="Pool (MOONEY)"
+          label="Project pool (MOONEY)"
           value={formatMooney(outcome.pool.mooneyAmount)}
+          sub="Distributed via this tally"
+        />
+        <StatTile
+          label={`Community circle (${outcome.pool.primaryAsset})`}
+          value={formatPrimary(
+            outcome.pool.communityCirclePrimary,
+            outcome.pool.primaryAsset
+          )}
+          sub="Parallel 10% cohort (not in tally)"
+        />
+        <StatTile
+          label="Community circle (MOONEY)"
+          value={formatMooney(outcome.pool.communityCircleMooney)}
+          sub="Parallel 10% cohort (not in tally)"
         />
       </div>
     </div>
@@ -394,13 +409,11 @@ function ProjectsList({
   audit,
   addressToPower,
   totalCitizenPower,
-  totalPower,
 }: {
   outcome: RetroactiveOutcome
   audit: RetroactiveAudit
   addressToPower: Record<string, number>
   totalCitizenPower: number
-  totalPower: number
 }) {
   // Single-expand for the same reason as the member-vote audit page —
   // multiple-open is hard to scan on mobile and there's no real
@@ -431,7 +444,6 @@ function ProjectsList({
             onToggle={() => setExpandedId(expanded ? null : r.projectId)}
             addressToPower={addressToPower}
             totalCitizenPower={totalCitizenPower}
-            totalPower={totalPower}
             contributorAddresses={
               audit.projectIdToContributors[r.projectId] || []
             }
@@ -450,7 +462,6 @@ function ProjectRow({
   onToggle,
   addressToPower,
   totalCitizenPower,
-  totalPower,
   contributorAddresses,
 }: {
   outcomeRow: RetroactiveOutcome['results'][number]
@@ -461,8 +472,6 @@ function ProjectRow({
   addressToPower: Record<string, number>
   /** Total √vMOONEY across all CITIZEN voters in the cycle. */
   totalCitizenPower: number
-  /** Total √vMOONEY across ALL voters (citizen + non-citizen) in the cycle. */
-  totalPower: number
   contributorAddresses: string[]
 }) {
   // Per-voter weighted contribution (citizens only) is in voting-power
@@ -476,26 +485,31 @@ function ProjectRow({
         (addressToPower[c.voterAddress] || 0),
     0
   )
-  // Reproduce `outcomeRow.percentage` from first principles so the
-  // footer reconciles with the value shown at the top of the row.
-  // Derivation: `runQuadraticVoting` (rewards.ts) computes raw
-  // weighted shares for every key fed in (real project ids from
-  // citizen rows + integer indices from the non-citizen best-fit
-  // projection), then renormalizes the whole vector so it sums to
-  // 90 (10% community-circle reservation). For a real project P:
-  //   raw[P] = Σ_citizens (norm_pct[c,P] × power[c]) / votingPowerSum
-  // The renormalizer's sum is dominated by citizens because each
-  // citizen row sums to 100 while each non-citizen best-fit row sums
-  // to 1 (`minimizeL1Distance` constraint), so:
-  //   sum = (100·citizenPower + nonCitizenPower) / votingPowerSum
-  //   final[P] = raw[P] / sum × 90
-  //            = totalWeighted × 9000
-  //              / (100·citizenPower + nonCitizenPower)
-  // (totalWeighted absorbs the /100 already, so multiply by 100·90
-  //  in the numerator.)
-  const denom = 100 * totalCitizenPower + (totalPower - totalCitizenPower)
+  // Reproduce `outcomeRow.percentage` from first principles. After
+  // `computeRetroactiveOutcome` filters out the bogus integer keys
+  // produced by the non-citizen best-fit projection and renormalizes
+  // the survivors to sum to 100, every project's % share collapses
+  // to a clean ratio of citizen weighted contributions:
+  //
+  //   final[P] = totalWeighted[P] / Σ_Q totalWeighted[Q] × 100
+  //
+  // And because each citizen's normalized row sums to 100, the
+  // denominator equals the total citizen power (Σ_v power[v] × 1):
+  //
+  //   Σ_Q totalWeighted[Q]
+  //     = Σ_Q Σ_v (norm_pct[v,Q]/100) × power[v]
+  //     = Σ_v power[v] × (Σ_Q norm_pct[v,Q] / 100)
+  //     = Σ_v power[v]
+  //     = totalCitizenPower
+  //
+  // So the reproduction simplifies to: weighted / citizenPower × 100.
+  // Non-citizen power is no longer in the formula — their contribution
+  // is filtered out of the per-project shares because it lands on
+  // bogus integer keys (the L1 best-fit returns array coefficients,
+  // not project IDs). They still count as voters in the audit voter
+  // list, but don't directly move project percentages.
   const reproducedFinal =
-    denom > 0 ? (totalWeighted * 100 * 90) / denom : 0
+    totalCitizenPower > 0 ? (totalWeighted * 100) / totalCitizenPower : 0
 
   const projectLink =
     outcomeRow.MDP != null && outcomeRow.MDP !== ''
@@ -668,7 +682,6 @@ function ProjectRow({
               <ProjectFooter
                 totalWeighted={totalWeighted}
                 totalCitizenPower={totalCitizenPower}
-                totalNonCitizenPower={totalPower - totalCitizenPower}
                 reproducedFinal={reproducedFinal}
                 finalPercentage={outcomeRow.percentage}
               />
@@ -683,13 +696,11 @@ function ProjectRow({
 function ProjectFooter({
   totalWeighted,
   totalCitizenPower,
-  totalNonCitizenPower,
   reproducedFinal,
   finalPercentage,
 }: {
   totalWeighted: number
   totalCitizenPower: number
-  totalNonCitizenPower: number
   reproducedFinal: number
   finalPercentage: number
 }) {
@@ -710,20 +721,9 @@ function ProjectFooter({
           {formatNumber(totalCitizenPower, 2)}
         </span>
       </div>
-      {totalNonCitizenPower > 0 && (
-        <div className="flex items-center justify-between gap-4 flex-wrap mt-1">
-          <span className="text-gray-400">
-            Total non-citizen power (× 0.01 vs. citizens via L1 best-fit)
-          </span>
-          <span className="text-white">
-            {formatNumber(totalNonCitizenPower, 2)}
-          </span>
-        </div>
-      )}
       <div className="border-t border-white/10 mt-2 pt-2 flex items-center justify-between gap-4 flex-wrap">
         <span className="text-gray-400">
-          Final share = Σ weighted × 9000 ÷ (100 × citizen power +
-          non-citizen power)
+          Final share = Σ weighted ÷ total citizen power × 100
         </span>
         <span className={matches ? 'text-emerald-200' : 'text-amber-200'}>
           {reproducedFinal.toFixed(4)}%

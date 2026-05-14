@@ -703,13 +703,14 @@ export const OPERATORS: string[] = [
 // 'USDC' (and RETRO_USD_BUDGET) is the default for stablecoin retros.
 export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = 'USDC'
 
-// Q1 2026 retroactives (last cycle, ETH-paid): 2.215 ETH.
+// Q1 2026 retroactives (last cycle, ETH-paid): 2.215 ETH for projects.
 // The quarter's total ETH budget was 11.6, of which 90% goes to projects
 // (10.44 ETH). 8.225 ETH was paid out upfront to funded projects, so the
 // remainder for retroactive distribution is (11.6 * 0.9) - 8.225 = 2.215 ETH.
+// The community circle slice for that cycle was 1.16 ETH (10% of 11.6).
 export const RETRO_ETH_BUDGET = 2.215
 
-// Q2 2026 retroactives (current cycle, USDC-paid): $5,629.26.
+// Q2 2026 retroactives (current cycle, USDC-paid): $5,629.26 for projects.
 // The quarter's total USD budget is $23,409 (NEXT_QUARTER_BUDGET_USD).
 // 90% goes to projects ($21,068.10); $15,438.84 was committed upfront
 // to the 4 Member-Vote winners (MDP-240 $3,955 + MDP-235 $3,600 +
@@ -718,3 +719,20 @@ export const RETRO_ETH_BUDGET = 2.215
 // upfront past the 3/4 cap of $17,556.75.
 // Retroactive remainder = ($23,409 * 0.9) - $15,438.84 = $5,629.26.
 export const RETRO_USD_BUDGET = 5629.26
+
+// Community circle's slice of the primary asset for the *currently-voting*
+// cycle. The community circle is reserved as 10% of the original quarterly
+// budget (before any upfront project funding), in the same asset paid out
+// to projects via `RETRO_PAYOUT_TOKEN`. This is a parallel cohort, NOT a
+// carve-out of the retro project pool: it does NOT scale down when projects
+// receive upfront funding. Audit / results displays surface this value
+// alongside the project pool so every part of the cycle's spend is visible.
+//
+// USDC cycles: 10% of NEXT_QUARTER_BUDGET_USD (Q2 2026 = $2,340.90).
+// ETH cycles: must be hardcoded against the cycle's quarterly ETH total
+// (e.g. Q1 2026 was 1.16 ETH, set when RETRO_PAYOUT_TOKEN was 'ETH').
+// Past cycles are pinned in `HISTORICAL_RETRO_POOLS` (see
+// `lib/proposals/computeRetroactiveOutcome.ts`) so this constant only
+// needs to track the current cycle.
+export const RETRO_PRIMARY_COMMUNITY_CIRCLE: number =
+  RETRO_PAYOUT_TOKEN === 'USDC' ? NEXT_QUARTER_BUDGET_USD * 0.1 : 0
