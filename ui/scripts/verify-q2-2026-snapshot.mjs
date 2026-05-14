@@ -214,8 +214,39 @@ function runQuadraticVoting(filledVotes, projects, voterPowers) {
     console.log(`  MDP-${String(p.MDP).padEnd(4)}  ${p.finalPct.toFixed(4).padStart(8)}%   $${usdBudgets[String(p.id)]}   ${p.name}`)
   }
 
-  console.log('\nCanonical (deterministic) outcome with true historical balances at')
-  console.log('the May 4 00:00 UTC snapshot moment is what should be displayed.')
-  console.log('Top 4 by % approved under the 3/4-budget cap: MDP-235, MDP-240,')
-  console.log('MDP-245, MDP-237 (in that order).')
+  // Funding determination (mirrors getApprovedProjects in lib/utils/rewards.ts):
+  // - eligible count = max(ceil(n/2), 3) = 5 for the 10-project Q2 ballot
+  // - budget cap = quarterlyBudget * 3/4 = $23,409 * 0.75 = $17,556.75
+  // - knapsack walk in % order: approve if it fits under BOTH caps; if a
+  //   project would push cumulative past the budget cap, skip it but keep
+  //   evaluating later (smaller) projects.
+  const QUARTERLY_BUDGET_USD = 23409
+  const numEligible = Math.min(Math.max(Math.ceil(sortedProjects.length / 2), 3), sortedProjects.length)
+  const budgetCap = (QUARTERLY_BUDGET_USD * 3) / 4
+  let approvedBudget = 0
+  let approvedCount = 0
+  const approved = []
+  for (const p of sortedProjects) {
+    const b = usdBudgets[String(p.id)] ?? 0
+    const fitsCap = approvedBudget + b <= budgetCap
+    const fitsCount = approvedCount < numEligible
+    if (fitsCap && fitsCount) {
+      approved.push({ ...p, budget: b })
+      approvedBudget += b
+      approvedCount += 1
+    }
+  }
+  console.log('\n========================================================================')
+  console.log('FUNDING DECISION (knapsack: top % under $17,556.75 cap, max 5 projects)')
+  console.log('========================================================================\n')
+  for (const p of approved) {
+    console.log(`  APPROVED  MDP-${String(p.MDP).padEnd(4)}  $${String(p.budget).padStart(8)}   ${p.name}`)
+  }
+  console.log(`\n  Total approved: ${approved.length} projects, $${approvedBudget.toFixed(2)} of $${budgetCap.toFixed(2)} cap.`)
+  console.log('\nCanonical funding set (May 4 snapshot, true historical balances):')
+  console.log('MDP-235, MDP-240, MDP-245, MDP-232.')
+  console.log('Differs from the originally-published audit screenshot (which had')
+  console.log('MDP-237 in slot #4 instead of MDP-232) — that screenshot reflected')
+  console.log('the pre-fix `balanceOf(addr, _t)` extrapolation bug, where new locks')
+  console.log('created AFTER the cycle close were retroactively counted.')
 })()
