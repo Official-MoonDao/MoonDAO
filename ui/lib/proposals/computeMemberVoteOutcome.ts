@@ -334,14 +334,14 @@ export async function computeMemberVoteOutcome({
   //
   // The default `voteCloseTimestamp` formula (third Thursday + 5 days)
   // matches the on-chain `vote.ts` close calculation, but the *actual*
-  // governance close moment can diverge — e.g. Q2 2026 actually closed
-  // 2026-05-01, not the formula's 2026-04-21 (the formula treats the
-  // submission deadline as the vote-open, but voting actually starts
-  // after the Senate phase). When a snapshot is present and pins its
-  // own `voteCloseTimestamp`, we use THAT for the displayed close date
-  // so the audit page is internally consistent (values come from the
-  // snapshot, displayed close date matches when those values were
-  // captured).
+  // governance close moment can diverge — e.g. Q2 2026 is pinned by the
+  // snapshot to 2026-04-20 00:00 UTC, not the formula's 2026-04-21
+  // (the formula treats the submission deadline as the vote-open, but
+  // voting actually starts after the Senate phase). When a snapshot is
+  // present and pins its own `voteCloseTimestamp`, we use THAT for the
+  // displayed close date so the audit page is internally consistent
+  // (values come from the snapshot, displayed close date matches when
+  // those values were captured).
   // Reuse the snapshot already fetched at the top of the function for
   // the distribution lookup. Lookup is a constant-time map read so a
   // second call would also be cheap, but reusing the binding makes the
