@@ -234,6 +234,12 @@ const VMOONEY_ABI = [
   'function balanceOf(address) view returns (uint256)',
   'function balanceOf(address, uint256) view returns (uint256)',
   'function balanceOfAt(address, uint256) view returns (uint256)',
+  // Used by the per-voter sanity check that distinguishes "no
+  // user_points yet" (legitimate 0) from real reverts (silent
+  // undercount). Required for the empty-data revert classification
+  // in `getTotalVMooney`.
+  'function user_point_epoch(address) view returns (uint256)',
+  'function user_point_history(address, uint256) view returns (int128 bias, int128 slope, uint256 ts, uint256 blk)',
 ]
 
 // =============================================================================
@@ -303,6 +309,24 @@ async function getBlockAtTimestamp(provider, chainName, targetTimestamp) {
 
 // Per-chain provider + block-at-vote-close cache. Resolved once up front
 // so each voter doesn't trigger a fresh binary search per chain.
+//
+// Arbitrum L1/L2 block-number gotcha
+// ----------------------------------
+// On Arbitrum, `block.number` (and `_block` parameters in storage like
+// `user_point_history.blk`) refer to the L1 (Ethereum) block number,
+// NOT the Arbitrum L2 block number. The vMOONEY contract's
+// `balanceOfAt(addr, _block)` does `assert _block <= block.number`,
+// which on Arbitrum means "≤ the latest L1 block this Arbitrum tx
+// sees". Passing the L2 block (in the 400M+ range) blows past the L1
+// block (in the 24M range) and the assert reverts — silently
+// returning 0 if the caller swallows errors. That silently undercounts
+// every voter's Arbitrum balance.
+//
+// Fix: for Arbitrum, use the Ethereum block-at-timestamp as the
+// `balanceOfAt` argument. The Ethereum block height matches what the
+// Arbitrum contract's `block.number` would have returned at the L2
+// block at the same wall-clock moment, so it both passes the assert
+// and resolves to the correct historical user_point.
 async function resolveChainContexts(method, voteCloseTimestamp) {
   const contexts = []
   for (const t of VMOONEY_TOKENS) {
@@ -323,21 +347,35 @@ async function resolveChainContexts(method, voteCloseTimestamp) {
       }
       ctx.status = 'ready'
     } catch (err) {
-      // Don't bail the whole script — most voters have 0 balance on most
-      // chains anyway, and we want the run to surface partial results
-      // rather than aborting on a single chain's RPC blip. The
-      // per-voter loop treats this chain as 0, matching the production
-      // fetcher's failure mode. Surface the warning loudly so the EB
-      // can re-run if the affected chain matters for this cycle.
-      console.error(
-        `[snapshot-vmooney] WARNING: ${t.name} setup failed; balances on ` +
-          `that chain will count as 0 in this snapshot.`,
-        err?.message ?? err
+      // RPC/setup failure (provider down, address malformed, etc.) is
+      // a HARD failure — not "0 balance". Bail loudly; the EB needs
+      // to re-run with a working RPC for that chain rather than
+      // silently shipping an undercounted snapshot.
+      throw new Error(
+        `[snapshot-vmooney] FATAL: ${t.name} setup failed (RPC: ${t.rpc}). ` +
+          `Re-run when the chain is reachable, or substitute a working RPC. ` +
+          `Refusing to silently undercount.\nUnderlying: ${err?.message ?? err}`
       )
-      ctx.status = 'failed'
     }
     contexts.push(ctx)
   }
+
+  // Arbitrum L1/L2 fix-up. After all per-chain blocks are resolved
+  // via timestamp, override the Arbitrum block with the Ethereum
+  // block at the same timestamp. See header comment above.
+  if (method === 'historical') {
+    const arb = contexts.find((c) => c.name === 'arbitrum')
+    const eth = contexts.find((c) => c.name === 'ethereum')
+    if (arb && eth && eth.blockAtClose != null) {
+      console.error(
+        `[snapshot-vmooney] arbitrum block fix-up: ` +
+          `L2 block #${arb.blockAtClose} → L1 block #${eth.blockAtClose} ` +
+          `(balanceOfAt on Arbitrum expects an L1 block number)`
+      )
+      arb.blockAtClose = eth.blockAtClose
+    }
+  }
+
   return contexts
 }
 
@@ -359,9 +397,54 @@ async function getTotalVMooney(address, voteCloseTimestamp, contexts, method) {
         )
       }
       total += parseFloat(ethers.utils.formatEther(bal))
-    } catch {
-      // Most addresses don't have a balance on most chains. Treat any
-      // read failure as 0 — same fallback the production fetcher uses.
+    } catch (err) {
+      // Distinguish "no user_points yet" (legitimate 0) from real
+      // contract reverts (silent undercount). The Curve-style
+      // VotingEscrow `balanceOfAt` reverts with empty data when the
+      // address has no points before `_block` — we sanity-check via
+      // `user_point_epoch` and only treat empty-data reverts as 0
+      // when the voter genuinely has no history at this block.
+      const isEmptyDataRevert =
+        err?.code === 'CALL_EXCEPTION' && (err?.data === '0x' || err?.data == null)
+      if (!isEmptyDataRevert) {
+        throw new Error(
+          `[snapshot-vmooney] FATAL: ${ctx.name} balanceOfAt(${address}, ` +
+            `${ctx.blockAtClose}) errored unexpectedly. Refusing to silently ` +
+            `undercount.\nUnderlying: ${err?.message ?? err}`
+        )
+      }
+      // Empty-data revert: most likely "no user_points before _block".
+      // Confirm by checking user_point_epoch — if the voter has any
+      // points whose `blk` is ≤ `ctx.blockAtClose`, then a 0 here is
+      // wrong and we should bail.
+      try {
+        const epoch = await ctx.contract.user_point_epoch(address)
+        if (Number(epoch.toString()) > 0) {
+          const firstPoint = await ctx.contract.user_point_history(address, 1)
+          const firstBlk = Number(firstPoint.blk.toString())
+          if (firstBlk <= ctx.blockAtClose) {
+            throw new Error(
+              `[snapshot-vmooney] FATAL: ${ctx.name} balanceOfAt(${address}, ` +
+                `${ctx.blockAtClose}) reverted but voter's first point on this ` +
+                `chain is at L1-block ${firstBlk} ≤ ${ctx.blockAtClose}. ` +
+                `This indicates a real contract problem (or the wrong block ` +
+                `number was passed). Refusing to silently undercount.`
+            )
+          }
+        }
+      } catch (sanityErr) {
+        if (String(sanityErr?.message ?? '').startsWith('[snapshot-vmooney] FATAL')) {
+          throw sanityErr
+        }
+        // user_point_epoch lookup itself failed — don't bail on the
+        // sanity-check infrastructure (the chain may not match this
+        // exact ABI shape on every contract version), but log it so a
+        // human can investigate.
+        console.error(
+          `[snapshot-vmooney] WARNING: ${ctx.name} sanity check after revert ` +
+            `failed; treating as 0 (voter ${address}). ${sanityErr?.message ?? sanityErr}`
+        )
+      }
     }
   }
   return total

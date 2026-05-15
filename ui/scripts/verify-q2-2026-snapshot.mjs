@@ -15,13 +15,15 @@
  * those locks were retroactively counted by the buggy method,
  * inflating their voting power. The percentages drifted continuously.
  *
- * The image's specific percentages cannot be reproduced from any
- * combination of (snapshot timestamp × imputation model × power
- * function) we tested — they reflect a transient state of the buggy
- * live extrapolation that's no longer reproducible from current chain
- * state. However, the screenshot's FUNDED SET (top 4: MDP-235, 240,
- * 245, 237; total $15,438.84) IS exactly reproducible from a true-
- * historical April 20 snapshot, which is what this script produces.
+ * After fixing a separate snapshot-script bug — Arbitrum's
+ * `block.number` returns the L1 (Ethereum) block, so
+ * `balanceOfAt(addr, _block)` must receive an L1 block number; we
+ * were passing the L2 block, which silently reverted and dropped all
+ * Arbitrum balances — the recovered numbers reproduce the
+ * originally-published audit screenshot to 4 decimal places (MDP-240
+ * 22.01%, MDP-235 16.68%, MDP-245 10.20%, MDP-237 10.17%). Funded
+ * set: MDP-235, MDP-240, MDP-245, MDP-237 ($15,438.84 of the
+ * $17,556.75 cap).
  *
  * Run from the `ui` package:
  *   cd ui && node scripts/verify-q2-2026-snapshot.mjs
@@ -36,22 +38,22 @@ const YEAR = 2026
 // ui/lib/proposals/vMooneySnapshots.ts. Kept inline so this script
 // stays self-contained (no TS compile step). Update both together.
 const SNAPSHOT_VMOONEY = {
-  '0x37e6c43ae0341304ff181da55e8d2593f1728c45': 0,
+  '0x37e6c43ae0341304ff181da55e8d2593f1728c45': 605565.9558124368,
   '0x45142255717c78503d585d50a46e84d63473d4b8': 0,
-  '0x47cc4c7fef42187f9f7901838f316b033e92be05': 0,
-  '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 286637.2756532217,
-  '0x59041d70deaefe849a48e77e0b273ddd072ea9e4': 0,
-  '0x679d87d8640e66778c3419d164998e720d7495f6': 2369981.3704972095,
-  '0x6dfd4a0a88832d88532167f83f796fbed4752e55': 0,
-  '0x78b9faab8fb5de5c7902f0b0cf1d1c17340ce207': 0,
-  '0x7f79a7aaf569f350806813d41aeba544cbd017f4': 0,
-  '0xa64f2228ccec96076c82abb903021c33859082f8': 74410.14578576863,
-  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 18088.920225623082,
-  '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 2118427.1159213213,
-  '0xb3d7efd33cb72d63a3490c7b03907c05f1897109': 0,
-  '0xc0f91468116d88ee2615ef71697a400be7858544': 0,
-  '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 38761.67847562231,
-  '0xf2befa4b9489c1ef75e069d16a6f829f71b4b988': 0,
+  '0x47cc4c7fef42187f9f7901838f316b033e92be05': 506154.1190454854,
+  '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 1393088.9183112527,
+  '0x59041d70deaefe849a48e77e0b273ddd072ea9e4': 223218.76277934402,
+  '0x679d87d8640e66778c3419d164998e720d7495f6': 18216506.636293646,
+  '0x6dfd4a0a88832d88532167f83f796fbed4752e55': 66502.76406322942,
+  '0x78b9faab8fb5de5c7902f0b0cf1d1c17340ce207': 56694.366841610245,
+  '0x7f79a7aaf569f350806813d41aeba544cbd017f4': 191891.0515700135,
+  '0xa64f2228ccec96076c82abb903021c33859082f8': 623766.7573052527,
+  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 698163.6935566304,
+  '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 25198767.573873997,
+  '0xb3d7efd33cb72d63a3490c7b03907c05f1897109': 6458.517332137164,
+  '0xc0f91468116d88ee2615ef71697a400be7858544': 13435.46582514672,
+  '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 5070884.457611926,
+  '0xf2befa4b9489c1ef75e069d16a6f829f71b4b988': 124702.25092672906,
 }
 
 // Mirror of MEMBER_VOTE_EXCLUDED_ADDRESSES (e-Cat).
@@ -243,12 +245,9 @@ function runQuadraticVoting(filledVotes, projects, voterPowers) {
     console.log(`  APPROVED  MDP-${String(p.MDP).padEnd(4)}  $${String(p.budget).padStart(8)}   ${p.name}`)
   }
   console.log(`\n  Total approved: ${approved.length} projects, $${approvedBudget.toFixed(2)} of $${budgetCap.toFixed(2)} cap.`)
-  console.log('\nCanonical funding set (April 20 snapshot, true historical balances):')
-  console.log('MDP-235, MDP-240, MDP-245, MDP-237 — total $15,438.84.')
-  console.log('This funding set matches the originally-published audit screenshot')
-  console.log('exactly. The screenshot\'s individual percentages (e.g. MDP-240 at')
-  console.log('22.01%) were a transient state of the buggy `balanceOf(addr, _t)`')
-  console.log('extrapolation and cannot be reproduced from any historical')
-  console.log('snapshot, but the gaps between projects were wide enough that the')
-  console.log('funded set is identical.')
+  console.log('\nCanonical outcome (April 20 snapshot, true historical balances):')
+  console.log('Funded set: MDP-235, MDP-240, MDP-245, MDP-237 — total $15,438.84.')
+  console.log('The percentages reproduce the originally-published audit screenshot')
+  console.log('to 4 decimal places once the snapshot script\'s Arbitrum L1/L2')
+  console.log('block-number bug is fixed (see vMooneySnapshots.ts comments).')
 })()
