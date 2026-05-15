@@ -35,6 +35,12 @@ import { getThirdThursdayOfQuarterTimestamp } from '@/lib/utils/dates'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { excludeMemberVotesByAddress } from '@/lib/proposals/excludeMemberVotes'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
+import {
+  getMemberVoteVMooneySnapshot,
+  resolveSnapshotDistributions,
+  resolveSnapshotVMooney,
+  snapshotHasDistributions,
+} from '@/lib/proposals/vMooneySnapshots'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -175,8 +181,21 @@ export async function computeMemberVoteOutcome({
     return null
   }
 
-  const voteStatement = `SELECT * FROM ${proposalsTableName} WHERE quarter = ${quarter} AND year = ${year}`
-  const rawVotes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+  // Distribution resolution. Past cycles read from the same frozen
+  // snapshot in `vMooneySnapshots.ts` that pins voting power, so the
+  // audit is fully drift-proof: neither vMOONEY changes nor post-close
+  // Tableland edits (the wrapper contract still allows owner-side
+  // updates and a row-edit middleware can fail open) can shift the
+  // numbers. The active cycle has no snapshot yet, so we still query
+  // Tableland live for the in-flight preview.
+  const memberSnapshot = getMemberVoteVMooneySnapshot(quarter, year)
+  let rawVotes: DistributionVote[]
+  if (snapshotHasDistributions(memberSnapshot)) {
+    rawVotes = resolveSnapshotDistributions(memberSnapshot!) as DistributionVote[]
+  } else {
+    const voteStatement = `SELECT * FROM ${proposalsTableName} WHERE quarter = ${quarter} AND year = ${year}`
+    rawVotes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+  }
   if (!rawVotes || rawVotes.length === 0) return null
 
   // Mirror of the `vote.ts` POST handler. Same shared helper, same gate
@@ -302,9 +321,37 @@ export async function computeMemberVoteOutcome({
   const voteOpenTimestamp = Math.floor(
     getThirdThursdayOfQuarterTimestamp(quarter, year).getTime() / 1000
   )
-  const voteCloseTimestamp = voteOpenTimestamp + 60 * 60 * 24 * 5
-
-  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
+  // Voting power resolution. Past cycles read from a frozen snapshot in
+  // `vMooneySnapshots.ts` so the audit doesn't drift when voters touch
+  // their lock after vote close — see that file's header for the full
+  // rationale (`balanceOf(addr, _t)` extrapolates from the LATEST user
+  // point, so it's not actually a historical lookup).
+  //
+  // The active cycle has no snapshot yet — it gets captured by the EB
+  // after the on-chain tally fires — so we still need the live RPC path
+  // to power the in-flight preview. Once the cycle's snapshot lands in
+  // the constants file and ships, the audit for that quarter freezes.
+  //
+  // The default `voteCloseTimestamp` formula (third Thursday + 5 days)
+  // matches the on-chain `vote.ts` close calculation, but the *actual*
+  // governance close moment can diverge — e.g. Q2 2026 is pinned by the
+  // snapshot to 2026-04-20 00:00 UTC, not the formula's 2026-04-21
+  // (the formula treats the submission deadline as the vote-open, but
+  // voting actually starts after the Senate phase). When a snapshot is
+  // present and pins its own `voteCloseTimestamp`, we use THAT for the
+  // displayed close date so the audit page is internally consistent
+  // (values come from the snapshot, displayed close date matches when
+  // those values were captured).
+  // Reuse the snapshot already fetched at the top of the function for
+  // the distribution lookup. Lookup is a constant-time map read so a
+  // second call would also be cheap, but reusing the binding makes the
+  // dependency between the two reads explicit.
+  const snapshot = memberSnapshot
+  const voteCloseTimestamp =
+    snapshot?.voteCloseTimestamp ?? voteOpenTimestamp + 60 * 60 * 24 * 5
+  const vMOONEYs = snapshot
+    ? resolveSnapshotVMooney(snapshot, voteAddresses)
+    : await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
   if (!vMOONEYs || vMOONEYs.length === 0) return null
 
   const addressToQuadraticVotingPower: Record<string, number> = Object.fromEntries(

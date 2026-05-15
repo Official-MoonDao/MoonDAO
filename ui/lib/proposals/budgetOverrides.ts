@@ -19,7 +19,13 @@
  */
 
 export const BUDGET_OVERRIDES_USD: Record<string, number> = {
-  // No active overrides. See file header for the process to add one.
+  // Q2 2026: MDP-237 ("Moon Founder's Club"). The proposal body / IPFS
+  // extractor returns $4,898 (the original request line item) but the
+  // approved/audited budget for the cycle was $4,650 — see
+  // `audit-q2-2026-votes.mjs`'s KNOWN_BUDGETS and the original
+  // published audit screenshot. Pin to the audited value so the
+  // displayed budget and the budget-cap math both match.
+  '237': 4650,
 }
 
 export function getBudgetOverrideUSD(

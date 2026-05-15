@@ -41,6 +41,12 @@ import {
 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
+import {
+  getRetroVMooneySnapshot,
+  resolveSnapshotDistributions,
+  resolveSnapshotVMooney,
+  snapshotHasDistributions,
+} from '@/lib/proposals/vMooneySnapshots'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
@@ -310,8 +316,18 @@ export async function computeRetroactiveOutcome({
   // that were eligible at vote time, and the set is immutable after the
   // fact (distributions can be edited but only across the same project
   // surface a voter saw).
-  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE quarter = ${quarter} AND year = ${year}`
-  const rawDistributions = (await queryTable(chain, distributionStatement)) || []
+  // Distribution resolution. Past cycles read from the same frozen
+  // snapshot in `vMooneySnapshots.ts` that pins voting power, so the
+  // audit is fully drift-proof. Active cycle (no snapshot yet) still
+  // queries Tableland live for the in-flight preview.
+  const retroSnapshot = getRetroVMooneySnapshot(quarter, year)
+  let rawDistributions: any[]
+  if (snapshotHasDistributions(retroSnapshot)) {
+    rawDistributions = resolveSnapshotDistributions(retroSnapshot!)
+  } else {
+    const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE quarter = ${quarter} AND year = ${year}`
+    rawDistributions = (await queryTable(chain, distributionStatement)) || []
+  }
   if (rawDistributions.length === 0) return null
 
   const referencedProjectIds = new Set<string>()
@@ -411,14 +427,29 @@ export async function computeRetroactiveOutcome({
     }
   }
 
-  const voteCloseTimestamp = getRetroVoteCloseTimestamp(quarter, year)
-
-  // vMOONEY snapshot at vote close. This intentionally uses the same
-  // multi-chain summed `√vMOONEY` calculation as `useTotalVPs` so the
-  // audit reproduces what the on-chain tally would have used. A
-  // failure to fetch returns 0s rather than throwing, mirroring the
-  // production hook's behavior.
-  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
+  // vMOONEY snapshot at vote close. Past cycles read from a frozen
+  // snapshot in `vMooneySnapshots.ts` so the audit doesn't drift when
+  // voters touch their lock after vote close — the on-chain
+  // `balanceOf(addr, _t)` extrapolates from the LATEST user point, not a
+  // truly historical one, so re-querying it post-cycle silently moves
+  // the numbers around (see `vMooneySnapshots.ts` header).
+  //
+  // The active cycle has no snapshot yet, so we still call the live
+  // multi-chain `√vMOONEY` fetcher to drive the in-flight preview.
+  // Failures return 0s (matching the production hook's behavior).
+  //
+  // Snapshots also carry the authoritative `voteCloseTimestamp` for
+  // the cycle they describe — the formula here is a default for the
+  // in-flight preview but can diverge from the actual governance close
+  // moment. Prefer the snapshot's value so the audit page's displayed
+  // close date matches when the pinned values were captured.
+  // Reuse the snapshot binding from the distribution lookup above.
+  const snapshot = retroSnapshot
+  const voteCloseTimestamp =
+    snapshot?.voteCloseTimestamp ?? getRetroVoteCloseTimestamp(quarter, year)
+  const vMOONEYs = snapshot
+    ? resolveSnapshotVMooney(snapshot, voteAddresses)
+    : await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
   if (!vMOONEYs || vMOONEYs.length === 0) return null
 
   const addressToVMOONEY: Record<string, number> = {}
