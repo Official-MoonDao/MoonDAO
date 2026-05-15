@@ -168,61 +168,60 @@ const cycleKey = (quarter: number, year: number) => `${year}-Q${quarter}`
  * Thursday of the quarter + 5 days).
  */
 export const MEMBER_VOTE_VMOONEY_SNAPSHOTS: Record<string, VMooneySnapshot> = {
-  // Q2 2026 member vote (snapshot moment 2026-05-04 00:00:00 UTC, the
-  // governance-canonical close moment per EB direction). The default
-  // `getThirdThursdayOfQuarterTimestamp + 5 days` formula in
-  // `dates.ts` would put close at 2026-04-21, but that formula treats
-  // the *submission* deadline as vote-open. The actual Member Vote
-  // ran past the formula's date and the EB designated 2026-05-04 as
-  // the canonical close-of-cycle moment for this quarter; we override
-  // the formula here so the recovered values and the displayed close
-  // date both reflect that decision.
+  // Q2 2026 member vote (snapshot moment 2026-04-20 00:00:00 UTC).
+  // This is the date displayed on the originally-published audit
+  // screenshot ("Snapshot at vote close (4/20/2026)") and matches the
+  // governance close-of-cycle moment for the Q2 Member Vote.
   // Recovered via `balanceOfAt(addr, blockNumber)` against the block
-  // at the override timestamp on each chain — see `blockAtClose`.
-  // This is true historical: each value is decayed from the
+  // at this timestamp on each chain — see `blockAtClose`. This is
+  // true historical: each value is decayed from the
   // `user_point_history` entry that was current at the per-chain
   // close-block, NOT from the voter's *latest* point as the buggy
   // `balanceOf(addr, _t)` extrapolation does.
+  // The exact percentages on the original screenshot (MDP-240 22.01%
+  // etc.) were a transient state of that buggy projection and cannot
+  // be reproduced from any historical snapshot. The April 20 funded
+  // SET — MDP-235, MDP-240, MDP-245, MDP-237 ($15,438.84 of the
+  // $17,556.75 cap) — is reproducible exactly and matches what was
+  // published.
   '2026-Q2': {
     quarter: 2,
     year: 2026,
-    voteCloseTimestamp: 1777852800,
-    snapshotTakenAt: 1778800875,
+    voteCloseTimestamp: 1776643200,
+    snapshotTakenAt: 1778803785,
     method: 'historical',
     blockAtClose: {
-      arbitrum: 459112764,
-      ethereum: 25017913,
-      polygon: 86366378,
-      base: 45531726,
+      arbitrum: 454293301,
+      ethereum: 24917376,
+      polygon: 85761578,
+      base: 44926926,
     },
     vMOONEY: {
       '0x37e6c43ae0341304ff181da55e8d2593f1728c45': 0,
-      '0x45142255717c78503d585d50a46e84d63473d4b8': 9945.195015220641,
+      '0x45142255717c78503d585d50a46e84d63473d4b8': 0,
       '0x47cc4c7fef42187f9f7901838f316b033e92be05': 0,
-      '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 281881.64320142055,
+      '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 286637.2756532217,
       '0x59041d70deaefe849a48e77e0b273ddd072ea9e4': 0,
-      '0x679d87d8640e66778c3419d164998e720d7495f6': 2273962.1385083715,
+      '0x679d87d8640e66778c3419d164998e720d7495f6': 2369981.3704972095,
       '0x6dfd4a0a88832d88532167f83f796fbed4752e55': 0,
       '0x78b9faab8fb5de5c7902f0b0cf1d1c17340ce207': 0,
       '0x7f79a7aaf569f350806813d41aeba544cbd017f4': 0,
-      '0xa64f2228ccec96076c82abb903021c33859082f8': 69513.16495433789,
-      '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 17876.36245176939,
-      '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 2095791.8784316229,
+      '0xa64f2228ccec96076c82abb903021c33859082f8': 74410.14578576863,
+      '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 18088.920225623082,
+      '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 2118427.1159213213,
       '0xb3d7efd33cb72d63a3490c7b03907c05f1897109': 0,
       '0xc0f91468116d88ee2615ef71697a400be7858544': 0,
-      '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 38156.915816039094,
+      '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 38761.67847562231,
       '0xf2befa4b9489c1ef75e069d16a6f829f71b4b988': 0,
     },
-    // Distributions captured at the May 4 close. Each row is the
-    // post-close state of the voter's `Proposals_42161_157` row,
-    // reproducing exactly what Tableland would return today (verified
-    // via `scripts/verify-q2-2026-snapshot.mjs`). On-chain history
-    // (`RunSQL` events on the Tableland registry) confirms no voter
-    // recast their distribution after the close moment, so this is
-    // identical to the live Tableland state at capture time. Pinning
-    // here makes the audit drift-proof against any future row edit
-    // (whether through a re-opened submissions window or a manual
-    // owner-side write to the Proposals contract).
+    // Distributions captured from the live `Proposals_42161_157`
+    // table. On-chain history (`RunSQL` events on the Tableland
+    // registry) confirms no voter recast their distribution between
+    // the April 20 snapshot moment and capture time, so the rows are
+    // identical to what was on chain at close. Pinning here makes the
+    // audit drift-proof against any future row edit (whether through
+    // a re-opened submissions window or a manual owner-side write to
+    // the Proposals contract).
     distributions: {
       '0x37e6c43ae0341304ff181da55e8d2593f1728c45': { '113': 10, '114': 10, '117': 80 },
       '0x45142255717c78503d585d50a46e84d63473d4b8': { '114': 100 },

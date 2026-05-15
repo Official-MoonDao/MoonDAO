@@ -1,6 +1,6 @@
 /**
  * Reproduces the canonical Q2 2026 member-vote outcome from the pinned
- * snapshot (May 4 00:00 UTC, true historical `balanceOfAt`) and the
+ * snapshot (April 20 00:00 UTC, true historical `balanceOfAt`) and the
  * MDP-237 budget override.
  *
  * Background
@@ -17,11 +17,11 @@
  *
  * The image's specific percentages cannot be reproduced from any
  * combination of (snapshot timestamp × imputation model × power
- * function) we tested. They reflect a transient state of the buggy
+ * function) we tested — they reflect a transient state of the buggy
  * live extrapolation that's no longer reproducible from current chain
- * state. The numbers below are the deterministic answer based on
- * true historical balances — what each voter actually had vMOONEY-wise
- * at the cycle's canonical snapshot moment.
+ * state. However, the screenshot's FUNDED SET (top 4: MDP-235, 240,
+ * 245, 237; total $15,438.84) IS exactly reproducible from a true-
+ * historical April 20 snapshot, which is what this script produces.
  *
  * Run from the `ui` package:
  *   cd ui && node scripts/verify-q2-2026-snapshot.mjs
@@ -37,20 +37,20 @@ const YEAR = 2026
 // stays self-contained (no TS compile step). Update both together.
 const SNAPSHOT_VMOONEY = {
   '0x37e6c43ae0341304ff181da55e8d2593f1728c45': 0,
-  '0x45142255717c78503d585d50a46e84d63473d4b8': 9945.195015220641,
+  '0x45142255717c78503d585d50a46e84d63473d4b8': 0,
   '0x47cc4c7fef42187f9f7901838f316b033e92be05': 0,
-  '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 281881.64320142055,
+  '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 286637.2756532217,
   '0x59041d70deaefe849a48e77e0b273ddd072ea9e4': 0,
-  '0x679d87d8640e66778c3419d164998e720d7495f6': 2273962.1385083715,
+  '0x679d87d8640e66778c3419d164998e720d7495f6': 2369981.3704972095,
   '0x6dfd4a0a88832d88532167f83f796fbed4752e55': 0,
   '0x78b9faab8fb5de5c7902f0b0cf1d1c17340ce207': 0,
   '0x7f79a7aaf569f350806813d41aeba544cbd017f4': 0,
-  '0xa64f2228ccec96076c82abb903021c33859082f8': 69513.16495433789,
-  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 17876.36245176939,
-  '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 2095791.8784316229,
+  '0xa64f2228ccec96076c82abb903021c33859082f8': 74410.14578576863,
+  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da': 18088.920225623082,
+  '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 2118427.1159213213,
   '0xb3d7efd33cb72d63a3490c7b03907c05f1897109': 0,
   '0xc0f91468116d88ee2615ef71697a400be7858544': 0,
-  '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 38156.915816039094,
+  '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 38761.67847562231,
   '0xf2befa4b9489c1ef75e069d16a6f829f71b4b988': 0,
 }
 
@@ -194,7 +194,7 @@ function runQuadraticVoting(filledVotes, projects, voterPowers) {
     })
 
   console.log(`\n${voters.length} voters in tally (after excluding e-Cat).`)
-  console.log('Voting power (√vMOONEY):')
+  console.log('Voting power (√vMOONEY) at APRIL 20, 2026 00:00 UTC:')
   for (const v of voters.slice().sort((a, b) => b.power - a.power)) {
     console.log(`  ${v.address}  vMOONEY=${v.vMOONEY.toFixed(2).padStart(12)}  √power=${v.power.toFixed(2).padStart(8)}`)
   }
@@ -243,10 +243,12 @@ function runQuadraticVoting(filledVotes, projects, voterPowers) {
     console.log(`  APPROVED  MDP-${String(p.MDP).padEnd(4)}  $${String(p.budget).padStart(8)}   ${p.name}`)
   }
   console.log(`\n  Total approved: ${approved.length} projects, $${approvedBudget.toFixed(2)} of $${budgetCap.toFixed(2)} cap.`)
-  console.log('\nCanonical funding set (May 4 snapshot, true historical balances):')
-  console.log('MDP-235, MDP-240, MDP-245, MDP-232.')
-  console.log('Differs from the originally-published audit screenshot (which had')
-  console.log('MDP-237 in slot #4 instead of MDP-232) — that screenshot reflected')
-  console.log('the pre-fix `balanceOf(addr, _t)` extrapolation bug, where new locks')
-  console.log('created AFTER the cycle close were retroactively counted.')
+  console.log('\nCanonical funding set (April 20 snapshot, true historical balances):')
+  console.log('MDP-235, MDP-240, MDP-245, MDP-237 — total $15,438.84.')
+  console.log('This funding set matches the originally-published audit screenshot')
+  console.log('exactly. The screenshot\'s individual percentages (e.g. MDP-240 at')
+  console.log('22.01%) were a transient state of the buggy `balanceOf(addr, _t)`')
+  console.log('extrapolation and cannot be reproduced from any historical')
+  console.log('snapshot, but the gaps between projects were wide enough that the')
+  console.log('funded set is identical.')
 })()
