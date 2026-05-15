@@ -50,7 +50,8 @@ import ProposalVotes from '@/components/nance/ProposalVotes'
 import VotingResults from '@/components/nance/VotingResults'
 import ProposalEditSection from '@/components/nance/ProposalEditSection'
 import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
-import TempCheck from '@/components/project/TempCheck'
+import CloseAndTallyButton from '@/components/project/CloseAndTallyButton'
+import SenateVote from '@/components/project/SenateVote'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
@@ -84,6 +85,7 @@ type ProjectProfileProps = {
   votes: any[]
   voteOutcome: any
   proposalStatus: any
+  tempCheckApprovedTimestamp?: string
   pending?: boolean
 }
 
@@ -96,6 +98,7 @@ export default function ProjectProfile({
   votes,
   voteOutcome,
   proposalStatus,
+  tempCheckApprovedTimestamp,
   pending,
 }: ProjectProfileProps) {
   const router = useRouter()
@@ -267,32 +270,52 @@ export default function ProjectProfile({
               </div>
             </SectionCard>
           )}
+          {/* Senate Vote Section — non-project proposals awaiting senate
+              approval. Senators see interactive 👍/👎 buttons; everyone sees
+              the running counts and the per-senator voted/pending status. */}
+          {project.active === PROJECT_PENDING &&
+            proposalStatus === 'Temperature Check' &&
+            proposalJSON?.nonProjectProposal && (
+              <SectionCard header="Senate Vote" iconSrc="/assets/icon-star.svg">
+                <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-6">
+                  <p className="text-sm text-white/70 mb-5">
+                    Senators must approve this proposal before it moves to a
+                    member vote.
+                  </p>
+                  <SenateVote mdp={project.MDP} />
+                </div>
+              </SectionCard>
+            )}
+
+          {/* Member Vote Section — non-project proposals after senate approval. */}
+          {project.active === PROJECT_PENDING &&
+            proposalStatus === 'Voting' &&
+            proposalJSON?.nonProjectProposal && (
+              <SectionCard header="Member Vote" iconSrc="/assets/icon-star.svg">
+                <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5">
+                  <p className="text-sm text-white/70 mb-4">
+                    This proposal passed the Senate vote. Lock $MOONEY to vote
+                    quadratically with vMOONEY-weighted Yes / No / Abstain.
+                  </p>
+                  <ProposalVotes
+                    project={project}
+                    votes={votes}
+                    proposalStatus={proposalStatus}
+                    showContainer
+                  />
+                  <CloseAndTallyButton
+                    mdp={project.MDP}
+                    tempCheckApprovedTimestamp={tempCheckApprovedTimestamp}
+                  />
+                </div>
+              </SectionCard>
+            )}
+
           {/* Project Overview */}
           <SectionCard
             header="Proposal"
             iconSrc="/assets/icon-star.svg"
             className=""
-            action={
-              <div className="flex gap-2 items-center">
-                {project.active == PROJECT_PENDING &&
-                  proposalStatus === 'Temperature Check' && (
-                  <div className="flex items-center gap-2">
-                    <TempCheck mdp={project.MDP} />
-                  </div>
-                )}
-                {project.active == PROJECT_PENDING &&
-                  proposalStatus === 'Voting' &&
-                  proposalJSON?.nonProjectProposal && (
-                    <div className="flex items-center">
-                      <ProposalVotes
-                        project={project}
-                        votes={votes}
-                        proposalStatus={proposalStatus}
-                      />
-                    </div>
-                  )}
-              </div>
-            }
           >
             <div className="mb-6 sm:mt-4 sm:mb-10 px-0 sm:px-4 md:px-8 w-full">
               <div className="prose prose-base prose-invert max-w-none">
@@ -438,6 +461,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
             proposalStatus: 'Discussion',
             proposalJSON: {},
             voteOutcome: {},
+            tempCheckApprovedTimestamp: '0',
           },
         }
       }
@@ -473,22 +497,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
 
     let proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
 
-    if (proposalStatus === 'Temperature Check') {
-      try {
-        const { NANCE_API_URL, NANCE_SPACE_NAME } = await import('@/lib/nance/constants')
-        const nanceRes = await fetch(`${NANCE_API_URL}/${NANCE_SPACE_NAME}/proposal/${mdp}`)
-        if (nanceRes.ok) {
-          const nanceData = await nanceRes.json()
-          const nanceStatus = nanceData?.data?.status
-          if (nanceStatus && nanceStatus !== 'Temperature Check') {
-            proposalStatus = nanceStatus
-          }
-        }
-      } catch {
-        // Nance API unavailable, use on-chain status
-      }
-    }
-
     let proposalJSON: any = {}
     if (isFetchableUrl(project.proposalIPFS)) {
       try {
@@ -505,6 +513,28 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
       }
     }
 
+    // Non-project proposals do not exist in nance and are tallied on-chain
+    // via the NonProjectProposal Tableland table, so the nance status overlay
+    // would only mask the correct on-chain status. Skip it for those.
+    if (
+      proposalStatus === 'Temperature Check' &&
+      !proposalJSON?.nonProjectProposal
+    ) {
+      try {
+        const { NANCE_API_URL, NANCE_SPACE_NAME } = await import('@/lib/nance/constants')
+        const nanceRes = await fetch(`${NANCE_API_URL}/${NANCE_SPACE_NAME}/proposal/${mdp}`)
+        if (nanceRes.ok) {
+          const nanceData = await nanceRes.json()
+          const nanceStatus = nanceData?.data?.status
+          if (nanceStatus && nanceStatus !== 'Temperature Check') {
+            proposalStatus = nanceStatus
+          }
+        }
+      } catch {
+        // Nance API unavailable, use on-chain status
+      }
+    }
+
     let votes: DistributionVote[] = []
     let voteOutcome = {}
     if (proposalJSON?.nonProjectProposal) {
@@ -512,7 +542,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
         const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
         votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
         const voteAddresses = votes.map((v) => v.address)
-        const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
+        // Voting window is 5 days after temp-check approval. Must match
+        // pages/api/proposals/nonProjectVote.ts so the previewed outcome
+        // here matches the tallied outcome there.
+        const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 5
 
         if (voteAddresses.length > 0) {
           const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
@@ -572,6 +605,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
         proposalStatus,
         proposalJSON,
         voteOutcome,
+        tempCheckApprovedTimestamp: tempCheckApprovedTimestamp
+          ? tempCheckApprovedTimestamp.toString()
+          : '0',
       },
     }
   } catch (error) {

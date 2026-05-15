@@ -1,6 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useState, useEffect } from 'react'
-import { ProposalStatus } from '@/lib/nance/useProposalStatus'
+import { ProposalStatus, STATUS_DISPLAY_LABELS } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
 import useAccountAddress from '../../lib/nance/useAccountAddress'
 import { classNames } from '../../lib/utils/tailwind'
@@ -42,7 +42,7 @@ export default function NewVoteButton({
     buttonLabel = 'Loading'
   }
   if (proposalStatus == 'Temperature Check') {
-    buttonLabel = proposalStatus
+    buttonLabel = STATUS_DISPLAY_LABELS['Temperature Check'] ?? proposalStatus
   } else if (proposalStatus !== 'Voting') {
     buttonLabel = 'Voting Closed'
   } else if (address) {

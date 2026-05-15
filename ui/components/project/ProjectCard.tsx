@@ -1,20 +1,17 @@
 //This component dipslays a project card using project data directly from tableland
 import { trimActionsFromBody } from '@nance/nance-sdk'
 import { usePrivy } from '@privy-io/react-auth'
-import confetti from 'canvas-confetti'
 import CitizenABI from 'const/abis/Citizen.json'
-import ProposalsABI from 'const/abis/Proposals.json'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
-  PROPOSALS_ADDRESSES,
   IS_SENATE_VOTE,
 } from 'const/config'
 import { getProposalVideoUrl } from 'const/proposalVideos'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
-import { prepareContractCall, sendAndConfirmTransaction, readContract } from 'thirdweb'
+import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
@@ -22,15 +19,14 @@ import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
-import useProposalData from '@/lib/project/useProposalData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { normalizeJsonString } from '@/lib/utils/rewards'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
+import { SenateVoteButtons, SenatorsStatus } from '@/components/project/SenateVote'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
@@ -162,171 +158,6 @@ type ProjectCardProps = {
   // to keep card behavior consistent with the standard project listings.
   linkToProjectPage?: boolean
 }
-
-import { useIsSenator } from '@/lib/thirdweb/hooks/useIsSenator'
-
-
-// Senators Status Display component - shows which senators have voted
-const SenatorsStatus = memo(({ senatorVotes, isLoading }: { senatorVotes: any[]; isLoading: boolean }) => {
-  const votedSenators = senatorVotes.filter(s => s.hasVoted)
-  const pendingSenators = senatorVotes.filter(s => !s.hasVoted)
-
-  if (isLoading) {
-    return (
-      <div data-testid="senators-loading" className="flex items-center gap-2">
-        <LoadingSpinner width="w-4" height="h-4" />
-        <span className="text-[11px] text-white/60">Loading senators...</span>
-      </div>
-    )
-  }
-
-  if (senatorVotes.length === 0) return null
-
-  return (
-    <div 
-      data-testid="senators-status"
-      className="p-2 rounded-lg bg-slate-800/40 border border-white/10 w-fit"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div data-testid="senators-count" className="text-[11px] text-white/60 mb-1.5">
-        Senators ({votedSenators.length}/{senatorVotes.length} voted)
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {/* Show voted senators */}
-        {votedSenators.map((senator) => (
-          <div 
-            key={senator.address}
-            data-testid={`senator-voted-${senator.name}`}
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/20 border border-green-500/30"
-            title={`${senator.name} has voted`}
-          >
-            <span className="text-[10px]">✓</span>
-            <span className="text-[10px] text-white/90">{senator.name}</span>
-          </div>
-        ))}
-        {/* Show pending senators */}
-        {pendingSenators.map((senator) => (
-          <div 
-            key={senator.address}
-            data-testid={`senator-pending-${senator.name}`}
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-500/20 border border-gray-500/30"
-            title={`${senator.name} has not voted yet`}
-          >
-            <span className="text-[10px]">○</span>
-            <span className="text-[10px] text-white/50">{senator.name}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-})
-SenatorsStatus.displayName = 'SenatorsStatus'
-
-// Senate Vote component for thumbs up/down voting
-const SenateVoteButtons = memo(({ mdp, budgetLabel, onSenatorVotesChange }: { mdp: number; budgetLabel?: string; onSenatorVotesChange?: (votes: any[], loading: boolean) => void }) => {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
-  const account = useActiveAccount()
-  const { authenticated } = usePrivy()
-  const { isSenator, isLoading: isSenatorLoading } = useIsSenator()
-  
-  const proposalContract = useContract({
-    address: PROPOSALS_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: ProposalsABI.abi as any,
-  })
-  
-  const { proposalData, senatorVotes, isLoading, refetch } = useProposalData(proposalContract, mdp)
-
-  // Notify parent of senator votes changes
-  React.useEffect(() => {
-    if (onSenatorVotesChange) {
-      onSenatorVotesChange(senatorVotes, isLoading)
-    }
-  }, [senatorVotes, isLoading, onSenatorVotesChange])
-  
-  const handleVote = (pass: boolean) => {
-    return async () => {
-      if (!account) return
-      const transaction = prepareContractCall({
-        contract: proposalContract,
-        method: 'voteTempCheck' as string,
-        params: [mdp, pass],
-      })
-      await sendAndConfirmTransaction({
-        transaction,
-        account,
-      })
-      // Trigger confetti animation on successful vote
-      confetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.6 },
-        shapes: ['circle', 'star'],
-        colors: pass 
-          ? ['#22c55e', '#4ade80', '#86efac', '#ffffff', '#FFD700'] // Green theme for thumbs up
-          : ['#ef4444', '#f87171', '#fca5a5', '#ffffff', '#FFD700'], // Red theme for thumbs down
-      })
-      refetch()
-    }
-  }
-  
-  const approvalCount = 'tempCheckApprovalCount' in proposalData 
-    ? Number(proposalData?.tempCheckApprovalCount || 0).toString() 
-    : '0'
-  const rejectionCount = 'tempCheckVoteCount' in proposalData 
-    ? (Number(proposalData?.tempCheckVoteCount || 0) - Number(proposalData?.tempCheckApprovalCount || 0)).toString() 
-    : '0'
-  
-  // Show loading state while checking senator status
-  if (isSenatorLoading) {
-    return (
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <LoadingSpinner width="w-5" height="h-5" />
-      </div>
-    )
-  }
-  
-  const VoteButtons = isSenator && account && authenticated ? (
-    <div className="flex items-center gap-2">
-      <PrivyWeb3Button
-        action={handleVote(true)}
-        requiredChain={DEFAULT_CHAIN_V5}
-        className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium text-sm transition-all"
-        label={`👍 ${approvalCount}`}
-      />
-      <PrivyWeb3Button
-        action={handleVote(false)}
-        requiredChain={DEFAULT_CHAIN_V5}
-        className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all"
-        label={`👎 ${rejectionCount}`}
-      />
-    </div>
-  ) : (
-    <div className="flex items-center gap-2">
-      <div className="px-3 py-2 h-[36px] rounded-lg bg-green-600/50 text-white font-medium text-sm flex items-center">
-        👍 {approvalCount}
-      </div>
-      <div className="px-3 py-2 h-[36px] rounded-lg bg-red-600/50 text-white font-medium text-sm flex items-center">
-        👎 {rejectionCount}
-      </div>
-    </div>
-  )
-  
-  return (
-    <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto sm:flex-shrink-0">
-      <div className="flex flex-wrap items-center gap-2">
-        {budgetLabel && (
-          <span className="px-3 py-1.5 h-[36px] flex items-center rounded-lg text-sm font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-            {budgetLabel}
-          </span>
-        )}
-        {VoteButtons}
-      </div>
-    </div>
-  )
-})
-SenateVoteButtons.displayName = 'SenateVoteButtons'
 
 const ProjectCardContent = memo(
   ({
