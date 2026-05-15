@@ -95,12 +95,12 @@ function parseArgs() {
   // formula in this script (`getMemberVoteCloseTimestamp` /
   // `getRetroVoteCloseTimestamp`) mirrors what the production compute
   // pipeline derives, but the *actual* governance close moment can
-  // diverge — e.g. Q2 2026's member vote actually closed 2026-05-01,
-  // not the formula's 2026-04-21. Pass the real close as a unix
-  // timestamp (seconds) and the snapshot pins it both in
-  // `voteCloseTimestamp` (so the audit page displays the right date)
-  // and as the `balanceOfAt` block-resolution target (so the values
-  // reflect what actually counted).
+  // diverge — e.g. Q2 2026's member vote used the canonical close
+  // 2026-04-20 00:00 UTC (`1776643200`), not the formula's 2026-04-21.
+  // Pass the real close as a unix timestamp (seconds) and the snapshot
+  // pins it both in `voteCloseTimestamp` (so the audit page displays
+  // the right date) and as the `balanceOfAt` block-resolution target
+  // (so the values reflect what actually counted).
   const voteCloseOverride = args['vote-close-timestamp']
     ? Number(args['vote-close-timestamp'])
     : null
