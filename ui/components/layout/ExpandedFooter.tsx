@@ -206,7 +206,7 @@ export function ExpandedFooter({
             className={`${
               isFullwidth
                 ? 'container mx-auto md:pl-[5vw] lg:pl-[2vw] md:pb-0 md:pt-[5vh]'
-                : 'pb-[5vw] md:pt-[5vw]'
+                : 'mx-auto pb-[5vw] md:pt-[5vw]'
             } max-w-[1200px] pb-0 flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10`}
           >
             {hasCallToAction && isFullwidth && (
