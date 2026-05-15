@@ -266,10 +266,13 @@ async function getBlockAtTimestamp(provider, chainName, targetTimestamp) {
 
   const latestBlockNumber = await provider.getBlockNumber()
   const latestBlock = await provider.getBlock(latestBlockNumber)
-  if (latestBlock.timestamp <= targetTimestamp) {
-    // Target is in the future relative to the chain head — `balanceOfAt`
-    // would `assert _block <= block.number` and revert. Caller should
-    // fall back to the projected method in this case.
+  if (latestBlock.timestamp < targetTimestamp) {
+    // Target is strictly in the future relative to the chain head —
+    // `balanceOfAt` would `assert _block <= block.number` and revert.
+    // Caller should fall back to the projected method in this case.
+    // Equality (latest == target) is fine: the latest block IS the
+    // highest block ≤ targetTimestamp, and the binary search below
+    // will converge on it.
     throw new Error(
       `Target timestamp ${targetTimestamp} is past the latest ${chainName} ` +
         `block (${latestBlock.timestamp}). Cycle hasn't closed on this chain yet.`
