@@ -283,7 +283,7 @@ export async function calculateTreasuryGrowthReward(
 }
 
 export async function calculateRevenueReward(
-  year: number,
+  endMs: number,
   ethPrice: number
 ): Promise<RevenueReward> {
   try {
@@ -291,10 +291,12 @@ export async function calculateRevenueReward(
 
     // Subscription revenue: pull canonical on-chain numbers (no cache) so
     // a transient Etherscan failure can never silently zero this out.
-    const now = Date.now()
-    const yearAgo = now - 365 * 86400000
+    // endMs is anchored to the quarter end (capped at now) so historical
+    // calculations don't drift as time passes.
+    const windowEnd = Math.min(endMs, Date.now())
+    const yearAgo = windowEnd - 365 * 86400000
     const [annualSubs, revenueData] = await Promise.all([
-      getCanonicalSubscriptionRevenue(yearAgo, now, ethPrice),
+      getCanonicalSubscriptionRevenue(yearAgo, windowEnd, ethPrice),
       // Still need defi fees + staking from the existing pipeline
       // (Uniswap subgraph + beacon chain — both deterministic).
       getHistoricalRevenue(defiData, 365),
@@ -343,9 +345,9 @@ export async function calculateEBRewards(quarter: number, year: number): Promise
       throw new Error('Unable to fetch ETH price')
     }
 
-    // Calculate quarterly revenue once and use it for both calculations
+    // Quarter revenue used only to strip out revenue inflows from AUM growth
     const quarterRevenueUSD = await getQuarterlyRevenue(quarter, year)
-    
+
     const treasuryGrowth = await calculateTreasuryGrowthReward(
       quarter,
       year,
@@ -353,12 +355,15 @@ export async function calculateEBRewards(quarter: number, year: number): Promise
       quarterRevenueUSD
     )
 
-    // EB gets 10% of quarterly revenue
-    const revenueRewardUSD = quarterRevenueUSD * 0.1
-    const revenueRewardETH = ethPrice > 0 ? revenueRewardUSD / ethPrice : 0
+    // Revenue reward = 10% of TRAILING 365-DAY annual revenue anchored to quarter end
+    const { endDate } = getQuarterDateRange(quarter, year)
+    const quarterEndMs = endDate.getTime()
+    const revenueReward = await calculateRevenueReward(quarterEndMs, ethPrice)
+    const revenueRewardUSD = revenueReward.rewardUSD
+    const revenueRewardETH = revenueReward.rewardETH
 
     const revenue = {
-      annualRevenueUSD: quarterRevenueUSD,
+      annualRevenueUSD: revenueReward.annualRevenueUSD,
       rewardUSD: revenueRewardUSD,
       rewardETH: revenueRewardETH,
     }

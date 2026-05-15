@@ -45,8 +45,6 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
   }
 
   useEffect(() => {
-    if (!isManager) return
-
     // Clear old rewards immediately when selection changes
     setRewards(null)
 
@@ -54,28 +52,56 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
       setLoading(true)
       setError(null)
       try {
-        const nocache = refreshTrigger > 0 ? '&nocache=1' : ''
-        const response = await fetch(
-          `/api/eb/rewards?quarter=${selectedQuarter}&year=${selectedYear}${nocache}`
-        )
-
-        if (!response.ok) {
-          if (response.status === 403) {
-            throw new Error('Access denied: Executive Branch membership required')
-          }
-          const errorData = await response.json()
-          throw new Error(errorData.message || 'Failed to fetch rewards')
-        }
-        const data = await response.json()
-
-        // Verify the response matches what we requested
-        if (data.quarter !== selectedQuarter || data.year !== selectedYear) {
-          console.error(
-            `[EB Rewards UI] MISMATCH! Requested Q${selectedQuarter} ${selectedYear} but got Q${data.quarter} ${data.year}`
+        if (isManager) {
+          // Managers use the gated /api/eb/rewards endpoint (cached, full result)
+          const nocache = refreshTrigger > 0 ? '&nocache=1' : ''
+          const response = await fetch(
+            `/api/eb/rewards?quarter=${selectedQuarter}&year=${selectedYear}${nocache}`
           )
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.message || 'Failed to fetch rewards')
+          }
+          const data = await response.json()
+          if (data.quarter !== selectedQuarter || data.year !== selectedYear) {
+            console.error(
+              `[EB Rewards UI] MISMATCH! Requested Q${selectedQuarter} ${selectedYear} but got Q${data.quarter} ${data.year}`
+            )
+          }
+          setRewards(data)
+        } else {
+          // Community members use the public /api/eb/audit endpoint and we
+          // normalise the shape to match EBRewardResult.
+          const response = await fetch(
+            `/api/eb/audit?quarter=${selectedQuarter}&year=${selectedYear}`
+          )
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.message || 'Failed to fetch audit data')
+          }
+          const audit = await response.json()
+          // Map audit shape → EBRewardResult shape
+          const mapped: EBRewardResult = {
+            quarter: audit.meta.quarter,
+            year: audit.meta.year,
+            treasuryGrowth: {
+              currentQuarterAvgUSD: audit.currentQuarter.averageUSD,
+              previousQuarterAvgUSD: audit.previousQuarter.averageUSD,
+              growthUSD: audit.result.capitalGainsUSD,
+              rewardUSD: audit.result.treasuryRewardUSD,
+              rewardETH: audit.result.treasuryRewardETH,
+            },
+            revenue: {
+              annualRevenueUSD: audit.result.annualRevenueUSD,
+              rewardUSD: audit.result.revenueRewardUSD,
+              rewardETH: audit.result.revenueRewardETH,
+            },
+            totalRewardETH: audit.result.totalRewardETH,
+            ethPrice: audit.meta.ethPriceUSD,
+            calculatedAt: audit.meta.calculatedAt,
+          }
+          setRewards(mapped)
         }
-
-        setRewards(data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load rewards')
       } finally {
@@ -106,14 +132,15 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
     return selectedQuarter === currentQuarter && selectedYear === currentYear
   }
 
-  if (!isManager) {
-    return null
-  }
-
   return (
     <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-white">Rewards</h2>
+        <div>
+          <h2 className="text-2xl font-semibold text-white">Rewards</h2>
+          {!isManager && (
+            <p className="text-xs text-slate-400 mt-1">Read-only view — sourced from the public audit endpoint</p>
+          )}
+        </div>
         <div className="flex gap-3">
           <select
             value={selectedQuarter}
@@ -133,15 +160,31 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
             max={2100}
             className="bg-slate-700/50 border border-slate-600 text-white rounded-lg px-4 py-2 w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="bg-slate-700/50 border border-slate-600 text-white rounded-lg px-4 py-2 hover:bg-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title="Refresh data (bypass cache)"
-          >
-            <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          {isManager && (
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="bg-slate-700/50 border border-slate-600 text-white rounded-lg px-4 py-2 hover:bg-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Refresh data (bypass cache)"
+            >
+              <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Public audit link — visible to everyone */}
+      <div className="mb-4 flex items-center gap-2 text-xs text-slate-400">
+        <span>🔍</span>
+        <span>Verify this calculation:</span>
+        <a
+          href={`/api/eb/audit?quarter=${selectedQuarter}&year=${selectedYear}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+        >
+          /api/eb/audit?quarter={selectedQuarter}&amp;year={selectedYear}
+        </a>
       </div>
 
       {loading ? (
@@ -284,16 +327,11 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
                 <div>
                   <p className="font-semibold text-slate-300 mb-2">2. Treasury Data Fetching</p>
                   <p>
-                    The calculation starts by fetching treasury AUM (Assets Under Management)
-                    history from CoinStats API using{' '}
-                    <code className="bg-slate-900/50 px-1 rounded">getAUMHistory()</code>. This
-                    retrieves daily portfolio value snapshots for the last 365 days, including:
+                    Daily AUM is reconstructed from on-chain transfer history via Etherscan v2,
+                    with prices sourced from DefiLlama (<code className="bg-slate-900/50 px-1 rounded">coins.llama.fi</code>).
+                    Uniswap V3 LP positions are valued from live pool slot0 + liquidity reads.
+                    MOONEY token holdings are excluded from AUM.
                   </p>
-                  <ul className="list-disc list-inside ml-2 mt-1 space-y-1">
-                    <li>Portfolio value from CoinStats (includes all tracked assets)</li>
-                    <li>DeFi balance from Uniswap pools and other protocols</li>
-                    <li>Historical data points with timestamps and USD values</li>
-                  </ul>
                 </div>
 
                 <div>
@@ -321,13 +359,15 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
                 <div>
                   <p className="font-semibold text-slate-300 mb-2">4. Revenue Calculation</p>
                   <p>
-                    Quarterly revenue is calculated from all revenue sources (subscriptions, DeFi
-                    fees, staking) by taking the difference between cumulative revenue at the end and
-                    start of the quarter.
+                    Subscription revenue is pulled directly from Arbitrum internal transactions on
+                    Etherscan v2 — filtering ETH flows from the Citizen NFT and Team NFT contracts
+                    to the Arbitrum treasury. Every individual transaction hash is included in the
+                    audit endpoint response.
                   </p>
                   <p className="mt-1">
-                    Revenue includes: Citizen subscriptions, Team subscriptions, DeFi protocol fees,
-                    and ETH staking rewards.
+                    DeFi fees come from the Uniswap V3 subgraph. Staking rewards are sourced from
+                    the beacon chain. The revenue reward uses the trailing 365-day total anchored
+                    to the end of the selected quarter.
                   </p>
                 </div>
 
@@ -358,9 +398,9 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
                       </code>
                     </li>
                     <li>
-                      <strong>Revenue Reward:</strong> 10% of quarterly revenue{' '}
+                      <strong>Revenue Reward:</strong> 10% of trailing 365-day annual revenue{' '}
                       <code className="bg-slate-900/50 px-1 rounded">
-                        Reward = Quarterly Revenue × 0.10
+                        Reward = Annual Revenue × 0.10
                       </code>
                     </li>
                   </ul>
@@ -395,28 +435,24 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
                   <p className="text-slate-300 font-semibold">Key Files:</p>
                   <ul className="list-disc list-inside ml-2 mt-1 space-y-1">
                     <li>
-                      <code className="bg-slate-900/50 px-1 rounded">
-                        ui/pages/api/eb/rewards.ts
-                      </code>{' '}
-                      - API endpoint
+                      <code className="bg-slate-900/50 px-1 rounded">ui/pages/api/eb/audit.ts</code>{' '}
+                      - Public audit endpoint (all intermediate values)
                     </li>
                     <li>
-                      <code className="bg-slate-900/50 px-1 rounded">
-                        ui/lib/treasury/eb-rewards.ts
-                      </code>{' '}
+                      <code className="bg-slate-900/50 px-1 rounded">ui/pages/api/eb/rewards.ts</code>{' '}
+                      - Gated rewards API (manager only)
+                    </li>
+                    <li>
+                      <code className="bg-slate-900/50 px-1 rounded">ui/lib/treasury/eb-rewards.ts</code>{' '}
                       - Calculation logic
                     </li>
                     <li>
-                      <code className="bg-slate-900/50 px-1 rounded">
-                        ui/lib/coinstats/index.ts
-                      </code>{' '}
-                      - Treasury data fetching
+                      <code className="bg-slate-900/50 px-1 rounded">ui/lib/treasury/canonicalRevenue.ts</code>{' '}
+                      - On-chain subscription revenue
                     </li>
                     <li>
-                      <code className="bg-slate-900/50 px-1 rounded">
-                        ui/lib/etherscan/index.ts
-                      </code>{' '}
-                      - ETH price fetching
+                      <code className="bg-slate-900/50 px-1 rounded">ui/lib/treasury/aum-onchain.ts</code>{' '}
+                      - Daily AUM reconstruction
                     </li>
                   </ul>
                 </div>
