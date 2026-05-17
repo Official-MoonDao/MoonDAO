@@ -129,12 +129,6 @@ contract ManualRefundTest is Test, Config {
             memberHatURI: ""
         });
         MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
-            name: "",
-            bio: "",
-            image: "",
-            twitter: "",
-            communications: "",
-            website: "",
             _view: "view",
             formId: "formId"
         });
