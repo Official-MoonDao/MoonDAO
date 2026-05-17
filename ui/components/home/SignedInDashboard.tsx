@@ -463,9 +463,7 @@ export default function SignedInDashboard({
 
             {/* Retroactive Rewards - Under profile card */}
             {address && (
-              <div className="hidden lg:block">
-                <ClaimRewardsSection />
-              </div>
+              <ClaimRewardsSection />
             )}
 
             {/* Weekly Reward Pool - Enhanced UI */}
