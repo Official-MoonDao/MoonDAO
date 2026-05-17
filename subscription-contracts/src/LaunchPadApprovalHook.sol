@@ -8,6 +8,10 @@ import "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import "@nana-core-v5/libraries/JBConstants.sol";
 import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
 
+interface ILaunchPadPayHook {
+    function refundsEnabled() external view returns (bool);
+}
+
 // Hook to enable payouts after a funding goal is reached and a deadline is passed.
 contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
     uint256 public immutable fundingGoal;
@@ -15,7 +19,7 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
     uint256 public immutable refundPeriod;
     IJBTerminalStore public immutable jbTerminalStore;
     address public immutable terminal;
-    bool public refundsEnabled;
+    ILaunchPadPayHook public immutable payHook;
 
     constructor(
         uint256 _fundingGoal,
@@ -23,6 +27,7 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
         uint256 _refundPeriod,
         address _jbTerminalStoreAddress,
         address _terminal,
+        address _payHook,
         address owner
     ) Ownable(owner) {
         fundingGoal = _fundingGoal;
@@ -30,14 +35,17 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
         refundPeriod = _refundPeriod;
         jbTerminalStore = IJBTerminalStore(_jbTerminalStoreAddress);
         terminal = _terminal;
+        require(_payHook != address(0), "LaunchPadApprovalHook: invalid pay hook");
+        payHook = ILaunchPadPayHook(_payHook);
     }
 
     function DURATION() external view override returns (uint256) {
         return 0;
     }
 
-    function enableRefunds(bool _refundsEnabled) external onlyOwner {
-        refundsEnabled = _refundsEnabled;
+    // Single source of truth lives on the pay hook.
+    function refundsEnabled() public view returns (bool) {
+        return payHook.refundsEnabled();
     }
 
     // Missions have 2 rulesets.
@@ -55,9 +63,10 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
         JBRuleset memory ruleset
     ) external view override returns (JBApprovalStatus) {
         uint256 currentFunding = _totalFunding(terminal, projectId);
-        if (refundsEnabled && block.timestamp < deadline + refundPeriod) {
+        bool _refundsEnabled = refundsEnabled();
+        if (_refundsEnabled && block.timestamp < deadline + refundPeriod) {
             return JBApprovalStatus.Failed;
-        } else if (refundsEnabled && block.timestamp >= deadline + refundPeriod) {
+        } else if (_refundsEnabled && block.timestamp >= deadline + refundPeriod) {
             return JBApprovalStatus.Approved;
         } else if (currentFunding >= fundingGoal && block.timestamp >= deadline) {
             return JBApprovalStatus.Approved;

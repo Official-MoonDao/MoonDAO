@@ -65,6 +65,7 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
     using OptionsBuilder for bytes;
     IJBMultiTerminal public jbMultiTerminal;
     IStargate public stargateRouter;
+    address public immutable lzEndpoint;
 
     // Events
     event CrossChainPayInitiated(
@@ -83,10 +84,14 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
     constructor(
         address _owner,
         address _jbMultiTerminalAddress,
-        address _stargateRouter
+        address _stargateRouter,
+        address _lzEndpoint
     ) Ownable(_owner) {
+        require(_lzEndpoint != address(0), "lzEndpoint cannot be zero address");
+        require(_stargateRouter != address(0), "stargateRouter cannot be zero address");
         jbMultiTerminal = IJBMultiTerminal(_jbMultiTerminalAddress);
         stargateRouter = IStargate(_stargateRouter);
+        lzEndpoint = _lzEndpoint;
     }
 
     function crossChainPay(
@@ -173,6 +178,10 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
         address /*_executor*/,
         bytes calldata /*_extraData*/
     ) external payable {
+        // Only accept compose messages from the configured endpoint and trusted source.
+        require(msg.sender == lzEndpoint, "!endpoint");
+        require(_from == address(stargateRouter), "!source");
+
         bytes memory _composeMessage = OFTComposeMsgCodec.composeMsg(_message);
         (
             uint256 projectId,
@@ -181,8 +190,11 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             string memory memo,
             bytes memory metadata
         ) = abi.decode(_composeMessage, (uint256, address, uint256, string, bytes));
-        uint contractBalance = address(this).balance;
-        uint256 tokenCount = jbMultiTerminal.pay{value: contractBalance}(
+        // Forward exactly the ETH delivered by this compose call (msg.value),
+        // not amountLD from the message, so slippage and leftover contract balance
+        // can never be inadvertently drained.
+        require(msg.value > 0, "No ETH delivered");
+        uint256 tokenCount = jbMultiTerminal.pay{value: msg.value}(
             projectId,
             JBConstants.NATIVE_TOKEN,
             0,
@@ -191,7 +203,7 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             memo,
             metadata
         );
-        emit CrossChainPayReceived(projectId, contractBalance, beneficiary);
+        emit CrossChainPayReceived(projectId, msg.value, beneficiary);
     }
 
     // Admin functions

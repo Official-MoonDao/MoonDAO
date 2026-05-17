@@ -5,3 +5,7 @@ notes.txt
 fee-hook/lib/
 xp/lib/contracts/
 contracts/lib/
+
+# Local audit notes — never commit
+AUDIT_FIXES_PROOF.local.md
+**/AUDIT_FIXES_PROOF.local.md

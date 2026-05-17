@@ -115,7 +115,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
 
 
         LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
-        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal), to);
+        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal), address(launchPadPayHook), to);
         // Ruleset 0 is funding/refunds
         // Ruleset 0 has a cashout hook that will only allow refunds if the deadline has passed and the funding goal has not been met.
         // Ruleset 0 has an approval hook that will automatically move to ruleset 1 if the funding goal is met and if the deadline has passed.
@@ -142,7 +142,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
                 allowSetController: false, // The project cannot set a new controller.
                 allowAddAccountingContext: false, // The project cannot add new accounting contexts to its terminals.
                 allowAddPriceFeed: false, // The project cannot add new price feeds.
-                ownerMustSendPayouts: false, // Anyone can send this project's payouts to the splits specified in the `splitGroups` property below.
+                ownerMustSendPayouts: true, // Payout distribution is initiated by the project owner.
                 holdFees: false, // Fees are not held.
                 useTotalSurplusForCashOuts: false, // Cash outs are made from each terminal independently.
                 useDataHookForPay: true,
@@ -172,7 +172,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
                 allowSetController: false, // The project cannot set a new controller.
                 allowAddAccountingContext: false, // The project cannot add new accounting contexts to its terminals.
                 allowAddPriceFeed: false, // The project cannot add new price feeds.
-                ownerMustSendPayouts: false, // Anyone can send this project's payouts to the splits specified in the `splitGroups` property below.
+                ownerMustSendPayouts: true, // Payout distribution is initiated by the project owner.
                 holdFees: false, // Fees are not held.
                 useTotalSurplusForCashOuts: false, // Cash outs are made from each terminal independently.
                 useDataHookForPay: true,

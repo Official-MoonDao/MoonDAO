@@ -540,7 +540,7 @@ contract MissionTest is Test, Config {
         Vesting teamVesting = Vesting(missionCreator.missionIdToTeamVesting(missionId));
         Vesting moonDAOVesting = Vesting(missionCreator.missionIdToMoonDAOVesting(missionId));
         // Can only set token once
-        vm.expectRevert("Token already set");
+        vm.expectRevert("only factory");
         moonDAOVesting.setToken(address(0));
         uint256 tokensTeamVesting = jbTokens.totalBalanceOf(address(teamVesting), projectId);
         uint256 tokensMoonDAOVesting = jbTokens.totalBalanceOf(address(moonDAOVesting), projectId);
@@ -617,6 +617,8 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         assertEq(missionCreator.stage(missionId), 2);
+        vm.stopPrank();
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -624,6 +626,7 @@ contract MissionTest is Test, Config {
             uint32(uint160(JBConstants.NATIVE_TOKEN)),
             0
         );
+        vm.startPrank(user1);
         assertEq(missionCreator.stage(missionId), 2);
         uint256 used = jbTerminalStore.usedPayoutLimitOf(
           address(terminal),
@@ -635,7 +638,7 @@ contract MissionTest is Test, Config {
         assertEq(used, payoutAmount);
 
         PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
-        vm.expectRevert("Token already set");
+        vm.expectRevert("only factory");
         poolDeployer.setToken(address(0));
         poolDeployer.setHookAddress(missionCreator.feeHookAddress());
 
@@ -674,6 +677,8 @@ contract MissionTest is Test, Config {
         skip(28 days);
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         jbController.sendReservedTokensToSplitsOf(projectId);
+        vm.stopPrank();
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -766,6 +771,7 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -848,6 +854,8 @@ contract MissionTest is Test, Config {
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
+        vm.stopPrank();
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -970,7 +978,6 @@ contract MissionTest is Test, Config {
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
-        approvalHook.enableRefunds(true);
         payhook.enableRefunds(true);
         vm.stopPrank();
 
@@ -1010,6 +1017,7 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -1074,7 +1082,6 @@ contract MissionTest is Test, Config {
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
-        approvalHook.enableRefunds(true);
         payhook.enableRefunds(true);
         vm.stopPrank();
 
@@ -1114,6 +1121,7 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -1178,7 +1186,6 @@ contract MissionTest is Test, Config {
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
-        approvalHook.enableRefunds(true);
         payhook.enableRefunds(true);
         vm.stopPrank();
         skip(10 days);
@@ -1219,6 +1226,7 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
