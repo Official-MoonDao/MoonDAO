@@ -142,11 +142,11 @@ export default function WalletInfoCard({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-full overflow-hidden bg-white/5 p-0.5 flex items-center justify-center">
+              <div className="w-6 h-6 flex items-center justify-center">
                 <Image
                   src={`/icons/networks/${chainSlug}.svg`}
-                  width={20}
-                  height={20}
+                  width={16}
+                  height={16}
                   alt="Network Icon"
                   className="object-contain"
                 />
@@ -168,7 +168,7 @@ export default function WalletInfoCard({
 
         {/* Network Dropdown */}
         {networkDropdownOpen && (
-          <div className="absolute top-full mt-2 w-full bg-gradient-to-br from-gray-900 via-blue-900/50 to-purple-900/30 backdrop-blur-xl border border-white/20 rounded-lg shadow-2xl z-[9999] max-h-48 overflow-y-auto">
+          <div className="absolute top-full mt-2 w-full bg-gray-900 border border-white/20 rounded-lg shadow-2xl z-[9999] max-h-48 overflow-y-auto">
             {availableChains.map((chain) => (
               <button
                 key={chain.id}
