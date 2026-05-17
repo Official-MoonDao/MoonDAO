@@ -10,11 +10,13 @@ import Image from 'next/image'
 import { NavLink } from '@/components/layout/NavLink'
 import { useState, useContext } from 'react'
 import { toast } from 'react-hot-toast'
-import { useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { useENS } from '@/lib/utils/hooks/useENS'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import client from '@/lib/thirdweb/client'
+import { USDC_ADDRESSES } from 'const/config'
 import {
   arbitrum,
   ethereum,
@@ -89,6 +91,24 @@ export default function WalletInfoCard({
   const { selectedChain, setSelectedChain }: any = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false)
+
+  // ETH (native) balance
+  const { data: ethBalanceData } = useWalletBalance({
+    client,
+    address,
+    chain: selectedChain,
+  })
+  const ethBalance = ethBalanceData ? Number(ethBalanceData.displayValue) : null
+
+  // USDC balance
+  const usdcAddress = USDC_ADDRESSES[chainSlug] as `0x${string}` | undefined
+  const { data: usdcBalanceData } = useWalletBalance({
+    client,
+    address,
+    chain: selectedChain,
+    tokenAddress: usdcAddress,
+  })
+  const usdcBalance = usdcBalanceData ? Number(usdcBalanceData.displayValue) : null
 
   const availableChains = [
     arbitrum,
@@ -202,6 +222,44 @@ export default function WalletInfoCard({
 
       {/* Balances */}
       <div className="space-y-3 mb-4 min-w-0">
+        {/* ETH Balance */}
+        <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+              <Image
+                src={`/icons/networks/${chainSlug}.svg`}
+                width={16}
+                height={16}
+                alt="ETH"
+                className="object-contain"
+              />
+            </div>
+            <span className="text-sm text-gray-400">ETH</span>
+          </div>
+          <span className="text-white font-semibold text-sm">
+            {ethBalance !== null ? formatToken(ethBalance, 4) : '—'}
+          </span>
+        </div>
+
+        {/* USDC Balance */}
+        {usdcAddress && (
+          <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0 flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <Image
+                src="/coins/USDC.svg"
+                width={20}
+                height={20}
+                alt="USDC"
+                className="object-contain flex-shrink-0"
+              />
+              <span className="text-sm text-gray-400">USDC</span>
+            </div>
+            <span className="text-white font-semibold text-sm">
+              {usdcBalance !== null ? formatToken(usdcBalance, 2) : '—'}
+            </span>
+          </div>
+        )}
+
         {/* $MOONEY Balance */}
         <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0 flex flex-col">
           <div className="flex items-center gap-2 min-w-0">
