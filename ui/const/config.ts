@@ -311,15 +311,7 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   sepolia: '0x1e638C6120d7eF07e0978b68e22CD80bf5E70986',
 }
 
-export const FEATURED_MISSION =
-  process.env.NEXT_PUBLIC_FEATURED_MISSION !== 'false'
-    ? {
-        id: '4',
-        name: 'Go to Space with Frank White',
-        description:
-          'Want to go to space? Join Frank White and bring the Overview Effect to Earth to help unite humanity.',
-      }
-    : null
+export const FEATURED_MISSION = null
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,
   sepolia: sepoliaConfig.MissionTable,
