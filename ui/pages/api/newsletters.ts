@@ -142,9 +142,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const publishedBroadcasts = allBroadcasts.filter(
       (broadcast: any) =>
-        (broadcast.published_at != null ||
-          broadcast.send_at != null ||
-          broadcast.created_at != null) &&
+        broadcast.published_at != null &&
         // Only include public newsletters (non-public ones 404 when opened)
         broadcast.public === true
     )

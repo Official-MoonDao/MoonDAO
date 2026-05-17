@@ -593,7 +593,7 @@ export default function SignedInDashboard({
                     <div className="text-white/60">Loading newsletters...</div>
                   </div>
                 ) : clientNewsletters && clientNewsletters.length > 0 ? (
-                  clientNewsletters.slice(0, 4).map((newsletter: any, index: number) => (
+                  clientNewsletters.slice(0, 3).map((newsletter: any, index: number) => (
                     <div
                       key={newsletter.id || index}
                       className={`bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5${index >= 2 ? ' hidden sm:block' : ''}`}
