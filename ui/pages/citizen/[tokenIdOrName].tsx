@@ -126,6 +126,12 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
 
   const isOwner = address?.toLowerCase() === nft?.owner?.toLowerCase()
 
+  useEffect(() => {
+    if (router.query.edit === '1' && isOwner) {
+      setCitizenMetadataModalEnabled(true)
+    }
+  }, [router.query.edit, isOwner])
+
   const { data: votes } = useVotesOfAddress(nft?.owner)
 
   // Balances

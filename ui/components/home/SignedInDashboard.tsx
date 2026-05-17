@@ -399,11 +399,11 @@ export default function SignedInDashboard({
                         ? `/citizen/${generatePrettyLinkWithId(
                             citizen.metadata.name,
                             citizen.metadata?.id ?? citizen.id
-                          )}`
+                          )}?edit=1`
                         : '/join'
                     }
                   >
-                    View profile
+                    Edit profile
                   </StandardButton>
                 )}
               </div>
@@ -440,7 +440,7 @@ export default function SignedInDashboard({
                     <p className="text-white font-medium truncate">
                       {citizen?.metadata?.name || 'Anonymous'}
                     </p>
-                    <p className="text-white/60 text-sm truncate">Edit profile & settings</p>
+                    <p className="text-white/60 text-sm truncate">View profile</p>
                   </div>
                   <ArrowUpRightIcon className="w-4 h-4 text-white/40 flex-shrink-0" />
                 </Link>
