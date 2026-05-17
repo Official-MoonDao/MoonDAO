@@ -35,6 +35,7 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
         refundPeriod = _refundPeriod;
         jbTerminalStore = IJBTerminalStore(_jbTerminalStoreAddress);
         terminal = _terminal;
+        require(_payHook != address(0), "LaunchPadApprovalHook: invalid pay hook");
         payHook = ILaunchPadPayHook(_payHook);
     }
 

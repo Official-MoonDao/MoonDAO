@@ -87,6 +87,8 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
         address _stargateRouter,
         address _lzEndpoint
     ) Ownable(_owner) {
+        require(_lzEndpoint != address(0), "lzEndpoint cannot be zero address");
+        require(_stargateRouter != address(0), "stargateRouter cannot be zero address");
         jbMultiTerminal = IJBMultiTerminal(_jbMultiTerminalAddress);
         stargateRouter = IStargate(_stargateRouter);
         lzEndpoint = _lzEndpoint;
@@ -188,10 +190,11 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             string memory memo,
             bytes memory metadata
         ) = abi.decode(_composeMessage, (uint256, address, uint256, string, bytes));
-        // Use the amount actually bridged by this compose call rather than the
-        // contract's full balance, so leftover dust is not forwarded.
-        uint256 amount = OFTComposeMsgCodec.amountLD(_message);
-        uint256 tokenCount = jbMultiTerminal.pay{value: amount}(
+        // Forward exactly the ETH delivered by this compose call (msg.value),
+        // not amountLD from the message, so slippage and leftover contract balance
+        // can never be inadvertently drained.
+        require(msg.value > 0, "No ETH delivered");
+        uint256 tokenCount = jbMultiTerminal.pay{value: msg.value}(
             projectId,
             JBConstants.NATIVE_TOKEN,
             0,
@@ -200,7 +203,7 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             memo,
             metadata
         );
-        emit CrossChainPayReceived(projectId, amount, beneficiary);
+        emit CrossChainPayReceived(projectId, msg.value, beneficiary);
     }
 
     // Admin functions

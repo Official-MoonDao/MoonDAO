@@ -617,6 +617,8 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         assertEq(missionCreator.stage(missionId), 2);
+        vm.stopPrank();
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -624,6 +626,7 @@ contract MissionTest is Test, Config {
             uint32(uint160(JBConstants.NATIVE_TOKEN)),
             0
         );
+        vm.startPrank(user1);
         assertEq(missionCreator.stage(missionId), 2);
         uint256 used = jbTerminalStore.usedPayoutLimitOf(
           address(terminal),
@@ -674,6 +677,8 @@ contract MissionTest is Test, Config {
         skip(28 days);
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         jbController.sendReservedTokensToSplitsOf(projectId);
+        vm.stopPrank();
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -766,6 +771,7 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -848,6 +854,8 @@ contract MissionTest is Test, Config {
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
+        vm.stopPrank();
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -1009,6 +1017,7 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -1112,6 +1121,7 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -1216,6 +1226,7 @@ contract MissionTest is Test, Config {
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        vm.prank(teamAddress);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
