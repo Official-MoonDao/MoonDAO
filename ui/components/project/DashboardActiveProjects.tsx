@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { RocketLaunchIcon } from '@heroicons/react/24/outline'
 import StandardButton from '@/components/layout/StandardButton'
 import { Project } from '@/lib/project/useProjectData'
+import { getRelativeQuarter } from '@/lib/utils/dates'
 
 type DashboardActiveProjectsProps = {
   currentProjects: Project[]
@@ -16,6 +17,7 @@ export default function DashboardActiveProjects({
   showBudget = true,
   maxProjects = 6,
 }: DashboardActiveProjectsProps) {
+  const { quarter, year } = getRelativeQuarter(0)
   return (
     <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-8">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
@@ -37,7 +39,7 @@ export default function DashboardActiveProjects({
                 <div className="text-xl font-bold text-white">
                   ${Number(usdBudget).toLocaleString()}
                 </div>
-                <div className="text-green-200 text-sm">Quarterly Budget</div>
+                <div className="text-green-200 text-sm">Q{quarter} {year} Budget</div>
               </div>
             )}
             <div className="bg-black/20 rounded-xl px-5 py-3 border border-green-500/20">
