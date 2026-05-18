@@ -177,14 +177,26 @@ export default function RecentActivity({
       })
     }
 
+    // Build name → citizen image lookup (case-insensitive) from the already-fetched list
+    const nameToCitizenImage: Record<string, string> = {}
+    for (const c of newestCitizens) {
+      const citizenName = (c.name || c.metadata?.name || '').trim().toLowerCase()
+      const img = c.image || c.metadata?.image
+      if (citizenName && img) nameToCitizenImage[citizenName] = getIPFSGateway(img)
+    }
+
     // Contributions (have timestamp string like "2/19/2025 10:30:00")
     for (const c of contributions.slice(0, 8)) {
       const ts = c.timestamp ? new Date(c.timestamp).getTime() : undefined
+      const citizenImage = c.name
+        ? nameToCitizenImage[c.name.trim().toLowerCase()]
+        : undefined
       list.push({
         id: `contribution-${c.walletAddress}-${c.timestamp}`,
         type: 'contribution',
         title: c.name || 'Anonymous',
         subtitle: c.description,
+        image: citizenImage,
         link: `/contributions#contribution-${encodeURIComponent(c.name || 'Anonymous')}`,
         timestamp: ts && !isNaN(ts) ? ts : undefined,
       })
