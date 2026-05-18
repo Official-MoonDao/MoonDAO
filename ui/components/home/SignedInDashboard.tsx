@@ -587,7 +587,7 @@ export default function SignedInDashboard({
               <SectionHeader
                 title="Recent Activity"
                 subtitle="Latest happenings across the network"
-                icon={<SparklesIcon className="w-6 h-6 text-blue-400" />}
+                icon={<NewspaperIcon className="w-6 h-6 text-blue-400" />}
                 actions={
                   <div className="flex gap-2">
                     <SubtleButton color="blue" link="/news">News</SubtleButton>
