@@ -7,6 +7,7 @@ import {
   DEFAULT_CHAIN_V5,
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
+import { isOperator } from 'middleware/isOperator'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -24,8 +25,15 @@ import { runQuadraticVoting } from '@/lib/utils/rewards'
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 
-// Tally votes for non project proposals and set approved proposals to active
-async function POST(req: NextApiRequest, res: NextApiResponse) {
+// Tally votes for non-project proposals and flip the project's `active`
+// column on-chain. Gated by `isOperator` (Executive Lead allowlist) — the
+// frontend's `CloseAndTallyButton` is a UI hint only; the real gate is here.
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST')
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
   const mdp = parseInt(req.body?.mdp, 10)
   if (!Number.isInteger(mdp) || mdp <= 0) {
     return res.status(400).json({ error: 'Invalid mdp: must be a positive integer.' })
@@ -91,11 +99,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   )
   const SUM_TO_ONE_HUNDRED = 100
   const outcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
-  if (req.method === 'GET') {
-    return res.status(200).json({
-      outcome,
-    })
-  }
   const SUPER_MAJORITY = 66.6
   const passed = outcome[1] >= SUPER_MAJORITY
   const active = passed ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED
@@ -115,4 +118,4 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     passed: passed,
   })
 }
-export default withMiddleware(POST, rateLimit)
+export default withMiddleware(handler, rateLimit, isOperator)

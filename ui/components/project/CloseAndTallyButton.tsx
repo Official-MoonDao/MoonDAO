@@ -48,6 +48,7 @@ export default function CloseAndTallyButton({
     try {
       const res = await fetch('/api/proposals/nonProjectVote', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mdp }),
       })
