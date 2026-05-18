@@ -508,11 +508,11 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
             {hats && hats?.length > 0 && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {hats?.map((hat: any) => (
                     <div
                       key={hat.id}
-                      className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors"
+                      className="bg-slate-600/20 rounded-xl p-3 hover:bg-slate-600/30 transition-colors"
                     >
                       <Hat
                         selectedChain={selectedChain}
@@ -520,6 +520,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                         hatsContract={hatsContract}
                         teamImage
                         teamContract={teamContract}
+                        compact
                       />
                     </div>
                   ))}
@@ -539,27 +540,28 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                     </StandardButton>
                   </div>
                   <SlidingCardMenu>
-                    <div id="new-marketplace-listings-container" className="flex gap-5">
+                    <div id="new-marketplace-listings-container" className="flex gap-4">
                       {isLoadingListings ? (
                         Array.from({ length: 4 }).map((_, i) => (
                           <div
                             key={`skeleton-${i}`}
-                            className="min-w-[220px] w-[220px] h-[300px] rounded-xl bg-slate-700/40 animate-pulse flex-shrink-0"
+                            className="w-[300px] flex-shrink-0 h-[420px] rounded-xl bg-slate-700/40 animate-pulse"
                           />
                         ))
                       ) : newListings.length === 0 ? (
                         <p className="text-slate-400 text-sm py-4">No active listings at the moment.</p>
                       ) : (
                         newListings.map((listing, i) => (
-                          <TeamListing
-                            key={`team-listing-${i}`}
-                            listing={listing}
-                            selectedChain={selectedChain}
-                            teamContract={teamContract}
-                            marketplaceTableContract={marketplaceTableContract}
-                            teamName
-                            isCitizen={true}
-                          />
+                          <div key={`team-listing-${i}`} className="w-[300px] flex-shrink-0">
+                            <TeamListing
+                              listing={listing}
+                              selectedChain={selectedChain}
+                              teamContract={teamContract}
+                              marketplaceTableContract={marketplaceTableContract}
+                              teamName
+                              isCitizen={true}
+                            />
+                          </div>
                         ))
                       )}
                     </div>
