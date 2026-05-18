@@ -135,6 +135,7 @@ export default function RecentActivity({
         type: 'contribution',
         title: c.name || 'Anonymous',
         subtitle: c.description,
+        link: `/contributions#contribution-${encodeURIComponent(c.name || 'Anonymous')}`,
         timestamp: ts && !isNaN(ts) ? ts : undefined,
       })
     }
