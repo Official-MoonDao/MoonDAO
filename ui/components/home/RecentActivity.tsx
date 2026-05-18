@@ -3,6 +3,7 @@
 import {
   BriefcaseIcon,
   NewspaperIcon,
+  RocketLaunchIcon,
   TagIcon,
   UserPlusIcon,
   UserGroupIcon,
@@ -22,6 +23,7 @@ export type ActivityItemType =
   | 'listing'
   | 'newsletter'
   | 'contribution'
+  | 'donation'
 
 export interface ActivityItem {
   id: string
@@ -55,6 +57,7 @@ function typeLabel(type: ActivityItemType): string {
     case 'listing': return 'Marketplace'
     case 'newsletter': return 'Newsletter'
     case 'contribution': return 'Contribution'
+    case 'donation': return 'Mission Donation'
   }
 }
 
@@ -67,6 +70,7 @@ function TypeIcon({ type, className }: { type: ActivityItemType; className?: str
     case 'listing': return <TagIcon className={cls} />
     case 'newsletter': return <NewspaperIcon className={cls} />
     case 'contribution': return <TagIcon className={cls} />
+    case 'donation': return <RocketLaunchIcon className={cls} />
   }
 }
 
@@ -95,6 +99,7 @@ function typeBg(type: ActivityItemType, title?: string): string {
     case 'listing': return 'from-orange-500 to-amber-600'
     case 'newsletter': return 'from-blue-600 to-blue-700'
     case 'contribution': return contribGradient(title ?? '')
+    case 'donation': return 'from-indigo-500 to-blue-600'
   }
 }
 
@@ -105,6 +110,7 @@ interface RecentActivityProps {
   newestJobs?: any[]
   newestListings?: any[]
   newestTeams?: any[]
+  missions?: any[]
   maxItems?: number
 }
 
@@ -113,11 +119,13 @@ export default function RecentActivity({
   newestJobs = [],
   newestListings = [],
   newestTeams = [],
+  missions = [],
   maxItems = 8,
 }: RecentActivityProps) {
   const { newsletters, isLoading: newslettersLoading } = useNewsletters()
   const [contributions, setContributions] = useState<any[]>([])
   const [contribLoading, setContribLoading] = useState(true)
+  const [donations, setDonations] = useState<any[]>([])
 
   useEffect(() => {
     fetch('/api/contributions/feed')
@@ -125,6 +133,13 @@ export default function RecentActivity({
       .then((data) => setContributions(data.contributions ?? []))
       .catch(() => setContributions([]))
       .finally(() => setContribLoading(false))
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/mission/recent-donations')
+      .then((r) => r.ok ? r.json() : { donations: [] })
+      .then((data) => setDonations(data.donations ?? []))
+      .catch(() => setDonations([]))
   }, [])
 
   const items = useMemo<ActivityItem[]>(() => {
@@ -140,6 +155,24 @@ export default function RecentActivity({
         image: n.image,
         link: n.url && n.url.includes('http') && !n.url.endsWith('/posts') ? n.url : 'https://news.moondao.com/posts',
         timestamp: n.publishedAt ? new Date(n.publishedAt).getTime() : undefined,
+      })
+    }
+
+    // Launchpad donations
+    for (const d of donations.slice(0, 6)) {
+      const mission = missions.find((m: any) => String(m.projectId) === String(d.projectId))
+      const missionName = mission?.metadata?.name || `Mission #${d.missionId || d.projectId}`
+      const ethAmt = Number(d.amountWei) / 1e18
+      const ethLabel = ethAmt >= 1 ? ethAmt.toFixed(3) : ethAmt.toFixed(5)
+      const shortAddr = d.from ? `${d.from.slice(0, 6)}…${d.from.slice(-4)}` : 'Someone'
+      list.push({
+        id: `donation-${d.projectId}-${d.timestamp}-${d.from}`,
+        type: 'donation',
+        title: missionName,
+        subtitle: `${shortAddr} contributed ${ethLabel} ETH`,
+        image: mission?.metadata?.logoUri || mission?.metadata?.image,
+        link: d.missionId ? `/mission/${d.missionId}` : '/launch',
+        timestamp: d.timestamp,
       })
     }
 
@@ -229,7 +262,7 @@ export default function RecentActivity({
     const withoutTs = list.filter((x) => x.timestamp == null)
 
     return [...withTs, ...withoutTs].slice(0, maxItems)
-  }, [newsletters, contributions, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
+  }, [newsletters, contributions, donations, missions, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
 
   const isLoading = newslettersLoading && contribLoading
 
