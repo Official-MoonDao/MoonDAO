@@ -16,6 +16,7 @@ import {
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
+  MARKETPLACE_TABLE_NAMES,
   MOONDAO_HAT_TREE_IDS,
   TEAM_ADDRESSES,
 } from 'const/config'
@@ -64,7 +65,6 @@ import Action from '@/components/subscription/Action'
 import Card from '@/components/subscription/Card'
 import CitizenActions from '@/components/subscription/CitizenActions'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
-import GeneralActions from '@/components/subscription/GeneralActions'
 import GuestActions from '@/components/subscription/GuestActions'
 import LatestJobs from '@/components/subscription/LatestJobs'
 import OpenVotes from '@/components/subscription/OpenVotes'
@@ -157,24 +157,30 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
 
   // Marketplace Listings
   const [newListings, setNewListings] = useState<TeamListingType[]>([])
+  const [isLoadingListings, setIsLoadingListings] = useState<boolean>(true)
   const [marketplaceTableName, setMarketplaceTableName] = useState<string | null>(null)
 
   useEffect(() => {
     async function getTableName() {
-      if (!marketplaceTableContract) return
+      const fallback = MARKETPLACE_TABLE_NAMES[chainSlug] || null
+      if (!marketplaceTableContract) {
+        setMarketplaceTableName(fallback)
+        return
+      }
       try {
         const name: any = await readContract({
           contract: marketplaceTableContract,
           method: 'getTableName' as string,
           params: [],
         })
-        setMarketplaceTableName(name)
+        setMarketplaceTableName(name || fallback)
       } catch (error) {
         console.error('Error fetching marketplace table name:', error)
+        setMarketplaceTableName(fallback)
       }
     }
     getTableName()
-  }, [marketplaceTableContract])
+  }, [marketplaceTableContract, chainSlug])
 
   const now = Math.floor(Date.now() / 1000)
   const marketplaceStatement = marketplaceTableName
@@ -187,8 +193,10 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
 
   useEffect(() => {
     async function processListings() {
-      if (!listings || !teamContract || listings.length === 0) {
+      if (!listings) return // still loading — don't clear
+      if (!teamContract || listings.length === 0) {
         setNewListings([])
+        setIsLoadingListings(false)
         return
       }
 
@@ -221,6 +229,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
         }
       }
       setNewListings(validListings)
+      setIsLoadingListings(false)
     }
 
     processListings()
@@ -531,25 +540,33 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                   </div>
                   <SlidingCardMenu>
                     <div id="new-marketplace-listings-container" className="flex gap-5">
-                      {newListings.map((listing, i) => (
-                        <TeamListing
-                          key={`team-listing-${i}`}
-                          listing={listing}
-                          selectedChain={selectedChain}
-                          teamContract={teamContract}
-                          marketplaceTableContract={marketplaceTableContract}
-                          teamName
-                          isCitizen={true}
-                        />
-                      ))}
+                      {isLoadingListings ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                          <div
+                            key={`skeleton-${i}`}
+                            className="min-w-[220px] w-[220px] h-[300px] rounded-xl bg-slate-700/40 animate-pulse flex-shrink-0"
+                          />
+                        ))
+                      ) : newListings.length === 0 ? (
+                        <p className="text-slate-400 text-sm py-4">No active listings at the moment.</p>
+                      ) : (
+                        newListings.map((listing, i) => (
+                          <TeamListing
+                            key={`team-listing-${i}`}
+                            listing={listing}
+                            selectedChain={selectedChain}
+                            teamContract={teamContract}
+                            marketplaceTableContract={marketplaceTableContract}
+                            teamName
+                            isCitizen={true}
+                          />
+                        ))
+                      )}
                     </div>
                   </SlidingCardMenu>
                 </div>
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                   <LatestJobs teamContract={teamContract} jobTableContract={jobTableContract} />
-                </div>
-                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                  <GeneralActions />
                 </div>
               </>
             )}
