@@ -38,7 +38,7 @@ export default function CloseAndTallyButton({
   }, [tempCheckApprovedTimestamp])
 
   const nowSec = Math.floor(Date.now() / 1000)
-  const windowEnded = closesAt > 0 && nowSec >= closesAt
+  const windowEnded = closesAt > 0 && nowSec > closesAt
 
   if (!isOperator) return null
 
