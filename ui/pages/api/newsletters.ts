@@ -23,6 +23,12 @@ function extractTeaserFromHtml(html: string, maxLen: number): string | null {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&nbsp;/g, ' ')
+  // Resolve ConvertKit/Liquid template tags to their default value
+  // e.g. {{ subscriber.first_name | strip | default: "there" }} → "there"
+  text = text
+    .replace(/\{\{[^}]*\|[^}]*default:\s*["']([^"']*)["'][^}]*\}\}/g, '$1')
+    .replace(/\{\{[^}]*\}\}/g, '')
+    .replace(/\s+/g, ' ').trim()
   if (!text || text.length < 20) return null
   if (text.length <= maxLen) return text
   const truncated = text.slice(0, maxLen)
@@ -212,8 +218,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         const publishedDate = broadcast.published_at || broadcast.send_at || broadcast.created_at
 
         // Description/teaser: use API fields first, else extract from HTML content
+        const stripLiquid = (s: string) =>
+          s
+            .replace(/\{\{[^}]*\|[^}]*default:\s*["']([^"']*)["'][^}]*\}\}/g, '$1')
+            .replace(/\{\{[^}]*\}\}/g, '')
+            .replace(/\s+/g, ' ').trim()
         let description: string | null =
           broadcast.description || broadcast.preview_text || null
+        if (description) description = stripLiquid(description) || null
         if (!description && broadcast.content && typeof broadcast.content === 'string') {
           const teaser = extractTeaserFromHtml(broadcast.content, 140)
           if (teaser) description = teaser
