@@ -4,7 +4,6 @@ import {
   BriefcaseIcon,
   NewspaperIcon,
   TagIcon,
-  TrophyIcon,
   UserPlusIcon,
   UserGroupIcon,
   ArrowTopRightOnSquareIcon,
@@ -67,18 +66,35 @@ function TypeIcon({ type, className }: { type: ActivityItemType; className?: str
     case 'job': return <BriefcaseIcon className={cls} />
     case 'listing': return <TagIcon className={cls} />
     case 'newsletter': return <NewspaperIcon className={cls} />
-    case 'contribution': return <TrophyIcon className={cls} />
+    case 'contribution': return <TagIcon className={cls} />
   }
 }
 
-function typeBg(type: ActivityItemType): string {
+const CONTRIB_GRADIENTS = [
+  'from-violet-500 to-purple-600',
+  'from-blue-500 to-indigo-600',
+  'from-teal-500 to-cyan-600',
+  'from-rose-500 to-pink-600',
+  'from-amber-500 to-yellow-600',
+  'from-emerald-500 to-green-600',
+  'from-sky-500 to-blue-600',
+  'from-fuchsia-500 to-violet-600',
+]
+
+function contribGradient(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0
+  return CONTRIB_GRADIENTS[hash % CONTRIB_GRADIENTS.length]
+}
+
+function typeBg(type: ActivityItemType, title?: string): string {
   switch (type) {
     case 'citizen': return 'from-green-500 to-teal-600'
     case 'team': return 'from-purple-500 to-indigo-600'
     case 'job': return 'from-blue-500 to-cyan-600'
     case 'listing': return 'from-orange-500 to-amber-600'
     case 'newsletter': return 'from-blue-600 to-blue-700'
-    case 'contribution': return 'from-yellow-500 to-orange-600'
+    case 'contribution': return contribGradient(title ?? '')
   }
 }
 
@@ -236,7 +252,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
   const inner = (
     <div className="flex items-center gap-3 group">
       {/* Avatar / icon */}
-      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${typeBg(item.type)} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${typeBg(item.type, item.title)} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
         {item.image ? (
           <Image
             src={item.image}
@@ -246,6 +262,8 @@ function ActivityRow({ item }: { item: ActivityItem }) {
             className="w-full h-full object-cover"
             unoptimized
           />
+        ) : item.type === 'contribution' ? (
+          <span className="text-white font-bold text-sm">{item.title?.[0]?.toUpperCase() ?? '?'}</span>
         ) : (
           <TypeIcon type={item.type} className="w-5 h-5 text-white" />
         )}
