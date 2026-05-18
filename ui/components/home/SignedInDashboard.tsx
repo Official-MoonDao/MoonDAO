@@ -550,7 +550,7 @@ export default function SignedInDashboard({
                 </div>
                 <div className="min-w-0">
                   <p className="text-white font-semibold text-sm">Submit a Contribution</p>
-                  <p className="text-white/50 text-xs truncate">Share work that advances MoonDAO's mission — earn ETH &amp; vMOONEY rewards each quarter.</p>
+                  <p className="text-white/50 text-xs truncate">Document your work and earn ETH &amp; vMOONEY each quarter.</p>
                 </div>
               </div>
               <div className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-500 group-hover:bg-blue-400 text-white text-sm font-semibold rounded-xl transition-all duration-200 whitespace-nowrap">
