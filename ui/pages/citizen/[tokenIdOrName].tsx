@@ -511,9 +511,11 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {hats?.map((hat: any) => (
+                  {Array.from(
+                    new Map(hats.map((hat: any) => [hat.teamId, hat])).values()
+                  ).map((hat: any) => (
                     <div
-                      key={hat.id}
+                      key={hat.teamId}
                       className="bg-slate-600/20 rounded-xl p-3 hover:bg-slate-600/30 transition-colors"
                     >
                       <Hat
