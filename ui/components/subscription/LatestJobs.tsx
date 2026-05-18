@@ -14,6 +14,7 @@ type LatestJobsProps = {
 export default function LatestJobs({ teamContract, jobTableContract }: LatestJobsProps) {
   const router = useRouter()
   const [latestJobs, setLatestJobs] = useState<JobType[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [tableName, setTableName] = useState<string | null>(null)
   
   // Memoize 'now' to prevent unnecessary re-renders and effect re-runs
@@ -49,7 +50,12 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
   // Process and filter jobs
   useEffect(() => {
     async function processJobs() {
-      if (!jobs || !teamContract) return
+      if (!jobs) return // still loading — don't clear
+      if (!teamContract || jobs.length === 0) {
+        setLatestJobs([])
+        setIsLoading(false)
+        return
+      }
 
       const resolvedJobs = await Promise.all(
         jobs.map(async (job: JobType) => {
@@ -69,6 +75,7 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
       const validJobs = resolvedJobs.filter((job): job is JobType => job !== null)
 
       setLatestJobs(validJobs)
+      setIsLoading(false)
     }
 
     processJobs()
@@ -88,11 +95,23 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
 
       <SlidingCardMenu>
         <div id="latest-jobs-container" className="flex gap-5">
-          {latestJobs.map((job, i) => (
-            <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
-          ))}
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={`skeleton-${i}`}
+                className="w-[300px] flex-shrink-0 h-[200px] rounded-xl bg-slate-700/40 animate-pulse"
+              />
+            ))
+          ) : (
+            latestJobs.map((job, i) => (
+              <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
+            ))
+          )}
         </div>
       </SlidingCardMenu>
+      {!isLoading && latestJobs.length === 0 && (
+        <p className="text-slate-400 text-sm py-4 text-center">No open positions at the moment.</p>
+      )}
     </div>
   )
 }
