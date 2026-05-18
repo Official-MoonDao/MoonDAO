@@ -54,7 +54,7 @@ contract JobBoardTable is ERC721Holder, Ownable {
         require(_moonDaoTeam.isManager(teamId, msg.sender), "Only Manager, Operator, or Owner can write");
     }
 
-    // Let anyone insert into the table
+    // Allow only the owner, enabled operators, or the team manager to insert into the table
     function insertIntoTable(string memory title, string memory description, uint256 teamId, string memory tag, string memory metadata, uint256 endTime, uint256 timestamp, string memory contactInfo) external {
         _isAuthorized(teamId);
         string memory setters = string.concat(

@@ -68,7 +68,6 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import StandardButton from '@/components/layout/StandardButton'
 import Action from '@/components/subscription/Action'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
@@ -179,6 +178,7 @@ function TeamDetailPageContent({
     adminHatId,
     managerHatId,
     isManager,
+    isTableOperator,
     subIsValid,
     isLoading: isLoadingTeamData,
     hasFullAccess,
@@ -479,7 +479,7 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {!isDeleted && subIsValid && (isManager || address === nft.owner) && (
+          {!isDeleted && subIsValid && (isManager || isTableOperator || address === nft.owner) && (
             <div
               id="entity-actions-container"
               className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6"
@@ -571,7 +571,7 @@ function TeamDetailPageContent({
                 <TeamJobs
                   teamId={tokenId}
                   jobTableContract={jobTableContract}
-                  isManager={isManager}
+                  isManager={isManager || isTableOperator}
                   isCitizen={citizen}
                   hasFullAccess={hasFullAccess}
                   jobs={jobs}
@@ -582,7 +582,7 @@ function TeamDetailPageContent({
                   selectedChain={selectedChain}
                   marketplaceTableContract={marketplaceTableContract}
                   teamContract={teamContract}
-                  isManager={isManager}
+                  isManager={isManager || isTableOperator}
                   teamId={tokenId}
                   isCitizen={citizen}
                   listings={listings}

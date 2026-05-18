@@ -31,6 +31,7 @@ export function useTeamData(
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [isDeleted, setIsDeleted] = useState<boolean>(false)
   const [isManager, setIsManager] = useState<boolean>(false)
+  const [isTableOperator, setIsTableOperator] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
   const [hatTreeId, setHatTreeId] = useState<any>()
   const [adminHatId, setAdminHatId] = useState<any>()
@@ -138,10 +139,11 @@ export function useTeamData(
     async function checkManager() {
       try {
         if (address) {
-          // Super managers (e.g. Pablo, Ryan) have manager access on all teams
+          // Super managers (e.g. Pablo, Ryan) can write to the job/marketplace
+          // tables for any team, but do NOT get the full on-chain manager role
+          // (which would surface controls that call contracts they can't satisfy).
           if (SUPER_MANAGERS.includes(address.toLowerCase())) {
-            setIsManager(true)
-            return
+            setIsTableOperator(true)
           }
           const isAddressManager: any = await readContract({
             contract: teamContract,
@@ -370,6 +372,7 @@ export function useTeamData(
     adminHatId,
     managerHatId,
     isManager,
+    isTableOperator,
     isLoading,
     subIsValid,
     hasFullAccess,

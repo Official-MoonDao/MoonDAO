@@ -58,7 +58,7 @@ contract MarketplaceTable is ERC721Holder, Ownable {
         require(_moonDaoTeam.isManager(teamId, msg.sender), "Only Manager, Operator, or Owner can write");
     }
 
-    // Let anyone insert into the table
+    // Only the owner, an enabled operator, or the team manager can insert into the table
     function insertIntoTable(string memory title, string memory description, string memory image, uint256 teamId, string memory price, string memory currency, uint256 startTime, uint256 endTime, uint256 timestamp, string memory tag, string memory metadata, string memory shipping) external {
         _isAuthorized(teamId);
         string memory setters = string.concat(
