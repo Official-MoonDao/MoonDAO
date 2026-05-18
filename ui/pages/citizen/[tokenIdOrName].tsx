@@ -187,9 +187,16 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
     ? `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 10`
     : null
 
-  const { data: listings } = useTablelandQuery(marketplaceStatement, {
+  const { data: listings, isLoading: isListingsQueryLoading } = useTablelandQuery(marketplaceStatement, {
     revalidateOnFocus: false,
   })
+
+  // If there's no query to run (table name lookup failed with no fallback), stop the skeleton
+  useEffect(() => {
+    if (!marketplaceStatement && marketplaceTableName !== null) {
+      setIsLoadingListings(false)
+    }
+  }, [marketplaceStatement, marketplaceTableName])
 
   useEffect(() => {
     async function processListings() {

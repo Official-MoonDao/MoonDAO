@@ -1,7 +1,10 @@
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { JOBS_TABLE_NAMES } from 'const/config'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import Job, { Job as JobType } from '../jobs/Job'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
@@ -13,6 +16,8 @@ type LatestJobsProps = {
 
 export default function LatestJobs({ teamContract, jobTableContract }: LatestJobsProps) {
   const router = useRouter()
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const [latestJobs, setLatestJobs] = useState<JobType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [tableName, setTableName] = useState<string | null>(null)
@@ -20,28 +25,40 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
   // Memoize 'now' to prevent unnecessary re-renders and effect re-runs
   const now = useMemo(() => Math.floor(Date.now() / 1000), [])
 
-  // Get table name from contract
+  // Get table name from contract, fall back to config constant
   useEffect(() => {
     async function getTableName() {
-      if (!jobTableContract) return
+      const fallback = JOBS_TABLE_NAMES[chainSlug] || null
+      if (!jobTableContract) {
+        setTableName(fallback)
+        return
+      }
       try {
         const name: any = await readContract({
           contract: jobTableContract,
           method: 'getTableName' as string,
           params: [],
         })
-        setTableName(name)
+        setTableName(name || fallback)
       } catch (error) {
         console.error('Error fetching table name:', error)
+        setTableName(fallback)
       }
     }
     getTableName()
-  }, [jobTableContract])
+  }, [jobTableContract, chainSlug])
 
   // Build statement with memoized timestamp
   const statement = tableName
     ? `SELECT * FROM ${tableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
     : null
+
+  // If tableName resolved to null (no contract + no fallback), stop skeleton
+  useEffect(() => {
+    if (tableName === null && jobTableContract === null) {
+      setIsLoading(false)
+    }
+  }, [tableName, jobTableContract])
 
   const { data: jobs } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
