@@ -70,7 +70,6 @@ import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
 import Action from '@/components/subscription/Action'
-import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
 import TeamJobs from '@/components/subscription/TeamJobs'
@@ -329,24 +328,14 @@ function TeamDetailPageContent({
                     {isManager || address === nft.owner ? (
                       <div id="manager-container" className="relative">
                         {expiresAt && (
-                          <div id="expires-container" className="">
-                            <div
-                              id="extend-sub-button-container"
-                              className="overflow-hidden text-sm"
+                          <div id="expires-container">
+                            <button
+                              id="extend-sub-button"
+                              onClick={() => setTeamSubscriptionModalEnabled(true)}
+                              className="gradient-2 h-12 px-4 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity"
                             >
-                              <div
-                                id="extend-sub-button"
-                                className="gradient-2 rounded-[2vmax] rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px]"
-                              >
-                                <StandardButton
-                                  onClick={() => {
-                                    setTeamSubscriptionModalEnabled(true)
-                                  }}
-                                >
-                                  {'Extend Plan'}
-                                </StandardButton>
-                              </div>
-                            </div>
+                              Extend Plan
+                            </button>
                           </div>
                         )}
                       </div>
@@ -599,11 +588,6 @@ function TeamDetailPageContent({
                   listings={listings}
                 />
               </div>
-              {isManager && (
-                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                  <GeneralActions />
-                </div>
-              )}
               {isManager &&
                 EB_TEAM_ID &&
                 String(tokenId) === String(EB_TEAM_ID) && (

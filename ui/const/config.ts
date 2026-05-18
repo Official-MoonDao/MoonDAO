@@ -690,6 +690,13 @@ export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
 // total quarterly rewards."
 export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)
 
+// Addresses that have manager-level access on ALL teams (can add jobs and
+// marketplace listings on behalf of any team). Lowercase for comparison.
+export const SUPER_MANAGERS: string[] = [
+  '0x679d87d8640e66778c3419d164998e720d7495f6', // pmoncada.eth
+  '0xb2d3900807094d4fe47405871b0c8adb58e10d42', // ryand2d.eth
+]
+
 // Hard-coded allowlist of wallet addresses that can use the operator panel
 // on /projects (start the retro cycle, mark projects eligible, etc.).
 // Lowercase for cheap comparison.

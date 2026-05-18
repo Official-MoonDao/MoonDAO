@@ -1,3 +1,4 @@
+import { SUPER_MANAGERS } from 'const/config'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
@@ -137,6 +138,11 @@ export function useTeamData(
     async function checkManager() {
       try {
         if (address) {
+          // Super managers (e.g. Pablo, Ryan) have manager access on all teams
+          if (SUPER_MANAGERS.includes(address.toLowerCase())) {
+            setIsManager(true)
+            return
+          }
           const isAddressManager: any = await readContract({
             contract: teamContract,
             method: 'isManager' as string,
