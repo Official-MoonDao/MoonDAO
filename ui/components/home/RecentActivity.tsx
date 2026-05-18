@@ -12,6 +12,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useNewsletters } from '@/lib/home/useHomeData'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -170,7 +171,7 @@ export default function RecentActivity({
         type: 'donation',
         title: missionName,
         subtitle: `${shortAddr} contributed ${ethLabel} ETH`,
-        image: mission?.metadata?.logoUri || mission?.metadata?.image,
+        image: getIPFSGateway(mission?.metadata?.logoUri || mission?.metadata?.image),
         link: d.missionId ? `/mission/${d.missionId}` : '/launch',
         timestamp: d.timestamp,
       })
