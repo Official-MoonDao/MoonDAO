@@ -6,13 +6,15 @@
 // tally and flips the project's `active` column to PROJECT_ACTIVE or
 // PROJECT_VOTE_FAILED on-chain.
 import { useRouter } from 'next/router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { OPERATORS } from 'const/config'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 
 const VOTING_WINDOW_SECONDS = 60 * 60 * 24 * 5
+// 30s is fine — countdown granularity is minutes/hours/days.
+const TICK_MS = 30 * 1000
 
 export default function CloseAndTallyButton({
   mdp,
@@ -37,8 +39,18 @@ export default function CloseAndTallyButton({
     return ts + VOTING_WINDOW_SECONDS
   }, [tempCheckApprovedTimestamp])
 
-  const nowSec = Math.floor(Date.now() / 1000)
+  // Tick the clock so the button enables and the countdown updates without
+  // requiring a manual page refresh. Stop the timer as soon as the window has
+  // elapsed (or if there's no window at all).
+  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000))
   const windowEnded = closesAt > 0 && nowSec > closesAt
+  useEffect(() => {
+    if (closesAt === 0 || windowEnded) return
+    const id = setInterval(() => {
+      setNowSec(Math.floor(Date.now() / 1000))
+    }, TICK_MS)
+    return () => clearInterval(id)
+  }, [closesAt, windowEnded])
 
   if (!isOperator) return null
 
