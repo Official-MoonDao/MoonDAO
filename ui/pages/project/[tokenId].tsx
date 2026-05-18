@@ -270,17 +270,16 @@ export default function ProjectProfile({
               </div>
             </SectionCard>
           )}
-          {/* Senate Vote Section — non-project proposals awaiting senate
-              approval. Senators see interactive 👍/👎 buttons; everyone sees
-              the running counts and the per-senator voted/pending status. */}
+          {/* Senate Vote Section — pending proposals in Temperature Check.
+              Senators see interactive 👍/👎 buttons; everyone sees the
+              running counts and the per-senator voted/pending status. */}
           {project.active === PROJECT_PENDING &&
-            proposalStatus === 'Temperature Check' &&
-            proposalJSON?.nonProjectProposal && (
+            proposalStatus === 'Temperature Check' && (
               <SectionCard header="Senate Vote" iconSrc="/assets/icon-star.svg">
                 <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-6">
                   <p className="text-sm text-white/70 mb-5">
-                    Senators must approve this proposal before it moves to a
-                    member vote.
+                    Senators must approve this proposal before it can advance
+                    to the next stage.
                   </p>
                   <SenateVote mdp={project.MDP} />
                 </div>
