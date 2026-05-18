@@ -233,7 +233,7 @@ function StatPill({
 
   return (
     <div
-      className={`flex flex-col items-center justify-center min-w-[120px] flex-1 sm:flex-initial px-4 py-3 rounded-xl border ${styles}`}
+      className={`flex flex-col items-center justify-center min-w-0 w-full flex-1 px-4 py-3 rounded-xl border sm:min-w-[120px] sm:flex-initial ${styles}`}
     >
       <div className="text-2xl font-bold leading-none">
         <span className="mr-1">{emoji}</span>
