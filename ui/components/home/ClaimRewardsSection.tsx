@@ -6,9 +6,9 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 export default function ClaimRewardsSection() {
   const { withdrawable, withdraw } = useRetroactiveRewards()
 
-  const hasRewards = Number(withdrawable) > 0
+  const hasRewards = true // Number(withdrawable) > 0 — forced true for testing
 
-  if (!hasRewards) return null
+  // if (!hasRewards) return null
 
   const formattedAmount = (Number(withdrawable) / 10 ** MOONEY_DECIMALS).toLocaleString('en-US', {
     minimumFractionDigits: 2,
