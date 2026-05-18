@@ -505,7 +505,7 @@ export default function SignedInDashboard({
         {/* ──────────────── PREMIUM HERO: Greeting + KPIs ──────────────── */}
         <div className="hidden lg:block mb-6">
           {/* Welcome banner */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900/40 via-blue-900/30 to-purple-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-4">
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900/40 via-blue-900/30 to-purple-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-4">
             {/* decorative gradient blobs */}
             <div className="absolute -top-24 -right-24 w-72 h-72 bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
@@ -522,19 +522,19 @@ export default function SignedInDashboard({
                     }
                     className="flex-shrink-0"
                   >
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-white/20 shadow-lg shadow-blue-500/20 hover:ring-blue-400/40 transition-all">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden ring-2 ring-white/20 shadow-lg shadow-blue-500/20 hover:ring-blue-400/40 transition-all">
                       <IPFSRenderer
                         src={citizen.metadata.image}
                         alt={citizen.metadata.name}
                         className="w-full h-full object-cover"
-                        width={64}
-                        height={64}
+                        width={48}
+                        height={48}
                       />
                     </div>
                   </Link>
                 ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 ring-2 ring-white/20 shadow-lg shadow-blue-500/20">
-                    <span className="text-white font-bold text-2xl">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 ring-2 ring-white/20 shadow-lg shadow-blue-500/20">
+                    <span className="text-white font-bold text-xl">
                       {citizen?.metadata?.name?.[0] || address?.[2]?.toUpperCase() || 'M'}
                     </span>
                   </div>
@@ -546,44 +546,29 @@ export default function SignedInDashboard({
                   <h2 className="text-white text-2xl xl:text-3xl font-bold truncate leading-tight">
                     {citizen?.metadata?.name || 'Explorer'}
                   </h2>
-                  <div className="flex items-center gap-2 mt-2">
-                    {citizen ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/15 border border-blue-400/30 rounded-md text-blue-300 text-xs font-medium">
-                        <CheckBadgeIcon className="w-3.5 h-3.5" />
-                        MoonDAO Citizen
-                      </span>
-                    ) : (
-                      <Link
-                        href="/join"
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/15 border border-purple-400/30 rounded-md text-purple-300 text-xs font-medium hover:bg-purple-500/25 transition-colors"
-                      >
-                        <SparklesIcon className="w-3.5 h-3.5" />
-                        Become a Citizen →
-                      </Link>
-                    )}
-                  </div>
+                  {!citizen && (
+                    <Link
+                      href="/join"
+                      className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-purple-500/15 border border-purple-400/30 rounded-md text-purple-300 text-xs font-medium hover:bg-purple-500/25 transition-colors"
+                    >
+                      <SparklesIcon className="w-3.5 h-3.5" />
+                      Become a Citizen →
+                    </Link>
+                  )}
                 </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                {citizen && (
-                  <Link
-                    href={
-                      citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
-                        ? `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata?.id ?? citizen.id)}?edit=1`
-                        : '/join'
-                    }
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-medium rounded-xl transition-all"
-                  >
-                    Edit Profile
-                  </Link>
-                )}
+              {/* Contribution CTA box */}
+              <div className="flex items-center gap-4 flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-xl px-5 py-3.5">
+                <div>
+                  <p className="text-white text-sm font-semibold">What did you get done this week?</p>
+                  <p className="text-white/40 text-xs mt-0.5">Earn ETH & vMOONEY rewards each quarter.</p>
+                </div>
                 <a
                   href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all whitespace-nowrap flex-shrink-0"
                 >
                   <TrophyIcon className="w-4 h-4" />
                   Submit Contribution
