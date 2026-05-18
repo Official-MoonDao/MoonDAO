@@ -500,11 +500,13 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                 )}
               </div>
             )}
+            {/* Open Votes section hidden for now
             {isOwner && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <OpenVotes proposals={proposals} />
               </div>
             )}
+            */}
             {hats && hats?.length > 0 && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
