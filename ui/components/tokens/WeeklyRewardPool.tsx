@@ -572,25 +572,24 @@ export default function WeeklyRewardPool() {
 
           {/* Learn More */}
           <div className="text-center">
-            <Link
-              href="/fees"
-              className="inline-flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200 transition-colors duration-200 group"
-            >
-              <span>Learn about rewards</span>
-              <svg
-                className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </Link>
+            <div className="relative inline-block group">
+              <button className="inline-flex items-center gap-1.5 text-sm text-blue-300 hover:text-blue-200 transition-colors duration-200">
+                <span>Learn about rewards</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-gray-900 border border-white/20 rounded-xl p-4 text-left shadow-2xl z-50 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
+                <p className="text-white font-semibold text-sm mb-2">How Weekly Rewards Work</p>
+                <ul className="text-white/70 text-xs space-y-1.5">
+                  <li>• Lock MOONEY to earn vMOONEY voting power</li>
+                  <li>• Protocol fees are collected each week from MoonDAO activity</li>
+                  <li>• Rewards are distributed proportionally to vMOONEY holders</li>
+                  <li>• More vMOONEY = a larger share of the weekly pool</li>
+                  <li>• Check in weekly to claim your portion</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
