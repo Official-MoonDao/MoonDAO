@@ -388,7 +388,7 @@ export const PROJECT_HAT_TREE_IDS: Index = {
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x94e225DDe1b3E5f861222ca2055739BA12730bd4',
+  arbitrum: '0x2113341dEc8a0fB9883Ad494C589d5cdefDDBc1b',
   sepolia: '0x948a3c9057780002286f7e3Dd22699d13b4Ff76d',
   'arbitrum-sepolia': '0x97F9F6DC65b57af7E0B0CB32E5E3153af14E3332',
 }
@@ -397,7 +397,7 @@ export const JOBS_TABLE_ADDRESSES: Index = {
 // fails (e.g. RPC rate-limit / Thirdweb hosted RPC blip during ISR build).
 // Verified against on-chain reads on 2026-04-21.
 export const JOBS_TABLE_NAMES: Index = {
-  arbitrum: 'JOBBOARD_42161_115',
+  arbitrum: 'JOBBOARD_42161_158',
   sepolia: 'JOBBOARD_11155111_1899',
 }
 
@@ -407,13 +407,13 @@ export const MARKETPLACE_ADDRESS =
     : sepoliaConfig.Marketplace
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E',
+  arbitrum: '0xF0AeE0c837943fa1919538B12b5d9AE11C5EED05',
   sepolia: '0x46025c3b96B01d551274Ba7AdC6057FD15E0923b',
   'arbitrum-sepolia': '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
 }
 
 export const MARKETPLACE_TABLE_NAMES: Index = {
-  arbitrum: 'MARKETPLACE_42161_116',
+  arbitrum: 'MARKETPLACE_42161_159',
   sepolia: 'MARKETPLACE_11155111_1898',
 }
 
