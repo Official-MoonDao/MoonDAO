@@ -12,10 +12,17 @@
 import { usePrivy } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ProposalsABI from 'const/abis/Proposals.json'
-import { DEFAULT_CHAIN_V5, PROPOSALS_ADDRESSES } from 'const/config'
-import React, { memo, useEffect } from 'react'
-import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import {
+  DEFAULT_CHAIN_V5,
+  OPERATORS,
+  PROPOSALS_ADDRESSES,
+} from 'const/config'
+import { useRouter } from 'next/router'
+import React, { memo, useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
+import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useProposalData from '@/lib/project/useProposalData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -211,6 +218,158 @@ export const SenateVoteButtons = memo(
 SenateVoteButtons.displayName = 'SenateVoteButtons'
 
 // ---------------------------------------------------------------------------
+// Executive-Lead "Close Senate Vote" controls.
+//
+// Mirrors the pattern of `CloseAndTallyButton` (which closes the Member
+// Vote): visible only to OPERATORS (Executive Lead allowlist), POSTs to a
+// backend endpoint which signs `Proposals.tallyVotes(mdp)` as the Proposals
+// contract owner — the owner is the team's HSM/server wallet
+// (`createHSMWallet()`), not any individual EOA, so we can't call
+// `tallyVotes` straight from the browser. The contract's `tallyVotes` is a
+// no-op below quorum, so we disable the button until quorum is met to
+// avoid burning gas on a no-op tx; the API performs the same check before
+// signing as a defense in depth.
+// ---------------------------------------------------------------------------
+function CloseSenateVoteButton({
+  mdp,
+  proposalContract,
+  votedCount,
+  approvalCount,
+  rejectionCount,
+  onClosed,
+}: {
+  mdp: number
+  proposalContract: any
+  votedCount: number
+  approvalCount: number
+  rejectionCount: number
+  onClosed?: () => void
+}) {
+  const router = useRouter()
+  const account = useActiveAccount()
+  const address = account?.address
+
+  const isOperator = useMemo(() => {
+    if (!address) return false
+    return OPERATORS.includes(address.toLowerCase())
+  }, [address])
+
+  const [quorum, setQuorum] = useState<number | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!proposalContract) return
+    let cancelled = false
+    readContract({
+      contract: proposalContract,
+      method: 'function getQuorum() view returns (uint256)',
+      params: [],
+    })
+      .then((result: unknown) => {
+        if (cancelled) return
+        try {
+          setQuorum(Number(result))
+        } catch {
+          setQuorum(null)
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+        setQuorum(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [proposalContract])
+
+  if (!isOperator) return null
+
+  const quorumReached = quorum != null && votedCount >= quorum
+  const wouldPass = approvalCount * 3 >= votedCount * 2 && votedCount > 0
+  const projectedOutcome = quorumReached
+    ? wouldPass
+      ? 'Will pass — advances to Member Vote'
+      : 'Will fail — proposal cancelled'
+    : null
+
+  const handleClose = async () => {
+    if (submitting || !quorumReached) return
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/proposals/closeSenate', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mdp }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        // Surface the underlying contract revert reason (e.g.
+        // `OwnableUnauthorizedAccount`) when the API includes it; falls
+        // back to the high-level message otherwise. The diagnostic detail
+        // is what the EB needs to fix the actual failure mode without
+        // having to read the server log.
+        const detail =
+          typeof data?.details === 'string' && data.details.length > 0
+            ? `${data.error || 'Failed to close senate vote.'} — ${data.details}`
+            : data?.error || 'Failed to close senate vote.'
+        throw new Error(detail)
+      }
+      toast.success(
+        data?.passed
+          ? 'Senate vote closed — advancing to Member Vote.'
+          : 'Senate vote closed — proposal did not pass.',
+        { style: toastStyle }
+      )
+      onClosed?.()
+      // Re-trigger getServerSideProps so `proposalStatus` flips from
+      // Temperature Check → Voting / Cancelled.
+      router.replace(router.asPath)
+    } catch (err: any) {
+      console.error('Close senate vote failed:', err)
+      toast.error(err?.message || 'Failed to close senate vote.', {
+        style: toastStyle,
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-2 mt-2 p-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 w-full">
+      <div className="text-[11px] uppercase tracking-wider text-yellow-300/80">
+        Executive Lead Controls
+      </div>
+      <button
+        type="button"
+        onClick={handleClose}
+        disabled={!quorumReached || submitting}
+        className="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black disabled:from-gray-600 disabled:to-gray-700 disabled:text-white/60 disabled:cursor-not-allowed"
+      >
+        {submitting
+          ? 'Closing…'
+          : quorumReached
+          ? 'Close Senate Vote'
+          : 'Awaiting senate quorum'}
+      </button>
+      <p className="text-[11px] text-white/60">
+        {quorum == null
+          ? 'Loading quorum…'
+          : `Quorum: ${votedCount}/${quorum} senators voted (${approvalCount} for · ${rejectionCount} against)`}
+      </p>
+      {projectedOutcome && (
+        <p className="text-[11px] text-white/50">{projectedOutcome}</p>
+      )}
+      <p className="text-[11px] text-white/40">
+        Signs{' '}
+        <code className="text-white/60">Proposals.tallyVotes({mdp})</code>{' '}
+        with the HSM owner wallet. Approval threshold is 2/3 of votes cast.
+      </p>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Default export: full-width project-page Senate Vote layout.
 // ---------------------------------------------------------------------------
 
@@ -380,6 +539,16 @@ export default function SenateVote({ mdp }: { mdp: number }) {
           </p>
         )}
       </div>
+
+      {/* Owner controls — close the senate vote and advance the state machine. */}
+      <CloseSenateVoteButton
+        mdp={mdp}
+        proposalContract={proposalContract}
+        votedCount={votedCount}
+        approvalCount={approvalCount}
+        rejectionCount={rejectionCount}
+        onClosed={refetch}
+      />
 
       {/* Senator roster */}
       {senatorTotal > 0 && (
