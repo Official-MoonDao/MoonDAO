@@ -9,10 +9,11 @@ import { useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import NonProjectProposalABI from 'const/abis/NonProjectProposal.json'
 import { DEFAULT_CHAIN_V5, NON_PROJECT_PROPOSAL_ADDRESSES } from 'const/config'
-import { useState, Fragment, useEffect, useMemo } from 'react'
+import { useState, Fragment, useEffect, useMemo, useContext } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
@@ -78,13 +79,20 @@ export default function VotingModal({
   // first-class banner inside the modal so the user sees it *before*
   // signing, in addition to the Submit button auto-flipping to a "Switch
   // Network" CTA via PrivyWeb3Button.
+  // Read the chainId from the *same* wallet PrivyWeb3Button will sign
+  // with (selectedWallet via PrivyWalletContext). Earlier this read
+  // wallets?.[0] which silently disagreed with the button when the
+  // user had multiple wallets connected and a non-zero one selected
+  // — the banner could green-light a Submit while the button was
+  // still showing "Switch Network", or vice versa.
   const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
   const connectedChainId = useMemo(() => {
-    const raw = wallets?.[0]?.chainId
+    const raw = wallets?.[selectedWallet]?.chainId
     if (!raw) return undefined
     const parts = String(raw).split(':')
     return Number(parts[parts.length - 1]) || undefined
-  }, [wallets])
+  }, [wallets, selectedWallet])
   const requiredChainId = DEFAULT_CHAIN_V5.id
   const isWrongNetwork =
     Boolean(address) &&
@@ -451,21 +459,30 @@ function SingleClickChoiceSelector({
     return <MinusCircleIcon className={`${cls} text-gray-300`} />
   }
 
+  // Plain <button>s with aria-pressed, grouped by `role="group"`
+  // and the form's existing `id="options-heading"` label. We avoid
+  // claiming `role="radiogroup"` / `role="radio"` because the full
+  // ARIA radio pattern (roving tabIndex, arrow-key navigation,
+  // Home/End handling) isn't implemented here — and a half-spec'd
+  // radio group is worse for screen readers than a plain button
+  // group with toggle state. Tab still walks each button, Space /
+  // Enter activates them via native button keyboard handling.
   return (
     <div
       className={classNames(
         'grid gap-3',
         visibleChoices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
       )}
-      role="radiogroup"
+      role="group"
+      aria-labelledby="options-heading"
     >
       {visibleChoices.map(({ label, key }) => {
         const isSelected = selectedKey === key
         return (
           <button
             type="button"
-            role="radio"
-            aria-checked={isSelected}
+            aria-pressed={isSelected}
+            aria-label={label}
             key={key}
             onClick={() => setValue({ [key]: 100 })}
             className={styleFor(label, isSelected)}
