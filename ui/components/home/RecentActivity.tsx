@@ -127,11 +127,27 @@ export default function RecentActivity({
   const [contributions, setContributions] = useState<any[]>([])
   const [contribLoading, setContribLoading] = useState(true)
   const [donations, setDonations] = useState<any[]>([])
+  const [contribCitizenImages, setContribCitizenImages] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetch('/api/contributions/feed')
       .then((r) => r.ok ? r.json() : { contributions: [] })
-      .then((data) => setContributions(data.contributions ?? []))
+      .then((data) => {
+        const contribs = data.contributions ?? []
+        setContributions(contribs)
+        // Fetch citizen images for all unique contributor wallet addresses
+        const addresses = [...new Set<string>(
+          contribs
+            .map((c: any) => c.walletAddress?.trim().toLowerCase())
+            .filter(Boolean)
+        )]
+        if (addresses.length > 0) {
+          fetch(`/api/citizens/images-by-address?addresses=${addresses.join(',')}`)
+            .then((r) => r.ok ? r.json() : {})
+            .then((map) => setContribCitizenImages(map))
+            .catch(() => {})
+        }
+      })
       .catch(() => setContributions([]))
       .finally(() => setContribLoading(false))
   }, [])
@@ -188,9 +204,12 @@ export default function RecentActivity({
     // Contributions (have timestamp string like "2/19/2025 10:30:00")
     for (const c of contributions.slice(0, 8)) {
       const ts = c.timestamp ? new Date(c.timestamp).getTime() : undefined
-      const citizenImage = c.name
-        ? nameToCitizenImage[c.name.trim().toLowerCase()]
-        : undefined
+      // Prefer citizen image looked up by wallet address; fall back to name-based lookup
+      const walletKey = c.walletAddress?.trim().toLowerCase()
+      const citizenImage =
+        (walletKey && contribCitizenImages[walletKey])
+          ? getIPFSGateway(contribCitizenImages[walletKey])
+          : (c.name ? nameToCitizenImage[c.name.trim().toLowerCase()] : undefined)
       list.push({
         id: `contribution-${c.walletAddress}-${c.timestamp}`,
         type: 'contribution',
@@ -275,7 +294,7 @@ export default function RecentActivity({
     const withoutTs = list.filter((x) => x.timestamp == null)
 
     return [...withTs, ...withoutTs].slice(0, maxItems)
-  }, [newsletters, contributions, donations, missions, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
+  }, [newsletters, contributions, contribCitizenImages, donations, missions, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
 
   const isLoading = newslettersLoading || contribLoading
 
