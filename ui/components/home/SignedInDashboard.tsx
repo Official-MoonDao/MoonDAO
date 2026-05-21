@@ -579,10 +579,10 @@ export default function SignedInDashboard({
 
         </div>
 
-        {/* ──────────────── ROW 1: Activity + Wallet/Rewards ──────────────── */}
+        {/* ──────────────── ROW 1: Activity + Citizens/Teams + Wallet/Rewards ──────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* LEFT — Recent Activity (8 cols) */}
-          <div className="lg:col-span-8 order-2 lg:order-1">
+          {/* LEFT — Recent Activity (6 cols) */}
+          <div className="lg:col-span-6 order-2 lg:order-1">
             <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 h-full">
               <SectionHeader
                 title="Recent Activity"
@@ -606,8 +606,110 @@ export default function SignedInDashboard({
             </div>
           </div>
 
-          {/* RIGHT — Wallet + Rewards (4 cols, same height as activity) */}
-          <div className="lg:col-span-4 flex flex-col gap-6 order-1 lg:order-2 min-w-0">
+          {/* MIDDLE — New Citizens + Featured Teams (3 cols) */}
+          <div className="lg:col-span-3 flex flex-col gap-6 order-3 lg:order-2 min-w-0">
+            {newestCitizens && newestCitizens.length > 0 && (
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-1">
+                <SectionHeader
+                  small
+                  title="New Citizens"
+                  icon={<UserGroupIcon className="w-5 h-5 text-green-400" />}
+                  actions={<SubtleButton color="teal" link="/citizens">All →</SubtleButton>}
+                />
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {newestCitizens.slice(0, 8).map((c: any) => {
+                    const name = c.name || c.metadata?.name || `Citizen #${c.id}`
+                    const image = c.image || c.metadata?.image
+                    const location = getCitizenLocation(c)
+                    const href = name && c.id
+                      ? `/citizen/${generatePrettyLinkWithId(name, c.id)}`
+                      : `/citizen/${c.id}`
+                    return (
+                      <Link
+                        key={c.id}
+                        href={href}
+                        className="group flex flex-col items-center gap-2 py-3 px-1 rounded-xl hover:bg-white/[0.05] transition-all text-center"
+                      >
+                        <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-white/10 group-hover:ring-green-400/40 transition-all">
+                          {image ? (
+                            <IPFSRenderer
+                              src={image}
+                              alt={name}
+                              width={80}
+                              height={80}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+                              <span className="text-white font-bold text-xl">{name[0]?.toUpperCase()}</span>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-white text-xs font-medium truncate w-full">{name}</p>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {filteredTeams && filteredTeams.length > 0 && (
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-1">
+                <SectionHeader
+                  small
+                  title="Featured Teams"
+                  icon={<UserGroupIcon className="w-5 h-5 text-purple-400" />}
+                  actions={<SubtleButton color="purple" link="/teams">All →</SubtleButton>}
+                />
+                <div className="flex flex-col gap-2 mt-2">
+                  {filteredTeams.slice(0, 5).map((t: any) => {
+                    const name = t.name || t.metadata?.name || `Team #${t.id}`
+                    const image = t.image || t.metadata?.image
+                    const description = (t.description || t.metadata?.description || '')
+                      .replace(/<[^>]*>/g, '').trim()
+                    const href = name && t.id
+                      ? `/team/${generatePrettyLink(name)}-${t.id}`
+                      : `/team/${t.id}`
+                    return (
+                      <Link
+                        key={t.id}
+                        href={href}
+                        className="group flex items-center gap-2 p-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-white/15 transition-all"
+                      >
+                        <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 ring-2 ring-white/10 group-hover:ring-purple-400/30 transition-all">
+                          {image ? (
+                            <IPFSRenderer
+                              src={image}
+                              alt={name}
+                              width={36}
+                              height={36}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                              <UserGroupIcon className="w-4 h-4 text-white/70" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs font-semibold truncate">{name}</p>
+                          {description && (
+                            <p className="text-white/50 text-[10px] truncate">
+                              {description.length > 40 ? description.slice(0, 37) + '…' : description}
+                            </p>
+                          )}
+                        </div>
+                        <ArrowRightIcon className="w-3.5 h-3.5 text-white/20 group-hover:text-white/50 flex-shrink-0 transition-colors" />
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT — Wallet + Rewards (3 cols, same height as activity) */}
+          <div className="lg:col-span-3 flex flex-col gap-6 order-1 lg:order-3 min-w-0">
             {/* Retroactive Rewards (above wallet) */}
             {address && <ClaimRewardsSection />}
 
