@@ -222,7 +222,7 @@ export default function WalletInfoCard({
 
       {/* Balances */}
       <div className="space-y-3 mb-4 min-w-0">
-        {/* ETH Balance */}
+        {/* Native balance */}
         <div className="bg-black/20 rounded-lg p-3 border border-white/5 min-w-0 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
@@ -230,11 +230,11 @@ export default function WalletInfoCard({
                 src={`/icons/networks/${chainSlug}.svg`}
                 width={16}
                 height={16}
-                alt="ETH"
+                alt={selectedChain?.nativeCurrency?.symbol ?? 'ETH'}
                 className="object-contain"
               />
             </div>
-            <span className="text-sm text-gray-400">ETH</span>
+            <span className="text-sm text-gray-400">{selectedChain?.nativeCurrency?.symbol ?? 'ETH'}</span>
           </div>
           <span className="text-white font-semibold text-sm">
             {ethBalance !== null ? formatToken(ethBalance, 4) : '—'}

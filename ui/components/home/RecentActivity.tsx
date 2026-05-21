@@ -277,7 +277,7 @@ export default function RecentActivity({
     return [...withTs, ...withoutTs].slice(0, maxItems)
   }, [newsletters, contributions, donations, missions, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
 
-  const isLoading = newslettersLoading && contribLoading
+  const isLoading = newslettersLoading || contribLoading
 
   return (
     <div className="space-y-2">
@@ -301,7 +301,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
       <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${typeBg(item.type, item.title)} flex items-center justify-center flex-shrink-0 overflow-hidden`}>
         {item.image ? (
           <Image
-            src={item.image}
+            src={getIPFSGateway(item.image)}
             alt={item.title}
             width={40}
             height={40}
