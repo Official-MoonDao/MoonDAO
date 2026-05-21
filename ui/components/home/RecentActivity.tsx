@@ -322,9 +322,10 @@ export default function RecentActivity({
       })
     }
 
-    // Teams (no timestamp)
+    // Teams — use mintTimestamp from subgraph when available
     for (let i = 0; i < Math.min(newestTeams.length, 3); i++) {
       const t = newestTeams[i]
+      if (!t.mintTimestamp) continue // skip teams without a known mint time
       const teamDesc = t.description || t.metadata?.description
       list.push({
         id: `team-${t.id}`,
@@ -333,7 +334,7 @@ export default function RecentActivity({
         subtitle: teamDesc && typeof teamDesc === 'string' ? teamDesc : undefined,
         image: t.image || t.metadata?.image,
         link: `/team/${t.id}`,
-        timestamp: undefined,
+        timestamp: t.mintTimestamp * 1000,
       })
     }
 

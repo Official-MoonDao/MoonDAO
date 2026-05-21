@@ -397,12 +397,18 @@ export async function getStaticProps() {
         mintTsMap[t.tokenId] = Number(t.blockTimestamp)
       }
     }
+    const teamMintTsMap: Record<string, number> = {}
+    for (const t of transferData.teamTransfers) {
+      if (t.tokenId && t.blockTimestamp && !(t.tokenId in teamMintTsMap)) {
+        teamMintTsMap[t.tokenId] = Number(t.blockTimestamp)
+      }
+    }
     newestCitizens = citizens
       .filter((c: any) => !BLOCKED_CITIZENS.has(c.id))
       .map((c: any) => ({ ...c, mintTimestamp: mintTsMap[String(c.id)] ?? null }))
     newestListings = listings
     newestJobs = jobs
-    newestTeams = teams
+    newestTeams = teams.map((t: any) => ({ ...t, mintTimestamp: teamMintTsMap[String(t.id)] ?? null }))
     allProjects = projects
 
     // Process missions data - simplified to just pass basic data to client.
@@ -483,7 +489,7 @@ export async function getStaticProps() {
       }
     }
 
-    filteredTeams = teams || []
+    filteredTeams = (teams || []).map((t: any) => ({ ...t, mintTimestamp: teamMintTsMap[String(t.id)] ?? null }))
   }
 
   if (mooneyPriceResult.status === 'fulfilled') {
