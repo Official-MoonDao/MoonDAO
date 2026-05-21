@@ -379,6 +379,7 @@ export async function getStaticProps() {
     citizenSubgraphData = {
       transfers: transferData.citizenTransfers.map((transfer: any) => ({
         id: transfer.id,
+        tokenId: transfer.tokenId,
         from: transfer.transactionHash,
         blockTimestamp: transfer.blockTimestamp,
       })),
@@ -389,7 +390,16 @@ export async function getStaticProps() {
   let citizensCount = 0
   if (contractResult.status === 'fulfilled') {
     const { citizens, listings, jobs, teams, projects, missionRows } = contractResult.value
-    newestCitizens = citizens.filter((c: any) => !BLOCKED_CITIZENS.has(c.id))
+    // Build tokenId→blockTimestamp map from subgraph transfer data
+    const mintTsMap: Record<string, number> = {}
+    for (const t of citizenSubgraphData.transfers) {
+      if (t.tokenId && t.blockTimestamp && !(t.tokenId in mintTsMap)) {
+        mintTsMap[t.tokenId] = Number(t.blockTimestamp)
+      }
+    }
+    newestCitizens = citizens
+      .filter((c: any) => !BLOCKED_CITIZENS.has(c.id))
+      .map((c: any) => ({ ...c, mintTimestamp: mintTsMap[String(c.id)] ?? null }))
     newestListings = listings
     newestJobs = jobs
     newestTeams = teams

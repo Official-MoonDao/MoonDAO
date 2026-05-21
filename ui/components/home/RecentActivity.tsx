@@ -295,9 +295,10 @@ export default function RecentActivity({
       })
     }
 
-    // Citizens (no timestamp — use position)
+    // Citizens — only include if we have a real mint timestamp from the subgraph
     for (let i = 0; i < Math.min(newestCitizens.length, 5); i++) {
       const c = newestCitizens[i]
+      if (!c.mintTimestamp) continue // skip citizens without a known mint time
       const rawLoc = c.location ?? c.metadata?.attributes?.find((a: any) => a.trait_type === 'location')?.value
       let locationStr: string | undefined
       if (rawLoc && typeof rawLoc === 'object' && rawLoc.name) {
@@ -317,7 +318,7 @@ export default function RecentActivity({
         subtitle: locationStr,
         image: c.image || c.metadata?.image,
         link: `/citizen/${c.id}`,
-        timestamp: undefined,
+        timestamp: c.mintTimestamp * 1000,
       })
     }
 
