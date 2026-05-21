@@ -2,6 +2,7 @@
 
 import {
   BriefcaseIcon,
+  DocumentTextIcon,
   NewspaperIcon,
   RocketLaunchIcon,
   TagIcon,
@@ -25,6 +26,7 @@ export type ActivityItemType =
   | 'newsletter'
   | 'contribution'
   | 'donation'
+  | 'proposal'
 
 export interface ActivityItem {
   id: string
@@ -59,6 +61,7 @@ function typeLabel(type: ActivityItemType): string {
     case 'newsletter': return 'Newsletter'
     case 'contribution': return 'Contribution'
     case 'donation': return 'Mission Donation'
+    case 'proposal': return 'New Proposal'
   }
 }
 
@@ -72,6 +75,7 @@ function TypeIcon({ type, className }: { type: ActivityItemType; className?: str
     case 'newsletter': return <NewspaperIcon className={cls} />
     case 'contribution': return <TagIcon className={cls} />
     case 'donation': return <RocketLaunchIcon className={cls} />
+    case 'proposal': return <DocumentTextIcon className={cls} />
   }
 }
 
@@ -101,6 +105,7 @@ function typeBg(type: ActivityItemType, title?: string): string {
     case 'newsletter': return 'from-blue-600 to-blue-700'
     case 'contribution': return contribGradient(title ?? '')
     case 'donation': return 'from-indigo-500 to-blue-600'
+    case 'proposal': return 'from-purple-500 to-indigo-600'
   }
 }
 
@@ -112,6 +117,7 @@ interface RecentActivityProps {
   newestListings?: any[]
   newestTeams?: any[]
   missions?: any[]
+  proposals?: any[]
   maxItems?: number
 }
 
@@ -121,6 +127,7 @@ export default function RecentActivity({
   newestListings = [],
   newestTeams = [],
   missions = [],
+  proposals = [],
   maxItems = 8,
 }: RecentActivityProps) {
   const { newsletters, isLoading: newslettersLoading } = useNewsletters()
@@ -190,6 +197,21 @@ export default function RecentActivity({
         image: getIPFSGateway(mission?.metadata?.logoUri || mission?.metadata?.image),
         link: d.missionId ? `/mission/${d.missionId}` : '/launch',
         timestamp: d.timestamp,
+      })
+    }
+
+    // Proposals (year+quarter used as rough recency — no createdAt on Project type)
+    for (const p of proposals.slice(0, 5)) {
+      const mdpLabel = p.MDP ? `MDP-${p.MDP}` : ''
+      const quarterLabel = p.quarter && p.year ? `Q${p.quarter} ${p.year}` : ''
+      list.push({
+        id: `proposal-${p.id}`,
+        type: 'proposal' as ActivityItemType,
+        title: p.name || mdpLabel || 'New Proposal',
+        subtitle: mdpLabel && quarterLabel ? `${mdpLabel} · ${quarterLabel}` : (mdpLabel || quarterLabel),
+        image: p.image || undefined,
+        link: p.proposalLink || `/projects`,
+        timestamp: undefined,
       })
     }
 
@@ -294,7 +316,7 @@ export default function RecentActivity({
     const withoutTs = list.filter((x) => x.timestamp == null)
 
     return [...withTs, ...withoutTs].slice(0, maxItems)
-  }, [newsletters, contributions, contribCitizenImages, donations, missions, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
+  }, [newsletters, contributions, contribCitizenImages, donations, missions, proposals, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
 
   const isLoading = newslettersLoading || contribLoading
 

@@ -601,6 +601,7 @@ export default function SignedInDashboard({
                 newestJobs={newestJobs}
                 newestListings={newestListings}
                 newestTeams={filteredTeams}
+                proposals={proposals}
                 maxItems={11}
               />
             </div>
