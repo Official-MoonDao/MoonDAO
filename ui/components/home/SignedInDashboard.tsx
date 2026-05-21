@@ -19,6 +19,8 @@ import {
   ChartBarIcon,
   DocumentTextIcon,
   FireIcon,
+  UserCircleIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
@@ -487,19 +489,34 @@ export default function SignedInDashboard({
             <p className="text-white/50 text-xs">MoonDAO Citizen</p>
           </div>
           {/* Edit profile link */}
-          <Link
-            href={
-              citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
-                ? `/citizen/${generatePrettyLinkWithId(
-                    citizen.metadata.name,
-                    citizen.metadata?.id ?? citizen.id
-                  )}`
-                : '/join'
-            }
-            className="flex-shrink-0 text-xs text-blue-300 hover:text-blue-200 transition-colors px-3 py-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20"
-          >
-            Profile
-          </Link>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link
+              href={
+                citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                  ? `/citizen/${generatePrettyLinkWithId(
+                      citizen.metadata.name,
+                      citizen.metadata?.id ?? citizen.id
+                    )}`
+                  : '/join'
+              }
+              className="text-xs text-white/60 hover:text-white transition-colors px-2.5 py-1.5 bg-white/5 rounded-lg border border-white/10"
+            >
+              View
+            </Link>
+            <Link
+              href={
+                citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                  ? `/citizen/${generatePrettyLinkWithId(
+                      citizen.metadata.name,
+                      citizen.metadata?.id ?? citizen.id
+                    )}?edit=1`
+                  : '/join'
+              }
+              className="text-xs text-blue-300 hover:text-blue-200 transition-colors px-2.5 py-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20"
+            >
+              Edit
+            </Link>
+          </div>
         </div>
 
         {/* ──────────────── PREMIUM HERO: Greeting + KPIs ──────────────── */}
@@ -558,6 +575,33 @@ export default function SignedInDashboard({
                 </div>
               </div>
 
+              {/* View / Edit Profile buttons */}
+              {citizen && (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Link
+                    href={
+                      citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                        ? `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata?.id ?? citizen.id)}`
+                        : '/citizens'
+                    }
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white/70 hover:text-white text-sm font-medium transition-all"
+                  >
+                    <UserCircleIcon className="w-4 h-4" />
+                    View Profile
+                  </Link>
+                  <Link
+                    href={
+                      citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                        ? `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata?.id ?? citizen.id)}?edit=1`
+                        : '/join'
+                    }
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl text-blue-300 hover:text-blue-200 text-sm font-medium transition-all"
+                  >
+                    <PencilSquareIcon className="w-4 h-4" />
+                    Edit Profile
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
 
@@ -603,7 +647,7 @@ export default function SignedInDashboard({
                 newestTeams={filteredTeams}
                 proposals={proposals}
                 missions={missions}
-                maxItems={12}
+                maxItems={13}
               />
             </div>
           </div>
@@ -664,7 +708,7 @@ export default function SignedInDashboard({
                   actions={<SubtleButton color="purple" link="/teams">All →</SubtleButton>}
                 />
                 <div className="flex flex-col gap-2 mt-2">
-                  {filteredTeams.slice(0, 5).map((t: any) => {
+                  {filteredTeams.slice(0, 8).map((t: any) => {
                     const name = t.name || t.metadata?.name || `Team #${t.id}`
                     const image = t.image || t.metadata?.image
                     const description = (t.description || t.metadata?.description || '')
