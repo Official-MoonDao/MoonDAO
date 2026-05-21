@@ -154,20 +154,15 @@ export default function MemberVoteSidebar({
       }
     >
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3
-            className={
-              isActive
-                ? 'font-GoodTimes text-base text-white'
-                : 'font-GoodTimes text-base text-white/90'
-            }
-          >
-            Member Vote
-          </h3>
-          <p className="text-[11px] text-white/60 mt-1">
-            Quadratic vMOONEY voting (vp = √vMOONEY at close).
-          </p>
-        </div>
+        <h3
+          className={
+            isActive
+              ? 'font-GoodTimes text-base text-white'
+              : 'font-GoodTimes text-base text-white/90'
+          }
+        >
+          Member Vote
+        </h3>
         {isActive && (
           <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-blue-400/50 bg-blue-500/15 text-[10px] font-semibold uppercase tracking-wider text-blue-100">
             <span className="relative flex h-1.5 w-1.5">
@@ -180,18 +175,11 @@ export default function MemberVoteSidebar({
       </div>
 
       {isActive && (
-        <>
-          <p className="text-xs text-blue-100/80">
-            This is the primary action right now — the Senate has
-            approved this proposal and members must weigh in. Click
-            below to cast your vote.
-          </p>
-          <NewVoteButton
-            proposalStatus={proposalStatus}
-            votes={votes}
-            project={project}
-          />
-        </>
+        <NewVoteButton
+          proposalStatus={proposalStatus}
+          votes={votes}
+          project={project}
+        />
       )}
 
       {/* Participation summary — voter count + total committed VP.
@@ -245,17 +233,6 @@ export default function MemberVoteSidebar({
         </div>
       )}
 
-      {!revealResults && enriched.length > 0 && (
-        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-          <p className="text-[11px] text-white/70">
-            Results are hidden until voting closes
-          </p>
-          <p className="text-[10px] text-white/40 mt-0.5">
-            You can see who has voted, but not how, while voting is
-            open — discourages bandwagoning.
-          </p>
-        </div>
-      )}
 
       {/* Voter list */}
       <div className="border-t border-white/10 pt-3">

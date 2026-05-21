@@ -311,10 +311,6 @@ export default function ProjectProfile({
                     iconSrc="/assets/icon-star.svg"
                   >
                     <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-6">
-                      <p className="text-sm text-white/70 mb-5">
-                        Senators must approve this proposal before it can
-                        advance to the next stage.
-                      </p>
                       <SenateVote mdp={project.MDP} />
                     </div>
                   </SectionCard>

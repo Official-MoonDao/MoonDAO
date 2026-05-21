@@ -85,16 +85,9 @@ export default function SenateVoteSidebar({
       }
     >
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="font-GoodTimes text-base text-white/80">
-            Senate Vote
-          </h3>
-          <p className="text-[11px] text-white/50 mt-1">
-            {secondary
-              ? 'Completed — required before Member Vote could open.'
-              : 'On-chain vote of MoonDAO senators.'}
-          </p>
-        </div>
+        <h3 className="font-GoodTimes text-base text-white/80">
+          Senate Vote
+        </h3>
         <span
           className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-semibold uppercase tracking-wider ${outcome.className}`}
         >

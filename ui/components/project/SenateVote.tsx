@@ -360,11 +360,6 @@ function CloseSenateVoteButton({
       {projectedOutcome && (
         <p className="text-[11px] text-white/50">{projectedOutcome}</p>
       )}
-      <p className="text-[11px] text-white/40">
-        Signs{' '}
-        <code className="text-white/60">Proposals.tallyVotes({mdp})</code>{' '}
-        with the HSM owner wallet. Approval threshold is 2/3 of votes cast.
-      </p>
     </div>
   )
 }

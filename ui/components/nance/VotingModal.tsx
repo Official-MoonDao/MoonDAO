@@ -261,12 +261,9 @@ export default function VotingModal({
                             <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
                           </div>
                         </div>
-                        <div>
-                          <h2 className="text-lg font-bold text-white">Vote on Proposal</h2>
-                          <p className="text-gray-300 text-xs">
-                            Cast your vote and make your voice heard
-                          </p>
-                        </div>
+                        <h2 className="text-lg font-bold text-white">
+                          Vote on Proposal
+                        </h2>
                       </div>
 
                       {/* Proposal Name */}
@@ -342,34 +339,21 @@ export default function VotingModal({
                             )}
                           </div>
 
-                          {/* Wrong-network banner — shows before the user
-                              even clicks. The submit button itself will
-                              also flip to "Switch Network" via
-                              PrivyWeb3Button, but a banner makes the
-                              cause unambiguous (MetaMask on Ethereum vs.
-                              Arbitrum was the previous failure mode). */}
+                          {/* Wrong-network indicator. The PrivyWeb3Button
+                              below already swaps its label to "Switch
+                              Network" — this just names the destination
+                              so the user doesn't have to guess which
+                              network. */}
                           {isWrongNetwork && (
-                            <div className="rounded-lg border border-yellow-400/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-100">
-                              <p className="font-semibold mb-0.5">
-                                Wrong network detected
-                              </p>
-                              <p className="text-yellow-100/80">
-                                Your wallet is connected to chain{' '}
-                                <code className="text-yellow-50">
-                                  {connectedChainId}
-                                </code>
-                                . MoonDAO proposals live on{' '}
-                                <span className="font-medium">
-                                  {DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'}
-                                </span>{' '}
-                                (chain id {requiredChainId}). Click{' '}
-                                <span className="font-medium">
-                                  Switch Network
-                                </span>{' '}
-                                below — your wallet will prompt you and
-                                the button will then become{' '}
-                                <span className="font-medium">Submit vote</span>.
-                              </p>
+                            <div className="rounded-lg border border-yellow-400/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-100 flex items-center gap-2">
+                              <span className="font-semibold">
+                                Wrong network.
+                              </span>
+                              <span className="text-yellow-100/80">
+                                Switch to{' '}
+                                {DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'} to
+                                vote.
+                              </span>
                             </div>
                           )}
 

@@ -113,10 +113,6 @@ export default function CloseAndTallyButton({
       {remainingLabel && (
         <p className="text-[11px] text-white/60">{remainingLabel}</p>
       )}
-      <p className="text-[11px] text-white/50">
-        Runs the quadratic vMOONEY tally on the NonProjectProposal table and
-        flips this proposal's status on-chain.
-      </p>
     </div>
   )
 }
