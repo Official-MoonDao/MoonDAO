@@ -399,6 +399,7 @@ export const JOBS_TABLE_ADDRESSES: Index = {
 export const JOBS_TABLE_NAMES: Index = {
   arbitrum: 'JOBBOARD_42161_115',
   sepolia: 'JOBBOARD_11155111_1899',
+  'arbitrum-sepolia': 'JOBBOARD_421614_115',
 }
 
 export const MARKETPLACE_ADDRESS =
@@ -415,6 +416,7 @@ export const MARKETPLACE_TABLE_ADDRESSES: Index = {
 export const MARKETPLACE_TABLE_NAMES: Index = {
   arbitrum: 'MARKETPLACE_42161_116',
   sepolia: 'MARKETPLACE_11155111_1898',
+  'arbitrum-sepolia': 'MARKETPLACE_421614_116',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
