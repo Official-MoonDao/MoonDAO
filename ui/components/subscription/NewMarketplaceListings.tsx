@@ -37,7 +37,7 @@ export default function NewMarketplaceListings({
           onClick={() => router.push('/marketplace')}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 border-purple-400/20"
         >
-          View All →
+          View All Items
         </button>
       </div>
 

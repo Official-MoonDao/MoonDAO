@@ -573,8 +573,8 @@ export default function WeeklyRewardPool() {
           {/* Learn More */}
           <div className="text-center">
             <div className="relative inline-block group">
-              <button
-                type="button"
+              <a
+                href="/fees"
                 aria-describedby="reward-tooltip"
                 className="inline-flex items-center gap-1.5 text-sm text-blue-300 hover:text-blue-200 transition-colors duration-200"
               >
@@ -582,7 +582,7 @@ export default function WeeklyRewardPool() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-              </button>
+              </a>
               <div
                 id="reward-tooltip"
                 role="tooltip"
