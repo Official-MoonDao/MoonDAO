@@ -135,6 +135,16 @@ export default function MemberVoteSidebar({
   // both sidebar cards read as peers.
   const isActive = mode === 'voting'
 
+  // Reveal the per-choice tally and per-voter pick only after the
+  // vote has closed. While voting is open we show *who* has voted
+  // and their voting power but never *what* they voted for —
+  // surfacing the running tally lets late voters bandwagon or vote
+  // strategically against a known leader. The on-chain Tableland
+  // rows are still public, so this isn't a confidentiality
+  // guarantee — just a UI-level discouragement of bandwagoning that
+  // matches the legacy Nance flow.
+  const revealResults = mode === 'closed'
+
   return (
     <aside
       className={
@@ -184,8 +194,11 @@ export default function MemberVoteSidebar({
         </>
       )}
 
-      {/* Headline tally — total VP and per-choice breakdown. Mirrors the
-          old Nance "Total VP" stat strip. */}
+      {/* Participation summary — voter count + total committed VP.
+          Visible at every phase: how *many* people have weighed in
+          and *how much* voting power has shown up so far is fair to
+          surface even mid-vote (it nudges turnout without revealing
+          which side is winning). */}
       <div className="grid grid-cols-2 gap-2 text-center">
         <div className="rounded-lg bg-white/5 px-2 py-2 border border-white/10">
           <p className="text-[10px] uppercase tracking-wider text-white/50">
@@ -205,28 +218,44 @@ export default function MemberVoteSidebar({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 text-[11px]">
-        <div className="flex items-center justify-between">
-          <span className="text-green-300">For</span>
-          <span className="text-white/80 font-mono">
-            {formatNumberUSStyle(tally.For, true)} VP
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-red-300">Against</span>
-          <span className="text-white/80 font-mono">
-            {formatNumberUSStyle(tally.Against, true)} VP
-          </span>
-        </div>
-        {tally.Abstain > 0 && (
+      {/* Per-choice tally — only after the vote has closed.
+          Suppressed mid-vote to avoid bandwagoning. */}
+      {revealResults && (
+        <div className="flex flex-col gap-1.5 text-[11px]">
           <div className="flex items-center justify-between">
-            <span className="text-gray-300">Abstain</span>
+            <span className="text-green-300">For</span>
             <span className="text-white/80 font-mono">
-              {formatNumberUSStyle(tally.Abstain, true)} VP
+              {formatNumberUSStyle(tally.For, true)} VP
             </span>
           </div>
-        )}
-      </div>
+          <div className="flex items-center justify-between">
+            <span className="text-red-300">Against</span>
+            <span className="text-white/80 font-mono">
+              {formatNumberUSStyle(tally.Against, true)} VP
+            </span>
+          </div>
+          {tally.Abstain > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">Abstain</span>
+              <span className="text-white/80 font-mono">
+                {formatNumberUSStyle(tally.Abstain, true)} VP
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!revealResults && enriched.length > 0 && (
+        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+          <p className="text-[11px] text-white/70">
+            Results are hidden until voting closes
+          </p>
+          <p className="text-[10px] text-white/40 mt-0.5">
+            You can see who has voted, but not how, while voting is
+            open — discourages bandwagoning.
+          </p>
+        </div>
+      )}
 
       {/* Voter list */}
       <div className="border-t border-white/10 pt-3">
@@ -265,7 +294,16 @@ export default function MemberVoteSidebar({
                       <AddressLink address={v.address} />
                     </span>
                   )}
-                  <ChoicePill label={v.choice} />
+                  {revealResults ? (
+                    <ChoicePill label={v.choice} />
+                  ) : (
+                    <span
+                      className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border bg-white/5 text-white/40 border-white/10"
+                      title="Choice hidden while voting is open"
+                    >
+                      Voted
+                    </span>
+                  )}
                 </div>
                 <span className="text-white/70 font-mono whitespace-nowrap">
                   {formatNumberUSStyle(v.vp, true)} VP
