@@ -138,6 +138,7 @@ export default function TeamListing({
   return (
     <>
       <div
+        id="link-frame"
         onClick={() => { if (!editable) setEnabledBuyListingModal(true) }}
         className={`flex-shrink-0 w-56 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 rounded-2xl overflow-hidden transition-all duration-200 flex flex-col ${!editable ? 'cursor-pointer' : ''}`}
       >
@@ -168,7 +169,7 @@ export default function TeamListing({
 
         {/* Content */}
         <div className="p-3 flex flex-col gap-2 flex-1">
-          <h4 className="text-white font-semibold text-sm leading-tight line-clamp-2">
+          <h4 id="main-header" className="text-white font-semibold text-sm leading-tight line-clamp-2">
             {listing?.title}
           </h4>
           {listing?.description && (
@@ -181,16 +182,21 @@ export default function TeamListing({
           <div className="mt-auto pt-2 flex items-center justify-between gap-2">
             {listing?.price && listing?.currency ? (
               <div>
-                <span className="text-white font-bold text-sm">
+                <span id="listing-price" className="text-white font-bold text-sm">
                   {`${isCitizen
                     ? truncateTokenValue(listing.price, listing.currency)
                     : truncateTokenValue(+listing.price * 1.1, listing.currency)
                   } ${listing.currency}`}
                 </span>
                 {isCitizen && (
-                  <span className="text-white/30 text-xs line-through ml-1.5">
+                  <span id="listing-original-price" className="text-white/30 text-xs line-through ml-1.5">
                     {`${truncateTokenValue(+listing.price * 1.1, listing.currency)} ${listing.currency}`}
                   </span>
+                )}
+                {!isCitizen && listing.price && (
+                  <p id="listing-savings" className="text-white/40 text-xs mt-0.5">
+                    {`Save ${+listing.price * 0.1} ${listing.currency} with citizenship`}
+                  </p>
                 )}
               </div>
             ) : (
@@ -200,6 +206,7 @@ export default function TeamListing({
             {editable && (
               <div className="flex items-center gap-2">
                 <button
+                  id="edit-listing-button"
                   onClick={(e) => { e.stopPropagation(); setEnabledMarketplaceListingModal(true) }}
                   className="text-white/40 hover:text-white/80 transition-colors"
                 >
@@ -209,6 +216,7 @@ export default function TeamListing({
                   <LoadingSpinner className="scale-75" />
                 ) : (
                   <button
+                    id="delete-listing-button"
                     onClick={async (e) => {
                       if (!account) return
                       e.stopPropagation()
@@ -236,9 +244,15 @@ export default function TeamListing({
             )}
           </div>
 
+          {isUpcoming && editable && (
+            <p id="listing-status" className="text-yellow-400/70 text-xs">
+              {`*This listing is not available for purchase until ${new Date(listing.startTime * 1000).toLocaleDateString()} ${new Date(listing.startTime * 1000).toLocaleTimeString()}`}
+            </p>
+          )}
+
           {!isExpired && !isUpcoming && listing?.endTime != 0 && (
-            <p className="text-white/30 text-xs">
-              Ends in {daysUntilExpiry} {+daysUntilExpiry === 1 ? 'day' : 'days'}
+            <p id="listing-end-time" className="text-white/30 text-xs">
+              Offer ends in {daysUntilExpiry} {+daysUntilExpiry === 1 ? 'day' : 'days'}
             </p>
           )}
         </div>
