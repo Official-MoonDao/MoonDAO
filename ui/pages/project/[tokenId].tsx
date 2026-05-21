@@ -52,6 +52,7 @@ import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
 import CloseAndTallyButton from '@/components/project/CloseAndTallyButton'
 import MemberVoteSidebar from '@/components/project/MemberVoteSidebar'
 import SenateVote from '@/components/project/SenateVote'
+import SenateVoteSidebar from '@/components/project/SenateVoteSidebar'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
@@ -294,21 +295,15 @@ export default function ProjectProfile({
                 </SectionCard>
               )}
 
-              {/* Senate Vote Section.
-                  - During Temperature Check: senators see interactive
-                    👍/👎 buttons; everyone sees the running counts and
-                    the per-senator voted/pending grid; OPERATORS see
-                    the Close Senate Vote control.
-                  - After Temperature Check (Voting / Approved /
-                    Cancelled): the same panel renders read-only with a
-                    "Approved by Senate" / "Rejected by Senate" outcome
-                    badge so the senate breakdown stays visible across
-                    the rest of the proposal lifecycle. The on-chain
-                    `voteTempCheck` reverts post-tally so the cast-vote
-                    affordances are hidden — they would only confuse.
-                  Project proposals (which don't carry the on-chain
-                  Senate vote in the same way) are excluded post-TC to
-                  avoid showing zeros for a vote that never happened. */}
+              {/* Senate Vote Section — only renders during Temperature
+                  Check, when senators still need the interactive 👍/👎
+                  buttons and OPERATORS need the Close Senate Vote
+                  control. Once the senate has tallied, the read-only
+                  breakdown lives in the right-rail `SenateVoteSidebar`
+                  (so it's persistent across Voting / Approved /
+                  Cancelled without consuming main-column real estate).
+                  Project proposals don't carry the on-chain Senate
+                  vote in the same way, so they're excluded. */}
               {project.active === PROJECT_PENDING &&
                 proposalStatus === 'Temperature Check' && (
                   <SectionCard
@@ -321,23 +316,6 @@ export default function ProjectProfile({
                         advance to the next stage.
                       </p>
                       <SenateVote mdp={project.MDP} />
-                    </div>
-                  </SectionCard>
-                )}
-
-              {proposalStatus !== 'Temperature Check' &&
-                proposalJSON?.nonProjectProposal && (
-                  <SectionCard
-                    header="Senate Vote Results"
-                    iconSrc="/assets/icon-star.svg"
-                  >
-                    <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-6">
-                      <p className="text-sm text-white/70 mb-5">
-                        Senate verdict for this proposal — the breakdown
-                        and per-senator votes that decided whether it
-                        advanced to the Member Vote.
-                      </p>
-                      <SenateVote mdp={project.MDP} readOnly />
                     </div>
                   </SectionCard>
                 )}
@@ -447,13 +425,17 @@ export default function ProjectProfile({
           // The sidebar appears *first* in source order so on mobile the
           // active CTA (Vote button) is above the proposal body — same
           // reasoning as Snapshot's mobile layout. On lg+ the grid
-          // rebalances it to the right column.
+          // rebalances it to the right column. The Senate and Member
+          // Vote cards stack inside one sticky wrapper so they scroll
+          // together as a single unit (two independent `position:
+          // sticky` siblings would race each other for `top: 24px`).
           return (
             <div
               id="page-container"
               className="pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
             >
-              <div className="lg:order-2 lg:col-span-1">
+              <div className="lg:order-2 lg:col-span-1 lg:sticky lg:top-24 lg:self-start flex flex-col gap-4">
+                <SenateVoteSidebar mdp={project.MDP} />
                 <MemberVoteSidebar
                   project={project}
                   votes={votes}

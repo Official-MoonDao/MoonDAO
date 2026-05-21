@@ -129,7 +129,7 @@ export default function MemberVoteSidebar({
   }, [enriched])
 
   return (
-    <aside className="w-full bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-5 flex flex-col gap-4 lg:sticky lg:top-24">
+    <aside className="w-full bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-5 flex flex-col gap-4">
       <div>
         <h3 className="font-GoodTimes text-base text-white/90">Member Vote</h3>
         <p className="text-[11px] text-white/50 mt-1">
