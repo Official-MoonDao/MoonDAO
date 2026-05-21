@@ -558,32 +558,32 @@ export default function SignedInDashboard({
                 </div>
               </div>
 
-              {/* Contribution CTA box */}
-              <div className="flex items-center gap-4 flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-xl px-5 py-3.5">
-                <div>
-                  <p className="text-white text-sm font-semibold">What did you get done this week?</p>
-                  <p className="text-white/40 text-xs mt-0.5">Earn ETH & vMOONEY rewards each quarter.</p>
-                </div>
-                <a
-                  href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all whitespace-nowrap flex-shrink-0"
-                >
-                  <TrophyIcon className="w-4 h-4" />
-                  Submit Contribution
-                </a>
-              </div>
             </div>
           </div>
 
         </div>
 
         {/* ──────────────── ROW 1: Activity + Citizens/Teams + Wallet/Rewards ──────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
           {/* MIDDLE — Recent Activity (6 cols) */}
-          <div className="lg:col-span-6 order-2 lg:order-2">
-            <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 h-full">
+          <div className="lg:col-span-6 order-2 lg:order-2 flex flex-col gap-4">
+            {/* Contribution CTA */}
+            <div className="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-3.5">
+              <div>
+                <p className="text-white text-sm font-semibold">What did you get done this week?</p>
+                <p className="text-white/40 text-xs mt-0.5">Earn ETH & vMOONEY rewards each quarter.</p>
+              </div>
+              <a
+                href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all whitespace-nowrap flex-shrink-0"
+              >
+                <TrophyIcon className="w-4 h-4" />
+                Submit Contribution
+              </a>
+            </div>
+            <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 flex-1">
               <SectionHeader
                 title="Recent Activity"
                 subtitle="Latest happenings across the network"
@@ -603,7 +603,7 @@ export default function SignedInDashboard({
                 newestTeams={filteredTeams}
                 proposals={proposals}
                 missions={missions}
-                maxItems={11}
+                maxItems={12}
               />
             </div>
           </div>
