@@ -1,12 +1,19 @@
-import { Dialog, RadioGroup, Transition } from '@headlessui/react'
-import { XMarkIcon } from '@heroicons/react/24/solid'
+import { Dialog, Transition } from '@headlessui/react'
+import {
+  CheckCircleIcon,
+  MinusCircleIcon,
+  XCircleIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/solid'
+import { useWallets } from '@privy-io/react-auth'
+import confetti from 'canvas-confetti'
 import NonProjectProposalABI from 'const/abis/NonProjectProposal.json'
 import { DEFAULT_CHAIN_V5, NON_PROJECT_PROPOSAL_ADDRESSES } from 'const/config'
-import { useState, Fragment, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState, Fragment, useEffect, useMemo, useContext } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
@@ -14,12 +21,12 @@ import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { classNames } from '@/lib/utils/tailwind'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
 interface VotingProps {
   modalIsOpen: boolean
   closeModal: () => void
   address: string | undefined
-  spaceHideAbstain: boolean
   project: Project
   votes: any[]
   totalVMOONEY: any
@@ -31,7 +38,6 @@ export default function VotingModal({
   modalIsOpen,
   closeModal,
   address,
-  spaceHideAbstain,
   project,
   votes,
   totalVMOONEY,
@@ -65,6 +71,33 @@ export default function VotingModal({
   const choices = ['Yes', 'No', 'Abstain'] // could make this dynamic in the future
   // external
   const vp = Math.sqrt(totalVMOONEY) || 0
+
+  // The previous voter to hit `nonce has already been used` was on the wrong
+  // network — MetaMask was on Ethereum, vote was sent against the
+  // NonProjectProposal contract that only exists on Arbitrum, and the
+  // signed tx ended up at a stale nonce. Surface the chain mismatch as a
+  // first-class banner inside the modal so the user sees it *before*
+  // signing, in addition to the Submit button auto-flipping to a "Switch
+  // Network" CTA via PrivyWeb3Button.
+  // Read the chainId from the *same* wallet PrivyWeb3Button will sign
+  // with (selectedWallet via PrivyWalletContext). Earlier this read
+  // wallets?.[0] which silently disagreed with the button when the
+  // user had multiple wallets connected and a non-zero one selected
+  // — the banner could green-light a Submit while the button was
+  // still showing "Switch Network", or vice versa.
+  const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const connectedChainId = useMemo(() => {
+    const raw = wallets?.[selectedWallet]?.chainId
+    if (!raw) return undefined
+    const parts = String(raw).split(':')
+    return Number(parts[parts.length - 1]) || undefined
+  }, [wallets, selectedWallet])
+  const requiredChainId = DEFAULT_CHAIN_V5.id
+  const isWrongNetwork =
+    Boolean(address) &&
+    Boolean(connectedChainId) &&
+    connectedChainId !== requiredChainId
 
   const handleSubmit = async () => {
     if (!choice) {
@@ -123,7 +156,21 @@ export default function VotingModal({
         { label: 'senate-vote-notification' }
       )
 
+      // Celebrate + dismiss. Same confetti palette the SenateVote
+      // component uses on a successful approve so the visual language
+      // stays consistent across both vote stages. Closing the modal
+      // here means the user lands back on the proposal page (where
+      // the right-rail sidebar reflects their vote on the next
+      // getServerSideProps refresh) without having to hunt for the X.
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        shapes: ['circle', 'star'],
+        colors: ['#22c55e', '#4ade80', '#86efac', '#ffffff', '#FFD700'],
+      })
       setSubmitting(false)
+      closeModal()
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -139,35 +186,42 @@ export default function VotingModal({
   }
 
   const renderVoteButton = () => {
+    // PrivyWeb3Button owns the wallet/network state machine: it flips
+    // its own label/handler to "Sign In" when unauthenticated and to
+    // "Switch Network" when the connected chain doesn't match
+    // `requiredChain`. We only need to drive the *action* button
+    // label (state 2). `actionDisabled` (vs `isDisabled`) is
+    // important here: blocking the whole button would also block
+    // the Switch Network affordance, leaving wrong-network users
+    // unable to resolve their network *before* the form considers
+    // itself submittable.
     let canVote = false
-    let label = 'Close'
+    let actionLabel = 'Submit vote'
 
-    if (address == '') {
-      label = 'Wallet not connected'
-    } else if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
-      label = 'Not supported'
+    if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
+      actionLabel = 'Not supported'
     } else if (choice === undefined) {
-      label = 'You need to select a choice'
-    } else if (vp > 0) {
-      if (submitting) {
-        label = 'Submitting...'
-      } else {
-        label = 'Submit vote'
-        canVote = true
-      }
+      actionLabel = 'Select a choice'
+    } else if (vp <= 0) {
+      actionLabel = 'No voting power'
+    } else if (submitting) {
+      actionLabel = 'Submitting...'
     } else {
-      label = 'Close'
+      canVote = true
+      actionLabel = 'Submit vote'
     }
 
     return (
-      <button
-        type="button"
-        disabled={!canVote}
-        onClick={canVote ? handleSubmit : closeModal}
-        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
-      >
-        {label}
-      </button>
+      <PrivyWeb3Button
+        label={actionLabel}
+        loadingLabel="Submitting..."
+        action={handleSubmit}
+        requiredChain={DEFAULT_CHAIN_V5}
+        actionDisabled={!canVote}
+        noGradient
+        noPadding
+        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed !text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50 !text-base"
+      />
     )
   }
 
@@ -217,12 +271,9 @@ export default function VotingModal({
                             <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
                           </div>
                         </div>
-                        <div>
-                          <h2 className="text-lg font-bold text-white">Vote on Proposal</h2>
-                          <p className="text-gray-300 text-xs">
-                            Cast your vote and make your voice heard
-                          </p>
-                        </div>
+                        <h2 className="text-lg font-bold text-white">
+                          Vote on Proposal
+                        </h2>
                       </div>
 
                       {/* Proposal Name */}
@@ -265,34 +316,55 @@ export default function VotingModal({
                         </h3>
 
                         <form className="space-y-4">
-                          {/* Option selector */}
+                          {/* Option selector. Quadratic is what every
+                              non-project proposal actually uses today,
+                              and the old WeightedChoiceSelector forced
+                              voters to type a percentage per choice
+                              (which routinely failed the
+                              "must equal 100%" guard and felt like
+                              busywork for a yes/no question). The new
+                              SingleClickChoiceSelector encodes a single
+                              choice as `{ "<index>": 100 }`, the exact
+                              shape `runQuadraticVoting` already
+                              expects, so the on-chain tally stays
+                              compatible with every prior vote — but
+                              the user just clicks once. */}
                           <div>
                             <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide mb-3">
                               Select Your Choice
                             </h4>
-                            {(proposalType == 'single-choice' || proposalType == 'basic') && (
-                              <BasicChoiceSelector
-                                value={choice}
-                                setValue={setChoice}
-                                choices={choices}
-                              />
-                            )}
-                            {proposalType == 'weighted' ||
-                              (proposalType == 'quadratic' && (
-                                <WeightedChoiceSelector
-                                  value={choice}
-                                  setValue={setChoice}
-                                  choices={choices}
-                                />
-                              ))}
-                            {proposalType == 'ranked-choice' && (
+                            {proposalType == 'ranked-choice' ? (
                               <RankedChoiceSelector
                                 value={choice || []}
                                 setValue={setChoice}
                                 choices={choices}
                               />
+                            ) : (
+                              <SingleClickChoiceSelector
+                                value={choice}
+                                setValue={setChoice}
+                                choices={choices}
+                              />
                             )}
                           </div>
+
+                          {/* Wrong-network indicator. The PrivyWeb3Button
+                              below already swaps its label to "Switch
+                              Network" — this just names the destination
+                              so the user doesn't have to guess which
+                              network. */}
+                          {isWrongNetwork && (
+                            <div className="rounded-lg border border-yellow-400/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-100 flex items-center gap-2">
+                              <span className="font-semibold">
+                                Wrong network.
+                              </span>
+                              <span className="text-yellow-100/80">
+                                Switch to{' '}
+                                {DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'} to
+                                vote.
+                              </span>
+                            </div>
+                          )}
 
                           {/* Vote button */}
                           <div className="pt-2">{renderVoteButton()}</div>
@@ -316,95 +388,110 @@ interface SelectorProps {
   choices: string[]
 }
 
-function BasicChoiceSelector({ value, setValue, choices }: SelectorProps) {
-  return (
-    <RadioGroup value={value} onChange={setValue}>
-      <div className="grid grid-cols-3 gap-3">
-        {choices.map((choice, index) => (
-          <RadioGroup.Option
-            as="div"
-            key={choice}
-            value={index + 1}
-            className={({ active, checked }) =>
-              classNames(
-                'relative block cursor-pointer rounded-lg p-3 transition-all duration-200 text-center',
-                checked
-                  ? 'bg-blue-500/20 border-2 border-blue-500/50 shadow-lg'
-                  : 'bg-black/20 border border-white/10 hover:bg-black/30 hover:border-white/20',
-                active ? 'ring-2 ring-blue-500/50' : ''
-              )
-            }
-          >
-            {({ active, checked }) => (
-              <>
-                <div className="flex items-center justify-center">
-                  <RadioGroup.Label as="p" className="text-sm font-medium text-white">
-                    {choice}
-                  </RadioGroup.Label>
-                </div>
-              </>
-            )}
-          </RadioGroup.Option>
-        ))}
-      </div>
-    </RadioGroup>
-  )
-}
-
-function WeightedChoiceSelector({
+// Single-click yes/no/abstain selector. Encodes the picked option as
+// `{ "<index+1>": 100 }` — the same shape the on-chain
+// NonProjectProposal table stores and `runQuadraticVoting` expects, so
+// the tally code is unchanged. Shown for `quadratic` / `weighted` /
+// `basic` / `single-choice` proposal types now that the underlying
+// vote is binary in practice. Edit mode highlights whichever choice
+// has the largest weight in the existing distribution (argmax) so
+// re-opening a previously cast vote shows the user's prior pick.
+function SingleClickChoiceSelector({
   value,
   setValue,
   choices,
 }: Omit<SelectorProps, 'value'> & {
   value: { [key: string]: number } | undefined
 }) {
-  const { register, getValues, watch } = useForm()
+  const visibleChoices = useMemo(() => {
+    return choices.map((label, index) => ({ label, key: String(index + 1) }))
+  }, [choices])
 
-  useEffect(() => {
-    // sync form state
-    const subscription = watch((_) => {
-      const values = getValues()
-      const newValue: { [key: string]: any } = {}
-      // remove empty values
-      for (const key in values) {
-        const val = values[key]
-        if (!isNaN(val) && val > 0) {
-          newValue[key] = val
-        }
-      }
-      setValue(newValue)
-    })
+  // Argmax over the existing distribution. Single-click votes are
+  // always 100/0/0 so this resolves trivially; it also gracefully
+  // highlights the dominant choice for legacy split votes.
+  const selectedKey = useMemo(() => {
+    if (!value) return null
+    let best: [string, number] | null = null
+    for (const [k, v] of Object.entries(value)) {
+      const n = Number(v)
+      if (!Number.isFinite(n)) continue
+      if (best === null || n > best[1]) best = [k, n]
+    }
+    return best && best[1] > 0 ? best[0] : null
+  }, [value])
 
-    return () => subscription.unsubscribe()
-  }, [watch])
+  const styleFor = (label: string, isSelected: boolean) => {
+    const base =
+      'group flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black/20'
+    if (label.toLowerCase() === 'yes' || label.toLowerCase() === 'for') {
+      return classNames(
+        base,
+        isSelected
+          ? 'bg-green-500/25 border-green-400 shadow-lg shadow-green-500/20 scale-[1.02]'
+          : 'bg-green-500/5 border-green-500/20 hover:bg-green-500/15 hover:border-green-400/60'
+      )
+    }
+    if (label.toLowerCase() === 'no' || label.toLowerCase() === 'against') {
+      return classNames(
+        base,
+        isSelected
+          ? 'bg-red-500/25 border-red-400 shadow-lg shadow-red-500/20 scale-[1.02]'
+          : 'bg-red-500/5 border-red-500/20 hover:bg-red-500/15 hover:border-red-400/60'
+      )
+    }
+    return classNames(
+      base,
+      isSelected
+        ? 'bg-gray-500/25 border-gray-300 shadow-lg shadow-gray-500/20 scale-[1.02]'
+        : 'bg-gray-500/5 border-gray-500/20 hover:bg-gray-500/15 hover:border-gray-300/60'
+    )
+  }
 
-  const totalUnits = Object.values(value ?? {}).reduce((a, b) => a + b, 0)
+  const iconFor = (label: string, isSelected: boolean) => {
+    const cls = isSelected ? 'w-7 h-7' : 'w-7 h-7 opacity-70 group-hover:opacity-100'
+    if (label.toLowerCase() === 'yes' || label.toLowerCase() === 'for') {
+      return <CheckCircleIcon className={`${cls} text-green-400`} />
+    }
+    if (label.toLowerCase() === 'no' || label.toLowerCase() === 'against') {
+      return <XCircleIcon className={`${cls} text-red-400`} />
+    }
+    return <MinusCircleIcon className={`${cls} text-gray-300`} />
+  }
 
+  // Plain <button>s with aria-pressed, grouped by `role="group"`
+  // and the form's existing `id="options-heading"` label. We avoid
+  // claiming `role="radiogroup"` / `role="radio"` because the full
+  // ARIA radio pattern (roving tabIndex, arrow-key navigation,
+  // Home/End handling) isn't implemented here — and a half-spec'd
+  // radio group is worse for screen readers than a plain button
+  // group with toggle state. Tab still walks each button, Space /
+  // Enter activates them via native button keyboard handling.
   return (
-    <div className="space-y-3">
-      {choices.map((choice, index) => (
-        <div
-          key={choice}
-          className="bg-black/20 border border-white/10 rounded-lg p-4 hover:bg-black/30 hover:border-white/20 transition-all duration-200"
-        >
-          <div className="flex items-center gap-4">
-            <label className="flex-1 text-white font-medium">{choice}</label>
-            <input
-              className="w-24 bg-black/30 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
-              type="number"
-              placeholder="0"
-              min={0}
-              step={1}
-              defaultValue={value ? value[index + 1] : 0}
-              {...register((index + 1).toString(), {
-                shouldUnregister: true,
-                valueAsNumber: true,
-              })}
-            />
-            <span className="w-16 text-right text-gray-300 text-sm">%</span>
-          </div>
-        </div>
-      ))}
+    <div
+      className={classNames(
+        'grid gap-3',
+        visibleChoices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+      )}
+      role="group"
+      aria-labelledby="options-heading"
+    >
+      {visibleChoices.map(({ label, key }) => {
+        const isSelected = selectedKey === key
+        return (
+          <button
+            type="button"
+            aria-pressed={isSelected}
+            aria-label={label}
+            key={key}
+            onClick={() => setValue({ [key]: 100 })}
+            className={styleFor(label, isSelected)}
+          >
+            {iconFor(label, isSelected)}
+            <span className="text-sm font-semibold text-white">{label}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

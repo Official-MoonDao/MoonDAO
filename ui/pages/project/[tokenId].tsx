@@ -45,13 +45,14 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
-import ProposalVotes from '@/components/nance/ProposalVotes'
 
 import VotingResults from '@/components/nance/VotingResults'
 import ProposalEditSection from '@/components/nance/ProposalEditSection'
 import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
 import CloseAndTallyButton from '@/components/project/CloseAndTallyButton'
+import MemberVoteSidebar from '@/components/project/MemberVoteSidebar'
 import SenateVote from '@/components/project/SenateVote'
+import SenateVoteSidebar from '@/components/project/SenateVoteSidebar'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
@@ -85,6 +86,11 @@ type ProjectProfileProps = {
   votes: any[]
   voteOutcome: any
   proposalStatus: any
+  // address (lowercased or checksummed — we look up both) -> quadratic
+  // voting power (sqrt of vMOONEY at the voting-window close).
+  // Empty object when the proposal has no votes yet or isn't a
+  // non-project proposal.
+  addressToVotingPower: { [address: string]: number }
   tempCheckApprovedTimestamp?: string
   pending?: boolean
 }
@@ -98,6 +104,7 @@ export default function ProjectProfile({
   votes,
   voteOutcome,
   proposalStatus,
+  addressToVotingPower,
   tempCheckApprovedTimestamp,
   pending,
 }: ProjectProfileProps) {
@@ -152,6 +159,48 @@ export default function ProjectProfile({
     }, 5000)
     return () => clearTimeout(timer)
   }, [pending, tokenId, router])
+
+  // Tabbed main column. The right rail (Senate + Member vote
+  // sidebars) is intentionally outside the tab system so the
+  // primary action stays visible across all three tabs.
+  type ProjectTab = 'proposal' | 'treasury' | 'team'
+  const [tab, setTab] = useState<ProjectTab>('proposal')
+
+  // Hydrate from `?tab=` so deep links land on the right tab and
+  // browser back/forward navigates between tabs the user has
+  // already visited.
+  useEffect(() => {
+    const urlTab = router.query.tab
+    if (
+      typeof urlTab === 'string' &&
+      (urlTab === 'proposal' ||
+        urlTab === 'treasury' ||
+        urlTab === 'team')
+    ) {
+      setTab(urlTab)
+    }
+  }, [router.query.tab])
+
+  const handleTabChange = (next: string) => {
+    const nextTab = next as ProjectTab
+    setTab(nextTab)
+    // `shallow + scroll: false`: don't re-run getServerSideProps
+    // and don't yank the user back to the top of the page when
+    // they're switching tabs — the rail is sticky and the tab
+    // strip itself sits inside the main column.
+    const { tab: _omit, ...restQuery } = router.query
+    router.replace(
+      {
+        pathname: router.pathname,
+        query:
+          nextTab === 'proposal'
+            ? restQuery
+            : { ...restQuery, tab: nextTab },
+      },
+      undefined,
+      { shallow: true, scroll: false }
+    )
+  }
 
   if (pending) {
     return (
@@ -262,92 +311,126 @@ export default function ProjectProfile({
           />
         }
       >
-        <div id="page-container" className="flex flex-col gap-4 sm:gap-6 pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8">
-          {finalReportMarkdown && (
-            <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
-              <div className="prose prose-invert max-w-none">
-                <MarkdownWithTOC body={finalReportMarkdown} />
-              </div>
-            </SectionCard>
-          )}
-          {/* Senate Vote Section — pending proposals in Temperature Check.
-              Senators see interactive 👍/👎 buttons; everyone sees the
-              running counts and the per-senator voted/pending status. */}
-          {project.active === PROJECT_PENDING &&
-            proposalStatus === 'Temperature Check' && (
-              <SectionCard header="Senate Vote" iconSrc="/assets/icon-star.svg">
-                <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-6">
-                  <p className="text-sm text-white/70 mb-5">
-                    Senators must approve this proposal before it can advance
-                    to the next stage.
-                  </p>
-                  <SenateVote mdp={project.MDP} />
-                </div>
-              </SectionCard>
-            )}
+        {(() => {
+          // Non-project proposals get the Snapshot/Nance-style two-column
+          // layout: proposal body on the left, a sticky vote sidebar
+          // running down the right with the live voter list and quadratic
+          // voting power. Project proposals fall back to a single column.
+          const showVoteSidebar = Boolean(proposalJSON?.nonProjectProposal)
+          const sidebarMode: 'voting' | 'closed' | 'inactive' =
+            project.active === PROJECT_PENDING && proposalStatus === 'Voting'
+              ? 'voting'
+              : project.active !== PROJECT_PENDING
+              ? 'closed'
+              : 'inactive'
 
-          {/* Member Vote Section — non-project proposals after senate approval. */}
-          {project.active === PROJECT_PENDING &&
-            proposalStatus === 'Voting' &&
-            proposalJSON?.nonProjectProposal && (
-              <SectionCard header="Member Vote" iconSrc="/assets/icon-star.svg">
-                <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5">
-                  <p className="text-sm text-white/70 mb-4">
-                    This proposal passed the Senate vote. Lock $MOONEY to vote
-                    quadratically with vMOONEY-weighted Yes / No / Abstain.
-                  </p>
-                  <ProposalVotes
-                    project={project}
-                    votes={votes}
-                    proposalStatus={proposalStatus}
-                    showContainer
-                  />
-                  <CloseAndTallyButton
-                    mdp={project.MDP}
-                    tempCheckApprovedTimestamp={tempCheckApprovedTimestamp}
-                  />
-                </div>
-              </SectionCard>
-            )}
+          // Proposal tab — proposal-lifecycle content. Final Report
+          // (post-completion), Senate Vote interactive section
+          // (Temperature Check only), the proposal body itself, and
+          // Voting Results (post-tally, non-project proposals only).
+          const proposalPane = (
+            <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
+              {finalReportMarkdown && (
+                <SectionCard
+                  header="Final Report"
+                  iconSrc="/assets/icon-star.svg"
+                >
+                  <div className="prose prose-invert max-w-none">
+                    <MarkdownWithTOC body={finalReportMarkdown} />
+                  </div>
+                </SectionCard>
+              )}
 
-          {/* Project Overview */}
-          <SectionCard
-            header="Proposal"
-            iconSrc="/assets/icon-star.svg"
-            className=""
-          >
-            <div className="mb-6 sm:mt-4 sm:mb-10 px-0 sm:px-4 md:px-8 w-full">
-              <div className="prose prose-base prose-invert max-w-none">
-                <MarkdownWithTOC body={(() => {
-                  const full = proposalJSON.body || ''
-                  const idx = full.search(/^#{1,6}\s*Abstract/im)
-                  if (idx !== -1) return full.slice(idx)
-                  const plainIdx = full.search(/^\*{0,2}Abstract\*{0,2}\s*$/im)
-                  if (plainIdx !== -1) return full.slice(plainIdx)
-                  return full
-                })()} />
+              {/* Senate Vote Section — only renders during Temperature
+                  Check, when senators still need the interactive 👍/👎
+                  buttons and OPERATORS need the Close Senate Vote
+                  control. Once the senate has tallied, the read-only
+                  breakdown lives in the right-rail `SenateVoteSidebar`
+                  (so it's persistent across Voting / Approved /
+                  Cancelled without consuming main-column real estate).
+                  Project proposals don't carry the on-chain Senate
+                  vote in the same way, so they're excluded. */}
+              {project.active === PROJECT_PENDING &&
+                proposalStatus === 'Temperature Check' && (
+                  <SectionCard
+                    header="Senate Vote"
+                    iconSrc="/assets/icon-star.svg"
+                  >
+                    <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-6">
+                      <SenateVote mdp={project.MDP} />
+                    </div>
+                  </SectionCard>
+                )}
+
+              {/* Proposal body. The "Proposal" tab is the navigation;
+                  no need for a duplicate `Proposal` SectionCard
+                  header inside it. Just render the markdown on the
+                  same SectionCard surface for visual continuity. */}
+              <div className="md:bg-gradient-to-br md:from-slate-700/20 md:to-slate-800/30 md:backdrop-blur-xl md:border md:border-white/10 md:rounded-xl px-4 py-3 md:p-6 md:shadow-lg w-full">
+                <div className="px-0 sm:px-4 md:px-8 w-full">
+                  <div className="prose prose-base prose-invert max-w-none">
+                    <MarkdownWithTOC
+                      body={(() => {
+                        const full = proposalJSON.body || ''
+                        const idx = full.search(/^#{1,6}\s*Abstract/im)
+                        if (idx !== -1) return full.slice(idx)
+                        const plainIdx = full.search(
+                          /^\*{0,2}Abstract\*{0,2}\s*$/im
+                        )
+                        if (plainIdx !== -1) return full.slice(plainIdx)
+                        return full
+                      })()}
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Voting Results Section - Only show for completed
+                  proposals. Aggregate verdict card; the right rail
+                  still carries the per-voter detail. */}
+              {project.active !== PROJECT_PENDING &&
+                proposalJSON?.nonProjectProposal && (
+                  <SectionCard
+                    header="Voting Results"
+                    iconSrc="/assets/icon-star.svg"
+                  >
+                    <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5">
+                      <VotingResults
+                        voteOutcome={voteOutcome}
+                        votes={votes}
+                        threshold={0}
+                      />
+                    </div>
+                  </SectionCard>
+                )}
             </div>
-          </SectionCard>
+          )
 
-          {/* Voting Results Section - Only show for completed proposals */}
-          {project.active !== PROJECT_PENDING && proposalJSON?.nonProjectProposal && (
-            <SectionCard
-              header="Voting Results"
-              iconSrc="/assets/icon-star.svg"
-            >
-              <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5">
-                <VotingResults voteOutcome={voteOutcome} votes={votes} threshold={0} />
-              </div>
-            </SectionCard>
-          )}
+          // Treasury tab — drop the SectionCard wrapper so the tab
+          // (already labelled "Treasury") is the only title, then
+          // re-create the SectionCard surface inline. `hideHeader`
+          // keeps TeamTreasury from rendering its own internal h2.
+          const treasuryPane = (
+            <div className="md:bg-gradient-to-br md:from-slate-700/20 md:to-slate-800/30 md:backdrop-blur-xl md:border md:border-white/10 md:rounded-xl md:shadow-lg w-full">
+              <TeamTreasury
+                isSigner={isSigner}
+                safeData={safeData}
+                multisigAddress={safeAddress}
+                safeOwners={safeOwners}
+                projectActive={project.active}
+                hideHeader
+              />
+            </div>
+          )
 
-          <SectionCard
-            header="Meet the Team"
-            iconSrc="/assets/icon-team.svg"
-            action={
-              isManager && (
-                <div className="flex flex-col md:flex-row justify-start items-center gap-2">
+          // Team tab — same pattern. The Manage Members button (only
+          // visible to managers) stays anchored to the top-right of
+          // the card so it doesn't get lost without a SectionCard
+          // header to host it.
+          const teamPane = (
+            <div className="md:bg-gradient-to-br md:from-slate-700/20 md:to-slate-800/30 md:backdrop-blur-xl md:border md:border-white/10 md:rounded-xl px-4 py-3 md:p-6 md:shadow-lg w-full">
+              {isManager && (
+                <div className="flex justify-end mb-3 md:mb-5">
                   <TeamManageMembers
                     account={account}
                     hats={hats}
@@ -360,31 +443,117 @@ export default function ProjectProfile({
                     managerHatId={managerHatId}
                   />
                 </div>
-              )
-            }
-          >
-            <SlidingCardMenu>
-              <div className="flex gap-2 md:gap-4">
-                {hats?.[0].id && (
-                  <TeamMembers
-                    hats={hats}
-                    hatsContract={hatsContract}
-                    citizenContract={citizenContract}
-                  />
+              )}
+              <SlidingCardMenu>
+                <div className="flex gap-2 md:gap-4">
+                  {hats?.[0].id && (
+                    <TeamMembers
+                      hats={hats}
+                      hatsContract={hatsContract}
+                      citizenContract={citizenContract}
+                    />
+                  )}
+                </div>
+              </SlidingCardMenu>
+            </div>
+          )
+
+          // Underline-style tab bar matching the Mission/Launchpad
+          // pattern (`MissionInfo.tsx`): text-only, gray-500
+          // inactive, white + 2px indigo underline active, sitting
+          // on a thin `border-b`. `overflow-x-auto` keeps it
+          // single-row on phones.
+          const tabButton = (key: ProjectTab, label: string) => {
+            const isActive = tab === key
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleTabChange(key)}
+                className={`relative px-5 py-3 text-base md:text-lg font-semibold tracking-wide whitespace-nowrap transition-all duration-200 ${
+                  isActive
+                    ? 'text-white'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {label}
+                {isActive && (
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[2px] bg-indigo-400 rounded-full" />
                 )}
+              </button>
+            )
+          }
+
+          const mainColumn = (
+            <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
+              <div className="flex items-center gap-1 border-b border-white/[0.08] overflow-x-auto max-w-full -mx-1 px-1">
+                {tabButton('proposal', 'Proposal')}
+                {tabButton('treasury', 'Treasury')}
+                {tabButton('team', 'Team')}
               </div>
-            </SlidingCardMenu>
-          </SectionCard>
-          <SectionCard header="Treasury" iconSrc="/assets/icon-treasury.svg">
-            <TeamTreasury
-              isSigner={isSigner}
-              safeData={safeData}
-              multisigAddress={safeAddress}
-              safeOwners={safeOwners}
-              projectActive={project.active}
-            />
-          </SectionCard>
-        </div>
+
+              {tab === 'proposal' && proposalPane}
+              {tab === 'treasury' && treasuryPane}
+              {tab === 'team' && teamPane}
+            </div>
+          )
+
+          if (!showVoteSidebar) {
+            return (
+              <div
+                id="page-container"
+                className="pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8"
+              >
+                {mainColumn}
+              </div>
+            )
+          }
+
+          // The sidebar appears *first* in source order so on mobile the
+          // active CTA (Vote button) is above the proposal body — same
+          // reasoning as Snapshot's mobile layout. On lg+ the grid
+          // rebalances it to the right column. The Senate and Member
+          // Vote cards stack inside one sticky wrapper so they scroll
+          // together as a single unit (two independent `position:
+          // sticky` siblings would race each other for `top: 24px`).
+          return (
+            <div
+              id="page-container"
+              className="pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
+            >
+              <div className="lg:order-2 lg:col-span-1 lg:sticky lg:top-24 lg:self-start flex flex-col gap-4">
+                {/* Member Vote sits on top while it's the active step
+                    — that's the primary action members can take right
+                    now, so it gets the eye-catching styling. The
+                    Senate Vote slot below renders as a "completed"
+                    reference card so members can still see how the
+                    proposal got past senate approval. Once voting is
+                    closed, the emphasis lifts and both panels render
+                    as peers. */}
+                <MemberVoteSidebar
+                  project={project}
+                  votes={votes}
+                  addressToVotingPower={addressToVotingPower}
+                  proposalStatus={proposalStatus}
+                  mode={sidebarMode}
+                  footer={
+                    sidebarMode === 'voting' ? (
+                      <CloseAndTallyButton
+                        mdp={project.MDP}
+                        tempCheckApprovedTimestamp={tempCheckApprovedTimestamp}
+                      />
+                    ) : null
+                  }
+                />
+                <SenateVoteSidebar
+                  mdp={project.MDP}
+                  secondary={sidebarMode === 'voting'}
+                />
+              </div>
+              <div className="lg:order-1 lg:col-span-2">{mainColumn}</div>
+            </div>
+          )
+        })()}
       </ContentLayout>
     </Container>
   )
@@ -536,6 +705,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
 
     let votes: DistributionVote[] = []
     let voteOutcome = {}
+    // address -> quadratic voting power (sqrt of vMOONEY at the voting
+    // window close). Same number we'd use to tally on-chain, so the
+    // sidebar list stays consistent with the eventual outcome. Empty
+    // object when there are no voters yet (or this is a project
+    // proposal that doesn't carry vote rows).
+    let addressToVotingPower: { [address: string]: number } = {}
     if (proposalJSON?.nonProjectProposal) {
       try {
         const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
@@ -548,11 +723,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
 
         if (voteAddresses.length > 0) {
           const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
-          const addressToQuadraticVotingPower = Object.fromEntries(
+          addressToVotingPower = Object.fromEntries(
             voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
           )
           const SUM_TO_ONE_HUNDRED = 100
-          voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+          voteOutcome = runQuadraticVoting(votes, addressToVotingPower, SUM_TO_ONE_HUNDRED)
         }
       } catch (error) {
         console.error('Error fetching votes:', error)
@@ -604,6 +779,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
         proposalStatus,
         proposalJSON,
         voteOutcome,
+        addressToVotingPower,
         tempCheckApprovedTimestamp: tempCheckApprovedTimestamp
           ? tempCheckApprovedTimestamp.toString()
           : '0',

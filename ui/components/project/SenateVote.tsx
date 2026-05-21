@@ -360,11 +360,6 @@ function CloseSenateVoteButton({
       {projectedOutcome && (
         <p className="text-[11px] text-white/50">{projectedOutcome}</p>
       )}
-      <p className="text-[11px] text-white/40">
-        Signs{' '}
-        <code className="text-white/60">Proposals.tallyVotes({mdp})</code>{' '}
-        with the HSM owner wallet. Approval threshold is 2/3 of votes cast.
-      </p>
     </div>
   )
 }
@@ -445,7 +440,20 @@ function SenatorPill({
   )
 }
 
-export default function SenateVote({ mdp }: { mdp: number }) {
+export default function SenateVote({
+  mdp,
+  // When true, render as a historical results card: hide the cast-vote
+  // CTA, the "only senators can vote" copy, and the operator close
+  // control. The on-chain `voteTempCheck` reverts after the senate has
+  // tallied anyway, but showing those affordances post-tally is
+  // confusing — the voter doesn't know why their click does nothing.
+  // Used by the proposal page to keep the senate breakdown visible
+  // through the Voting and Approved/Cancelled phases.
+  readOnly = false,
+}: {
+  mdp: number
+  readOnly?: boolean
+}) {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
@@ -484,14 +492,49 @@ export default function SenateVote({ mdp }: { mdp: number }) {
       ? Number(proposalData?.tempCheckVoteCount || 0)
       : 0
   const rejectionCount = Math.max(totalVoteCount - approvalCount, 0)
+  const tempCheckApproved = Boolean(
+    'tempCheckApproved' in proposalData && proposalData?.tempCheckApproved
+  )
+  const tempCheckFailed = Boolean(
+    'tempCheckFailed' in proposalData && proposalData?.tempCheckFailed
+  )
 
   const votedCount = senatorVotes.filter((s) => s.hasVoted).length
   const senatorTotal = senatorVotes.length
 
-  const canVote = isSenator && Boolean(account) && authenticated
+  const canVote = isSenator && Boolean(account) && authenticated && !readOnly
+
+  // Outcome badge — only meaningful in read-only mode (post-tally).
+  // `tempCheckApproved` and `tempCheckFailed` are mutually exclusive on
+  // chain; if neither is set the senate just hasn't tallied yet.
+  const outcomeBadge = readOnly
+    ? tempCheckApproved
+      ? {
+          label: 'Approved by Senate',
+          className: 'bg-green-500/15 border-green-500/40 text-green-200',
+        }
+      : tempCheckFailed
+      ? {
+          label: 'Rejected by Senate',
+          className: 'bg-red-500/15 border-red-500/40 text-red-200',
+        }
+      : {
+          label: 'Senate vote closed',
+          className: 'bg-slate-500/15 border-slate-500/40 text-slate-200',
+        }
+    : null
 
   return (
     <div className="flex flex-col gap-6">
+      {outcomeBadge && (
+        <div
+          className={`inline-flex self-start items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold ${outcomeBadge.className}`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+          {outcomeBadge.label}
+        </div>
+      )}
+
       {/* Summary stats — equal-width cards on every screen */}
       <div className="grid grid-cols-3 gap-3">
         <StatPill emoji="👍" label="For" count={approvalCount} tone="positive" />
@@ -509,46 +552,55 @@ export default function SenateVote({ mdp }: { mdp: number }) {
         />
       </div>
 
-      {/* Action row — buttons for senators, status note for everyone else */}
-      <div className="flex flex-col items-center gap-3">
-        {isSenatorLoading ? (
-          <LoadingSpinner width="w-5" height="h-5" />
-        ) : canVote ? (
-          <>
-            <p className="text-xs uppercase tracking-wider text-white/60">
-              Cast your senate vote
+      {/* Action row — buttons for senators, status note for everyone
+          else. Hidden in read-only mode (post-tally) — voting is
+          impossible at that point and showing dead buttons is
+          misleading. */}
+      {!readOnly && (
+        <div className="flex flex-col items-center gap-3">
+          {isSenatorLoading ? (
+            <LoadingSpinner width="w-5" height="h-5" />
+          ) : canVote ? (
+            <>
+              <p className="text-xs uppercase tracking-wider text-white/60">
+                Cast your senate vote
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:max-w-md">
+                <PrivyWeb3Button
+                  action={handleVote(true)}
+                  requiredChain={DEFAULT_CHAIN_V5}
+                  className="flex-1 !px-6 !py-3 rounded-lg bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold text-base transition-all shadow-lg"
+                  label="👍 Approve"
+                />
+                <PrivyWeb3Button
+                  action={handleVote(false)}
+                  requiredChain={DEFAULT_CHAIN_V5}
+                  className="flex-1 !px-6 !py-3 rounded-lg bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-semibold text-base transition-all shadow-lg"
+                  label="👎 Reject"
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-white/50">
+              Only senators can cast a vote at this stage.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:max-w-md">
-              <PrivyWeb3Button
-                action={handleVote(true)}
-                requiredChain={DEFAULT_CHAIN_V5}
-                className="flex-1 !px-6 !py-3 rounded-lg bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-semibold text-base transition-all shadow-lg"
-                label="👍 Approve"
-              />
-              <PrivyWeb3Button
-                action={handleVote(false)}
-                requiredChain={DEFAULT_CHAIN_V5}
-                className="flex-1 !px-6 !py-3 rounded-lg bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-semibold text-base transition-all shadow-lg"
-                label="👎 Reject"
-              />
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-white/50">
-            Only senators can cast a vote at this stage.
-          </p>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Owner controls — close the senate vote and advance the state machine. */}
-      <CloseSenateVoteButton
-        mdp={mdp}
-        proposalContract={proposalContract}
-        votedCount={votedCount}
-        approvalCount={approvalCount}
-        rejectionCount={rejectionCount}
-        onClosed={refetch}
-      />
+      {/* Owner controls — close the senate vote and advance the state
+          machine. Pointless once the vote has already closed, so we
+          skip it in read-only mode. */}
+      {!readOnly && (
+        <CloseSenateVoteButton
+          mdp={mdp}
+          proposalContract={proposalContract}
+          votedCount={votedCount}
+          approvalCount={approvalCount}
+          rejectionCount={rejectionCount}
+          onClosed={refetch}
+        />
+      )}
 
       {/* Senator roster */}
       {senatorTotal > 0 && (

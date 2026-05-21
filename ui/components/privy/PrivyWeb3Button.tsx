@@ -20,7 +20,17 @@ type PrivyWeb3BtnProps = {
   label: any
   type?: string
   action: Function
+  /** Disables every state of the button (Connect / Switch Network /
+   *  Action). Use sparingly — usually only for hard "this whole
+   *  surface is read-only" cases, since it also blocks the
+   *  Switch Network affordance for wrong-network users. For
+   *  per-form validation prefer `actionDisabled`. */
   isDisabled?: boolean
+  /** Disables only the Action state (state 2). Connect Wallet
+   *  and Switch Network remain clickable so a wrong-network user
+   *  can still resolve their network *before* the form is
+   *  considered submittable. */
+  actionDisabled?: boolean
   className?: string
   onSuccess?: Function
   onError?: Function
@@ -68,6 +78,7 @@ export function PrivyWeb3Button({
   type = 'button',
   action,
   isDisabled = false,
+  actionDisabled = false,
   className = '',
   onSuccess,
   onError,
@@ -264,7 +275,9 @@ export function PrivyWeb3Button({
               isProcessingRef.current = false
             }
           }}
-          isDisabled={isDisabled || isLoading || isProcessing}
+          isDisabled={
+            isDisabled || actionDisabled || isLoading || isProcessing
+          }
           noPadding={noPadding}
           noGradient={noGradient}
         >
