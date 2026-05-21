@@ -695,6 +695,7 @@ export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)
 export const SUPER_MANAGERS: string[] = [
   '0x679d87d8640e66778c3419d164998e720d7495f6', // pmoncada.eth
   '0xb2d3900807094d4fe47405871b0c8adb58e10d42', // ryand2d.eth
+  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da', // miguel.eth
 ]
 
 // Hard-coded allowlist of wallet addresses that can use the operator panel
@@ -703,6 +704,7 @@ export const SUPER_MANAGERS: string[] = [
 export const OPERATORS: string[] = [
   '0x679d87d8640e66778c3419d164998e720d7495f6', // pmoncada.eth
   '0xb2d3900807094d4fe47405871b0c8adb58e10d42', // ryand2d.eth
+  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da', // miguel.eth
 ]
 
 // Retroactive rewards payout token for the *currently-voting* cycle.
