@@ -581,8 +581,8 @@ export default function SignedInDashboard({
 
         {/* ──────────────── ROW 1: Activity + Citizens/Teams + Wallet/Rewards ──────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* LEFT — Recent Activity (6 cols) */}
-          <div className="lg:col-span-6 order-2 lg:order-1">
+          {/* MIDDLE — Recent Activity (6 cols) */}
+          <div className="lg:col-span-6 order-2 lg:order-2">
             <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 h-full">
               <SectionHeader
                 title="Recent Activity"
@@ -608,8 +608,8 @@ export default function SignedInDashboard({
             </div>
           </div>
 
-          {/* MIDDLE — New Citizens + Featured Teams (3 cols) */}
-          <div className="lg:col-span-3 flex flex-col gap-6 order-3 lg:order-2 min-w-0">
+          {/* LEFT — New Citizens + Featured Teams (3 cols) */}
+          <div className="lg:col-span-3 flex flex-col gap-6 order-3 lg:order-1 min-w-0">
             {newestCitizens && newestCitizens.length > 0 && (
               <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-1">
                 <SectionHeader
