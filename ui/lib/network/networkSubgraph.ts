@@ -151,3 +151,28 @@ export async function getNetworkTransfersBatch(
 }
 
 export { subgraphClient }
+
+/**
+ * Fetch just the most recent N citizen mint transfers from the subgraph.
+ * Used to attach real mintTimestamps to newestCitizens on the dashboard.
+ * Falls back to empty array if unavailable.
+ */
+export async function getRecentCitizenTransfers(limit: number = 20): Promise<CitizenTransfer[]> {
+  try {
+    const result = await subgraphClient
+      .query(
+        `query RecentCitizen($first: Int!) {
+          moonDAOCitizenTransfers(first: $first, orderBy: blockTimestamp, orderDirection: desc) {
+            id
+            tokenId
+            blockTimestamp
+          }
+        }`,
+        { first: limit }
+      )
+      .toPromise()
+    return result.data?.moonDAOCitizenTransfers ?? []
+  } catch {
+    return []
+  }
+}

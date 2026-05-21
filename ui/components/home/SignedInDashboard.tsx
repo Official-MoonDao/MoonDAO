@@ -14,6 +14,11 @@ import {
   PlusIcon,
   ArrowUpRightIcon,
   ArrowRightIcon,
+  SparklesIcon,
+  BoltIcon,
+  ChartBarIcon,
+  DocumentTextIcon,
+  FireIcon,
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
@@ -48,11 +53,10 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import React, { useContext, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { useNewsletters } from '@/lib/home/useHomeData'
 import useMissionData from '@/lib/mission/useMissionData'
 import useMissionRaisedProgress from '@/lib/mission/useMissionRaisedProgress'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
@@ -85,6 +89,7 @@ import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardActiveProjects from '../project/DashboardActiveProjects'
 import DashboardQuests from './DashboardQuests'
+import RecentActivity from './RecentActivity'
 import LazyEarth from '@/components/globe/LazyEarth'
 
 // Parse citizen location from Tableland (can be JSON or plain string)
@@ -165,6 +170,124 @@ function countUniqueCountries(locations: any[]): number {
   }
 }
 
+// ── Premium UI primitives ──────────────────────────────────────────────────
+
+function StatCard({
+  icon,
+  iconBg,
+  label,
+  value,
+  unit,
+  ctaLabel,
+  onCta,
+  ctaLink,
+}: {
+  icon: React.ReactNode
+  iconBg: string
+  label: string
+  value: React.ReactNode
+  unit?: string
+  ctaLabel?: string
+  onCta?: () => void
+  ctaLink?: string
+}) {
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-colors">
+      <div className="flex items-start justify-between mb-3">
+        <div
+          className={`w-10 h-10 rounded-xl bg-gradient-to-br ${iconBg} flex items-center justify-center`}
+        >
+          {icon}
+        </div>
+        {ctaLabel && (ctaLink ? (
+          <Link
+            href={ctaLink}
+            className="text-xs font-medium text-white/50 hover:text-white transition-colors"
+          >
+            {ctaLabel} →
+          </Link>
+        ) : (
+          <button
+            onClick={onCta}
+            className="text-xs font-medium text-white/50 hover:text-white transition-colors"
+          >
+            {ctaLabel} →
+          </button>
+        ))}
+      </div>
+      <p className="text-white/50 text-xs font-medium uppercase tracking-wider mb-1">
+        {label}
+      </p>
+      <div className="flex items-baseline gap-1.5">
+        <p className="text-white text-xl sm:text-2xl font-bold leading-none">{value}</p>
+        {unit && <span className="text-white/40 text-xs font-medium">{unit}</span>}
+      </div>
+    </div>
+  )
+}
+
+function SectionHeader({
+  title,
+  subtitle,
+  icon,
+  actions,
+  small,
+}: {
+  title: string
+  subtitle?: string
+  icon?: React.ReactNode
+  actions?: React.ReactNode
+  small?: boolean
+}) {
+  return (
+    <div
+      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${small ? 'mb-4' : 'mb-5 sm:mb-6'}`}
+    >
+      <div className="min-w-0 flex-1">
+        <h3
+          className={`font-bold text-white flex items-center gap-2 ${small ? 'text-lg' : 'text-xl sm:text-2xl'}`}
+        >
+          {icon}
+          <span className="truncate">{title}</span>
+        </h3>
+        {subtitle && (
+          <p className={`text-white/55 ${small ? 'text-xs' : 'text-sm'} mt-1 leading-snug`}>
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {actions && <div className="flex-shrink-0">{actions}</div>}
+    </div>
+  )
+}
+
+function SubtleButton({
+  children,
+  link,
+  onClick,
+  color = 'blue',
+}: {
+  children: React.ReactNode
+  link?: string
+  onClick?: () => void
+  color?: 'blue' | 'purple' | 'indigo' | 'teal' | 'white'
+}) {
+  const colorMap: Record<string, string> = {
+    blue: 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 border-blue-400/20',
+    purple: 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 border-purple-400/20',
+    indigo: 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-200 border-indigo-400/20',
+    teal: 'bg-teal-500/10 hover:bg-teal-500/20 text-teal-200 border-teal-400/20',
+    white: 'bg-white/5 hover:bg-white/10 text-white/80 border-white/10',
+  }
+  const cls = `inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap ${colorMap[color]}`
+  if (link) {
+    const isExternal = link.startsWith('http')
+    if (isExternal) return <a href={link} target="_blank" rel="noreferrer" className={cls}>{children}</a>
+    return <Link href={link} className={cls}>{children}</Link>
+  }
+  return <button onClick={onClick} className={cls}>{children}</button>
+}
+
 export default function SignedInDashboard({
   newestCitizens,
   newestListings,
@@ -212,9 +335,6 @@ export default function SignedInDashboard({
 
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
-
-  // Newsletter data (fetched via SWR with caching)
-  const { newsletters: clientNewsletters, isLoading: newslettersLoading } = useNewsletters()
 
   const account = useActiveAccount()
   const address = account?.address
@@ -382,65 +502,27 @@ export default function SignedInDashboard({
           </Link>
         </div>
 
-        {/* Community Circle CTA */}
-        <div className="mb-6 flex items-center justify-between gap-4 bg-gradient-to-r from-blue-900/40 to-purple-900/30 backdrop-blur-xl border border-blue-500/20 rounded-2xl px-5 py-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-              <TrophyIcon className="w-5 h-5 text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-white font-semibold text-sm">Submit a Contribution</p>
-              <p className="text-white/50 text-xs truncate">Share work that advances MoonDAO's mission — earn ETH &amp; vMOONEY rewards each quarter.</p>
-            </div>
-          </div>
-          <Link
-            href="/contributions"
-            className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white text-sm font-semibold rounded-xl transition-all duration-200 whitespace-nowrap"
-          >
-            Submit
-            <ArrowUpRightIcon className="w-4 h-4" />
-          </Link>
-        </div>
+        {/* ──────────────── PREMIUM HERO: Greeting + KPIs ──────────────── */}
+        <div className="hidden lg:block mb-6">
+          {/* Welcome banner */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900/40 via-blue-900/30 to-purple-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-4">
+            {/* decorative gradient blobs */}
+            <div className="absolute -top-24 -right-24 w-72 h-72 bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Main Content - Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-stretch lg:h-full">
-          {/* Left Sidebar - Key Metrics & Quick Actions */}
-          {/* On mobile: rendered last (order-3) so wallet/feed come first */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-3 lg:order-1">
-            {/* Your Profile — hidden on mobile (replaced by hero bar above) */}
-            <div className="hidden lg:block bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">Your Profile</h3>
-                {citizen && (
-                  <StandardButton
-                    className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                    link={
+            <div className="relative flex items-center justify-between gap-6">
+              {/* Avatar + Greeting */}
+              <div className="flex items-center gap-4 min-w-0">
+                {citizen?.metadata?.image ? (
+                  <Link
+                    href={
                       citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
-                        ? `/citizen/${generatePrettyLinkWithId(
-                            citizen.metadata.name,
-                            citizen.metadata?.id ?? citizen.id
-                          )}`
+                        ? `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata?.id ?? citizen.id)}`
                         : '/join'
                     }
+                    className="flex-shrink-0"
                   >
-                    View profile
-                  </StandardButton>
-                )}
-              </div>
-              {citizen ? (
-                <Link
-                  href={
-                    citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
-                      ? `/citizen/${generatePrettyLinkWithId(
-                          citizen.metadata.name,
-                          citizen.metadata?.id ?? citizen.id
-                        )}`
-                      : '/join'
-                  }
-                  className="flex items-center gap-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-3"
-                >
-                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                    {citizen?.metadata?.image ? (
+                    <div className="w-12 h-12 rounded-xl overflow-hidden ring-2 ring-white/20 shadow-lg shadow-blue-500/20 hover:ring-blue-400/40 transition-all">
                       <IPFSRenderer
                         src={citizen.metadata.image}
                         alt={citizen.metadata.name}
@@ -448,274 +530,192 @@ export default function SignedInDashboard({
                         width={48}
                         height={48}
                       />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">
-                          {citizen?.metadata?.name?.[0] || address?.[2] || 'M'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-white font-medium truncate">
-                      {citizen?.metadata?.name || 'Anonymous'}
-                    </p>
-                    <p className="text-white/60 text-sm truncate">Edit profile & settings</p>
-                  </div>
-                  <ArrowUpRightIcon className="w-4 h-4 text-white/40 flex-shrink-0" />
-                </Link>
-              ) : (
-                <Link
-                  href="/join"
-                  className="flex items-center gap-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-3 border border-dashed border-white/20"
-                >
-                  <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                    <UserGroupIcon className="w-6 h-6 text-white/40" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-white font-medium">Become a citizen</p>
-                    <p className="text-white/60 text-sm">Create your profile to join the network</p>
-                  </div>
-                  <ArrowUpRightIcon className="w-4 h-4 text-white/40 flex-shrink-0" />
-                </Link>
-              )}
-            </div>
-
-            {/* Retroactive Rewards - Under profile card */}
-            {address && (
-              <div className="hidden lg:block">
-                <ClaimRewardsSection />
-              </div>
-            )}
-
-            {/* Weekly Reward Pool - Enhanced UI */}
-            <div className="order-2">
-              <WeeklyRewardPool />
-            </div>
-
-            {/* New Citizens */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-grow flex flex-col order-5">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-white text-xl">New Citizens</h3>
-                <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all py-1 px-2"
-                  link="/network?tab=citizens"
-                >
-                  See all
-                </StandardButton>
-              </div>
-
-              <div className="flex flex-col gap-1 flex-1 min-h-0">
-                {newestCitizens && newestCitizens.length > 0 ? (
-                  newestCitizens.slice(0, 8).map((citizen: any, cidx: number) => {
-                    const hiddenOnMobile = cidx >= 4
-                    const metadata = getCitizenMetadata(citizen)
-                    const bio = (citizen.description || citizen.metadata?.description || '')
-                      .replace(/<[^>]*>/g, '')
-                      .trim()
-                    const bioPreview = bio ? (bio.length > 60 ? `${bio.slice(0, 60)}…` : bio) : null
-                    return (
-                      <Link
-                        key={citizen.id}
-                        href={`/citizen/${
-                          citizen.name && citizen.id
-                            ? generatePrettyLinkWithId(citizen.name, citizen.id)
-                            : citizen.id || 'anonymous'
-                        }`}
-                        className={`flex items-start gap-3 hover:bg-white/5 rounded-lg transition-all cursor-pointer p-2${hiddenOnMobile ? ' hidden lg:flex' : ''}`}
-                      >
-                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                          {citizen.image || citizen.metadata?.image ? (
-                            <IPFSRenderer
-                              src={citizen.image || citizen.metadata?.image}
-                              alt={citizen.name}
-                              className="w-full h-full object-cover"
-                              width={64}
-                              height={64}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                              {citizen.name?.[0] || 'C'}
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-white font-medium text-base truncate">
-                            {citizen.name || 'Anonymous'}
-                          </h4>
-                          {(metadata || bioPreview) && (
-                            <p className="text-white/50 text-sm leading-snug mt-0.5 line-clamp-2">
-                              {[metadata, bioPreview].filter(Boolean).join(' · ')}
-                            </p>
-                          )}
-                        </div>
-                      </Link>
-                    )
-                  })
+                    </div>
+                  </Link>
                 ) : (
-                  <div className="text-gray-400 text-sm py-4 text-center">Loading...</div>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 ring-2 ring-white/20 shadow-lg shadow-blue-500/20">
+                    <span className="text-white font-bold text-xl">
+                      {citizen?.metadata?.name?.[0] || address?.[2]?.toUpperCase() || 'M'}
+                    </span>
+                  </div>
                 )}
+                <div className="min-w-0">
+                  <p className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-1">
+                    Welcome back
+                  </p>
+                  <h2 className="text-white text-2xl xl:text-3xl font-bold truncate leading-tight">
+                    {citizen?.metadata?.name || 'Explorer'}
+                  </h2>
+                  {!citizen && (
+                    <Link
+                      href="/join"
+                      className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-purple-500/15 border border-purple-400/30 rounded-md text-purple-300 text-xs font-medium hover:bg-purple-500/25 transition-colors"
+                    >
+                      <SparklesIcon className="w-3.5 h-3.5" />
+                      Become a Citizen →
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              {/* Contribution CTA box */}
+              <div className="flex items-center gap-4 flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-xl px-5 py-3.5">
+                <div>
+                  <p className="text-white text-sm font-semibold">What did you get done this week?</p>
+                  <p className="text-white/40 text-xs mt-0.5">Earn ETH & vMOONEY rewards each quarter.</p>
+                </div>
+                <a
+                  href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all whitespace-nowrap flex-shrink-0"
+                >
+                  <TrophyIcon className="w-4 h-4" />
+                  Submit Contribution
+                </a>
               </div>
             </div>
           </div>
 
-          {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 flex flex-col space-y-6 h-full lg:min-h-[800px] order-2 lg:order-2">
-            {/* Activity Feed */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
-                <h3 className="text-xl font-bold text-white whitespace-nowrap">
-                  Recent Newsletters
-                </h3>
-                <div className="flex gap-2 flex-shrink-0">
-                  <StandardButton
-                    className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
-                    link="/news"
-                  >
-                    View All
-                  </StandardButton>
-                  <StandardButton
-                    className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
-                    onClick={() => setNewsletterModalOpen(true)}
-                  >
-                    Subscribe
-                  </StandardButton>
-                  <StandardButton
-                    className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
-                    link="/townhall"
-                  >
-                    Town Hall
-                  </StandardButton>
-                </div>
-              </div>
+        </div>
 
-              <div className="space-y-4">
-                {newslettersLoading ? (
-                  <div className="text-center py-8">
-                    <div className="text-white/60">Loading newsletters...</div>
+        {/* ──────────────── ROW 1: Activity + Citizens/Teams + Wallet/Rewards ──────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* MIDDLE — Recent Activity (6 cols) */}
+          <div className="lg:col-span-6 order-2 lg:order-2">
+            <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 h-full">
+              <SectionHeader
+                title="Recent Activity"
+                subtitle="Latest happenings across the network"
+                icon={<NewspaperIcon className="w-6 h-6 text-blue-400" />}
+                actions={
+                  <div className="flex gap-2">
+                    <SubtleButton color="blue" link="/news">News</SubtleButton>
+                    <SubtleButton color="purple" onClick={() => setNewsletterModalOpen(true)}>Subscribe</SubtleButton>
+                    <SubtleButton color="indigo" link="/townhall">Town Hall</SubtleButton>
                   </div>
-                ) : clientNewsletters && clientNewsletters.length > 0 ? (
-                  clientNewsletters.slice(0, 4).map((newsletter: any, index: number) => (
-                    <div
-                      key={newsletter.id || index}
-                      className={`bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5${index >= 2 ? ' hidden sm:block' : ''}`}
-                      onClick={() => {
-                        if (
-                          newsletter.url &&
-                          newsletter.url !== 'https://news.moondao.com/posts' &&
-                          newsletter.url !== 'https://moondao.kit.com/posts' &&
-                          newsletter.url.includes('http')
-                        ) {
-                          window.open(newsletter.url, '_blank')
-                        } else {
-                          window.open('https://news.moondao.com/posts', '_blank')
-                        }
-                      }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
-                          {newsletter.image ? (
-                            <IPFSRenderer
-                              src={newsletter.image}
-                              alt={newsletter.title}
-                              className="w-full h-full object-cover"
-                              width={100}
-                              height={100}
-                            />
-                          ) : (
-                            <NewspaperIcon className="w-6 h-6 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-white font-medium mb-1">
-                            {newsletter.title || 'Newsletter Update'}
-                          </p>
-                          {newsletter.description && (
-                            <p className="text-gray-300 text-sm mb-2 line-clamp-2">
-                              {newsletter.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-4 text-sm text-gray-400">
-                            <span>
-                              {newsletter.publishedAt
-                                ? new Date(newsletter.publishedAt).toLocaleDateString()
-                                : 'Recently'}
-                            </span>
-                            {newsletter.views && newsletter.views > 0 && (
-                              <>
-                                <span>•</span>
-                                <span>{newsletter.views} recipients</span>
-                              </>
-                            )}
-                            {newsletter.readTime && (
-                              <>
-                                <span>•</span>
-                                <span>{newsletter.readTime} min read</span>
-                              </>
-                            )}
-                            {newsletter.isArchived && (
-                              <>
-                                <span>•</span>
-                                <span className="text-orange-400">Archive</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div
-                          className="text-gray-400 hover:text-white transition-colors"
-                          title="Click to view newsletter"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-16 min-h-[300px] flex flex-col justify-center">
-                    <NewspaperIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm">No newsletters available</p>
-                    <p className="text-gray-500 text-xs mt-1">Check back soon for updates</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Active Proposals Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
-                <h3 className="text-xl font-bold text-white whitespace-nowrap">Latest Proposals</h3>
-                <StandardButton
-                  className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
-                  link="/projects"
-                >
-                  View All
-                </StandardButton>
-              </div>
-
-              <ProposalList
-                noPagination
-                compact
-                feedCardStyle
-                projects={proposals.slice(0, 3)}
+                }
+              />
+              <RecentActivity
+                newestCitizens={newestCitizens}
+                newestJobs={newestJobs}
+                newestListings={newestListings}
+                newestTeams={filteredTeams}
+                proposals={proposals}
+                missions={missions}
+                maxItems={11}
               />
             </div>
           </div>
 
-          {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full lg:min-h-[800px] order-1 lg:order-3 min-w-0">
-            {/* Wallet Info Card */}
+          {/* LEFT — New Citizens + Featured Teams (3 cols) */}
+          <div className="lg:col-span-3 flex flex-col gap-6 order-3 lg:order-1 min-w-0">
+            {newestCitizens && newestCitizens.length > 0 && (
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-1">
+                <SectionHeader
+                  small
+                  title="New Citizens"
+                  icon={<UserGroupIcon className="w-5 h-5 text-green-400" />}
+                  actions={<SubtleButton color="teal" link="/citizens">All →</SubtleButton>}
+                />
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {newestCitizens.slice(0, 8).map((c: any) => {
+                    const name = c.name || c.metadata?.name || `Citizen #${c.id}`
+                    const image = c.image || c.metadata?.image
+                    const location = getCitizenLocation(c)
+                    const href = name && c.id
+                      ? `/citizen/${generatePrettyLinkWithId(name, c.id)}`
+                      : `/citizen/${c.id}`
+                    return (
+                      <Link
+                        key={c.id}
+                        href={href}
+                        className="group flex flex-col items-center gap-2 py-3 px-1 rounded-xl hover:bg-white/[0.05] transition-all text-center"
+                      >
+                        <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-white/10 group-hover:ring-green-400/40 transition-all">
+                          {image ? (
+                            <IPFSRenderer
+                              src={image}
+                              alt={name}
+                              width={80}
+                              height={80}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+                              <span className="text-white font-bold text-xl">{name[0]?.toUpperCase()}</span>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-white text-xs font-medium truncate w-full">{name}</p>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {filteredTeams && filteredTeams.length > 0 && (
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-1">
+                <SectionHeader
+                  small
+                  title="Featured Teams"
+                  icon={<UserGroupIcon className="w-5 h-5 text-purple-400" />}
+                  actions={<SubtleButton color="purple" link="/teams">All →</SubtleButton>}
+                />
+                <div className="flex flex-col gap-2 mt-2">
+                  {filteredTeams.slice(0, 5).map((t: any) => {
+                    const name = t.name || t.metadata?.name || `Team #${t.id}`
+                    const image = t.image || t.metadata?.image
+                    const description = (t.description || t.metadata?.description || '')
+                      .replace(/<[^>]*>/g, '').trim()
+                    const href = name && t.id
+                      ? `/team/${generatePrettyLink(name)}-${t.id}`
+                      : `/team/${t.id}`
+                    return (
+                      <Link
+                        key={t.id}
+                        href={href}
+                        className="group flex items-center gap-2 p-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-white/15 transition-all"
+                      >
+                        <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 ring-2 ring-white/10 group-hover:ring-purple-400/30 transition-all">
+                          {image ? (
+                            <IPFSRenderer
+                              src={image}
+                              alt={name}
+                              width={36}
+                              height={36}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                              <UserGroupIcon className="w-4 h-4 text-white/70" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs font-semibold truncate">{name}</p>
+                          {description && (
+                            <p className="text-white/50 text-[10px] truncate">
+                              {description.length > 40 ? description.slice(0, 37) + '…' : description}
+                            </p>
+                          )}
+                        </div>
+                        <ArrowRightIcon className="w-3.5 h-3.5 text-white/20 group-hover:text-white/50 flex-shrink-0 transition-colors" />
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT — Wallet + Rewards (3 cols, same height as activity) */}
+          <div className="lg:col-span-3 flex flex-col gap-6 order-1 lg:order-3 min-w-0">
+            {/* Retroactive Rewards (above wallet) */}
+            {address && <ClaimRewardsSection />}
+
+            {/* Wallet */}
             {address && (
               <WalletInfoCard
                 unlockedMooney={MOONEYBalance ?? 0}
@@ -730,65 +730,79 @@ export default function SignedInDashboard({
               />
             )}
 
-            {/* Featured Teams */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex-grow flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-white text-xl">Featured Teams</h3>
-                <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all py-1 px-2"
-                  link="/network?tab=teams"
-                >
-                  See all
-                </StandardButton>
-              </div>
+            {/* Weekly Reward Pool — flex-1 so it fills remaining height */}
+            <div className="flex-1 min-h-0">
+              <WeeklyRewardPool />
+            </div>
+          </div>
+        </div>
 
-              <div className="flex flex-col gap-1 flex-1 min-h-0">
-                {filteredTeams && filteredTeams.length > 0 ? (
-                  filteredTeams.slice(0, 8).map((team: any, index: number) => {
-                    const hiddenOnMobile = index >= 3
-                    const metadata = getTeamMetadata(team)
-                    return (
-                      <Link
-                        key={team.id || index}
-                        href={`/team/${generatePrettyLink(team.name)}`}
-                        className={`flex items-start gap-3 hover:bg-white/5 rounded-lg transition-all cursor-pointer p-2${hiddenOnMobile ? ' hidden lg:flex' : ''}`}
-                      >
-                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                          {team.image ? (
-                            <IPFSRenderer
-                              src={team.image}
-                              alt={team.name}
-                              className="w-full h-full object-cover"
-                              width={64}
-                              height={64}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                              {team.name?.[0] || 'T'}
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-white font-medium text-base truncate">
-                            {team.name || 'Team'}
-                          </h4>
-                          {metadata && (
-                            <p className="text-white/50 text-sm leading-snug mt-0.5 line-clamp-2">
-                              {metadata}
-                            </p>
-                          )}
-                        </div>
-                      </Link>
-                    )
-                  })
-                ) : (
-                  <div className="flex items-center gap-3 p-2">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
-                      M
-                    </div>
-                    <h4 className="text-white font-medium text-base">Mission Control</h4>
+        {/* ──────────────── ROW 2: Proposals + Events ──────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
+          {/* Active Proposals (8 cols) */}
+          <div className="lg:col-span-8 order-2 lg:order-1 flex flex-col">
+            <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 flex-1">
+              <SectionHeader
+                title="Active Proposals"
+                subtitle="Vote on the future of MoonDAO"
+                icon={<DocumentTextIcon className="w-6 h-6 text-purple-400" />}
+                actions={<SubtleButton color="white" link="/projects">View All →</SubtleButton>}
+              />
+              <ProposalList
+                noPagination
+                compact
+                feedCardStyle
+                projects={proposals.slice(0, 4)}
+              />
+            </div>
+          </div>
+
+          {/* Upcoming Events (4 cols) */}
+          <div className="lg:col-span-4 order-1 lg:order-2 min-w-0 flex flex-col">
+            <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 flex-1">
+              <SectionHeader
+                small
+                title="Upcoming Events"
+                icon={<CalendarDaysIcon className="w-5 h-5 text-indigo-400" />}
+                actions={
+                  <SubtleButton color="indigo" link="https://lu.ma/moondao">
+                    All →
+                  </SubtleButton>
+                }
+              />
+              <Link
+                href="https://lu.ma/moondao"
+                target="_blank"
+                rel="noreferrer"
+                className="sm:hidden flex items-center gap-3 bg-black/20 hover:bg-black/40 border border-white/10 rounded-xl p-4 transition-all"
+              >
+                <CalendarDaysIcon className="w-6 h-6 text-indigo-400" />
+                <span className="text-white text-sm font-medium">Open Community Calendar</span>
+                <ArrowUpRightIcon className="w-4 h-4 text-white/40 ml-auto" />
+              </Link>
+              <div className="relative h-[460px] hidden sm:block">
+                <div
+                  id="luma-loading-side"
+                  className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center z-10"
+                >
+                  <div className="text-white text-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto mb-2" />
+                    <p className="text-xs">Loading events…</p>
                   </div>
-                )}
+                </div>
+                <iframe
+                  src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
+                  className="rounded-lg absolute inset-0 w-full h-full"
+                  style={{ border: '1px solid #ffffff20' }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                  title="MoonDAO Events Calendar"
+                  onLoad={() => {
+                    const el = document.getElementById('luma-loading-side')
+                    if (el) el.style.display = 'none'
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -1027,18 +1041,14 @@ export default function SignedInDashboard({
         )}
 
         {/* Quests Section */}
-        <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-4 md:p-6 mt-6 sm:mt-8 mb-6 sm:mb-8">
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                <TrophyIcon className="w-7 h-7 text-yellow-400" />
-                Quests
-              </h3>
-              <p className="text-slate-300 text-sm mt-2">Complete quests to earn XP and level up</p>
-            </div>
-
-            <DashboardQuests selectedChain={selectedChain} />
-          </div>
+        <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 mt-8 mb-8">
+          <SectionHeader
+            title="Quests"
+            subtitle="Complete quests to earn XP and level up"
+            icon={<TrophyIcon className="w-6 h-6 text-yellow-400" />}
+            actions={<SubtleButton color="white" link="/quests">View All →</SubtleButton>}
+          />
+          <DashboardQuests selectedChain={selectedChain} />
         </div>
 
         {/* Active Projects Section - Full Width */}
@@ -1059,162 +1069,55 @@ export default function SignedInDashboard({
           />
         </div>
 
-        {/* Events and Open Jobs Section - Side by Side */}
-        <div className="grid gap-8 mt-8 mb-8 grid-cols-1 lg:grid-cols-2">
-          {/* Events Section */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <CalendarDaysIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
-                  <span className="leading-tight">Upcoming Events</span>
-                </h3>
-                <p className="text-gray-300 text-sm sm:text-base leading-tight">
-                  Join the community events and discussions
-                </p>
-              </div>
-            </div>
-
-            {/* Mobile: simple CTA card instead of heavy iframe */}
-            <Link
-              href="https://lu.ma/moondao"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="sm:hidden flex items-center gap-4 bg-black/20 hover:bg-black/40 border border-white/10 rounded-xl p-5 transition-all"
-            >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <CalendarDaysIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold">View Community Calendar</p>
-                <p className="text-white/50 text-sm">Townhalls, AMAs & more</p>
-              </div>
-              <ArrowUpRightIcon className="w-5 h-5 text-white/40 flex-shrink-0" />
-            </Link>
-
-            {/* Desktop: full iframe */}
-            <div className="relative flex-1 min-h-[500px] hidden sm:block">
-              <div
-                id="luma-loading-dashboard-small"
-                className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center"
-              >
-                <div className="text-white text-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
-                  <p className="text-xs">Loading events...</p>
-                </div>
-              </div>
-              <iframe
-                src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
-                allowFullScreen
-                aria-hidden="false"
-                tabIndex={0}
-                className="rounded-lg z-10 absolute inset-0 h-full w-full"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="MoonDAO Events Calendar"
-                onLoad={() => {
-                  const loadingDiv = document.getElementById('luma-loading-dashboard-small')
-                  if (loadingDiv) loadingDiv.style.display = 'none'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Open Jobs Section */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <BriefcaseIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
-                  <span className="leading-tight">Open Jobs</span>
-                </h3>
-                <p className="text-gray-300 text-sm sm:text-base leading-tight">
-                  Find open job positions within the MoonDAO Network.
-                </p>
-              </div>
-              <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap flex-shrink-0"
-                link="/jobs"
-              >
-                See all
-              </StandardButton>
-            </div>
-
+        {/* Open Jobs Section - Full Width */}
+        <div className="mt-8 mb-8">
+          <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6">
+            <SectionHeader
+              title="Open Jobs"
+              subtitle="Find open positions within the MoonDAO Network"
+              icon={<BriefcaseIcon className="w-6 h-6 text-blue-400" />}
+              actions={<SubtleButton color="white" link="/jobs">View All →</SubtleButton>}
+            />
             {newestJobs && newestJobs.length > 0 ? (
-              <div className="flex-1 flex flex-col gap-3 min-h-0">
-                {newestJobs.slice(0, 5).map((job: any) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {newestJobs.slice(0, 6).map((job: any) => (
                   <Link
                     key={job.id}
                     href={job?.contactInfo || '/jobs'}
-                    className="block bg-black/20 hover:bg-black/40 border border-white/5 hover:border-white/10 rounded-xl transition-all"
+                    className="flex items-center gap-3 bg-black/20 hover:bg-black/40 border border-white/5 hover:border-white/10 rounded-xl p-3 transition-all"
                   >
-                    <div className="flex items-center gap-3 p-3 sm:p-4">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
-                        <BriefcaseIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm sm:text-base truncate">
-                          {job?.title || 'Open Position'}
-                        </h4>
-                        {job?.description && (
-                          <p className="text-gray-400 text-xs sm:text-sm truncate mt-0.5">
-                            {job.description}
-                          </p>
-                        )}
-                      </div>
-                      <ArrowRightIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                      <BriefcaseIcon className="w-5 h-5" />
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-white font-medium text-sm truncate">{job?.title || 'Open Position'}</h4>
+                      {job?.description && typeof job.description === 'string' && (
+                        <p className="text-gray-400 text-xs truncate mt-0.5">{job.description}</p>
+                      )}
+                    </div>
+                    <ArrowRightIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   </Link>
                 ))}
-                {newestJobs.length > 5 && (
-                  <Link
-                    href="/jobs"
-                    className="text-center text-blue-300 hover:text-blue-200 text-sm py-2 transition-colors"
-                  >
-                    +{newestJobs.length - 5} more positions →
-                  </Link>
-                )}
               </div>
             ) : (
-              <Link
-                href="/jobs"
-                className="flex-1 flex items-center justify-center bg-black/20 border border-white/5 rounded-xl hover:bg-black/30 transition-all min-h-[200px]"
-              >
-                <div className="text-center p-6">
+              <div className="flex items-center justify-center py-10">
+                <div className="text-center">
                   <BriefcaseIcon className="w-10 h-10 text-gray-500 mx-auto mb-2" />
-                  <h4 className="text-white font-medium text-sm">No open positions</h4>
-                  <p className="text-gray-400 text-xs mt-1">
-                    Check back soon for opportunities
-                  </p>
+                  <p className="text-gray-400 text-sm">No open positions right now</p>
                 </div>
-              </Link>
+              </div>
             )}
           </div>
         </div>
 
         {/* Global Community Map - Enhanced */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                <GlobeAmericasIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
-                <span className="leading-tight">Global Community</span>
-              </h3>
-              <p className="text-gray-300 text-sm sm:text-base leading-tight">
-                MoonDAO citizens around the world
-              </p>
-            </div>
-            <StandardButton
-              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold transition-all text-sm sm:text-base whitespace-nowrap flex-shrink-0"
-              link="/map"
-            >
-              Explore Map
-            </StandardButton>
-          </div>
+        <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 mb-8">
+          <SectionHeader
+            title="Global Community"
+            subtitle="MoonDAO citizens around the world"
+            icon={<GlobeAmericasIcon className="w-6 h-6 text-teal-400" />}
+            actions={<SubtleButton color="teal" link="/map">Explore Map →</SubtleButton>}
+          />
 
           {/* Mobile: lightweight stats grid + CTA instead of 3D globe */}
           <div className="sm:hidden">

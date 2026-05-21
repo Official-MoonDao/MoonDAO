@@ -5,6 +5,14 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 const emptyResponse = (res: NextApiResponse) =>
   res.status(200).json({ newsletters: [], total: 0, source: null })
 
+/** Strip Liquid/template tags from a string, resolving default values */
+function stripLiquidTags(s: string): string {
+  return s
+    .replace(/\{\{[^}]*\|[^}]*default:\s*["']([^"']*)["'][^}]*\}\}/g, '$1')
+    .replace(/\{\{[^}]*\}\}/g, '')
+    .replace(/\s+/g, ' ').trim()
+}
+
 /** Extract a short teaser from HTML content (strips tags, decodes entities, truncates) */
 function extractTeaserFromHtml(html: string, maxLen: number): string | null {
   if (!html || typeof html !== 'string') return null
@@ -23,6 +31,8 @@ function extractTeaserFromHtml(html: string, maxLen: number): string | null {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&nbsp;/g, ' ')
+  // Resolve Liquid template tags to their default value
+  text = stripLiquidTags(text)
   if (!text || text.length < 20) return null
   if (text.length <= maxLen) return text
   const truncated = text.slice(0, maxLen)
@@ -142,9 +152,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const publishedBroadcasts = allBroadcasts.filter(
       (broadcast: any) =>
-        (broadcast.published_at != null ||
-          broadcast.send_at != null ||
-          broadcast.created_at != null) &&
+        broadcast.published_at != null &&
         // Only include public newsletters (non-public ones 404 when opened)
         broadcast.public === true
     )
@@ -153,10 +161,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return emptyResponse(res)
     }
 
-    // Sort all broadcasts by date (newest first) - use published_at, send_at, or created_at
+    // Sort all broadcasts by date (newest first)
     publishedBroadcasts.sort((a: any, b: any) => {
-      const dateA = new Date(a.published_at || a.send_at || a.created_at || 0).getTime()
-      const dateB = new Date(b.published_at || b.send_at || b.created_at || 0).getTime()
+      const dateA = new Date(a.published_at).getTime()
+      const dateB = new Date(b.published_at).getTime()
       return dateB - dateA
     })
 
@@ -216,6 +224,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // Description/teaser: use API fields first, else extract from HTML content
         let description: string | null =
           broadcast.description || broadcast.preview_text || null
+        if (description) description = stripLiquidTags(description) || null
         if (!description && broadcast.content && typeof broadcast.content === 'string') {
           const teaser = extractTeaserFromHtml(broadcast.content, 140)
           if (teaser) description = teaser
@@ -237,7 +246,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
               // ignore parse errors
             }
           } else if (!rawThumb.includes('playbutton') && !rawThumb.includes('functions-js')) {
-            imageUrl = rawThumb
+            // Strip the /email suffix that ConvertKit sometimes appends — it breaks image loading
+            imageUrl = rawThumb.replace(/\/email$/, '')
           }
         }
 

@@ -55,7 +55,7 @@ function ContributionFeed() {
       {entries.map(([name, items]) => {
         const open = expanded[name]
         return (
-          <div key={name} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-all">
+          <div key={name} id={`contribution-${encodeURIComponent(name)}`} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-all">
             <button
               type="button"
               aria-expanded={!!open}
