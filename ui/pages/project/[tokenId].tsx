@@ -294,10 +294,21 @@ export default function ProjectProfile({
                 </SectionCard>
               )}
 
-              {/* Senate Vote Section — pending proposals in Temperature
-                  Check. Senators see interactive 👍/👎 buttons; everyone
-                  sees the running counts and the per-senator
-                  voted/pending status. */}
+              {/* Senate Vote Section.
+                  - During Temperature Check: senators see interactive
+                    👍/👎 buttons; everyone sees the running counts and
+                    the per-senator voted/pending grid; OPERATORS see
+                    the Close Senate Vote control.
+                  - After Temperature Check (Voting / Approved /
+                    Cancelled): the same panel renders read-only with a
+                    "Approved by Senate" / "Rejected by Senate" outcome
+                    badge so the senate breakdown stays visible across
+                    the rest of the proposal lifecycle. The on-chain
+                    `voteTempCheck` reverts post-tally so the cast-vote
+                    affordances are hidden — they would only confuse.
+                  Project proposals (which don't carry the on-chain
+                  Senate vote in the same way) are excluded post-TC to
+                  avoid showing zeros for a vote that never happened. */}
               {project.active === PROJECT_PENDING &&
                 proposalStatus === 'Temperature Check' && (
                   <SectionCard
@@ -310,6 +321,23 @@ export default function ProjectProfile({
                         advance to the next stage.
                       </p>
                       <SenateVote mdp={project.MDP} />
+                    </div>
+                  </SectionCard>
+                )}
+
+              {proposalStatus !== 'Temperature Check' &&
+                proposalJSON?.nonProjectProposal && (
+                  <SectionCard
+                    header="Senate Vote Results"
+                    iconSrc="/assets/icon-star.svg"
+                  >
+                    <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-6">
+                      <p className="text-sm text-white/70 mb-5">
+                        Senate verdict for this proposal — the breakdown
+                        and per-senator votes that decided whether it
+                        advanced to the Member Vote.
+                      </p>
+                      <SenateVote mdp={project.MDP} readOnly />
                     </div>
                   </SectionCard>
                 )}
