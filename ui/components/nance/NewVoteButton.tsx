@@ -84,7 +84,6 @@ export default function NewVoteButton({
           votes={votes}
           project={project}
           address={address}
-          spaceHideAbstain={true}
           totalVMOONEY={totalVMOONEY}
         />
       )}

@@ -26,7 +26,6 @@ interface VotingProps {
   modalIsOpen: boolean
   closeModal: () => void
   address: string | undefined
-  spaceHideAbstain: boolean
   project: Project
   votes: any[]
   totalVMOONEY: any
@@ -38,7 +37,6 @@ export default function VotingModal({
   modalIsOpen,
   closeModal,
   address,
-  spaceHideAbstain,
   project,
   votes,
   totalVMOONEY,
@@ -334,7 +332,6 @@ export default function VotingModal({
                                 value={choice}
                                 setValue={setChoice}
                                 choices={choices}
-                                hideAbstain={spaceHideAbstain}
                               />
                             )}
                           </div>
@@ -391,16 +388,12 @@ function SingleClickChoiceSelector({
   value,
   setValue,
   choices,
-  hideAbstain = false,
 }: Omit<SelectorProps, 'value'> & {
   value: { [key: string]: number } | undefined
-  hideAbstain?: boolean
 }) {
   const visibleChoices = useMemo(() => {
-    return choices
-      .map((label, index) => ({ label, key: String(index + 1) }))
-      .filter((c) => !(hideAbstain && c.label.toLowerCase() === 'abstain'))
-  }, [choices, hideAbstain])
+    return choices.map((label, index) => ({ label, key: String(index + 1) }))
+  }, [choices])
 
   // Argmax over the existing distribution. Single-click votes are
   // always 100/0/0 so this resolves trivially; it also gracefully
