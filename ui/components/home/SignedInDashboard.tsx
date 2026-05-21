@@ -783,11 +783,11 @@ export default function SignedInDashboard({
 
         {/* ──────────────── ROW 2: Proposals + Events ──────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
-          {/* Active Proposals (8 cols) */}
+          {/* Latest Proposals (8 cols) */}
           <div className="lg:col-span-8 order-2 lg:order-1 flex flex-col">
             <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 flex-1">
               <SectionHeader
-                title="Active Proposals"
+                title="Latest Proposals"
                 subtitle="Vote on the future of MoonDAO"
                 icon={<DocumentTextIcon className="w-6 h-6 text-purple-400" />}
                 actions={<SubtleButton color="white" link="/projects">View All →</SubtleButton>}
@@ -796,7 +796,7 @@ export default function SignedInDashboard({
                 noPagination
                 compact
                 feedCardStyle
-                projects={proposals.slice(0, 4)}
+                projects={proposals.slice(0, 3)}
               />
             </div>
           </div>
