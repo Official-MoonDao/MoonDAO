@@ -435,7 +435,14 @@ export default function ProjectProfile({
               className="pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
             >
               <div className="lg:order-2 lg:col-span-1 lg:sticky lg:top-24 lg:self-start flex flex-col gap-4">
-                <SenateVoteSidebar mdp={project.MDP} />
+                {/* Member Vote sits on top while it's the active step
+                    — that's the primary action members can take right
+                    now, so it gets the eye-catching styling. The
+                    Senate Vote slot below renders as a "completed"
+                    reference card so members can still see how the
+                    proposal got past senate approval. Once voting is
+                    closed, the emphasis lifts and both panels render
+                    as peers. */}
                 <MemberVoteSidebar
                   project={project}
                   votes={votes}
@@ -450,6 +457,10 @@ export default function ProjectProfile({
                       />
                     ) : null
                   }
+                />
+                <SenateVoteSidebar
+                  mdp={project.MDP}
+                  secondary={sidebarMode === 'voting'}
                 />
               </div>
               <div className="lg:order-1 lg:col-span-2">{mainColumn}</div>

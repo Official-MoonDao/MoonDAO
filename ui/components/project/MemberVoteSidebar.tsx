@@ -128,22 +128,60 @@ export default function MemberVoteSidebar({
     return acc
   }, [enriched])
 
+  // While the Member Vote is the active step, elevate the card so
+  // users can't miss the primary action: a tinted background, a
+  // gradient ring, and a pulsing "Active — Vote now" pill. Once
+  // voting has closed (or hasn't opened yet), strip the emphasis so
+  // both sidebar cards read as peers.
+  const isActive = mode === 'voting'
+
   return (
-    <aside className="w-full bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-5 flex flex-col gap-4">
-      <div>
-        <h3 className="font-GoodTimes text-base text-white/90">Member Vote</h3>
-        <p className="text-[11px] text-white/50 mt-1">
-          Quadratic vMOONEY voting (vp = √vMOONEY at close).
-        </p>
+    <aside
+      className={
+        isActive
+          ? 'relative w-full rounded-[20px] p-4 sm:p-5 flex flex-col gap-4 bg-gradient-to-br from-blue-950/60 via-darkest-cool to-purple-950/40 border border-blue-400/40 shadow-[0_0_0_1px_rgba(59,130,246,0.25),0_8px_30px_-12px_rgba(59,130,246,0.45)]'
+          : 'w-full bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-5 flex flex-col gap-4'
+      }
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h3
+            className={
+              isActive
+                ? 'font-GoodTimes text-base text-white'
+                : 'font-GoodTimes text-base text-white/90'
+            }
+          >
+            Member Vote
+          </h3>
+          <p className="text-[11px] text-white/60 mt-1">
+            Quadratic vMOONEY voting (vp = √vMOONEY at close).
+          </p>
+        </div>
+        {isActive && (
+          <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-blue-400/50 bg-blue-500/15 text-[10px] font-semibold uppercase tracking-wider text-blue-100">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-300 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-300" />
+            </span>
+            Vote now
+          </span>
+        )}
       </div>
 
-      {mode === 'voting' && (
-        <NewVoteButton
-          proposalStatus={proposalStatus}
-          votes={votes}
-          project={project}
-          isSmall
-        />
+      {isActive && (
+        <>
+          <p className="text-xs text-blue-100/80">
+            This is the primary action right now — the Senate has
+            approved this proposal and members must weigh in. Click
+            below to cast your vote.
+          </p>
+          <NewVoteButton
+            proposalStatus={proposalStatus}
+            votes={votes}
+            project={project}
+          />
+        </>
       )}
 
       {/* Headline tally — total VP and per-choice breakdown. Mirrors the

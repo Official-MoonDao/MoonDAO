@@ -15,7 +15,17 @@ import useProposalData from '@/lib/project/useProposalData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 
-export default function SenateVoteSidebar({ mdp }: { mdp: number }) {
+export default function SenateVoteSidebar({
+  mdp,
+  // When `true`, render dimmed/quieter — the Member Vote above is the
+  // active step and this card should fade into reference territory so
+  // the eye lands on the primary CTA. The breakdown is still fully
+  // legible at hover/focus.
+  secondary = false,
+}: {
+  mdp: number
+  secondary?: boolean
+}) {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
@@ -67,14 +77,22 @@ export default function SenateVoteSidebar({ mdp }: { mdp: number }) {
       }
 
   return (
-    <aside className="w-full bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-5 flex flex-col gap-4">
+    <aside
+      className={
+        secondary
+          ? 'w-full bg-dark-cool lg:bg-darkest-cool/60 rounded-[20px] p-4 sm:p-5 flex flex-col gap-4 border border-white/5 opacity-80 hover:opacity-100 focus-within:opacity-100 transition-opacity'
+          : 'w-full bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-5 flex flex-col gap-4'
+      }
+    >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="font-GoodTimes text-base text-white/90">
+          <h3 className="font-GoodTimes text-base text-white/80">
             Senate Vote
           </h3>
           <p className="text-[11px] text-white/50 mt-1">
-            On-chain vote of MoonDAO senators.
+            {secondary
+              ? 'Completed — required before Member Vote could open.'
+              : 'On-chain vote of MoonDAO senators.'}
           </p>
         </div>
         <span
