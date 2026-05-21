@@ -45,7 +45,6 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
-import Tab from '@/components/layout/Tab'
 
 import VotingResults from '@/components/nance/VotingResults'
 import ProposalEditSection from '@/components/nance/ProposalEditSection'
@@ -459,40 +458,38 @@ export default function ProjectProfile({
             </div>
           )
 
+          // Underline-style tab bar matching the Mission/Launchpad
+          // pattern (`MissionInfo.tsx`): text-only, gray-500
+          // inactive, white + 2px indigo underline active, sitting
+          // on a thin `border-b`. `overflow-x-auto` keeps it
+          // single-row on phones.
+          const tabButton = (key: ProjectTab, label: string) => {
+            const isActive = tab === key
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleTabChange(key)}
+                className={`relative px-5 py-3 text-base md:text-lg font-semibold tracking-wide whitespace-nowrap transition-all duration-200 ${
+                  isActive
+                    ? 'text-white'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {label}
+                {isActive && (
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-[2px] bg-indigo-400 rounded-full" />
+                )}
+              </button>
+            )
+          }
+
           const mainColumn = (
             <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
-              {/* Tab strip. Sticky at small viewports too, but on
-                  mobile it sits *below* the right-rail vote cards
-                  (which are themselves source-ordered first via
-                  `lg:order-2` on the rail wrapper) so the primary
-                  vote action stays above the navigation. */}
-              <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5 self-start">
-                <div className="flex text-sm gap-1">
-                  <Tab
-                    tab="proposal"
-                    currentTab={tab}
-                    setTab={handleTabChange}
-                    icon="/assets/icon-star.svg"
-                  >
-                    Proposal
-                  </Tab>
-                  <Tab
-                    tab="treasury"
-                    currentTab={tab}
-                    setTab={handleTabChange}
-                    icon="/assets/icon-treasury.svg"
-                  >
-                    Treasury
-                  </Tab>
-                  <Tab
-                    tab="team"
-                    currentTab={tab}
-                    setTab={handleTabChange}
-                    icon="/assets/icon-team.svg"
-                  >
-                    Team
-                  </Tab>
-                </div>
+              <div className="flex items-center gap-1 border-b border-white/[0.08] overflow-x-auto max-w-full -mx-1 px-1">
+                {tabButton('proposal', 'Proposal')}
+                {tabButton('treasury', 'Treasury')}
+                {tabButton('team', 'Team')}
               </div>
 
               {tab === 'proposal' && proposalPane}
