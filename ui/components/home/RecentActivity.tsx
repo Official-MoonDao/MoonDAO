@@ -193,19 +193,11 @@ export default function RecentActivity({
       .catch(() => setDonations([]))
   }, [])
 
-  const [nanceProposals, setNanceProposals] = useState<any[]>([])
-  useEffect(() => {
-    fetch('https://nance-ts-production.up.railway.app/moondao/proposals?cycle=All&limit=30')
-      .then((r) => r.ok ? r.json() : { data: { proposals: [] } })
-      .then((data) => setNanceProposals(data.data?.proposals ?? []))
-      .catch(() => {})
-  }, [])
-
   const items = useMemo<ActivityItem[]>(() => {
     const list: ActivityItem[] = []
 
-    // Newsletters (have publishedAt)
-    for (const n of (newsletters ?? []).slice(0, 5)) {
+    // Newsletters
+    for (const n of (newsletters ?? [])) {
       list.push({
         id: `newsletter-${n.id}`,
         type: 'newsletter',
@@ -218,7 +210,7 @@ export default function RecentActivity({
     }
 
     // Launchpad donations
-    for (const d of donations.slice(0, 6)) {
+    for (const d of donations) {
       const mission = missions.find((m: any) => String(m.projectId) === String(d.projectId))
       const missionName = mission?.metadata?.name || d.missionName || `Mission #${d.missionId || d.projectId}`
       const ethAmt = Number(d.amountWei) / 1e18
@@ -237,33 +229,22 @@ export default function RecentActivity({
       })
     }
 
-    // Active Snapshot votes from Nance — proposals with status "Voting"
-    for (const p of nanceProposals) {
-      if (p.status !== 'Voting') continue
-      const mdpLabel = p.proposalId ? `MDP-${p.proposalId}` : ''
-      const snapshotId = p.voteURL?.split('/proposal/')?.pop()
-      list.push({
-        id: `vote-${p.uuid}`,
-        type: 'vote' as ActivityItemType,
-        title: p.title || mdpLabel || 'Governance Vote',
-        subtitle: mdpLabel ? `${mdpLabel} · Vote is open` : 'Vote is open',
-        link: p.voteURL || '/projects',
-        timestamp: p.createdTime ? new Date(p.createdTime).getTime() : undefined,
-      })
-    }
-
-    // Proposals (year+quarter used as rough recency — no createdAt on Project type)
-    for (const p of proposals.slice(0, 5)) {
+    // Proposals from project table — use id as ordering proxy (higher id = newer)
+    // Anchor: id 1 ≈ Q1 2023; each id ≈ ~1 week apart
+    const PROPOSAL_BASE_TS = new Date('2023-01-01').getTime()
+    const PROPOSAL_ID_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000 // ~1 week per id
+    for (const p of proposals) {
       const mdpLabel = p.MDP ? `MDP-${p.MDP}` : ''
       const quarterLabel = p.quarter && p.year ? `Q${p.quarter} ${p.year}` : ''
+      const ts = PROPOSAL_BASE_TS + (Number(p.id) * PROPOSAL_ID_INTERVAL_MS)
       list.push({
         id: `proposal-${p.id}`,
         type: 'proposal' as ActivityItemType,
         title: p.name || mdpLabel || 'New Proposal',
         subtitle: mdpLabel && quarterLabel ? `${mdpLabel} · ${quarterLabel}` : (mdpLabel || quarterLabel),
         image: p.image || undefined,
-        link: p.proposalLink || `/projects`,
-        timestamp: undefined,
+        link: p.proposalLink || '/projects',
+        timestamp: ts,
       })
     }
 
@@ -275,10 +256,9 @@ export default function RecentActivity({
       if (citizenName && img) nameToCitizenImage[citizenName] = getIPFSGateway(img)
     }
 
-    // Contributions (have timestamp string like "2/19/2025 10:30:00")
-    for (const c of contributions.slice(0, 8)) {
+    // Contributions
+    for (const c of contributions) {
       const ts = c.timestamp ? new Date(c.timestamp).getTime() : undefined
-      // Prefer citizen image looked up by wallet address; fall back to name-based lookup
       const walletKey = c.walletAddress?.trim().toLowerCase()
       const citizenImage =
         (walletKey && contribCitizenImages[walletKey])
@@ -295,10 +275,9 @@ export default function RecentActivity({
       })
     }
 
-    // Citizens — only include if we have a real mint timestamp from the subgraph
-    for (let i = 0; i < Math.min(newestCitizens.length, 5); i++) {
-      const c = newestCitizens[i]
-      if (!c.mintTimestamp) continue // skip citizens without a known mint time
+    // Citizens — only include if we have a real mint timestamp
+    for (const c of newestCitizens) {
+      if (!c.mintTimestamp) continue
       const rawLoc = c.location ?? c.metadata?.attributes?.find((a: any) => a.trait_type === 'location')?.value
       let locationStr: string | undefined
       if (rawLoc && typeof rawLoc === 'object' && rawLoc.name) {
@@ -322,10 +301,9 @@ export default function RecentActivity({
       })
     }
 
-    // Teams — use mintTimestamp from subgraph when available
-    for (let i = 0; i < Math.min(newestTeams.length, 3); i++) {
-      const t = newestTeams[i]
-      if (!t.mintTimestamp) continue // skip teams without a known mint time
+    // Teams — only include if we have a real mint timestamp
+    for (const t of newestTeams) {
+      if (!t.mintTimestamp) continue
       const teamDesc = t.description || t.metadata?.description
       list.push({
         id: `team-${t.id}`,
@@ -338,22 +316,20 @@ export default function RecentActivity({
       })
     }
 
-    // Jobs (no timestamp)
-    for (let i = 0; i < Math.min(newestJobs.length, 4); i++) {
-      const j = newestJobs[i]
+    // Jobs
+    for (const j of newestJobs) {
       list.push({
         id: `job-${j.id}`,
         type: 'job',
         title: j.title || 'Open Position',
         subtitle: j.description && typeof j.description === 'string' ? j.description : undefined,
         link: j.contactInfo || '/jobs',
-        timestamp: undefined,
+        timestamp: j.timestamp ? Number(j.timestamp) * 1000 : undefined,
       })
     }
 
-    // Listings (no timestamp)
-    for (let i = 0; i < Math.min(newestListings.length, 3); i++) {
-      const l = newestListings[i]
+    // Listings
+    for (const l of newestListings) {
       list.push({
         id: `listing-${l.id}`,
         type: 'listing',
@@ -361,16 +337,17 @@ export default function RecentActivity({
         subtitle: l.description && typeof l.description === 'string' ? l.description : undefined,
         image: l.image,
         link: `/marketplace/${l.id}`,
-        timestamp: undefined,
+        timestamp: l.timestamp ? Number(l.timestamp) * 1000 : undefined,
       })
     }
 
-    // Sort: items with timestamps first (newest first), then the rest
+    // Sort everything: timestamped items newest-first, then untimstamped
     const withTs = list.filter((x) => x.timestamp != null).sort((a, b) => b.timestamp! - a.timestamp!)
     const withoutTs = list.filter((x) => x.timestamp == null)
 
     return [...withTs, ...withoutTs].slice(0, maxItems)
-  }, [newsletters, contributions, contribCitizenImages, donations, missionImages, nanceProposals, missions, proposals, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
+  }, [newsletters, contributions, contribCitizenImages, donations, missionImages, missions, proposals, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
+
 
   const isLoading = newslettersLoading || contribLoading
 

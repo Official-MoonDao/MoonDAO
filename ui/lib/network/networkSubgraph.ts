@@ -150,28 +150,63 @@ export async function getNetworkTransfersBatch(
   }
 }
 
+
 export { subgraphClient }
 
 /**
- * Fetch just the most recent N citizen mint transfers from the subgraph.
+ * Fetch recent citizen mint transfers via Etherscan v2 (Arbitrum).
  * Used to attach real mintTimestamps to newestCitizens on the dashboard.
- * Falls back to empty array if unavailable.
  */
-export async function getRecentCitizenTransfers(limit: number = 20): Promise<CitizenTransfer[]> {
+export async function getRecentCitizenTransfers(limit: number = 50): Promise<CitizenTransfer[]> {
   try {
-    const result = await subgraphClient
-      .query(
-        `query RecentCitizen($first: Int!) {
-          moonDAOCitizenTransfers(first: $first, orderBy: blockTimestamp, orderDirection: desc) {
-            id
-            tokenId
-            blockTimestamp
-          }
-        }`,
-        { first: limit }
-      )
-      .toPromise()
-    return result.data?.moonDAOCitizenTransfers ?? []
+    const CITIZEN_ADDRESS = '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002'
+    const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
+    if (!apiKey) return []
+    const res = await fetch(
+      `https://api.etherscan.io/v2/api?module=account&action=tokennfttx` +
+      `&contractaddress=${CITIZEN_ADDRESS}&page=1&offset=${limit}&sort=desc&chainid=42161&apikey=${apiKey}`
+    )
+    const json = await res.json()
+    if (json.status !== '1' || !Array.isArray(json.result)) return []
+    return json.result
+      .filter((tx: any) => tx.from === '0x0000000000000000000000000000000000000000')
+      .map((tx: any) => ({
+        id: tx.hash,
+        tokenId: tx.tokenID,
+        transactionHash: tx.hash,
+        ethValue: '0',
+        blockTimestamp: tx.timeStamp,
+        blockNumber: tx.blockNumber,
+      }))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Fetch recent team mint transfers via Etherscan v2 (Arbitrum).
+ * Used to attach real mintTimestamps to newestTeams on the dashboard.
+ */
+export async function getRecentTeamTransfers(limit: number = 20): Promise<TeamTransfer[]> {
+  try {
+    const TEAM_ADDRESS = '0xAB2C354eC32880C143e87418f80ACc06334Ff55F'
+    const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
+    if (!apiKey) return []
+    const res = await fetch(
+      `https://api.etherscan.io/v2/api?module=account&action=tokennfttx` +
+      `&contractaddress=${TEAM_ADDRESS}&page=1&offset=${limit}&sort=desc&chainid=42161&apikey=${apiKey}`
+    )
+    const json = await res.json()
+    if (json.status !== '1' || !Array.isArray(json.result)) return []
+    return json.result
+      .filter((tx: any) => tx.from === '0x0000000000000000000000000000000000000000')
+      .map((tx: any) => ({
+        id: tx.hash,
+        tokenId: tx.tokenID,
+        ethValue: '0',
+        blockTimestamp: tx.timeStamp,
+        blockNumber: tx.blockNumber,
+      }))
   } catch {
     return []
   }
