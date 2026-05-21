@@ -27,6 +27,7 @@ export type ActivityItemType =
   | 'contribution'
   | 'donation'
   | 'proposal'
+  | 'vote'
 
 export interface ActivityItem {
   id: string
@@ -62,6 +63,7 @@ function typeLabel(type: ActivityItemType): string {
     case 'contribution': return 'Contribution'
     case 'donation': return 'Mission Donation'
     case 'proposal': return 'New Proposal'
+    case 'vote': return 'Vote Open'
   }
 }
 
@@ -76,6 +78,7 @@ function TypeIcon({ type, className }: { type: ActivityItemType; className?: str
     case 'contribution': return <TagIcon className={cls} />
     case 'donation': return <RocketLaunchIcon className={cls} />
     case 'proposal': return <DocumentTextIcon className={cls} />
+    case 'vote': return <DocumentTextIcon className={cls} />
   }
 }
 
@@ -106,6 +109,7 @@ function typeBg(type: ActivityItemType, title?: string): string {
     case 'contribution': return contribGradient(title ?? '')
     case 'donation': return 'from-indigo-500 to-blue-600'
     case 'proposal': return 'from-purple-500 to-indigo-600'
+    case 'vote': return 'from-green-500 to-emerald-600'
   }
 }
 
@@ -166,6 +170,14 @@ export default function RecentActivity({
       .catch(() => setDonations([]))
   }, [])
 
+  const [nanceProposals, setNanceProposals] = useState<any[]>([])
+  useEffect(() => {
+    fetch('https://nance-ts-production.up.railway.app/moondao/proposals?cycle=All&limit=30')
+      .then((r) => r.ok ? r.json() : { data: { proposals: [] } })
+      .then((data) => setNanceProposals(data.data?.proposals ?? []))
+      .catch(() => {})
+  }, [])
+
   const items = useMemo<ActivityItem[]>(() => {
     const list: ActivityItem[] = []
 
@@ -197,6 +209,21 @@ export default function RecentActivity({
         image: getIPFSGateway(mission?.metadata?.logoUri || mission?.metadata?.image),
         link: d.missionId ? `/mission/${d.missionId}` : '/launch',
         timestamp: d.timestamp,
+      })
+    }
+
+    // Active Snapshot votes from Nance — proposals with status "Voting"
+    for (const p of nanceProposals) {
+      if (p.status !== 'Voting') continue
+      const mdpLabel = p.proposalId ? `MDP-${p.proposalId}` : ''
+      const snapshotId = p.voteURL?.split('/proposal/')?.pop()
+      list.push({
+        id: `vote-${p.uuid}`,
+        type: 'vote' as ActivityItemType,
+        title: p.title || mdpLabel || 'Governance Vote',
+        subtitle: mdpLabel ? `${mdpLabel} · Vote is open` : 'Vote is open',
+        link: p.voteURL || '/projects',
+        timestamp: p.createdTime ? new Date(p.createdTime).getTime() : undefined,
       })
     }
 
@@ -316,7 +343,7 @@ export default function RecentActivity({
     const withoutTs = list.filter((x) => x.timestamp == null)
 
     return [...withTs, ...withoutTs].slice(0, maxItems)
-  }, [newsletters, contributions, contribCitizenImages, donations, missions, proposals, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
+  }, [newsletters, contributions, contribCitizenImages, donations, nanceProposals, missions, proposals, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
 
   const isLoading = newslettersLoading || contribLoading
 
