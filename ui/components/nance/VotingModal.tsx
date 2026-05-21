@@ -1,8 +1,9 @@
 import { Dialog, RadioGroup, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/solid'
+import { useWallets } from '@privy-io/react-auth'
 import NonProjectProposalABI from 'const/abis/NonProjectProposal.json'
 import { DEFAULT_CHAIN_V5, NON_PROJECT_PROPOSAL_ADDRESSES } from 'const/config'
-import { useState, Fragment, useEffect } from 'react'
+import { useState, Fragment, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
@@ -14,6 +15,7 @@ import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { classNames } from '@/lib/utils/tailwind'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
 interface VotingProps {
   modalIsOpen: boolean
@@ -65,6 +67,26 @@ export default function VotingModal({
   const choices = ['Yes', 'No', 'Abstain'] // could make this dynamic in the future
   // external
   const vp = Math.sqrt(totalVMOONEY) || 0
+
+  // The previous voter to hit `nonce has already been used` was on the wrong
+  // network — MetaMask was on Ethereum, vote was sent against the
+  // NonProjectProposal contract that only exists on Arbitrum, and the
+  // signed tx ended up at a stale nonce. Surface the chain mismatch as a
+  // first-class banner inside the modal so the user sees it *before*
+  // signing, in addition to the Submit button auto-flipping to a "Switch
+  // Network" CTA via PrivyWeb3Button.
+  const { wallets } = useWallets()
+  const connectedChainId = useMemo(() => {
+    const raw = wallets?.[0]?.chainId
+    if (!raw) return undefined
+    const parts = String(raw).split(':')
+    return Number(parts[parts.length - 1]) || undefined
+  }, [wallets])
+  const requiredChainId = DEFAULT_CHAIN_V5.id
+  const isWrongNetwork =
+    Boolean(address) &&
+    Boolean(connectedChainId) &&
+    connectedChainId !== requiredChainId
 
   const handleSubmit = async () => {
     if (!choice) {
@@ -139,35 +161,38 @@ export default function VotingModal({
   }
 
   const renderVoteButton = () => {
+    // PrivyWeb3Button owns the wallet/network state machine: it flips its
+    // own label/handler to "Sign In" when unauthenticated and to
+    // "Switch Network" when the connected chain doesn't match
+    // `requiredChain`. We only need to drive the *action* button label
+    // (state 2) and disable it when the form isn't submittable yet.
     let canVote = false
-    let label = 'Close'
+    let actionLabel = 'Submit vote'
 
-    if (address == '') {
-      label = 'Wallet not connected'
-    } else if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
-      label = 'Not supported'
+    if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
+      actionLabel = 'Not supported'
     } else if (choice === undefined) {
-      label = 'You need to select a choice'
-    } else if (vp > 0) {
-      if (submitting) {
-        label = 'Submitting...'
-      } else {
-        label = 'Submit vote'
-        canVote = true
-      }
+      actionLabel = 'You need to select a choice'
+    } else if (vp <= 0) {
+      actionLabel = 'No voting power'
+    } else if (submitting) {
+      actionLabel = 'Submitting...'
     } else {
-      label = 'Close'
+      canVote = true
+      actionLabel = 'Submit vote'
     }
 
     return (
-      <button
-        type="button"
-        disabled={!canVote}
-        onClick={canVote ? handleSubmit : closeModal}
-        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
-      >
-        {label}
-      </button>
+      <PrivyWeb3Button
+        label={actionLabel}
+        loadingLabel="Submitting..."
+        action={handleSubmit}
+        requiredChain={DEFAULT_CHAIN_V5}
+        isDisabled={!canVote}
+        noGradient
+        noPadding
+        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed !text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50 !text-base"
+      />
     )
   }
 
@@ -293,6 +318,37 @@ export default function VotingModal({
                               />
                             )}
                           </div>
+
+                          {/* Wrong-network banner — shows before the user
+                              even clicks. The submit button itself will
+                              also flip to "Switch Network" via
+                              PrivyWeb3Button, but a banner makes the
+                              cause unambiguous (MetaMask on Ethereum vs.
+                              Arbitrum was the previous failure mode). */}
+                          {isWrongNetwork && (
+                            <div className="rounded-lg border border-yellow-400/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-100">
+                              <p className="font-semibold mb-0.5">
+                                Wrong network detected
+                              </p>
+                              <p className="text-yellow-100/80">
+                                Your wallet is connected to chain{' '}
+                                <code className="text-yellow-50">
+                                  {connectedChainId}
+                                </code>
+                                . MoonDAO proposals live on{' '}
+                                <span className="font-medium">
+                                  {DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'}
+                                </span>{' '}
+                                (chain id {requiredChainId}). Click{' '}
+                                <span className="font-medium">
+                                  Switch Network
+                                </span>{' '}
+                                below — your wallet will prompt you and
+                                the button will then become{' '}
+                                <span className="font-medium">Submit vote</span>.
+                              </p>
+                            </div>
+                          )}
 
                           {/* Vote button */}
                           <div className="pt-2">{renderVoteButton()}</div>
