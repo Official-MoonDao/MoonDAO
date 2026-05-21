@@ -189,7 +189,9 @@ export function getStatusIndicatorConfig(
   )
 }
 
-/** Display label for "Vote Closed" instead of "Cancelled" */
+/** User-facing labels for ProposalStatus values. The internal status string
+ * is kept stable for state-machine logic, while UI surfaces use these. */
 export const STATUS_DISPLAY_LABELS: Partial<Record<ProposalStatus, string>> = {
   Cancelled: 'Vote Closed',
+  'Temperature Check': 'Senate Vote',
 }

@@ -14,10 +14,12 @@ contract JobBoardTable is ERC721Holder, Ownable {
     MoonDAOTeam public _moonDaoTeam;
     uint256 public currId = 0;
     mapping(uint256 => uint256) public idToTeamId;
+    mapping(address => bool) public operators;
 
     event JobInserted(uint256 indexed id, uint256 indexed teamId);
     event JobUpdated(uint256 indexed id, uint256 indexed teamId);
     event JobDeleted(uint256 indexed id, uint256 indexed teamId);
+    event OperatorSet(address indexed operator, bool enabled);
 
     constructor(string memory _table_prefix) Ownable(msg.sender) {
         _TABLE_PREFIX = _table_prefix;
@@ -42,11 +44,19 @@ contract JobBoardTable is ERC721Holder, Ownable {
         _moonDaoTeam = MoonDAOTeam(moonDaoTeam);
     }
 
-    // Let anyone insert into the table
+    function setOperator(address operator, bool enabled) external onlyOwner {
+        operators[operator] = enabled;
+        emit OperatorSet(operator, enabled);
+    }
+
+    function _isAuthorized(uint256 teamId) internal view {
+        if (msg.sender == owner() || operators[msg.sender]) return;
+        require(_moonDaoTeam.isManager(teamId, msg.sender), "Only Manager, Operator, or Owner can write");
+    }
+
+    // Allow only the owner, enabled operators, or the team manager to insert into the table
     function insertIntoTable(string memory title, string memory description, uint256 teamId, string memory tag, string memory metadata, uint256 endTime, uint256 timestamp, string memory contactInfo) external {
-        if (msg.sender != owner()) {
-            require(_moonDaoTeam.isManager(teamId, msg.sender), "Only Manager or Owner can insert");
-        }
+        _isAuthorized(teamId);
         string memory setters = string.concat(
                 Strings.toString(currId), // Convert to a string
                 ",",
@@ -83,9 +93,7 @@ contract JobBoardTable is ERC721Holder, Ownable {
 
     function updateTable(uint256 id, string memory title, string memory description, uint256 teamId, string memory tag, string memory metadata, uint256 endTime, uint256 timestamp, string memory contactInfo) external {
         
-        if (msg.sender != owner()) {
-            require(_moonDaoTeam.isManager(teamId, msg.sender), "Only Manager or Owner can update");
-        }
+        _isAuthorized(teamId);
         require (idToTeamId[id] == teamId, "You can only update job post by your team");
 
         // Set the values to update
@@ -122,9 +130,7 @@ contract JobBoardTable is ERC721Holder, Ownable {
     function updateTableCol(uint256 id, uint256 teamId, string memory colName, string memory val) external {
         require (Strings.equal(colName, "id") == false, "Cannot update id");
         require (Strings.equal(colName, "teamId") == false, "Cannot update teamId");
-        if (msg.sender != owner()) {
-            require(_moonDaoTeam.isManager(teamId, msg.sender), "Only Manager or Owner can update");
-        }
+        _isAuthorized(teamId);
 
         // Set the values to update
         string memory setters = string.concat(colName, "=", SQLHelpers.quote(val));
@@ -145,9 +151,7 @@ contract JobBoardTable is ERC721Holder, Ownable {
 
     // Delete a row from the table by ID 
     function deleteFromTable(uint256 id, uint256 teamId) external {
-        if (msg.sender != owner()) {
-            require(_moonDaoTeam.isManager(teamId, msg.sender), "Only Manager or Owner can delete");
-        }
+        _isAuthorized(teamId);
         require (idToTeamId[id] == teamId, "You can only delete job post by your team");
 
         // Specify filters for which row to delete

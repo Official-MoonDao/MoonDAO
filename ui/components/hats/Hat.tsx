@@ -124,17 +124,23 @@ export function Hat({
         <div className="flex-1 w-full">
           {isHatLoading ? (
             <>
-              <TextSkeleton width="w-32" height="h-5" />
+              <TextSkeleton width="w-full" height="h-5" />
               {!compact && (
                 <div className="mt-2">
-                  <TextSkeleton width="w-48" height="h-4" />
+                  <TextSkeleton width="w-3/4" height="h-4" />
                 </div>
               )}
             </>
           ) : hatError ? (
-            <div className="text-red-500 text-sm">
-              <p>Error loading hat data</p>
-            </div>
+            compact && teamNFT?.metadata?.name ? (
+              <p className="w-full font-GoodTimes text-xs">
+                {teamNFT.metadata.name}
+              </p>
+            ) : (
+              <div className="text-red-500 text-sm">
+                <p>Error loading hat data</p>
+              </div>
+            )
           ) : (
             <>
               <p

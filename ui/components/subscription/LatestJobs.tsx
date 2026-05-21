@@ -1,7 +1,10 @@
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { JOBS_TABLE_NAMES } from 'const/config'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import Job, { Job as JobType } from '../jobs/Job'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
@@ -13,34 +16,49 @@ type LatestJobsProps = {
 
 export default function LatestJobs({ teamContract, jobTableContract }: LatestJobsProps) {
   const router = useRouter()
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const [latestJobs, setLatestJobs] = useState<JobType[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [tableName, setTableName] = useState<string | null>(null)
   
   // Memoize 'now' to prevent unnecessary re-renders and effect re-runs
   const now = useMemo(() => Math.floor(Date.now() / 1000), [])
 
-  // Get table name from contract
+  // Get table name from contract, fall back to config constant
   useEffect(() => {
     async function getTableName() {
-      if (!jobTableContract) return
+      const fallback = JOBS_TABLE_NAMES[chainSlug] || null
+      if (!jobTableContract) {
+        setTableName(fallback)
+        return
+      }
       try {
         const name: any = await readContract({
           contract: jobTableContract,
           method: 'getTableName' as string,
           params: [],
         })
-        setTableName(name)
+        setTableName(name || fallback)
       } catch (error) {
         console.error('Error fetching table name:', error)
+        setTableName(fallback)
       }
     }
     getTableName()
-  }, [jobTableContract])
+  }, [jobTableContract, chainSlug])
 
   // Build statement with memoized timestamp
   const statement = tableName
     ? `SELECT * FROM ${tableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
     : null
+
+  // If tableName resolved to null (no contract + no fallback), stop skeleton
+  useEffect(() => {
+    if (tableName === null && jobTableContract === null) {
+      setIsLoading(false)
+    }
+  }, [tableName, jobTableContract])
 
   const { data: jobs } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
@@ -49,7 +67,12 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
   // Process and filter jobs
   useEffect(() => {
     async function processJobs() {
-      if (!jobs || !teamContract) return
+      if (!jobs) return // still loading — don't clear
+      if (!teamContract || jobs.length === 0) {
+        setLatestJobs([])
+        setIsLoading(false)
+        return
+      }
 
       const resolvedJobs = await Promise.all(
         jobs.map(async (job: JobType) => {
@@ -69,6 +92,7 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
       const validJobs = resolvedJobs.filter((job): job is JobType => job !== null)
 
       setLatestJobs(validJobs)
+      setIsLoading(false)
     }
 
     processJobs()
@@ -88,11 +112,23 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
 
       <SlidingCardMenu>
         <div id="latest-jobs-container" className="flex gap-5">
-          {latestJobs.map((job, i) => (
-            <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
-          ))}
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={`skeleton-${i}`}
+                className="w-[300px] flex-shrink-0 h-[200px] rounded-xl bg-slate-700/40 animate-pulse"
+              />
+            ))
+          ) : (
+            latestJobs.map((job, i) => (
+              <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
+            ))
+          )}
         </div>
       </SlidingCardMenu>
+      {!isLoading && latestJobs.length === 0 && (
+        <p className="text-slate-400 text-sm py-4 text-center">No open positions at the moment.</p>
+      )}
     </div>
   )
 }

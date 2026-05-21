@@ -380,7 +380,7 @@ export const PROJECT_HAT_TREE_IDS: Index = {
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x94e225DDe1b3E5f861222ca2055739BA12730bd4',
+  arbitrum: '0x2113341dEc8a0fB9883Ad494C589d5cdefDDBc1b',
   sepolia: '0x948a3c9057780002286f7e3Dd22699d13b4Ff76d',
   'arbitrum-sepolia': '0x97F9F6DC65b57af7E0B0CB32E5E3153af14E3332',
 }
@@ -389,8 +389,9 @@ export const JOBS_TABLE_ADDRESSES: Index = {
 // fails (e.g. RPC rate-limit / Thirdweb hosted RPC blip during ISR build).
 // Verified against on-chain reads on 2026-04-21.
 export const JOBS_TABLE_NAMES: Index = {
-  arbitrum: 'JOBBOARD_42161_115',
+  arbitrum: 'JOBBOARD_42161_158',
   sepolia: 'JOBBOARD_11155111_1899',
+  'arbitrum-sepolia': 'JOBBOARD_421614_115',
 }
 
 export const MARKETPLACE_ADDRESS =
@@ -399,14 +400,15 @@ export const MARKETPLACE_ADDRESS =
     : sepoliaConfig.Marketplace
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E',
+  arbitrum: '0xF0AeE0c837943fa1919538B12b5d9AE11C5EED05',
   sepolia: '0x46025c3b96B01d551274Ba7AdC6057FD15E0923b',
   'arbitrum-sepolia': '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
 }
 
 export const MARKETPLACE_TABLE_NAMES: Index = {
-  arbitrum: 'MARKETPLACE_42161_116',
+  arbitrum: 'MARKETPLACE_42161_159',
   sepolia: 'MARKETPLACE_11155111_1898',
+  'arbitrum-sepolia': 'MARKETPLACE_421614_116',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
@@ -682,12 +684,21 @@ export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
 // total quarterly rewards."
 export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)
 
+// Addresses that have manager-level access on ALL teams (can add jobs and
+// marketplace listings on behalf of any team). Lowercase for comparison.
+export const SUPER_MANAGERS: string[] = [
+  '0x679d87d8640e66778c3419d164998e720d7495f6', // pmoncada.eth
+  '0xb2d3900807094d4fe47405871b0c8adb58e10d42', // ryand2d.eth
+  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da', // miguel.eth
+]
+
 // Hard-coded allowlist of wallet addresses that can use the operator panel
 // on /projects (start the retro cycle, mark projects eligible, etc.).
 // Lowercase for cheap comparison.
 export const OPERATORS: string[] = [
   '0x679d87d8640e66778c3419d164998e720d7495f6', // pmoncada.eth
   '0xb2d3900807094d4fe47405871b0c8adb58e10d42', // ryand2d.eth
+  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da', // miguel.eth
 ]
 
 // Retroactive rewards payout token for the *currently-voting* cycle.

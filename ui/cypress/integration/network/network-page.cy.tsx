@@ -199,7 +199,11 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      cy.contains('button', 'Map', { timeout: 10000 }).should('exist').click()
+      // Match the pattern that works for the Teams tab test above: `cy.contains`
+      // already implicitly retries until the element exists, so chaining an
+      // extra `.should('exist')` is both redundant and a known source of
+      // "Expected to find element: undefined" flakes on render races.
+      cy.contains('Map', { timeout: 10000 }).click()
       cy.get('#network-content').should('exist')
     })
   })

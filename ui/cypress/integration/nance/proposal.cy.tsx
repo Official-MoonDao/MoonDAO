@@ -81,7 +81,7 @@ describe('<Proposal />', () => {
         .then((txt) => {
           cy.log('Component text is:', txt)
         })
-      cy.contains('Temperature Check').should('exist')
+      cy.contains('Senate Vote').should('exist')
     })
   })
 

@@ -18,7 +18,7 @@ export default function Action({
   return (
     <div
       data-testid="action-container"
-      className={`flex-1 bg-slate-600/20 rounded-xl p-4 transition-all duration-200 cursor-pointer group hover:bg-slate-600/30 ${
+      className={`flex-1 flex items-center bg-slate-600/20 rounded-xl p-4 transition-all duration-200 cursor-pointer group hover:bg-slate-600/30 ${
         disabled ? 'opacity-50 cursor-not-allowed' : ''
       }`}
       onClick={disabled ? undefined : onClick}
