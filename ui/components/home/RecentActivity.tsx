@@ -138,6 +138,7 @@ export default function RecentActivity({
   const [contributions, setContributions] = useState<any[]>([])
   const [contribLoading, setContribLoading] = useState(true)
   const [donations, setDonations] = useState<any[]>([])
+  const [missionImages, setMissionImages] = useState<Record<string, string>>({})
   const [contribCitizenImages, setContribCitizenImages] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -166,7 +167,29 @@ export default function RecentActivity({
   useEffect(() => {
     fetch('/api/mission/recent-donations')
       .then((r) => r.ok ? r.json() : { donations: [] })
-      .then((data) => setDonations(data.donations ?? []))
+      .then((data) => {
+        const d = data.donations ?? []
+        setDonations(d)
+        // Fetch mission metadata images for each unique missionId
+        const ids = [...new Set<string>(d.map((x: any) => x.missionId).filter(Boolean))]
+        if (ids.length > 0) {
+          Promise.all(
+            ids.map((id) =>
+              fetch(`/api/mission/${id}`)
+                .then((r) => r.ok ? r.json() : null)
+                .then((m) => {
+                  const img = m?.metadata?.logoUri || m?.metadata?.image || m?.logoUri || m?.image
+                  return img ? [id, img] : null
+                })
+                .catch(() => null)
+            )
+          ).then((results) => {
+            const map: Record<string, string> = {}
+            for (const r of results) { if (r) map[r[0]] = r[1] }
+            setMissionImages(map)
+          })
+        }
+      })
       .catch(() => setDonations([]))
   }, [])
 
@@ -197,16 +220,18 @@ export default function RecentActivity({
     // Launchpad donations
     for (const d of donations.slice(0, 6)) {
       const mission = missions.find((m: any) => String(m.projectId) === String(d.projectId))
-      const missionName = mission?.metadata?.name || `Mission #${d.missionId || d.projectId}`
+      const missionName = mission?.metadata?.name || d.missionName || `Mission #${d.missionId || d.projectId}`
       const ethAmt = Number(d.amountWei) / 1e18
       const ethLabel = ethAmt >= 1 ? ethAmt.toFixed(3) : ethAmt.toFixed(5)
       const shortAddr = d.from ? `${d.from.slice(0, 6)}…${d.from.slice(-4)}` : 'Someone'
+      const rawImg = mission?.metadata?.logoUri || mission?.metadata?.image ||
+        (d.missionId ? missionImages[d.missionId] : undefined)
       list.push({
         id: `donation-${d.projectId}-${d.timestamp}-${d.from}`,
         type: 'donation',
         title: missionName,
         subtitle: `${shortAddr} contributed ${ethLabel} ETH`,
-        image: getIPFSGateway(mission?.metadata?.logoUri || mission?.metadata?.image),
+        image: rawImg ? getIPFSGateway(rawImg) : undefined,
         link: d.missionId ? `/mission/${d.missionId}` : '/launch',
         timestamp: d.timestamp,
       })
@@ -343,7 +368,7 @@ export default function RecentActivity({
     const withoutTs = list.filter((x) => x.timestamp == null)
 
     return [...withTs, ...withoutTs].slice(0, maxItems)
-  }, [newsletters, contributions, contribCitizenImages, donations, nanceProposals, missions, proposals, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
+  }, [newsletters, contributions, contribCitizenImages, donations, missionImages, nanceProposals, missions, proposals, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
 
   const isLoading = newslettersLoading || contribLoading
 
