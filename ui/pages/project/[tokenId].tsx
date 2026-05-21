@@ -400,12 +400,16 @@ export default function ProjectProfile({
                 header="Treasury"
                 iconSrc="/assets/icon-treasury.svg"
               >
+                {/* `hideHeader`: SectionCard already renders the
+                    "Treasury" title, so suppress the inner h2 + icon
+                    to avoid the double-title look. */}
                 <TeamTreasury
                   isSigner={isSigner}
                   safeData={safeData}
                   multisigAddress={safeAddress}
                   safeOwners={safeOwners}
                   projectActive={project.active}
+                  hideHeader
                 />
               </SectionCard>
             </div>
