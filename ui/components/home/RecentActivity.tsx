@@ -229,24 +229,7 @@ export default function RecentActivity({
       })
     }
 
-    // Proposals from project table — use id as ordering proxy (higher id = newer)
-    // Anchor: id 1 ≈ Q1 2023; each id ≈ ~1 week apart
-    const PROPOSAL_BASE_TS = new Date('2023-01-01').getTime()
-    const PROPOSAL_ID_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000 // ~1 week per id
-    for (const p of proposals) {
-      const mdpLabel = p.MDP ? `MDP-${p.MDP}` : ''
-      const quarterLabel = p.quarter && p.year ? `Q${p.quarter} ${p.year}` : ''
-      const ts = PROPOSAL_BASE_TS + (Number(p.id) * PROPOSAL_ID_INTERVAL_MS)
-      list.push({
-        id: `proposal-${p.id}`,
-        type: 'proposal' as ActivityItemType,
-        title: p.name || mdpLabel || 'New Proposal',
-        subtitle: mdpLabel && quarterLabel ? `${mdpLabel} · ${quarterLabel}` : (mdpLabel || quarterLabel),
-        image: p.image || undefined,
-        link: p.proposalLink || '/projects',
-        timestamp: ts,
-      })
-    }
+    // Proposals are shown in the dedicated Proposals section (ROW 2), not here
 
     // Build name → citizen image lookup (case-insensitive) from the already-fetched list
     const nameToCitizenImage: Record<string, string> = {}
