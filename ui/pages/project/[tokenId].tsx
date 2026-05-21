@@ -45,6 +45,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
+import Tab from '@/components/layout/Tab'
 
 import VotingResults from '@/components/nance/VotingResults'
 import ProposalEditSection from '@/components/nance/ProposalEditSection'
@@ -159,6 +160,48 @@ export default function ProjectProfile({
     }, 5000)
     return () => clearTimeout(timer)
   }, [pending, tokenId, router])
+
+  // Tabbed main column. The right rail (Senate + Member vote
+  // sidebars) is intentionally outside the tab system so the
+  // primary action stays visible across all three tabs.
+  type ProjectTab = 'proposal' | 'treasury' | 'team'
+  const [tab, setTab] = useState<ProjectTab>('proposal')
+
+  // Hydrate from `?tab=` so deep links land on the right tab and
+  // browser back/forward navigates between tabs the user has
+  // already visited.
+  useEffect(() => {
+    const urlTab = router.query.tab
+    if (
+      typeof urlTab === 'string' &&
+      (urlTab === 'proposal' ||
+        urlTab === 'treasury' ||
+        urlTab === 'team')
+    ) {
+      setTab(urlTab)
+    }
+  }, [router.query.tab])
+
+  const handleTabChange = (next: string) => {
+    const nextTab = next as ProjectTab
+    setTab(nextTab)
+    // `shallow + scroll: false`: don't re-run getServerSideProps
+    // and don't yank the user back to the top of the page when
+    // they're switching tabs — the rail is sticky and the tab
+    // strip itself sits inside the main column.
+    const { tab: _omit, ...restQuery } = router.query
+    router.replace(
+      {
+        pathname: router.pathname,
+        query:
+          nextTab === 'proposal'
+            ? restQuery
+            : { ...restQuery, tab: nextTab },
+      },
+      undefined,
+      { shallow: true, scroll: false }
+    )
+  }
 
   if (pending) {
     return (
@@ -282,7 +325,11 @@ export default function ProjectProfile({
               ? 'closed'
               : 'inactive'
 
-          const mainColumn = (
+          // Proposal tab — proposal-lifecycle content. Final Report
+          // (post-completion), Senate Vote interactive section
+          // (Temperature Check only), the proposal body itself, and
+          // Voting Results (post-tally, non-project proposals only).
+          const proposalPane = (
             <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
               {finalReportMarkdown && (
                 <SectionCard
@@ -316,13 +363,12 @@ export default function ProjectProfile({
                   </SectionCard>
                 )}
 
-              {/* Project Overview */}
-              <SectionCard
-                header="Proposal"
-                iconSrc="/assets/icon-star.svg"
-                className=""
-              >
-                <div className="mb-6 sm:mt-4 sm:mb-10 px-0 sm:px-4 md:px-8 w-full">
+              {/* Proposal body. The "Proposal" tab is the navigation;
+                  no need for a duplicate `Proposal` SectionCard
+                  header inside it. Just render the markdown on the
+                  same SectionCard surface for visual continuity. */}
+              <div className="md:bg-gradient-to-br md:from-slate-700/20 md:to-slate-800/30 md:backdrop-blur-xl md:border md:border-white/10 md:rounded-xl px-4 py-3 md:p-6 md:shadow-lg w-full">
+                <div className="px-0 sm:px-4 md:px-8 w-full">
                   <div className="prose prose-base prose-invert max-w-none">
                     <MarkdownWithTOC
                       body={(() => {
@@ -338,11 +384,11 @@ export default function ProjectProfile({
                     />
                   </div>
                 </div>
-              </SectionCard>
+              </div>
 
               {/* Voting Results Section - Only show for completed
-                  proposals. Aggregate verdict card; the right rail still
-                  carries the per-voter detail. */}
+                  proposals. Aggregate verdict card; the right rail
+                  still carries the per-voter detail. */}
               {project.active !== PROJECT_PENDING &&
                 proposalJSON?.nonProjectProposal && (
                   <SectionCard
@@ -358,56 +404,100 @@ export default function ProjectProfile({
                     </div>
                   </SectionCard>
                 )}
+            </div>
+          )
 
-              <SectionCard
-                header="Meet the Team"
-                iconSrc="/assets/icon-team.svg"
-                action={
-                  isManager && (
-                    <div className="flex flex-col md:flex-row justify-start items-center gap-2">
-                      <TeamManageMembers
-                        account={account}
-                        hats={hats}
-                        hatsContract={hatsContract}
-                        teamContract={projectContract}
-                        teamId={tokenId}
-                        selectedChain={selectedChain}
-                        multisigAddress={safeAddress}
-                        adminHatId={adminHatId}
-                        managerHatId={managerHatId}
-                      />
-                    </div>
-                  )
-                }
-              >
-                <SlidingCardMenu>
-                  <div className="flex gap-2 md:gap-4">
-                    {hats?.[0].id && (
-                      <TeamMembers
-                        hats={hats}
-                        hatsContract={hatsContract}
-                        citizenContract={citizenContract}
-                      />
-                    )}
-                  </div>
-                </SlidingCardMenu>
-              </SectionCard>
-              <SectionCard
-                header="Treasury"
-                iconSrc="/assets/icon-treasury.svg"
-              >
-                {/* `hideHeader`: SectionCard already renders the
-                    "Treasury" title, so suppress the inner h2 + icon
-                    to avoid the double-title look. */}
-                <TeamTreasury
-                  isSigner={isSigner}
-                  safeData={safeData}
-                  multisigAddress={safeAddress}
-                  safeOwners={safeOwners}
-                  projectActive={project.active}
-                  hideHeader
-                />
-              </SectionCard>
+          // Treasury tab — drop the SectionCard wrapper so the tab
+          // (already labelled "Treasury") is the only title, then
+          // re-create the SectionCard surface inline. `hideHeader`
+          // keeps TeamTreasury from rendering its own internal h2.
+          const treasuryPane = (
+            <div className="md:bg-gradient-to-br md:from-slate-700/20 md:to-slate-800/30 md:backdrop-blur-xl md:border md:border-white/10 md:rounded-xl md:shadow-lg w-full">
+              <TeamTreasury
+                isSigner={isSigner}
+                safeData={safeData}
+                multisigAddress={safeAddress}
+                safeOwners={safeOwners}
+                projectActive={project.active}
+                hideHeader
+              />
+            </div>
+          )
+
+          // Team tab — same pattern. The Manage Members button (only
+          // visible to managers) stays anchored to the top-right of
+          // the card so it doesn't get lost without a SectionCard
+          // header to host it.
+          const teamPane = (
+            <div className="md:bg-gradient-to-br md:from-slate-700/20 md:to-slate-800/30 md:backdrop-blur-xl md:border md:border-white/10 md:rounded-xl px-4 py-3 md:p-6 md:shadow-lg w-full">
+              {isManager && (
+                <div className="flex justify-end mb-3 md:mb-5">
+                  <TeamManageMembers
+                    account={account}
+                    hats={hats}
+                    hatsContract={hatsContract}
+                    teamContract={projectContract}
+                    teamId={tokenId}
+                    selectedChain={selectedChain}
+                    multisigAddress={safeAddress}
+                    adminHatId={adminHatId}
+                    managerHatId={managerHatId}
+                  />
+                </div>
+              )}
+              <SlidingCardMenu>
+                <div className="flex gap-2 md:gap-4">
+                  {hats?.[0].id && (
+                    <TeamMembers
+                      hats={hats}
+                      hatsContract={hatsContract}
+                      citizenContract={citizenContract}
+                    />
+                  )}
+                </div>
+              </SlidingCardMenu>
+            </div>
+          )
+
+          const mainColumn = (
+            <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
+              {/* Tab strip. Sticky at small viewports too, but on
+                  mobile it sits *below* the right-rail vote cards
+                  (which are themselves source-ordered first via
+                  `lg:order-2` on the rail wrapper) so the primary
+                  vote action stays above the navigation. */}
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5 self-start">
+                <div className="flex text-sm gap-1">
+                  <Tab
+                    tab="proposal"
+                    currentTab={tab}
+                    setTab={handleTabChange}
+                    icon="/assets/icon-star.svg"
+                  >
+                    Proposal
+                  </Tab>
+                  <Tab
+                    tab="treasury"
+                    currentTab={tab}
+                    setTab={handleTabChange}
+                    icon="/assets/icon-treasury.svg"
+                  >
+                    Treasury
+                  </Tab>
+                  <Tab
+                    tab="team"
+                    currentTab={tab}
+                    setTab={handleTabChange}
+                    icon="/assets/icon-team.svg"
+                  >
+                    Team
+                  </Tab>
+                </div>
+              </div>
+
+              {tab === 'proposal' && proposalPane}
+              {tab === 'treasury' && treasuryPane}
+              {tab === 'team' && teamPane}
             </div>
           )
 
