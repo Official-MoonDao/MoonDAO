@@ -178,18 +178,22 @@ export default function VotingModal({
   }
 
   const renderVoteButton = () => {
-    // PrivyWeb3Button owns the wallet/network state machine: it flips its
-    // own label/handler to "Sign In" when unauthenticated and to
+    // PrivyWeb3Button owns the wallet/network state machine: it flips
+    // its own label/handler to "Sign In" when unauthenticated and to
     // "Switch Network" when the connected chain doesn't match
-    // `requiredChain`. We only need to drive the *action* button label
-    // (state 2) and disable it when the form isn't submittable yet.
+    // `requiredChain`. We only need to drive the *action* button
+    // label (state 2). `actionDisabled` (vs `isDisabled`) is
+    // important here: blocking the whole button would also block
+    // the Switch Network affordance, leaving wrong-network users
+    // unable to resolve their network *before* the form considers
+    // itself submittable.
     let canVote = false
     let actionLabel = 'Submit vote'
 
     if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
       actionLabel = 'Not supported'
     } else if (choice === undefined) {
-      actionLabel = 'You need to select a choice'
+      actionLabel = 'Select a choice'
     } else if (vp <= 0) {
       actionLabel = 'No voting power'
     } else if (submitting) {
@@ -205,7 +209,7 @@ export default function VotingModal({
         loadingLabel="Submitting..."
         action={handleSubmit}
         requiredChain={DEFAULT_CHAIN_V5}
-        isDisabled={!canVote}
+        actionDisabled={!canVote}
         noGradient
         noPadding
         className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed !text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50 !text-base"
