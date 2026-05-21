@@ -1,10 +1,15 @@
-import { Dialog, RadioGroup, Transition } from '@headlessui/react'
-import { XMarkIcon } from '@heroicons/react/24/solid'
+import { Dialog, Transition } from '@headlessui/react'
+import {
+  CheckCircleIcon,
+  MinusCircleIcon,
+  XCircleIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/solid'
 import { useWallets } from '@privy-io/react-auth'
+import confetti from 'canvas-confetti'
 import NonProjectProposalABI from 'const/abis/NonProjectProposal.json'
 import { DEFAULT_CHAIN_V5, NON_PROJECT_PROPOSAL_ADDRESSES } from 'const/config'
 import { useState, Fragment, useEffect, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -145,7 +150,21 @@ export default function VotingModal({
         { label: 'senate-vote-notification' }
       )
 
+      // Celebrate + dismiss. Same confetti palette the SenateVote
+      // component uses on a successful approve so the visual language
+      // stays consistent across both vote stages. Closing the modal
+      // here means the user lands back on the proposal page (where
+      // the right-rail sidebar reflects their vote on the next
+      // getServerSideProps refresh) without having to hunt for the X.
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        shapes: ['circle', 'star'],
+        colors: ['#22c55e', '#4ade80', '#86efac', '#ffffff', '#FFD700'],
+      })
       setSubmitting(false)
+      closeModal()
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -290,31 +309,35 @@ export default function VotingModal({
                         </h3>
 
                         <form className="space-y-4">
-                          {/* Option selector */}
+                          {/* Option selector. Quadratic is what every
+                              non-project proposal actually uses today,
+                              and the old WeightedChoiceSelector forced
+                              voters to type a percentage per choice
+                              (which routinely failed the
+                              "must equal 100%" guard and felt like
+                              busywork for a yes/no question). The new
+                              SingleClickChoiceSelector encodes a single
+                              choice as `{ "<index>": 100 }`, the exact
+                              shape `runQuadraticVoting` already
+                              expects, so the on-chain tally stays
+                              compatible with every prior vote — but
+                              the user just clicks once. */}
                           <div>
                             <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide mb-3">
                               Select Your Choice
                             </h4>
-                            {(proposalType == 'single-choice' || proposalType == 'basic') && (
-                              <BasicChoiceSelector
-                                value={choice}
-                                setValue={setChoice}
-                                choices={choices}
-                              />
-                            )}
-                            {proposalType == 'weighted' ||
-                              (proposalType == 'quadratic' && (
-                                <WeightedChoiceSelector
-                                  value={choice}
-                                  setValue={setChoice}
-                                  choices={choices}
-                                />
-                              ))}
-                            {proposalType == 'ranked-choice' && (
+                            {proposalType == 'ranked-choice' ? (
                               <RankedChoiceSelector
                                 value={choice || []}
                                 setValue={setChoice}
                                 choices={choices}
+                              />
+                            ) : (
+                              <SingleClickChoiceSelector
+                                value={choice}
+                                setValue={setChoice}
+                                choices={choices}
+                                hideAbstain={spaceHideAbstain}
                               />
                             )}
                           </div>
@@ -372,95 +395,105 @@ interface SelectorProps {
   choices: string[]
 }
 
-function BasicChoiceSelector({ value, setValue, choices }: SelectorProps) {
-  return (
-    <RadioGroup value={value} onChange={setValue}>
-      <div className="grid grid-cols-3 gap-3">
-        {choices.map((choice, index) => (
-          <RadioGroup.Option
-            as="div"
-            key={choice}
-            value={index + 1}
-            className={({ active, checked }) =>
-              classNames(
-                'relative block cursor-pointer rounded-lg p-3 transition-all duration-200 text-center',
-                checked
-                  ? 'bg-blue-500/20 border-2 border-blue-500/50 shadow-lg'
-                  : 'bg-black/20 border border-white/10 hover:bg-black/30 hover:border-white/20',
-                active ? 'ring-2 ring-blue-500/50' : ''
-              )
-            }
-          >
-            {({ active, checked }) => (
-              <>
-                <div className="flex items-center justify-center">
-                  <RadioGroup.Label as="p" className="text-sm font-medium text-white">
-                    {choice}
-                  </RadioGroup.Label>
-                </div>
-              </>
-            )}
-          </RadioGroup.Option>
-        ))}
-      </div>
-    </RadioGroup>
-  )
-}
-
-function WeightedChoiceSelector({
+// Single-click yes/no/abstain selector. Encodes the picked option as
+// `{ "<index+1>": 100 }` — the same shape the on-chain
+// NonProjectProposal table stores and `runQuadraticVoting` expects, so
+// the tally code is unchanged. Shown for `quadratic` / `weighted` /
+// `basic` / `single-choice` proposal types now that the underlying
+// vote is binary in practice. Edit mode highlights whichever choice
+// has the largest weight in the existing distribution (argmax) so
+// re-opening a previously cast vote shows the user's prior pick.
+function SingleClickChoiceSelector({
   value,
   setValue,
   choices,
+  hideAbstain = false,
 }: Omit<SelectorProps, 'value'> & {
   value: { [key: string]: number } | undefined
+  hideAbstain?: boolean
 }) {
-  const { register, getValues, watch } = useForm()
+  const visibleChoices = useMemo(() => {
+    return choices
+      .map((label, index) => ({ label, key: String(index + 1) }))
+      .filter((c) => !(hideAbstain && c.label.toLowerCase() === 'abstain'))
+  }, [choices, hideAbstain])
 
-  useEffect(() => {
-    // sync form state
-    const subscription = watch((_) => {
-      const values = getValues()
-      const newValue: { [key: string]: any } = {}
-      // remove empty values
-      for (const key in values) {
-        const val = values[key]
-        if (!isNaN(val) && val > 0) {
-          newValue[key] = val
-        }
-      }
-      setValue(newValue)
-    })
+  // Argmax over the existing distribution. Single-click votes are
+  // always 100/0/0 so this resolves trivially; it also gracefully
+  // highlights the dominant choice for legacy split votes.
+  const selectedKey = useMemo(() => {
+    if (!value) return null
+    let best: [string, number] | null = null
+    for (const [k, v] of Object.entries(value)) {
+      const n = Number(v)
+      if (!Number.isFinite(n)) continue
+      if (best === null || n > best[1]) best = [k, n]
+    }
+    return best && best[1] > 0 ? best[0] : null
+  }, [value])
 
-    return () => subscription.unsubscribe()
-  }, [watch])
+  const styleFor = (label: string, isSelected: boolean) => {
+    const base =
+      'group flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black/20'
+    if (label.toLowerCase() === 'yes' || label.toLowerCase() === 'for') {
+      return classNames(
+        base,
+        isSelected
+          ? 'bg-green-500/25 border-green-400 shadow-lg shadow-green-500/20 scale-[1.02]'
+          : 'bg-green-500/5 border-green-500/20 hover:bg-green-500/15 hover:border-green-400/60'
+      )
+    }
+    if (label.toLowerCase() === 'no' || label.toLowerCase() === 'against') {
+      return classNames(
+        base,
+        isSelected
+          ? 'bg-red-500/25 border-red-400 shadow-lg shadow-red-500/20 scale-[1.02]'
+          : 'bg-red-500/5 border-red-500/20 hover:bg-red-500/15 hover:border-red-400/60'
+      )
+    }
+    return classNames(
+      base,
+      isSelected
+        ? 'bg-gray-500/25 border-gray-300 shadow-lg shadow-gray-500/20 scale-[1.02]'
+        : 'bg-gray-500/5 border-gray-500/20 hover:bg-gray-500/15 hover:border-gray-300/60'
+    )
+  }
 
-  const totalUnits = Object.values(value ?? {}).reduce((a, b) => a + b, 0)
+  const iconFor = (label: string, isSelected: boolean) => {
+    const cls = isSelected ? 'w-7 h-7' : 'w-7 h-7 opacity-70 group-hover:opacity-100'
+    if (label.toLowerCase() === 'yes' || label.toLowerCase() === 'for') {
+      return <CheckCircleIcon className={`${cls} text-green-400`} />
+    }
+    if (label.toLowerCase() === 'no' || label.toLowerCase() === 'against') {
+      return <XCircleIcon className={`${cls} text-red-400`} />
+    }
+    return <MinusCircleIcon className={`${cls} text-gray-300`} />
+  }
 
   return (
-    <div className="space-y-3">
-      {choices.map((choice, index) => (
-        <div
-          key={choice}
-          className="bg-black/20 border border-white/10 rounded-lg p-4 hover:bg-black/30 hover:border-white/20 transition-all duration-200"
-        >
-          <div className="flex items-center gap-4">
-            <label className="flex-1 text-white font-medium">{choice}</label>
-            <input
-              className="w-24 bg-black/30 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
-              type="number"
-              placeholder="0"
-              min={0}
-              step={1}
-              defaultValue={value ? value[index + 1] : 0}
-              {...register((index + 1).toString(), {
-                shouldUnregister: true,
-                valueAsNumber: true,
-              })}
-            />
-            <span className="w-16 text-right text-gray-300 text-sm">%</span>
-          </div>
-        </div>
-      ))}
+    <div
+      className={classNames(
+        'grid gap-3',
+        visibleChoices.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+      )}
+      role="radiogroup"
+    >
+      {visibleChoices.map(({ label, key }) => {
+        const isSelected = selectedKey === key
+        return (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={isSelected}
+            key={key}
+            onClick={() => setValue({ [key]: 100 })}
+            className={styleFor(label, isSelected)}
+          >
+            {iconFor(label, isSelected)}
+            <span className="text-sm font-semibold text-white">{label}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }
