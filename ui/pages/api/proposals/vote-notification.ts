@@ -207,7 +207,12 @@ async function handler(req: any, res: any) {
       content = `## 🗳️ **${voterDisplay}** ${verb} **${proposalLabel}**`
 
       if (proposalMDP != null && Number.isFinite(proposalMDP)) {
-        linkUrl = `${DEPLOYED_ORIGIN}/proposal/${proposalMDP}`
+        // `/proposal/<MDP>` is the legacy Nance-only viewer; the
+        // canonical surface is `/project/<MDP>` (the full proposal
+        // page with the right-rail vote sidebar). Sending the
+        // legacy link from a Discord notification is a dead end —
+        // the vote action is on `/project/...`.
+        linkUrl = `${DEPLOYED_ORIGIN}/project/${proposalMDP}`
         content += `\n\n[View proposal →](${linkUrl})`
       }
     } else {
