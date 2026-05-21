@@ -195,9 +195,11 @@ export default function RecentActivity({
 
   const items = useMemo<ActivityItem[]>(() => {
     const list: ActivityItem[] = []
+    // Cap each source to avoid unbounded sort as data grows
+    const MAX_PER_SOURCE = 50
 
     // Newsletters
-    for (const n of (newsletters ?? [])) {
+    for (const n of (newsletters ?? []).slice(0, MAX_PER_SOURCE)) {
       list.push({
         id: `newsletter-${n.id}`,
         type: 'newsletter',
@@ -210,7 +212,7 @@ export default function RecentActivity({
     }
 
     // Launchpad donations
-    for (const d of donations) {
+    for (const d of donations.slice(0, MAX_PER_SOURCE)) {
       const mission = missions.find((m: any) => String(m.projectId) === String(d.projectId))
       const missionName = mission?.metadata?.name || d.missionName || `Mission #${d.missionId || d.projectId}`
       const ethAmt = Number(d.amountWei) / 1e18
@@ -233,14 +235,14 @@ export default function RecentActivity({
 
     // Build name → citizen image lookup (case-insensitive) from the already-fetched list
     const nameToCitizenImage: Record<string, string> = {}
-    for (const c of newestCitizens) {
+    for (const c of newestCitizens.slice(0, MAX_PER_SOURCE)) {
       const citizenName = (c.name || c.metadata?.name || '').trim().toLowerCase()
       const img = c.image || c.metadata?.image
       if (citizenName && img) nameToCitizenImage[citizenName] = getIPFSGateway(img)
     }
 
     // Contributions
-    for (const c of contributions) {
+    for (const c of contributions.slice(0, MAX_PER_SOURCE)) {
       const ts = c.timestamp ? new Date(c.timestamp).getTime() : undefined
       const walletKey = c.walletAddress?.trim().toLowerCase()
       const citizenImage =
@@ -259,7 +261,7 @@ export default function RecentActivity({
     }
 
     // Citizens — only include if we have a real mint timestamp
-    for (const c of newestCitizens) {
+    for (const c of newestCitizens.slice(0, MAX_PER_SOURCE)) {
       if (!c.mintTimestamp) continue
       const rawLoc = c.location ?? c.metadata?.attributes?.find((a: any) => a.trait_type === 'location')?.value
       let locationStr: string | undefined
@@ -285,7 +287,7 @@ export default function RecentActivity({
     }
 
     // Teams — only include if we have a real mint timestamp
-    for (const t of newestTeams) {
+    for (const t of newestTeams.slice(0, MAX_PER_SOURCE)) {
       if (!t.mintTimestamp) continue
       const teamDesc = t.description || t.metadata?.description
       list.push({
@@ -300,7 +302,7 @@ export default function RecentActivity({
     }
 
     // Jobs
-    for (const j of newestJobs) {
+    for (const j of newestJobs.slice(0, MAX_PER_SOURCE)) {
       list.push({
         id: `job-${j.id}`,
         type: 'job',
@@ -312,7 +314,7 @@ export default function RecentActivity({
     }
 
     // Listings
-    for (const l of newestListings) {
+    for (const l of newestListings.slice(0, MAX_PER_SOURCE)) {
       list.push({
         id: `listing-${l.id}`,
         type: 'listing',

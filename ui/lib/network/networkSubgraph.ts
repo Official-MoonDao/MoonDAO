@@ -1,4 +1,5 @@
-import { MOONDAO_NETWORK_SUBGRAPH_URL } from 'const/config'
+import { MOONDAO_NETWORK_SUBGRAPH_URL, CITIZEN_ADDRESSES, TEAM_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 
 const subgraphClient = createClient({
@@ -159,13 +160,17 @@ export { subgraphClient }
  */
 export async function getRecentCitizenTransfers(limit: number = 50): Promise<CitizenTransfer[]> {
   try {
-    const CITIZEN_ADDRESS = '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002'
+    const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+    const CITIZEN_ADDRESS = CITIZEN_ADDRESSES[chainSlug]
+    if (!CITIZEN_ADDRESS) return []
     const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
     if (!apiKey) return []
     const res = await fetch(
       `https://api.etherscan.io/v2/api?module=account&action=tokennfttx` +
-      `&contractaddress=${CITIZEN_ADDRESS}&page=1&offset=${limit}&sort=desc&chainid=42161&apikey=${apiKey}`
+      `&contractaddress=${CITIZEN_ADDRESS}&page=1&offset=${limit}&sort=desc&chainid=${DEFAULT_CHAIN_V5.id}&apikey=${apiKey}`,
+      { signal: AbortSignal.timeout(5000) }
     )
+    if (!res.ok) return []
     const json = await res.json()
     if (json.status !== '1' || !Array.isArray(json.result)) return []
     return json.result
@@ -189,13 +194,17 @@ export async function getRecentCitizenTransfers(limit: number = 50): Promise<Cit
  */
 export async function getRecentTeamTransfers(limit: number = 20): Promise<TeamTransfer[]> {
   try {
-    const TEAM_ADDRESS = '0xAB2C354eC32880C143e87418f80ACc06334Ff55F'
+    const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+    const TEAM_ADDRESS = TEAM_ADDRESSES[chainSlug]
+    if (!TEAM_ADDRESS) return []
     const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
     if (!apiKey) return []
     const res = await fetch(
       `https://api.etherscan.io/v2/api?module=account&action=tokennfttx` +
-      `&contractaddress=${TEAM_ADDRESS}&page=1&offset=${limit}&sort=desc&chainid=42161&apikey=${apiKey}`
+      `&contractaddress=${TEAM_ADDRESS}&page=1&offset=${limit}&sort=desc&chainid=${DEFAULT_CHAIN_V5.id}&apikey=${apiKey}`,
+      { signal: AbortSignal.timeout(5000) }
     )
+    if (!res.ok) return []
     const json = await res.json()
     if (json.status !== '1' || !Array.isArray(json.result)) return []
     return json.result
