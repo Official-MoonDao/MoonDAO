@@ -246,7 +246,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
               // ignore parse errors
             }
           } else if (!rawThumb.includes('playbutton') && !rawThumb.includes('functions-js')) {
-            imageUrl = rawThumb
+            // Strip the /email suffix that ConvertKit sometimes appends — it breaks image loading
+            imageUrl = rawThumb.replace(/\/email$/, '')
           }
         }
 
