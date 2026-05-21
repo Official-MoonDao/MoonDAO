@@ -502,7 +502,7 @@ export default function WeeklyRewardPool() {
   }
 
   return (
-    <div className="relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+    <div className="relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 h-full">
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
