@@ -1,4 +1,4 @@
-import { PencilIcon, ShareIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { PencilIcon, ShoppingBagIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
@@ -10,8 +10,7 @@ import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import ShareButton from '../layout/ShareButton'
-import StandardCard from '../layout/StandardCard'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import BuyTeamListingModal from './BuyTeamListingModal'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
@@ -136,144 +135,128 @@ export default function TeamListing({
   if (!listing) return null
   if (!isActive) return null
 
-  const listingFooter = (
-    <div className="text-sm">
-      {listing?.price && listing?.currency ? (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <p id="listing-price" className="font-bold">
-              {`${
-                isCitizen
-                  ? truncateTokenValue(listing.price, listing.currency)
-                  : truncateTokenValue(+listing.price * 1.1, listing.currency)
-              } ${listing.currency}`}
-            </p>
-            {isCitizen && (
-              <p id="listing-original-price" className="line-through text-xs opacity-70">
-                {`${truncateTokenValue(+listing.price * 1.1, listing.currency)} ${
-                  listing.currency
-                }`}
-              </p>
-            )}
-          </div>
-          {!isCitizen && (
-            <button
-              id="listing-savings"
-              onClick={(e) => {
-                e.stopPropagation()
-                router.push('/citizen')
-              }}
-              className="flex items-center hover:underline text-sm"
-            >
-              <span className="bg-light-warm px-2 py-1 rounded mr-1">
-                {`Save ${truncateTokenValue(+listing.price * 0.1, listing.currency)} ${
-                  listing.currency
-                }`}
-              </span>
-              {' with citizenship'}
-            </button>
-          )}
-        </div>
-      ) : (
-        <p className="text-gray-400 text-xs">Price not available</p>
-      )}
-      {editable && (
-        <p id="listing-status" className="opacity-60">
-          {isExpired
-            ? `*This listing has expired and is no longer available for purchase.`
-            : isUpcoming
-            ? `*This listing is not available for purchase until ${
-                new Date((listing?.startTime || 0) * 1000).toLocaleDateString() +
-                ' ' +
-                new Date((listing?.startTime || 0) * 1000).toLocaleTimeString()
-              }`
-            : ''}
-        </p>
-      )}
-      {!isExpired && !isUpcoming && listing?.endTime != 0 && (
-        <p id="listing-end-time" className="mt-2 opacity-60">
-          {`Offer ends in ${daysUntilExpiry} ${+daysUntilExpiry === 1 ? 'day' : 'days'}`}
-        </p>
-      )}
-    </div>
-  )
-
-  const listingActions = (
-    <div className="flex items-center gap-4">
-      <ShareButton
-        link={`${window.location.origin}/team/${
-          teamNFT?.metadata?.name ? generatePrettyLink(teamNFT.metadata.name) : listing?.teamId
-        }?listing=${listing?.id}`}
-      />
-      {editable && (
-        <>
-          <button
-            id="edit-listing-button"
-            onClick={(event) => {
-              event.stopPropagation()
-              setEnabledMarketplaceListingModal(true)
-            }}
-          >
-            {!isDeleting && (
-              <PencilIcon className="h-6 w-6 text-light-warm hover:text-light-cool" />
-            )}
-          </button>
-          {isDeleting ? (
-            <LoadingSpinner className="scale-[75%]" />
-          ) : (
-            <button
-              id="delete-listing-button"
-              onClick={async (event) => {
-                if (!account) return
-                event.stopPropagation()
-                setIsDeleting(true)
-                try {
-                  const transaction = prepareContractCall({
-                    contract: marketplaceTableContract,
-                    method: 'deleteFromTable' as string,
-                    params: [listing?.id, listing?.teamId],
-                  })
-                  const receipt = await sendAndConfirmTransaction({
-                    transaction,
-                    account: account,
-                  })
-                  setTimeout(() => {
-                    refreshListings()
-                    setIsDeleting(false)
-                  }, 25000)
-                } catch (err) {
-                  console.log(err)
-                  toast.error('Failed to delete listing. Please try again.')
-                  setIsDeleting(false)
-                }
-              }}
-            >
-              <TrashIcon className="h-6 w-6 text-light-warm hover:text-light-cool" />
-            </button>
-          )}
-        </>
-      )}
-    </div>
-  )
-
   return (
     <>
-      <StandardCard
-        title={listing?.title || ''}
-        headerLink={`/team/${listing?.teamId || ''}`}
-        headerLinkLabel={teamNFT?.metadata?.name || `Team ${listing?.teamId || ''}`}
-        paragraph={listing?.description || ''}
-        footer={listingFooter}
-        actions={listingActions}
-        onClick={() => {
-          if (!editable) {
-            setEnabledBuyListingModal(true)
-          }
-        }}
-        image={listing?.image || ''}
-        profile={true}
-        inline
-      />
+      <div
+        id="link-frame"
+        onClick={() => { if (!editable) setEnabledBuyListingModal(true) }}
+        className={`flex-shrink-0 w-56 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 rounded-2xl overflow-hidden transition-all duration-200 flex flex-col ${!editable ? 'cursor-pointer' : ''}`}
+      >
+        {/* Image */}
+        <div className="relative w-full h-36 bg-white/5 flex-shrink-0 overflow-hidden">
+          {listing?.image ? (
+            <IPFSRenderer
+              src={listing.image}
+              alt={listing.title}
+              width={224}
+              height={144}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ShoppingBagIcon className="w-10 h-10 text-white/20" />
+            </div>
+          )}
+          {/* Team badge */}
+          {(teamNFT?.metadata?.name || listing?.teamId) && (
+            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
+              <span className="text-white/70 text-xs truncate max-w-[120px] block">
+                {teamNFT?.metadata?.name || `Team ${listing?.teamId}`}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-3 flex flex-col gap-2 flex-1">
+          <h4 id="main-header" className="text-white font-semibold text-sm leading-tight line-clamp-2">
+            {listing?.title}
+          </h4>
+          {listing?.description && (
+            <p className="text-white/40 text-xs leading-relaxed line-clamp-2">
+              {listing.description}
+            </p>
+          )}
+
+          {/* Footer: price + actions */}
+          <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+            {listing?.price && listing?.currency ? (
+              <div>
+                <span id="listing-price" className="text-white font-bold text-sm">
+                  {`${isCitizen
+                    ? truncateTokenValue(listing.price, listing.currency)
+                    : truncateTokenValue(+listing.price * 1.1, listing.currency)
+                  } ${listing.currency}`}
+                </span>
+                {isCitizen && (
+                  <span id="listing-original-price" className="text-white/30 text-xs line-through ml-1.5">
+                    {`${truncateTokenValue(+listing.price * 1.1, listing.currency)} ${listing.currency}`}
+                  </span>
+                )}
+                {!isCitizen && listing.price && (
+                  <p id="listing-savings" className="text-white/40 text-xs mt-0.5">
+                    {`Save ${+listing.price * 0.1} ${listing.currency} with citizenship`}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <span className="text-white/30 text-xs">—</span>
+            )}
+
+            {editable && (
+              <div className="flex items-center gap-2">
+                <button
+                  id="edit-listing-button"
+                  onClick={(e) => { e.stopPropagation(); setEnabledMarketplaceListingModal(true) }}
+                  className="text-white/40 hover:text-white/80 transition-colors"
+                >
+                  <PencilIcon className="w-4 h-4" />
+                </button>
+                {isDeleting ? (
+                  <LoadingSpinner className="scale-75" />
+                ) : (
+                  <button
+                    id="delete-listing-button"
+                    onClick={async (e) => {
+                      if (!account) return
+                      e.stopPropagation()
+                      setIsDeleting(true)
+                      try {
+                        const transaction = prepareContractCall({
+                          contract: marketplaceTableContract,
+                          method: 'deleteFromTable' as string,
+                          params: [listing?.id, listing?.teamId],
+                        })
+                        const receipt = await sendAndConfirmTransaction({ transaction, account })
+                        setTimeout(() => { refreshListings(); setIsDeleting(false) }, 25000)
+                      } catch (err) {
+                        console.log(err)
+                        toast.error('Failed to delete listing. Please try again.')
+                        setIsDeleting(false)
+                      }
+                    }}
+                    className="text-white/40 hover:text-red-400 transition-colors"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {isUpcoming && editable && (
+            <p id="listing-status" className="text-yellow-400/70 text-xs">
+              {`*This listing is not available for purchase until ${new Date(listing.startTime * 1000).toLocaleDateString()} ${new Date(listing.startTime * 1000).toLocaleTimeString()}`}
+            </p>
+          )}
+
+          {!isExpired && !isUpcoming && listing?.endTime != 0 && (
+            <p id="listing-end-time" className="text-white/30 text-xs">
+              Offer ends in {daysUntilExpiry} {+daysUntilExpiry === 1 ? 'day' : 'days'}
+            </p>
+          )}
+        </div>
+      </div>
 
       {enabledMarketplaceListingModal && listing && (
         <TeamMarketplaceListingModal

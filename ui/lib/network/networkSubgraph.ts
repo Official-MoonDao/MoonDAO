@@ -1,4 +1,5 @@
-import { MOONDAO_NETWORK_SUBGRAPH_URL } from 'const/config'
+import { MOONDAO_NETWORK_SUBGRAPH_URL, CITIZEN_ADDRESSES, TEAM_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 
 const subgraphClient = createClient({
@@ -150,28 +151,71 @@ export async function getNetworkTransfersBatch(
   }
 }
 
+
 export { subgraphClient }
 
 /**
- * Fetch just the most recent N citizen mint transfers from the subgraph.
+ * Fetch recent citizen mint transfers via Etherscan v2 (Arbitrum).
  * Used to attach real mintTimestamps to newestCitizens on the dashboard.
- * Falls back to empty array if unavailable.
  */
-export async function getRecentCitizenTransfers(limit: number = 20): Promise<CitizenTransfer[]> {
+export async function getRecentCitizenTransfers(limit: number = 50): Promise<CitizenTransfer[]> {
   try {
-    const result = await subgraphClient
-      .query(
-        `query RecentCitizen($first: Int!) {
-          moonDAOCitizenTransfers(first: $first, orderBy: blockTimestamp, orderDirection: desc) {
-            id
-            tokenId
-            blockTimestamp
-          }
-        }`,
-        { first: limit }
-      )
-      .toPromise()
-    return result.data?.moonDAOCitizenTransfers ?? []
+    const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+    const CITIZEN_ADDRESS = CITIZEN_ADDRESSES[chainSlug]
+    if (!CITIZEN_ADDRESS) return []
+    const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
+    if (!apiKey) return []
+    const res = await fetch(
+      `https://api.etherscan.io/v2/api?module=account&action=tokennfttx` +
+      `&contractaddress=${CITIZEN_ADDRESS}&page=1&offset=${limit}&sort=desc&chainid=${DEFAULT_CHAIN_V5.id}&apikey=${apiKey}`,
+      { signal: AbortSignal.timeout(5000) }
+    )
+    if (!res.ok) return []
+    const json = await res.json()
+    if (json.status !== '1' || !Array.isArray(json.result)) return []
+    return json.result
+      .filter((tx: any) => tx.from === '0x0000000000000000000000000000000000000000')
+      .map((tx: any) => ({
+        id: tx.hash,
+        tokenId: tx.tokenID,
+        transactionHash: tx.hash,
+        ethValue: '0',
+        blockTimestamp: tx.timeStamp,
+        blockNumber: tx.blockNumber,
+      }))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Fetch recent team mint transfers via Etherscan v2 (Arbitrum).
+ * Used to attach real mintTimestamps to newestTeams on the dashboard.
+ */
+export async function getRecentTeamTransfers(limit: number = 20): Promise<TeamTransfer[]> {
+  try {
+    const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+    const TEAM_ADDRESS = TEAM_ADDRESSES[chainSlug]
+    if (!TEAM_ADDRESS) return []
+    const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
+    if (!apiKey) return []
+    const res = await fetch(
+      `https://api.etherscan.io/v2/api?module=account&action=tokennfttx` +
+      `&contractaddress=${TEAM_ADDRESS}&page=1&offset=${limit}&sort=desc&chainid=${DEFAULT_CHAIN_V5.id}&apikey=${apiKey}`,
+      { signal: AbortSignal.timeout(5000) }
+    )
+    if (!res.ok) return []
+    const json = await res.json()
+    if (json.status !== '1' || !Array.isArray(json.result)) return []
+    return json.result
+      .filter((tx: any) => tx.from === '0x0000000000000000000000000000000000000000')
+      .map((tx: any) => ({
+        id: tx.hash,
+        tokenId: tx.tokenID,
+        ethValue: '0',
+        blockTimestamp: tx.timeStamp,
+        blockNumber: tx.blockNumber,
+      }))
   } catch {
     return []
   }

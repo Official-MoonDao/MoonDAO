@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { RocketLaunchIcon } from '@heroicons/react/24/outline'
-import StandardButton from '@/components/layout/StandardButton'
 import { Project } from '@/lib/project/useProjectData'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 
@@ -19,52 +18,52 @@ export default function DashboardActiveProjects({
 }: DashboardActiveProjectsProps) {
   const { quarter, year } = getRelativeQuarter(0)
   return (
-    <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-8">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 mt-8 mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
           <div>
-            <h3 className="text-3xl font-bold text-white flex items-center gap-3 mb-3">
-              <RocketLaunchIcon className="w-8 h-8" />
+            <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
+              <RocketLaunchIcon className="w-6 h-6 text-green-400" />
               Active Projects
             </h3>
-            <p className="text-green-200 text-base">
-              Contribute to space exploration initiatives and make history
+            <p className="text-white/40 text-sm">
+              Contribute to space exploration initiatives
             </p>
           </div>
 
           {/* Stats next to title */}
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             {showBudget && usdBudget !== undefined && (
-              <div className="bg-black/20 rounded-xl px-5 py-3 border border-green-500/20">
-                <div className="text-xl font-bold text-white">
+              <div className="bg-white/5 rounded-xl px-4 py-2.5 border border-white/10">
+                <div className="text-lg font-bold text-white">
                   ${Number(usdBudget).toLocaleString()}
                 </div>
-                <div className="text-green-200 text-sm">Q{quarter} {year} Budget</div>
+                <div className="text-white/40 text-xs">Q{quarter} {year} Budget</div>
               </div>
             )}
-            <div className="bg-black/20 rounded-xl px-5 py-3 border border-green-500/20">
-              <div className="text-xl font-bold text-white">
+            <div className="bg-white/5 rounded-xl px-4 py-2.5 border border-white/10">
+              <div className="text-lg font-bold text-white">
                 {currentProjects?.length || 0}
               </div>
-              <div className="text-green-200 text-sm">Total Projects</div>
+              <div className="text-white/40 text-xs">Total Projects</div>
             </div>
           </div>
         </div>
 
         {/* Buttons on the right */}
-        <div className="flex gap-4">
-          <StandardButton
-            className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-8 py-4 rounded-xl font-medium transition-all text-base"
-            link="/proposals"
+        <div className="flex gap-2">
+          <Link
+            href="/proposals"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap bg-white/5 hover:bg-white/10 text-white/80 border-white/10"
           >
             Propose Project
-          </StandardButton>
-          <StandardButton
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all text-base"
-            link="/projects"
+          </Link>
+          <Link
+            href="/projects"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap bg-green-500/10 hover:bg-green-500/20 text-green-200 border-green-400/20"
           >
-            View All Projects
-          </StandardButton>
+            View All →
+          </Link>
         </div>
       </div>
 
@@ -74,7 +73,7 @@ export default function DashboardActiveProjects({
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {currentProjects.slice(0, maxProjects).map((project: any, index: number) => (
               <Link key={index} href={`/project/${project.MDP}`} passHref>
-                <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 h-[280px] flex flex-col">
+                <div className="bg-black/20 rounded-xl p-5 border border-white/5 cursor-pointer hover:bg-white/[0.05] hover:border-white/15 transition-all duration-300 h-[260px] flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                     <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight line-clamp-2">
                       {project.name}
@@ -89,13 +88,13 @@ export default function DashboardActiveProjects({
                       {project.active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden">
+                  <p className="text-white/50 text-sm leading-relaxed flex-1 overflow-hidden">
                     {project.description?.length > 180
                       ? `${project.description.substring(0, 180)}...`
                       : project.description || 'No description available'}
                   </p>
-                  <div className="mt-4 pt-4 border-t border-green-500/10">
-                    <div className="text-green-300 text-xs font-medium hover:text-green-200 transition-colors">
+                  <div className="mt-4 pt-4 border-t border-white/5">
+                    <div className="text-white/40 text-xs font-medium hover:text-white/70 transition-colors">
                       Click to view details →
                     </div>
                   </div>
@@ -105,7 +104,7 @@ export default function DashboardActiveProjects({
           </div>
         </div>
       ) : (
-        <div className="bg-black/20 rounded-xl p-12 border border-green-500/20 min-h-[300px] flex items-center justify-center">
+        <div className="bg-black/20 rounded-xl p-12 border border-white/5 min-h-[200px] flex items-center justify-center">
           <div className="text-center max-w-md">
             <RocketLaunchIcon className="w-20 h-20 text-gray-500 mx-auto mb-6" />
             <h4 className="font-bold text-white text-2xl mb-3">
@@ -116,18 +115,18 @@ export default function DashboardActiveProjects({
               opportunities to contribute to groundbreaking missions
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <StandardButton
-                className="bg-green-600/20 hover:bg-green-600/40 text-green-300 px-8 py-3 rounded-xl transition-all font-medium"
-                link="/projects"
+              <Link
+                href="/projects"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap bg-white/5 hover:bg-white/10 text-white/80 border-white/10"
               >
                 View All Projects
-              </StandardButton>
-              <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-8 py-3 rounded-xl transition-all font-medium"
-                link="/proposals"
+              </Link>
+              <Link
+                href="/proposals"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap bg-white/5 hover:bg-white/10 text-white/80 border-white/10"
               >
                 Propose a Project
-              </StandardButton>
+              </Link>
             </div>
           </div>
         </div>

@@ -19,6 +19,8 @@ import {
   ChartBarIcon,
   DocumentTextIcon,
   FireIcon,
+  UserCircleIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
@@ -487,19 +489,34 @@ export default function SignedInDashboard({
             <p className="text-white/50 text-xs">MoonDAO Citizen</p>
           </div>
           {/* Edit profile link */}
-          <Link
-            href={
-              citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
-                ? `/citizen/${generatePrettyLinkWithId(
-                    citizen.metadata.name,
-                    citizen.metadata?.id ?? citizen.id
-                  )}`
-                : '/join'
-            }
-            className="flex-shrink-0 text-xs text-blue-300 hover:text-blue-200 transition-colors px-3 py-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20"
-          >
-            Profile
-          </Link>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link
+              href={
+                citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                  ? `/citizen/${generatePrettyLinkWithId(
+                      citizen.metadata.name,
+                      citizen.metadata?.id ?? citizen.id
+                    )}`
+                  : '/join'
+              }
+              className="text-xs text-white/60 hover:text-white transition-colors px-2.5 py-1.5 bg-white/5 rounded-lg border border-white/10"
+            >
+              View
+            </Link>
+            <Link
+              href={
+                citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                  ? `/citizen/${generatePrettyLinkWithId(
+                      citizen.metadata.name,
+                      citizen.metadata?.id ?? citizen.id
+                    )}?edit=1`
+                  : '/join'
+              }
+              className="text-xs text-blue-300 hover:text-blue-200 transition-colors px-2.5 py-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20"
+            >
+              Edit
+            </Link>
+          </div>
         </div>
 
         {/* ──────────────── PREMIUM HERO: Greeting + KPIs ──────────────── */}
@@ -558,32 +575,59 @@ export default function SignedInDashboard({
                 </div>
               </div>
 
-              {/* Contribution CTA box */}
-              <div className="flex items-center gap-4 flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-xl px-5 py-3.5">
-                <div>
-                  <p className="text-white text-sm font-semibold">What did you get done this week?</p>
-                  <p className="text-white/40 text-xs mt-0.5">Earn ETH & vMOONEY rewards each quarter.</p>
+              {/* View / Edit Profile buttons */}
+              {citizen && (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Link
+                    href={
+                      citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                        ? `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata?.id ?? citizen.id)}`
+                        : '/citizens'
+                    }
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white/70 hover:text-white text-sm font-medium transition-all"
+                  >
+                    <UserCircleIcon className="w-4 h-4" />
+                    View Profile
+                  </Link>
+                  <Link
+                    href={
+                      citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+                        ? `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata?.id ?? citizen.id)}?edit=1`
+                        : '/join'
+                    }
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl text-blue-300 hover:text-blue-200 text-sm font-medium transition-all"
+                  >
+                    <PencilSquareIcon className="w-4 h-4" />
+                    Edit Profile
+                  </Link>
                 </div>
-                <a
-                  href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all whitespace-nowrap flex-shrink-0"
-                >
-                  <TrophyIcon className="w-4 h-4" />
-                  Submit Contribution
-                </a>
-              </div>
+              )}
             </div>
           </div>
 
         </div>
 
         {/* ──────────────── ROW 1: Activity + Citizens/Teams + Wallet/Rewards ──────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
           {/* MIDDLE — Recent Activity (6 cols) */}
-          <div className="lg:col-span-6 order-2 lg:order-2">
-            <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 h-full">
+          <div className="lg:col-span-6 order-2 lg:order-2 flex flex-col gap-4">
+            {/* Contribution CTA */}
+            <div className="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-3.5">
+              <div>
+                <p className="text-white text-sm font-semibold">What did you get done this week?</p>
+                <p className="text-white/40 text-xs mt-0.5">Earn ETH & vMOONEY rewards each quarter.</p>
+              </div>
+              <a
+                href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all whitespace-nowrap flex-shrink-0"
+              >
+                <TrophyIcon className="w-4 h-4" />
+                Submit Contribution
+              </a>
+            </div>
+            <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 flex-1">
               <SectionHeader
                 title="Recent Activity"
                 subtitle="Latest happenings across the network"
@@ -603,7 +647,7 @@ export default function SignedInDashboard({
                 newestTeams={filteredTeams}
                 proposals={proposals}
                 missions={missions}
-                maxItems={11}
+                maxItems={13}
               />
             </div>
           </div>
@@ -664,7 +708,7 @@ export default function SignedInDashboard({
                   actions={<SubtleButton color="purple" link="/teams">All →</SubtleButton>}
                 />
                 <div className="flex flex-col gap-2 mt-2">
-                  {filteredTeams.slice(0, 5).map((t: any) => {
+                  {filteredTeams.slice(0, 8).map((t: any) => {
                     const name = t.name || t.metadata?.name || `Team #${t.id}`
                     const image = t.image || t.metadata?.image
                     const description = (t.description || t.metadata?.description || '')
@@ -739,11 +783,11 @@ export default function SignedInDashboard({
 
         {/* ──────────────── ROW 2: Proposals + Events ──────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
-          {/* Active Proposals (8 cols) */}
+          {/* Latest Proposals (8 cols) */}
           <div className="lg:col-span-8 order-2 lg:order-1 flex flex-col">
             <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 flex-1">
               <SectionHeader
-                title="Active Proposals"
+                title="Latest Proposals"
                 subtitle="Vote on the future of MoonDAO"
                 icon={<DocumentTextIcon className="w-6 h-6 text-purple-400" />}
                 actions={<SubtleButton color="white" link="/projects">View All →</SubtleButton>}
@@ -752,7 +796,7 @@ export default function SignedInDashboard({
                 noPagination
                 compact
                 feedCardStyle
-                projects={proposals.slice(0, 4)}
+                projects={proposals.slice(0, 3)}
               />
             </div>
           </div>

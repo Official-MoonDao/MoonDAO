@@ -23,7 +23,7 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { getCitizensLocationData } from '@/lib/map'
-import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
+import { getAllNetworkTransfers, getRecentCitizenTransfers, getRecentTeamTransfers } from '@/lib/network/networkSubgraph'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -360,13 +360,15 @@ export async function getStaticProps() {
     }
   }
 
-  const [transferResult, contractResult, aumResult, mooneyPriceResult, locationResult] =
+  const [transferResult, contractResult, aumResult, mooneyPriceResult, locationResult, recentCitizenResult, recentTeamResult] =
     await Promise.allSettled([
       allTransferData(),
       contractOperations(),
       getAUMData(),
       getMooneyPriceData(),
       getLocationData(),
+      getRecentCitizenTransfers(50),
+      getRecentTeamTransfers(20),
     ])
 
   transferData =
@@ -390,15 +392,17 @@ export async function getStaticProps() {
   let citizensCount = 0
   if (contractResult.status === 'fulfilled') {
     const { citizens, listings, jobs, teams, projects, missionRows } = contractResult.value
-    // Build tokenId→blockTimestamp map from subgraph transfer data
+    // Build tokenId→blockTimestamp maps from Etherscan transfer data
+    const recentCitizenTransfers = recentCitizenResult.status === 'fulfilled' ? recentCitizenResult.value : []
+    const recentTeamTransfers = recentTeamResult.status === 'fulfilled' ? recentTeamResult.value : []
     const mintTsMap: Record<string, number> = {}
-    for (const t of citizenSubgraphData.transfers) {
+    for (const t of recentCitizenTransfers) {
       if (t.tokenId && t.blockTimestamp && !(t.tokenId in mintTsMap)) {
         mintTsMap[t.tokenId] = Number(t.blockTimestamp)
       }
     }
     const teamMintTsMap: Record<string, number> = {}
-    for (const t of transferData.teamTransfers) {
+    for (const t of recentTeamTransfers) {
       if (t.tokenId && t.blockTimestamp && !(t.tokenId in teamMintTsMap)) {
         teamMintTsMap[t.tokenId] = Number(t.blockTimestamp)
       }

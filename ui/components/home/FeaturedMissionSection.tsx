@@ -28,7 +28,7 @@ import StandardButton from '@/components/layout/StandardButton'
 import Tooltip from '@/components/layout/Tooltip'
 import MissionSingleLineTitle from '@/components/mission/MissionSingleLineTitle'
 
-export default function FeaturedMissionSection({ missions, featuredMissionData }: any) {
+function FeaturedMissionSectionInner({ missions, featuredMissionData }: any) {
   const router = useRouter()
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -357,4 +357,9 @@ export default function FeaturedMissionSection({ missions, featuredMissionData }
       </div>
     </section>
   )
+}
+
+export default function FeaturedMissionSection(props: any) {
+  if (!FEATURED_MISSION) return null
+  return <FeaturedMissionSectionInner {...props} />
 }

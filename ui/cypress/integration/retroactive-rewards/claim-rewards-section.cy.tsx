@@ -3,7 +3,7 @@ import ClaimRewardsSection from '../../../components/home/ClaimRewardsSection'
 import TestnetProviders from '../../mock/TestnetProviders'
 
 describe('<ClaimRewardsSection />', () => {
-  it('should not render when no rewards available', () => {
+  it('should render with zero state when no rewards available', () => {
     cy.mount(
       <TestnetProviders>
         <div data-testid="wrapper">
@@ -12,11 +12,10 @@ describe('<ClaimRewardsSection />', () => {
       </TestnetProviders>
     )
 
-    // Component returns null when there are no rewards,
-    // so the wrapper should be empty
+    // Component always renders, showing 0.00 state when no rewards
     cy.get('[data-testid="wrapper"]')
       .should('exist')
       .children()
-      .should('have.length', 0)
+      .should('have.length.at.least', 1)
   })
 })
