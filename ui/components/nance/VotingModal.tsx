@@ -113,11 +113,73 @@ export default function VotingModal({
       })
       return
     }
+
+    // Preflight checks. These previously failed *during* the
+    // transaction and surfaced as a generic "Error submitting
+    // distribution" toast, leaving the user with no actionable
+    // information. Catch the well-known modes up front and tell
+    // the user exactly what to fix.
+
+    if (!account) {
+      toast.error(
+        'Wallet not connected to the app. Disconnect and reconnect, then try again.',
+        { style: toastStyle }
+      )
+      return
+    }
+
+    // (1) Defense-in-depth: re-check the chain from the same wallet
+    // PrivyWeb3Button signs with. The `requiredChain` prop on the
+    // button should already gate this, but if Privy's app-level
+    // network dropdown desyncs from the wallet provider (we've
+    // seen this with MetaMask retaining Ethereum after the user
+    // picks Arbitrum in our dropdown) we'd otherwise fall through
+    // to a confusing on-chain failure.
+    if (isWrongNetwork) {
+      toast.error(
+        `Wrong network. Switch your wallet to ${
+          DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'
+        } and try again.`,
+        { style: toastStyle }
+      )
+      return
+    }
+
+    // (2) Privy can have multiple wallets connected at once; the
+    // selected one feeds the displayed `address` / VP / "have you
+    // voted" lookup, but `useActiveAccount()` (Thirdweb v5) picks
+    // a separate active wallet. If they disagree, the user signs
+    // with a wallet that may have zero VP, and any "edit
+    // existing vote" path keyed off the Privy address breaks
+    // (insertIntoTable would hit a duplicate-row revert).
+    const signingAddress = account.address?.toLowerCase()
+    const displayAddress = (address ?? '').toLowerCase()
+    if (signingAddress && displayAddress && signingAddress !== displayAddress) {
+      toast.error(
+        'Active signing wallet differs from the wallet shown in the header. Switch wallets in the dropdown to the one displayed and try again.',
+        { style: toastStyle }
+      )
+      return
+    }
+
+    // (3) Auto-correct the edit flag from a fresh `votes` lookup
+    // against the signing address. The mounted `setEdit` effect
+    // keys on `userAddress`, but if `votes` arrived after the
+    // modal mounted (or the user has multiple wallets and the
+    // active one differs), `edit` can be stale.
+    const effectiveEdit =
+      edit ||
+      Boolean(
+        signingAddress &&
+          votes?.some(
+            (v: any) => v.address?.toLowerCase() === signingAddress
+          )
+      )
+
     try {
-      if (!account) throw new Error('No account found')
       setSubmitting(true)
       let receipt
-      if (edit) {
+      if (effectiveEdit) {
         const transaction = prepareContractCall({
           contract: proposalTableContract,
           method: 'updateTableCol' as string,
@@ -151,7 +213,7 @@ export default function VotingModal({
           kind: 'senate',
           proposalName: project?.name,
           proposalMDP: project?.MDP,
-          isEdit: edit,
+          isEdit: effectiveEdit,
         },
         { label: 'senate-vote-notification' }
       )
@@ -171,11 +233,67 @@ export default function VotingModal({
       })
       setSubmitting(false)
       closeModal()
-    } catch (error) {
-      console.error('Error submitting distribution:', error)
-      toast.error('Error submitting distribution. Please try again.', {
-        style: toastStyle,
+    } catch (error: any) {
+      // Pull the most useful piece of context out of whatever shape
+      // the error happens to take (Thirdweb wraps EVM errors in a
+      // few different envelopes). Surface that to the user instead
+      // of the previous generic "Please try again." which gave them
+      // no way to self-diagnose.
+      const raw =
+        error?.shortMessage ||
+        error?.reason ||
+        error?.data?.message ||
+        error?.cause?.shortMessage ||
+        error?.message ||
+        ''
+      const lower = String(raw).toLowerCase()
+
+      let friendly = 'Could not submit your vote.'
+      if (
+        lower.includes('user rejected') ||
+        lower.includes('user denied') ||
+        error?.code === 4001
+      ) {
+        friendly = 'Transaction was rejected in your wallet.'
+      } else if (lower.includes('insufficient funds')) {
+        friendly = `Not enough ETH on ${
+          DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'
+        } to pay gas. Bridge a small amount and try again.`
+      } else if (
+        lower.includes('nonce') ||
+        lower.includes('replacement') ||
+        lower.includes('already known')
+      ) {
+        friendly =
+          'Wallet nonce out of sync. Reset your wallet activity (or close and reopen the wallet) and try again.'
+      } else if (
+        lower.includes('chain') ||
+        lower.includes('network') ||
+        lower.includes('unsupported')
+      ) {
+        friendly = `Network mismatch. Make sure your wallet is on ${
+          DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'
+        }.`
+      } else if (
+        lower.includes('already voted') ||
+        lower.includes('duplicate')
+      ) {
+        friendly =
+          'It looks like you have already voted. Refresh the page and the modal will switch to "Edit Vote".'
+      } else if (raw) {
+        friendly = `Could not submit your vote: ${String(raw).slice(0, 160)}`
+      }
+
+      console.error('Error submitting distribution:', {
+        error,
+        edit: effectiveEdit,
+        signingAddress,
+        displayAddress,
+        connectedChainId,
+        requiredChainId,
+        choice,
       })
+      toast.error(friendly, { style: toastStyle })
       setSubmitting(false)
     }
   }
