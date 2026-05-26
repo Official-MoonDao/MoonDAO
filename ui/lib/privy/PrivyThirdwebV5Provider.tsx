@@ -81,8 +81,27 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
         await thirdwebWallet.connect({ client })
         setActiveWallet(thirdwebWallet)
       } catch (err: any) {
-        console.log(err.message)
-        // On error, we don't need to set an active wallet
+        // This catch is the source of a particularly nasty class
+        // of bugs: when adapter setup throws (provider not ready,
+        // signer init failed, ethers5Adapter rejected, etc.) the
+        // app continues happily — Privy still reports the wallet
+        // connected, balances/VP still render — but
+        // `useActiveAccount()` stays null. Downstream tx flows
+        // then fail with generic "could not submit" toasts.
+        // Surface it as a real error so it actually shows up in
+        // Sentry / browser consoles, with enough breadcrumbs to
+        // tell which wallet failed.
+        console.error(
+          '[PrivyThirdwebV5Provider] Failed to set active Thirdweb v5 wallet — useActiveAccount() will be null until the user reconnects.',
+          {
+            walletClientType: wallets[selectedWallet]?.walletClientType,
+            address: wallets[selectedWallet]?.address,
+            chainId: wallets[selectedWallet]?.chainId,
+            selectedChainId: selectedChain?.id,
+            message: err?.message,
+            error: err,
+          }
+        )
         return
       }
     }

@@ -316,12 +316,34 @@ export default function VotingModal({
     let canVote = false
     let actionLabel = 'Submit vote'
 
+    // The Privy wallet (header dropdown / VP) and the Thirdweb v5
+    // active account (transaction signer) are wired up
+    // independently inside PrivyThirdwebV5Provider. For non
+    // auto-switch wallets — notably MetaMask — that adapter setup
+    // can fail silently (provider/signer init throws and the
+    // catch in PrivyThirdwebV5Provider swallows it), leaving
+    // `account` null even though Privy reports the wallet
+    // connected and `vp` is computed off the Privy address. If we
+    // only gate on `vp <= 0` the Submit button is fully clickable
+    // here, the user clicks, and the catch block one layer below
+    // surfaces a generic "Could not submit" toast. Treat the v5
+    // account as a hard prereq so we tell the user up front.
+    const v5AccountReady = Boolean(account?.address)
+    const addressMismatch =
+      Boolean(account?.address) &&
+      Boolean(address) &&
+      account!.address.toLowerCase() !== address!.toLowerCase()
+
     if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
       actionLabel = 'Not supported'
     } else if (choice === undefined) {
       actionLabel = 'Select a choice'
     } else if (vp <= 0) {
       actionLabel = 'No voting power'
+    } else if (!v5AccountReady) {
+      actionLabel = 'Wallet not synced — reconnect'
+    } else if (addressMismatch) {
+      actionLabel = 'Wrong active wallet'
     } else if (submitting) {
       actionLabel = 'Submitting...'
     } else {
@@ -483,6 +505,58 @@ export default function VotingModal({
                               </span>
                             </div>
                           )}
+
+                          {/* Wallet-not-synced indicator. We see the
+                              Privy address (so VP renders) but
+                              Thirdweb v5 has no active account, which
+                              means the signer wiring inside
+                              PrivyThirdwebV5Provider failed. Most
+                              common cause is MetaMask: it isn't on
+                              the auto-switch list, and the silent
+                              catch in that provider hides any
+                              setup error. Reconnecting almost always
+                              re-runs the adapter cleanly. */}
+                          {!isWrongNetwork &&
+                            address &&
+                            !account?.address && (
+                              <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 flex items-start gap-2">
+                                <span className="font-semibold whitespace-nowrap">
+                                  Wallet not synced.
+                                </span>
+                                <span className="text-amber-100/80">
+                                  Disconnect and reconnect your wallet
+                                  from the header dropdown, then reopen
+                                  this modal.
+                                </span>
+                              </div>
+                            )}
+
+                          {/* Address-mismatch indicator. The Privy
+                              header shows one wallet, but Thirdweb
+                              v5 picked a different one as the active
+                              signer. Submitting would either revert
+                              (no VP on the v5 wallet) or record a
+                              vote against an unexpected address. */}
+                          {!isWrongNetwork &&
+                            account?.address &&
+                            address &&
+                            account.address.toLowerCase() !==
+                              address.toLowerCase() && (
+                              <div className="rounded-lg border border-orange-400/40 bg-orange-500/10 px-3 py-2 text-xs text-orange-100 flex items-start gap-2">
+                                <span className="font-semibold whitespace-nowrap">
+                                  Wrong active wallet.
+                                </span>
+                                <span className="text-orange-100/80">
+                                  The signing wallet ({' '}
+                                  {account.address.slice(0, 6)}…
+                                  {account.address.slice(-4)} ) doesn't
+                                  match the header wallet (
+                                  {address.slice(0, 6)}…
+                                  {address.slice(-4)}). Switch wallets
+                                  in the dropdown to match.
+                                </span>
+                              </div>
+                            )}
 
                           {/* Vote button */}
                           <div className="pt-2">{renderVoteButton()}</div>
