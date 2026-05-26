@@ -113,11 +113,73 @@ export default function VotingModal({
       })
       return
     }
+
+    // Preflight checks. These previously failed *during* the
+    // transaction and surfaced as a generic "Error submitting
+    // distribution" toast, leaving the user with no actionable
+    // information. Catch the well-known modes up front and tell
+    // the user exactly what to fix.
+
+    if (!account) {
+      toast.error(
+        'Wallet not connected to the app. Disconnect and reconnect, then try again.',
+        { style: toastStyle }
+      )
+      return
+    }
+
+    // (1) Defense-in-depth: re-check the chain from the same wallet
+    // PrivyWeb3Button signs with. The `requiredChain` prop on the
+    // button should already gate this, but if Privy's app-level
+    // network dropdown desyncs from the wallet provider (we've
+    // seen this with MetaMask retaining Ethereum after the user
+    // picks Arbitrum in our dropdown) we'd otherwise fall through
+    // to a confusing on-chain failure.
+    if (isWrongNetwork) {
+      toast.error(
+        `Wrong network. Switch your wallet to ${
+          DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'
+        } and try again.`,
+        { style: toastStyle }
+      )
+      return
+    }
+
+    // (2) Privy can have multiple wallets connected at once; the
+    // selected one feeds the displayed `address` / VP / "have you
+    // voted" lookup, but `useActiveAccount()` (Thirdweb v5) picks
+    // a separate active wallet. If they disagree, the user signs
+    // with a wallet that may have zero VP, and any "edit
+    // existing vote" path keyed off the Privy address breaks
+    // (insertIntoTable would hit a duplicate-row revert).
+    const signingAddress = account.address?.toLowerCase()
+    const displayAddress = (address ?? '').toLowerCase()
+    if (signingAddress && displayAddress && signingAddress !== displayAddress) {
+      toast.error(
+        'Active signing wallet differs from the wallet shown in the header. Switch wallets in the dropdown to the one displayed and try again.',
+        { style: toastStyle }
+      )
+      return
+    }
+
+    // (3) Auto-correct the edit flag from a fresh `votes` lookup
+    // against the signing address. The mounted `setEdit` effect
+    // keys on `userAddress`, but if `votes` arrived after the
+    // modal mounted (or the user has multiple wallets and the
+    // active one differs), `edit` can be stale.
+    const effectiveEdit =
+      edit ||
+      Boolean(
+        signingAddress &&
+          votes?.some(
+            (v: any) => v.address?.toLowerCase() === signingAddress
+          )
+      )
+
     try {
-      if (!account) throw new Error('No account found')
       setSubmitting(true)
       let receipt
-      if (edit) {
+      if (effectiveEdit) {
         const transaction = prepareContractCall({
           contract: proposalTableContract,
           method: 'updateTableCol' as string,
@@ -151,7 +213,7 @@ export default function VotingModal({
           kind: 'senate',
           proposalName: project?.name,
           proposalMDP: project?.MDP,
-          isEdit: edit,
+          isEdit: effectiveEdit,
         },
         { label: 'senate-vote-notification' }
       )
@@ -171,11 +233,67 @@ export default function VotingModal({
       })
       setSubmitting(false)
       closeModal()
-    } catch (error) {
-      console.error('Error submitting distribution:', error)
-      toast.error('Error submitting distribution. Please try again.', {
-        style: toastStyle,
+    } catch (error: any) {
+      // Pull the most useful piece of context out of whatever shape
+      // the error happens to take (Thirdweb wraps EVM errors in a
+      // few different envelopes). Surface that to the user instead
+      // of the previous generic "Please try again." which gave them
+      // no way to self-diagnose.
+      const raw =
+        error?.shortMessage ||
+        error?.reason ||
+        error?.data?.message ||
+        error?.cause?.shortMessage ||
+        error?.message ||
+        ''
+      const lower = String(raw).toLowerCase()
+
+      let friendly = 'Could not submit your vote.'
+      if (
+        lower.includes('user rejected') ||
+        lower.includes('user denied') ||
+        error?.code === 4001
+      ) {
+        friendly = 'Transaction was rejected in your wallet.'
+      } else if (lower.includes('insufficient funds')) {
+        friendly = `Not enough ETH on ${
+          DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'
+        } to pay gas. Bridge a small amount and try again.`
+      } else if (
+        lower.includes('nonce') ||
+        lower.includes('replacement') ||
+        lower.includes('already known')
+      ) {
+        friendly =
+          'Wallet nonce out of sync. Reset your wallet activity (or close and reopen the wallet) and try again.'
+      } else if (
+        lower.includes('chain') ||
+        lower.includes('network') ||
+        lower.includes('unsupported')
+      ) {
+        friendly = `Network mismatch. Make sure your wallet is on ${
+          DEFAULT_CHAIN_V5.name ?? 'Arbitrum One'
+        }.`
+      } else if (
+        lower.includes('already voted') ||
+        lower.includes('duplicate')
+      ) {
+        friendly =
+          'It looks like you have already voted. Refresh the page and the modal will switch to "Edit Vote".'
+      } else if (raw) {
+        friendly = `Could not submit your vote: ${String(raw).slice(0, 160)}`
+      }
+
+      console.error('Error submitting distribution:', {
+        error,
+        edit: effectiveEdit,
+        signingAddress,
+        displayAddress,
+        connectedChainId,
+        requiredChainId,
+        choice,
       })
+      toast.error(friendly, { style: toastStyle })
       setSubmitting(false)
     }
   }
@@ -198,12 +316,34 @@ export default function VotingModal({
     let canVote = false
     let actionLabel = 'Submit vote'
 
+    // The Privy wallet (header dropdown / VP) and the Thirdweb v5
+    // active account (transaction signer) are wired up
+    // independently inside PrivyThirdwebV5Provider. For non
+    // auto-switch wallets — notably MetaMask — that adapter setup
+    // can fail silently (provider/signer init throws and the
+    // catch in PrivyThirdwebV5Provider swallows it), leaving
+    // `account` null even though Privy reports the wallet
+    // connected and `vp` is computed off the Privy address. If we
+    // only gate on `vp <= 0` the Submit button is fully clickable
+    // here, the user clicks, and the catch block one layer below
+    // surfaces a generic "Could not submit" toast. Treat the v5
+    // account as a hard prereq so we tell the user up front.
+    const v5AccountReady = Boolean(account?.address)
+    const addressMismatch =
+      Boolean(account?.address) &&
+      Boolean(address) &&
+      account!.address.toLowerCase() !== address!.toLowerCase()
+
     if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
       actionLabel = 'Not supported'
     } else if (choice === undefined) {
       actionLabel = 'Select a choice'
     } else if (vp <= 0) {
       actionLabel = 'No voting power'
+    } else if (!v5AccountReady) {
+      actionLabel = 'Wallet not synced — reconnect'
+    } else if (addressMismatch) {
+      actionLabel = 'Wrong active wallet'
     } else if (submitting) {
       actionLabel = 'Submitting...'
     } else {
@@ -365,6 +505,58 @@ export default function VotingModal({
                               </span>
                             </div>
                           )}
+
+                          {/* Wallet-not-synced indicator. We see the
+                              Privy address (so VP renders) but
+                              Thirdweb v5 has no active account, which
+                              means the signer wiring inside
+                              PrivyThirdwebV5Provider failed. Most
+                              common cause is MetaMask: it isn't on
+                              the auto-switch list, and the silent
+                              catch in that provider hides any
+                              setup error. Reconnecting almost always
+                              re-runs the adapter cleanly. */}
+                          {!isWrongNetwork &&
+                            address &&
+                            !account?.address && (
+                              <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 flex items-start gap-2">
+                                <span className="font-semibold whitespace-nowrap">
+                                  Wallet not synced.
+                                </span>
+                                <span className="text-amber-100/80">
+                                  Disconnect and reconnect your wallet
+                                  from the header dropdown, then reopen
+                                  this modal.
+                                </span>
+                              </div>
+                            )}
+
+                          {/* Address-mismatch indicator. The Privy
+                              header shows one wallet, but Thirdweb
+                              v5 picked a different one as the active
+                              signer. Submitting would either revert
+                              (no VP on the v5 wallet) or record a
+                              vote against an unexpected address. */}
+                          {!isWrongNetwork &&
+                            account?.address &&
+                            address &&
+                            account.address.toLowerCase() !==
+                              address.toLowerCase() && (
+                              <div className="rounded-lg border border-orange-400/40 bg-orange-500/10 px-3 py-2 text-xs text-orange-100 flex items-start gap-2">
+                                <span className="font-semibold whitespace-nowrap">
+                                  Wrong active wallet.
+                                </span>
+                                <span className="text-orange-100/80">
+                                  The signing wallet ({' '}
+                                  {account.address.slice(0, 6)}…
+                                  {account.address.slice(-4)} ) doesn't
+                                  match the header wallet (
+                                  {address.slice(0, 6)}…
+                                  {address.slice(-4)}). Switch wallets
+                                  in the dropdown to match.
+                                </span>
+                              </div>
+                            )}
 
                           {/* Vote button */}
                           <div className="pt-2">{renderVoteButton()}</div>
