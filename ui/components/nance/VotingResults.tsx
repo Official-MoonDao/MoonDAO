@@ -1,7 +1,6 @@
 import { CheckCircleIcon, XCircleIcon, MinusCircleIcon } from '@heroicons/react/24/outline'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { MEMBER_VOTE_SUPER_MAJORITY } from '@/lib/proposals/computeMemberProposalTally'
-import { SnapshotGraphqlProposalVotingInfo, VotesOfProposal } from '@/lib/snapshot'
 import ColorBar from './ColorBar'
 
 interface VotingResultsProps {
@@ -12,15 +11,11 @@ interface VotingResultsProps {
   // sensible (if less precise) view.
   voteOutcome: any
   votes?: any[]
-  threshold?: number
-  onRefetch?: () => void
 }
 
 export default function VotingResults({
   voteOutcome,
   votes,
-  threshold = 0,
-  onRefetch,
 }: VotingResultsProps) {
   // New shape: an explicit MemberVoteTally with For/Against percentages
   // computed against decided VP (Abstain excluded), plus a separate
@@ -44,15 +39,15 @@ export default function VotingResults({
     : (Number(voteOutcome?.[3] ?? 0)).toFixed(1)
 
   // Pass/fail: prefer the explicit `passed` flag from the structured
-  // tally (mirrors the on-chain decision exactly). Fall back to a
-  // simple-majority test for the legacy shape so we don't break
-  // anything.
+  // tally (mirrors the on-chain decision exactly, including the 66.6%
+  // supermajority threshold against decided VP). Fall back to a simple
+  // -majority test for the legacy shape so we don't break the
+  // project-vote callers that pass an older `Record<choice, pct>`.
   const forPctNum = Number(forPercentage) || 0
   const againstPctNum = Number(againstPercentage) || 0
   const passed = isStructuredTally
     ? Boolean(voteOutcome.passed)
     : forPctNum > againstPctNum
-  const quorumMet = threshold === 0 // If no quorum set, consider it met
 
   return (
     <div className="p-6">
@@ -61,17 +56,17 @@ export default function VotingResults({
           <h3 className="text-xl font-bold text-white font-GoodTimes">Voting Results</h3>
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-              passed && quorumMet
+              passed
                 ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                 : 'bg-red-500/20 text-red-400 border border-red-500/30'
             }`}
           >
-            {passed && quorumMet ? (
+            {passed ? (
               <CheckCircleIcon className="w-4 h-4" />
             ) : (
               <XCircleIcon className="w-4 h-4" />
             )}
-            {passed && quorumMet ? 'PASSED' : 'FAILED'}
+            {passed ? 'PASSED' : 'FAILED'}
           </div>
         </div>
 
@@ -150,7 +145,7 @@ export default function VotingResults({
                 <p className="font-medium text-gray-400">Abstain</p>
                 <p className="text-sm text-gray-300">
                   {isStructuredTally
-                    ? `${abstainPercentage}% of voters abstained · excluded from threshold`
+                    ? `${abstainPercentage}% of turnout VP · excluded from threshold`
                     : `${abstainPercentage}% of votes`}
                 </p>
               </div>

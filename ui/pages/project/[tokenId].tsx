@@ -477,7 +477,6 @@ export default function ProjectProfile({
                       <VotingResults
                         voteOutcome={voteOutcome}
                         votes={votes}
-                        threshold={0}
                       />
                     </div>
                   </SectionCard>
