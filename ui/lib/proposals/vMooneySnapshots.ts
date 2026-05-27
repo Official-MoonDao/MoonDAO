@@ -642,14 +642,37 @@ export function resolveSnapshotDistributions(
   snapshot: VMooneySnapshot
 ): SnapshotVoteRow[] {
   if (!snapshot.distributions) return []
+  // Cycle keys are part of the schema for project quarterly votes —
+  // emit a hard error rather than silently producing "Q0 0" rows
+  // when they're missing. Two failure modes this guards against:
+  //
+  //   * A malformed snapshot (typo / missed paste) lands in
+  //     `QUARTERLY_VMOONEY_SNAPSHOTS` without `quarter`/`year` and
+  //     downstream tally code happily attributes the votes to a
+  //     non-existent cycle "Q0 0".
+  //
+  //   * A per-MDP Member Vote snapshot (which doesn't carry
+  //     `quarter`/`year`, only `mdp`) accidentally gets routed
+  //     through this resolver instead of
+  //     `resolveSnapshotMemberProposalVotes`. The cycle-keyed
+  //     pipeline would otherwise consume it without complaint.
+  if (snapshot.quarter == null || snapshot.year == null) {
+    throw new Error(
+      `[resolveSnapshotDistributions] snapshot missing cycle keys ` +
+        `(quarter=${snapshot.quarter}, year=${snapshot.year}). ` +
+        `Project quarterly snapshots must declare both. Per-MDP ` +
+        `Member Vote snapshots should be resolved via ` +
+        `resolveSnapshotMemberProposalVotes instead.`
+    )
+  }
   const rows: SnapshotVoteRow[] = []
   for (const [address, distribution] of Object.entries(snapshot.distributions)) {
     if (!address || !distribution) continue
     rows.push({
       address: address.toLowerCase(),
       distribution: { ...distribution },
-      quarter: snapshot.quarter ?? 0,
-      year: snapshot.year ?? 0,
+      quarter: snapshot.quarter,
+      year: snapshot.year,
     })
   }
   return rows
@@ -683,13 +706,25 @@ export function resolveSnapshotMemberProposalVotes(
   snapshot: VMooneySnapshot
 ): SnapshotMemberProposalVoteRow[] {
   if (!snapshot.distributions) return []
+  // Mirror of the cycle-keys guard in `resolveSnapshotDistributions`:
+  // refuse to silently emit `MDP: 0` rows when the per-MDP key is
+  // missing, since that masks malformed snapshots and accidental
+  // cross-pipeline routing.
+  if (snapshot.mdp == null) {
+    throw new Error(
+      `[resolveSnapshotMemberProposalVotes] snapshot missing 'mdp' ` +
+        `key. Per-MDP Member Vote snapshots must declare which MDP ` +
+        `they pin. Project quarterly snapshots should be resolved ` +
+        `via resolveSnapshotDistributions instead.`
+    )
+  }
   const rows: SnapshotMemberProposalVoteRow[] = []
   for (const [address, vote] of Object.entries(snapshot.distributions)) {
     if (!address || !vote) continue
     rows.push({
       address: address.toLowerCase(),
       vote: { ...vote },
-      MDP: snapshot.mdp ?? 0,
+      MDP: snapshot.mdp,
     })
   }
   return rows
