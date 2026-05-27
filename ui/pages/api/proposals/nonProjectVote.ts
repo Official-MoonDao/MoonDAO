@@ -112,10 +112,80 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     transaction,
     account,
   })
+
+  // Per-MDP vMOONEY snapshot, paste-ready for
+  // `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS` in
+  // `lib/proposals/vMooneySnapshots.ts`. This is the `--method=projected`
+  // backup capture: it freezes the vMOONEY values reported by the live
+  // fetcher *at this exact moment* (i.e. immediately after the on-chain
+  // tally), which matches what the live recompute would produce until a
+  // voter touches their lock. The truly-historical snapshot (recovered
+  // via `balanceOfAt(_block)` per chain) is captured separately by
+  // running `ui/scripts/snapshot-vmooney.mjs --kind=memberProposal
+  // --mdp=<n>`. Prefer the historical capture when both exist; this
+  // backup is what we have if the historical run can't be done (RPC
+  // outage, etc.) so the audit is never empty.
+  const projectedSnapshot = {
+    mdp,
+    voteCloseTimestamp: votingPeriodClosedTimestamp,
+    snapshotTakenAt: Math.floor(Date.now() / 1000),
+    method: 'projected' as const,
+    vMOONEY: Object.fromEntries(
+      voteAddresses.map((address, index) => [
+        address.toLowerCase(),
+        Number(vMOONEYs[index]) || 0,
+      ])
+    ),
+    distributions: Object.fromEntries(
+      votes.map((v) => [
+        String(v.address || '').toLowerCase(),
+        // The live row carries either a parsed object or a JSON
+        // string in `vote`. Normalize to the object form the snapshot
+        // schema expects.
+        (() => {
+          const raw = (v as any).vote
+          if (raw && typeof raw === 'object') return { ...raw }
+          if (typeof raw === 'string') {
+            try {
+              return JSON.parse(raw)
+            } catch {
+              return {}
+            }
+          }
+          return {}
+        })(),
+      ])
+    ),
+  }
+  // One-line marker for grep/Sentry/log-shipping. Operators can copy
+  // the JSON below the marker straight into the constants file.
+  console.log(
+    `[member-proposal-vote] tallied MDP-${mdp} (passed=${passed}, forPct=${outcome[1]?.toFixed(2)}%) — paste under MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS in lib/proposals/vMooneySnapshots.ts:\n` +
+      `${mdp}: ${JSON.stringify(projectedSnapshot, null, 2)},`
+  )
+
   res.status(200).json({
-    url: 'https://moondao.com/projects/' + mdp,
+    url: 'https://moondao.com/project/' + mdp,
     proposalId: mdp,
-    passed: passed,
+    passed,
+    // Surface the same fields a Discord summary needs, so the
+    // /api/proposals/vote-notification handler doesn't have to re-run
+    // the tally to format its message. Sums are quadratic VPs (square
+    // roots of vMOONEY), keyed by the same '1' / '2' / '3' choice ids
+    // VotingModal writes.
+    tally: {
+      vpFor: Number(outcome[1]) || 0,
+      forPct: Number(outcome[1]) || 0,
+      voterCount: voteAddresses.length,
+      totalQuadraticVP: Object.values(addressToQuadraticVotingPower).reduce(
+        (a, b) => a + (Number.isFinite(b) ? b : 0),
+        0
+      ),
+      voteCloseTimestamp: votingPeriodClosedTimestamp,
+    },
+    // Paste-ready backup snapshot. The frontend doesn't read this; it's
+    // for the EB workflow + log shipping.
+    projectedSnapshot,
   })
 }
 export default withMiddleware(handler, rateLimit, isOperator)
