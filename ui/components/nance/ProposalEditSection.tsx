@@ -14,17 +14,24 @@ import {
   InformationCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
+import { ProposalStatus } from '@/lib/nance/useProposalStatus'
 
 interface ProposalEditSectionProps {
   proposalJSON: any
   projectName: string
   mdp: number
+  // Lifecycle gate. Editing a proposal post-approval would let the
+  // author rewrite the text members already voted on, so we lock it
+  // once `proposalStatus === 'Approved'`. Optional so legacy callers
+  // (and tests) keep working without a status feed.
+  proposalStatus?: ProposalStatus
 }
 
 export default function ProposalEditSection({
   proposalJSON,
   projectName,
   mdp,
+  proposalStatus,
 }: ProposalEditSectionProps) {
   const router = useRouter()
   const account = useActiveAccount()
@@ -44,6 +51,7 @@ export default function ProposalEditSection({
     address.toLowerCase() === proposalJSON.authorAddress.toLowerCase()
 
   if (!isAuthor) return null
+  if (proposalStatus === 'Approved') return null
 
   const handleSetMarkdown = (markdown: string) => {
     setNewBody(markdown)
