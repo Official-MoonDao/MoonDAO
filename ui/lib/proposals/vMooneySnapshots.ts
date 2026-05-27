@@ -116,8 +116,22 @@
  */
 
 export type VMooneySnapshot = {
-  quarter: number
-  year: number
+  /**
+   * Cycle keys for project quarterly votes (`MEMBER_VOTE_VMOONEY_SNAPSHOTS`,
+   * `RETRO_VMOONEY_SNAPSHOTS`). Optional because per-proposal Member Vote
+   * snapshots (`MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS`) are keyed by `mdp`
+   * instead — each Senate-approved proposal has its own close moment so
+   * `(quarter, year)` doesn't apply.
+   */
+  quarter?: number
+  year?: number
+  /**
+   * MDP (Senate-approved proposal id) for per-proposal Member Vote
+   * snapshots in `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS`. Mutually exclusive
+   * with `(quarter, year)` in practice — the cycle maps don't set this,
+   * the per-MDP map doesn't set quarter/year.
+   */
+  mdp?: number
   voteCloseTimestamp: number
   snapshotTakenAt: number
   /**
@@ -537,6 +551,38 @@ export function getRetroVMooneySnapshot(
 }
 
 /**
+ * Per-MDP Member Vote snapshots. Snapshot at the canonical close moment
+ * for a Senate-approved proposal: `tempCheckApprovedTimestamp + 5 days`,
+ * read from `Proposals.sol` on Arbitrum. Same mechanism as
+ * `MEMBER_VOTE_VMOONEY_SNAPSHOTS` — the only difference is the key (an
+ * MDP integer instead of a `(quarter, year)` cycle), since each
+ * proposal has its own close timestamp.
+ *
+ * Each entry's `distributions` is in `{ choiceKey → percent }` shape
+ * mirroring the live `vote` column on the `NonProjectProposal_*` table
+ * (e.g. `{ "1": 100 }` for an all-Yes single-click vote, where the
+ * choice keys map to ['Yes', 'No', 'Abstain'] in `VotingModal.tsx`).
+ *
+ * Capture workflow:
+ *
+ *   npm --prefix ui run snapshot:vmooney -- \
+ *       --kind=memberProposal --mdp=<n>
+ *
+ * The script reads `tempCheckApprovedTimestamp(mdp)` from
+ * `Proposals.sol` on Arbitrum, derives the canonical close moment
+ * (+5 days), resolves the per-chain block-at-close, and emits a
+ * paste-ready entry keyed by the MDP integer.
+ */
+export const MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS: Record<number, VMooneySnapshot> = {}
+
+export function getMemberProposalVMooneySnapshot(
+  mdp: number
+): VMooneySnapshot | null {
+  if (!Number.isInteger(mdp) || mdp <= 0) return null
+  return MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS[mdp] ?? null
+}
+
+/**
  * Resolve a list of voter addresses against a snapshot. Returns vMOONEY
  * values in the same order as `addresses`, defaulting any voter missing
  * from the snapshot to 0 (which downstream maps to 0 voting power, the
@@ -602,8 +648,48 @@ export function resolveSnapshotDistributions(
     rows.push({
       address: address.toLowerCase(),
       distribution: { ...distribution },
-      quarter: snapshot.quarter,
-      year: snapshot.year,
+      quarter: snapshot.quarter ?? 0,
+      year: snapshot.year ?? 0,
+    })
+  }
+  return rows
+}
+
+/**
+ * Vote row shape returned by `queryTable(... NonProjectProposal_*)` for
+ * per-MDP Member Vote snapshots. Distinct from the cycle-keyed
+ * `SnapshotVoteRow` above on two axes: the column name is `vote`
+ * (matches `DistributionVote` in `lib/tableland/types.ts`) instead of
+ * `distribution`, and the cycle key is `MDP` instead of `(quarter,
+ * year)`. The compute pipeline's `runQuadraticVoting` already accepts
+ * either column name (`if (!dist) dist = d.vote`), so producing the
+ * right field here is purely about UI consumers (e.g.
+ * `MemberVoteSidebar` reads `v.vote` directly).
+ */
+type SnapshotMemberProposalVoteRow = {
+  address: string
+  vote: Record<string, number>
+  MDP: number
+}
+
+/**
+ * Materialize per-voter votes from a per-MDP Member Vote snapshot's
+ * frozen distributions. Mirrors `resolveSnapshotDistributions` but
+ * emits the `NonProjectProposal_*` shape (`vote` column + `MDP` cycle
+ * key) so `MemberVoteSidebar` and the right-rail Voting Results card
+ * can consume snapshot rows interchangeably with live Tableland reads.
+ */
+export function resolveSnapshotMemberProposalVotes(
+  snapshot: VMooneySnapshot
+): SnapshotMemberProposalVoteRow[] {
+  if (!snapshot.distributions) return []
+  const rows: SnapshotMemberProposalVoteRow[] = []
+  for (const [address, vote] of Object.entries(snapshot.distributions)) {
+    if (!address || !vote) continue
+    rows.push({
+      address: address.toLowerCase(),
+      vote: { ...vote },
+      MDP: snapshot.mdp ?? 0,
     })
   }
   return rows
