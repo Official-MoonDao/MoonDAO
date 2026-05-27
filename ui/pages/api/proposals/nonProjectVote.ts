@@ -14,12 +14,15 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
+import {
+  computeMemberProposalTally,
+  MEMBER_VOTE_SUPER_MAJORITY,
+} from '@/lib/proposals/computeMemberProposalTally'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
-import { runQuadraticVoting } from '@/lib/utils/rewards'
 
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
@@ -97,10 +100,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return [address, power]
     })
   )
-  const SUM_TO_ONE_HUNDRED = 100
-  const outcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
-  const SUPER_MAJORITY = 66.6
-  const passed = outcome[1] >= SUPER_MAJORITY
+  // Abstain-aware tally: For % is computed as a share of decided VP
+  // (For + Against), so a large-VP abstainer can't sink an otherwise-
+  // passing proposal. See `lib/proposals/computeMemberProposalTally.ts`
+  // for the full rationale and shared semantics.
+  const tally = computeMemberProposalTally(
+    votes as any,
+    addressToQuadraticVotingPower
+  )
+  const passed = tally.passed
   const active = passed ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED
   const account = await createHSMWallet()
   const transaction = prepareContractCall({
@@ -160,7 +168,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   // One-line marker for grep/Sentry/log-shipping. Operators can copy
   // the JSON below the marker straight into the constants file.
   console.log(
-    `[member-proposal-vote] tallied MDP-${mdp} (passed=${passed}, forPct=${outcome[1]?.toFixed(2)}%) — paste under MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS in lib/proposals/vMooneySnapshots.ts:\n` +
+    `[member-proposal-vote] tallied MDP-${mdp} (passed=${passed}, forPctOfDecided=${tally.forPctOfDecided.toFixed(2)}%, threshold=${MEMBER_VOTE_SUPER_MAJORITY}%) — paste under MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS in lib/proposals/vMooneySnapshots.ts:\n` +
       `${mdp}: ${JSON.stringify(projectedSnapshot, null, 2)},`
   )
 
@@ -170,17 +178,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     passed,
     // Surface the same fields a Discord summary needs, so the
     // /api/proposals/vote-notification handler doesn't have to re-run
-    // the tally to format its message. Sums are quadratic VPs (square
-    // roots of vMOONEY), keyed by the same '1' / '2' / '3' choice ids
-    // VotingModal writes.
+    // the tally to format its message. VPs are quadratic (square roots
+    // of vMOONEY) and keyed by the same '1' / '2' / '3' choice ids
+    // VotingModal writes. `forPctOfDecided` excludes Abstain from the
+    // denominator so the threshold test matches the on-chain decision.
     tally: {
-      vpFor: Number(outcome[1]) || 0,
-      forPct: Number(outcome[1]) || 0,
+      forVP: tally.forVP,
+      againstVP: tally.againstVP,
+      abstainVP: tally.abstainVP,
+      decidedVP: tally.decidedVP,
+      totalParticipationVP: tally.totalParticipationVP,
+      forPctOfDecided: tally.forPctOfDecided,
+      againstPctOfDecided: tally.againstPctOfDecided,
+      abstainShareOfTurnout: tally.abstainShareOfTurnout,
+      threshold: MEMBER_VOTE_SUPER_MAJORITY,
       voterCount: voteAddresses.length,
-      totalQuadraticVP: Object.values(addressToQuadraticVotingPower).reduce(
-        (a, b) => a + (Number.isFinite(b) ? b : 0),
-        0
-      ),
       voteCloseTimestamp: votingPeriodClosedTimestamp,
     },
     // Paste-ready backup snapshot. The frontend doesn't read this; it's

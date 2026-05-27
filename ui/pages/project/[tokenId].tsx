@@ -35,6 +35,7 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { computeMemberProposalTally } from '@/lib/proposals/computeMemberProposalTally'
 import {
   getMemberProposalVMooneySnapshot,
   resolveSnapshotMemberProposalVotes,
@@ -43,7 +44,6 @@ import {
 } from '@/lib/proposals/vMooneySnapshots'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { isFetchableUrl } from '@/lib/utils/links'
-import { runQuadraticVoting } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -834,11 +834,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
               Math.sqrt(vMOONEYs[index]),
             ])
           )
-          const SUM_TO_ONE_HUNDRED = 100
-          voteOutcome = runQuadraticVoting(
-            votes,
-            addressToVotingPower,
-            SUM_TO_ONE_HUNDRED
+          voteOutcome = computeMemberProposalTally(
+            votes as any,
+            addressToVotingPower
           )
           voteSnapshotMeta = {
             source: 'snapshot',
@@ -874,11 +872,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
                 Math.sqrt(vMOONEYs[index]),
               ])
             )
-            const SUM_TO_ONE_HUNDRED = 100
-            voteOutcome = runQuadraticVoting(
-              votes,
-              addressToVotingPower,
-              SUM_TO_ONE_HUNDRED
+            voteOutcome = computeMemberProposalTally(
+              votes as any,
+              addressToVotingPower
             )
             voteSnapshotMeta = snapshot
               ? {
