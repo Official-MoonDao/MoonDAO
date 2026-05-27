@@ -88,6 +88,93 @@ async function withRetry<T>(
   throw lastError
 }
 
+/**
+ * Drift-proof sibling of `fetchTotalVMOONEYs` that calls the
+ * VotingEscrow's truly-historical `balanceOfAt(addr, _block)` instead
+ * of the projected `balanceOf(addr, _t)`. The contract's `balanceOf
+ * (addr, _t)` extrapolates from the voter's LATEST `user_point_history`
+ * entry — so any post-close lock change silently rewrites what it
+ * returns. `balanceOfAt(addr, _block)` binary-searches the history for
+ * the point that was current at `_block`, which is permanent once the
+ * block is mined.
+ *
+ * `closeBlocks` is the per-chain block-at-close map persisted by the
+ * close handler (`pages/api/proposals/nonProjectVote.ts`) into the
+ * `NonProjectProposal_*` Tableland row at tally time. Note that
+ * `closeBlocks.arbitrum` MUST be the Ethereum L1 block height at the
+ * close timestamp, not the Arbitrum L2 block — vMOONEY's
+ * `balanceOfAt` on Arbitrum asserts `_block <= block.number` where
+ * `block.number` returns the L1 block (see `lib/proposals/
+ * blockAtTimestamp.ts` for the resolver that handles the L1/L2 fix-
+ * up). The data persisted to Tableland already accounts for this.
+ */
+export async function fetchTotalVMOONEYsAtBlocks(
+  addresses: string[],
+  closeBlocks: {
+    arbitrum?: number
+    ethereum?: number
+    polygon?: number
+    base?: number
+  }
+) {
+  try {
+    const { engineBatchRead } = await import('@/lib/thirdweb/engine')
+    const chains = [arbitrum, ethereum, base, polygon]
+
+    const results = await Promise.all(
+      chains.map(async (chain) => {
+        const chainSlug = getChainSlug(chain)
+        const chainId = chain.id
+        const tokenAddress = VMOONEY_ADDRESSES[chainSlug]
+        const blockAtClose = (closeBlocks as any)[chainSlug] as
+          | number
+          | undefined
+
+        if (!process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET) {
+          return addresses.map(() => 0)
+        }
+        if (!Number.isFinite(blockAtClose) || (blockAtClose ?? 0) <= 0) {
+          // Bail loudly rather than silently zero this chain's
+          // contribution — a partial sum could flip a tally
+          // outcome. Caller is expected to fall back to the
+          // timestamp-based fetcher in this case.
+          throw new Error(
+            `[fetchTotalVMOONEYsAtBlocks] missing/invalid blockAtClose for ${chainSlug}`
+          )
+        }
+
+        const balances = await withRetry(() =>
+          engineBatchRead<string>(
+            tokenAddress,
+            'balanceOfAt',
+            addresses.map((address) => [address, blockAtClose]),
+            VMOONEY_ABI,
+            chainId
+          )
+        )
+
+        return balances.map((balance) => {
+          const parsed = parseInt(balance)
+          return isNaN(parsed) ? 0 : parsed / 1e18
+        })
+      })
+    )
+
+    const totals: number[] = addresses.map(() => 0)
+    results.forEach((chainBalances) => {
+      chainBalances.forEach((value: number, i: number) => {
+        const numValue = isNaN(value) ? 0 : value
+        totals[i] = (totals[i] || 0) + numValue
+      })
+    })
+
+    return totals
+  } catch (error) {
+    console.error('Failed to fetch vMOONEY balances at blocks:', error)
+    return addresses.map(() => 0)
+  }
+}
+
 export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number) {
   try {
     const { engineBatchRead } = await import('@/lib/thirdweb/engine')
