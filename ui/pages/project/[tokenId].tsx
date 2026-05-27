@@ -42,7 +42,10 @@ import {
   resolveSnapshotVMooney,
   snapshotHasDistributions,
 } from '@/lib/proposals/vMooneySnapshots'
-import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import {
+  fetchTotalVMOONEYs,
+  fetchTotalVMOONEYsAtBlocks,
+} from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { isFetchableUrl } from '@/lib/utils/links'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -96,7 +99,7 @@ function TallyProvenanceTag({
     return (
       <div
         className="inline-flex items-center gap-2 self-start rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] uppercase tracking-wider text-emerald-200"
-        title="Tally is locked from a vMOONEY snapshot pinned in MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS — values won't drift even if voters change their locks later."
+        title="Tally is locked: voting power is read via balanceOfAt(addr, _block) against the close-time block snapshotted in the NonProjectProposal table. Values won't drift even if voters change their locks later."
       >
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
         <span className="font-semibold">Final tally</span>
@@ -108,7 +111,7 @@ function TallyProvenanceTag({
   return (
     <div
       className="inline-flex items-center gap-2 self-start rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] uppercase tracking-wider text-blue-200"
-      title="Live tally — voting power is queried at every page load until the EB pins a vMOONEY snapshot after close."
+      title="Live tally — voting power is queried with balanceOf(addr, _t) on every page load. This call extrapolates from each voter's latest lock entry, so the displayed numbers can drift if a voter changes their lock after the vote closes. Once the close handler writes a snapshot row, the tally switches to a drift-proof balanceOfAt lookup."
     >
       <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
       <span className="font-semibold">Live tally</span>
@@ -810,24 +813,42 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
         const votingPeriodClosedTimestamp =
           parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 5
 
-        // Prefer the pinned snapshot when one exists for this MDP.
-        // Reading from the snapshot is what makes the closed-vote view
-        // deterministic forever: vMOONEY's `balanceOf(addr, _t)` is not
-        // truly historical (it extrapolates from the latest user_point),
-        // so re-querying live drifts whenever a voter touches their lock
-        // post-close. The snapshot is captured via `balanceOfAt(_block)`
-        // which IS historical, freezing the audit at the original
-        // at-close numbers. See `lib/proposals/vMooneySnapshots.ts`.
-        const snapshot = getMemberProposalVMooneySnapshot(mdp)
+        // Resolve votes for this proposal, with three layered fallbacks
+        // for the vMOONEY voting-power lookup so the rendered tally is
+        // drift-proof whenever possible:
+        //
+        //   1. Auto-written sentinel row in the NonProjectProposal_*
+        //      table (preferred). The close handler at
+        //      `pages/api/proposals/nonProjectVote.ts` writes a row
+        //      with `vote.kind === 'snapshot'` that pins
+        //      `closeBlocks` per chain. We then call
+        //      `balanceOfAt(addr, _block)` on each chain — the
+        //      VotingEscrow's truly-historical lookup — so the
+        //      result is permanent regardless of post-close lock
+        //      activity.
+        //
+        //   2. Manual constants-file snapshot in
+        //      `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS`. This is the
+        //      legacy/override path (kept so previously-pinned audits
+        //      keep rendering exactly as captured, and so an EB can
+        //      still freeze a tally manually if the auto-snapshot
+        //      misses a chain).
+        //
+        //   3. Live recompute via `balanceOf(addr, _t)`. Drift-prone
+        //      (extrapolates from latest user_point) but the only
+        //      option for in-flight votes where neither snapshot
+        //      exists yet.
+        const constantsSnapshot = getMemberProposalVMooneySnapshot(mdp)
 
-        if (snapshot && snapshotHasDistributions(snapshot)) {
-          // Snapshot pins both vMOONEY balances *and* per-voter
-          // distributions, so we don't need to query Tableland at all
-          // for closed proposals — the tally is reproducible from the
-          // constants file alone.
-          votes = resolveSnapshotMemberProposalVotes(snapshot) as any[]
+        if (constantsSnapshot && snapshotHasDistributions(constantsSnapshot)) {
+          // Constants-file pin reproduces both VP and per-voter
+          // distributions standalone — no Tableland round-trip needed.
+          votes = resolveSnapshotMemberProposalVotes(constantsSnapshot) as any[]
           const voteAddresses = votes.map((v) => v.address)
-          const vMOONEYs = resolveSnapshotVMooney(snapshot, voteAddresses)
+          const vMOONEYs = resolveSnapshotVMooney(
+            constantsSnapshot,
+            voteAddresses
+          )
           addressToVotingPower = Object.fromEntries(
             voteAddresses.map((address, index) => [
               address,
@@ -840,54 +861,106 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
           )
           voteSnapshotMeta = {
             source: 'snapshot',
-            voteCloseTimestamp: snapshot.voteCloseTimestamp,
-            method: snapshot.method,
-            blockAtClose: snapshot.blockAtClose,
-            snapshotTakenAt: snapshot.snapshotTakenAt,
+            voteCloseTimestamp: constantsSnapshot.voteCloseTimestamp,
+            method: constantsSnapshot.method,
+            blockAtClose: constantsSnapshot.blockAtClose,
+            snapshotTakenAt: constantsSnapshot.snapshotTakenAt,
           }
         } else {
-          // No snapshot yet (active vote, or close transaction has
-          // fired but the operator hasn't run snapshot-vmooney.mjs
-          // yet). Fall back to the live recompute so the in-flight
-          // preview still works.
           const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
-          votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+          const allRows = (await queryTable(
+            chain,
+            voteStatement
+          )) as DistributionVote[]
+
+          // Pull the auto-snapshot sentinel row out of the vote list
+          // so it doesn't show up as a "voter" in the sidebar list or
+          // contribute to the tally. Identified by SHAPE (vote JSON
+          // has `kind: 'snapshot'` instead of '1'/'2'/'3' choice
+          // keys), not by address — keeps the filter robust against
+          // HSM wallet rotations.
+          let autoSnapshotPayload: any = null
+          votes = allRows.filter((row: any) => {
+            const raw = row?.vote
+            const parsed =
+              raw && typeof raw === 'object'
+                ? raw
+                : typeof raw === 'string'
+                ? (() => {
+                    try {
+                      return JSON.parse(raw)
+                    } catch {
+                      return null
+                    }
+                  })()
+                : null
+            if (parsed && parsed.kind === 'snapshot') {
+              autoSnapshotPayload = parsed
+              return false
+            }
+            return true
+          })
+
           const voteAddresses = votes.map((v) => v.address)
 
           if (voteAddresses.length > 0) {
-            // If a snapshot exists but only pins vMOONEY (no
-            // distributions — older capture format), reuse those frozen
-            // VP values; otherwise hit the live fetcher. Either way,
-            // mirror the snapshot's voteCloseTimestamp when one is
-            // present so the displayed close moment matches the audit.
-            const vMOONEYs = snapshot
-              ? resolveSnapshotVMooney(snapshot, voteAddresses)
-              : await fetchTotalVMOONEYs(
-                  voteAddresses,
-                  votingPeriodClosedTimestamp
-                )
+            // Prefer the auto-snapshot's `closeBlocks` if present —
+            // drift-proof. Then a constants-file VP map (legacy).
+            // Otherwise fall back to the timestamp-based live fetcher.
+            let vMOONEYs: number[] | null = null
+            if (
+              autoSnapshotPayload?.closeBlocks &&
+              typeof autoSnapshotPayload.closeBlocks === 'object'
+            ) {
+              vMOONEYs = await fetchTotalVMOONEYsAtBlocks(
+                voteAddresses,
+                autoSnapshotPayload.closeBlocks
+              )
+            } else if (constantsSnapshot) {
+              vMOONEYs = resolveSnapshotVMooney(
+                constantsSnapshot,
+                voteAddresses
+              )
+            } else {
+              vMOONEYs = await fetchTotalVMOONEYs(
+                voteAddresses,
+                votingPeriodClosedTimestamp
+              )
+            }
             addressToVotingPower = Object.fromEntries(
               voteAddresses.map((address, index) => [
                 address,
-                Math.sqrt(vMOONEYs[index]),
+                Math.sqrt(vMOONEYs![index] ?? 0),
               ])
             )
             voteOutcome = computeMemberProposalTally(
               votes as any,
               addressToVotingPower
             )
-            voteSnapshotMeta = snapshot
-              ? {
-                  source: 'snapshot',
-                  voteCloseTimestamp: snapshot.voteCloseTimestamp,
-                  method: snapshot.method,
-                  blockAtClose: snapshot.blockAtClose,
-                  snapshotTakenAt: snapshot.snapshotTakenAt,
-                }
-              : {
-                  source: 'live',
-                  voteCloseTimestamp: votingPeriodClosedTimestamp,
-                }
+            if (autoSnapshotPayload?.closeBlocks) {
+              voteSnapshotMeta = {
+                source: 'snapshot',
+                voteCloseTimestamp:
+                  autoSnapshotPayload.voteCloseTimestamp ??
+                  votingPeriodClosedTimestamp,
+                method: 'historical',
+                blockAtClose: autoSnapshotPayload.closeBlocks,
+                snapshotTakenAt: autoSnapshotPayload.capturedAt,
+              }
+            } else if (constantsSnapshot) {
+              voteSnapshotMeta = {
+                source: 'snapshot',
+                voteCloseTimestamp: constantsSnapshot.voteCloseTimestamp,
+                method: constantsSnapshot.method,
+                blockAtClose: constantsSnapshot.blockAtClose,
+                snapshotTakenAt: constantsSnapshot.snapshotTakenAt,
+              }
+            } else {
+              voteSnapshotMeta = {
+                source: 'live',
+                voteCloseTimestamp: votingPeriodClosedTimestamp,
+              }
+            }
           }
         }
       } catch (error) {

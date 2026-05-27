@@ -1,8 +1,10 @@
+import NonProjectProposalABI from 'const/abis/NonProjectProposal.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import ProposalsABI from 'const/abis/Proposals.json'
 import {
   PROJECT_TABLE_NAMES,
   NON_PROJECT_PROPOSAL_TABLE_NAMES,
+  NON_PROJECT_PROPOSAL_ADDRESSES,
   PROPOSALS_ADDRESSES,
   DEFAULT_CHAIN_V5,
   PROJECT_TABLE_ADDRESSES,
@@ -14,6 +16,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
+import { resolveCloseBlocks } from '@/lib/proposals/blockAtTimestamp'
 import {
   computeMemberProposalTally,
   MEMBER_VOTE_SUPER_MAJORITY,
@@ -121,55 +124,98 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     account,
   })
 
-  // Per-MDP vMOONEY snapshot, paste-ready for
-  // `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS` in
-  // `lib/proposals/vMooneySnapshots.ts`. This is the `--method=projected`
-  // backup capture: it freezes the vMOONEY values reported by the live
-  // fetcher *at this exact moment* (i.e. immediately after the on-chain
-  // tally), which matches what the live recompute would produce until a
-  // voter touches their lock. The truly-historical snapshot (recovered
-  // via `balanceOfAt(_block)` per chain) is captured separately by
-  // running `ui/scripts/snapshot-vmooney.mjs --kind=memberProposal
-  // --mdp=<n>`. Prefer the historical capture when both exist; this
-  // backup is what we have if the historical run can't be done (RPC
-  // outage, etc.) so the audit is never empty.
-  const projectedSnapshot = {
-    mdp,
-    voteCloseTimestamp: votingPeriodClosedTimestamp,
-    snapshotTakenAt: Math.floor(Date.now() / 1000),
-    method: 'projected' as const,
-    vMOONEY: Object.fromEntries(
-      voteAddresses.map((address, index) => [
-        address.toLowerCase(),
-        Number(vMOONEYs[index]) || 0,
-      ])
-    ),
-    distributions: Object.fromEntries(
-      votes.map((v) => [
-        String(v.address || '').toLowerCase(),
-        // The live row carries either a parsed object or a JSON
-        // string in `vote`. Normalize to the object form the snapshot
-        // schema expects.
-        (() => {
-          const raw = (v as any).vote
-          if (raw && typeof raw === 'object') return { ...raw }
-          if (typeof raw === 'string') {
-            try {
-              return JSON.parse(raw)
-            } catch {
-              return {}
-            }
-          }
-          return {}
-        })(),
-      ])
-    ),
+  // Persist a "snapshot row" into the existing NonProjectProposal_*
+  // Tableland table so the proposal page can render the tally with
+  // truly-historical voting power (`balanceOfAt(addr, _block)`) on
+  // every load — no manual paste step, no constants-file PR. The
+  // row's `address` is the HSM wallet (set automatically by the
+  // contract's `Strings.toHexString(msg.sender)` insert), and its
+  // `vote` JSON carries `kind: 'snapshot'` + `closeBlocks` per chain
+  // instead of the standard '1'/'2'/'3' choice keys, so consumers
+  // distinguish it from real voter rows by SHAPE rather than by
+  // identity.
+  //
+  // We resolve close blocks AFTER the on-chain `active` flip so that
+  // a partial failure (e.g., RPC outage during block resolution)
+  // leaves the canonical decision intact and the page just falls
+  // back to the live timestamp-based fetcher. The snapshot row write
+  // itself is a separate Tableland mutation; if it also fails the
+  // active flip is unaffected and the EB can re-trigger the snapshot
+  // write later (TODO: add a retry endpoint).
+  let snapshotRowWritten = false
+  let closeBlocks: Awaited<ReturnType<typeof resolveCloseBlocks>> | null = null
+  try {
+    closeBlocks = await resolveCloseBlocks(votingPeriodClosedTimestamp)
+    const snapshotPayload = {
+      kind: 'snapshot' as const,
+      voteCloseTimestamp: votingPeriodClosedTimestamp,
+      capturedAt: Math.floor(Date.now() / 1000),
+      closeBlocks,
+      // Tally summary at close time — informational. The page
+      // re-derives the same numbers from the votes table + the
+      // `closeBlocks` lookup, but pinning a snapshot of the
+      // computed values gives us a small audit log right alongside
+      // the votes.
+      tally: {
+        forVP: tally.forVP,
+        againstVP: tally.againstVP,
+        abstainVP: tally.abstainVP,
+        decidedVP: tally.decidedVP,
+        forPctOfDecided: tally.forPctOfDecided,
+        threshold: MEMBER_VOTE_SUPER_MAJORITY,
+        passed,
+      },
+    }
+    const nonProjectProposalContract = getContract({
+      client: serverClient,
+      address: NON_PROJECT_PROPOSAL_ADDRESSES[chainSlug],
+      abi: NonProjectProposalABI.abi as any,
+      chain,
+    })
+    try {
+      const insertTx = prepareContractCall({
+        contract: nonProjectProposalContract,
+        method: 'insertIntoTable',
+        params: [BigInt(mdp), JSON.stringify(snapshotPayload)],
+      })
+      await sendAndConfirmTransaction({ transaction: insertTx, account })
+      snapshotRowWritten = true
+    } catch (insertErr: any) {
+      // The table has `unique(address, mdp)`. If a snapshot row from
+      // a prior close already exists (re-tally on a previously
+      // failed proposal), `insertIntoTable` reverts. Fall through to
+      // `updateTableCol` which is gated by msg.sender on the same
+      // (mdp, address) pair, so it'll only touch our own row.
+      console.warn(
+        `[member-proposal-vote] snapshot insert reverted for MDP-${mdp} ` +
+          `(likely duplicate); attempting update:`,
+        insertErr?.message ?? insertErr
+      )
+      const updateTx = prepareContractCall({
+        contract: nonProjectProposalContract,
+        method: 'updateTableCol',
+        params: [BigInt(mdp), JSON.stringify(snapshotPayload)],
+      })
+      await sendAndConfirmTransaction({ transaction: updateTx, account })
+      snapshotRowWritten = true
+    }
+  } catch (snapshotErr: any) {
+    // Don't fail the API — the on-chain `active` flip is canonical
+    // for pass/fail. Page renders fall back to the live (drift-prone)
+    // `balanceOf(addr, _t)` path until the snapshot row lands. Surface
+    // the error to logs so an operator can investigate.
+    console.error(
+      `[member-proposal-vote] snapshot row write failed for MDP-${mdp}; ` +
+        `on-chain decision is committed but page will render with live ` +
+        `recompute until a snapshot row is inserted:`,
+      snapshotErr?.message ?? snapshotErr
+    )
   }
-  // One-line marker for grep/Sentry/log-shipping. Operators can copy
-  // the JSON below the marker straight into the constants file.
   console.log(
-    `[member-proposal-vote] tallied MDP-${mdp} (passed=${passed}, forPctOfDecided=${tally.forPctOfDecided.toFixed(2)}%, threshold=${MEMBER_VOTE_SUPER_MAJORITY}%) — paste under MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS in lib/proposals/vMooneySnapshots.ts:\n` +
-      `${mdp}: ${JSON.stringify(projectedSnapshot, null, 2)},`
+    `[member-proposal-vote] tallied MDP-${mdp} (passed=${passed}, ` +
+      `forPctOfDecided=${tally.forPctOfDecided.toFixed(2)}%, ` +
+      `threshold=${MEMBER_VOTE_SUPER_MAJORITY}%, ` +
+      `snapshotRowWritten=${snapshotRowWritten})`
   )
 
   res.status(200).json({
@@ -195,9 +241,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       voterCount: voteAddresses.length,
       voteCloseTimestamp: votingPeriodClosedTimestamp,
     },
-    // Paste-ready backup snapshot. The frontend doesn't read this; it's
-    // for the EB workflow + log shipping.
-    projectedSnapshot,
+    // Auditable snapshot row metadata. `snapshotRowWritten=true` means
+    // the tally is now drift-proof on every page render (renders use
+    // `balanceOfAt(addr, _block)` against `closeBlocks`); `false` means
+    // the on-chain decision is set but the page will render with the
+    // drift-prone `balanceOf(addr, _t)` path until the snapshot row
+    // lands.
+    snapshot: {
+      written: snapshotRowWritten,
+      closeBlocks,
+    },
   })
 }
 export default withMiddleware(handler, rateLimit, isOperator)
