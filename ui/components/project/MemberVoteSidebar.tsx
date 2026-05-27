@@ -71,6 +71,19 @@ export type MemberVoteSidebarProps = {
   // 'voting' enables the Vote button (and Close & Tally for operators
   // via the parent). 'closed' renders read-only.
   mode: 'voting' | 'closed' | 'inactive'
+  // Provenance for the rendered tally. When `source: 'snapshot'`, the
+  // numbers are pinned in `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS` and
+  // locked for audit. `'live'` means we're recomputing from the live
+  // vMOONEY contract and the values may drift post-close. Used to
+  // render a small pill at the top of the card so members know what
+  // they're looking at.
+  snapshotMeta?: {
+    source: 'snapshot' | 'live'
+    voteCloseTimestamp: number
+    method?: 'historical' | 'projected'
+    blockAtClose?: Record<string, number>
+    snapshotTakenAt?: number
+  } | null
   // Children slot for the operator-only Close & Tally button so the
   // parent stays in charge of when it shows.
   footer?: React.ReactNode
@@ -82,6 +95,7 @@ export default function MemberVoteSidebar({
   addressToVotingPower,
   proposalStatus,
   mode,
+  snapshotMeta,
   footer,
 }: MemberVoteSidebarProps) {
   const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -173,6 +187,38 @@ export default function MemberVoteSidebar({
           </span>
         )}
       </div>
+
+      {/* Provenance pill. Only shown once the vote has closed (so it
+          doesn't crowd the active "Vote now" CTA mid-vote). 'snapshot'
+          tells members the numbers are locked from a vMOONEY balance
+          capture and won't drift; 'live' (the brief window between
+          close and the EB pinning a snapshot) tells them the numbers
+          may still move slightly until the snapshot lands. */}
+      {!isActive &&
+        snapshotMeta &&
+        snapshotMeta.source === 'snapshot' &&
+        enriched.length > 0 && (
+          <div
+            className="inline-flex items-center gap-1.5 self-start rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200"
+            title="Tally is locked from a vMOONEY snapshot pinned at vote close — values won't drift even if voters change their locks later."
+          >
+            <span className="w-1 h-1 rounded-full bg-emerald-400" />
+            Final tally
+          </div>
+        )}
+      {!isActive &&
+        snapshotMeta &&
+        snapshotMeta.source === 'live' &&
+        mode === 'closed' &&
+        enriched.length > 0 && (
+          <div
+            className="inline-flex items-center gap-1.5 self-start rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200"
+            title="Vote has closed but the EB hasn't pinned a vMOONEY snapshot yet, so these numbers are still computed live. Once the snapshot lands the tally is locked for audit."
+          >
+            <span className="w-1 h-1 rounded-full bg-amber-400" />
+            Awaiting snapshot
+          </div>
+        )}
 
       {isActive && (
         <NewVoteButton
