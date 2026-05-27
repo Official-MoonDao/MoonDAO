@@ -108,6 +108,37 @@ function TallyProvenanceTag({
       </div>
     )
   }
+
+  // Live source has two sub-states the UI must distinguish:
+  //
+  //   1. Vote still open (voteCloseTimestamp in the future): "Live
+  //      tally" with the pulsing blue dot — current behavior.
+  //   2. Vote already closed but no snapshot row yet (close handler
+  //      mid-flight, or its snapshot write failed): "Awaiting
+  //      snapshot" amber pill, no pulse. Calling this "Live tally" in
+  //      this window misrepresents the state — the vote isn't moving
+  //      anymore, we're just waiting for the canonical pin to land.
+  //
+  // The post-close window is normally a few seconds (the close
+  // handler resolves blockAtClose and inserts the row before
+  // returning), but it can extend if the snapshot write throws and
+  // the EB needs to retry. Surfacing it as a distinct state makes
+  // that retry path obvious.
+  const nowSec = Math.floor(Date.now() / 1000)
+  const closeHasPassed =
+    meta.voteCloseTimestamp != null && nowSec >= meta.voteCloseTimestamp
+  if (closeHasPassed) {
+    return (
+      <div
+        className="inline-flex items-center gap-2 self-start rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] uppercase tracking-wider text-amber-200"
+        title="Vote has closed but the on-chain snapshot row hasn't landed yet. The displayed numbers come from balanceOf(addr, _t), which is NOT truly historical — they may drift if a voter changes their lock before the snapshot lands. The close handler normally writes the snapshot in the same invocation; if you're seeing this for more than a minute, the snapshot write likely failed and an operator needs to retry."
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+        <span className="font-semibold">Awaiting snapshot</span>
+        {closeIso && <span className="opacity-70">· closed {closeIso}</span>}
+      </div>
+    )
+  }
   return (
     <div
       className="inline-flex items-center gap-2 self-start rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] uppercase tracking-wider text-blue-200"
