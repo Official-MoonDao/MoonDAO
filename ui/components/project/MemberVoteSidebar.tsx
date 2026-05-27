@@ -29,14 +29,46 @@ const CHOICE_LABELS: Record<string, string> = {
   '3': 'Abstain',
 }
 
-// Map a quadratic vote distribution like { '1': 70, '2': 30 } to a single
-// label by picking the choice with the highest weight. Single-click votes
-// (after task 4) are always 100/0/0 so this collapses to the obvious
-// answer; older split votes still render sensibly.
-function dominantChoice(vote: Record<string, number> | undefined): string {
-  if (!vote) return 'Unknown'
+const FOR_KEY = '1'
+const AGAINST_KEY = '2'
+const ABSTAIN_KEY = '3'
+
+// Mirrors `parseVote` in `lib/proposals/computeMemberProposalTally`:
+// the Tableland row's `vote` field can come back as either an already-
+// parsed object (Tableland gateway path) or a JSON-encoded string
+// (some adapter paths and the legacy `distribution` column). Without
+// this fallback, `Object.entries(stringVote)` would iterate the
+// characters of the JSON literal and produce nonsense numbers — which
+// would silently disagree with the on-chain tally for any caller that
+// happens to pass a string-form row.
+function parseVoteDist(
+  raw: Record<string, number> | string | undefined | null
+): Record<string, number> {
+  if (raw == null) return {}
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch {
+      return {}
+    }
+  }
+  return raw
+}
+
+// Map a quadratic vote distribution like { '1': 70, '2': 30 } to a
+// single label by picking the choice with the highest weight. Used
+// only for the per-voter ChoicePill in the voter list — the *tally*
+// (For/Against/Abstain VP totals) is intentionally computed by
+// weighting each voter's VP by their allocation pct (see the
+// useMemo below) so it still agrees with the canonical
+// `computeMemberProposalTally` for legacy split votes.
+function dominantChoice(
+  vote: Record<string, number> | string | undefined
+): string {
+  const dist = parseVoteDist(vote)
   let best: [string, number] | null = null
-  for (const [k, v] of Object.entries(vote)) {
+  for (const [k, v] of Object.entries(dist)) {
     const n = Number(v)
     if (!Number.isFinite(n)) continue
     if (best === null || n > best[1]) best = [k, n]
@@ -132,30 +164,51 @@ export default function MemberVoteSidebar({
     [enriched]
   )
 
+  // VP-weighted tally — mirrors `computeMemberProposalTally` line-for-
+  // line so the rendered sidebar breakdown can never diverge from the
+  // server-side outcome or the on-chain decision. Each voter's VP is
+  // distributed across For/Against/Abstain by the same pct allocation
+  // they wrote into the Tableland row (split votes preserve their
+  // weighting; single-click votes collapse to 100/0/0 and behave as
+  // expected). `totalParticipationVP` counts each voter's *full* VP
+  // when they allocated to any choice, which is the denominator used
+  // for `abstainShareOfTurnout` — same convention as the helper.
   const tally = useMemo(() => {
-    const acc = { For: 0, Against: 0, Abstain: 0 }
+    let forVP = 0
+    let againstVP = 0
+    let abstainVP = 0
+    let totalParticipationVP = 0
     for (const v of enriched) {
-      if (v.choice === 'For') acc.For += v.vp
-      else if (v.choice === 'Against') acc.Against += v.vp
-      else if (v.choice === 'Abstain') acc.Abstain += v.vp
+      const power = Number(v.vp) || 0
+      if (power <= 0) continue
+      const dist = parseVoteDist(v.vote)
+      const pctFor = Number(dist[FOR_KEY]) || 0
+      const pctAgainst = Number(dist[AGAINST_KEY]) || 0
+      const pctAbstain = Number(dist[ABSTAIN_KEY]) || 0
+      forVP += (power * pctFor) / 100
+      againstVP += (power * pctAgainst) / 100
+      abstainVP += (power * pctAbstain) / 100
+      if (pctFor > 0 || pctAgainst > 0 || pctAbstain > 0) {
+        totalParticipationVP += power
+      }
     }
-    return acc
+    return { For: forVP, Against: againstVP, Abstain: abstainVP, totalParticipationVP }
   }, [enriched])
 
-  // Percentages match `computeMemberProposalTally` exactly: For/
-  // Against are shares of *decided* VP (excluding Abstain — that's
-  // what the on-chain supermajority test uses), Abstain is shown as
-  // a share of *total turnout* so members can still see how much VP
-  // declined to take a side. Keeping the math here in lockstep with
-  // the server-side helper means the sidebar breakdown can never
-  // disagree with the Voting Results tab or the on-chain decision.
+  // Percentages match `computeMemberProposalTally`: For/Against are
+  // shares of decided VP (Abstain excluded — what the on-chain
+  // supermajority test uses), Abstain is reported as % of total
+  // participation VP so members can still see how much VP declined
+  // to take a side.
   const tallyPercents = useMemo(() => {
     const decided = tally.For + tally.Against
-    const turnout = decided + tally.Abstain
     return {
       forPctOfDecided: decided > 0 ? (tally.For / decided) * 100 : 0,
       againstPctOfDecided: decided > 0 ? (tally.Against / decided) * 100 : 0,
-      abstainPctOfTurnout: turnout > 0 ? (tally.Abstain / turnout) * 100 : 0,
+      abstainPctOfTurnout:
+        tally.totalParticipationVP > 0
+          ? (tally.Abstain / tally.totalParticipationVP) * 100
+          : 0,
     }
   }, [tally])
 
@@ -284,19 +337,30 @@ export default function MemberVoteSidebar({
           {/* Single proportional bar visualizes For vs Against —
               Abstain is intentionally omitted from the bar since the
               decision math also excludes it (matches the
-              VotingResults ColorBar in the Voting Results tab). The
-              [&>div]:transition-all keeps width changes smooth if
-              snapshot data lands after first paint. */}
-          <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden flex">
+              VotingResults ColorBar in the Voting Results tab).
+              `role="img"` + a combined `aria-label` on the wrapper
+              makes the bar legible to screen readers as one unit;
+              the segment <div>s themselves are decorative
+              (`aria-hidden`) since their textual percentages are
+              already rendered in the grid above. Putting aria-labels
+              on the inner divs would not be announced reliably —
+              they have no semantic role of their own. */}
+          <div
+            role="img"
+            aria-label={`For ${tallyPercents.forPctOfDecided.toFixed(
+              1
+            )}%, Against ${tallyPercents.againstPctOfDecided.toFixed(1)}%`}
+            className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden flex"
+          >
             <div
+              aria-hidden="true"
               className="h-full bg-green-500/70"
               style={{ width: `${tallyPercents.forPctOfDecided}%` }}
-              aria-label={`For ${tallyPercents.forPctOfDecided.toFixed(1)}%`}
             />
             <div
+              aria-hidden="true"
               className="h-full bg-red-500/70"
               style={{ width: `${tallyPercents.againstPctOfDecided}%` }}
-              aria-label={`Against ${tallyPercents.againstPctOfDecided.toFixed(1)}%`}
             />
           </div>
         </div>
