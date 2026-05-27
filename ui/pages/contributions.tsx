@@ -1,14 +1,17 @@
+import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import type { Contribution } from './api/contributions/feed'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 
 function ContributionFeed() {
   const [contributions, setContributions] = useState<Contribution[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [citizenImages, setCitizenImages] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetch('/api/contributions/feed')
@@ -16,7 +19,25 @@ function ContributionFeed() {
         if (!r.ok) throw new Error(`Feed request failed: ${r.status}`)
         return r.json()
       })
-      .then((data) => setContributions(data.contributions || []))
+      .then((data) => {
+        const contribs: Contribution[] = data.contributions || []
+        setContributions(contribs)
+
+        // Fetch citizen profile images for all unique wallet addresses
+        const addresses = [
+          ...new Set(
+            contribs
+              .map((c) => c.walletAddress?.trim().toLowerCase())
+              .filter(Boolean)
+          ),
+        ]
+        if (addresses.length > 0) {
+          fetch(`/api/citizens/images-by-address?addresses=${addresses.join(',')}`)
+            .then((r) => (r.ok ? r.json() : {}))
+            .then((map) => setCitizenImages(map))
+            .catch(() => {})
+        }
+      })
       .catch((err) => {
         console.error('[ContributionFeed]', err)
         setContributions([])
@@ -64,9 +85,25 @@ function ContributionFeed() {
               onClick={() => setExpanded((prev) => ({ ...prev, [name]: !prev[name] }))}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                  {name[0]?.toUpperCase() || '?'}
-                </div>
+                {(() => {
+                  const walletKey = items[0]?.walletAddress?.trim().toLowerCase()
+                  const ipfs = walletKey ? citizenImages[walletKey] : undefined
+                  const imgSrc = ipfs ? getIPFSGateway(ipfs) : undefined
+                  return imgSrc ? (
+                    <Image
+                      src={imgSrc}
+                      alt={name}
+                      width={36}
+                      height={36}
+                      className="w-9 h-9 rounded-xl object-cover flex-shrink-0"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      {name[0]?.toUpperCase() || '?'}
+                    </div>
+                  )
+                })()}
                 <div className="min-w-0">
                   <p className="text-white font-semibold text-sm truncate">{name}</p>
                   {items[0]?.area && (
