@@ -178,7 +178,7 @@ export default function VotingResults({
             <ColorBar
               greenScore={forPctNum}
               redScore={againstPctNum}
-              threshold={threshold}
+              threshold={0}
               noTooltip={false}
               backgroundColor="bg-slate-600"
             />
