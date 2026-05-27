@@ -142,6 +142,23 @@ export default function MemberVoteSidebar({
     return acc
   }, [enriched])
 
+  // Percentages match `computeMemberProposalTally` exactly: For/
+  // Against are shares of *decided* VP (excluding Abstain — that's
+  // what the on-chain supermajority test uses), Abstain is shown as
+  // a share of *total turnout* so members can still see how much VP
+  // declined to take a side. Keeping the math here in lockstep with
+  // the server-side helper means the sidebar breakdown can never
+  // disagree with the Voting Results tab or the on-chain decision.
+  const tallyPercents = useMemo(() => {
+    const decided = tally.For + tally.Against
+    const turnout = decided + tally.Abstain
+    return {
+      forPctOfDecided: decided > 0 ? (tally.For / decided) * 100 : 0,
+      againstPctOfDecided: decided > 0 ? (tally.Against / decided) * 100 : 0,
+      abstainPctOfTurnout: turnout > 0 ? (tally.Abstain / turnout) * 100 : 0,
+    }
+  }, [tally])
+
   // While the Member Vote is the active step, elevate the card so
   // users can't miss the primary action: a tinted background, a
   // gradient ring, and a pulsing "Active — Vote now" pill. Once
@@ -220,6 +237,71 @@ export default function MemberVoteSidebar({
           </div>
         )}
 
+      {/* Final tally breakdown — pinned to the top of the card so
+          it's the first thing readers see post-close. Three labeled
+          percentages (For/Against of decided VP, Abstain of turnout)
+          over a single proportional bar. Suppressed mid-vote since
+          revealing the running split mid-window invites bandwagoning
+          (same reason the per-voter Choice pill is gated on
+          `revealResults`). */}
+      {revealResults && enriched.length > 0 && (
+        <div className="rounded-lg border border-white/10 bg-white/5 p-3 flex flex-col gap-2">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-green-300/80">
+                For
+              </p>
+              <p className="text-sm font-semibold text-green-300">
+                {tallyPercents.forPctOfDecided.toFixed(1)}%
+              </p>
+              <p className="text-[10px] text-white/50 font-mono">
+                {formatNumberUSStyle(tally.For, true)} VP
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-red-300/80">
+                Against
+              </p>
+              <p className="text-sm font-semibold text-red-300">
+                {tallyPercents.againstPctOfDecided.toFixed(1)}%
+              </p>
+              <p className="text-[10px] text-white/50 font-mono">
+                {formatNumberUSStyle(tally.Against, true)} VP
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-gray-300/80">
+                Abstain
+              </p>
+              <p className="text-sm font-semibold text-gray-300">
+                {tallyPercents.abstainPctOfTurnout.toFixed(1)}%
+              </p>
+              <p className="text-[10px] text-white/50 font-mono">
+                {formatNumberUSStyle(tally.Abstain, true)} VP
+              </p>
+            </div>
+          </div>
+          {/* Single proportional bar visualizes For vs Against —
+              Abstain is intentionally omitted from the bar since the
+              decision math also excludes it (matches the
+              VotingResults ColorBar in the Voting Results tab). The
+              [&>div]:transition-all keeps width changes smooth if
+              snapshot data lands after first paint. */}
+          <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden flex">
+            <div
+              className="h-full bg-green-500/70"
+              style={{ width: `${tallyPercents.forPctOfDecided}%` }}
+              aria-label={`For ${tallyPercents.forPctOfDecided.toFixed(1)}%`}
+            />
+            <div
+              className="h-full bg-red-500/70"
+              style={{ width: `${tallyPercents.againstPctOfDecided}%` }}
+              aria-label={`Against ${tallyPercents.againstPctOfDecided.toFixed(1)}%`}
+            />
+          </div>
+        </div>
+      )}
+
       {isActive && (
         <NewVoteButton
           proposalStatus={proposalStatus}
@@ -252,33 +334,10 @@ export default function MemberVoteSidebar({
         </div>
       </div>
 
-      {/* Per-choice tally — only after the vote has closed.
-          Suppressed mid-vote to avoid bandwagoning. */}
-      {revealResults && (
-        <div className="flex flex-col gap-1.5 text-[11px]">
-          <div className="flex items-center justify-between">
-            <span className="text-green-300">For</span>
-            <span className="text-white/80 font-mono">
-              {formatNumberUSStyle(tally.For, true)} VP
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-red-300">Against</span>
-            <span className="text-white/80 font-mono">
-              {formatNumberUSStyle(tally.Against, true)} VP
-            </span>
-          </div>
-          {tally.Abstain > 0 && (
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Abstain</span>
-              <span className="text-white/80 font-mono">
-                {formatNumberUSStyle(tally.Abstain, true)} VP
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
+      {/* Per-choice tally has moved to the top of the card (pinned
+          right after the provenance pill) — keeping the absolute VPs
+          there with the % breakdown so the post-close summary stays
+          in one place rather than splitting across the card. */}
 
       {/* Voter list */}
       <div className="border-t border-white/10 pt-3">
@@ -317,16 +376,11 @@ export default function MemberVoteSidebar({
                       <AddressLink address={v.address} />
                     </span>
                   )}
-                  {revealResults ? (
-                    <ChoicePill label={v.choice} />
-                  ) : (
-                    <span
-                      className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full border bg-white/5 text-white/40 border-white/10"
-                      title="Choice hidden while voting is open"
-                    >
-                      Voted
-                    </span>
-                  )}
+                  {/* Choice pill is only rendered once results are
+                      unlocked. Mid-vote, the row is just name + VP —
+                      the section header already says "Votes" so a
+                      per-row "Voted" pill was redundant noise. */}
+                  {revealResults && <ChoicePill label={v.choice} />}
                 </div>
                 <span className="text-white/70 font-mono whitespace-nowrap">
                   {formatNumberUSStyle(v.vp, true)} VP

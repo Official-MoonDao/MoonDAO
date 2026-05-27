@@ -271,8 +271,8 @@ export default function ProjectProfile({
 
   // Tabbed main column. The right rail (Senate + Member vote
   // sidebars) is intentionally outside the tab system so the
-  // primary action stays visible across all three tabs.
-  type ProjectTab = 'proposal' | 'treasury' | 'team'
+  // primary action stays visible across all four tabs.
+  type ProjectTab = 'proposal' | 'results' | 'treasury' | 'team'
   const [tab, setTab] = useState<ProjectTab>('proposal')
 
   // Hydrate from `?tab=` so deep links land on the right tab and
@@ -283,6 +283,7 @@ export default function ProjectProfile({
     if (
       typeof urlTab === 'string' &&
       (urlTab === 'proposal' ||
+        urlTab === 'results' ||
         urlTab === 'treasury' ||
         urlTab === 'team')
     ) {
@@ -400,6 +401,7 @@ export default function ProjectProfile({
                 proposalJSON={proposalJSON}
                 projectName={project.name}
                 mdp={project.MDP}
+                proposalStatus={proposalStatus}
               />
             </div>
           </div>
@@ -493,27 +495,28 @@ export default function ProjectProfile({
                   </div>
                 </div>
               </div>
-
-              {/* Voting Results Section - Only show for completed
-                  proposals. Aggregate verdict card; the right rail
-                  still carries the per-voter detail. */}
-              {project.active !== PROJECT_PENDING &&
-                proposalJSON?.nonProjectProposal && (
-                  <SectionCard
-                    header="Voting Results"
-                    iconSrc="/assets/icon-star.svg"
-                  >
-                    <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5 flex flex-col gap-3">
-                      <TallyProvenanceTag meta={voteSnapshotMeta} />
-                      <VotingResults
-                        voteOutcome={voteOutcome}
-                        votes={votes}
-                      />
-                    </div>
-                  </SectionCard>
-                )}
             </div>
           )
+
+          // Voting Results tab — only meaningful for non-project
+          // proposals that have actually closed. Aggregate verdict
+          // card; the right rail still carries the per-voter detail
+          // so members can correlate their own vote against the
+          // tally.
+          const hasVotingResults =
+            project.active !== PROJECT_PENDING &&
+            Boolean(proposalJSON?.nonProjectProposal)
+          const resultsPane = hasVotingResults ? (
+            <div className="md:bg-gradient-to-br md:from-slate-700/20 md:to-slate-800/30 md:backdrop-blur-xl md:border md:border-white/10 md:rounded-xl px-4 py-3 md:p-6 md:shadow-lg w-full">
+              <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5 flex flex-col gap-3">
+                <TallyProvenanceTag meta={voteSnapshotMeta} />
+                <VotingResults
+                  voteOutcome={voteOutcome}
+                  votes={votes}
+                />
+              </div>
+            </div>
+          ) : null
 
           // Treasury tab — drop the SectionCard wrapper so the tab
           // (already labelled "Treasury") is the only title, then
@@ -567,13 +570,25 @@ export default function ProjectProfile({
             </div>
           )
 
+          // The Voting Results tab only appears once there's
+          // something to show — i.e. the proposal has tallied. While
+          // the vote is still in-flight, we don't surface a ghost tab
+          // that would just render an empty card.
+          const showResultsTab = hasVotingResults
+
+          // If the user deep-links to ?tab=results on a proposal that
+          // doesn't (yet) have results, fall back to the proposal tab
+          // rather than rendering blank content.
+          const effectiveTab: ProjectTab =
+            tab === 'results' && !showResultsTab ? 'proposal' : tab
+
           // Underline-style tab bar matching the Mission/Launchpad
           // pattern (`MissionInfo.tsx`): text-only, gray-500
           // inactive, white + 2px indigo underline active, sitting
           // on a thin `border-b`. `overflow-x-auto` keeps it
           // single-row on phones.
           const tabButton = (key: ProjectTab, label: string) => {
-            const isActive = tab === key
+            const isActive = effectiveTab === key
             return (
               <button
                 key={key}
@@ -597,13 +612,15 @@ export default function ProjectProfile({
             <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
               <div className="flex items-center gap-1 border-b border-white/[0.08] overflow-x-auto max-w-full -mx-1 px-1">
                 {tabButton('proposal', 'Proposal')}
+                {showResultsTab && tabButton('results', 'Voting Results')}
                 {tabButton('treasury', 'Treasury')}
                 {tabButton('team', 'Team')}
               </div>
 
-              {tab === 'proposal' && proposalPane}
-              {tab === 'treasury' && treasuryPane}
-              {tab === 'team' && teamPane}
+              {effectiveTab === 'proposal' && proposalPane}
+              {effectiveTab === 'results' && resultsPane}
+              {effectiveTab === 'treasury' && treasuryPane}
+              {effectiveTab === 'team' && teamPane}
             </div>
           )
 
@@ -630,7 +647,15 @@ export default function ProjectProfile({
               id="page-container"
               className="pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
             >
-              <div className="lg:order-2 lg:col-span-1 lg:sticky lg:top-24 lg:self-start flex flex-col gap-4">
+              {/* `lg:mt-[77px]` shifts the rail down on desktop so its
+                  top edge lines up with the start of the proposal
+                  pane (i.e. *below* the tab strip in the main column),
+                  not the tab strip itself. Math: tab button height
+                  `py-3 text-lg` ≈ 52px + 1px `border-b` + 24px
+                  `gap-6` between tab strip and pane = 77px. Mobile
+                  keeps the rail on top so the Vote CTA stays above
+                  the fold. */}
+              <div className="lg:order-2 lg:col-span-1 lg:mt-[77px] lg:sticky lg:top-24 lg:self-start flex flex-col gap-4">
                 {/* Member Vote sits on top while it's the active step
                     — that's the primary action members can take right
                     now, so it gets the eye-catching styling. The
