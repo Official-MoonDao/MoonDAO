@@ -43,6 +43,13 @@
  *   # truly-historical values.
  *   node ui/scripts/snapshot-vmooney.mjs --kind=retro --quarter=1 --year=2026
  *
+ *   # Per-MDP Member Vote on a Senate-approved proposal. Reads
+ *   # `tempCheckApprovedTimestamp(mdp)` from `Proposals.sol` on Arbitrum
+ *   # and adds 5 days to derive the canonical close moment, mirroring
+ *   # the formula in `pages/api/proposals/nonProjectVote.ts`. Pin under
+ *   # `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS`, keyed by the MDP integer.
+ *   node ui/scripts/snapshot-vmooney.mjs --kind=memberProposal --mdp=249
+ *
  *   # Force the projected (non-historical) method even for past cycles —
  *   # only useful for debugging / reproducing the buggy live behavior.
  *   node ui/scripts/snapshot-vmooney.mjs --kind=member --quarter=2 --year=2026 --method=projected
@@ -85,6 +92,7 @@ function parseArgs() {
   const kind = args.kind || 'member'
   const quarter = Number(args.quarter)
   const year = Number(args.year)
+  const mdp = args.mdp != null ? Number(args.mdp) : NaN
   // `historical` (default) → balanceOfAt(addr, blockNumber).
   // `projected`            → balanceOf(addr, timestamp). Same as the
   //                          buggy live fetcher; only useful for
@@ -104,17 +112,30 @@ function parseArgs() {
   const voteCloseOverride = args['vote-close-timestamp']
     ? Number(args['vote-close-timestamp'])
     : null
-  if (!['member', 'retro'].includes(kind)) {
-    console.error(`Invalid --kind="${kind}" (expected "member" or "retro").`)
+  if (!['member', 'retro', 'memberProposal'].includes(kind)) {
+    console.error(
+      `Invalid --kind="${kind}" (expected "member", "retro", or "memberProposal").`
+    )
     process.exit(1)
   }
-  if (!Number.isInteger(quarter) || quarter < 1 || quarter > 4) {
-    console.error(`Invalid --quarter="${args.quarter}" (expected 1-4).`)
-    process.exit(1)
-  }
-  if (!Number.isInteger(year) || year < 2020) {
-    console.error(`Invalid --year="${args.year}" (expected ≥2020).`)
-    process.exit(1)
+  // memberProposal is keyed by MDP, not (quarter, year). The other two
+  // are still cycle-keyed.
+  if (kind === 'memberProposal') {
+    if (!Number.isInteger(mdp) || mdp <= 0) {
+      console.error(
+        `Invalid --mdp="${args.mdp}" (required for --kind=memberProposal; expected a positive integer).`
+      )
+      process.exit(1)
+    }
+  } else {
+    if (!Number.isInteger(quarter) || quarter < 1 || quarter > 4) {
+      console.error(`Invalid --quarter="${args.quarter}" (expected 1-4).`)
+      process.exit(1)
+    }
+    if (!Number.isInteger(year) || year < 2020) {
+      console.error(`Invalid --year="${args.year}" (expected ≥2020).`)
+      process.exit(1)
+    }
   }
   if (!['historical', 'projected'].includes(method)) {
     console.error(
@@ -132,7 +153,7 @@ function parseArgs() {
     )
     process.exit(1)
   }
-  return { kind, quarter, year, method, voteCloseOverride }
+  return { kind, quarter, year, mdp, method, voteCloseOverride }
 }
 
 // =============================================================================
@@ -144,11 +165,24 @@ function parseArgs() {
 // the `DISTRIBUTION_*` table. Both have the same shape: one row per
 // (quarter, year, voter) with a JSON `distribution` blob.
 // Must mirror the production table names in `const/config.ts`
-// (PROPOSALS_TABLE_NAMES / DISTRIBUTION_TABLE_NAMES, arbitrum slug). Hardcoded
-// here so the script stays standalone with only `ethers` as a runtime
-// dependency. If the table id ever rotates, update both places.
+// (PROPOSALS_TABLE_NAMES / DISTRIBUTION_TABLE_NAMES /
+// NON_PROJECT_PROPOSAL_TABLE_NAMES, arbitrum slug). Hardcoded here so
+// the script stays standalone with only `ethers` as a runtime
+// dependency. If any table id ever rotates, update both places.
 const PROPOSALS_TABLE = 'Proposals_42161_157'
 const DISTRIBUTION_TABLE = 'DISTRIBUTION_42161_104'
+const NON_PROJECT_PROPOSAL_TABLE = 'NonProjectProposal_42161_154'
+
+// Mainnet Proposals contract on Arbitrum. Used by the memberProposal
+// path to read `tempCheckApprovedTimestamp(mdp)` so we can derive the
+// canonical close moment without the user having to pass
+// `--vote-close-timestamp` by hand. Mirror of
+// `PROPOSALS_ADDRESSES.arbitrum` in `ui/const/config.ts`.
+const PROPOSALS_CONTRACT_ARBITRUM = '0xaA928a1189b9320D23754f1D36B6C67d676fd6FE'
+const PROPOSALS_ABI_FRAGMENT = [
+  'function tempCheckApprovedTimestamp(uint256) view returns (uint256)',
+  'function tempCheckApproved(uint256) view returns (bool)',
+]
 
 const TABLELAND_QUERY_URL = 'https://tableland.network/api/v1/query'
 
@@ -163,9 +197,32 @@ const TABLELAND_QUERY_URL = 'https://tableland.network/api/v1/query'
  * can pin them in the snapshot, freezing the audit against post-close
  * Tableland edits in the same way `vMOONEY` freezes voting power.
  */
-async function fetchVoteRows(kind, quarter, year) {
-  const table = kind === 'member' ? PROPOSALS_TABLE : DISTRIBUTION_TABLE
-  const statement = `SELECT address, distribution FROM ${table} WHERE quarter=${quarter} AND year=${year}`
+async function fetchVoteRows(kind, quarter, year, mdp) {
+  // Three table variants. The cycle-keyed cases query by (quarter, year)
+  // and read a `distribution` column; the per-MDP case queries by MDP
+  // and reads a `vote` column (mirrors the column names in
+  // `lib/tableland/types.ts:DistributionVote`).
+  let table
+  let column
+  let where
+  let cycleLabel
+  if (kind === 'member') {
+    table = PROPOSALS_TABLE
+    column = 'distribution'
+    where = `quarter=${quarter} AND year=${year}`
+    cycleLabel = `Q${quarter} ${year}`
+  } else if (kind === 'retro') {
+    table = DISTRIBUTION_TABLE
+    column = 'distribution'
+    where = `quarter=${quarter} AND year=${year}`
+    cycleLabel = `Q${quarter} ${year}`
+  } else {
+    table = NON_PROJECT_PROPOSAL_TABLE
+    column = 'vote'
+    where = `MDP=${mdp}`
+    cycleLabel = `MDP-${mdp}`
+  }
+  const statement = `SELECT address, ${column} FROM ${table} WHERE ${where}`
   const url = `${TABLELAND_QUERY_URL}?statement=${encodeURIComponent(statement)}`
   const res = await fetch(url)
   if (!res.ok) {
@@ -176,7 +233,7 @@ async function fetchVoteRows(kind, quarter, year) {
   const rows = await res.json()
   if (!Array.isArray(rows) || rows.length === 0) {
     throw new Error(
-      `No votes found in ${table} for Q${quarter} ${year}. Did the cycle actually close?`
+      `No votes found in ${table} for ${cycleLabel}. Did the cycle actually close?`
     )
   }
   // De-dupe and lowercase. The on-chain insert always lowercases via
@@ -196,7 +253,7 @@ async function fetchVoteRows(kind, quarter, year) {
     // for some validators and as a string for others. Handle both, and
     // strip any non-finite/negative values so the pinned snapshot only
     // contains the cleaned shape the compute pipeline expects.
-    const raw = r.distribution
+    const raw = r[column]
     let parsed
     if (typeof raw === 'string') {
       try { parsed = JSON.parse(raw) } catch { parsed = {} }
@@ -213,6 +270,48 @@ async function fetchVoteRows(kind, quarter, year) {
     distributions[addr] = clean
   }
   return { addresses, distributions }
+}
+
+/**
+ * Read the canonical close moment for a per-MDP Member Vote: the
+ * Senate's `tempCheckApprovedTimestamp` plus a 5-day voting window.
+ *
+ * Mirrors the formula in `ui/pages/api/proposals/nonProjectVote.ts` so
+ * snapshots line up with what the on-chain tally uses. Reads from
+ * Arbitrum mainnet — the only chain Proposals.sol is deployed on for
+ * production.
+ */
+async function getMemberProposalVoteCloseTimestamp(mdp) {
+  const arb = VMOONEY_TOKENS.find((t) => t.name === 'arbitrum')
+  if (!arb) {
+    throw new Error(
+      `[snapshot-vmooney] internal: no arbitrum entry in VMOONEY_TOKENS`
+    )
+  }
+  const provider = new ethers.providers.JsonRpcProvider(arb.rpc)
+  const proposals = new ethers.Contract(
+    PROPOSALS_CONTRACT_ARBITRUM,
+    PROPOSALS_ABI_FRAGMENT,
+    provider
+  )
+  const approved = await proposals.tempCheckApproved(mdp)
+  if (!approved) {
+    throw new Error(
+      `[snapshot-vmooney] MDP-${mdp} hasn't passed Senate Temperature Check ` +
+        `(tempCheckApproved=false). There's nothing to snapshot until the ` +
+        `Senate vote tallies and a Member Vote actually opens.`
+    )
+  }
+  const tempCheckApprovedTs = await proposals.tempCheckApprovedTimestamp(mdp)
+  const ts = Number(tempCheckApprovedTs.toString())
+  if (!Number.isFinite(ts) || ts <= 0) {
+    throw new Error(
+      `[snapshot-vmooney] MDP-${mdp} returned invalid ` +
+        `tempCheckApprovedTimestamp=${ts}. Refusing to derive a close moment ` +
+        `from junk; pass --vote-close-timestamp explicitly if needed.`
+    )
+  }
+  return ts + 60 * 60 * 24 * 5
 }
 
 // =============================================================================
@@ -497,16 +596,29 @@ function getRetroVoteCloseTimestamp(quarter, year) {
 // Main
 // =============================================================================
 ;(async () => {
-  const { kind, quarter, year, method, voteCloseOverride } = parseArgs()
-  const derivedVoteClose =
-    kind === 'member'
-      ? getMemberVoteCloseTimestamp(quarter, year)
-      : getRetroVoteCloseTimestamp(quarter, year)
+  const { kind, quarter, year, mdp, method, voteCloseOverride } = parseArgs()
+  let derivedVoteClose
+  if (kind === 'member') {
+    derivedVoteClose = getMemberVoteCloseTimestamp(quarter, year)
+  } else if (kind === 'retro') {
+    derivedVoteClose = getRetroVoteCloseTimestamp(quarter, year)
+  } else {
+    // memberProposal: derive from Proposals.sol on Arbitrum unless
+    // explicitly overridden via --vote-close-timestamp. Skip the RPC
+    // read in that case so an offline / archived run can still emit
+    // a snapshot without hitting the contract.
+    derivedVoteClose =
+      voteCloseOverride != null
+        ? voteCloseOverride
+        : await getMemberProposalVoteCloseTimestamp(mdp)
+  }
   const voteCloseTimestamp = voteCloseOverride ?? derivedVoteClose
 
   const closeIso = new Date(voteCloseTimestamp * 1000).toISOString()
+  const cycleLabel =
+    kind === 'memberProposal' ? `MDP-${mdp}` : `Q${quarter} ${year}`
   console.error(
-    `[snapshot-vmooney] kind=${kind} cycle=Q${quarter} ${year} ` +
+    `[snapshot-vmooney] kind=${kind} cycle=${cycleLabel} ` +
       `voteCloseTimestamp=${voteCloseTimestamp} (${closeIso}) method=${method}`
   )
   if (voteCloseOverride != null && voteCloseOverride !== derivedVoteClose) {
@@ -529,7 +641,12 @@ function getRetroVoteCloseTimestamp(quarter, year) {
     process.exit(1)
   }
 
-  const { addresses, distributions } = await fetchVoteRows(kind, quarter, year)
+  const { addresses, distributions } = await fetchVoteRows(
+    kind,
+    quarter,
+    year,
+    mdp
+  )
   console.error(
     `[snapshot-vmooney] ${addresses.length} unique voter address(es) to snapshot.`
   )
@@ -553,8 +670,12 @@ function getRetroVoteCloseTimestamp(quarter, year) {
   }
 
   const entry = {
-    quarter,
-    year,
+    // Per-MDP snapshots key off `mdp`, not `(quarter, year)`. Emit only
+    // the relevant key so the pasted entry matches the constants-file
+    // schema exactly without leaving stale `quarter: NaN` fields behind.
+    ...(kind === 'memberProposal'
+      ? { mdp }
+      : { quarter, year }),
     voteCloseTimestamp,
     snapshotTakenAt: Math.floor(Date.now() / 1000),
     // Record which method produced these numbers so the EB (and any
@@ -583,21 +704,30 @@ function getRetroVoteCloseTimestamp(quarter, year) {
     distributions,
   }
 
-  const mapName =
-    kind === 'member'
-      ? 'MEMBER_VOTE_VMOONEY_SNAPSHOTS'
-      : 'RETRO_VMOONEY_SNAPSHOTS'
+  let mapName
+  let entryKey
+  if (kind === 'member') {
+    mapName = 'MEMBER_VOTE_VMOONEY_SNAPSHOTS'
+    entryKey = `'${year}-Q${quarter}'`
+  } else if (kind === 'retro') {
+    mapName = 'RETRO_VMOONEY_SNAPSHOTS'
+    entryKey = `'${year}-Q${quarter}'`
+  } else {
+    mapName = 'MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS'
+    // Per-MDP map is keyed by integer (no quotes).
+    entryKey = `${mdp}`
+  }
 
   console.error('')
   console.error(
     `Paste the JSON below as a new entry under \`${mapName}\` in ` +
-      `ui/lib/proposals/vMooneySnapshots.ts (key: '${year}-Q${quarter}'):`
+      `ui/lib/proposals/vMooneySnapshots.ts (key: ${entryKey}):`
   )
   console.error('')
   // Print the entry to stdout so it can be redirected to a file. Headers
   // and progress lines go to stderr so they don't pollute the captured
   // JSON when piping (`> snapshot.json`).
-  process.stdout.write(`'${year}-Q${quarter}': ${JSON.stringify(entry, null, 2)},\n`)
+  process.stdout.write(`${entryKey}: ${JSON.stringify(entry, null, 2)},\n`)
 })().catch((err) => {
   console.error('[snapshot-vmooney] FAILED:', err)
   process.exit(1)

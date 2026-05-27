@@ -199,12 +199,38 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      // Match the pattern that works for the Teams tab test above: `cy.contains`
-      // already implicitly retries until the element exists, so chaining an
-      // extra `.should('exist')` is both redundant and a known source of
-      // "Expected to find element: undefined" flakes on render races.
-      cy.contains('Map', { timeout: 10000 }).click()
-      cy.get('#network-content').should('exist')
+      // Two failure modes the original `cy.contains('Map').click()`
+      // hit intermittently:
+      //
+      //   1. Detached-element race. `cy.contains` resolves to the
+      //      Map button, then the page re-renders as the Tableland
+      //      intercepts respond and SWR commits new data. The
+      //      original button is replaced and `cy.click()` errors
+      //      with "requires a DOM element". `.should('be.visible')`
+      //      is the fix: assertion chains re-run the WHOLE query
+      //      from `cy.contains` on each retry, so a detached
+      //      subject gets re-resolved to the new attached element
+      //      before the click fires.
+      //
+      //   2. `cy.wait('@getTablelandQuery')` style fixes don't help
+      //      here. SWR's cache lives at module scope and persists
+      //      across `cy.mount` calls within the same spec file, so
+      //      by the time this (last) test runs the queries are
+      //      served from cache, no XHR fires, and any `cy.wait`
+      //      hangs until timeout. Pin our synchronization to UI
+      //      state instead.
+      //
+      // `button` scope guards against accidentally matching some
+      // other "Map" text the post-click globe view introduces, and
+      // the trailing UI assertion (the Earth/Moon sub-tab bar that
+      // only renders when `isMapTab === true`) confirms the click
+      // actually took effect — a stronger guarantee than just
+      // re-checking `#network-content` (which exists on every
+      // tab).
+      cy.contains('button', 'Map', { timeout: 10000 })
+        .should('be.visible')
+        .click()
+      cy.contains('button', 'Earth', { timeout: 10000 }).should('be.visible')
     })
   })
 

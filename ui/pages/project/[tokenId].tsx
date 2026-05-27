@@ -35,9 +35,18 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import { computeMemberProposalTally } from '@/lib/proposals/computeMemberProposalTally'
+import {
+  getMemberProposalVMooneySnapshot,
+  resolveSnapshotMemberProposalVotes,
+  resolveSnapshotVMooney,
+  snapshotHasDistributions,
+} from '@/lib/proposals/vMooneySnapshots'
+import {
+  fetchTotalVMOONEYs,
+  fetchTotalVMOONEYsAtBlocks,
+} from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { isFetchableUrl } from '@/lib/utils/links'
-import { runQuadraticVoting } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -56,6 +65,91 @@ import SenateVoteSidebar from '@/components/project/SenateVoteSidebar'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
+
+// Small inline tag that names the provenance of the rendered Member
+// Vote tally. Two states matter: 'snapshot' (numbers locked in
+// `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS`, audit-stable forever) vs 'live'
+// (live vMOONEY query during the active voting window — drifts post-
+// close because `balanceOf(addr, _t)` extrapolation is not truly
+// historical). When a snapshot is `historical` we also surface the
+// per-chain block-at-close so an external auditor can re-derive the
+// numbers via any explorer.
+function TallyProvenanceTag({
+  meta,
+}: {
+  meta?: {
+    source: 'snapshot' | 'live'
+    voteCloseTimestamp: number
+    method?: 'historical' | 'projected'
+    blockAtClose?: Record<string, number>
+  } | null
+}) {
+  if (!meta) return null
+  const closeIso = meta.voteCloseTimestamp
+    ? new Date(meta.voteCloseTimestamp * 1000).toISOString().slice(0, 10)
+    : null
+  if (meta.source === 'snapshot') {
+    const arbBlock = meta.blockAtClose?.arbitrum
+    const detail =
+      meta.method === 'historical' && arbBlock
+        ? `block #${arbBlock} on Arbitrum`
+        : meta.method === 'projected'
+        ? 'projected at close'
+        : null
+    return (
+      <div
+        className="inline-flex items-center gap-2 self-start rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] uppercase tracking-wider text-emerald-200"
+        title="Tally is locked: voting power is read via balanceOfAt(addr, _block) against the close-time block snapshotted in the NonProjectProposal table. Values won't drift even if voters change their locks later."
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+        <span className="font-semibold">Final tally</span>
+        {closeIso && <span className="opacity-70">· closed {closeIso}</span>}
+        {detail && <span className="opacity-70">· {detail}</span>}
+      </div>
+    )
+  }
+
+  // Live source has two sub-states the UI must distinguish:
+  //
+  //   1. Vote still open (voteCloseTimestamp in the future): "Live
+  //      tally" with the pulsing blue dot — current behavior.
+  //   2. Vote already closed but no snapshot row yet (close handler
+  //      mid-flight, or its snapshot write failed): "Awaiting
+  //      snapshot" amber pill, no pulse. Calling this "Live tally" in
+  //      this window misrepresents the state — the vote isn't moving
+  //      anymore, we're just waiting for the canonical pin to land.
+  //
+  // The post-close window is normally a few seconds (the close
+  // handler resolves blockAtClose and inserts the row before
+  // returning), but it can extend if the snapshot write throws and
+  // the EB needs to retry. Surfacing it as a distinct state makes
+  // that retry path obvious.
+  const nowSec = Math.floor(Date.now() / 1000)
+  const closeHasPassed =
+    meta.voteCloseTimestamp != null && nowSec >= meta.voteCloseTimestamp
+  if (closeHasPassed) {
+    return (
+      <div
+        className="inline-flex items-center gap-2 self-start rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] uppercase tracking-wider text-amber-200"
+        title="Vote has closed but the on-chain snapshot row hasn't landed yet. The displayed numbers come from balanceOf(addr, _t), which is NOT truly historical — they may drift if a voter changes their lock before the snapshot lands. The close handler normally writes the snapshot in the same invocation; if you're seeing this for more than a minute, the snapshot write likely failed and an operator needs to retry."
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+        <span className="font-semibold">Awaiting snapshot</span>
+        {closeIso && <span className="opacity-70">· closed {closeIso}</span>}
+      </div>
+    )
+  }
+  return (
+    <div
+      className="inline-flex items-center gap-2 self-start rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] uppercase tracking-wider text-blue-200"
+      title="Live tally — voting power is queried with balanceOf(addr, _t) on every page load. This call extrapolates from each voter's latest lock entry, so the displayed numbers can drift if a voter changes their lock after the vote closes. Once the close handler writes a snapshot row, the tally switches to a drift-proof balanceOfAt lookup."
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+      <span className="font-semibold">Live tally</span>
+      {closeIso && <span className="opacity-70">· closes {closeIso}</span>}
+    </div>
+  )
+}
 
 function ProposalStatusBadge({ status }: { status: ProposalStatus }) {
   const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || {
@@ -91,6 +185,20 @@ type ProjectProfileProps = {
   // Empty object when the proposal has no votes yet or isn't a
   // non-project proposal.
   addressToVotingPower: { [address: string]: number }
+  // Provenance for the rendered Member Vote tally. `source: 'snapshot'`
+  // means the numbers came from `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS` in
+  // `lib/proposals/vMooneySnapshots.ts` and are locked for audit.
+  // `source: 'live'` means we computed them from a live vMOONEY query
+  // and they may drift (vMOONEY's `balanceOf(addr, _t)` extrapolation
+  // is not truly historical). `null` for proposals without a Member
+  // Vote phase or with no voters yet.
+  voteSnapshotMeta?: {
+    source: 'snapshot' | 'live'
+    voteCloseTimestamp: number
+    method?: 'historical' | 'projected'
+    blockAtClose?: Record<string, number>
+    snapshotTakenAt?: number
+  } | null
   tempCheckApprovedTimestamp?: string
   pending?: boolean
 }
@@ -105,6 +213,7 @@ export default function ProjectProfile({
   voteOutcome,
   proposalStatus,
   addressToVotingPower,
+  voteSnapshotMeta,
   tempCheckApprovedTimestamp,
   pending,
 }: ProjectProfileProps) {
@@ -394,11 +503,11 @@ export default function ProjectProfile({
                     header="Voting Results"
                     iconSrc="/assets/icon-star.svg"
                   >
-                    <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5">
+                    <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5 flex flex-col gap-3">
+                      <TallyProvenanceTag meta={voteSnapshotMeta} />
                       <VotingResults
                         voteOutcome={voteOutcome}
                         votes={votes}
-                        threshold={0}
                       />
                     </div>
                   </SectionCard>
@@ -536,6 +645,7 @@ export default function ProjectProfile({
                   addressToVotingPower={addressToVotingPower}
                   proposalStatus={proposalStatus}
                   mode={sidebarMode}
+                  snapshotMeta={voteSnapshotMeta}
                   footer={
                     sidebarMode === 'voting' ? (
                       <CloseAndTallyButton
@@ -711,23 +821,177 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
     // object when there are no voters yet (or this is a project
     // proposal that doesn't carry vote rows).
     let addressToVotingPower: { [address: string]: number } = {}
+    // Provenance for the rendered tally so the UI can show whether the
+    // numbers are still moving (live vMOONEY query during the active
+    // voting window) or locked (snapshot pinned in
+    // `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS` after close). Null when this
+    // isn't a non-project proposal, or there are no voters yet.
+    let voteSnapshotMeta: {
+      source: 'snapshot' | 'live'
+      voteCloseTimestamp: number
+      method?: 'historical' | 'projected'
+      blockAtClose?: Record<string, number>
+      snapshotTakenAt?: number
+    } | null = null
     if (proposalJSON?.nonProjectProposal) {
       try {
-        const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
-        votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
-        const voteAddresses = votes.map((v) => v.address)
         // Voting window is 5 days after temp-check approval. Must match
-        // pages/api/proposals/nonProjectVote.ts so the previewed outcome
-        // here matches the tallied outcome there.
-        const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 5
+        // pages/api/proposals/nonProjectVote.ts and
+        // ui/scripts/snapshot-vmooney.mjs so the previewed outcome here,
+        // the on-chain tally, and the snapshot capture all use the same
+        // close moment.
+        const votingPeriodClosedTimestamp =
+          parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 5
 
-        if (voteAddresses.length > 0) {
-          const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
-          addressToVotingPower = Object.fromEntries(
-            voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+        // Resolve votes for this proposal, with three layered fallbacks
+        // for the vMOONEY voting-power lookup so the rendered tally is
+        // drift-proof whenever possible:
+        //
+        //   1. Auto-written sentinel row in the NonProjectProposal_*
+        //      table (preferred). The close handler at
+        //      `pages/api/proposals/nonProjectVote.ts` writes a row
+        //      with `vote.kind === 'snapshot'` that pins
+        //      `closeBlocks` per chain. We then call
+        //      `balanceOfAt(addr, _block)` on each chain — the
+        //      VotingEscrow's truly-historical lookup — so the
+        //      result is permanent regardless of post-close lock
+        //      activity.
+        //
+        //   2. Manual constants-file snapshot in
+        //      `MEMBER_PROPOSAL_VMOONEY_SNAPSHOTS`. This is the
+        //      legacy/override path (kept so previously-pinned audits
+        //      keep rendering exactly as captured, and so an EB can
+        //      still freeze a tally manually if the auto-snapshot
+        //      misses a chain).
+        //
+        //   3. Live recompute via `balanceOf(addr, _t)`. Drift-prone
+        //      (extrapolates from latest user_point) but the only
+        //      option for in-flight votes where neither snapshot
+        //      exists yet.
+        const constantsSnapshot = getMemberProposalVMooneySnapshot(mdp)
+
+        if (constantsSnapshot && snapshotHasDistributions(constantsSnapshot)) {
+          // Constants-file pin reproduces both VP and per-voter
+          // distributions standalone — no Tableland round-trip needed.
+          votes = resolveSnapshotMemberProposalVotes(constantsSnapshot) as any[]
+          const voteAddresses = votes.map((v) => v.address)
+          const vMOONEYs = resolveSnapshotVMooney(
+            constantsSnapshot,
+            voteAddresses
           )
-          const SUM_TO_ONE_HUNDRED = 100
-          voteOutcome = runQuadraticVoting(votes, addressToVotingPower, SUM_TO_ONE_HUNDRED)
+          addressToVotingPower = Object.fromEntries(
+            voteAddresses.map((address, index) => [
+              address,
+              Math.sqrt(vMOONEYs[index]),
+            ])
+          )
+          voteOutcome = computeMemberProposalTally(
+            votes as any,
+            addressToVotingPower
+          )
+          voteSnapshotMeta = {
+            source: 'snapshot',
+            voteCloseTimestamp: constantsSnapshot.voteCloseTimestamp,
+            method: constantsSnapshot.method,
+            blockAtClose: constantsSnapshot.blockAtClose,
+            snapshotTakenAt: constantsSnapshot.snapshotTakenAt,
+          }
+        } else {
+          const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
+          const allRows = (await queryTable(
+            chain,
+            voteStatement
+          )) as DistributionVote[]
+
+          // Pull the auto-snapshot sentinel row out of the vote list
+          // so it doesn't show up as a "voter" in the sidebar list or
+          // contribute to the tally. Identified by SHAPE (vote JSON
+          // has `kind: 'snapshot'` instead of '1'/'2'/'3' choice
+          // keys), not by address — keeps the filter robust against
+          // HSM wallet rotations.
+          let autoSnapshotPayload: any = null
+          votes = allRows.filter((row: any) => {
+            const raw = row?.vote
+            const parsed =
+              raw && typeof raw === 'object'
+                ? raw
+                : typeof raw === 'string'
+                ? (() => {
+                    try {
+                      return JSON.parse(raw)
+                    } catch {
+                      return null
+                    }
+                  })()
+                : null
+            if (parsed && parsed.kind === 'snapshot') {
+              autoSnapshotPayload = parsed
+              return false
+            }
+            return true
+          })
+
+          const voteAddresses = votes.map((v) => v.address)
+
+          if (voteAddresses.length > 0) {
+            // Prefer the auto-snapshot's `closeBlocks` if present —
+            // drift-proof. Then a constants-file VP map (legacy).
+            // Otherwise fall back to the timestamp-based live fetcher.
+            let vMOONEYs: number[] | null = null
+            if (
+              autoSnapshotPayload?.closeBlocks &&
+              typeof autoSnapshotPayload.closeBlocks === 'object'
+            ) {
+              vMOONEYs = await fetchTotalVMOONEYsAtBlocks(
+                voteAddresses,
+                autoSnapshotPayload.closeBlocks
+              )
+            } else if (constantsSnapshot) {
+              vMOONEYs = resolveSnapshotVMooney(
+                constantsSnapshot,
+                voteAddresses
+              )
+            } else {
+              vMOONEYs = await fetchTotalVMOONEYs(
+                voteAddresses,
+                votingPeriodClosedTimestamp
+              )
+            }
+            addressToVotingPower = Object.fromEntries(
+              voteAddresses.map((address, index) => [
+                address,
+                Math.sqrt(vMOONEYs![index] ?? 0),
+              ])
+            )
+            voteOutcome = computeMemberProposalTally(
+              votes as any,
+              addressToVotingPower
+            )
+            if (autoSnapshotPayload?.closeBlocks) {
+              voteSnapshotMeta = {
+                source: 'snapshot',
+                voteCloseTimestamp:
+                  autoSnapshotPayload.voteCloseTimestamp ??
+                  votingPeriodClosedTimestamp,
+                method: 'historical',
+                blockAtClose: autoSnapshotPayload.closeBlocks,
+                snapshotTakenAt: autoSnapshotPayload.capturedAt,
+              }
+            } else if (constantsSnapshot) {
+              voteSnapshotMeta = {
+                source: 'snapshot',
+                voteCloseTimestamp: constantsSnapshot.voteCloseTimestamp,
+                method: constantsSnapshot.method,
+                blockAtClose: constantsSnapshot.blockAtClose,
+                snapshotTakenAt: constantsSnapshot.snapshotTakenAt,
+              }
+            } else {
+              voteSnapshotMeta = {
+                source: 'live',
+                voteCloseTimestamp: votingPeriodClosedTimestamp,
+              }
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching votes:', error)
@@ -780,6 +1044,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
         proposalJSON,
         voteOutcome,
         addressToVotingPower,
+        voteSnapshotMeta,
         tempCheckApprovedTimestamp: tempCheckApprovedTimestamp
           ? tempCheckApprovedTimestamp.toString()
           : '0',

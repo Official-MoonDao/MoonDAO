@@ -9,6 +9,7 @@
     "cypress/integration/unit/voting.cy.tsx",
     "cypress/integration/unit/vmooney-snapshots.cy.tsx",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
+    "cypress/integration/unit/member-vote-tally.cy.tsx",
     "cypress/integration/overview-delegate/leaderboard.cy.ts"
   ]
 }
