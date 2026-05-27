@@ -24,12 +24,30 @@ const VOTE_CHOICE_LABELS: Record<string, string> = {
 // the only nonzero key; legacy split votes still resolve to whichever
 // side got the most weight, matching the dominantChoice logic in the
 // sidebar so "You voted" and the per-voter pill always agree.
+//
+// Accepts both shapes a vote row can arrive as: an already-parsed
+// object (Tableland gateway path) and a JSON-encoded string (some
+// adapter paths and the legacy `distribution` column). Without the
+// string fallback, `Object.entries(stringVote)` would iterate the
+// JSON literal's characters and produce a nonsense label. Mirrors
+// `parseVote` in `lib/proposals/computeMemberProposalTally`.
 function dominantVoteLabel(
-  vote: Record<string, number> | undefined
+  vote: Record<string, number> | string | undefined | null
 ): string | null {
-  if (!vote) return null
+  if (vote == null) return null
+  let dist: Record<string, number> = {}
+  if (typeof vote === 'string') {
+    try {
+      const parsed = JSON.parse(vote)
+      if (parsed && typeof parsed === 'object') dist = parsed
+    } catch {
+      return null
+    }
+  } else {
+    dist = vote
+  }
   let best: [string, number] | null = null
-  for (const [k, v] of Object.entries(vote)) {
+  for (const [k, v] of Object.entries(dist)) {
     const n = Number(v)
     if (!Number.isFinite(n)) continue
     if (best === null || n > best[1]) best = [k, n]
