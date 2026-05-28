@@ -20,6 +20,7 @@
     "test:voting-author-restriction": "ts-node -r tsconfig-paths/register scripts/test-voting-author-restriction.ts",
     "snapshot:vmooney": "node scripts/snapshot-vmooney.mjs",
     "test:cypress-unit": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-cypress-unit.json",
+    "onramp:sandbox-check": "ts-node -r tsconfig-paths/register scripts/test-onramp-sandbox.ts",
     "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts",
     "verify:mail": "node scripts/verify-nodemailer.cjs"
   },

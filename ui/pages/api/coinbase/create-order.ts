@@ -6,6 +6,7 @@ import {
   validateCDPCredentials,
   makeCDPRequest,
   handleAPIError,
+  CDP_HOST_V2,
 } from '../../../lib/coinbase'
 import { getCountryFromHeaders } from '../../../lib/geo'
 import {
@@ -15,6 +16,7 @@ import {
   buildCreateOrderRequestBody,
   extractOrderResult,
   applySandboxParam,
+  sanitizeClientIp,
   type CreateOrderInput,
 } from '../../../lib/coinbase/headlessOrder'
 
@@ -59,12 +61,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    // Best-effort end-user IP for Coinbase's region determination.
+    // Best-effort end-user IP for Coinbase's region determination. Coinbase
+    // rejects private/loopback IPs, so only forward a genuine public address.
     const forwardedFor = (req.headers['x-forwarded-for'] as string) || ''
     const clientIp =
-      forwardedFor.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
-      req.socket?.remoteAddress ||
+      sanitizeClientIp(forwardedFor) ||
+      sanitizeClientIp(req.headers['x-real-ip'] as string) ||
+      sanitizeClientIp(req.socket?.remoteAddress) ||
       undefined
 
     const credentials = validateCDPCredentials()
@@ -75,10 +78,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
 
     const response = await makeCDPRequest(
-      '/onramp/v2/orders',
+      '/platform/v2/onramp/orders',
       'POST',
       requestBody,
-      credentials
+      credentials,
+      CDP_HOST_V2
     )
 
     if (!response.ok) {

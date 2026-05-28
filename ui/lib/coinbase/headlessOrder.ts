@@ -99,6 +99,53 @@ export function isRegionAllowed(country: string | null | undefined): boolean {
 }
 
 /**
+ * Coinbase rejects private / loopback / link-local IPs ("private IP addresses
+ * are not allowed"). `clientIp` is optional, so we only forward a genuine
+ * public address. Returns the trimmed IP when it's public, otherwise undefined.
+ *
+ * Verified against the live API: sending 127.0.0.1 returns HTTP 400.
+ */
+export function sanitizeClientIp(
+  raw: string | null | undefined
+): string | undefined {
+  if (!raw) return undefined
+  // Take the first hop if a comma-separated x-forwarded-for slipped through,
+  // and strip an optional IPv6 zone id and surrounding brackets/whitespace.
+  let ip = raw.split(',')[0]?.trim() || ''
+  ip = ip.replace(/^\[|\]$/g, '').split('%')[0]
+  // Strip a trailing :port for IPv4 (but not for bare IPv6).
+  if (/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(ip)) ip = ip.split(':')[0]
+  if (!ip) return undefined
+
+  const lower = ip.toLowerCase()
+
+  // IPv6 loopback / unspecified / unique-local (fc00::/7) / link-local (fe80::/10).
+  if (lower === '::1' || lower === '::') return undefined
+  if (/^f[cd][0-9a-f]{2}:/.test(lower)) return undefined
+  if (/^fe[89ab][0-9a-f]:/.test(lower)) return undefined
+  // IPv4-mapped IPv6 (::ffff:127.0.0.1) — fall through to IPv4 checks below.
+  const mapped = lower.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/)
+  if (mapped) ip = mapped[1]
+
+  const v4 = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])]
+    if (a === 10) return undefined // 10.0.0.0/8
+    if (a === 127) return undefined // loopback
+    if (a === 0) return undefined // 0.0.0.0/8
+    if (a === 169 && b === 254) return undefined // link-local
+    if (a === 172 && b >= 16 && b <= 31) return undefined // 172.16.0.0/12
+    if (a === 192 && b === 168) return undefined // 192.168.0.0/16
+    if (a === 100 && b >= 64 && b <= 127) return undefined // CGNAT 100.64.0.0/10
+    return ip
+  }
+
+  // Non-IPv4 that survived the private/loopback IPv6 checks above: treat as a
+  // public IPv6 address.
+  return ip
+}
+
+/**
  * In sandbox/mock mode, Coinbase short-circuits the charge when the
  * partnerUserRef is prefixed with `sandbox-`. Idempotent — never double-prefixes.
  */
@@ -113,7 +160,7 @@ export function resolvePartnerUserRef(
 }
 
 /**
- * Builds the exact body sent to the CDP `/onramp/v2/orders` endpoint.
+ * Builds the exact body sent to the CDP `/platform/v2/onramp/orders` endpoint.
  * Optional fields are only included when present.
  */
 export function buildCreateOrderRequestBody(

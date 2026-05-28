@@ -25,6 +25,7 @@ import {
   buildCreateOrderRequestBody,
   extractOrderResult,
   applySandboxParam,
+  sanitizeClientIp,
   PHONE_E164_REGEX,
 } from '../../../lib/coinbase/headlessOrder'
 import {
@@ -154,6 +155,73 @@ describe('Coinbase Headless Onramp — region gating (US only)', () => {
 
   it('is case-sensitive (lowercase us is not US)', () => {
     expect(isRegionAllowed('us')).to.equal(false)
+  })
+})
+
+// Verified against the live API: Coinbase returns HTTP 400 "private IP
+// addresses are not allowed" when a loopback/private clientIp is sent.
+describe('Coinbase Headless Onramp — clientIp sanitization', () => {
+  it('passes through a public IPv4 address', () => {
+    expect(sanitizeClientIp('203.0.113.7')).to.equal('203.0.113.7')
+  })
+
+  it('drops IPv4 loopback', () => {
+    expect(sanitizeClientIp('127.0.0.1')).to.equal(undefined)
+  })
+
+  it('drops 10.x / 172.16-31.x / 192.168.x private ranges', () => {
+    expect(sanitizeClientIp('10.1.2.3')).to.equal(undefined)
+    expect(sanitizeClientIp('172.16.5.5')).to.equal(undefined)
+    expect(sanitizeClientIp('172.31.255.255')).to.equal(undefined)
+    expect(sanitizeClientIp('192.168.0.1')).to.equal(undefined)
+  })
+
+  it('keeps 172.x outside the private 16-31 block', () => {
+    expect(sanitizeClientIp('172.32.0.1')).to.equal('172.32.0.1')
+    expect(sanitizeClientIp('172.15.0.1')).to.equal('172.15.0.1')
+  })
+
+  it('drops link-local and CGNAT ranges', () => {
+    expect(sanitizeClientIp('169.254.1.1')).to.equal(undefined)
+    expect(sanitizeClientIp('100.64.0.1')).to.equal(undefined)
+  })
+
+  it('drops IPv6 loopback and unique/link-local', () => {
+    expect(sanitizeClientIp('::1')).to.equal(undefined)
+    expect(sanitizeClientIp('fc00::1')).to.equal(undefined)
+    expect(sanitizeClientIp('fe80::1')).to.equal(undefined)
+  })
+
+  it('keeps a public IPv6 address', () => {
+    expect(sanitizeClientIp('2606:4700:4700::1111')).to.equal(
+      '2606:4700:4700::1111'
+    )
+  })
+
+  it('takes the first hop of an x-forwarded-for chain', () => {
+    expect(sanitizeClientIp('203.0.113.7, 10.0.0.1, 192.168.1.1')).to.equal(
+      '203.0.113.7'
+    )
+  })
+
+  it('falls through to the next candidate when the first hop is private', () => {
+    // x-forwarded-for whose first hop is private should yield undefined so the
+    // handler can try x-real-ip / socket next.
+    expect(sanitizeClientIp('10.0.0.1, 203.0.113.7')).to.equal(undefined)
+  })
+
+  it('strips a trailing :port from IPv4', () => {
+    expect(sanitizeClientIp('203.0.113.7:54321')).to.equal('203.0.113.7')
+  })
+
+  it('handles IPv4-mapped IPv6 loopback', () => {
+    expect(sanitizeClientIp('::ffff:127.0.0.1')).to.equal(undefined)
+  })
+
+  it('returns undefined for empty / nullish input', () => {
+    expect(sanitizeClientIp('')).to.equal(undefined)
+    expect(sanitizeClientIp(null)).to.equal(undefined)
+    expect(sanitizeClientIp(undefined)).to.equal(undefined)
   })
 })
 
