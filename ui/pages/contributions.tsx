@@ -23,19 +23,24 @@ function ContributionFeed() {
         const contribs: Contribution[] = data.contributions || []
         setContributions(contribs)
 
-        // Fetch citizen profile images for all unique wallet addresses
+        // Fetch citizen profile images for all unique, valid wallet addresses.
+        // Addresses come from an untrusted public sheet, so validate the format
+        // before sending them to the (SQL-backed) lookup endpoint.
         const addresses = [
           ...new Set(
             contribs
               .map((c) => c.walletAddress?.trim().toLowerCase())
-              .filter(Boolean)
+              .filter((a): a is string => !!a && /^0x[a-f0-9]{40}$/.test(a))
           ),
         ]
         if (addresses.length > 0) {
-          fetch(`/api/citizens/images-by-address?addresses=${addresses.join(',')}`)
+          const params = new URLSearchParams({ addresses: addresses.join(',') })
+          fetch(`/api/citizens/images-by-address?${params.toString()}`)
             .then((r) => (r.ok ? r.json() : {}))
             .then((map) => setCitizenImages(map))
-            .catch(() => {})
+            .catch((err) =>
+              console.warn('[ContributionFeed] citizen image fetch failed', err)
+            )
         }
       })
       .catch((err) => {
@@ -86,8 +91,12 @@ function ContributionFeed() {
             >
               <div className="flex items-center gap-3 min-w-0">
                 {(() => {
-                  const walletKey = items[0]?.walletAddress?.trim().toLowerCase()
-                  const ipfs = walletKey ? citizenImages[walletKey] : undefined
+                  // A group is keyed by name; pick the first wallet in the group
+                  // that actually resolves to a citizen image.
+                  const ipfs = items
+                    .map((c) => c.walletAddress?.trim().toLowerCase())
+                    .map((key) => (key ? citizenImages[key] : undefined))
+                    .find(Boolean)
                   const imgSrc = ipfs ? getIPFSGateway(ipfs) : undefined
                   return imgSrc ? (
                     <Image
