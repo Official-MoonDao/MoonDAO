@@ -128,7 +128,11 @@ function getCitizenMetadata(citizen: any): string | null {
   return null
 }
 
-// Determine which key profile fields a citizen is still missing
+// Determine which key profile fields a citizen is still missing.
+// Mirrors the on-chain HAS_COMPLETED_CITIZEN_PROFILE verifier (see
+// ui/lib/xp/config.ts + has-completed-citizen-profile-proof.ts): a profile is
+// considered complete with a description (bio) + at least one of
+// location / discord / twitter / website.
 function getMissingProfileFields(citizen: any): string[] {
   if (!citizen) return []
 
@@ -141,28 +145,17 @@ function getMissingProfileFields(citizen: any): string[] {
 
   const missing: string[] = []
 
-  // Avatar — default placeholder image doesn't count as a real avatar
-  const image = citizen?.metadata?.image
-  if (!image || (typeof image === 'string' && image.includes('citizen-default'))) {
-    missing.push('Profile photo')
-  }
-
-  // Bio
+  // Bio (description) — required by the verifier
   if (!hasValue(citizen?.metadata?.description ?? citizen?.description)) {
     missing.push('Bio')
   }
 
-  // Location
-  if (!getCitizenLocation(citizen)) {
-    missing.push('Location')
-  }
-
-  // At least one social/contact link
-  const hasSocial = ['twitter', 'discord', 'instagram', 'linkedin', 'website'].some(
-    (trait) => hasValue(getAttr(trait))
-  )
-  if (!hasSocial) {
-    missing.push('A social or website link')
+  // At least one of location / discord / twitter / website — required by the verifier
+  const hasContact =
+    !!getCitizenLocation(citizen) ||
+    ['discord', 'twitter', 'website'].some((trait) => hasValue(getAttr(trait)))
+  if (!hasContact) {
+    missing.push('Location or a social/website link')
   }
 
   return missing
@@ -381,8 +374,17 @@ export default function SignedInDashboard({
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
-  // Incomplete profile notice state
-  const [profileNoticeDismissed, setProfileNoticeDismissed] = useState(false)
+  // Incomplete profile notice state — persisted per citizen so dismiss survives remounts
+  const citizenId = citizen?.metadata?.id ?? citizen?.id
+  const storageKey = citizenId ? `profileNoticeDismissed:${citizenId}` : null
+  const [profileNoticeDismissed, setProfileNoticeDismissed] = useState(() => {
+    if (typeof window === 'undefined' || !storageKey) return false
+    return localStorage.getItem(storageKey) === '1'
+  })
+  const dismissProfileNotice = () => {
+    setProfileNoticeDismissed(true)
+    if (storageKey) localStorage.setItem(storageKey, '1')
+  }
   const missingProfileFields = getMissingProfileFields(citizen)
   const showProfileNotice =
     !!citizen && missingProfileFields.length > 0 && !profileNoticeDismissed
@@ -655,7 +657,7 @@ export default function SignedInDashboard({
                       </Link>
                       <button
                         type="button"
-                        onClick={() => setProfileNoticeDismissed(true)}
+                        onClick={dismissProfileNotice}
                         aria-label="Dismiss"
                         className="self-stretch px-2.5 bg-amber-500/10 hover:bg-amber-500/30 text-amber-300/60 hover:text-amber-200 border-l border-amber-400/25 transition-all flex items-center"
                       >
@@ -684,11 +686,7 @@ export default function SignedInDashboard({
                     View Profile
                   </Link>
                   <Link
-                    href={
-                      citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
-                        ? `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata?.id ?? citizen.id)}?edit=1`
-                        : '/join'
-                    }
+                    href={profileEditHref}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl text-blue-300 hover:text-blue-200 text-sm font-medium transition-all"
                   >
                     <PencilSquareIcon className="w-4 h-4" />
