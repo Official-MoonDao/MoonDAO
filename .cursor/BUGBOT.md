@@ -12,9 +12,13 @@ keep comments concise and actionable.
   (`getContract`/`readContract`), **NextAuth**, **Tableland**, **Upstash Redis**,
   and Coinbase Onramp. Tests are **Cypress** (component + e2e).
 - `xp/` — Foundry/Solidity contracts (OpenZeppelin). `xp/lib/**` is vendored
-  dependencies — **do not review or flag anything under `**/lib/**`,
-  `node_modules/**`, or generated/ABI files in `const/abis/**`.**
-- `const/` — shared config: contract `*_ADDRESSES` keyed by chain slug, ABIs.
+  dependencies — **do not review or flag anything under the vendored Solidity
+  `lib/` dirs (`xp/lib/**`, `subscription-contracts/lib/**`, `fee-hook/lib/**`),
+  `node_modules/**`, `ui/archive/**`, or the generated ABI files in
+  `ui/const/abis/**`. Note: `ui/lib/**` is FIRST-PARTY app code — review it
+  normally.**
+- `ui/const/` — shared config: contract `*_ADDRESSES` keyed by chain slug, ABIs
+  (imported via the `const/...` path alias, but the directory is `ui/const/`).
 - Other top-level packages (`dispatcher/`, etc.) are secondary.
 
 ## Security — API routes (`ui/pages/api/**`)
@@ -104,8 +108,12 @@ keep comments concise and actionable.
 
 ## Noise control — do NOT flag
 
-- Files under `**/lib/**` (vendored), `node_modules/**`, `const/abis/**`,
-  `**/*.json` ABIs, build output (`.next/`), or Cypress fixtures.
+- Vendored / generated paths only: the Solidity `lib/` deps (`xp/lib/**`,
+  `subscription-contracts/lib/**`, `fee-hook/lib/**`), `node_modules/**`,
+  `ui/archive/**`, the ABI JSON in `ui/const/abis/**`, build output (`.next/`,
+  `out/`), and Cypress fixtures. Do NOT add a blanket `**/lib/**` or `**/*.json`
+  ignore — `ui/lib/**` is first-party code and JSON configs (tsconfig, prettier,
+  package.json) should still be reviewed.
 - Pure formatting/whitespace, import ordering, or subjective naming preferences.
 - Pre-existing issues unrelated to the PR diff.
 - Restating what the code obviously does — only comment when there's a real risk,
