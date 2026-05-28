@@ -21,6 +21,8 @@ import {
   FireIcon,
   UserCircleIcon,
   PencilSquareIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
@@ -123,6 +125,46 @@ function getCitizenMetadata(citizen: any): string | null {
   const discord = citizen?.discord ?? citizen?.metadata?.attributes?.find((a: any) => a.trait_type === 'discord')?.value
   if (discord) return discord.length > 25 ? discord.slice(0, 22) + '…' : discord
   return null
+}
+
+// Determine which key profile fields a citizen is still missing
+function getMissingProfileFields(citizen: any): string[] {
+  if (!citizen) return []
+
+  const getAttr = (trait: string) =>
+    citizen?.[trait] ??
+    citizen?.metadata?.attributes?.find((a: any) => a.trait_type === trait)?.value
+
+  const hasValue = (val: any) =>
+    typeof val === 'string' ? val.trim().length > 0 : !!val
+
+  const missing: string[] = []
+
+  // Avatar — default placeholder image doesn't count as a real avatar
+  const image = citizen?.metadata?.image
+  if (!image || (typeof image === 'string' && image.includes('citizen-default'))) {
+    missing.push('Profile photo')
+  }
+
+  // Bio
+  if (!hasValue(citizen?.metadata?.description ?? citizen?.description)) {
+    missing.push('Bio')
+  }
+
+  // Location
+  if (!getCitizenLocation(citizen)) {
+    missing.push('Location')
+  }
+
+  // At least one social/contact link
+  const hasSocial = ['twitter', 'discord', 'instagram', 'linkedin', 'website'].some(
+    (trait) => hasValue(getAttr(trait))
+  )
+  if (!hasSocial) {
+    missing.push('A social or website link')
+  }
+
+  return missing
 }
 
 // Get team metadata for card (description preview, communications, or website)
@@ -338,6 +380,18 @@ export default function SignedInDashboard({
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
+  // Incomplete profile notice state
+  const [profileNoticeDismissed, setProfileNoticeDismissed] = useState(false)
+  const missingProfileFields = getMissingProfileFields(citizen)
+  const showProfileNotice = true // TODO: restore → !!citizen && missingProfileFields.length > 0 && !profileNoticeDismissed
+  const profileEditHref =
+    citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+      ? `/citizen/${generatePrettyLinkWithId(
+          citizen.metadata.name,
+          citizen.metadata?.id ?? citizen.id
+        )}?edit=1`
+      : '/join'
+
   const account = useActiveAccount()
   const address = account?.address
 
@@ -486,7 +540,17 @@ export default function SignedInDashboard({
             <p className="text-white font-semibold truncate">
               {citizen?.metadata?.name || 'Welcome back'}
             </p>
-            <p className="text-white/50 text-xs">MoonDAO Citizen</p>
+            {showProfileNotice ? (
+              <Link
+                href={profileEditHref}
+                className="inline-flex items-center gap-1 text-amber-300 hover:text-amber-200 text-xs transition-colors"
+              >
+                <ExclamationTriangleIcon className="w-3 h-3 flex-shrink-0" />
+                Profile incomplete — complete it
+              </Link>
+            ) : (
+              <p className="text-white/50 text-xs">MoonDAO Citizen</p>
+            )}
           </div>
           {/* Edit profile link */}
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -578,6 +642,25 @@ export default function SignedInDashboard({
               {/* View / Edit Profile buttons */}
               {citizen && (
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {showProfileNotice && (
+                    <div className="inline-flex items-center border border-amber-400/25 rounded-xl overflow-hidden">
+                      <Link
+                        href={profileEditHref}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 text-sm font-medium transition-all"
+                      >
+                        <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
+                        Your profile is incomplete
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setProfileNoticeDismissed(true)}
+                        aria-label="Dismiss"
+                        className="self-stretch px-2.5 bg-amber-500/10 hover:bg-amber-500/30 text-amber-300/60 hover:text-amber-200 border-l border-amber-400/25 transition-all flex items-center"
+                      >
+                        <XMarkIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                   <Link
                     href={
                       citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
