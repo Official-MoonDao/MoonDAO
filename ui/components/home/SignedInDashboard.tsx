@@ -94,6 +94,7 @@ import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardActiveProjects from '../project/DashboardActiveProjects'
 import DashboardQuests from './DashboardQuests'
 import RecentActivity from './RecentActivity'
+import { useClaimableQuestsCount } from '@/lib/xp/useClaimableQuestsCount'
 import LazyEarth from '@/components/globe/LazyEarth'
 
 // Parse citizen location from Tableland (can be JSON or plain string)
@@ -383,7 +384,8 @@ export default function SignedInDashboard({
   // Incomplete profile notice state
   const [profileNoticeDismissed, setProfileNoticeDismissed] = useState(false)
   const missingProfileFields = getMissingProfileFields(citizen)
-  const showProfileNotice = true // TODO: restore → !!citizen && missingProfileFields.length > 0 && !profileNoticeDismissed
+  const showProfileNotice =
+    !!citizen && missingProfileFields.length > 0 && !profileNoticeDismissed
   const profileEditHref =
     citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
       ? `/citizen/${generatePrettyLinkWithId(
@@ -395,7 +397,7 @@ export default function SignedInDashboard({
   const account = useActiveAccount()
   const address = account?.address
 
-  // Hooks for SendModal
+  const claimableQuestsCount = useClaimableQuestsCount(address)
   const { nativeBalance } = useNativeBalance()
   const { tokens: walletTokens } = useWalletTokens(address, chainSlug)
 
@@ -660,6 +662,15 @@ export default function SignedInDashboard({
                         <XMarkIcon className="w-3.5 h-3.5" />
                       </button>
                     </div>
+                  )}
+                  {claimableQuestsCount !== null && claimableQuestsCount > 0 && (
+                    <Link
+                      href="/quests"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/25 rounded-xl text-purple-300 hover:text-purple-200 text-sm font-medium transition-all"
+                    >
+                      <TrophyIcon className="w-4 h-4 flex-shrink-0" />
+                      {claimableQuestsCount} quest{claimableQuestsCount !== 1 ? 's' : ''} to claim
+                    </Link>
                   )}
                   <Link
                     href={
