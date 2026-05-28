@@ -27,6 +27,41 @@ function pickVerifiedAt(account: LinkedPhoneAccount | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
+export interface PhoneState {
+  phoneNumber: string | null
+  isLinked: boolean
+  isFresh: boolean
+  isStale: boolean
+  verifiedAt: Date | null
+}
+
+/**
+ * Pure computation of the phone verification state. Extracted so it can be unit
+ * tested deterministically (pass `now` to control the clock).
+ *
+ *  - No linked phone            -> not linked, not fresh, not stale
+ *  - Linked, verified < 60d ago -> fresh
+ *  - Linked, verified > 60d ago -> stale
+ *  - Linked, no timestamp       -> stale. Coinbase REQUIRES a
+ *                                  `phoneNumberVerifiedAt` within 60 days, so a
+ *                                  number we can't timestamp must be re-verified
+ *                                  via Privy to obtain a fresh one.
+ */
+export function computePhoneState(
+  account: LinkedPhoneAccount | undefined,
+  fallbackNumber: string | null,
+  now: number = Date.now()
+): PhoneState {
+  const phoneNumber = account?.number ?? fallbackNumber ?? null
+  const verifiedAt = pickVerifiedAt(account)
+  const isLinked = !!phoneNumber
+  const isFresh = !!(
+    verifiedAt && now - verifiedAt.getTime() < PHONE_REVERIFICATION_INTERVAL_MS
+  )
+  const isStale = isLinked && !isFresh
+  return { phoneNumber, isLinked, isFresh, isStale, verifiedAt }
+}
+
 export interface UsePhoneVerificationReturn {
   /** E.164 phone number from Privy, e.g. "+12345678901" */
   phoneNumber: string | null
@@ -63,18 +98,10 @@ export function usePhoneVerification(): UsePhoneVerificationReturn {
     return accounts.find((a) => a?.type === 'phone') as LinkedPhoneAccount | undefined
   }, [user?.linkedAccounts])
 
-  const phoneNumber = phoneAccount?.number ?? user?.phone?.number ?? null
-  const verifiedAt = pickVerifiedAt(phoneAccount)
-  const isLinked = !!phoneNumber
-  const isFresh =
-    // If verifiedAt is available, check within 60-day window
-    verifiedAt
-      ? Date.now() - verifiedAt.getTime() < PHONE_REVERIFICATION_INTERVAL_MS
-      : // No timestamp from Privy (older linked accounts) — treat as fresh to
-        // avoid blocking valid users. Coinbase will reject the order itself
-        // if the number is unverified.
-        isLinked
-  const isStale = isLinked && !isFresh
+  const { phoneNumber, isLinked, isFresh, isStale, verifiedAt } = computePhoneState(
+    phoneAccount,
+    user?.phone?.number ?? null
+  )
 
   const requestVerification = useCallback(() => {
     return linkPhone()

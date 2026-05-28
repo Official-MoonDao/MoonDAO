@@ -18,6 +18,13 @@ import {
   LargeAmountExchangeOnrampNotice,
 } from './LargeAmountExchangeOnrampNotice'
 import usePhoneVerification from '@/lib/coinbase/usePhoneVerification'
+import {
+  type HeadlessStatus,
+  getQuoteNetworkName,
+  getOnrampNetworkName,
+  parseOnrampMessage,
+  mapOnrampEvent,
+} from '@/lib/coinbase/headlessEvents'
 
 interface CBHeadlessOnrampProps {
   address: string
@@ -43,84 +50,6 @@ interface CBHeadlessOnrampProps {
 
 const MOCK_ONRAMP = process.env.NEXT_PUBLIC_MOCK_ONRAMP === 'true'
 
-// Map post-message event names to internal UI states
-type HeadlessStatus =
-  | 'idle' // before user clicks Buy
-  | 'creating' // POST /create-order in flight
-  | 'iframe-loading' // iframe mounted, waiting for load_success
-  | 'ready' // pay button visible inside the iframe
-  | 'committing' // user pressed Apple Pay, awaiting commit_success
-  | 'polling' // commit succeeded, waiting for settlement
-  | 'success'
-  | 'error'
-
-interface PostMessageData {
-  eventName?: string
-  data?: { errorCode?: string; errorMessage?: string }
-}
-
-function getQuoteNetworkName(chain: any): string {
-  const chainName = chain?.name?.toLowerCase() || 'ethereum'
-  const chainId = chain?.id
-  switch (chainName) {
-    case 'base':
-    case 'base sepolia':
-    case 'base sepolia testnet':
-      return 'base'
-    case 'polygon':
-      return 'polygon'
-    default:
-      switch (chainId) {
-        case 8453:
-        case 84532:
-          return 'base'
-        case 137:
-          return 'polygon'
-        default:
-          return 'ethereum'
-      }
-  }
-}
-
-function getOnrampNetworkName(chain: any): string {
-  const chainName = chain?.name?.toLowerCase() || 'ethereum'
-  const chainId = chain?.id
-  switch (chainName) {
-    case 'arbitrum':
-    case 'arbitrum one':
-    case 'arbitrum sepolia':
-      return 'arbitrum'
-    case 'base':
-    case 'base sepolia':
-    case 'base sepolia testnet':
-      return 'base'
-    case 'polygon':
-      return 'polygon'
-    case 'optimism':
-      return 'optimism'
-    case 'ethereum':
-    case 'mainnet':
-    case 'sepolia':
-      return 'arbitrum'
-    default:
-      switch (chainId) {
-        case 42161:
-        case 421614:
-          return 'arbitrum'
-        case 8453:
-        case 84532:
-          return 'base'
-        case 137:
-          return 'polygon'
-        case 10:
-        case 11155420:
-          return 'optimism'
-        default:
-          return 'ethereum'
-      }
-  }
-}
-
 export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
   address,
   selectedChain,
@@ -142,6 +71,7 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
     phoneNumber,
     isLinked: hasPhone,
     isStale: phoneStale,
+    verifiedAt: phoneVerifiedAt,
     requestVerification,
     refreshVerification,
   } = usePhoneVerification()
@@ -167,6 +97,13 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
   const [debouncedEthAmount, setDebouncedEthAmount] = useState(ethAmount)
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
+
+  // Track latest status in a ref so the postMessage listener can read it
+  // without re-subscribing on every status change.
+  const statusRef = useRef<HeadlessStatus>(status)
+  useEffect(() => {
+    statusRef.current = status
+  }, [status])
 
   useEffect(() => {
     if (!allowAmountInput) {
@@ -305,74 +242,25 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
     const handler = (event: MessageEvent) => {
       // We can't always pin to a Coinbase origin (sandbox uses different host),
       // so we parse defensively and only act on well-formed onramp_api.* messages.
-      let parsed: PostMessageData | null = null
-      try {
-        if (typeof event.data === 'string') {
-          parsed = JSON.parse(event.data)
-        } else if (event.data && typeof event.data === 'object') {
-          parsed = event.data as PostMessageData
-        }
-      } catch {
-        return
-      }
-      const name = parsed?.eventName
-      if (!name || !name.startsWith('onramp_api.')) return
+      const parsed = parseOnrampMessage(event.data)
+      const result = mapOnrampEvent(parsed, statusRef.current)
+      if (result.ignored) return
 
-      const errorMessage = parsed?.data?.errorMessage
-      const errorCodeFromMsg = parsed?.data?.errorCode || null
-
-      switch (name) {
-        case 'onramp_api.load_pending':
-          setStatus('iframe-loading')
-          break
-        case 'onramp_api.load_success':
-          setStatus('ready')
-          break
-        case 'onramp_api.load_error':
-          setStatus('error')
-          setErrorCode(errorCodeFromMsg)
-          setError(
-            errorMessage ||
-              'Failed to initialize Coinbase payment. Please try again.'
-          )
-          break
-        case 'onramp_api.commit_success':
-          setStatus('polling')
-          break
-        case 'onramp_api.commit_error':
-          setStatus('error')
-          setErrorCode(errorCodeFromMsg)
-          setError(errorMessage || 'Payment could not be started.')
-          break
-        case 'onramp_api.cancel':
-          // User dismissed the Apple/Google Pay sheet — return to ready state.
-          if (status === 'polling') break
-          setStatus('ready')
-          break
-        case 'onramp_api.polling_start':
-          setStatus('polling')
-          break
-        case 'onramp_api.polling_success':
-          setStatus('success')
-          // Fire the in-page success callback immediately. Consumers should
-          // either run their on-chain transaction directly or rely on the
-          // useOnrampAutoTransaction hook (the modal forwards this through).
-          Promise.resolve(onPaymentSuccess?.()).catch((err) =>
-            console.error('[CBHeadlessOnramp] onPaymentSuccess threw', err)
-          )
-          break
-        case 'onramp_api.polling_error':
-          setStatus('error')
-          setErrorCode(errorCodeFromMsg)
-          setError(errorMessage || 'Your transaction could not be completed.')
-          break
-        default:
-          break
+      if (result.status) setStatus(result.status)
+      if (result.error !== undefined) setError(result.error)
+      if (result.errorCode !== undefined) setErrorCode(result.errorCode)
+      if (result.fireSuccess) {
+        // Fire the in-page success callback immediately. Consumers should
+        // either run their on-chain transaction directly or rely on the
+        // useOnrampAutoTransaction hook (the modal forwards this through).
+        Promise.resolve(onPaymentSuccess?.()).catch((err) =>
+          console.error('[CBHeadlessOnramp] onPaymentSuccess threw', err)
+        )
       }
     }
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
-  }, [paymentLinkUrl, onPaymentSuccess, status])
+  }, [paymentLinkUrl, onPaymentSuccess])
 
   // ---------------------------------------------------------------------------
   // Create the order + render the iframe.
@@ -427,14 +315,14 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
           destinationAddress: address,
           email: userEmail,
           phoneNumber,
+          phoneNumberVerifiedAt: phoneVerifiedAt?.toISOString(),
           partnerUserRef,
           purchaseCurrency: 'ETH',
-          purchaseNetwork: getOnrampNetworkName(selectedChain),
+          destinationNetwork: getOnrampNetworkName(selectedChain),
           paymentCurrency: 'USD',
-          paymentMethod: 'APPLE_PAY',
+          paymentMethod: 'GUEST_CHECKOUT_APPLE_PAY',
           domain: DEPLOYED_ORIGIN.replace(/^https?:\/\//, ''),
           agreementAcceptedAt: new Date().toISOString(),
-          quoteId: quoteData.quoteId ?? undefined,
         }),
       })
 
@@ -470,6 +358,7 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
     quoteData,
     onBeforeNavigate,
     phoneNumber,
+    phoneVerifiedAt,
     partnerUserRef,
     selectedChain,
   ])
@@ -616,7 +505,8 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
             src={paymentLinkUrl}
             title="Coinbase Onramp"
             allow="payment"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+            sandbox="allow-scripts allow-same-origin"
+            referrerPolicy="no-referrer"
             className="w-full h-[520px] rounded-lg bg-white"
             style={{ minHeight: 520, border: 'none' }}
           />

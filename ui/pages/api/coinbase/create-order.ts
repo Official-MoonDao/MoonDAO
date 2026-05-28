@@ -1,4 +1,3 @@
-import { Redis } from '@upstash/redis'
 import { authMiddleware } from 'middleware/authMiddleware'
 import { secureHeaders } from 'middleware/secureHeaders'
 import withMiddleware from 'middleware/withMiddleware'
@@ -8,38 +7,18 @@ import {
   makeCDPRequest,
   handleAPIError,
 } from '../../../lib/coinbase'
+import { getCountryFromHeaders } from '../../../lib/geo'
 import {
-  detectUserState,
-  isValidUSState,
-  getCountryFromHeaders,
-} from '../../../lib/geo'
-
-// Initialize Redis client for geolocation caching (matches buy-quote.ts)
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_URL!,
-  token: process.env.UPSTASH_REDIS_TOKEN!,
-})
+  validateCreateOrderInput,
+  isRegionAllowed,
+  resolvePartnerUserRef,
+  buildCreateOrderRequestBody,
+  extractOrderResult,
+  applySandboxParam,
+  type CreateOrderInput,
+} from '../../../lib/coinbase/headlessOrder'
 
 const MOCK_ONRAMP = process.env.NEXT_PUBLIC_MOCK_ONRAMP === 'true'
-
-interface CreateOrderRequest {
-  // Required
-  paymentAmount: number // USD amount (string in API, we convert)
-  destinationAddress: string
-  email: string
-  phoneNumber: string // E.164 format, e.g. +12345678901
-  partnerUserRef: string // unique per-user identifier
-  // Optional / overrides
-  purchaseCurrency?: string // default ETH
-  purchaseNetwork?: string // default ethereum
-  paymentCurrency?: string // default USD
-  paymentMethod?: 'APPLE_PAY' | 'GOOGLE_PAY'
-  domain?: string // required for web iframe in prod (must be in CDP allow list)
-  country?: string
-  subdivision?: string
-  agreementAcceptedAt?: string // ISO timestamp
-  quoteId?: string
-}
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -49,90 +28,51 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   secureHeaders(res)
 
   try {
+    const body: CreateOrderInput = req.body || {}
     const {
-      paymentAmount,
-      destinationAddress,
-      email,
-      phoneNumber,
       partnerUserRef,
-      purchaseCurrency = 'ETH',
-      purchaseNetwork = 'ethereum',
-      paymentCurrency = 'USD',
-      paymentMethod = 'APPLE_PAY',
-      domain,
-      country: providedCountry,
-      subdivision,
-      agreementAcceptedAt,
-      quoteId,
-    }: CreateOrderRequest = req.body
+      paymentMethod = 'GUEST_CHECKOUT_APPLE_PAY',
+    } = body
 
-    if (!paymentAmount || !destinationAddress) {
+    const validation = validateCreateOrderInput(body)
+    if (!validation.ok) {
       return res
-        .status(400)
-        .json({ error: 'paymentAmount and destinationAddress are required' })
-    }
-    if (!email || !phoneNumber) {
-      return res
-        .status(400)
-        .json({ error: 'email and phoneNumber are required for headless onramp' })
-    }
-    if (!partnerUserRef) {
-      return res.status(400).json({ error: 'partnerUserRef is required' })
-    }
-    if (!/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
-      return res
-        .status(400)
-        .json({ error: 'phoneNumber must be in E.164 format (e.g. +12345678901)' })
+        .status(validation.status)
+        .json({ error: validation.error, ...(validation.code && { code: validation.code }) })
     }
 
     // In sandbox/mock mode prefix the partnerUserRef so Coinbase short-circuits
     // the payment without charging the card.
-    const effectivePartnerUserRef =
-      MOCK_ONRAMP && !partnerUserRef.startsWith('sandbox-')
-        ? `sandbox-${partnerUserRef}`
-        : partnerUserRef
+    const effectivePartnerUserRef = resolvePartnerUserRef(
+      partnerUserRef as string,
+      MOCK_ONRAMP
+    )
 
-    // Detect country / state for region restrictions (Headless = US only)
-    const headerCountry = getCountryFromHeaders(req)
-    const country = providedCountry || headerCountry || 'US'
+    // Detect country for region restrictions (Headless = US only). Coinbase
+    // determines the precise region itself from clientIp; we only gate here.
+    const country = getCountryFromHeaders(req) || 'US'
 
-    let detectedSubdivision = subdivision
-    if (!detectedSubdivision && country === 'US') {
-      try {
-        const stateCode = await detectUserState(req, redis)
-        if (stateCode && isValidUSState(stateCode)) {
-          detectedSubdivision = stateCode
-        }
-      } catch (error) {
-        console.error('Error detecting state for create-order:', error)
-      }
-    }
-
-    if (country !== 'US') {
+    if (!isRegionAllowed(country)) {
       return res.status(400).json({
         error: 'Headless onramp is only available for US users',
         code: 'REGION_NOT_SUPPORTED',
       })
     }
 
+    // Best-effort end-user IP for Coinbase's region determination.
+    const forwardedFor = (req.headers['x-forwarded-for'] as string) || ''
+    const clientIp =
+      forwardedFor.split(',')[0]?.trim() ||
+      (req.headers['x-real-ip'] as string) ||
+      req.socket?.remoteAddress ||
+      undefined
+
     const credentials = validateCDPCredentials()
 
-    const requestBody: Record<string, unknown> = {
-      paymentAmount: paymentAmount.toFixed(2),
-      paymentCurrency,
-      purchaseCurrency,
-      purchaseNetwork,
-      destinationAddress,
-      paymentMethod,
-      email,
-      phoneNumber,
-      partnerUserRef: effectivePartnerUserRef,
-      country,
-      ...(detectedSubdivision && { subdivision: detectedSubdivision }),
-      ...(domain && { domain }),
-      ...(agreementAcceptedAt && { agreementAcceptedAt }),
-      ...(quoteId && { quoteId }),
-    }
+    const requestBody = buildCreateOrderRequestBody(body, {
+      effectivePartnerUserRef,
+      clientIp,
+    })
 
     const response = await makeCDPRequest(
       '/onramp/v2/orders',
@@ -162,23 +102,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const data = await response.json()
 
-    // Coinbase v2 response shape: { order_id, payment_link_url, ... }
-    let paymentLinkUrl: string | undefined =
-      data?.payment_link_url || data?.paymentLinkUrl
+    // Documented CDP v2 shape: { order: { orderId, ... }, paymentLink: { url } }
+    let { paymentLinkUrl, orderId } = extractOrderResult(data)
 
     // Append sandbox query param for local/mock testing per docs
-    if (MOCK_ONRAMP && paymentLinkUrl) {
-      const separator = paymentLinkUrl.includes('?') ? '&' : '?'
-      const sandboxParam =
-        paymentMethod === 'GOOGLE_PAY'
-          ? 'useGooglePaySandbox=true'
-          : 'useApplePaySandbox=true'
-      paymentLinkUrl = `${paymentLinkUrl}${separator}${sandboxParam}`
+    if (paymentLinkUrl) {
+      paymentLinkUrl = applySandboxParam(paymentLinkUrl, paymentMethod, MOCK_ONRAMP)
     }
 
     return res.status(200).json({
       paymentLinkUrl,
-      orderId: data?.order_id || data?.orderId,
+      orderId,
       raw: data,
     })
   } catch (error: any) {

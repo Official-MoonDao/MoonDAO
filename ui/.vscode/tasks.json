@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start UI Dev Server",
+			"type": "shell",
+			"command": "NODE_OPTIONS='--max-old-space-size=8192' npx next dev",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}
