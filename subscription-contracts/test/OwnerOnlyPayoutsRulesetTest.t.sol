@@ -113,6 +113,12 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
             memberHatURI: ""
         });
         MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+            name: "name",
+            bio: "bio",
+            image: "image",
+            twitter: "twitter",
+            communications: "communications",
+            website: "website",
             _view: "view",
             formId: "formId"
         });
