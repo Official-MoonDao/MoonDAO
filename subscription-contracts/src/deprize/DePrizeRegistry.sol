@@ -167,12 +167,14 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     /// @inheritdoc IDePrizeRegistry
     function completeM2(uint256 deprizeId) external override onlyOwner {
         DePrize storage d = _requireState(deprizeId, DePrizeState.M1_RELEASED);
+        d.cancellationNoticeAt = 0;
         _setState(deprizeId, d, DePrizeState.M2_COMPLETE);
     }
 
     /// @inheritdoc IDePrizeRegistry
     function failM2(uint256 deprizeId) external override onlyOwner {
         DePrize storage d = _requireState(deprizeId, DePrizeState.M1_RELEASED);
+        d.cancellationNoticeAt = 0;
         _setState(deprizeId, d, DePrizeState.M2_FAILED);
     }
 
