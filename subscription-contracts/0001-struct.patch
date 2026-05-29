@@ -87,6 +87,19 @@ index abbcdad1..a322d4db 100644
            _view: "view",
            formId: "formId"
        });
+diff --git a/subscription-contracts/test/TableOperatorsTest.t.sol b/subscription-contracts/test/TableOperatorsTest.t.sol
+--- a/subscription-contracts/test/TableOperatorsTest.t.sol
++++ b/subscription-contracts/test/TableOperatorsTest.t.sol
+@@ -111,8 +111,7 @@ contract TableOperatorsTest is Test {
+             adminHatURI: "", managerHatURI: "", memberHatURI: ""
+         });
+         MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+-            name: "Test Team", bio: "bio", image: "", twitter: "",
+-            communications: "", website: "", _view: "public", formId: ""
++            _view: "public", formId: ""
+         });
+         (teamId, ) = creator.createMoonDAOTeam{value: 0.555 ether}(hatURIs, metadata, new address[](0));
+         vm.stopPrank();
 -- 
 2.50.1 (Apple Git-155)
 
