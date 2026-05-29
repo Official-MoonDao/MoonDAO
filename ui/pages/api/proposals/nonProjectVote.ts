@@ -111,6 +111,53 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     votes as any,
     addressToQuadraticVotingPower
   )
+
+  // Guard against a silent vMOONEY-fetch failure flipping a passing
+  // proposal to FAILED on-chain. `fetchTotalVMOONEYs` does NOT throw on
+  // an RPC/Engine read failure — it logs and returns an all-zeros array
+  // of the same length as `voteAddresses`. So a transient outage at
+  // tally time resolves every voter to 0 VP, which makes
+  // `computeMemberProposalTally` report `passed=false`, and we would
+  // then write `PROJECT_VOTE_FAILED` to the project's `active` column
+  // for a proposal the membership actually passed. The project-vote
+  // handler (`pages/api/proposals/vote.ts`) already guards this exact
+  // case with `if (totalVotingPower === 0) return 500`; mirror it here.
+  //
+  // Trigger condition: at least one real (non-snapshot-sentinel) vote
+  // row exists, but the total resolved participation VP is 0. A Member
+  // Vote on a Senate-approved proposal always has at least the proposer
+  // and senators holding vMOONEY, so an all-zero resolve is a fetch
+  // failure, not a legitimate outcome. Refuse to commit and let the
+  // operator retry once the chains are reachable again.
+  const realVoteCount = (votes ?? []).filter((row: any) => {
+    let parsed: any = row?.vote
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed)
+      } catch {
+        // Unparseable but present — treat as a real voter row, not the
+        // structured snapshot sentinel.
+        return true
+      }
+    }
+    return !(parsed && typeof parsed === 'object' && parsed.kind === 'snapshot')
+  }).length
+  if (realVoteCount > 0 && tally.totalParticipationVP === 0) {
+    console.error(
+      `[member-proposal-vote] aborting tally for MDP-${mdp}: ${realVoteCount} ` +
+        `vote row(s) present but total resolved voting power is 0. This ` +
+        `almost always means the vMOONEY fetch failed (RPC/Engine outage). ` +
+        `Refusing to flip the on-chain 'active' column to avoid recording a ` +
+        `false FAILED. Retry once the chains are reachable.`
+    )
+    return res.status(503).json({
+      error:
+        'Could not resolve voting power (all voters returned 0 vMOONEY). ' +
+        'This usually indicates a transient RPC/Engine failure. The on-chain ' +
+        'result was NOT changed. Please retry Close & Tally.',
+    })
+  }
+
   const passed = tally.passed
   const active = passed ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED
   const account = await createHSMWallet()
