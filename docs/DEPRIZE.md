@@ -1602,9 +1602,10 @@ This is a desirable property: existing holders are rewarded for taking early ris
    - Snapshot of existing $OVERVIEW holders posted to IPFS.
    - Pinned spec (this document + addresses) referenced from the proposal.
 6. If Option 1 (Unified DePrize) wins:
-   - Admin Safe calls Registry.register(deprizeId=0, jbProjectId=FRANK,
-     teams=[Virgin, Zephalto, Unnamed], quotes=[1500000, 390000, 0],
-     preferenceOrder=[Virgin, Zephalto, Unnamed]).
+   - Admin Safe calls Registry.register(jbProjectId=FRANK,
+     teamIds=[Virgin, Zephalto, Unnamed], sunset=...), which assigns and
+     returns the new deprizeId (1; id 0 is the "no DePrize" sentinel).
+     Quotes / preference order are configured separately.
    - LaunchPadPayHook reads DePrize state and gates cashOut accordingly.
    - Treasury seeds the three ETH/Team_X_YES pools (~1 ETH each).
    - DePrize #0 transitions DRAFT → OPEN. New bets accept.
