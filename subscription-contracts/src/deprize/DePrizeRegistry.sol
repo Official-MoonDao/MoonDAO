@@ -142,7 +142,10 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
         }
         if (!_isTeam[deprizeId][winningTeamId_]) revert UnknownTeam(deprizeId, winningTeamId_);
         d.winningTeamId = winningTeamId_;
-        d.cancellationNoticeAt = 0;
+        if (d.cancellationNoticeAt != 0) {
+            d.cancellationNoticeAt = 0;
+            emit CancellationAborted(deprizeId);
+        }
         _setState(deprizeId, d, DePrizeState.SETTLED);
         emit WinnerDeclared(deprizeId, winningTeamId_);
     }
@@ -153,28 +156,40 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
         if (d.state != DePrizeState.LOCKED && d.state != DePrizeState.VOTING) {
             revert InvalidState(deprizeId, d.state);
         }
-        d.cancellationNoticeAt = 0;
+        if (d.cancellationNoticeAt != 0) {
+            d.cancellationNoticeAt = 0;
+            emit CancellationAborted(deprizeId);
+        }
         _setState(deprizeId, d, DePrizeState.NO_WINNER);
     }
 
     /// @inheritdoc IDePrizeRegistry
     function releaseM1(uint256 deprizeId) external override onlyOwner {
         DePrize storage d = _requireState(deprizeId, DePrizeState.SETTLED);
-        d.cancellationNoticeAt = 0;
+        if (d.cancellationNoticeAt != 0) {
+            d.cancellationNoticeAt = 0;
+            emit CancellationAborted(deprizeId);
+        }
         _setState(deprizeId, d, DePrizeState.M1_RELEASED);
     }
 
     /// @inheritdoc IDePrizeRegistry
     function completeM2(uint256 deprizeId) external override onlyOwner {
         DePrize storage d = _requireState(deprizeId, DePrizeState.M1_RELEASED);
-        d.cancellationNoticeAt = 0;
+        if (d.cancellationNoticeAt != 0) {
+            d.cancellationNoticeAt = 0;
+            emit CancellationAborted(deprizeId);
+        }
         _setState(deprizeId, d, DePrizeState.M2_COMPLETE);
     }
 
     /// @inheritdoc IDePrizeRegistry
     function failM2(uint256 deprizeId) external override onlyOwner {
         DePrize storage d = _requireState(deprizeId, DePrizeState.M1_RELEASED);
-        d.cancellationNoticeAt = 0;
+        if (d.cancellationNoticeAt != 0) {
+            d.cancellationNoticeAt = 0;
+            emit CancellationAborted(deprizeId);
+        }
         _setState(deprizeId, d, DePrizeState.M2_FAILED);
     }
 
