@@ -19,25 +19,30 @@ jobs:
       - name: Review comment with AI
         id: review-comment
         uses: actions/github-script@v7
+        env:
+          MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
             const comment = context.payload.comment.body;
 
-            const response = await fetch('https://models.inference.ai.azure.com/chat/completions', {
+            const response = await fetch('https://models.github.ai/inference/chat/completions', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${context.token}`,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'Authorization': `Bearer ${process.env.MODELS_TOKEN}`,
               },
               body: JSON.stringify({
-                model: 'claude-sonnet-4-5',
+                model: 'openai/gpt-4o-mini',
+                max_tokens: 200,
                 messages: [
                   {
                     role: 'system',
-                    content: `You are a code review assistant. Your job is to decide whether a PR comment is requesting a legitimate code fix (e.g. lint errors, formatting, type errors, bugs, style improvements, refactoring). 
+                    content: `You are a code review assistant. Your job is to decide whether a PR comment is specifically requesting an auto-fixable issue such as lint errors, ESLint rule violations, code formatting, or import ordering — things that tools like ESLint and Prettier can fix automatically.
                     Respond with ONLY a JSON object in this format:
                     { "should_fix": true/false, "reason": "brief explanation" }
-                    Return should_fix=true only if the comment is clearly requesting a code change or fix. Ignore general questions, praise, unrelated discussion, or spam.`,
+                    Return should_fix=true ONLY for lint/formatting issues. Return should_fix=false for logic changes, feature requests, refactoring, questions, praise, or anything requiring human judgment.`,
                   },
                   {
                     role: 'user',
@@ -48,10 +53,22 @@ jobs:
               }),
             });
 
+            if (!response.ok) {
+              core.warning(`Models API returned ${response.status}: ${await response.text()}`);
+              core.setOutput('should_fix', 'false');
+              core.setOutput('reason', 'AI review request failed');
+              return;
+            }
+
             const data = await response.json();
             let result;
             try {
-              result = JSON.parse(data.choices[0].message.content.trim());
+              // Strip markdown code fences if present
+              const raw = data.choices[0].message.content
+                .replace(/```json\s*/gi, '')
+                .replace(/```/g, '')
+                .trim();
+              result = JSON.parse(raw);
             } catch (e) {
               core.setOutput('should_fix', 'false');
               core.setOutput('reason', 'Failed to parse AI response');
@@ -120,7 +137,7 @@ jobs:
       - name: Run Prettier fix
         if: steps.review-comment.outputs.should_fix == 'true'
         working-directory: ui
-        run: yarn prettier --write . || true
+        run: npx prettier --write "{components,lib,pages,const,middleware,styles}/**/*.{ts,tsx,js,jsx,css,scss}" || true
 
       - name: Check for changes
         if: steps.review-comment.outputs.should_fix == 'true'
