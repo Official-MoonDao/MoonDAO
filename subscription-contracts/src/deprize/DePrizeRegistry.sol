@@ -226,7 +226,9 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
         if (block.timestamp < executableAt) revert CancellationNoticeNotElapsed(deprizeId, executableAt);
         if (_isTerminalState(d.state)) revert InvalidState(deprizeId, d.state);
         d.cancellationNoticeAt = 0;
-        d.winningTeamId = 0;
+        // Intentionally preserve winningTeamId: if cancellation happens after
+        // SETTLED/M1_RELEASED, downstream refund/settlement paths may need to know
+        // which provider had been selected. Pre-settlement it is already 0.
         _setState(deprizeId, d, DePrizeState.CANCELLED);
     }
 

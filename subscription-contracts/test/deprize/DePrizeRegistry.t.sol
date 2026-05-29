@@ -471,6 +471,8 @@ contract DePrizeRegistryTest is Test {
         registry.cancel(id);
         vm.stopPrank();
         assertEq(uint256(registry.state(id)), uint256(IDePrizeRegistry.DePrizeState.CANCELLED));
+        // Cancelling after settlement preserves the previously declared winner.
+        assertEq(registry.winningTeamId(id), 2);
     }
 
     function testAnnounceCancellationOnTerminalReverts() public {
