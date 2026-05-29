@@ -100,7 +100,23 @@ contract MissionCreator is Ownable, IERC721Receiver {
         missionIdToTerminal[missionId] = terminal;
     }
 
+    /// @notice Create a classic, time-based launchpad mission (funding goal +
+    ///         deadline + refund window). Backwards-compatible entrypoint.
     function createMission(uint256 teamId, address to, string calldata projectUri, uint256 fundingGoal, uint256 deadline, uint256 refundPeriod, bool token, string calldata tokenName, string calldata tokenSymbol, string calldata memo) external returns (uint256) {
+        return createMission(teamId, to, projectUri, fundingGoal, deadline, refundPeriod, token, tokenName, tokenSymbol, memo, address(0));
+    }
+
+    /// @notice Create a mission, choosing its funding model:
+    ///         - `deprizeRegistry == address(0)`: classic time-based launchpad
+    ///           (fails to refund if the goal isn't met by the deadline).
+    ///         - `deprizeRegistry != address(0)`: a prize that ends once a team
+    ///           meets the requirements. The pay/approval hooks defer to the
+    ///           DePrize lifecycle: contributions stay open and the pot stays
+    ///           locked (no deadline) until the registry reaches a terminal —
+    ///           payouts unlock on success, refunds on a refundable terminal.
+    ///           The DePrize admin still binds the project via the registry's
+    ///           `register()`; this just wires the hooks to obey it.
+    function createMission(uint256 teamId, address to, string calldata projectUri, uint256 fundingGoal, uint256 deadline, uint256 refundPeriod, bool token, string calldata tokenName, string calldata tokenSymbol, string calldata memo, address deprizeRegistry) public returns (uint256) {
 
         if(msg.sender != owner()) {
             require(moonDAOTeam.isManager(teamId, msg.sender), "Only a manager of the team or owner of the contract can create a mission.");
@@ -114,7 +130,17 @@ contract MissionCreator is Ownable, IERC721Receiver {
         PoolDeployer poolDeployer = new PoolDeployer(feeHookAddress, positionManagerAddress, owner());
 
 
-        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
+        // Prize mode: deploy the pay hook owned by this contract so we can attach
+        // the registry atomically (its setter is owner-gated + write-once), then
+        // hand ownership to `to`. Classic mode: owned by `to` directly, registry
+        // left unset so every DePrize path stays dormant. The approval hook reads
+        // the registry from the pay hook, so wiring the pay hook covers both gates.
+        address payHookOwner = deprizeRegistry == address(0) ? to : address(this);
+        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, payHookOwner);
+        if (deprizeRegistry != address(0)) {
+            launchPadPayHook.setDePrizeRegistry(deprizeRegistry);
+            launchPadPayHook.transferOwnership(to);
+        }
         LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal), address(launchPadPayHook), to);
         // Ruleset 0 is funding/refunds
         // Ruleset 0 has a cashout hook that will only allow refunds if the deadline has passed and the funding goal has not been met.

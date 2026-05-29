@@ -198,11 +198,16 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
     function stage(address terminal, uint256 projectId) public view returns (uint256) {
         uint256 deprizeId = _deprizeIdFor(projectId);
         if (deprizeId != 0) {
-            // Refundable terminal → refund stage (no expiry); otherwise the campaign
-            // is active and cashOut stays disabled. Finer-grained milestone-gated
-            // staging for SETTLED/M2_COMPLETE arrives with the MilestoneEscrow.
+            // Refundable terminal → refund stage (no expiry). Success terminal
+            // (M2_COMPLETE) → payouts stage, matching the approval hook unlocking
+            // ruleset 2. Otherwise the campaign is active and cashOut stays
+            // disabled. Finer-grained milestone-gated staging for SETTLED/
+            // M1_RELEASED arrives with the MilestoneEscrow.
             if (deprizeRegistry.isRefundable(deprizeId)) {
                 return 3; // Refund stage
+            }
+            if (deprizeRegistry.isTerminal(deprizeId)) {
+                return 2; // Prize completed — payouts unlocked
             }
             return 1; // Active campaign — cashOut disabled
         }

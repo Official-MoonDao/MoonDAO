@@ -7,9 +7,14 @@ import "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
 import "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import "@nana-core-v5/libraries/JBConstants.sol";
 import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
+import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
 
 interface ILaunchPadPayHook {
     function refundsEnabled() external view returns (bool);
+    /// @dev Returns the optional DePrize registry the pay hook defers to (or
+    ///      address(0) for a classic time-based launchpad). Single source of
+    ///      truth: the approval hook reads it here rather than holding its own.
+    function deprizeRegistry() external view returns (address);
 }
 
 // Hook to enable payouts after a funding goal is reached and a deadline is passed.
@@ -48,6 +53,15 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
         return payHook.refundsEnabled();
     }
 
+    /// @notice The DePrize id bound to `projectId`, or 0 when this is a classic
+    ///         time-based launchpad (no registry) or the project has no DePrize
+    ///         attached. Mirrors the pay hook so both gates agree.
+    function _deprizeIdFor(uint256 projectId) internal view returns (uint256) {
+        address registry = payHook.deprizeRegistry();
+        if (registry == address(0)) return 0;
+        return IDePrizeRegistry(registry).deprizeIdByJBProject(projectId);
+    }
+
     // Missions have 2 rulesets.
     // Ruleset 1 is for active funding/refunds
     // Ruleset 2 is for payouts
@@ -58,10 +72,28 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
     // If not, we will advance to payouts if when the funding goal is achieved.
     // In either case, after the refund period has passed, the rulset will advance
     // to payouts.
+    //
+    // DePrize-governed missions ignore the immutable deadline/goal entirely:
+    // payouts (ruleset 2) unlock only when the prize wraps up successfully — a
+    // non-refundable terminal state (M2_COMPLETE, "requirements met by a team").
+    // While the campaign is active, or on a refundable terminal, the ruleset
+    // stays in funding/refund so the pot stays locked and contributor refunds
+    // (gated by the pay hook) remain available with no deadline expiry. Finer
+    // milestone-gated releases (30% at M1, 70% at M2) are the MilestoneEscrow's
+    // job in a later milestone; until then funds stay fully locked until M2.
     function approvalStatusOf(
         uint256 projectId,
         JBRuleset memory ruleset
     ) external view override returns (JBApprovalStatus) {
+        uint256 deprizeId = _deprizeIdFor(projectId);
+        if (deprizeId != 0) {
+            IDePrizeRegistry registry = IDePrizeRegistry(payHook.deprizeRegistry());
+            if (registry.isTerminal(deprizeId) && !registry.isRefundable(deprizeId)) {
+                return JBApprovalStatus.Approved; // prize completed → unlock payouts
+            }
+            return JBApprovalStatus.Failed; // active or refundable → stay locked
+        }
+
         uint256 currentFunding = _totalFunding(terminal, projectId);
         bool _refundsEnabled = refundsEnabled();
         if (_refundsEnabled && block.timestamp < deadline + refundPeriod) {

@@ -286,12 +286,12 @@ contract LaunchPadPayHookDePrizeTest is Test {
     }
 
     function testActiveStatesBlockCashOut() public {
-        IDePrizeRegistry.DePrizeState[5] memory states = [
+        // SETTLED / M1_RELEASED are non-terminal (campaign still resolving) → stage 1.
+        IDePrizeRegistry.DePrizeState[4] memory states = [
             IDePrizeRegistry.DePrizeState.LOCKED,
             IDePrizeRegistry.DePrizeState.VOTING,
             IDePrizeRegistry.DePrizeState.SETTLED,
-            IDePrizeRegistry.DePrizeState.M1_RELEASED,
-            IDePrizeRegistry.DePrizeState.M2_COMPLETE
+            IDePrizeRegistry.DePrizeState.M1_RELEASED
         ];
         // attach once: the registry pointer is write-once, and the same registry
         // serves every project id below
@@ -304,6 +304,16 @@ contract LaunchPadPayHookDePrizeTest is Test {
             hook.beforeCashOutRecordedWith(_cashOutCtx(projectId));
             assertEq(hook.stage(address(this), projectId), 1, "active stage should be 1");
         }
+    }
+
+    /// @dev M2_COMPLETE (success terminal): cashOut stays disabled, but stage is
+    ///      2 (payouts), matching the approval hook unlocking ruleset 2.
+    function testM2CompleteBlocksCashOutPayoutsStage() public {
+        _registerTo(PROJECT, IDePrizeRegistry.DePrizeState.M2_COMPLETE);
+        _attach();
+        vm.expectRevert("DePrize is active. Refunds are disabled.");
+        hook.beforeCashOutRecordedWith(_cashOutCtx(PROJECT));
+        assertEq(hook.stage(address(this), PROJECT), 2, "completed stage should be 2");
     }
 
     function testDraftBlocksCashOutAllowsPay() public {
