@@ -206,11 +206,7 @@ describe('<Network />', () => {
       //      Map button, then the page re-renders as the Tableland
       //      intercepts respond and SWR commits new data. The
       //      original button is replaced and `cy.click()` errors
-      //      with "requires a DOM element". `.should('be.visible')`
-      //      is the fix: assertion chains re-run the WHOLE query
-      //      from `cy.contains` on each retry, so a detached
-      //      subject gets re-resolved to the new attached element
-      //      before the click fires.
+      //      with "requires a DOM element".
       //
       //   2. `cy.wait('@getTablelandQuery')` style fixes don't help
       //      here. SWR's cache lives at module scope and persists
@@ -220,17 +216,26 @@ describe('<Network />', () => {
       //      hangs until timeout. Pin our synchronization to UI
       //      state instead.
       //
-      // `button` scope guards against accidentally matching some
-      // other "Map" text the post-click globe view introduces, and
-      // the trailing UI assertion (the Earth/Moon sub-tab bar that
-      // only renders when `isMapTab === true`) confirms the click
-      // actually took effect — a stronger guarantee than just
-      // re-checking `#network-content` (which exists on every
-      // tab).
-      cy.contains('button', 'Map', { timeout: 10000 })
-        .should('be.visible')
-        .click()
-      cy.contains('button', 'Earth', { timeout: 10000 }).should('be.visible')
+      // We previously used `.should('be.visible')` to force a
+      // re-query of the detached element. That introduced a third,
+      // flakier failure: during the re-render Cypress's visibility
+      // probe could run against a transiently-unwrapped node and
+      // throw `TypeError: $el.css is not a function` from deep
+      // inside `elHasDisplayNone`. `.should('exist')` is the
+      // robust replacement — it's still retryable (so it
+      // re-resolves the detached button to the freshly attached
+      // one) but never touches the `.css`/visibility code path, so
+      // it can't hit that crash. Re-querying immediately before the
+      // click guarantees we act on the attached element, and
+      // `{ force: true }` skips the actionability visibility checks
+      // that would otherwise re-introduce the same `.css` probe.
+      //
+      // The trailing `Earth` assertion (the sub-tab bar that only
+      // renders when `isMapTab === true`) confirms the click
+      // actually took effect.
+      cy.contains('button', 'Map', { timeout: 10000 }).should('exist')
+      cy.contains('button', 'Map').click({ force: true })
+      cy.contains('button', 'Earth', { timeout: 10000 }).should('exist')
     })
   })
 
