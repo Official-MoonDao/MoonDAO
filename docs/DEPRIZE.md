@@ -1534,6 +1534,10 @@ function stage(address terminal, uint256 projectId) public view returns (uint256
         return milestoneEscrow.cashOutAllowed(deprizeId) ? 2 : 1;
     }
 
+    if (state == DePrizeState.M2_COMPLETE) {
+        return 2; // Post-mission — cashOut enabled per standard launchpad rules.
+    }
+
     // DRAFT / OPEN / LOCKED / VOTING / M1_RELEASED:
     return 1; // Active campaign — cashOut disabled (5% slice protected).
 }
