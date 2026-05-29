@@ -13,6 +13,8 @@ import {IJBTerminalStore} from "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import {IJBRulesetDataHook} from "@nana-core-v5/interfaces/IJBRulesetDataHook.sol";
 import { JBConstants } from "@nana-core-v5/libraries/JBConstants.sol";
 
+import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
+
 
 // LaunchPadPayHook
 //   • Stores minFundingRequired, fundingGoal and deadline.
@@ -21,6 +23,17 @@ import { JBConstants } from "@nana-core-v5/libraries/JBConstants.sol";
 //   • An Ownable toggle (setFundingTurnedOff) for the fundingTurnedOff flag.
 //   • The beforePayRecordedWith function manipulates the weight to change number
 //     of tokens received per ETH based on the funding status.
+//
+//   DePrize awareness (optional, backwards-compatible):
+//   • If `deprizeRegistry` is unset (address(0)) or the project has no DePrize
+//     attached (deprizeIdByJBProject == 0), every code path behaves exactly as
+//     before. Live missions are unaffected.
+//   • When a DePrize is attached, its on-chain lifecycle — not the immutable
+//     `deadline`/`fundingGoal` — governs contributions and cashOut:
+//       - non-terminal states: contributions allowed, cashOut (refunds) disabled
+//         so the prize slice and betting collateral stay protected;
+//       - refundable terminals (CANCELLED / NO_WINNER / M2_FAILED): cashOut
+//         re-enabled with no expiry so $OVERVIEW holders can reclaim their floor.
 contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
 
     uint256 public immutable fundingGoal;
@@ -34,6 +47,12 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
 
     IJBTerminalStore public jbTerminalStore;
     IJBRulesets jbRulesets;
+
+    /// @notice Optional DePrize source of truth. When unset, the hook behaves
+    ///         exactly as the original (non-DePrize) LaunchPadPayHook.
+    IDePrizeRegistry public deprizeRegistry;
+
+    event DePrizeRegistrySet(address indexed registry);
 
     constructor(
         uint256 _fundingGoal,
@@ -58,6 +77,20 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         refundsEnabled = _refundsEnabled;
     }
 
+    /// @notice Attach (or detach, with address(0)) the DePrize registry that governs
+    ///         this hook's project. Owner-gated; defaults to unset.
+    function setDePrizeRegistry(address _registry) external onlyOwner {
+        deprizeRegistry = IDePrizeRegistry(_registry);
+        emit DePrizeRegistrySet(_registry);
+    }
+
+    /// @notice The DePrize id bound to `projectId`, or 0 when there is no DePrize
+    ///         attached (or no registry configured). Id 0 means "original behavior".
+    function _deprizeIdFor(uint256 projectId) internal view returns (uint256) {
+        if (address(deprizeRegistry) == address(0)) return 0;
+        return deprizeRegistry.deprizeIdByJBProject(projectId);
+    }
+
 
     function _totalFunding(address terminal, uint256 projectId) internal view returns (uint256) {
         uint256 balance = jbTerminalStore.balanceOf(
@@ -79,8 +112,20 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         if (fundingTurnedOff) {
             revert("Funding has been turned off.");
         }
-        uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
         require(context.amount.token == JBConstants.NATIVE_TOKEN);
+
+        uint256 deprizeId = _deprizeIdFor(context.projectId);
+        if (deprizeId != 0) {
+            // DePrize-governed: the registry lifecycle decides whether contributions
+            // are open, not the immutable deadline/goal. Once a DePrize reaches any
+            // terminal state, no new contributions are accepted.
+            if (deprizeRegistry.isTerminal(deprizeId)) {
+                revert("DePrize is closed to new contributions.");
+            }
+            return (context.weight, hookSpecifications);
+        }
+
+        uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
         if (currentFunding < fundingGoal && block.timestamp >= deadline) {
             revert("Project funding deadline has passed and funding goal requirement has not been met.");
         }
@@ -94,6 +139,21 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         uint256 totalSupply,
         JBCashOutHookSpecification[] memory hookSpecifications
     ){
+        uint256 deprizeId = _deprizeIdFor(context.projectId);
+        if (deprizeId != 0) {
+            // DePrize-governed: cashOut is disabled for the whole active campaign so
+            // the prize slice and betting collateral are protected, and re-enabled
+            // (with no expiry window) only on a refundable terminal state.
+            if (!deprizeRegistry.isRefundable(deprizeId)) {
+                revert("DePrize is active. Refunds are disabled.");
+            }
+            uint256 deprizeFunding = _totalFunding(context.terminal, context.projectId);
+            uint256 deprizeWeight = jbRulesets.getRulesetOf(context.projectId, context.rulesetId).weight;
+            cashOutCount = context.cashOutCount;
+            totalSupply = (deprizeFunding * deprizeWeight) / (2 * 1e18);
+            return (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications);
+        }
+
         uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
         if (!refundsEnabled && currentFunding >= fundingGoal){
             revert("Project has passed funding goal requirement. Refunds are disabled.");
@@ -125,6 +185,17 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
 
     // return a stage number based on what tier the project is in.
     function stage(address terminal, uint256 projectId) public view returns (uint256) {
+        uint256 deprizeId = _deprizeIdFor(projectId);
+        if (deprizeId != 0) {
+            // Refundable terminal → refund stage (no expiry); otherwise the campaign
+            // is active and cashOut stays disabled. Finer-grained milestone-gated
+            // staging for SETTLED/M2_COMPLETE arrives with the MilestoneEscrow.
+            if (deprizeRegistry.isRefundable(deprizeId)) {
+                return 3; // Refund stage
+            }
+            return 1; // Active campaign — cashOut disabled
+        }
+
         uint256 currentFunding = _totalFunding(terminal, projectId);
         if (currentFunding < fundingGoal || refundsEnabled) {
             if (block.timestamp >= deadline) {
