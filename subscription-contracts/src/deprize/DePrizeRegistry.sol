@@ -203,7 +203,7 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     /// @inheritdoc IDePrizeRegistry
     function announceCancellation(uint256 deprizeId) external override onlyOwner {
         DePrize storage d = _get(deprizeId);
-        if (_isTerminalState(d.state) || d.state == DePrizeState.NONE) {
+        if (_isTerminalState(d.state)) {
             revert InvalidState(deprizeId, d.state);
         }
         // Require an explicit abort before re-announcing, so the notice window can't be
