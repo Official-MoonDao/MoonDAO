@@ -50,8 +50,3 @@ public/sitemap*.xml
 scripts/generated/*
 !scripts/generated/.gitkeep
 .claude
-.vscode/
-
-# local mkcert test certs
-moondao.com.pem
-moondao.com-key.pem

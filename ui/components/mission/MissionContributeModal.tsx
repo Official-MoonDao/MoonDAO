@@ -66,9 +66,7 @@ import StandardButton from '@/components/layout/StandardButton'
 import Modal from '@/components/layout/Modal'
 import Tooltip from '@/components/layout/Tooltip'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
-import { CBHeadlessOnramp } from '../coinbase/CBHeadlessOnramp'
 import { CBOnramp } from '../coinbase/CBOnramp'
-import useOnrampRegion, { shouldUseHeadlessOnramp } from '@/lib/coinbase/useOnrampRegion'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import ProgressBar from '../layout/ProgressBar'
@@ -281,11 +279,6 @@ export default function MissionContributeModal({
   const lastSuccessfulEstimateKeyRef = useRef<string | null>(null)
 
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
-
-  // Coinbase onramp variant: US users get the new in-page headless Apple Pay
-  // flow; everyone else (and when force-disabled) keeps the legacy redirect.
-  const { isUS: isUSOnramp, isLoading: isLoadingOnrampRegion } = useOnrampRegion()
-  const useHeadlessOnramp = shouldUseHeadlessOnramp(isUSOnramp)
 
   const [coinbaseEthReceive, setCoinbaseEthReceive] = useState<number | null>(null)
   const [coinbasePaymentSubtotal, setCoinbasePaymentSubtotal] = useState<number>()
@@ -1702,65 +1695,6 @@ export default function MissionContributeModal({
     [fundingBalanceWei, requiredWei]
   )
 
-  /** Stable per-user identifier sent to Coinbase as partnerUserRef. */
-  const onrampPartnerUserRef = useMemo(() => {
-    const ctx = mission?.id?.toString() || 'mission'
-    return `${ctx}-${address || 'anon'}`.toLowerCase()
-  }, [mission?.id, address])
-
-  /**
-   * Generate the resume-JWT before an onramp order is created. Shared by both
-   * the legacy redirect flow and the headless Apple Pay flow so the
-   * post-payment `useOnrampAutoTransaction` restore path is identical.
-   */
-  const handleOnrampBeforeNavigate = useCallback(async () => {
-    await generateOnrampJWT({
-      address: address || '',
-      chainSlug: chainSlug,
-      usdAmount: usdInput.replace(/,/g, ''),
-      agreed: agreedToCondition,
-      message: message || '',
-      selectedWallet: selectedWallet,
-      missionId: mission?.id?.toString(),
-      context: mission?.id?.toString(),
-      contributorEmail: contributorEmail.trim(),
-      newsletterOptIn,
-    })
-  }, [
-    generateOnrampJWT,
-    address,
-    chainSlug,
-    usdInput,
-    agreedToCondition,
-    message,
-    selectedWallet,
-    mission?.id,
-    contributorEmail,
-    newsletterOptIn,
-  ])
-
-  /**
-   * Headless flow synthesizes the same signal the legacy redirect produces:
-   * the JWT was already written by `handleOnrampBeforeNavigate`, so we just add
-   * `?onrampSuccess=true` to the URL (shallow) and let `useOnrampAutoTransaction`
-   * fire exactly as it does after a redirect return.
-   */
-  const handleHeadlessOnrampSuccess = useCallback(async () => {
-    try {
-      const nextQuery = { ...router.query, onrampSuccess: 'true' }
-      await router.replace(
-        { pathname: router.pathname, query: nextQuery },
-        undefined,
-        { shallow: true }
-      )
-    } catch (error) {
-      console.error(
-        '[MissionContributeModal] failed to push onrampSuccess flag',
-        error
-      )
-    }
-  }, [router])
-
   // Clear Coinbase fee state when user no longer needs onramp
   useEffect(() => {
     if (hasEnoughBalance || ethDeficit === 0) {
@@ -2478,36 +2412,31 @@ export default function MissionContributeModal({
                   {usdInput &&
                     ethDeficit > 0 &&
                     agreedToCondition &&
-                    isValidContributorEmail(contributorEmail.trim()) &&
-                    (isLoadingOnrampRegion ? (
-                      <div className="w-full bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 text-center text-gray-300 text-sm">
-                        Loading payment options...
-                      </div>
-                    ) : useHeadlessOnramp ? (
-                      <CBHeadlessOnramp
-                        fullWidth
-                        address={address || ''}
-                        selectedChain={payChain}
-                        ethAmount={adjustedEthDeficit}
-                        partnerUserRef={onrampPartnerUserRef}
-                        isWaitingForGasEstimate={isLoadingGasEstimate}
-                        onQuoteCalculated={handleCoinbaseQuote}
-                        onBeforeNavigate={handleOnrampBeforeNavigate}
-                        onPaymentSuccess={handleHeadlessOnrampSuccess}
-                      />
-                    ) : (
-                      <CBOnramp
-                        fullWidth
-                        address={address || ''}
-                        selectedChain={payChain}
-                        ethAmount={adjustedEthDeficit}
-                        isWaitingForGasEstimate={isLoadingGasEstimate}
-                        onQuoteCalculated={handleCoinbaseQuote}
-                        onBeforeNavigate={handleOnrampBeforeNavigate}
-                        redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
-                      />
-                    ))}
-
+                    isValidContributorEmail(contributorEmail.trim()) && (
+                    <CBOnramp
+                      fullWidth
+                      address={address || ''}
+                      selectedChain={payChain}
+                      ethAmount={adjustedEthDeficit}
+                      isWaitingForGasEstimate={isLoadingGasEstimate}
+                      onQuoteCalculated={handleCoinbaseQuote}
+                      onBeforeNavigate={async () => {
+                        await generateOnrampJWT({
+                          address: address || '',
+                          chainSlug: chainSlug,
+                          usdAmount: usdInput.replace(/,/g, ''),
+                          agreed: agreedToCondition,
+                          message: message || '',
+                          selectedWallet: selectedWallet,
+                          missionId: mission?.id?.toString(),
+                          context: mission?.id?.toString(),
+                          contributorEmail: contributorEmail.trim(),
+                          newsletterOptIn,
+                        })
+                      }}
+                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
+                    />
+                  )}
 
                   {/* Show warning if checkbox not agreed */}
                   {usdInput && ethDeficit > 0 && !agreedToCondition && (

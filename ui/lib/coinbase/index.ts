@@ -12,15 +12,7 @@ export interface CDPJWTOptions {
   path: string
   apiKeyName: string
   privateKeyBase64: string
-  // The API host the request will be sent to. Must match the host the JWT is
-  // presented to. Defaults to the v1 host (api.developer.coinbase.com).
-  host?: string
 }
-
-// CDP hosts. v1 onramp endpoints (buy/quote, token) live on the developer host;
-// the v2 Headless Onramp Order API lives on the cdp platform host.
-export const CDP_HOST_V1 = 'api.developer.coinbase.com'
-export const CDP_HOST_V2 = 'api.cdp.coinbase.com'
 
 export interface SessionTokenRequest {
   address: string
@@ -60,12 +52,11 @@ export async function generateCDPJWT({
   path,
   apiKeyName,
   privateKeyBase64,
-  host = CDP_HOST_V1,
 }: CDPJWTOptions): Promise<string> {
   try {
     const now = Math.floor(Date.now() / 1000)
     const nonce = randomBytes(16).toString('hex')
-    const uri = `${method} ${host}${path}`
+    const uri = `${method} api.developer.coinbase.com${path}`
 
     const payload = {
       sub: apiKeyName,
@@ -121,18 +112,16 @@ export async function makeCDPRequest(
   endpoint: string,
   method: string,
   body: any,
-  credentials: CDPCredentials,
-  host: string = CDP_HOST_V1
+  credentials: CDPCredentials
 ): Promise<Response> {
   const jwt = await generateCDPJWT({
     method,
     path: endpoint,
     apiKeyName: credentials.apiKeyName,
     privateKeyBase64: credentials.apiKeySecret,
-    host,
   })
 
-  return fetch(`https://${host}${endpoint}`, {
+  return fetch(`https://api.developer.coinbase.com${endpoint}`, {
     method,
     headers: {
       'Content-Type': 'application/json',
