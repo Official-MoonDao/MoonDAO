@@ -132,6 +132,12 @@ export default function TeamListing({
     }
   }, [currTime, listing?.startTime, listing?.endTime, editable, listing])
 
+  useEffect(() => {
+    if (queriedListingId !== undefined && queriedListingId === listing?.id) {
+      setEnabledBuyListingModal(true)
+    }
+  }, [queriedListingId, listing?.id])
+
   if (!listing) return null
   if (!isActive) return null
 
@@ -139,8 +145,8 @@ export default function TeamListing({
     <>
       <div
         id="link-frame"
-        onClick={() => { if (!editable) setEnabledBuyListingModal(true) }}
-        className={`flex-shrink-0 w-56 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 rounded-2xl overflow-hidden transition-all duration-200 flex flex-col ${!editable ? 'cursor-pointer' : ''}`}
+        onClick={() => setEnabledBuyListingModal(true)}
+        className={`flex-shrink-0 w-56 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 rounded-2xl overflow-hidden transition-all duration-200 flex flex-col cursor-pointer`}
       >
         {/* Image */}
         <div className="relative w-full h-36 bg-white/5 flex-shrink-0 overflow-hidden">
