@@ -258,12 +258,12 @@ Total: ~700–900 lines of new Solidity. Compared to the original D draft (~1,50
 
 ### Upgrade pattern
 
-All new DePrize contracts are **upgradeable via OpenZeppelin's UUPS proxy pattern**, with upgrades gated by the MoonDAO Admin Safe (multi-sig) with a 7-day timelock.
+All new DePrize contracts are **upgradeable via OpenZeppelin's UUPS proxy pattern**, with upgrades gated by the MoonDAO Admin Safe (multi-sig). A 7-day upgrade timelock is the planned production target; **M1 (`DePrizeRegistry`) currently authorizes upgrades directly via `onlyOwner` with no timelock** — the timelocked upgrade path is a later milestone, so reviewers/operators should not assume a timelock is enforced yet.
 
 **Rationale:**
 - The DePrize is a multi-year-running contract suite holding meaningful prize pool ETH. Bug fixes during the campaign (without re-deploying and migrating user positions) are essential.
 - UUPS is the modern standard, smaller proxy footprint than Transparent Proxy.
-- 7-day timelock gives bettors visibility into upgrades and time to exit if they object to a proposed change.
+- The planned 7-day timelock gives bettors visibility into upgrades and time to exit if they object to a proposed change (not yet enforced in M1).
 - Admin Safe is already the trust anchor for cancellation; reusing it for upgrades doesn't expand trust surface.
 
 **Constraints on upgrades:**
