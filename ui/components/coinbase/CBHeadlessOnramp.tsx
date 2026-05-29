@@ -47,6 +47,8 @@ interface CBHeadlessOnrampProps {
     totalFees: number
   ) => void
   fullWidth?: boolean
+  /** Test-only: bypass the Privy-linked email (used by the local probe page). */
+  emailOverride?: string
 }
 
 const MOCK_ONRAMP = process.env.NEXT_PUBLIC_MOCK_ONRAMP === 'true'
@@ -63,10 +65,12 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
   allowAmountInput = false,
   onQuoteCalculated,
   fullWidth = false,
+  emailOverride,
 }) => {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
   const { user } = usePrivy()
-  const userEmail = user?.email?.address || user?.google?.email || null
+  const userEmail =
+    emailOverride || user?.email?.address || user?.google?.email || null
 
   const {
     phoneNumber,
