@@ -141,12 +141,14 @@ export default function TeamListing({
   if (!listing) return null
   if (!isActive) return null
 
+  const isPurchasable = !isUpcoming && !isExpired
+
   return (
     <>
       <div
         id="link-frame"
-        onClick={() => setEnabledBuyListingModal(true)}
-        className={`flex-shrink-0 w-56 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 rounded-2xl overflow-hidden transition-all duration-200 flex flex-col cursor-pointer`}
+        onClick={() => { if (isPurchasable) setEnabledBuyListingModal(true) }}
+        className={`flex-shrink-0 w-56 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 rounded-2xl overflow-hidden transition-all duration-200 flex flex-col ${isPurchasable ? 'cursor-pointer' : ''}`}
       >
         {/* Image */}
         <div className="relative w-full h-36 bg-white/5 flex-shrink-0 overflow-hidden">

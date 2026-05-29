@@ -62,7 +62,7 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import useMissionData from '@/lib/mission/useMissionData'
 import useMissionRaisedProgress from '@/lib/mission/useMissionRaisedProgress'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
-import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { generatePrettyLinks, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -708,14 +708,24 @@ export default function SignedInDashboard({
                   actions={<SubtleButton color="purple" link="/teams">All →</SubtleButton>}
                 />
                 <div className="flex flex-col gap-2 mt-2">
-                  {filteredTeams.slice(0, 8).map((t: any) => {
+                  {(() => {
+                    // Mirror the server-side team pretty-link resolver, which
+                    // de-duplicates by appending `-<id>` only on name
+                    // collisions (ordered by id asc). Building the canonical
+                    // map here avoids misrouting when team names collide.
+                    const { idToPrettyLink } = generatePrettyLinks(
+                      [...filteredTeams]
+                        .filter((t: any) => (t.name || t.metadata?.name) && t.id != null)
+                        .sort((a: any, b: any) => Number(a.id) - Number(b.id))
+                        .map((t: any) => ({ name: t.name || t.metadata?.name, id: t.id }))
+                    )
+                    return filteredTeams.slice(0, 8).map((t: any) => {
                     const name = t.name || t.metadata?.name || `Team #${t.id}`
                     const image = t.image || t.metadata?.image
                     const description = (t.description || t.metadata?.description || '')
                       .replace(/<[^>]*>/g, '').trim()
-                    const href = name
-                      ? `/team/${generatePrettyLink(name)}`
-                      : `/team/${t.id}`
+                    const prettyLink = idToPrettyLink[t.id]
+                    const href = prettyLink ? `/team/${prettyLink}` : `/team/${t.id}`
                     return (
                       <Link
                         key={t.id}
@@ -748,7 +758,8 @@ export default function SignedInDashboard({
                         <ArrowRightIcon className="w-3.5 h-3.5 text-white/20 group-hover:text-white/50 flex-shrink-0 transition-colors" />
                       </Link>
                     )
-                  })}
+                    })
+                  })()}
                 </div>
               </div>
             )}
