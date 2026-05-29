@@ -150,6 +150,15 @@ contract DePrizeRegistryTest is Test {
         registry.register(JB_PROJECT, t, block.timestamp + 30 days);
     }
 
+    function testRegisterRevertsZeroTeamId() public {
+        uint256[] memory t = new uint256[](2);
+        t[0] = 1;
+        t[1] = 0; // reserved sentinel
+        vm.prank(owner);
+        vm.expectRevert(IDePrizeRegistry.ZeroTeamId.selector);
+        registry.register(JB_PROJECT, t, block.timestamp + 30 days);
+    }
+
     function testRegisterRevertsPastSunset() public {
         vm.prank(owner);
         vm.expectRevert(IDePrizeRegistry.InvalidSunset.selector);
@@ -389,6 +398,29 @@ contract DePrizeRegistryTest is Test {
         assertEq(uint256(registry.state(id)), uint256(IDePrizeRegistry.DePrizeState.CANCELLED));
         assertTrue(registry.isRefundable(id));
         assertTrue(registry.isTerminal(id));
+        // notice is cleared once executed
+        assertFalse(registry.cancellationPending(id));
+    }
+
+    function testReannounceCancellationReverts() public {
+        uint256 id = _registerAndOpen();
+        vm.startPrank(owner);
+        registry.announceCancellation(id);
+        // re-announcing without aborting first must not silently reset the timer
+        vm.expectRevert(abi.encodeWithSelector(IDePrizeRegistry.CancellationAlreadyPending.selector, id));
+        registry.announceCancellation(id);
+        vm.stopPrank();
+    }
+
+    function testReannounceAfterAbortSucceeds() public {
+        uint256 id = _registerAndOpen();
+        vm.startPrank(owner);
+        registry.announceCancellation(id);
+        registry.abortCancellation(id);
+        // a fresh notice is allowed once the prior one was explicitly aborted
+        registry.announceCancellation(id);
+        vm.stopPrank();
+        assertTrue(registry.cancellationPending(id));
     }
 
     function testCancelWithoutNoticeReverts() public {

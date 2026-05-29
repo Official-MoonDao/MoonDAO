@@ -82,6 +82,8 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
 
         for (uint256 i = 0; i < teamIds_.length; i++) {
             uint256 teamId = teamIds_[i];
+            // 0 is reserved as the "no winner declared" sentinel for winningTeamId.
+            if (teamId == 0) revert ZeroTeamId();
             if (_isTeam[deprizeId][teamId]) revert DuplicateTeam(teamId);
             _isTeam[deprizeId][teamId] = true;
             d.teamIds.push(teamId);
@@ -181,6 +183,9 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
         if (_isTerminalState(d.state) || d.state == DePrizeState.NONE) {
             revert InvalidState(deprizeId, d.state);
         }
+        // Require an explicit abort before re-announcing, so the notice window can't be
+        // silently reset (off-chain monitors and bettors track a single executableAt).
+        if (d.cancellationNoticeAt != 0) revert CancellationAlreadyPending(deprizeId);
         d.cancellationNoticeAt = block.timestamp;
         emit CancellationAnnounced(deprizeId, block.timestamp, block.timestamp + CANCELLATION_NOTICE);
     }
@@ -200,6 +205,8 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
         uint256 executableAt = d.cancellationNoticeAt + CANCELLATION_NOTICE;
         if (block.timestamp < executableAt) revert CancellationNoticeNotElapsed(deprizeId, executableAt);
         if (_isTerminalState(d.state)) revert InvalidState(deprizeId, d.state);
+        // Clear the notice so cancellationPending() reads false once executed.
+        d.cancellationNoticeAt = 0;
         _setState(deprizeId, d, DePrizeState.CANCELLED);
     }
 
