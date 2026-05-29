@@ -80,3 +80,21 @@ export function useOnrampRegion(): UseOnrampRegionReturn {
 }
 
 export default useOnrampRegion
+
+/**
+ * Pure decision for which Coinbase onramp variant to render:
+ *  - US users get the new in-page Headless Onramp (iframe + Apple Pay)
+ *  - everyone else gets the legacy logged-in Coinbase redirect flow
+ *  - the `NEXT_PUBLIC_FORCE_LEGACY_ONRAMP` kill-switch forces legacy for all
+ *
+ * Extracted so the identical branch used by both `CBOnrampModal` and
+ * `MissionContributeModal` can be unit tested without rendering React.
+ */
+export function shouldUseHeadlessOnramp(
+  isUS: boolean,
+  forceLegacy: boolean = process.env.NEXT_PUBLIC_FORCE_LEGACY_ONRAMP === 'true'
+): boolean {
+  if (forceLegacy) return false
+  return !!isUS
+}
+

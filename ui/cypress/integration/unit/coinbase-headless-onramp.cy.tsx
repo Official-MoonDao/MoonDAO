@@ -37,8 +37,10 @@ import {
 } from '../../../lib/coinbase/headlessEvents'
 import {
   computePhoneState,
+  normalizePhoneE164,
   PHONE_REVERIFICATION_INTERVAL_MS,
 } from '../../../lib/coinbase/usePhoneVerification'
+import { shouldUseHeadlessOnramp } from '../../../lib/coinbase/useOnrampRegion'
 
 declare const expect: Chai.ExpectStatic
 
@@ -683,5 +685,51 @@ describe('Coinbase Headless Onramp — phone verification staleness', () => {
       NOW
     )
     expect(s.isStale).to.equal(true)
+  })
+
+  it('normalizes a formatted Privy number to E.164', () => {
+    const s = computePhoneState(
+      { type: 'phone', number: '+1 (202) 555-0123', latestVerifiedAt: new Date(within) },
+      null,
+      NOW
+    )
+    expect(s.phoneNumber).to.equal('+12025550123')
+  })
+})
+
+describe('Coinbase Headless Onramp — phone E.164 normalization', () => {
+  it('strips spaces, parens and dashes', () => {
+    expect(normalizePhoneE164('+1 (202) 555-0123')).to.equal('+12025550123')
+    expect(normalizePhoneE164('+1-202-555-0123')).to.equal('+12025550123')
+    expect(normalizePhoneE164('  +12025550123 ')).to.equal('+12025550123')
+  })
+
+  it('adds a leading + when missing', () => {
+    expect(normalizePhoneE164('12025550123')).to.equal('+12025550123')
+  })
+
+  it('returns null for empty / junk input', () => {
+    expect(normalizePhoneE164('')).to.equal(null)
+    expect(normalizePhoneE164(null)).to.equal(null)
+    expect(normalizePhoneE164(undefined)).to.equal(null)
+    expect(normalizePhoneE164('abc')).to.equal(null)
+  })
+})
+
+describe('Coinbase Onramp — variant selection (headless vs legacy)', () => {
+  it('US users get the headless flow', () => {
+    expect(shouldUseHeadlessOnramp(true, false)).to.equal(true)
+  })
+
+  it('non-US users get the legacy redirect flow', () => {
+    expect(shouldUseHeadlessOnramp(false, false)).to.equal(false)
+  })
+
+  it('force-legacy kill-switch overrides US users', () => {
+    expect(shouldUseHeadlessOnramp(true, true)).to.equal(false)
+  })
+
+  it('force-legacy also keeps non-US on legacy', () => {
+    expect(shouldUseHeadlessOnramp(false, true)).to.equal(false)
   })
 })

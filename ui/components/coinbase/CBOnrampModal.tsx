@@ -2,14 +2,11 @@ import { DEPLOYED_ORIGIN } from 'const/config'
 import { useRouter } from 'next/router'
 import React, { useCallback, useMemo } from 'react'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
-import useOnrampRegion from '@/lib/coinbase/useOnrampRegion'
+import useOnrampRegion, { shouldUseHeadlessOnramp } from '@/lib/coinbase/useOnrampRegion'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import Modal from '../layout/Modal'
 import { CBHeadlessOnramp } from './CBHeadlessOnramp'
 import { CBOnramp } from './CBOnramp'
-
-const FORCE_LEGACY_ONRAMP =
-  process.env.NEXT_PUBLIC_FORCE_LEGACY_ONRAMP === 'true'
 
 interface CBOnrampModalProps {
   enabled: boolean
@@ -53,7 +50,7 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
   const { generateJWT } = useOnrampJWT()
   const { isUS, isLoading: isLoadingRegion } = useOnrampRegion()
   const chainSlug = getChainSlug(selectedChain)
-  const useHeadless = !FORCE_LEGACY_ONRAMP && isUS
+  const useHeadless = shouldUseHeadlessOnramp(isUS)
 
   const generateRedirectUrl = useCallback(() => {
     if (redirectUrl) {
