@@ -52,7 +52,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     // Detect country for region restrictions (Headless = US only). Coinbase
     // determines the precise region itself from clientIp; we only gate here.
-    const country = getCountryFromHeaders(req) || 'US'
+    // Fail closed when no geo header is present (local dev, some proxies,
+    // direct calls) so the gate can't be bypassed by stripping headers —
+    // mirrors useOnrampRegion's non-US fallback on the client.
+    const country = getCountryFromHeaders(req)
 
     if (!isRegionAllowed(country)) {
       return res.status(400).json({

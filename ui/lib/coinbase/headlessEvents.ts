@@ -137,9 +137,7 @@ export function isCoinbaseOrigin(origin: string | undefined | null): boolean {
   }
   return (
     hostname === 'coinbase.com' ||
-    hostname.endsWith('.coinbase.com') ||
-    hostname === 'cb-pay.com' ||
-    hostname.endsWith('.cb-pay.com')
+    hostname.endsWith('.coinbase.com')
   )
 }
 

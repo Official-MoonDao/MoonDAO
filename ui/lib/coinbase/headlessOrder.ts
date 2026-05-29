@@ -15,6 +15,12 @@ export type OnrampPaymentMethod =
   | 'GUEST_CHECKOUT_APPLE_PAY'
   | 'GUEST_CHECKOUT_GOOGLE_PAY'
 
+/** Runtime allowlist mirroring the OnrampPaymentMethod union. */
+export const ONRAMP_PAYMENT_METHODS: readonly OnrampPaymentMethod[] = [
+  'GUEST_CHECKOUT_APPLE_PAY',
+  'GUEST_CHECKOUT_GOOGLE_PAY',
+]
+
 export interface CreateOrderInput {
   paymentAmount?: number
   destinationAddress?: string
@@ -51,6 +57,7 @@ export function validateCreateOrderInput(body: CreateOrderInput): ValidationResu
     phoneNumberVerifiedAt,
     partnerUserRef,
     agreementAcceptedAt,
+    paymentMethod,
   } = body
 
   if (!paymentAmount || !destinationAddress) {
@@ -87,6 +94,17 @@ export function validateCreateOrderInput(body: CreateOrderInput): ValidationResu
   }
   if (!agreementAcceptedAt) {
     return { ok: false, status: 400, error: 'agreementAcceptedAt is required' }
+  }
+  if (
+    paymentMethod !== undefined &&
+    !ONRAMP_PAYMENT_METHODS.includes(paymentMethod)
+  ) {
+    return {
+      ok: false,
+      status: 400,
+      error: `paymentMethod must be one of: ${ONRAMP_PAYMENT_METHODS.join(', ')}`,
+      code: 'INVALID_PAYMENT_METHOD',
+    }
   }
   return { ok: true }
 }

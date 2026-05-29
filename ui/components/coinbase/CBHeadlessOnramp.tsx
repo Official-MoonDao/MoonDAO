@@ -196,7 +196,7 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
             setError('Unable to get quote from Coinbase. Please try again.')
           }
           setIsLoadingQuote(false)
-          onQuoteCalculated?.(0, 0, 0, 0)
+          onQuoteCalculatedRef.current?.(0, 0, 0, 0)
           return
         }
 
@@ -528,7 +528,6 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
             src={paymentLinkUrl}
             title="Coinbase Onramp"
             allow="payment"
-            sandbox="allow-scripts allow-same-origin"
             referrerPolicy="no-referrer"
             className="w-full h-[520px] rounded-lg bg-white"
             style={{ minHeight: 520, border: 'none' }}

@@ -11,6 +11,11 @@ export interface UseOnrampRegionReturn {
   error: string | null
 }
 
+// Module-scoped cache: the region is IP-derived and stable for the page's
+// lifetime, so we fetch once and share the result across all hook consumers
+// and route changes. It intentionally lives until a full reload — a mid-session
+// network/VPN change is not picked up, which is acceptable for a coarse US gate
+// (Coinbase performs the authoritative region determination server-side).
 let cachedResult: { country: string | null; isUS: boolean } | null = null
 let inflight: Promise<{ country: string | null; isUS: boolean }> | null = null
 

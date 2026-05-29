@@ -118,6 +118,34 @@ describe('Coinbase Headless Onramp — create-order validation', () => {
     expect(result.ok).to.equal(false)
     if (!result.ok) expect(result.error).to.match(/agreementAcceptedAt/)
   })
+
+  it('accepts a valid GUEST_CHECKOUT payment method', () => {
+    expect(
+      validateCreateOrderInput({
+        ...VALID_BODY,
+        paymentMethod: 'GUEST_CHECKOUT_GOOGLE_PAY',
+      }).ok
+    ).to.equal(true)
+  })
+
+  it('defaults (undefined paymentMethod) are allowed', () => {
+    expect(
+      validateCreateOrderInput({ ...VALID_BODY, paymentMethod: undefined }).ok
+    ).to.equal(true)
+  })
+
+  it('rejects an unknown payment method', () => {
+    const result = validateCreateOrderInput({
+      ...VALID_BODY,
+      // deliberately invalid value coming from an untrusted client
+      paymentMethod: 'CARD' as any,
+    })
+    expect(result.ok).to.equal(false)
+    if (!result.ok) {
+      expect(result.code).to.equal('INVALID_PAYMENT_METHOD')
+      expect(result.error).to.match(/paymentMethod must be one of/)
+    }
+  })
 })
 
 describe('Coinbase Headless Onramp — E.164 regex', () => {
@@ -480,15 +508,17 @@ describe('Coinbase Headless Onramp — postMessage origin allowlist', () => {
   it('accepts coinbase.com and subdomains', () => {
     expect(isCoinbaseOrigin('https://coinbase.com')).to.equal(true)
     expect(isCoinbaseOrigin('https://pay.coinbase.com')).to.equal(true)
-    expect(isCoinbaseOrigin('https://pay.cb-pay.com')).to.equal(true)
-    expect(isCoinbaseOrigin('https://cb-pay.com')).to.equal(true)
   })
 
   it('rejects look-alike and unrelated origins', () => {
     expect(isCoinbaseOrigin('https://coinbase.com.evil.com')).to.equal(false)
     expect(isCoinbaseOrigin('https://notcoinbase.com')).to.equal(false)
     expect(isCoinbaseOrigin('https://evil.com')).to.equal(false)
-    expect(isCoinbaseOrigin('https://fakecb-pay.com')).to.equal(false)
+    // cb-pay.com is intentionally NOT trusted: Coinbase's Headless Onramp
+    // (and their reference app) serves the payment link from pay.coinbase.com,
+    // and our CSP frame-src is scoped to *.coinbase.com.
+    expect(isCoinbaseOrigin('https://cb-pay.com')).to.equal(false)
+    expect(isCoinbaseOrigin('https://pay.cb-pay.com')).to.equal(false)
   })
 
   it('rejects empty / malformed origins', () => {
