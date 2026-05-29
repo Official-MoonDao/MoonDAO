@@ -322,6 +322,20 @@ contract DePrizeMilestoneEscrowTest is Test {
         assertTrue(escrow.finalized(id));
     }
 
+    /// @dev If the registry reaches M2_FAILED but a keeper never called releaseM1,
+    ///      the provider still earned their 30% — returnToTreasury must pay it
+    ///      rather than send 100% to the treasury.
+    function testReturnToTreasuryPaysSkippedM1() public {
+        uint256 id = _registerTo(PROJECT, IDePrizeRegistry.DePrizeState.M2_FAILED);
+        _setRecipient(id, provider);
+        escrow.deposit{value: DEPOSIT}(id); // 10 ETH, releaseM1 never called
+        escrow.returnToTreasury(id);
+        assertEq(provider.balance, (DEPOSIT * 3000) / 10000); // 30%
+        assertEq(treasury.balance, DEPOSIT - (DEPOSIT * 3000) / 10000); // 70%
+        assertTrue(escrow.finalized(id));
+        assertTrue(escrow.m1Released(id));
+    }
+
     /// @dev A finalizer must be able to finalize a zero-balance prize so it can't
     ///      get stuck (and keep silently accepting stray deposits).
     function testReturnToTreasuryZeroBalanceFinalizes() public {

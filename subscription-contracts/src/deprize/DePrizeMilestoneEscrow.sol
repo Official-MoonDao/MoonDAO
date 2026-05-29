@@ -221,7 +221,9 @@ contract DePrizeMilestoneEscrow is Initializable, OwnableUpgradeable, UUPSUpgrad
 
     /// @notice Return the un-released remainder to the MoonDAO treasury when a
     ///         prize fails after M1 (`M2_FAILED`) for $OVERVIEW-governed
-    ///         re-allocation. The 30% already paid at M1 is not clawed back.
+    ///         re-allocation. The provider's 30% M1 tranche is never clawed back:
+    ///         if a keeper never called releaseM1 before failM2, it is paid out
+    ///         here first and only the remaining 70% goes to the treasury.
     function returnToTreasury(uint256 deprizeId) external nonReentrant {
         IDePrizeRegistry.DePrizeState s = registry.state(deprizeId);
         if (s != IDePrizeRegistry.DePrizeState.M2_FAILED) {
@@ -232,8 +234,26 @@ contract DePrizeMilestoneEscrow is Initializable, OwnableUpgradeable, UUPSUpgrad
         // Finalize gracefully even with a zero balance (matches refundToJB), so an
         // M2_FAILED prize with no escrow deposits can't be left permanently
         // un-finalized — which would otherwise keep accepting stray deposits.
-        uint256 amount = deposited[deprizeId] - released[deprizeId];
         finalized[deprizeId] = true;
+
+        // The registry only reaches M2_FAILED from M1_RELEASED, so the provider
+        // earned their 30% M1 tranche regardless of whether a keeper actually
+        // called releaseM1 first. Pay it here if it was skipped so the tranche is
+        // never clawed back to the treasury. (If there were no deposits, m1 is 0
+        // and we skip it — keeping zero-balance finalization recipient-agnostic.)
+        if (!m1Released[deprizeId]) {
+            uint256 m1 = (deposited[deprizeId] * M1_BPS) / BPS_DENOMINATOR;
+            if (m1 > 0) {
+                address recipient = providerRecipient[deprizeId];
+                if (recipient == address(0)) revert RecipientNotSet(deprizeId);
+                m1Released[deprizeId] = true;
+                released[deprizeId] += m1;
+                _sendETH(recipient, m1);
+                emit M1Released(deprizeId, recipient, m1);
+            }
+        }
+
+        uint256 amount = deposited[deprizeId] - released[deprizeId];
         released[deprizeId] = deposited[deprizeId];
         _sendETH(moonDAOTreasury, amount);
         emit ReturnedToTreasury(deprizeId, moonDAOTreasury, amount);
