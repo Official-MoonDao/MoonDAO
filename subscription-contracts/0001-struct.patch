@@ -56,7 +56,6 @@ index 5b3fb39f..21296fbd 100644
              formId: "formId"
          });
 diff --git a/subscription-contracts/test/ManualRefundTest.t.sol b/subscription-contracts/test/ManualRefundTest.t.sol
-index XXXXXXXX..XXXXXXXX 100644
 --- a/subscription-contracts/test/ManualRefundTest.t.sol
 +++ b/subscription-contracts/test/ManualRefundTest.t.sol
 @@ -130,12 +130,6 @@ contract ManualRefundTest is Test, Config {
@@ -89,7 +88,6 @@ index 0eedb883..b50035a8 100644
              formId: "formId"
          });
 diff --git a/subscription-contracts/test/OwnerOnlyPayoutsRulesetTest.t.sol b/subscription-contracts/test/OwnerOnlyPayoutsRulesetTest.t.sol
-index XXXXXXXX..XXXXXXXX 100644
 --- a/subscription-contracts/test/OwnerOnlyPayoutsRulesetTest.t.sol
 +++ b/subscription-contracts/test/OwnerOnlyPayoutsRulesetTest.t.sol
 @@ -114,12 +114,6 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
