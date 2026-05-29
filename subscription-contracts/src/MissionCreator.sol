@@ -224,7 +224,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
             terminal: address(terminal),
             token: JBConstants.NATIVE_TOKEN,
             payoutLimits: new JBCurrencyAmount[](0),
-            surplusAllowances: surplusAllowances
+            surplusAllowances: deprizeRegistry == address(0) ? surplusAllowances : new JBCurrencyAmount[](0)
         });
         rulesetConfigurations[1].fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
             terminal: address(terminal),
