@@ -154,10 +154,16 @@ contract DePrizeMilestoneEscrow is Initializable, OwnableUpgradeable, UUPSUpgrad
     ///         settlement flow, the future PrizeEscrow, or a JB payout routed
     ///         here). Reverts for unknown or already-finalized DePrizes so ETH is
     ///         never stranded under an unreleasable id.
+    /// @dev Deposits must land before the M1 tranche is released: the 30/70 split
+    ///      is computed from `deposited` at `releaseM1` time, so ETH arriving
+    ///      afterwards would skip the M1 treatment entirely and silently distort
+    ///      the per-prize accounting. Once `m1Released` is set, the prize is
+    ///      considered fully funded and further deposits are rejected.
     function deposit(uint256 deprizeId) external payable {
         if (msg.value == 0) revert ZeroAmount();
         if (registry.state(deprizeId) == IDePrizeRegistry.DePrizeState.NONE) revert UnknownDePrize(deprizeId);
         if (finalized[deprizeId]) revert AlreadyFinalized(deprizeId);
+        if (m1Released[deprizeId]) revert AlreadyReleasedM1(deprizeId);
         deposited[deprizeId] += msg.value;
         emit Deposited(deprizeId, msg.sender, msg.value);
     }

@@ -187,6 +187,17 @@ contract DePrizeMilestoneEscrowTest is Test {
         assertFalse(ok);
     }
 
+    /// @dev Deposits must land before M1 releases, or the 30/70 split (computed
+    ///      from `deposited` at releaseM1 time) would be silently distorted.
+    function testDepositAfterM1Reverts() public {
+        uint256 id = _registerTo(PROJECT, IDePrizeRegistry.DePrizeState.M1_RELEASED);
+        _setRecipient(id, provider);
+        escrow.deposit{value: DEPOSIT}(id);
+        escrow.releaseM1(id);
+        vm.expectRevert(abi.encodeWithSignature("AlreadyReleasedM1(uint256)", id));
+        escrow.deposit{value: 1 ether}(id);
+    }
+
     // ---------------------------------------------------------------------
     // provider recipient
     // ---------------------------------------------------------------------
