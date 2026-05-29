@@ -50,16 +50,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       MOCK_ONRAMP
     )
 
-    // Detect country for region restrictions (Headless = US only). This is a
-    // best-effort UX pre-filter: we only block on a POSITIVE non-US signal.
-    // When the geo header is absent (no Vercel/Cloudflare edge header, some
-    // proxies, local dev) we let the request through rather than blocking real
-    // US users — Coinbase performs the authoritative region determination from
-    // clientIp at order creation and rejects genuine non-US users there, so
-    // allowing "unknown" through never lets an ineligible user complete a buy.
+    // Detect country for region restrictions (Headless = US only). Coinbase
+    // determines the precise region itself from clientIp; we only gate here.
+    // Fail closed when no geo header is present (local dev, some proxies,
+    // direct calls) so the gate can't be bypassed by stripping headers —
+    // mirrors useOnrampRegion's non-US fallback on the client.
     const country = getCountryFromHeaders(req)
 
-    if (country && !isRegionAllowed(country)) {
+    if (!isRegionAllowed(country)) {
       return res.status(400).json({
         error: 'Headless onramp is only available for US users',
         code: 'REGION_NOT_SUPPORTED',
