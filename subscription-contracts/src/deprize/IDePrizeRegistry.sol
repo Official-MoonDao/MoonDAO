@@ -58,10 +58,13 @@ interface IDePrizeRegistry {
     error ConditionNotSet(uint256 deprizeId);
     error TooFewTeams(uint256 provided);
     error DuplicateTeam(uint256 teamId);
+    /// @dev Team id 0 is reserved: `winningTeamId() == 0` is the "no winner declared" sentinel.
+    error ZeroTeamId();
     error UnknownTeam(uint256 deprizeId, uint256 teamId);
     error InvalidJBProject();
     error InvalidSunset();
     error NoCancellationPending(uint256 deprizeId);
+    error CancellationAlreadyPending(uint256 deprizeId);
     error CancellationNoticeNotElapsed(uint256 deprizeId, uint256 executableAt);
 
     // ---------------------------------------------------------------------
