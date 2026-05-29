@@ -322,6 +322,23 @@ contract DePrizeMilestoneEscrowTest is Test {
         assertTrue(escrow.finalized(id));
     }
 
+    /// @dev A finalizer must be able to finalize a zero-balance prize so it can't
+    ///      get stuck (and keep silently accepting stray deposits).
+    function testReturnToTreasuryZeroBalanceFinalizes() public {
+        uint256 id = _registerTo(PROJECT, IDePrizeRegistry.DePrizeState.M2_FAILED);
+        escrow.returnToTreasury(id); // no deposits, no recipient
+        assertTrue(escrow.finalized(id));
+        assertEq(treasury.balance, 0);
+    }
+
+    function testReleaseM2ZeroBalanceFinalizes() public {
+        uint256 id = _registerTo(PROJECT, IDePrizeRegistry.DePrizeState.M2_COMPLETE);
+        _setRecipient(id, provider);
+        escrow.releaseM2(id); // no deposits
+        assertTrue(escrow.finalized(id));
+        assertEq(provider.balance, 0);
+    }
+
     function testReturnToTreasuryWrongStateReverts() public {
         uint256 id = _registerTo(PROJECT, IDePrizeRegistry.DePrizeState.M2_COMPLETE);
         escrow.deposit{value: DEPOSIT}(id);

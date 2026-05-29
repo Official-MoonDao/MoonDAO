@@ -207,8 +207,12 @@ contract DePrizeMilestoneEscrow is Initializable, OwnableUpgradeable, UUPSUpgrad
         address recipient = providerRecipient[deprizeId];
         if (recipient == address(0)) revert RecipientNotSet(deprizeId);
 
+        // Finalizers must always be able to finalize, even with a zero balance,
+        // so a fully-resolved prize never gets stuck un-finalized (consistent
+        // with refundToJB). _sendETH no-ops on zero. (releaseM1 keeps its zero
+        // guard because it is intermediate, not a finalizer: a zero-amount M1
+        // would prematurely lock the recipient with nothing paid.)
         uint256 amount = deposited[deprizeId] - released[deprizeId];
-        if (amount == 0) revert ZeroAmount();
         finalized[deprizeId] = true;
         released[deprizeId] = deposited[deprizeId];
         _sendETH(recipient, amount);
@@ -225,8 +229,10 @@ contract DePrizeMilestoneEscrow is Initializable, OwnableUpgradeable, UUPSUpgrad
         }
         if (finalized[deprizeId]) revert AlreadyFinalized(deprizeId);
 
+        // Finalize gracefully even with a zero balance (matches refundToJB), so an
+        // M2_FAILED prize with no escrow deposits can't be left permanently
+        // un-finalized — which would otherwise keep accepting stray deposits.
         uint256 amount = deposited[deprizeId] - released[deprizeId];
-        if (amount == 0) revert ZeroAmount();
         finalized[deprizeId] = true;
         released[deprizeId] = deposited[deprizeId];
         _sendETH(moonDAOTreasury, amount);
