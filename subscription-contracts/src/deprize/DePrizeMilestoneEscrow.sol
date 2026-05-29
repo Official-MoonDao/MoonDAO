@@ -40,12 +40,7 @@ import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
 ///      destination is never attacker-controlled. Admin (the same Safe that owns
 ///      the registry, in v1) sets the provider recipient, JB terminal, and
 ///      treasury. UUPS-upgradeable to match `DePrizeRegistry`.
-contract DePrizeMilestoneEscrow is
-    Initializable,
-    OwnableUpgradeable,
-    UUPSUpgradeable,
-    ReentrancyGuardUpgradeable
-{
+contract DePrizeMilestoneEscrow is Initializable, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice Basis points released at M1 (capability demonstrated).
     uint256 public constant M1_BPS = 3_000; // 30%
     uint256 public constant BPS_DENOMINATOR = 10_000;
@@ -144,6 +139,7 @@ contract DePrizeMilestoneEscrow is
     ///         released (so a release can never be redirected after the fact).
     function setProviderRecipient(uint256 deprizeId, address recipient) external onlyOwner {
         if (recipient == address(0)) revert ZeroAddress();
+        if (finalized[deprizeId]) revert AlreadyFinalized(deprizeId);
         if (m1Released[deprizeId]) revert AlreadyReleasedM1(deprizeId);
         if (registry.winningTeamId(deprizeId) == 0) revert NoWinnerDeclared(deprizeId);
         providerRecipient[deprizeId] = recipient;
