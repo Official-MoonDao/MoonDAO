@@ -21,6 +21,8 @@ import {
   FireIcon,
   UserCircleIcon,
   PencilSquareIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
@@ -92,6 +94,7 @@ import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardActiveProjects from '../project/DashboardActiveProjects'
 import DashboardQuests from './DashboardQuests'
 import RecentActivity from './RecentActivity'
+import { useClaimableQuestsCount } from '@/lib/xp/useClaimableQuestsCount'
 import LazyEarth from '@/components/globe/LazyEarth'
 
 // Parse citizen location from Tableland (can be JSON or plain string)
@@ -123,6 +126,39 @@ function getCitizenMetadata(citizen: any): string | null {
   const discord = citizen?.discord ?? citizen?.metadata?.attributes?.find((a: any) => a.trait_type === 'discord')?.value
   if (discord) return discord.length > 25 ? discord.slice(0, 22) + '…' : discord
   return null
+}
+
+// Determine which key profile fields a citizen is still missing.
+// Mirrors the on-chain HAS_COMPLETED_CITIZEN_PROFILE verifier (see
+// ui/lib/xp/config.ts + has-completed-citizen-profile-proof.ts): a profile is
+// considered complete with a description (bio) + at least one of
+// location / discord / twitter / website.
+function getMissingProfileFields(citizen: any): string[] {
+  if (!citizen) return []
+
+  const getAttr = (trait: string) =>
+    citizen?.[trait] ??
+    citizen?.metadata?.attributes?.find((a: any) => a.trait_type === trait)?.value
+
+  const hasValue = (val: any) =>
+    typeof val === 'string' ? val.trim().length > 0 : !!val
+
+  const missing: string[] = []
+
+  // Bio (description) — required by the verifier
+  if (!hasValue(citizen?.metadata?.description ?? citizen?.description)) {
+    missing.push('Bio')
+  }
+
+  // At least one of location / discord / twitter / website — required by the verifier
+  const hasContact =
+    !!getCitizenLocation(citizen) ||
+    ['discord', 'twitter', 'website'].some((trait) => hasValue(getAttr(trait)))
+  if (!hasContact) {
+    missing.push('Location or a social/website link')
+  }
+
+  return missing
 }
 
 // Get team metadata for card (description preview, communications, or website)
@@ -338,10 +374,32 @@ export default function SignedInDashboard({
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
+  // Incomplete profile notice state — persisted per citizen so dismiss survives remounts
+  const citizenId = citizen?.metadata?.id ?? citizen?.id
+  const storageKey = citizenId ? `profileNoticeDismissed:${citizenId}` : null
+  const [profileNoticeDismissed, setProfileNoticeDismissed] = useState(() => {
+    if (typeof window === 'undefined' || !storageKey) return false
+    return localStorage.getItem(storageKey) === '1'
+  })
+  const dismissProfileNotice = () => {
+    setProfileNoticeDismissed(true)
+    if (storageKey) localStorage.setItem(storageKey, '1')
+  }
+  const missingProfileFields = getMissingProfileFields(citizen)
+  const showProfileNotice =
+    !!citizen && missingProfileFields.length > 0 && !profileNoticeDismissed
+  const profileEditHref =
+    citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
+      ? `/citizen/${generatePrettyLinkWithId(
+          citizen.metadata.name,
+          citizen.metadata?.id ?? citizen.id
+        )}?edit=1`
+      : '/join'
+
   const account = useActiveAccount()
   const address = account?.address
 
-  // Hooks for SendModal
+  const claimableQuestsCount = useClaimableQuestsCount(address)
   const { nativeBalance } = useNativeBalance()
   const { tokens: walletTokens } = useWalletTokens(address, chainSlug)
 
@@ -486,7 +544,17 @@ export default function SignedInDashboard({
             <p className="text-white font-semibold truncate">
               {citizen?.metadata?.name || 'Welcome back'}
             </p>
-            <p className="text-white/50 text-xs">MoonDAO Citizen</p>
+            {showProfileNotice ? (
+              <Link
+                href={profileEditHref}
+                className="inline-flex items-center gap-1 text-amber-300 hover:text-amber-200 text-xs transition-colors"
+              >
+                <ExclamationTriangleIcon className="w-3 h-3 flex-shrink-0" />
+                Profile incomplete — complete it
+              </Link>
+            ) : (
+              <p className="text-white/50 text-xs">MoonDAO Citizen</p>
+            )}
           </div>
           {/* Edit profile link */}
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -578,6 +646,34 @@ export default function SignedInDashboard({
               {/* View / Edit Profile buttons */}
               {citizen && (
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {showProfileNotice && (
+                    <div className="inline-flex items-center border border-amber-400/25 rounded-xl overflow-hidden">
+                      <Link
+                        href={profileEditHref}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 text-sm font-medium transition-all"
+                      >
+                        <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
+                        Your profile is incomplete
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={dismissProfileNotice}
+                        aria-label="Dismiss"
+                        className="self-stretch px-2.5 bg-amber-500/10 hover:bg-amber-500/30 text-amber-300/60 hover:text-amber-200 border-l border-amber-400/25 transition-all flex items-center"
+                      >
+                        <XMarkIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                  {claimableQuestsCount !== null && claimableQuestsCount > 0 && (
+                    <Link
+                      href="/quests"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/25 rounded-xl text-purple-300 hover:text-purple-200 text-sm font-medium transition-all"
+                    >
+                      <TrophyIcon className="w-4 h-4 flex-shrink-0" />
+                      {claimableQuestsCount} quest{claimableQuestsCount !== 1 ? 's' : ''} to claim
+                    </Link>
+                  )}
                   <Link
                     href={
                       citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
@@ -590,11 +686,7 @@ export default function SignedInDashboard({
                     View Profile
                   </Link>
                   <Link
-                    href={
-                      citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
-                        ? `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata?.id ?? citizen.id)}?edit=1`
-                        : '/join'
-                    }
+                    href={profileEditHref}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl text-blue-300 hover:text-blue-200 text-sm font-medium transition-all"
                   >
                     <PencilSquareIcon className="w-4 h-4" />

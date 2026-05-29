@@ -1,0 +1,183 @@
+name: Auto-fix PR Comments
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  models: read
+
+jobs:
+  autofix:
+    # Only run on PR comments (not issue comments)
+    if: github.event.issue.pull_request != null
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Review comment with AI
+        id: review-comment
+        uses: actions/github-script@v7
+        env:
+          MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const comment = context.payload.comment.body;
+
+            const response = await fetch('https://models.github.ai/inference/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'Authorization': `Bearer ${process.env.MODELS_TOKEN}`,
+              },
+              body: JSON.stringify({
+                model: 'openai/gpt-4o-mini',
+                max_tokens: 200,
+                messages: [
+                  {
+                    role: 'system',
+                    content: `You are a code review assistant. Your job is to decide whether a PR comment is specifically requesting an auto-fixable issue such as lint errors, ESLint rule violations, code formatting, or import ordering — things that tools like ESLint and Prettier can fix automatically.
+                    Respond with ONLY a JSON object in this format:
+                    { "should_fix": true/false, "reason": "brief explanation" }
+                    Return should_fix=true ONLY for lint/formatting issues. Return should_fix=false for logic changes, feature requests, refactoring, questions, praise, or anything requiring human judgment.`,
+                  },
+                  {
+                    role: 'user',
+                    content: `PR comment: "${comment}"`,
+                  },
+                ],
+                temperature: 0,
+              }),
+            });
+
+            if (!response.ok) {
+              core.warning(`Models API returned ${response.status}: ${await response.text()}`);
+              core.setOutput('should_fix', 'false');
+              core.setOutput('reason', 'AI review request failed');
+              return;
+            }
+
+            const data = await response.json();
+            let result;
+            try {
+              // Strip markdown code fences if present
+              const raw = data.choices[0].message.content
+                .replace(/```json\s*/gi, '')
+                .replace(/```/g, '')
+                .trim();
+              result = JSON.parse(raw);
+            } catch (e) {
+              core.setOutput('should_fix', 'false');
+              core.setOutput('reason', 'Failed to parse AI response');
+              return;
+            }
+
+            core.setOutput('should_fix', String(result.should_fix));
+            core.setOutput('reason', result.reason);
+
+            // Post a reaction based on the decision
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: result.should_fix ? 'eyes' : 'confused',
+            });
+
+            if (!result.should_fix) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `⏭️ Skipping auto-fix — the comment doesn't appear to be requesting a code fix.\n> **Reason:** ${result.reason}`,
+              });
+            }
+
+      - name: Get PR branch
+        if: steps.review-comment.outputs.should_fix == 'true'
+        uses: actions/github-script@v7
+        id: get-pr
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            core.setOutput('head_ref', pr.data.head.ref);
+            core.setOutput('head_sha', pr.data.head.sha);
+
+      - name: Checkout PR branch
+        if: steps.review-comment.outputs.should_fix == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.get-pr.outputs.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        if: steps.review-comment.outputs.should_fix == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: ui/yarn.lock
+
+      - name: Install dependencies
+        if: steps.review-comment.outputs.should_fix == 'true'
+        working-directory: ui
+        run: yarn install --frozen-lockfile
+
+      - name: Run ESLint fix
+        if: steps.review-comment.outputs.should_fix == 'true'
+        working-directory: ui
+        run: yarn lint --fix || true
+
+      - name: Run Prettier fix
+        if: steps.review-comment.outputs.should_fix == 'true'
+        working-directory: ui
+        run: npx prettier --write "{components,lib,pages,const,middleware,styles}/**/*.{ts,tsx,js,jsx,css,scss}" || true
+
+      - name: Check for changes
+        if: steps.review-comment.outputs.should_fix == 'true'
+        id: check-changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push fixes
+        if: steps.check-changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: auto-fix lint and formatting issues"
+          git push
+
+      - name: Comment on PR (fixes applied)
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '✅ Auto-fix applied: lint and formatting issues have been fixed and committed.',
+            });
+
+      - name: Comment on PR (nothing to fix)
+        if: steps.check-changes.outputs.changed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '✨ No lint or formatting issues found — nothing to fix!',
+            });
