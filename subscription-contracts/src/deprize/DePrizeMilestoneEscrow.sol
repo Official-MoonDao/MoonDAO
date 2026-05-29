@@ -206,6 +206,7 @@ contract DePrizeMilestoneEscrow is
         if (recipient == address(0)) revert RecipientNotSet(deprizeId);
 
         uint256 amount = deposited[deprizeId] - released[deprizeId];
+        if (amount == 0) revert ZeroAmount();
         finalized[deprizeId] = true;
         released[deprizeId] = deposited[deprizeId];
         _sendETH(recipient, amount);
@@ -223,6 +224,7 @@ contract DePrizeMilestoneEscrow is
         if (finalized[deprizeId]) revert AlreadyFinalized(deprizeId);
 
         uint256 amount = deposited[deprizeId] - released[deprizeId];
+        if (amount == 0) revert ZeroAmount();
         finalized[deprizeId] = true;
         released[deprizeId] = deposited[deprizeId];
         _sendETH(moonDAOTreasury, amount);
