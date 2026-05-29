@@ -111,6 +111,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     votes as any,
     addressToQuadraticVotingPower
   )
+  const realVoteCount = votes.filter((vote: any) => {
+    if (typeof vote?.vote !== 'string') return true
+    try {
+      return JSON.parse(vote.vote)?.kind !== 'snapshot'
+    } catch {
+      return true
+    }
+  }).length
+  if (realVoteCount > 0 && tally.totalParticipationVP === 0) {
+    return res.status(503).json({
+      error:
+        'Resolved total voting power is 0 for non-snapshot votes. vMOONEY reads may have failed; retry once RPC/Engine reads recover.',
+      voterCount: realVoteCount,
+      vMOONEYs,
+      voteAddresses,
+    })
+  }
   const passed = tally.passed
   const active = passed ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED
   const account = await createHSMWallet()
