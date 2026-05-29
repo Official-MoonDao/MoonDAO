@@ -21,7 +21,7 @@ In the original hook, refunds (`beforeCashOutRecordedWith`) are gated purely by 
 
 ## How (backwards-compatible by construction)
 
-A single optional pointer is added: `IDePrizeRegistry public deprizeRegistry`, set via owner-gated `setDePrizeRegistry(address)` (defaults to `address(0)`).
+A single optional pointer is added: `IDePrizeRegistry public deprizeRegistry`, set via owner-gated `setDePrizeRegistry(address)` (defaults to `address(0)`). The setter is a **one-way latch**: it reverts once a registry is already set, so it can neither be detached nor repointed. The hook owner is the mission `to` account (a different trust domain from the registry admin), so a mutable pointer would let that owner drop the registry mid-campaign and bypass the cashOut lock — the latch closes that hole.
 
 The "is this a DePrize?" decision is one helper:
 
@@ -53,10 +53,10 @@ So **every** path keeps its exact original behavior unless a registry is set *an
 
 ## Wiring (no MissionCreator change required)
 
-Because the hook resolves the DePrize via `registry.deprizeIdByJBProject(projectId)`, attaching a DePrize to an existing mission is just two owner calls:
+Because the hook resolves the DePrize via `registry.deprizeIdByJBProject(projectId)`, attaching a DePrize to an existing mission is two calls made by **two different owners** (these are distinct trust domains, not a single account):
 
-1. `DePrizeRegistry.register(jbProjectId, teamIds, sunset)` — binds the project to a DePrize.
-2. `hook.setDePrizeRegistry(registryAddress)` — points the mission's hook at the registry.
+1. **Registry admin** (`DePrizeRegistry` owner) calls `DePrizeRegistry.register(jbProjectId, teamIds, sunset)` — binds the project to a DePrize. `register` is `onlyOwner` on the registry.
+2. **Hook owner** (the mission `to` account set in `MissionCreator.createMission`) calls `hook.setDePrizeRegistry(registryAddress)` — points the mission's hook at the registry. `setDePrizeRegistry` is `onlyOwner` on the hook, and is write-once (see above).
 
 No constructor/immutable changes, so the same deployment flow `MissionCreator` already uses still applies.
 
@@ -64,7 +64,7 @@ No constructor/immutable changes, so the same deployment flow `MissionCreator` a
 
 `forge test --match-path 'test/deprize/LaunchPadPayHookDePrize.t.sol'` — **12 passing**, using lightweight mock `IJBTerminalStore` / `IJBRulesets` stand-ins so the gating logic is deterministic and needs no RPC fork:
 
-- setter access control + attach/detach
+- setter access control + write-once latch (detach/repoint and zero-address both revert)
 - backwards compatibility: no registry, and registry-set-but-project-unregistered, both fall through to original pay/cashOut behavior
 - active DePrize: contributions allowed past the immutable deadline, cashOut reverts, `stage() == 1` — across `LOCKED / VOTING / SETTLED / M1_RELEASED / M2_COMPLETE` and `DRAFT`
 - refundable terminals (`CANCELLED / NO_WINNER / M2_FAILED`): cashOut enabled with correct supply math, contributions closed, `stage() == 3`

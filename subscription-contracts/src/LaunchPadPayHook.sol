@@ -54,6 +54,10 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
 
     event DePrizeRegistrySet(address indexed registry);
 
+    /// @notice Thrown when attempting to change `deprizeRegistry` after it has
+    ///         already been set. The assignment is a one-way latch.
+    error DePrizeRegistryAlreadySet();
+
     constructor(
         uint256 _fundingGoal,
         uint256 _deadline,
@@ -77,9 +81,16 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         refundsEnabled = _refundsEnabled;
     }
 
-    /// @notice Attach (or detach, with address(0)) the DePrize registry that governs
-    ///         this hook's project. Owner-gated; defaults to unset.
+    /// @notice Attach the DePrize registry that governs this hook's project.
+    ///         Owner-gated and write-once: once set it can never be detached or
+    ///         repointed. This is deliberate — the hook owner is the mission `to`
+    ///         account (see MissionCreator), which is a different trust domain
+    ///         from the registry admin. A mutable pointer would let that owner
+    ///         drop the registry mid-campaign and bypass the DePrize cashOut lock
+    ///         (re-opening refunds while bets/the prize slice are still live).
     function setDePrizeRegistry(address _registry) external onlyOwner {
+        if (address(deprizeRegistry) != address(0)) revert DePrizeRegistryAlreadySet();
+        require(_registry != address(0), "registry is zero");
         deprizeRegistry = IDePrizeRegistry(_registry);
         emit DePrizeRegistrySet(_registry);
     }

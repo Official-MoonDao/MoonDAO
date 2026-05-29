@@ -208,10 +208,31 @@ contract LaunchPadPayHookDePrizeTest is Test {
     function testSetDePrizeRegistry() public {
         _attach();
         assertEq(address(hook.deprizeRegistry()), address(registry));
-        // detach
+    }
+
+    function testSetDePrizeRegistryRejectsZero() public {
         vm.prank(owner);
+        vm.expectRevert("registry is zero");
         hook.setDePrizeRegistry(address(0));
-        assertEq(address(hook.deprizeRegistry()), address(0));
+    }
+
+    /// @dev One-way latch: once attached, the registry can neither be detached
+    ///      (address(0)) nor repointed, so the mission owner cannot drop the
+    ///      DePrize cashOut lock mid-campaign.
+    function testSetDePrizeRegistryIsOneWay() public {
+        _attach();
+
+        // cannot detach
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("DePrizeRegistryAlreadySet()"));
+        hook.setDePrizeRegistry(address(0));
+
+        // cannot repoint to a different registry
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("DePrizeRegistryAlreadySet()"));
+        hook.setDePrizeRegistry(address(0xDEAD));
+
+        assertEq(address(hook.deprizeRegistry()), address(registry));
     }
 
     // ---------------------------------------------------------------------
@@ -272,11 +293,13 @@ contract LaunchPadPayHookDePrizeTest is Test {
             IDePrizeRegistry.DePrizeState.M1_RELEASED,
             IDePrizeRegistry.DePrizeState.M2_COMPLETE
         ];
+        // attach once: the registry pointer is write-once, and the same registry
+        // serves every project id below
+        _attach();
         for (uint256 i = 0; i < states.length; i++) {
             // fresh project id per iteration so each DePrize binds uniquely
             uint256 projectId = 1000 + i;
             _registerTo(projectId, states[i]);
-            _attach();
             vm.expectRevert("DePrize is active. Refunds are disabled.");
             hook.beforeCashOutRecordedWith(_cashOutCtx(projectId));
             assertEq(hook.stage(address(this), projectId), 1, "active stage should be 1");
