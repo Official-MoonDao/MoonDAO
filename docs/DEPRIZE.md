@@ -1521,8 +1521,12 @@ function stage(address terminal, uint256 projectId) public view returns (uint256
 
     DePrizeState state = registry.state(deprizeId);
 
-    if (state == DePrizeState.CANCELLED || state == DePrizeState.NO_WINNER) {
-        return 3; // Refund stage — cashOut enabled.
+    if (
+        state == DePrizeState.CANCELLED
+            || state == DePrizeState.NO_WINNER
+            || state == DePrizeState.M2_FAILED
+    ) {
+        return 3; // Refund stage — cashOut enabled (matches Registry.isRefundable).
     }
 
     if (state == DePrizeState.SETTLED) {
