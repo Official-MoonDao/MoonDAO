@@ -237,7 +237,7 @@ Bettor payouts (CTF redemption) happen at `M1_RELEASED` — bettors do NOT wait 
 | System | Role | Status |
 |---|---|---|
 | Juicebox V5 + `MissionCreator` | Prize pool custody, `$OVERVIEW` issuance | Exists |
-| Gnosis ConditionalTokens (CTF) | Outcome token accounting, settlement | Exists in `prediction/`; needs Arbitrum deployment |
+| Gnosis ConditionalTokens (CTF) | Outcome token accounting, settlement | External dependency (Gnosis `conditional-tokens-contracts`); needs fresh Arbitrum deployment. `prediction/` only holds legacy LMSR/TWAP market-maker contracts (Solidity 0.5.x) that reference CTF via npm — not a reusable CTF deployment/interface. |
 | Uniswap v4 + `PoolDeployer` | Per-team pool creation | Exists; small extension for early invocation |
 | `Proposals.sol` + Senate | Winner declaration | Exists; small extension for discrete winner selection |
 | MoonDAOTeam NFTs + Hats | Competitor identity & admin gating | Exists, unchanged |
