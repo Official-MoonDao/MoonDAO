@@ -58,7 +58,7 @@ index 5b3fb39f..21296fbd 100644
 diff --git a/subscription-contracts/test/ManualRefundTest.t.sol b/subscription-contracts/test/ManualRefundTest.t.sol
 --- a/subscription-contracts/test/ManualRefundTest.t.sol
 +++ b/subscription-contracts/test/ManualRefundTest.t.sol
-@@ -130,12 +130,6 @@ contract ManualRefundTest is Test, Config {
+@@ -130,11 +130,6 @@ contract ManualRefundTest is Test, Config {
          });
          MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
 -            name: "name",
@@ -90,7 +90,7 @@ index 0eedb883..b50035a8 100644
 diff --git a/subscription-contracts/test/OwnerOnlyPayoutsRulesetTest.t.sol b/subscription-contracts/test/OwnerOnlyPayoutsRulesetTest.t.sol
 --- a/subscription-contracts/test/OwnerOnlyPayoutsRulesetTest.t.sol
 +++ b/subscription-contracts/test/OwnerOnlyPayoutsRulesetTest.t.sol
-@@ -114,12 +114,6 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
+@@ -114,11 +114,6 @@ contract OwnerOnlyPayoutsRulesetTest is Test, Config {
          });
          MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
 -            name: "name",
