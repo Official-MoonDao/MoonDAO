@@ -44,6 +44,9 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     mapping(uint256 => uint256) private _deprizeIdByJBProject;
     mapping(uint256 => mapping(uint256 => bool)) private _isTeam;
 
+    /// @dev Storage gap for future upgrades (50 slots - 4 used = 46).
+    uint256[46] private __gap;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
