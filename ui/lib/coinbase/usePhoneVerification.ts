@@ -27,6 +27,20 @@ function pickVerifiedAt(account: LinkedPhoneAccount | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
+/**
+ * Normalizes a phone number to E.164 (`+` followed by digits only). Privy may
+ * surface numbers with spaces / parens / dashes (e.g. "+1 (202) 555-0123"),
+ * which fail Coinbase's strict E.164 check. Returns null if it can't produce a
+ * plausible E.164 value.
+ */
+export function normalizePhoneE164(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const digits = raw.replace(/\D/g, '')
+  if (!digits) return null
+  const e164 = `+${digits}`
+  return /^\+[1-9]\d{1,14}$/.test(e164) ? e164 : null
+}
+
 export interface PhoneState {
   phoneNumber: string | null
   isLinked: boolean
@@ -52,7 +66,7 @@ export function computePhoneState(
   fallbackNumber: string | null,
   now: number = Date.now()
 ): PhoneState {
-  const phoneNumber = account?.number ?? fallbackNumber ?? null
+  const phoneNumber = normalizePhoneE164(account?.number ?? fallbackNumber ?? null)
   const verifiedAt = pickVerifiedAt(account)
   const isLinked = !!phoneNumber
   const isFresh = !!(
