@@ -338,7 +338,7 @@ The 30/70 split means a winning provider has meaningful liquid funds at demonstr
 | DePrize state | JB cashOut |
 |---|---|
 | `DRAFT`, `OPEN`, `LOCKED`, `VOTING`, `M1_RELEASED` | Disabled (cash-out tax = 100%) |
-| `CANCELLED`, `M2_FAILED` | Enabled (cash-out tax = 0%, linear pro-rata) |
+| `CANCELLED`, `NO_WINNER`, `M2_FAILED` | Enabled (cash-out tax = 0%, linear pro-rata) |
 | `M2_COMPLETE` (post-mission) | Enabled per standard launchpad rules |
 
 During the active campaign, `$OVERVIEW` is still tradeable on whatever Uniswap pools exist (initially none in this simplified design; the existing launchpad `PoolDeployer` creates the `$OVERVIEW/ETH` pool only after mission completion).
