@@ -220,6 +220,13 @@ contract MissionCreator is Ownable, IERC721Receiver {
             amount: uint224(128_000_000 * 10 ** 18), // 128 million ETH, functionally unlimited
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
+        // Third launchpad "valve": a classic mission lets the owner pull surplus
+        // during the funding stage (the 128M allowance) — a trusted-team assumption.
+        // For a prize the pot must stay fully locked for the whole active campaign,
+        // so ruleset 0 gets NO surplus allowance. With no payout limit and no
+        // surplus allowance there, the only exits during an active prize are
+        // contributor refunds (pay hook) and the ruleset-1 payout the approval hook
+        // unlocks at completion. Classic missions are unchanged.
         rulesetConfigurations[0].fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
             terminal: address(terminal),
             token: JBConstants.NATIVE_TOKEN,

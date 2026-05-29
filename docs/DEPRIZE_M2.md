@@ -21,9 +21,11 @@ A launchpad mission is governed by **three** independent gates on the JB project
 |---|---|---|
 | `LaunchPadPayHook.beforePay / beforeCashOut` | contributor pay-ins & refunds | DePrize registry (this milestone) |
 | `LaunchPadApprovalHook.approvalStatusOf` | ruleset 0 → 1 transition = **unlocking team payouts** | DePrize registry (this milestone) |
-| Fund-access limits (`payoutLimits` / `surplusAllowances`) | how much the owner can pull once payouts are unlocked | the active ruleset |
+| Fund-access limits (`payoutLimits` / `surplusAllowances`) | how much the owner can pull, and when | the active ruleset — **locked for prize missions at creation** |
 
 The original "fail if the goal isn't met" behavior lives in the **approval hook**: once `deadline + refundPeriod` elapses it approves the payout ruleset regardless of funding. For an indefinite prize that immutable clock *will* elapse, which would let the team drain the pot mid-campaign even while the pay hook's cashOut lock is active. So M2 makes the approval hook DePrize-aware too: for a prize, payouts unlock **only** when the prize wraps up successfully.
+
+The third valve is the **fund-access limits**. A classic launchpad gives ruleset 0 (funding stage) a functionally-unlimited `surplusAllowances` so the team can pull surplus — a trusted-team assumption, and one that bypasses both the data hook and the registry (`useAllowanceOf` consults neither). That would let a prize's pot leak out during the active campaign regardless of the other two locks, so `MissionCreator` now gives **prize missions zero surplus allowance** in ruleset 0. With no payout limit and no surplus allowance there, the only exits during an active prize are contributor refunds (pay hook, on a refundable terminal) and the ruleset-1 payout the approval hook unlocks at completion. Classic missions are unchanged.
 
 ---
 
