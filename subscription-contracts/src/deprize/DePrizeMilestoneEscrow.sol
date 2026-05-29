@@ -178,14 +178,16 @@ contract DePrizeMilestoneEscrow is
     /// @notice Release the 30% M1 tranche to the winning provider once the
     ///         registry reports `M1_RELEASED`.
     function releaseM1(uint256 deprizeId) external nonReentrant {
-        if (registry.state(deprizeId) != IDePrizeRegistry.DePrizeState.M1_RELEASED) {
-            revert WrongState(deprizeId, registry.state(deprizeId));
+        IDePrizeRegistry.DePrizeState s = registry.state(deprizeId);
+        if (s != IDePrizeRegistry.DePrizeState.M1_RELEASED) {
+            revert WrongState(deprizeId, s);
         }
         if (m1Released[deprizeId]) revert AlreadyReleasedM1(deprizeId);
         address recipient = providerRecipient[deprizeId];
         if (recipient == address(0)) revert RecipientNotSet(deprizeId);
 
         uint256 amount = (deposited[deprizeId] * M1_BPS) / BPS_DENOMINATOR;
+        if (amount == 0) revert ZeroAmount();
         m1Released[deprizeId] = true;
         released[deprizeId] += amount;
         _sendETH(recipient, amount);
@@ -195,8 +197,9 @@ contract DePrizeMilestoneEscrow is
     /// @notice Release the remaining balance to the winning provider once the
     ///         registry reports `M2_COMPLETE`.
     function releaseM2(uint256 deprizeId) external nonReentrant {
-        if (registry.state(deprizeId) != IDePrizeRegistry.DePrizeState.M2_COMPLETE) {
-            revert WrongState(deprizeId, registry.state(deprizeId));
+        IDePrizeRegistry.DePrizeState s = registry.state(deprizeId);
+        if (s != IDePrizeRegistry.DePrizeState.M2_COMPLETE) {
+            revert WrongState(deprizeId, s);
         }
         if (finalized[deprizeId]) revert AlreadyFinalized(deprizeId);
         address recipient = providerRecipient[deprizeId];
@@ -213,8 +216,9 @@ contract DePrizeMilestoneEscrow is
     ///         prize fails after M1 (`M2_FAILED`) for $OVERVIEW-governed
     ///         re-allocation. The 30% already paid at M1 is not clawed back.
     function returnToTreasury(uint256 deprizeId) external nonReentrant {
-        if (registry.state(deprizeId) != IDePrizeRegistry.DePrizeState.M2_FAILED) {
-            revert WrongState(deprizeId, registry.state(deprizeId));
+        IDePrizeRegistry.DePrizeState s = registry.state(deprizeId);
+        if (s != IDePrizeRegistry.DePrizeState.M2_FAILED) {
+            revert WrongState(deprizeId, s);
         }
         if (finalized[deprizeId]) revert AlreadyFinalized(deprizeId);
 
