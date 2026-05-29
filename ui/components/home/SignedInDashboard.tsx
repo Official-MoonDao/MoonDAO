@@ -713,8 +713,8 @@ export default function SignedInDashboard({
                     const image = t.image || t.metadata?.image
                     const description = (t.description || t.metadata?.description || '')
                       .replace(/<[^>]*>/g, '').trim()
-                    const href = name && t.id
-                      ? `/team/${generatePrettyLink(name)}-${t.id}`
+                    const href = name
+                      ? `/team/${generatePrettyLink(name)}`
                       : `/team/${t.id}`
                     return (
                       <Link
