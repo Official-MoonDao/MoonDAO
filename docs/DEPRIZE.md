@@ -981,7 +981,7 @@ Bettors opt in at bet time to "cancellation insurance" by paying an extra 1% pre
 - **3-way `$OVERVIEW`-holder proposal** (7-day discussion + 7-day vote, with optional 7-day runoff if no option clears 40%).
 - **7-day cooling-off period** after vote conclusion before any migration transaction executes. During this window, any holder can call the existing refund payhook individually (effectively choosing Option 3 for themselves). This applies regardless of margin; narrow-margin wins get an additional 14-day opt-out window per §Migration risks.
 - Branch on outcome:
-  - **Option 1 (Unified DePrize)**: register Frank JB project as DePrize #0 with all three providers + current quotes + preference order; seed team pools; transition `OPEN`. Begin monitoring.
+  - **Option 1 (Unified DePrize)**: register Frank JB project as the first DePrize (id `1`; `0` is reserved as the "no DePrize attached" sentinel) with all three providers + current quotes + preference order; seed team pools; transition `OPEN`. Begin monitoring.
   - **Option 2 (Zephalto direct)**: admin Safe places 20% deposit with Zephalto for 2 seats; follow-up fundraise begins. DePrize contracts remain deployed for future missions.
   - **Option 3 (Refunds)**: activate JB refund payhook per Overview Effect Terms Section 8. DePrize contracts remain deployed for future missions.
 - Post-vote retro regardless of outcome.
