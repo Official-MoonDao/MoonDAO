@@ -321,7 +321,10 @@ export default function RecentActivity({
         title: l.name || l.title || `Listing #${l.id}`,
         subtitle: l.description && typeof l.description === 'string' ? l.description : undefined,
         image: l.image,
-        link: `/marketplace/${l.id}`,
+        link:
+          l.teamId != null
+            ? `/team/${l.teamId}?listing=${l.id}`
+            : '/marketplace',
         timestamp: l.timestamp ? Number(l.timestamp) * 1000 : undefined,
       })
     }
