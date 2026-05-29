@@ -24,6 +24,7 @@ import {
   getOnrampNetworkName,
   parseOnrampMessage,
   mapOnrampEvent,
+  isCoinbaseOrigin,
 } from '@/lib/coinbase/headlessEvents'
 
 interface CBHeadlessOnrampProps {
@@ -97,6 +98,15 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
   const [debouncedEthAmount, setDebouncedEthAmount] = useState(ethAmount)
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
+
+  // Hold the latest onQuoteCalculated in a ref so callers don't have to memoize
+  // it: otherwise a new function identity on each parent render would land in
+  // the quote-fetch effect deps and re-trigger the ETH-price + buy-quote round
+  // trip on every render.
+  const onQuoteCalculatedRef = useRef(onQuoteCalculated)
+  useEffect(() => {
+    onQuoteCalculatedRef.current = onQuoteCalculated
+  }, [onQuoteCalculated])
 
   // Track latest status in a ref so the postMessage listener can read it
   // without re-subscribing on every status change.
@@ -208,15 +218,15 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
             fees,
             quoteId,
           })
-          onQuoteCalculated?.(receivedEth, subtotal, total, fees)
+          onQuoteCalculatedRef.current?.(receivedEth, subtotal, total, fees)
         } else {
-          onQuoteCalculated?.(0, 0, 0, 0)
+          onQuoteCalculatedRef.current?.(0, 0, 0, 0)
           setError('Invalid final quote data from Coinbase')
         }
       } catch (err: any) {
         console.error('[CBHeadlessOnramp] quote error:', err)
         setError('Failed to fetch quote from Coinbase. Please try again.')
-        onQuoteCalculated?.(0, 0, 0, 0)
+        onQuoteCalculatedRef.current?.(0, 0, 0, 0)
       } finally {
         setIsLoadingQuote(false)
       }
@@ -229,7 +239,6 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
     selectedChain,
     isArbitrum,
     isWaitingForGasEstimate,
-    onQuoteCalculated,
   ])
 
   // ---------------------------------------------------------------------------
@@ -240,8 +249,18 @@ export const CBHeadlessOnramp: React.FC<CBHeadlessOnrampProps> = ({
   useEffect(() => {
     if (!paymentLinkUrl) return
     const handler = (event: MessageEvent) => {
-      // We can't always pin to a Coinbase origin (sandbox uses different host),
-      // so we parse defensively and only act on well-formed onramp_api.* messages.
+      // Security: only trust messages from a Coinbase origin. Without this, any
+      // other frame/tab could spoof onramp_api.polling_success and trigger the
+      // on-chain auto-transaction. Both prod and sandbox links are served from
+      // pay.coinbase.com. When the event came from our iframe we additionally
+      // confirm the source window matches.
+      if (!isCoinbaseOrigin(event.origin)) return
+      if (
+        iframeRef.current?.contentWindow &&
+        event.source !== iframeRef.current.contentWindow
+      ) {
+        return
+      }
       const parsed = parseOnrampMessage(event.data)
       const result = mapOnrampEvent(parsed, statusRef.current)
       if (result.ignored) return

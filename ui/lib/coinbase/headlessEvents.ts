@@ -101,12 +101,17 @@ export interface OnrampEventResult {
 
 /**
  * Safely parses a postMessage payload into an OnrampPostMessage, or null if it
- * isn't a well-formed object/JSON string.
+ * isn't a well-formed object/JSON string. Primitive JSON (numbers, strings,
+ * booleans, null) is rejected so the helper only ever yields an object.
  */
 export function parseOnrampMessage(data: unknown): OnrampPostMessage | null {
   try {
     if (typeof data === 'string') {
-      return JSON.parse(data)
+      const result = JSON.parse(data)
+      if (result && typeof result === 'object') {
+        return result as OnrampPostMessage
+      }
+      return null
     }
     if (data && typeof data === 'object') {
       return data as OnrampPostMessage
@@ -115,6 +120,27 @@ export function parseOnrampMessage(data: unknown): OnrampPostMessage | null {
     return null
   }
   return null
+}
+
+/**
+ * Returns true when a postMessage event originated from a trusted Coinbase host.
+ * Both production and sandbox payment links are served from `pay.coinbase.com`,
+ * so this mirrors the allowlist used elsewhere in the app (PrivyConnectWallet).
+ */
+export function isCoinbaseOrigin(origin: string | undefined | null): boolean {
+  if (!origin) return false
+  let hostname: string
+  try {
+    hostname = new URL(origin).hostname
+  } catch {
+    return false
+  }
+  return (
+    hostname === 'coinbase.com' ||
+    hostname.endsWith('.coinbase.com') ||
+    hostname === 'cb-pay.com' ||
+    hostname.endsWith('.cb-pay.com')
+  )
 }
 
 /**

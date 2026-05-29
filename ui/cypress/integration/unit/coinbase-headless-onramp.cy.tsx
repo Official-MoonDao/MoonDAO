@@ -32,6 +32,7 @@ import {
   getQuoteNetworkName,
   getOnrampNetworkName,
   parseOnrampMessage,
+  isCoinbaseOrigin,
   mapOnrampEvent,
 } from '../../../lib/coinbase/headlessEvents'
 import {
@@ -463,6 +464,36 @@ describe('Coinbase Headless Onramp — postMessage parsing', () => {
     expect(parseOnrampMessage(42)).to.equal(null)
     expect(parseOnrampMessage(null)).to.equal(null)
     expect(parseOnrampMessage(undefined)).to.equal(null)
+  })
+
+  it('returns null for primitive JSON strings (number/string/bool)', () => {
+    expect(parseOnrampMessage('42')).to.equal(null)
+    expect(parseOnrampMessage('"x"')).to.equal(null)
+    expect(parseOnrampMessage('true')).to.equal(null)
+    expect(parseOnrampMessage('null')).to.equal(null)
+  })
+})
+
+describe('Coinbase Headless Onramp — postMessage origin allowlist', () => {
+  it('accepts coinbase.com and subdomains', () => {
+    expect(isCoinbaseOrigin('https://coinbase.com')).to.equal(true)
+    expect(isCoinbaseOrigin('https://pay.coinbase.com')).to.equal(true)
+    expect(isCoinbaseOrigin('https://pay.cb-pay.com')).to.equal(true)
+    expect(isCoinbaseOrigin('https://cb-pay.com')).to.equal(true)
+  })
+
+  it('rejects look-alike and unrelated origins', () => {
+    expect(isCoinbaseOrigin('https://coinbase.com.evil.com')).to.equal(false)
+    expect(isCoinbaseOrigin('https://notcoinbase.com')).to.equal(false)
+    expect(isCoinbaseOrigin('https://evil.com')).to.equal(false)
+    expect(isCoinbaseOrigin('https://fakecb-pay.com')).to.equal(false)
+  })
+
+  it('rejects empty / malformed origins', () => {
+    expect(isCoinbaseOrigin('')).to.equal(false)
+    expect(isCoinbaseOrigin(null)).to.equal(false)
+    expect(isCoinbaseOrigin(undefined)).to.equal(false)
+    expect(isCoinbaseOrigin('not a url')).to.equal(false)
   })
 })
 
