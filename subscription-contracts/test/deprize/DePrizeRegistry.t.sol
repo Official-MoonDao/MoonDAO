@@ -365,11 +365,20 @@ contract DePrizeRegistryTest is Test {
     // ---------------------------------------------------------------------
 
     function testCancellationFlow() public {
+        // Pin block.timestamp to a fixed literal up front and derive the
+        // cancellation-window math from that constant rather than re-reading
+        // block.timestamp. vm.warp mutates block.timestamp out-of-band, but the
+        // EVM TIMESTAMP opcode is invariant within a transaction, so the coverage
+        // build's IR optimizer can cache a value read from block.timestamp and it
+        // would then drift across the warps below.
+        uint256 noticeAt = 2_000_000_000;
+        vm.warp(noticeAt);
+        uint256 executableAt = noticeAt + 7 days;
+
         uint256 id = _registerAndOpen();
-        uint256 noticeAt = block.timestamp;
 
         vm.expectEmit(true, false, false, true);
-        emit CancellationAnnounced(id, noticeAt, noticeAt + 7 days);
+        emit CancellationAnnounced(id, noticeAt, executableAt);
         vm.prank(owner);
         registry.announceCancellation(id);
 
@@ -379,20 +388,20 @@ contract DePrizeRegistryTest is Test {
         // too early
         vm.prank(owner);
         vm.expectRevert(
-            abi.encodeWithSelector(IDePrizeRegistry.CancellationNoticeNotElapsed.selector, id, noticeAt + 7 days)
+            abi.encodeWithSelector(IDePrizeRegistry.CancellationNoticeNotElapsed.selector, id, executableAt)
         );
         registry.cancel(id);
 
         // still too early at 7 days minus 1
-        vm.warp(noticeAt + 7 days - 1);
+        vm.warp(executableAt - 1);
         vm.prank(owner);
         vm.expectRevert(
-            abi.encodeWithSelector(IDePrizeRegistry.CancellationNoticeNotElapsed.selector, id, noticeAt + 7 days)
+            abi.encodeWithSelector(IDePrizeRegistry.CancellationNoticeNotElapsed.selector, id, executableAt)
         );
         registry.cancel(id);
 
         // exactly at the window
-        vm.warp(noticeAt + 7 days);
+        vm.warp(executableAt);
         vm.prank(owner);
         registry.cancel(id);
         assertEq(uint256(registry.state(id)), uint256(IDePrizeRegistry.DePrizeState.CANCELLED));
