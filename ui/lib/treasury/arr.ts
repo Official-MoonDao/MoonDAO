@@ -39,6 +39,9 @@ interface DeFiData {
 }
 
 const TEAM_DISCOUNT = 0.067
+// Re-exported so other modules (e.g. the EB tracker endpoint) can apply the
+// exact same team-price discount without copying the magic number.
+export { TEAM_DISCOUNT }
 
 async function getEthPrice(): Promise<number> {
   try {
