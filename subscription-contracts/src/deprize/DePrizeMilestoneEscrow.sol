@@ -262,6 +262,8 @@ contract DePrizeMilestoneEscrow is Initializable, OwnableUpgradeable, UUPSUpgrad
     /// @notice Return the escrow balance to the JB project on a refundable,
     ///         pre-provider terminal (`CANCELLED` or `NO_WINNER`), raising the
     ///         $OVERVIEW cashOut value so contributors can reclaim their floor.
+    ///         If a winner was declared (meaning M1 was earned), the provider's
+    ///         30% M1 tranche is paid first and only the remainder is refunded.
     function refundToJB(uint256 deprizeId) external nonReentrant {
         IDePrizeRegistry.DePrizeState s = registry.state(deprizeId);
         if (s != IDePrizeRegistry.DePrizeState.CANCELLED && s != IDePrizeRegistry.DePrizeState.NO_WINNER) {
@@ -269,9 +271,22 @@ contract DePrizeMilestoneEscrow is Initializable, OwnableUpgradeable, UUPSUpgrad
         }
         if (finalized[deprizeId]) revert AlreadyFinalized(deprizeId);
 
+        finalized[deprizeId] = true;
+
+        if (!m1Released[deprizeId]) {
+            uint256 m1 = (deposited[deprizeId] * M1_BPS) / BPS_DENOMINATOR;
+            if (m1 > 0 && registry.winningTeamId(deprizeId) != 0) {
+                address recipient = providerRecipient[deprizeId];
+                if (recipient == address(0)) revert RecipientNotSet(deprizeId);
+                m1Released[deprizeId] = true;
+                released[deprizeId] += m1;
+                _sendETH(recipient, m1);
+                emit M1Released(deprizeId, recipient, m1);
+            }
+        }
+
         uint256 projectId = registry.getDePrize(deprizeId).jbProjectId;
         uint256 amount = deposited[deprizeId] - released[deprizeId];
-        finalized[deprizeId] = true;
         released[deprizeId] = deposited[deprizeId];
 
         if (amount > 0) {
