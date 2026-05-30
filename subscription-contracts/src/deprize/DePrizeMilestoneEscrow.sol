@@ -204,18 +204,23 @@ contract DePrizeMilestoneEscrow is Initializable, OwnableUpgradeable, UUPSUpgrad
             revert WrongState(deprizeId, s);
         }
         if (finalized[deprizeId]) revert AlreadyFinalized(deprizeId);
-        address recipient = providerRecipient[deprizeId];
-        if (recipient == address(0)) revert RecipientNotSet(deprizeId);
 
         // Finalizers must always be able to finalize, even with a zero balance,
         // so a fully-resolved prize never gets stuck un-finalized (consistent
-        // with refundToJB). _sendETH no-ops on zero. (releaseM1 keeps its zero
-        // guard because it is intermediate, not a finalizer: a zero-amount M1
-        // would prematurely lock the recipient with nothing paid.)
+        // with refundToJB and returnToTreasury). Only check recipient when
+        // there's an amount to pay — this allows zero-balance finalization
+        // without a recipient set. (releaseM1 keeps its zero guard because it is
+        // intermediate, not a finalizer: a zero-amount M1 would prematurely lock
+        // the recipient with nothing paid.)
         uint256 amount = deposited[deprizeId] - released[deprizeId];
         finalized[deprizeId] = true;
         released[deprizeId] = deposited[deprizeId];
-        _sendETH(recipient, amount);
+
+        address recipient = providerRecipient[deprizeId];
+        if (amount > 0) {
+            if (recipient == address(0)) revert RecipientNotSet(deprizeId);
+            _sendETH(recipient, amount);
+        }
         emit M2Released(deprizeId, recipient, amount);
     }
 
