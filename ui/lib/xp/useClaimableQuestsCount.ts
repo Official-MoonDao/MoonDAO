@@ -77,16 +77,21 @@ export function useClaimableQuestsCount(userAddress?: string): number | null {
           }
           if (claimed) return false
 
-          // 2. Check eligibility via the quest's backend API. Send the token
-          // in the POST body rather than the query string to avoid leaking it
-          // via logs/history. The proof routes return an explicit `eligible`
-          // boolean that already applies the per-verifier threshold.
+          // 2. Check eligibility via the quest's backend API. This MUST be a
+          // GET: on every proof route GET only *checks* eligibility and is
+          // side-effect free, whereas POST signs an oracle proof and relays an
+          // on-chain XP claim transaction (`submit*ClaimFor`). This hook is a
+          // passive count for a dashboard badge, so it must never use the
+          // claim verb — otherwise merely loading the dashboard would
+          // auto-claim every eligible quest on the user's behalf. Mirror the
+          // read-only eligibility fetch in `components/xp/Quest.tsx`. The proof
+          // routes return an explicit `eligible` boolean that already applies
+          // the per-verifier threshold.
           try {
-            const res = await fetch(v.route, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user: userAddress, accessToken }),
-            })
+            const res = await fetch(
+              `${v.route}?user=${userAddress}&accessToken=${accessToken}`,
+              { method: 'GET' }
+            )
             if (!res.ok) return false
             const data = await res.json()
             return Boolean(data.eligible)
