@@ -8,6 +8,11 @@
 //   - whether you hold vMOONEY (i.e. you're eligible to check in there)
 //   - whether your lastCheckIn == weekStart (i.e. you ARE checked in there)
 
+// NOTE: These FeeHook / vMOONEY addresses are duplicated from the app config
+// (FEE_HOOK_ADDRESSES in ui/const/config.ts, sourced from
+// contracts/deployments/<chain>.json, and the vMOONEY config). They are
+// hardcoded here only so this stays a zero-dependency standalone .mjs you can
+// run with plain `node`. If a FeeHook is ever redeployed, update both places.
 const CHAINS = [
   {
     name: 'ethereum',

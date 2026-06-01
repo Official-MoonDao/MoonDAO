@@ -12,17 +12,10 @@ import toast from 'react-hot-toast'
 import { getContract, readContract, prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { useActiveAccount } from 'thirdweb/react'
-import {
-  arbitrum,
-  base,
-  ethereum,
-  sepolia,
-  arbitrumSepolia,
-  Chain,
-} from '@/lib/rpc/chains'
 import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { arbitrum, base, ethereum, sepolia, arbitrumSepolia, Chain } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -54,8 +47,7 @@ async function safeRead<T>(
     } catch (err: any) {
       const isLast = attempt === retries
       const isBufferDecodeError =
-        err?.message?.includes("reading 'buffer'") ||
-        err?.message?.includes('decodeAbiParameters')
+        err?.message?.includes("reading 'buffer'") || err?.message?.includes('decodeAbiParameters')
       if (!isLast && isBufferDecodeError) {
         await sleep(baseDelay * Math.pow(2, attempt))
         continue
@@ -196,135 +188,124 @@ export default function WeeklyRewardPool() {
     // when the user tried to check in. Isolate failures per-chain so the
     // remaining chains still populate.
     const raw = await Promise.all(
-        chains.map(async (chain) => {
-          const slug = getChainSlug(chain)
-          try {
-            const hookAddress = FEE_HOOK_ADDRESSES[slug]
-            if (!hookAddress) return null
+      chains.map(async (chain) => {
+        const slug = getChainSlug(chain)
+        try {
+          const hookAddress = FEE_HOOK_ADDRESSES[slug]
+          if (!hookAddress) return null
 
-            const contract = getContract({
-              client,
-              address: hookAddress,
-              abi: FeeHook.abi as any,
-              chain,
-            })
+          const contract = getContract({
+            client,
+            address: hookAddress,
+            abi: FeeHook.abi as any,
+            chain,
+          })
 
-            const [start, last, count, vMooneyAddress] = await Promise.all([
-              safeRead(
-                () => readContract({ contract, method: 'weekStart', params: [] }),
-                `${slug}.weekStart`
-              ),
-              safeRead(
-                () =>
-                  readContract({
-                    contract,
-                    method: 'lastCheckIn',
-                    params: [address],
-                  }),
-                `${slug}.lastCheckIn`
-              ),
-              safeRead(
-                () =>
-                  readContract({
-                    contract,
-                    method: 'getCheckedInCount',
-                    params: [],
-                  }),
-                `${slug}.getCheckedInCount`
-              ),
-              safeRead(
-                () =>
-                  readContract({
-                    contract,
-                    method: 'vMooneyAddress',
-                    params: [],
-                  }),
-                `${slug}.vMooneyAddress`
-              ),
-            ])
-
-            // Drop the chain only if the truly required reads are missing
-            // after retries. Previously a single rejected read would null
-            // out the whole chain, which is what was making Arbitrum's
-            // check-in count silently disappear.
-            if (start == null || vMooneyAddress == null) {
-              console.warn(
-                `Skipping ${slug}: missing required FeeHook reads (start=${start}, vMooneyAddress=${vMooneyAddress})`
-              )
-              return null
-            }
-
-            const vMooneyContract = getContract({
-              client,
-              address: vMooneyAddress as `0x${string}`,
-              abi: ERC20ABI as any,
-              chain,
-            })
-
-            const vMooneyBalance = await safeRead(
+          const [start, last, count, vMooneyAddress] = await Promise.all([
+            safeRead(
+              () => readContract({ contract, method: 'weekStart', params: [] }),
+              `${slug}.weekStart`
+            ),
+            safeRead(
               () =>
                 readContract({
-                  contract: vMooneyContract,
-                  method: 'balanceOf',
+                  contract,
+                  method: 'lastCheckIn',
                   params: [address],
                 }),
-              `${slug}.balanceOf`
+              `${slug}.lastCheckIn`
+            ),
+            safeRead(
+              () =>
+                readContract({
+                  contract,
+                  method: 'getCheckedInCount',
+                  params: [],
+                }),
+              `${slug}.getCheckedInCount`
+            ),
+            safeRead(
+              () =>
+                readContract({
+                  contract,
+                  method: 'vMooneyAddress',
+                  params: [],
+                }),
+              `${slug}.vMooneyAddress`
+            ),
+          ])
+
+          // Drop the chain only if the truly required reads are missing
+          // after retries. Previously a single rejected read would null
+          // out the whole chain, which is what was making Arbitrum's
+          // check-in count silently disappear.
+          if (start == null || vMooneyAddress == null) {
+            console.warn(
+              `Skipping ${slug}: missing required FeeHook reads (start=${start}, vMooneyAddress=${vMooneyAddress})`
             )
-
-            const balance = (vMooneyBalance as bigint | null) ?? BigInt(0)
-            const safeLast = (last as bigint | null) ?? BigInt(0)
-            const safeCount = (count as bigint | null) ?? BigInt(0)
-            const hasVMooney = balance > BigInt(0)
-
-            return {
-              chain,
-              slug,
-              contract,
-              start: start as bigint,
-              last: safeLast,
-              count: safeCount,
-              vMooneyBalance: balance,
-              hasVMooney,
-              checkedInOnChain: safeLast === (start as bigint),
-            }
-          } catch (err) {
-            console.error(`Error fetching check-in status for ${slug}:`, err)
             return null
           }
-        })
-      )
 
-      const results = raw.filter((r) => r) as Array<{
-        chain: any
-        slug: string
-        contract: any
-        start: bigint
-        last: bigint
-        count: bigint
-        vMooneyBalance: bigint
-        hasVMooney: boolean
-        checkedInOnChain: boolean
-      }>
+          const vMooneyContract = getContract({
+            client,
+            address: vMooneyAddress as `0x${string}`,
+            abi: ERC20ABI as any,
+            chain,
+          })
 
-      setFeeData(results)
+          const vMooneyBalance = await safeRead(
+            () =>
+              readContract({
+                contract: vMooneyContract,
+                method: 'balanceOf',
+                params: [address],
+              }),
+            `${slug}.balanceOf`
+          )
 
-      // Only chains where the user actually holds vMOONEY are eligible for
-      // check-in (the FeeHook reverts otherwise). The "checked in" state
-      // should therefore only consider those chains; otherwise a user who
-      // has vMOONEY on one chain (e.g. Arbitrum) and is already checked in
-      // there would be incorrectly shown as "not checked in" because they
-      // have a 0 balance on the other chains.
-      const eligibleChains = results.filter((r) => r.hasVMooney)
-      const totalCount = results.reduce(
-        (acc, { count }) => acc + Number(count || BigInt(0)),
-        0
-      )
-      const allChecked =
-        eligibleChains.length > 0 &&
-        eligibleChains.every(({ checkedInOnChain }) => checkedInOnChain)
+          const balance = (vMooneyBalance as bigint | null) ?? BigInt(0)
+          const safeLast = (last as bigint | null) ?? BigInt(0)
+          const safeCount = (count as bigint | null) ?? BigInt(0)
+          const hasVMooney = balance > BigInt(0)
 
-      setCheckedInCount(totalCount)
-      setIsCheckedIn(allChecked)
+          return {
+            chain,
+            slug,
+            contract,
+            start: start as bigint,
+            last: safeLast,
+            count: safeCount,
+            vMooneyBalance: balance,
+            hasVMooney,
+            checkedInOnChain: safeLast === (start as bigint),
+          }
+        } catch (err) {
+          console.error(`Error fetching check-in status for ${slug}:`, err)
+          return null
+        }
+      })
+    )
+
+    const results = raw.filter((r) => r) as Array<{
+      chain: any
+      slug: string
+      contract: any
+      start: bigint
+      last: bigint
+      count: bigint
+      vMooneyBalance: bigint
+      hasVMooney: boolean
+      checkedInOnChain: boolean
+    }>
+
+    setFeeData(results)
+
+    // checkedInCount is the only thing derived here now. The button's
+    // isCheckedIn state is derived from feeData in a dedicated effect below,
+    // giving a single source of truth that also covers the optimistic
+    // update applied right after a check-in.
+    const totalCount = results.reduce((acc, { count }) => acc + Number(count || BigInt(0)), 0)
+    setCheckedInCount(totalCount)
   }, [address, chains, WEEK])
 
   useEffect(() => {
@@ -338,9 +319,7 @@ export default function WeeklyRewardPool() {
   useEffect(() => {
     if (!feeData || feeData.length === 0) return
     const eligibleChains = feeData.filter((d) => d.hasVMooney)
-    const allChecked =
-      eligibleChains.length > 0 &&
-      eligibleChains.every((d) => d.checkedInOnChain)
+    const allChecked = eligibleChains.length > 0 && eligibleChains.every((d) => d.checkedInOnChain)
     setIsCheckedIn(allChecked)
   }, [feeData])
 
@@ -386,8 +365,7 @@ export default function WeeklyRewardPool() {
       // actionable. Returns true only once the wallet actually reports the
       // target chain.
       const switchToChain = async (chain: any): Promise<boolean> => {
-        const alreadyOn = () =>
-          +wallets[selectedWallet]?.chainId?.split(':')[1] === chain.id
+        const alreadyOn = () => +wallets[selectedWallet]?.chainId?.split(':')[1] === chain.id
         if (alreadyOn()) return true
 
         for (let attempt = 0; attempt < 2; attempt++) {
@@ -497,7 +475,12 @@ export default function WeeklyRewardPool() {
                 }),
               ])
               if (ws != null && lc != null) {
-                return BigInt(lc as any) === BigInt(ws as any)
+                // weekStart === 0 means the hook is uninitialized / the RPC
+                // returned an empty read. Treating 0 === 0 as "checked in"
+                // would reintroduce the phantom-success bug, so require a
+                // real (non-zero) week boundary before trusting the match.
+                const wsBig = BigInt(ws as any)
+                return wsBig !== BigInt(0) && BigInt(lc as any) === wsBig
               }
             } catch (err) {
               console.warn(`verify lastCheckIn failed for ${slug}:`, err)
@@ -554,8 +537,7 @@ export default function WeeklyRewardPool() {
               // Genuine, unexpected failure on this chain. Don't abort the
               // whole loop — move on so other chains still get a chance.
               console.error(`Check-in failed for ${slug}:`, error)
-              lastError =
-                error?.shortMessage || error?.message || 'Transaction failed'
+              lastError = error?.shortMessage || error?.message || 'Transaction failed'
               break
             }
           }
@@ -583,9 +565,7 @@ export default function WeeklyRewardPool() {
       if (checkedInChainIds.size > 0) {
         setFeeData((prev) =>
           prev.map((d) =>
-            checkedInChainIds.has(d.chain.id)
-              ? { ...d, checkedInOnChain: true }
-              : d
+            checkedInChainIds.has(d.chain.id) ? { ...d, checkedInOnChain: true } : d
           )
         )
       }
@@ -733,7 +713,12 @@ export default function WeeklyRewardPool() {
               >
                 <span>Learn about rewards</span>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </Link>
               <div
