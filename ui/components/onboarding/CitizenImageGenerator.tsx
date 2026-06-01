@@ -43,7 +43,12 @@ export function ImageGenerator({
   nextStage,
   generateInBG,
   onGenerationStateChange, // Add this prop
+  onCrop, // Lifts the cropped upload to the parent (used for "Use my photo")
 }: any) {
+  // In the onboarding flow we generate in the background and advance to the next
+  // step immediately; the AI image (and Regenerate / Use-my-photo choices) then
+  // live on the Review step. Standalone usages (e.g. the edit modal) stay put.
+  const isBackgroundFlow = !!(generateInBG && nextStage)
   const [originalInputImage, setOriginalInputImage] = useState<File | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [croppedImage, setCroppedImage] = useState<File | null>(null)
@@ -125,14 +130,21 @@ export function ImageGenerator({
         cropArea.size
       )
 
-      // Store the cropped image for fallback
+      // Store the cropped image for fallback / "Use my photo" and lift to parent
       setCroppedImage(croppedFile)
+      onCrop?.(croppedFile)
 
       setImage(null) // Clear any existing generated image
       setShowError(false)
 
-      // Generate the AI image using the cropped version (pass directly to avoid mutating inputImage)
-      await generateImage(croppedFile)
+      // Kick off generation. In the background flow we don't await it — we
+      // advance to the next step and let it finish off-screen.
+      const generationPromise = generateImage(croppedFile)
+      if (isBackgroundFlow) {
+        nextStage?.()
+      } else {
+        await generationPromise
+      }
     } catch (error) {
       console.error('Error cropping or generating image:', error)
       setIsGenerating(false)
@@ -149,6 +161,58 @@ export function ImageGenerator({
     setImage,
     generateImage,
     onGenerationStateChange,
+    onCrop,
+    isBackgroundFlow,
+    nextStage,
+  ])
+
+  // Regenerate using the existing crop (no re-upload / re-crop needed).
+  const handleRegenerate = useCallback(async () => {
+    setIsGenerating(true)
+    setImage(null)
+    setHasGeneratedImage(false)
+    setShowError(false)
+    let cropped = croppedImage
+    if (!cropped && inputImage) {
+      cropped = await cropImageWithCoordinates(
+        inputImage,
+        cropArea.x,
+        cropArea.y,
+        cropArea.size
+      )
+      setCroppedImage(cropped)
+      onCrop?.(cropped)
+    }
+    await generateImage(cropped || undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [croppedImage, inputImage, cropArea.x, cropArea.y, cropArea.size, generateImage, onCrop, setImage])
+
+  // Use the user's own (cropped) photo instead of the AI version.
+  const handleUseMyPhoto = useCallback(async () => {
+    let cropped = croppedImage
+    if (!cropped && inputImage) {
+      cropped = await cropImageWithCoordinates(
+        inputImage,
+        cropArea.x,
+        cropArea.y,
+        cropArea.size
+      )
+    }
+    if (cropped) {
+      setCroppedImage(cropped)
+      setImage(cropped)
+      setHasGeneratedImage(false)
+      if (isBackgroundFlow) nextStage?.()
+    }
+  }, [
+    croppedImage,
+    inputImage,
+    cropArea.x,
+    cropArea.y,
+    cropArea.size,
+    setImage,
+    isBackgroundFlow,
+    nextStage,
   ])
 
   // When generation completes (success or failure), update image and reset local generating
@@ -724,88 +788,86 @@ export function ImageGenerator({
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Primary action: position the crop, then generate (defaults to AI) */}
       {inputImage && !image && !generating && (
         <div className="flex flex-col gap-2">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
-              onClick={handleGenerateImage}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
-              Generate AI Photo
-            </button>
-            <button
-              className="flex-1 py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
-              onClick={handleUseCroppedImage}
-            >
-              Use Cropped Image
-            </button>
-          </div>
-          <p className="text-xs text-slate-500 px-1 text-center sm:text-left">
-            AI generation usually takes 30–60 seconds.
-          </p>
-        </div>
-      )}
-
-      {inputImage && (image || generating) && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          {!generating && (
-            <button
-              className="py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-medium text-white text-sm"
-              onClick={() => {
-                if (originalInputImage) {
-                  setIsReCropping(true)
-                  setInputImage(originalInputImage)
-                  setCroppedImage(null)
-                  setImage(null)
-                  setHasGeneratedImage(false)
-                  setShowError(false)
-                  const minDimension = Math.min(imageSize.width, imageSize.height)
-                  setCropArea({
-                    x: (imageSize.width - minDimension) / 2,
-                    y: (imageSize.height - minDimension) / 2,
-                    size: minDimension,
-                  })
-                }
-              }}
-            >
-              Re-crop
-            </button>
-          )}
           <button
-            className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
-            onClick={() => {
-              setIsGenerating(true)
-              setImage(null)
-              setHasGeneratedImage(false)
-              setShowError(false)
-              generateImage(croppedImage || undefined)
-            }}
+            className="w-full py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
+            onClick={handleGenerateImage}
           >
-            {generating ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Generating…
-              </>
-            ) : hasGeneratedImage ? (
-              'Regenerate'
-            ) : (
-              'Generate AI Photo'
-            )}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
+            </svg>
+            Generate AI Photo
+          </button>
+          <p className="text-xs text-slate-500 px-1 text-center">
+            Position the crop on the face, then generate.{' '}
+            {isBackgroundFlow
+              ? 'Takes ~30–60s — you can keep going while it renders.'
+              : 'Usually takes 30–60 seconds.'}
+          </p>
+          <button
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2 mx-auto"
+            onClick={handleUseCroppedImage}
+          >
+            Skip AI and use my photo
           </button>
         </div>
       )}
 
-      {/* Next / Continue — hidden when nextStage is not provided */}
-      {nextStage && ((currImage && !inputImage) || image || (generateInBG && inputImage)) && (
+      {/* Post-generation choices (in-component for standalone / edit usage; the
+          onboarding flow surfaces the same choices on the Review step). */}
+      {inputImage && (image || generating) && (
+        <div className="flex flex-col gap-3">
+          {generating ? (
+            <button
+              disabled
+              className="w-full py-3 px-6 gradient-2 opacity-70 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 cursor-not-allowed"
+            >
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Generating…
+            </button>
+          ) : (
+            <>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
+                  onClick={handleRegenerate}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Regenerate
+                </button>
+                <button
+                  className="flex-1 py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+                  onClick={handleUseMyPhoto}
+                >
+                  Use my photo instead
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Next / Continue — only once an image exists (generation auto-advances) */}
+      {nextStage && !generating && ((currImage && !inputImage) || image) && (
         <button
           className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
           onClick={submitImage}
