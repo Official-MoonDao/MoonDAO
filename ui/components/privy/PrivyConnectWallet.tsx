@@ -564,7 +564,14 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
   const { data: _ensData } = useENS(address)
   const ens = _ensData?.name
   const [walletChainId, setWalletChainId] = useState(1)
-  const { logout, user, authenticated, connectWallet, exportWallet }: any = usePrivy()
+  const {
+    logout,
+    user,
+    authenticated,
+    connectWallet,
+    exportWallet,
+    unlinkWallet,
+  }: any = usePrivy()
 
   // Available chains for the network selector
   const availableChains = [
@@ -1339,9 +1346,29 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                             wallet.walletClientType !== 'privy' && (
                               <button
                                 className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation()
-                                  wallet.disconnect()
+                                  try {
+                                    // Disconnect the active session first.
+                                    wallet.disconnect()
+                                    // Unlink the wallet from the Privy account
+                                    // so it doesn't immediately reappear in the
+                                    // list. Only linked wallets can be
+                                    // unlinked, so guard against errors.
+                                    if (unlinkWallet) {
+                                      await unlinkWallet(wallet.address)
+                                    }
+                                    // If we just removed the currently selected
+                                    // wallet, reset the selection to the first
+                                    // remaining wallet.
+                                    setSelectedWallet(0)
+                                  } catch (err) {
+                                    console.warn(
+                                      'Failed to disconnect wallet:',
+                                      err
+                                    )
+                                    toast.error('Unable to disconnect wallet.')
+                                  }
                                 }}
                               >
                                 <XMarkIcon className="w-4 h-4" />
