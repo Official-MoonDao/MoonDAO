@@ -1348,27 +1348,58 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                                 className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
                                 onClick={async (e) => {
                                   e.stopPropagation()
+
+                                  // Disconnect the active session first. This is
+                                  // what actually removes a connected (but not
+                                  // linked) wallet from the list.
                                   try {
-                                    // Disconnect the active session first.
                                     wallet.disconnect()
-                                    // Unlink the wallet from the Privy account
-                                    // so it doesn't immediately reappear in the
-                                    // list. Only linked wallets can be
-                                    // unlinked, so guard against errors.
-                                    if (unlinkWallet) {
-                                      await unlinkWallet(wallet.address)
-                                    }
-                                    // If we just removed the currently selected
-                                    // wallet, reset the selection to the first
-                                    // remaining wallet.
-                                    setSelectedWallet(0)
                                   } catch (err) {
                                     console.warn(
                                       'Failed to disconnect wallet:',
                                       err
                                     )
-                                    toast.error('Unable to disconnect wallet.')
                                   }
+
+                                  // Some wallets are also "linked" to the Privy
+                                  // account and will reappear unless unlinked.
+                                  // Only attempt to unlink wallets that are
+                                  // actually linked accounts, and never unlink
+                                  // the last remaining login method (Privy
+                                  // rejects that). Otherwise unlinkWallet throws.
+                                  const linkedWalletAccounts =
+                                    user?.linkedAccounts?.filter(
+                                      (acc: any) => acc.type === 'wallet'
+                                    ) ?? []
+                                  const isLinked = linkedWalletAccounts.some(
+                                    (acc: any) =>
+                                      acc.address?.toLowerCase() ===
+                                      wallet.address?.toLowerCase()
+                                  )
+                                  const isLastLinkedAccount =
+                                    (user?.linkedAccounts?.length ?? 0) <= 1
+
+                                  if (
+                                    unlinkWallet &&
+                                    isLinked &&
+                                    !isLastLinkedAccount
+                                  ) {
+                                    try {
+                                      await unlinkWallet(wallet.address)
+                                    } catch (err) {
+                                      console.warn(
+                                        'Failed to unlink wallet:',
+                                        err
+                                      )
+                                      // The session was already disconnected, so
+                                      // don't surface a hard error for the
+                                      // unlink step.
+                                    }
+                                  }
+
+                                  // Reset selection to the first remaining
+                                  // wallet so the UI stays valid.
+                                  setSelectedWallet(0)
                                 }}
                               >
                                 <XMarkIcon className="w-4 h-4" />
