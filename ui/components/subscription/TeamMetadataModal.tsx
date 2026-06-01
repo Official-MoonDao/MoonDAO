@@ -1,7 +1,11 @@
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import TeamTableABI from 'const/abis/TeamTable.json'
-import { DEFAULT_CHAIN_V5, TEAM_TABLE_ADDRESSES } from 'const/config'
+import {
+  DEFAULT_CHAIN_V5,
+  TEAM_TABLE_ADDRESSES,
+  TEAM_TABLE_NAMES,
+} from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -100,6 +104,44 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
     chain: selectedChain,
     abi: TeamTableABI,
   })
+
+  // Poll Tableland until the updated row is indexed so a page reload shows the
+  // new image/details instead of the stale ones. Best-effort and time-bounded.
+  const waitForTeamIndexed = useCallback(
+    async (
+      tokenId: string,
+      expected: { image: string; name: string; description: string }
+    ) => {
+      const tableName = TEAM_TABLE_NAMES[getChainSlug(selectedChain)]
+      if (!tableName) return
+      const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${tokenId}`
+      const url = `/api/tableland/query?statement=${encodeURIComponent(statement)}`
+      const MAX_ATTEMPTS = 20
+      const INTERVAL_MS = 3000
+
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        try {
+          const res = await fetch(url)
+          if (res.ok) {
+            const rows = await res.json()
+            const row = Array.isArray(rows) ? rows[0] : undefined
+            if (
+              row &&
+              row.image === expected.image &&
+              row.name === expected.name &&
+              (row.description ?? '') === (expected.description ?? '')
+            ) {
+              return
+            }
+          }
+        } catch (err) {
+          console.warn('Error polling Tableland for updated team:', err)
+        }
+        await new Promise((resolve) => setTimeout(resolve, INTERVAL_MS))
+      }
+    },
+    [selectedChain]
+  )
 
   const submitTypeform = useCallback(
     async (formResponse: any) => {
@@ -335,13 +377,20 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                     })
 
                     if (receipt) {
-                      setTimeout(() => {
-                        setEnabled(false)
-                        router.reload()
-                      }, 30000)
+                      toast.success('Profile Editing Successful')
+                      setEnabled(false)
+                      // Wait until the new data is indexed by Tableland, then
+                      // refresh so the updated image/details show immediately.
+                      await waitForTeamIndexed(nft.metadata.id, {
+                        image: imageIpfsLink,
+                        name: cleanedTeamData.name,
+                        description: cleanedTeamData.description,
+                      })
+                      router.reload()
                     }
                   } catch (err) {
                     console.log(err)
+                    toast.error('Something went wrong updating your profile. Please try again.')
                   }
                 }}
               />

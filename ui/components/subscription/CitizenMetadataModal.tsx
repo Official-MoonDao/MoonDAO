@@ -2,7 +2,11 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
-import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import {
+  CITIZEN_TABLE_ADDRESSES,
+  CITIZEN_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
+} from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -163,6 +167,44 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
       }
     },
     [citizenTableContract]
+  )
+
+  // Poll Tableland until the updated row is indexed so a page reload shows the
+  // new image/details instead of the stale ones. Best-effort and time-bounded.
+  const waitForCitizenIndexed = useCallback(
+    async (
+      tokenId: string,
+      expected: { image: string; name: string; description: string }
+    ) => {
+      const tableName = CITIZEN_TABLE_NAMES[getChainSlug(selectedChain)]
+      if (!tableName) return
+      const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${tokenId}`
+      const url = `/api/tableland/query?statement=${encodeURIComponent(statement)}`
+      const MAX_ATTEMPTS = 20
+      const INTERVAL_MS = 3000
+
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        try {
+          const res = await fetch(url)
+          if (res.ok) {
+            const rows = await res.json()
+            const row = Array.isArray(rows) ? rows[0] : undefined
+            if (
+              row &&
+              row.image === expected.image &&
+              row.name === expected.name &&
+              (row.description ?? '') === (expected.description ?? '')
+            ) {
+              return
+            }
+          }
+        } catch (err) {
+          console.warn('Error polling Tableland for updated citizen:', err)
+        }
+        await new Promise((resolve) => setTimeout(resolve, INTERVAL_MS))
+      }
+    },
+    [selectedChain]
   )
 
   useEffect(() => {
@@ -379,15 +421,22 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 account,
               })
 
-              setEnabled(false)
-
               if (receipt) {
-                setTimeout(() => {
-                  router.reload()
-                }, 30000)
+                toast.success('Profile Editing Successful')
+                setEnabled(false)
+                // Wait until the new data is indexed by Tableland, then refresh
+                // the profile so the user sees their updated image/details
+                // rather than the stale version.
+                await waitForCitizenIndexed(nft.metadata.id, {
+                  image: imageIpfsLink,
+                  name: cleanedCitizenData.name,
+                  description: cleanedCitizenData.description,
+                })
+                router.reload()
               }
             } catch (err) {
               console.log(err)
+              toast.error('Something went wrong updating your profile. Please try again.')
             }
           }}
         />
