@@ -2,6 +2,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Options } from '@layerzerolabs/lz-v2-utilities'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import { getAccessToken } from '@privy-io/react-auth'
+import confetti from 'canvas-confetti'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_CROSS_CHAIN_MINT_ADDRESSES,
@@ -27,6 +28,7 @@ import {
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
@@ -87,11 +89,30 @@ import { TermsCheckbox } from './TermsCheckbox'
  * 8. Side Effects (grouped by purpose)
  * 9. JSX Render
  */
+
+// Celebratory confetti burst for the citizen welcome screen (space palette).
+function fireCelebrationConfetti() {
+  if (typeof window === 'undefined') return
+  const colors = ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2']
+  const fire = (originY: number, particleCount: number, spread: number) =>
+    confetti({
+      particleCount,
+      spread,
+      origin: { y: originY },
+      shapes: ['circle', 'star'],
+      colors,
+    })
+  fire(0.6, 160, 100)
+  setTimeout(() => fire(0.7, 120, 120), 250)
+  setTimeout(() => fire(0.5, 100, 90), 550)
+}
+
 export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // ===== Context & Constants =====
   const router = useRouter()
   const { setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
+  const { seedCitizen } = useContext(CitizenContext)
 
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const selectedChainSlug = getChainSlug(selectedChain)
@@ -156,6 +177,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // ===== State: Loading State =====
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
+  // Celebration shown after a successful mint, before landing on the dashboard.
+  const [mintComplete, setMintComplete] = useState<boolean>(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [isSubmittingTypeform, setIsSubmittingTypeform] = useState(false)
@@ -398,20 +421,23 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         console.error('Error recording referral:', error)
       }
 
-      // Send Discord notification and cleanup
-      setTimeout(async () => {
-        await sendDiscordMessage(
-          'networkNotifications',
-          `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
-        )
+      // Seed the citizen into context/cache so the app recognizes them right
+      // away. Without this, Tableland indexing lag can land a brand-new citizen
+      // on the marketing homepage instead of their dashboard.
+      seedCitizen(citizenNFT)
 
-        const cacheKey = `moondao_citizen_${address?.toLowerCase()}_${DEFAULT_CHAIN_V5.id}`
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(cacheKey)
-        }
-        clearCache()
-        router.push('/')
-      }, 10000)
+      // Celebrate: show the welcome screen and fire confetti.
+      setMintComplete(true)
+      fireCelebrationConfetti()
+
+      // Fire-and-forget side effects — don't block the celebration on them.
+      sendDiscordMessage(
+        'networkNotifications',
+        `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
+      ).catch((err) => console.error('Failed to send Discord message:', err))
+
+      // Clear the onboarding form cache (the citizen cache was just seeded).
+      clearCache()
     },
     [
       tagToNetworkSignup,
@@ -420,7 +446,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       citizenContract,
       address,
       clearCache,
-      router,
+      seedCitizen,
     ]
   )
 
@@ -961,6 +987,21 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     return () => window.removeEventListener('message', handler)
   }, [stage, submitTypeform])
 
+  // Navigate to the citizen dashboard (context is already seeded, so it renders
+  // immediately instead of bouncing to the marketing homepage).
+  const goToDashboard = useCallback(() => {
+    router.push('/dashboard')
+  }, [router])
+
+  // ===== Effect Group: Post-Mint Celebration =====
+  // Auto-advance to the dashboard a few seconds after the welcome screen so the
+  // user lands there even if they don't click the button.
+  useEffect(() => {
+    if (!mintComplete) return
+    const timer = setTimeout(goToDashboard, 6000)
+    return () => clearTimeout(timer)
+  }, [mintComplete, goToDashboard])
+
   // ===== Effect Group: Data Fetching =====
   useEffect(() => {
     if (!address) return
@@ -1269,6 +1310,52 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             setCache(cacheData, currentStage)
           }}
         />
+      )}
+
+      {/* Post-mint celebration / welcome screen */}
+      {mintComplete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md px-4 animate-fadeIn">
+          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-gradient-to-b from-slate-800/80 to-slate-900/95 p-8 text-center shadow-2xl">
+            {(citizenImage || inputImage) && (
+              <div className="mx-auto mb-6 h-28 w-28 overflow-hidden rounded-2xl border border-white/15 shadow-lg">
+                <Image
+                  src={URL.createObjectURL(citizenImage || inputImage)}
+                  alt={citizenData.name || 'Your citizen'}
+                  width={112}
+                  height={112}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
+              </div>
+            )}
+            <p className="text-xs uppercase tracking-[0.2em] text-amber-300/80 mb-2">
+              Welcome to MoonDAO
+            </p>
+            <h2 className="font-GoodTimes text-2xl sm:text-3xl text-white mb-3">
+              You&apos;re a Citizen!
+            </h2>
+            <p className="text-slate-300 text-sm leading-relaxed mb-7">
+              {citizenData.name ? `Welcome aboard, ${citizenData.name}. ` : 'Welcome aboard. '}
+              You&apos;re now part of the Space Acceleration Network. Your dashboard is ready with
+              everything you can do next.
+            </p>
+            <button
+              onClick={goToDashboard}
+              className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
+            >
+              Enter your Dashboard
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+            <p className="mt-3 text-xs text-slate-500">Taking you there automatically…</p>
+          </div>
+        </div>
       )}
     </Container>
   )

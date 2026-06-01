@@ -1,6 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTablelandQuery } from '../swr/useTablelandQuery'
 import { citizenRowToNFT } from '../tableland/convertRow'
@@ -10,6 +10,10 @@ import CitizenContext from './citizen-context'
 // Cache configuration
 const CACHE_PREFIX = 'moondao_citizen_'
 const CACHE_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
+// How long to trust an optimistically-seeded citizen (just minted) before
+// deferring to Tableland again. Indexing usually catches up within seconds.
+const OPTIMISTIC_WINDOW_MS = 2 * 60 * 1000 // 2 minutes
+const OPTIMISTIC_POLL_MS = 5000
 
 interface CachedCitizenData {
   data: any
@@ -173,6 +177,10 @@ export const clearAllCitizenCache = () => {
 export default function CitizenProvider({ selectedChain, children, mock = false }: any) {
   const [citizen, setCitizen] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  // While true, a freshly-minted citizen is being trusted optimistically and we
+  // poll Tableland until the real record shows up (see OPTIMISTIC_WINDOW_MS).
+  const [optimisticActive, setOptimisticActive] = useState(false)
+  const optimisticUntilRef = useRef(0)
   const account = useActiveAccount()
   const { authenticated, user } = usePrivy()
   const hasLoadedNonDefaultCache = useRef(false)
@@ -185,6 +193,8 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   // Reset cache loading flag when address or chain changes
   useEffect(() => {
     hasLoadedNonDefaultCache.current = false
+    optimisticUntilRef.current = 0
+    setOptimisticActive(false)
   }, [address, chainId])
 
   // Load cached data immediately when address/chain are available
@@ -222,9 +232,32 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       ? null
       : `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]} WHERE owner = '${address?.toLowerCase()}'`
 
-  const { data: citizenData, isLoading: isLoadingQuery } = useTablelandQuery(statement, {
-    revalidateOnFocus: false,
-  })
+  const { data: citizenData, isLoading: isLoadingQuery, mutate } = useTablelandQuery(
+    statement,
+    {
+      revalidateOnFocus: false,
+      // Poll while we're optimistically trusting a just-minted citizen so the
+      // real Tableland row replaces the seed as soon as it's indexed.
+      refreshInterval: optimisticActive ? OPTIMISTIC_POLL_MS : 0,
+    }
+  )
+
+  // Optimistically mark the wallet as a citizen right after minting. Updates
+  // state + cache immediately and kicks off a refetch; the empty-result branch
+  // below won't clobber this until OPTIMISTIC_WINDOW_MS elapses.
+  const seedCitizen = useCallback(
+    (nft: any) => {
+      if (!nft) return
+      optimisticUntilRef.current = Date.now() + OPTIMISTIC_WINDOW_MS
+      setOptimisticActive(true)
+      setCitizen(nft)
+      if (address) {
+        setCachedCitizen(address, DEFAULT_CHAIN_V5.id, nft)
+      }
+      mutate()
+    },
+    [address, mutate]
+  )
 
   // Update citizen state when data changes
   useEffect(() => {
@@ -259,6 +292,15 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     setIsLoading(false)
 
     if (!citizenData || citizenData.length === 0) {
+      // A freshly-minted citizen may not be indexed by Tableland yet — keep the
+      // optimistic seed (and keep polling) until the window elapses.
+      if (optimisticActive) {
+        if (Date.now() < optimisticUntilRef.current) {
+          return
+        }
+        setOptimisticActive(false)
+        optimisticUntilRef.current = 0
+      }
       setCitizen(undefined)
       setCachedCitizen(address || '', chainId, undefined)
       return
@@ -267,6 +309,10 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     const nft = citizenRowToNFT(citizenData?.[0])
     setCitizen(nft)
     setCachedCitizen(address || '', chainId, nft)
+    if (optimisticActive) {
+      setOptimisticActive(false)
+      optimisticUntilRef.current = 0
+    }
   }, [
     citizenData,
     isLoadingQuery,
@@ -277,6 +323,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     chainSlug,
     mock,
     isDefaultChain,
+    optimisticActive,
   ])
 
   useEffect(() => {
@@ -290,7 +337,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   }, [authenticated, mock])
 
   return (
-    <CitizenContext.Provider value={{ citizen, setCitizen, isLoading }}>
+    <CitizenContext.Provider value={{ citizen, setCitizen, seedCitizen, isLoading }}>
       {children}
     </CitizenContext.Provider>
   )
