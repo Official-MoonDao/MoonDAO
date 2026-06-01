@@ -547,13 +547,26 @@ export function ImageGenerator({
     <div className="animate-fadeIn flex flex-col gap-6" key={forceRerender}>
       {/* Upload zone — only show when no image yet, or allow re-upload */}
       {!inputImage && (
-        <FileInput
-          file={inputImage}
-          setFile={setInputImage}
-          noBlankImages
-          accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
-          acceptText="PNG, JPEG, WEBP, GIF, SVG — must contain a face"
-        />
+        <>
+          <FileInput
+            file={inputImage}
+            setFile={setInputImage}
+            noBlankImages
+            accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+            acceptText="PNG, JPEG, WEBP, GIF, SVG — must contain a face"
+          />
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+            <p className="text-xs font-semibold text-slate-300 mb-1.5">
+              For the best result:
+            </p>
+            <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
+              <li>Use a photo cropped to just your head and shoulders.</li>
+              <li>Make sure your face is fully visible.</li>
+              <li>Pick a clear, well-lit, front-facing photo.</li>
+              <li>Avoid hats, sunglasses, or anything covering your face.</li>
+            </ul>
+          </div>
+        </>
       )}
 
       {/* Image preview / crop area */}
