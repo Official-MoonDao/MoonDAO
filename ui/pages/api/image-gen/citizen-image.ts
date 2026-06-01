@@ -8,6 +8,15 @@ const COMFY_WORKFLOW_URL =
 // plenty of time before we abort the request.
 const COMFY_REQUEST_TIMEOUT_MS = 45_000
 
+// The comfy.icu API workers don't have the Juggernaut Lightning checkpoint
+// pre-installed, so we supply it via the `files` map. The worker downloads it on
+// first use and caches it for subsequent runs. Public, ungated HF repo (no token
+// required); the destination filename below must match node 4's `ckpt_name`.
+const JUGGERNAUT_CHECKPOINT_PATH =
+  '/models/checkpoints/juggernautXL_v9Rdphoto2Lighting.safetensors'
+const JUGGERNAUT_CHECKPOINT_URL =
+  'https://huggingface.co/RunDiffusion/Juggernaut-XL-Lightning/resolve/main/Juggernaut_RunDiffusionPhoto2_Lightning_4Steps.safetensors?download=true'
+
 async function fetchComfy(
   init: RequestInit & { method: 'POST' | 'GET' }
 ): Promise<Response> {
@@ -49,6 +58,7 @@ export default async function handler(
     const uuid = v4()
     const files: { [key: string]: string } = {}
     files[`/input/${uuid}.jpg`] = url
+    files[JUGGERNAUT_CHECKPOINT_PATH] = JUGGERNAUT_CHECKPOINT_URL
 
     // generate a random 15 digit number
     let seed = ''
