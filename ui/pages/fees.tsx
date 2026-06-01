@@ -18,7 +18,7 @@ import { BigNumber } from 'ethers'
 import { ethers } from 'ethers'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect, useContext, useMemo } from 'react'
+import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -343,16 +343,18 @@ export default function Fees() {
     fetchEstimates()
   }, [address, chains])
 
-  useEffect(() => {
+  // Reusable on-chain status loader. Exposed as a callback so it can be
+  // re-run after a check-in to reconcile the UI with the real on-chain state
+  // (the txs are already confirmed at that point, so lastCheckIn is updated).
+  const refreshFeeData = useCallback(async () => {
     if (!address) return
 
-    const fetchStatus = async () => {
-      // Each chain is fetched independently. A single chain failure (RPC
-      // hiccup, rate limit, etc.) used to reject the whole Promise.all and
-      // leave `feeData` empty, surfacing as "No fee data available" when the
-      // user tried to check in. Isolate failures per-chain so the remaining
-      // chains still populate.
-      const raw = await Promise.all(
+    // Each chain is fetched independently. A single chain failure (RPC
+    // hiccup, rate limit, etc.) used to reject the whole Promise.all and
+    // leave `feeData` empty, surfacing as "No fee data available" when the
+    // user tried to check in. Isolate failures per-chain so the remaining
+    // chains still populate.
+    const raw = await Promise.all(
         chains.map(async (chain) => {
           const slug = getChainSlug(chain)
           try {
@@ -475,10 +477,23 @@ export default function Fees() {
 
       setCheckedInCount(totalCount)
       setIsCheckedIn(allChecked)
-    }
-
-    fetchStatus()
   }, [address, chains])
+
+  useEffect(() => {
+    refreshFeeData()
+  }, [refreshFeeData])
+
+  // Keep the button's checked-in state in sync with feeData. This covers both
+  // the initial on-chain load and the optimistic update applied right after a
+  // successful check-in, so the button reliably flips to "Checked In" without
+  // depending on the exact tx/skip counts inside handleCheckIn.
+  useEffect(() => {
+    if (!feeData || feeData.length === 0) return
+    const eligible = feeData.filter((d) => d.hasVMooney)
+    const allChecked =
+      eligible.length > 0 && eligible.every((d) => d.checkedInOnChain)
+    setIsCheckedIn(allChecked)
+  }, [feeData])
 
   const handleCheckIn = async () => {
     try {
@@ -495,6 +510,13 @@ export default function Fees() {
       let transactionsSent = 0
       let alreadyCheckedInCount = 0
       let eligibleChainsCount = 0
+      // Chains the user is confirmed checked in on after this run. Used to
+      // optimistically update feeData so re-clicking the button doesn't
+      // re-broadcast no-op transactions.
+      const checkedInChainIds = new Set<number>()
+      // Capture the most useful failure reason so we can show the user what
+      // actually went wrong instead of a generic "please try again".
+      let lastError: string | null = null
 
       const waitForChainSwitch = async (targetChainId: number, maxWait = 5000) => {
         const startTime = Date.now()
@@ -503,6 +525,47 @@ export default function Fees() {
           if (walletChainId === targetChainId) return true
           await new Promise((resolve) => setTimeout(resolve, 100))
         }
+        return false
+      }
+
+      // Robustly switch the wallet to a target chain. Injected wallets (e.g.
+      // MetaMask) pop a confirmation the user has to approve, so we (a) give a
+      // generous window for that, (b) retry the request a couple of times, and
+      // (c) report WHY it failed (user rejected vs. timed out) so the toast is
+      // actionable. Returns true only once the wallet actually reports the
+      // target chain.
+      const switchToChain = async (chain: any): Promise<boolean> => {
+        const alreadyOn = () =>
+          +wallets[selectedWallet]?.chainId?.split(':')[1] === chain.id
+        if (alreadyOn()) return true
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            await wallets[selectedWallet].switchChain(chain.id)
+            setSelectedChain(chain)
+          } catch (err: any) {
+            // 4001 / ACTION_REJECTED = user dismissed the wallet prompt.
+            if (
+              err?.code === 4001 ||
+              err?.code === 'ACTION_REJECTED' ||
+              err?.message?.toLowerCase().includes('reject') ||
+              err?.message?.toLowerCase().includes('denied')
+            ) {
+              lastError = `You declined the network switch to ${chain.name}. Approve it in your wallet to check in there.`
+              return false
+            }
+            console.warn(`switchChain to ${chain.name} threw:`, err)
+          }
+          // Wait up to 20s for the wallet to report the new chain (covers the
+          // time the user spends approving the MetaMask popup).
+          if (await waitForChainSwitch(chain.id, 20000)) {
+            // Small settle delay so the provider's network is fully updated
+            // before we build a signer / send the tx.
+            await new Promise((resolve) => setTimeout(resolve, 500))
+            return true
+          }
+        }
+        lastError = `Could not switch your wallet to ${chain.name}. Open your wallet, switch to ${chain.name} manually, then press Check In again.`
         return false
       }
 
@@ -532,16 +595,14 @@ export default function Fees() {
         eligibleChainsCount++
         if (data.checkedInOnChain) {
           alreadyCheckedInCount++
+          checkedInChainIds.add(data.chain.id)
           continue
         }
 
         const walletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
         if (walletChainId !== data.chain.id) {
-          await wallets[selectedWallet].switchChain(data.chain.id)
-          setSelectedChain(data.chain)
-          const switched = await waitForChainSwitch(data.chain.id)
+          const switched = await switchToChain(data.chain)
           if (!switched) continue
-          await new Promise((resolve) => setTimeout(resolve, 500))
         }
 
         const tx = prepareContractCall({
@@ -550,8 +611,91 @@ export default function Fees() {
           params: [],
         })
         const txAccount = await getAccountForChain()
-        await sendAndConfirmTransaction({ transaction: tx, account: txAccount })
-        transactionsSent++
+
+        // The ONLY source of truth for "did the check-in happen" is the
+        // on-chain state: lastCheckIn[address] === weekStart. Never trust the
+        // tx promise (or a nonce collision) on its own — a tx that looked
+        // confirmed but never landed previously produced a false "checked in"
+        // toast while nothing changed on-chain.
+        const verifyCheckedIn = async () => {
+          const verifyContract = getContract({
+            client,
+            address: FEE_HOOK_ADDRESSES[data.slug],
+            abi: FeeHook.abi as any,
+            chain: data.chain,
+          })
+          for (let i = 0; i < 3; i++) {
+            try {
+              const [ws, lc] = await Promise.all([
+                readContract({
+                  contract: verifyContract,
+                  method: 'weekStart',
+                  params: [],
+                }),
+                readContract({
+                  contract: verifyContract,
+                  method: 'lastCheckIn',
+                  params: [address],
+                }),
+              ])
+              if (ws != null && lc != null) {
+                return BigInt(lc as any) === BigInt(ws as any)
+              }
+            } catch (err) {
+              console.warn(`verify lastCheckIn failed for ${data.slug}:`, err)
+            }
+            await new Promise((r) => setTimeout(r, 800))
+          }
+          return false
+        }
+
+        try {
+          await sendAndConfirmTransaction({ transaction: tx, account: txAccount })
+        } catch (error: any) {
+          // Nonce collisions / network-changed errors don't necessarily mean
+          // failure — fall through to on-chain verification, which decides.
+          // Any other error is a genuine failure for this chain, but we don't
+          // abort the whole loop so other chains still get a chance.
+          const isRecoverable =
+            error?.code === 'NONCE_EXPIRED' ||
+            error?.code === 'NETWORK_ERROR' ||
+            error?.message?.includes('nonce has already been used') ||
+            error?.message?.includes('nonce too low') ||
+            error?.message?.includes('underlying network changed') ||
+            error?.message?.includes('network changed')
+          lastError =
+            error?.shortMessage || error?.message || 'Transaction failed'
+          if (!isRecoverable) {
+            console.error(`Check-in failed for ${data.slug}:`, error)
+            continue
+          }
+        }
+
+        // Only a verified on-chain state counts as a successful check-in.
+        if (await verifyCheckedIn()) {
+          transactionsSent++
+          checkedInChainIds.add(data.chain.id)
+          lastError = null
+        } else if (!lastError) {
+          // The send didn't throw, but the on-chain state never flipped. This
+          // usually means the tx silently failed or was sent on the wrong
+          // network. Record it so the user sees something actionable.
+          lastError = `Your ${data.chain.name} check-in transaction did not register on-chain. Make sure your wallet is on ${data.chain.name} and try again.`
+        }
+      }
+
+      // Optimistically mark the chains we just checked in on so the button
+      // disables and a second click doesn't re-broadcast no-op transactions
+      // (on-chain checkIn() is idempotent, so re-sending only produces a
+      // "No changes" wallet prompt that confuses users).
+      if (checkedInChainIds.size > 0) {
+        setFeeData((prev) =>
+          prev.map((d) =>
+            checkedInChainIds.has(d.chain.id)
+              ? { ...d, checkedInOnChain: true }
+              : d
+          )
+        )
       }
 
       const finalWalletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
@@ -588,15 +732,25 @@ export default function Fees() {
         )
         setIsCheckedIn(true)
       } else {
-        toast.error('No check-ins were submitted. Please try again.', {
-          style: toastStyle,
-        })
+        toast.error(
+          lastError
+            ? `Check-in failed: ${lastError}`
+            : 'No check-ins were submitted. Please try again.',
+          { style: toastStyle }
+        )
       }
     } catch (error) {
       console.error('Error checking in:', error)
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred'
       toast.error(`Check-in failed: ${errorMessage}`, { style: toastStyle })
+    } finally {
+      // Reconcile the UI with the real on-chain state. The check-in txs are
+      // confirmed by this point, so lastCheckIn is updated on-chain. A short
+      // delay gives the RPC a moment to propagate before we re-read.
+      setTimeout(() => {
+        refreshFeeData()
+      }, 1500)
     }
   }
 
