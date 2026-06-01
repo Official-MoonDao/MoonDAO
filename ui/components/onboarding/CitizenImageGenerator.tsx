@@ -1,8 +1,6 @@
 import Image from 'next/image'
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import useImageGenerator, {
-  GenerationPhase,
-} from '@/lib/image-generator/useImageGenerator'
+import useImageGenerator, { GenerationPhase } from '@/lib/image-generator/useImageGenerator'
 import { cropImageWithCoordinates } from '@/lib/utils/images'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
@@ -78,10 +76,7 @@ export function ImageGenerator({
     }
     const start = Date.now()
     const elapsedTimer = setInterval(() => setElapsedMs(Date.now() - start), 250)
-    const tipTimer = setInterval(
-      () => setTipIndex((i) => (i + 1) % GENERATION_TIPS.length),
-      4000
-    )
+    const tipTimer = setInterval(() => setTipIndex((i) => (i + 1) % GENERATION_TIPS.length), 4000)
     return () => {
       clearInterval(elapsedTimer)
       clearInterval(tipTimer)
@@ -127,7 +122,7 @@ export function ImageGenerator({
         inputImage,
         cropArea.x,
         cropArea.y,
-        cropArea.size
+        cropArea.size,
       )
 
       // Store the cropped image for fallback / "Use my photo" and lift to parent
@@ -169,34 +164,46 @@ export function ImageGenerator({
   // Regenerate using the existing crop (no re-upload / re-crop needed).
   const handleRegenerate = useCallback(async () => {
     setIsGenerating(true)
+    if (onGenerationStateChange) {
+      onGenerationStateChange(true)
+    }
     setImage(null)
     setHasGeneratedImage(false)
     setShowError(false)
-    let cropped = croppedImage
-    if (!cropped && inputImage) {
-      cropped = await cropImageWithCoordinates(
-        inputImage,
-        cropArea.x,
-        cropArea.y,
-        cropArea.size
-      )
-      setCroppedImage(cropped)
-      onCrop?.(cropped)
+
+    try {
+      let cropped = croppedImage
+      if (!cropped && inputImage) {
+        cropped = await cropImageWithCoordinates(inputImage, cropArea.x, cropArea.y, cropArea.size)
+        setCroppedImage(cropped)
+        onCrop?.(cropped)
+      }
+      await generateImage(cropped || undefined)
+    } catch (error) {
+      console.error('Error cropping or generating image:', error)
+      setIsGenerating(false)
+      if (onGenerationStateChange) {
+        onGenerationStateChange(false)
+      }
     }
-    await generateImage(cropped || undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [croppedImage, inputImage, cropArea.x, cropArea.y, cropArea.size, generateImage, onCrop, setImage])
+  }, [
+    croppedImage,
+    inputImage,
+    cropArea.x,
+    cropArea.y,
+    cropArea.size,
+    generateImage,
+    onCrop,
+    onGenerationStateChange,
+    setImage,
+  ])
 
   // Use the user's own (cropped) photo instead of the AI version.
   const handleUseMyPhoto = useCallback(async () => {
     let cropped = croppedImage
     if (!cropped && inputImage) {
-      cropped = await cropImageWithCoordinates(
-        inputImage,
-        cropArea.x,
-        cropArea.y,
-        cropArea.size
-      )
+      cropped = await cropImageWithCoordinates(inputImage, cropArea.x, cropArea.y, cropArea.size)
     }
     if (cropped) {
       setCroppedImage(cropped)
@@ -371,7 +378,7 @@ export function ImageGenerator({
           case 'nw':
             newSize = Math.max(
               50,
-              Math.min(prev.x + prev.size - imageX, prev.y + prev.size - imageY)
+              Math.min(prev.x + prev.size - imageX, prev.y + prev.size - imageY),
             )
             newX = prev.x + prev.size - newSize
             newY = prev.y + prev.size - newSize
@@ -419,7 +426,7 @@ export function ImageGenerator({
       displayedImageSize.height,
       displayedImageSize.offsetX,
       displayedImageSize.offsetY,
-    ]
+    ],
   )
 
   const handleMouseMove = useCallback(
@@ -464,7 +471,7 @@ export function ImageGenerator({
       resizeHandle,
       isDragging,
       handleResize,
-    ]
+    ],
   )
 
   const handleMouseUp = useCallback(() => {
@@ -497,7 +504,7 @@ export function ImageGenerator({
           inputImage,
           cropArea.x,
           cropArea.y,
-          cropArea.size
+          cropArea.size,
         )
         setImage(croppedFile)
       } catch (error) {
@@ -516,19 +523,20 @@ export function ImageGenerator({
         inputImage,
         cropArea.x,
         cropArea.y,
-        cropArea.size
+        cropArea.size,
       )
 
       // Set the cropped image as the final image
       setImage(croppedFile)
       setCroppedImage(croppedFile)
+      onCrop?.(croppedFile)
       setIsReCropping(false)
 
       nextStage?.()
     } catch (error) {
       console.error('Error cropping image:', error)
     }
-  }, [inputImage, cropArea.x, cropArea.y, cropArea.size, setImage, nextStage])
+  }, [inputImage, cropArea.x, cropArea.y, cropArea.size, setImage, onCrop, nextStage])
 
   // Calculate the scale and position for the crop overlay
   const cropScale = displayedImageSize.width / imageSize.width
@@ -557,10 +565,10 @@ export function ImageGenerator({
               {generating
                 ? 'Generating your AI photo…'
                 : inputImage && !image
-                ? 'Drag to reposition crop · Handles to resize'
-                : image
-                ? 'Your photo'
-                : 'Current image'}
+                  ? 'Drag to reposition crop · Handles to resize'
+                  : image
+                    ? 'Your photo'
+                    : 'Current image'}
             </p>
             {inputImage && (
               <button
@@ -575,7 +583,12 @@ export function ImageGenerator({
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg transition-all duration-200"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
                 Change Photo
               </button>
@@ -641,9 +654,7 @@ export function ImageGenerator({
                               style={{ width: `${progressPct}%` }}
                             />
                           </div>
-                          <p className="text-xs text-slate-500">
-                            Usually takes 30–60 seconds
-                          </p>
+                          <p className="text-xs text-slate-500">Usually takes 30–60 seconds</p>
                         </div>
                         <p className="min-h-[1rem] text-xs text-slate-400 transition-opacity duration-300">
                           {GENERATION_TIPS[tipIndex]}
@@ -696,19 +707,9 @@ export function ImageGenerator({
                                 className="resize-handle absolute w-3 h-3 bg-indigo-400 border-2 border-white rounded-full shadow-lg"
                                 data-handle={handle}
                                 style={{
-                                  top:
-                                    handle === 'n'
-                                      ? -6
-                                      : handle === 's'
-                                      ? undefined
-                                      : '50%',
+                                  top: handle === 'n' ? -6 : handle === 's' ? undefined : '50%',
                                   bottom: handle === 's' ? -6 : undefined,
-                                  left:
-                                    handle === 'w'
-                                      ? -6
-                                      : handle === 'e'
-                                      ? undefined
-                                      : '50%',
+                                  left: handle === 'w' ? -6 : handle === 'e' ? undefined : '50%',
                                   right: handle === 'e' ? -6 : undefined,
                                   transform:
                                     handle === 'n' || handle === 's'
@@ -735,8 +736,7 @@ export function ImageGenerator({
                             <div
                               className="absolute bg-black/60"
                               style={{
-                                left:
-                                  (cropArea.x + cropArea.size) * cropScale + cropOffsetX,
+                                left: (cropArea.x + cropArea.size) * cropScale + cropOffsetX,
                                 top: 0,
                                 width:
                                   displayedImageSize.width -
@@ -757,8 +757,7 @@ export function ImageGenerator({
                               className="absolute bg-black/60"
                               style={{
                                 left: cropArea.x * cropScale + cropOffsetX,
-                                top:
-                                  (cropArea.y + cropArea.size) * cropScale + cropOffsetY,
+                                top: (cropArea.y + cropArea.size) * cropScale + cropOffsetY,
                                 width: cropArea.size * cropScale,
                                 height:
                                   displayedImageSize.height -
@@ -780,8 +779,7 @@ export function ImageGenerator({
             <div className="px-1">
               <p className="text-sm text-red-400/80">{generateError}</p>
               <p className="text-xs text-slate-500 mt-1">
-                We&apos;ve kept your cropped photo so you can continue, or try
-                generating again.
+                We&apos;ve kept your cropped photo so you can continue, or try generating again.
               </p>
             </div>
           )}
@@ -839,12 +837,7 @@ export function ImageGenerator({
                   className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
                   onClick={handleRegenerate}
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
