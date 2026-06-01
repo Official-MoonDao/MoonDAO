@@ -228,7 +228,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const LAYER_ZERO_TRANSFER_COST = useMemo(() => BigInt('3000000000000000'), [])
   const isCrossChain = useMemo(
     () => selectedChainSlug !== defaultChainSlug,
-    [selectedChainSlug, defaultChainSlug]
+    [selectedChainSlug, defaultChainSlug],
   )
 
   // ===== Internal Helper Functions =====
@@ -243,7 +243,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       }
       return totalCost
     },
-    [LAYER_ZERO_TRANSFER_COST]
+    [LAYER_ZERO_TRANSFER_COST],
   )
 
   const serializeCacheData = useCallback(async () => {
@@ -268,7 +268,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       }
       return false
     },
-    []
+    [],
   )
 
   const executeFreeMint = useCallback(
@@ -291,7 +291,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       }
       return await res.json()
     },
-    [address, citizenData.name, citizenData.formResponseId]
+    [address, citizenData.name, citizenData.formResponseId],
   )
 
   const executeCrossChainMint = useCallback(
@@ -330,7 +330,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       })
       const message = await waitForMessageReceived(
         isTestnet ? 19999 : 1,
-        originReceipt.transactionHash
+        originReceipt.transactionHash,
       )
       return await waitForReceipt({
         client: client,
@@ -348,7 +348,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       LAYER_ZERO_TRANSFER_COST,
       isTestnet,
       destinationChain,
-    ]
+    ],
   )
 
   const executeDirectMint = useCallback(
@@ -380,7 +380,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         account,
       })
     },
-    [account, citizenContract, address, citizenData.name, citizenData.formResponseId]
+    [account, citizenContract, address, citizenData.name, citizenData.formResponseId],
   )
 
   const handlePostMint = useCallback(
@@ -433,7 +433,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       // Fire-and-forget side effects — don't block the celebration on them.
       sendDiscordMessage(
         'networkNotifications',
-        `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
+        `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`,
       ).catch((err) => console.error('Failed to send Discord message:', err))
 
       // Clear the onboarding form cache (the citizen cache was just seeded).
@@ -447,7 +447,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       address,
       clearCache,
       seedCitizen,
-    ]
+    ],
   )
 
   // ===== Event Handlers & Callbacks =====
@@ -458,7 +458,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const baseCost = BigInt(ethers.utils.parseEther(formattedCost).toString())
       return calculateTotalCost(baseCost, estimatedGas, gasPriceToUse, isCrossChain)
     },
-    [estimatedGas, effectiveGasPrice, calculateTotalCost, isCrossChain]
+    [estimatedGas, effectiveGasPrice, calculateTotalCost, isCrossChain],
   )
 
   // Gas Estimation Handler
@@ -619,12 +619,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const citizenImageRestored = restoreImageFromCache(
         formData.citizenImage,
         setCitizenImage,
-        'citizen image'
+        'citizen image',
       )
       const inputImageRestored = restoreImageFromCache(
         formData.inputImage,
         setInputImage,
-        'input image'
+        'input image',
       )
 
       imagesRestoredRef.current = citizenImageRestored || inputImageRestored
@@ -639,7 +639,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         }
       }
     },
-    [setSelectedChain, setAgreedToCondition, restoreImageFromCache, estimateMintGas]
+    [setSelectedChain, setAgreedToCondition, restoreImageFromCache, estimateMintGas],
   )
 
   // ===== Side Effects =====
@@ -814,13 +814,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         console.error('Typeform submission error:', error)
         toast.error(
           error?.message || 'Failed to process your profile. Please try again or contact support.',
-          { duration: 8000 }
+          { duration: 8000 },
         )
       } finally {
         setIsSubmittingTypeform(false)
       }
     },
-    [subscribeToNetworkSignup]
+    [subscribeToNetworkSignup],
   )
 
   // ===== Effect Group: Gas Estimation =====
@@ -927,13 +927,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             citizenImage: hasSerializedCitizenImage
               ? existingFormData.citizenImage
               : citizenImageRef.current
-              ? 'PENDING_SERIALIZATION'
-              : null,
+                ? 'PENDING_SERIALIZATION'
+                : null,
             inputImage: hasSerializedInputImage
               ? existingFormData.inputImage
               : inputImageRef.current
-              ? 'PENDING_SERIALIZATION'
-              : null,
+                ? 'PENDING_SERIALIZATION'
+                : null,
             agreedToCondition: agreedToConditionRef.current,
             selectedChainSlug: selectedChainSlugRef.current,
           },
@@ -953,7 +953,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // Cache form state continuously (removed onrampModalOpen guard for more aggressive caching)
   useEffect(() => {
-    if (stage >= 0 && address && (citizenData.name || citizenImage || inputImage)) {
+    if (
+      stage >= 0 &&
+      address &&
+      (citizenData.name || citizenImage || inputImage) &&
+      !mintComplete
+    ) {
       const performCache = async () => {
         const cacheData = await serializeCacheData()
         setCache(cacheData, stage)
@@ -970,6 +975,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     inputImage,
     agreedToCondition,
     selectedChainSlug,
+    mintComplete,
   ])
 
   // Listen for Typeform submit via postMessage (raw iframe approach)
@@ -1169,8 +1175,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                           citizenImage
                             ? URL.createObjectURL(citizenImage)
                             : inputImage
-                            ? URL.createObjectURL(inputImage)
-                            : '/assets/MoonDAO-Loading-Animation.svg'
+                              ? URL.createObjectURL(inputImage)
+                              : '/assets/MoonDAO-Loading-Animation.svg'
                         }
                         alt="citizen-image"
                         fill
@@ -1241,8 +1247,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       isLoadingMint
                         ? 'Creating Citizen...'
                         : isLoadingGasEstimate
-                        ? 'Estimating Gas...'
-                        : 'Become a Citizen'
+                          ? 'Estimating Gas...'
+                          : 'Become a Citizen'
                     }
                     className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     isDisabled={!agreedToCondition || isLoadingMint || isLoadingGasEstimate}
