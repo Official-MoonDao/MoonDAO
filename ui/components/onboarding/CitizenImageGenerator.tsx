@@ -817,10 +817,10 @@ export function ImageGenerator({
             Generate AI Photo
           </button>
           <p className="text-xs text-slate-500 px-1 text-center">
-            Position the crop on the face, then generate.{' '}
+            Crop to just your head and shoulders, keeping your whole face inside the box.{' '}
             {isBackgroundFlow
-              ? 'Takes ~30–60s — you can keep going while it renders.'
-              : 'Usually takes 30–60 seconds.'}
+              ? 'Generation takes ~30–60s — you can keep going while it renders.'
+              : 'Generation usually takes 30–60 seconds.'}
           </p>
           <button
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2 mx-auto"
