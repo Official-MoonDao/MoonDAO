@@ -26,6 +26,7 @@ import {
   readContract,
   getContract,
 } from 'thirdweb'
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { useActiveAccount } from 'thirdweb/react'
 import {
   arbitrum,
@@ -505,6 +506,27 @@ export default function Fees() {
         return false
       }
 
+      // Build a thirdweb account from the Privy wallet's CURRENT ethers
+      // provider. The `account` from useActiveAccount() is bound (via
+      // ethers5Adapter) to the chain selected at render time; reusing it after
+      // switching chains makes ethers v5 throw `underlying network changed`
+      // because the signer's cached network no longer matches the wallet.
+      const getAccountForChain = async () => {
+        try {
+          const wallet = wallets[selectedWallet]
+          const provider = await wallet?.getEthersProvider()
+          const signer = provider?.getSigner()
+          if (!signer) return account
+          return await ethers5Adapter.signer.fromEthers({ signer })
+        } catch (err) {
+          console.warn(
+            'Failed to derive fresh account, falling back to active account:',
+            err
+          )
+          return account
+        }
+      }
+
       for (const data of feeData) {
         if (!data.hasVMooney) continue
         eligibleChainsCount++
@@ -527,7 +549,8 @@ export default function Fees() {
           method: 'checkIn' as string,
           params: [],
         })
-        await sendAndConfirmTransaction({ transaction: tx, account })
+        const txAccount = await getAccountForChain()
+        await sendAndConfirmTransaction({ transaction: tx, account: txAccount })
         transactionsSent++
       }
 

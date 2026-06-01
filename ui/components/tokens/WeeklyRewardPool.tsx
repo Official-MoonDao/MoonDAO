@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useContext, useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract, prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { useActiveAccount } from 'thirdweb/react'
 import {
   arbitrum,
@@ -355,6 +356,26 @@ export default function WeeklyRewardPool() {
         return false
       }
 
+      // Build a thirdweb account from the Privy wallet's CURRENT ethers
+      // provider. The `account` returned by useActiveAccount() is bound (via
+      // ethers5Adapter) to whatever chain was selected when the component
+      // rendered. Reusing it after switching chains makes ethers v5 throw
+      // `underlying network changed` because the signer's cached network no
+      // longer matches the wallet's actual chain. Re-deriving the signer (and
+      // therefore its provider) after every switch keeps them in lockstep.
+      const getAccountForChain = async () => {
+        try {
+          const wallet = wallets[selectedWallet]
+          const provider = await wallet?.getEthersProvider()
+          const signer = provider?.getSigner()
+          if (!signer) return account
+          return await ethers5Adapter.signer.fromEthers({ signer })
+        } catch (err) {
+          console.warn('Failed to derive fresh account, falling back to active account:', err)
+          return account
+        }
+      }
+
       for (const data of feeData) {
         if (!data.vMooneyBalance || data.vMooneyBalance === BigInt(0)) {
           continue
@@ -399,6 +420,11 @@ export default function WeeklyRewardPool() {
         let retries = 3
         let success = false
 
+        // Derive an account whose underlying ethers provider is on the chain
+        // we just switched to. Using the stale `account` here is what produced
+        // the `underlying network changed` error on check-in.
+        let txAccount = await getAccountForChain()
+
         while (retries > 0 && !success) {
           try {
             const tx = prepareContractCall({
@@ -409,7 +435,7 @@ export default function WeeklyRewardPool() {
 
             await sendAndConfirmTransaction({
               transaction: tx,
-              account,
+              account: txAccount,
             })
 
             success = true
@@ -437,6 +463,10 @@ export default function WeeklyRewardPool() {
                   abi: FeeHook.abi as any,
                   chain: data.chain,
                 })
+
+                // Rebuild the account too so its provider re-detects the
+                // (now correct) network instead of reusing the stale one.
+                txAccount = await getAccountForChain()
               } else {
                 throw error
               }
