@@ -1,11 +1,38 @@
 import Image from 'next/image'
-import { useEffect, useState, useRef, useCallback } from 'react'
-import useImageGenerator from '@/lib/image-generator/useImageGenerator'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import useImageGenerator, {
+  GenerationPhase,
+} from '@/lib/image-generator/useImageGenerator'
 import { cropImageWithCoordinates } from '@/lib/utils/images'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
 
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w' | null
+
+const PHASE_LABELS: Record<GenerationPhase, string> = {
+  idle: 'Preparing…',
+  uploading: 'Uploading your photo…',
+  queued: 'Waiting in line…',
+  generating: 'Generating your portrait…',
+  finishing: 'Finishing up…',
+  done: 'Done!',
+  error: 'Something went wrong…',
+}
+
+// Rotating messages shown during the wait to keep things feeling alive.
+const GENERATION_TIPS = [
+  'Crafting your MoonDAO astronaut portrait…',
+  'Tip: a clear, front-facing photo gives the best results.',
+  'Adding some cosmic flair to your image…',
+  'Hang tight — great art takes a few seconds.',
+]
+
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
 
 export function ImageGenerator({
   currImage,
@@ -31,7 +58,41 @@ export function ImageGenerator({
     generateImage,
     isLoading: generating,
     error: generateError,
+    phase,
   } = useImageGenerator('/api/image-gen/citizen-image', inputImage, setImage)
+
+  // Progress UX while the (cold-start heavy) generation runs.
+  const [elapsedMs, setElapsedMs] = useState(0)
+  const [tipIndex, setTipIndex] = useState(0)
+
+  useEffect(() => {
+    if (!generating) {
+      setElapsedMs(0)
+      setTipIndex(0)
+      return
+    }
+    const start = Date.now()
+    const elapsedTimer = setInterval(() => setElapsedMs(Date.now() - start), 250)
+    const tipTimer = setInterval(
+      () => setTipIndex((i) => (i + 1) % GENERATION_TIPS.length),
+      4000
+    )
+    return () => {
+      clearInterval(elapsedTimer)
+      clearInterval(tipTimer)
+    }
+  }, [generating])
+
+  // Eased progress bar: approaches ~90% over ~45s, with phase-based floors so it
+  // never looks stuck and snaps forward when we hit the final stages.
+  const progressPct = useMemo(() => {
+    if (phase === 'done') return 100
+    const eased = Math.round((1 - Math.exp(-elapsedMs / 22000)) * 100)
+    if (phase === 'finishing') return Math.max(92, eased)
+    return Math.min(90, Math.max(5, eased))
+  }, [phase, elapsedMs])
+
+  const phaseLabel = PHASE_LABELS[phase] ?? 'Creating your AI image…'
 
   // Store original image when first uploaded
   useEffect(() => {
@@ -481,21 +542,49 @@ export function ImageGenerator({
                   {image && !generating && generatedImageUrl ? (
                     <img
                       src={generatedImageUrl}
-                      className="absolute inset-0 w-full h-full object-contain"
+                      className="animate-fadeIn absolute inset-0 w-full h-full object-contain"
                       alt="Generated photo"
                     />
                   ) : generating ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/80">
-                      <Image
-                        src="/assets/MoonDAO-Loading-Animation.svg"
-                        width={96}
-                        height={96}
-                        className="animate-pulse"
-                        alt="Generating"
-                      />
-                      <p className="text-sm text-slate-400 animate-pulse">
-                        Creating your AI image…
-                      </p>
+                    <div className="absolute inset-0">
+                      {/* Show the user's photo underneath so the frame never looks empty */}
+                      {inputImageUrl && (
+                        <img
+                          src={inputImageUrl}
+                          className="absolute inset-0 w-full h-full object-contain opacity-30 blur-[2px]"
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      )}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/70 px-6 text-center">
+                        <Image
+                          src="/assets/MoonDAO-Loading-Animation.svg"
+                          width={72}
+                          height={72}
+                          className="animate-pulse"
+                          alt="Generating"
+                        />
+                        <div className="flex w-full max-w-[260px] flex-col gap-2">
+                          <div className="flex items-center justify-between text-xs text-slate-300">
+                            <span>{phaseLabel}</span>
+                            <span className="tabular-nums text-slate-400">
+                              {formatElapsed(elapsedMs)}
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                            <div
+                              className="h-full rounded-full bg-indigo-400 transition-all duration-700 ease-out"
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-slate-500">
+                            Usually takes 30–60 seconds
+                          </p>
+                        </div>
+                        <p className="min-h-[1rem] text-xs text-slate-400 transition-opacity duration-300">
+                          {GENERATION_TIPS[tipIndex]}
+                        </p>
+                      </div>
                     </div>
                   ) : inputImageUrl ? (
                     <>
@@ -624,34 +713,45 @@ export function ImageGenerator({
 
           {/* Error message */}
           {showError && generateError && (
-            <p className="text-sm text-red-400/80 px-1">{generateError}</p>
+            <div className="px-1">
+              <p className="text-sm text-red-400/80">{generateError}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                We&apos;ve kept your cropped photo so you can continue, or try
+                generating again.
+              </p>
+            </div>
           )}
         </div>
       )}
 
       {/* Action buttons */}
       {inputImage && !image && !generating && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
-            onClick={handleGenerateImage}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-              />
-            </svg>
-            Generate AI Photo
-          </button>
-          <button
-            className="flex-1 py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
-            onClick={handleUseCroppedImage}
-          >
-            Use Cropped Image
-          </button>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
+              onClick={handleGenerateImage}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                />
+              </svg>
+              Generate AI Photo
+            </button>
+            <button
+              className="flex-1 py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+              onClick={handleUseCroppedImage}
+            >
+              Use Cropped Image
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 px-1 text-center sm:text-left">
+            AI generation usually takes 30–60 seconds.
+          </p>
         </div>
       )}
 

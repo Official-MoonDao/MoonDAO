@@ -8,12 +8,26 @@ import { compressImageForUpload, fitImage } from '../utils/images'
 // would otherwise have completed successfully.
 const CREATE_JOB_TIMEOUT_MS = 45_000 // POST /api/image-gen/<route>
 const CREATE_JOB_MAX_RETRIES = 2 // 1 initial attempt + this many retries
-const POLL_INTERVAL_MS = 5_000
-const POLL_MAX_ATTEMPTS = 90 // ≈ 7.5 minutes
+// A shorter poll interval makes the UI notice completion sooner (the generation
+// itself is the slow part, not our polling). Attempts are bumped to keep the
+// overall ceiling at ~7.5 minutes.
+const POLL_INTERVAL_MS = 3_000
+const POLL_MAX_ATTEMPTS = 150 // ≈ 7.5 minutes
 const POLL_TRANSIENT_ERROR_LIMIT = 6 // consecutive failed polls before giving up
 const GET_IMAGE_MAX_RETRIES = 3
 
 const PENDING_STATUSES = new Set(['QUEUED', 'STARTED', 'INIT', 'PENDING'])
+
+// Coarse, user-facing phases of the generation pipeline so the UI can show
+// meaningful progress and set expectations during the (cold-start heavy) wait.
+export type GenerationPhase =
+  | 'idle'
+  | 'uploading'
+  | 'queued'
+  | 'generating'
+  | 'finishing'
+  | 'done'
+  | 'error'
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -40,6 +54,7 @@ export default function useImageGenerator(
 ) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>()
+  const [phase, setPhase] = useState<GenerationPhase>('idle')
 
   // Upload image to Google Cloud Storage. Retries on transient errors
   // (network blips / 5xx) but bails immediately on auth/validation failures.
@@ -202,6 +217,7 @@ export default function useImageGenerator(
 
     setError(undefined)
     setIsLoading(true)
+    setPhase('uploading')
     let uploadedFilename: string | null = null
 
     try {
@@ -209,10 +225,12 @@ export default function useImageGenerator(
       const { url, filename } = await uploadToGoogleStorage(sourceImage)
       uploadedFilename = filename
 
+      setPhase('queued')
       const jobId = await createJob(url)
       await checkJobStatus(jobId, uploadedFilename, sourceImage)
     } catch (err: any) {
       console.error('Image generation failed:', err)
+      setPhase('error')
 
       // Clean up uploaded file on error
       if (uploadedFilename) {
@@ -288,6 +306,7 @@ export default function useImageGenerator(
         }
 
         if (PENDING_STATUSES.has(job.status)) {
+          setPhase(job.status === 'STARTED' ? 'generating' : 'queued')
           await sleep(POLL_INTERVAL_MS)
           continue
         }
@@ -306,6 +325,7 @@ export default function useImageGenerator(
           throw new Error('Job completed without an output image')
         }
 
+        setPhase('finishing')
         let lastErr: any
         for (let attempt = 0; attempt < GET_IMAGE_MAX_RETRIES; attempt++) {
           try {
@@ -325,6 +345,7 @@ export default function useImageGenerator(
             const fileName = `image_${jobId}.png`
             const file = new File([blob], fileName, { type: blob.type })
             setImage(file)
+            setPhase('done')
             return
           } catch (err) {
             lastErr = err
@@ -346,10 +367,12 @@ export default function useImageGenerator(
         )
       }
 
+      setPhase('error')
       const fittedImage = await fitImage(sourceImage, 1024, 1024)
       setImage(fittedImage)
     } catch (err: any) {
       console.error('Image generation polling failed:', err)
+      setPhase('error')
       setError('Unable to generate an image, please try again later.')
       try {
         const fittedImage = await fitImage(sourceImage, 1024, 1024)
@@ -363,5 +386,5 @@ export default function useImageGenerator(
     }
   }
 
-  return { generateImage, isLoading, error }
+  return { generateImage, isLoading, error, phase }
 }
