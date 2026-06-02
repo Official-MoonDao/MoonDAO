@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin, unpinTeamImage } from '@/lib/ipfs/unpin'
-import cleanData from '@/lib/tableland/cleanData'
+import cleanData, { unescapeQuotes } from '@/lib/tableland/cleanData'
 import { waitForRow } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -342,14 +342,8 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                       // refresh so the updated image/details show immediately.
                       const tableName = TEAM_TABLE_NAMES[getChainSlug(selectedChain)]
                       const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${nft.metadata.id}`
-                      // cleanData strips emojis and SQL-escapes single quotes
-                      // ('' ). Tableland stores the un-escaped value, so mirror
-                      // that when comparing or the poll never matches.
-                      const unescapeQuotes = (v: string) => v.replace(/''/g, "'")
                       const expectedName = unescapeQuotes(cleanedTeamData.name ?? '')
-                      const expectedDescription = unescapeQuotes(
-                        cleanedTeamData.description ?? ''
-                      )
+                      const expectedDescription = unescapeQuotes(cleanedTeamData.description ?? '')
                       await waitForRow({
                         statement,
                         checkCondition: (rows) => {
