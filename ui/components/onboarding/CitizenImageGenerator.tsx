@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import useImageGenerator, { GenerationPhase } from '@/lib/image-generator/useImageGenerator'
+import useImageGenerator, {
+  type GenerationPhase,
+} from '@/lib/image-generator/useImageGenerator'
 import { cropImageWithCoordinates } from '@/lib/utils/images'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
@@ -88,7 +90,7 @@ export function ImageGenerator({
   const progressPct = useMemo(() => {
     if (phase === 'done') return 100
     const eased = Math.round((1 - Math.exp(-elapsedMs / 22000)) * 100)
-    if (phase === 'finishing') return Math.max(92, eased)
+    if (phase === 'finishing') return Math.min(98, Math.max(92, eased))
     return Math.min(90, Math.max(5, eased))
   }, [phase, elapsedMs])
 
