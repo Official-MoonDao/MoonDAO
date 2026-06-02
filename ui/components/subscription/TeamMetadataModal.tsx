@@ -1,11 +1,7 @@
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import TeamTableABI from 'const/abis/TeamTable.json'
-import {
-  DEFAULT_CHAIN_V5,
-  TEAM_TABLE_ADDRESSES,
-  TEAM_TABLE_NAMES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, TEAM_TABLE_ADDRESSES, TEAM_TABLE_NAMES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -13,6 +9,7 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin, unpinTeamImage } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
+import waitForTablelandIndexed from '@/lib/tableland/waitForTablelandIndexed'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import deleteResponse from '@/lib/typeform/deleteResponse'
@@ -95,7 +92,7 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
   const [newTeamImage, setNewTeamImage] = useState<File>()
   const [teamData, setTeamData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
-    getAttribute(nft?.metadata?.attributes, 'formId').value
+    getAttribute(nft?.metadata?.attributes, 'formId').value,
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
 
@@ -104,44 +101,6 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
     chain: selectedChain,
     abi: TeamTableABI,
   })
-
-  // Poll Tableland until the updated row is indexed so a page reload shows the
-  // new image/details instead of the stale ones. Best-effort and time-bounded.
-  const waitForTeamIndexed = useCallback(
-    async (
-      tokenId: string,
-      expected: { image: string; name: string; description: string }
-    ) => {
-      const tableName = TEAM_TABLE_NAMES[getChainSlug(selectedChain)]
-      if (!tableName) return
-      const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${tokenId}`
-      const url = `/api/tableland/query?statement=${encodeURIComponent(statement)}`
-      const MAX_ATTEMPTS = 20
-      const INTERVAL_MS = 3000
-
-      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-        try {
-          const res = await fetch(url)
-          if (res.ok) {
-            const rows = await res.json()
-            const row = Array.isArray(rows) ? rows[0] : undefined
-            if (
-              row &&
-              row.image === expected.image &&
-              row.name === expected.name &&
-              (row.description ?? '') === (expected.description ?? '')
-            ) {
-              return
-            }
-          }
-        } catch (err) {
-          console.warn('Error polling Tableland for updated team:', err)
-        }
-        await new Promise((resolve) => setTimeout(resolve, INTERVAL_MS))
-      }
-    },
-    [selectedChain]
-  )
 
   const submitTypeform = useCallback(
     async (formResponse: any) => {
@@ -173,7 +132,7 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
         console.log(err)
       }
     },
-    [teamTableContract, newTeamImage]
+    [teamTableContract, newTeamImage],
   )
 
   useEffect(() => {
@@ -309,7 +268,7 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
 
                       const renamedTeamImage = renameFile(
                         newTeamImage,
-                        `${teamData?.name} Team Image`
+                        `${teamData?.name} Team Image`,
                       )
 
                       //pin new image
@@ -327,7 +286,7 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                       //delete old typeform response
                       await deleteResponse(
                         process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
-                        oldFormResponseId
+                        oldFormResponseId,
                       )
                     }
 
@@ -381,10 +340,11 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                       setEnabled(false)
                       // Wait until the new data is indexed by Tableland, then
                       // refresh so the updated image/details show immediately.
-                      await waitForTeamIndexed(nft.metadata.id, {
+                      const tableName = TEAM_TABLE_NAMES[getChainSlug(selectedChain)]
+                      await waitForTablelandIndexed(tableName, nft.metadata.id, {
                         image: imageIpfsLink,
-                        name: cleanedTeamData.name,
-                        description: cleanedTeamData.description,
+                        name: teamData.name,
+                        description: teamData.description,
                       })
                       router.reload()
                     }

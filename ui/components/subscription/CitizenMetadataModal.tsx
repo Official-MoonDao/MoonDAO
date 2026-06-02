@@ -2,11 +2,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
-import {
-  CITIZEN_TABLE_ADDRESSES,
-  CITIZEN_TABLE_NAMES,
-  DEFAULT_CHAIN_V5,
-} from 'const/config'
+import { CITIZEN_TABLE_ADDRESSES, CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -15,6 +11,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpinCitizenImage } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
+import waitForTablelandIndexed from '@/lib/tableland/waitForTablelandIndexed'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import deleteResponse from '@/lib/typeform/deleteResponse'
@@ -92,7 +89,9 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         value={citizenData?.instagram}
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, instagram: e.target.value }))}
         placeholder="Enter your Instagram link including https://"
-        maxLength={bytesOfString(citizenData?.instagram) >= 1024 ? citizenData?.instagram.length : 1024}
+        maxLength={
+          bytesOfString(citizenData?.instagram) >= 1024 ? citizenData?.instagram.length : 1024
+        }
         formatNumbers={false}
       />
       <Input
@@ -101,7 +100,9 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         value={citizenData?.linkedin}
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, linkedin: e.target.value }))}
         placeholder="Enter your LinkedIn link including https://"
-        maxLength={bytesOfString(citizenData?.linkedin) >= 1024 ? citizenData?.linkedin.length : 1024}
+        maxLength={
+          bytesOfString(citizenData?.linkedin) >= 1024 ? citizenData?.linkedin.length : 1024
+        }
         formatNumbers={false}
       />
       <Input
@@ -125,7 +126,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
   const [newCitizenImage, setNewCitizenImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
-    getAttribute(nft?.metadata?.attributes, 'formId').value
+    getAttribute(nft?.metadata?.attributes, 'formId').value,
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
   const [showEmailUpdate, setShowEmailUpdate] = useState(false)
@@ -166,45 +167,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
         console.log(err)
       }
     },
-    [citizenTableContract]
-  )
-
-  // Poll Tableland until the updated row is indexed so a page reload shows the
-  // new image/details instead of the stale ones. Best-effort and time-bounded.
-  const waitForCitizenIndexed = useCallback(
-    async (
-      tokenId: string,
-      expected: { image: string; name: string; description: string }
-    ) => {
-      const tableName = CITIZEN_TABLE_NAMES[getChainSlug(selectedChain)]
-      if (!tableName) return
-      const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${tokenId}`
-      const url = `/api/tableland/query?statement=${encodeURIComponent(statement)}`
-      const MAX_ATTEMPTS = 20
-      const INTERVAL_MS = 3000
-
-      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-        try {
-          const res = await fetch(url)
-          if (res.ok) {
-            const rows = await res.json()
-            const row = Array.isArray(rows) ? rows[0] : undefined
-            if (
-              row &&
-              row.image === expected.image &&
-              row.name === expected.name &&
-              (row.description ?? '') === (expected.description ?? '')
-            ) {
-              return
-            }
-          }
-        } catch (err) {
-          console.warn('Error polling Tableland for updated citizen:', err)
-        }
-        await new Promise((resolve) => setTimeout(resolve, INTERVAL_MS))
-      }
-    },
-    [selectedChain]
+    [citizenTableContract],
   )
 
   useEffect(() => {
@@ -273,7 +236,10 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
             )}
           </button>
           {showEmailUpdate && (
-            <div data-testid="email-update-section" className="mt-3 w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
+            <div
+              data-testid="email-update-section"
+              className="mt-3 w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative"
+            >
               <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
                 {process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID ? (
                   <Widget
@@ -283,9 +249,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                     height={500}
                   />
                 ) : (
-                  <p className="text-sm text-gray-400 p-4">
-                    Email update form is not available.
-                  </p>
+                  <p className="text-sm text-gray-400 p-4">Email update form is not available.</p>
                 )}
               </div>
             </div>
@@ -323,7 +287,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
 
                 const renamedCitizenImage = renameFile(
                   newCitizenImage,
-                  `${citizenData?.name} Citizen Image`
+                  `${citizenData?.name} Citizen Image`,
                 )
 
                 const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
@@ -338,7 +302,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
               if (oldFormResponseId !== formResponseId) {
                 await deleteResponse(
                   process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
-                  oldFormResponseId
+                  oldFormResponseId,
                 )
               }
 
@@ -427,10 +391,11 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 // Wait until the new data is indexed by Tableland, then refresh
                 // the profile so the user sees their updated image/details
                 // rather than the stale version.
-                await waitForCitizenIndexed(nft.metadata.id, {
+                const tableName = CITIZEN_TABLE_NAMES[getChainSlug(selectedChain)]
+                await waitForTablelandIndexed(tableName, nft.metadata.id, {
                   image: imageIpfsLink,
-                  name: cleanedCitizenData.name,
-                  description: cleanedCitizenData.description,
+                  name: citizenData.name,
+                  description: citizenData.description,
                 })
                 router.reload()
               }
@@ -447,7 +412,9 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
             Danger Zone
           </h3>
           <p className="text-gray-400 text-xs mb-4 leading-relaxed">
-            Deleting your profile data is permanent and cannot be undone. All information — including your name, bio, image, and social links — will be erased from the blockchain. Your citizen NFT will remain, but your profile will be blank.
+            Deleting your profile data is permanent and cannot be undone. All information —
+            including your name, bio, image, and social links — will be erased from the blockchain.
+            Your citizen NFT will remain, but your profile will be blank.
           </p>
           <DeleteProfileData
             nft={nft}
