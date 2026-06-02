@@ -9,7 +9,7 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin, unpinTeamImage } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
-import waitForTablelandIndexed from '@/lib/tableland/waitForTablelandIndexed'
+import { waitForRow } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import deleteResponse from '@/lib/typeform/deleteResponse'
@@ -341,10 +341,21 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                       // Wait until the new data is indexed by Tableland, then
                       // refresh so the updated image/details show immediately.
                       const tableName = TEAM_TABLE_NAMES[getChainSlug(selectedChain)]
-                      await waitForTablelandIndexed(tableName, nft.metadata.id, {
-                        image: imageIpfsLink,
-                        name: teamData.name,
-                        description: teamData.description,
+                      const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${nft.metadata.id}`
+                      await waitForRow({
+                        statement,
+                        checkCondition: (rows) => {
+                          const row = Array.isArray(rows) ? rows[0] : undefined
+                          return (
+                            !!row &&
+                            row.image === imageIpfsLink &&
+                            row.name === cleanedTeamData.name &&
+                            (row.description ?? '') === (cleanedTeamData.description ?? '')
+                          )
+                        },
+                        pollInterval: 3000,
+                        maxRetries: 20,
+                        cacheBusting: true,
                       })
                       router.reload()
                     }

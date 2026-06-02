@@ -11,7 +11,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpinCitizenImage } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
-import waitForTablelandIndexed from '@/lib/tableland/waitForTablelandIndexed'
+import { waitForRow } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import deleteResponse from '@/lib/typeform/deleteResponse'
@@ -392,10 +392,21 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 // the profile so the user sees their updated image/details
                 // rather than the stale version.
                 const tableName = CITIZEN_TABLE_NAMES[getChainSlug(selectedChain)]
-                await waitForTablelandIndexed(tableName, nft.metadata.id, {
-                  image: imageIpfsLink,
-                  name: citizenData.name,
-                  description: citizenData.description,
+                const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${nft.metadata.id}`
+                await waitForRow({
+                  statement,
+                  checkCondition: (rows) => {
+                    const row = Array.isArray(rows) ? rows[0] : undefined
+                    return (
+                      !!row &&
+                      row.image === imageIpfsLink &&
+                      row.name === cleanedCitizenData.name &&
+                      (row.description ?? '') === (cleanedCitizenData.description ?? '')
+                    )
+                  },
+                  pollInterval: 3000,
+                  maxRetries: 20,
+                  cacheBusting: true,
                 })
                 router.reload()
               }

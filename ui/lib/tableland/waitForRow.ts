@@ -4,6 +4,7 @@ type WaitForRowOptions = {
   pollInterval?: number // milliseconds
   timeout?: number // milliseconds
   maxRetries?: number
+  cacheBusting?: boolean // add cache-busting parameter to prevent CDN from serving stale data
 }
 
 type WaitForRowResult = {
@@ -17,15 +18,14 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export async function waitForRow(
-  options: WaitForRowOptions
-): Promise<WaitForRowResult> {
+export async function waitForRow(options: WaitForRowOptions): Promise<WaitForRowResult> {
   const {
     statement,
     checkCondition = (data) => data && data.length > 0,
     pollInterval = 2000, // 2 seconds
     timeout = 60000, // 60 seconds
     maxRetries = 30,
+    cacheBusting = false,
   } = options
 
   const startTime = Date.now()
@@ -35,14 +35,12 @@ export async function waitForRow(
     attempts++
 
     try {
-      const response = await fetch(
-        `/api/tableland/query?statement=${encodeURIComponent(statement)}`
-      )
+      const url = `/api/tableland/query?statement=${encodeURIComponent(statement)}`
+      const cacheBuster = cacheBusting ? `&_=${Date.now()}` : ''
+      const response = await fetch(url + cacheBuster)
 
       if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: 'Unknown error' }))
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
 
         // For 500 errors, continue polling as the row might not exist yet
         if (response.status === 500) {
@@ -86,7 +84,7 @@ export async function waitForRowById(
   tableName: string,
   idColumn: string = 'id',
   idValue: string | number,
-  options: Omit<WaitForRowOptions, 'statement' | 'checkCondition'> = {}
+  options: Omit<WaitForRowOptions, 'statement' | 'checkCondition'> = {},
 ): Promise<WaitForRowResult> {
   const statement = `SELECT * FROM ${tableName} WHERE ${idColumn} = '${idValue}'`
 
