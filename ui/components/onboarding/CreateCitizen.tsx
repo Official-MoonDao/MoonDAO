@@ -109,6 +109,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     citizenData: CitizenData
     citizenImage: SerializedFile | null
     inputImage: SerializedFile | null
+    croppedInputImage: SerializedFile | null
     agreedToCondition: boolean
     selectedChainSlug: string
   }>('CreateCitizenCacheV1', address)
@@ -137,6 +138,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [lastStage, setLastStage] = useState<number>(0)
   const [inputImage, setInputImage] = useState<File>()
   const [citizenImage, setCitizenImage] = useState<any>()
+  // The user's own cropped upload, kept so they can fall back to it on the
+  // Review step ("Use my photo instead") without re-cropping.
+  const [croppedInputImage, setCroppedInputImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<CitizenData>({
     name: '',
     email: '',
@@ -205,7 +209,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const LAYER_ZERO_TRANSFER_COST = useMemo(() => BigInt('3000000000000000'), [])
   const isCrossChain = useMemo(
     () => selectedChainSlug !== defaultChainSlug,
-    [selectedChainSlug, defaultChainSlug]
+    [selectedChainSlug, defaultChainSlug],
   )
 
   // ===== Internal Helper Functions =====
@@ -220,21 +224,33 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       }
       return totalCost
     },
-    [LAYER_ZERO_TRANSFER_COST]
+    [LAYER_ZERO_TRANSFER_COST],
   )
 
   const serializeCacheData = useCallback(async () => {
     const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
     const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
+    const serializedCroppedInputImage = croppedInputImage
+      ? await fileToBase64(croppedInputImage)
+      : null
     return {
       stage,
       citizenData,
       citizenImage: serializedCitizenImage,
       inputImage: serializedInputImage,
+      croppedInputImage: serializedCroppedInputImage,
       agreedToCondition,
       selectedChainSlug,
     }
-  }, [stage, citizenData, citizenImage, inputImage, agreedToCondition, selectedChainSlug])
+  }, [
+    stage,
+    citizenData,
+    citizenImage,
+    inputImage,
+    croppedInputImage,
+    agreedToCondition,
+    selectedChainSlug,
+  ])
 
   const restoreImageFromCache = useCallback(
     (imageData: SerializedFile | string | null, setImage: Function, imageName: string) => {
@@ -245,7 +261,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       }
       return false
     },
-    []
+    [],
   )
 
   const executeFreeMint = useCallback(
@@ -268,7 +284,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       }
       return await res.json()
     },
-    [address, citizenData.name, citizenData.formResponseId]
+    [address, citizenData.name, citizenData.formResponseId],
   )
 
   const executeCrossChainMint = useCallback(
@@ -307,7 +323,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       })
       const message = await waitForMessageReceived(
         isTestnet ? 19999 : 1,
-        originReceipt.transactionHash
+        originReceipt.transactionHash,
       )
       return await waitForReceipt({
         client: client,
@@ -325,7 +341,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       LAYER_ZERO_TRANSFER_COST,
       isTestnet,
       destinationChain,
-    ]
+    ],
   )
 
   const executeDirectMint = useCallback(
@@ -357,7 +373,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         account,
       })
     },
-    [account, citizenContract, address, citizenData.name, citizenData.formResponseId]
+    [account, citizenContract, address, citizenData.name, citizenData.formResponseId],
   )
 
   const handlePostMint = useCallback(
@@ -402,7 +418,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       setTimeout(async () => {
         await sendDiscordMessage(
           'networkNotifications',
-          `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
+          `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`,
         )
 
         const cacheKey = `moondao_citizen_${address?.toLowerCase()}_${DEFAULT_CHAIN_V5.id}`
@@ -421,7 +437,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       address,
       clearCache,
       router,
-    ]
+    ],
   )
 
   // ===== Event Handlers & Callbacks =====
@@ -432,7 +448,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const baseCost = BigInt(ethers.utils.parseEther(formattedCost).toString())
       return calculateTotalCost(baseCost, estimatedGas, gasPriceToUse, isCrossChain)
     },
-    [estimatedGas, effectiveGasPrice, calculateTotalCost, isCrossChain]
+    [estimatedGas, effectiveGasPrice, calculateTotalCost, isCrossChain],
   )
 
   // Gas Estimation Handler
@@ -593,12 +609,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const citizenImageRestored = restoreImageFromCache(
         formData.citizenImage,
         setCitizenImage,
-        'citizen image'
+        'citizen image',
       )
       const inputImageRestored = restoreImageFromCache(
         formData.inputImage,
         setInputImage,
-        'input image'
+        'input image',
+      )
+      const croppedInputImageRestored = restoreImageFromCache(
+        formData.croppedInputImage,
+        setCroppedInputImage,
+        'cropped input image',
       )
 
       imagesRestoredRef.current = citizenImageRestored || inputImageRestored
@@ -613,7 +634,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         }
       }
     },
-    [setSelectedChain, setAgreedToCondition, restoreImageFromCache, estimateMintGas]
+    [setSelectedChain, setAgreedToCondition, restoreImageFromCache, estimateMintGas],
   )
 
   // ===== Side Effects =====
@@ -788,13 +809,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         console.error('Typeform submission error:', error)
         toast.error(
           error?.message || 'Failed to process your profile. Please try again or contact support.',
-          { duration: 8000 }
+          { duration: 8000 },
         )
       } finally {
         setIsSubmittingTypeform(false)
       }
     },
-    [subscribeToNetworkSignup]
+    [subscribeToNetworkSignup],
   )
 
   // ===== Effect Group: Gas Estimation =====
@@ -901,13 +922,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             citizenImage: hasSerializedCitizenImage
               ? existingFormData.citizenImage
               : citizenImageRef.current
-              ? 'PENDING_SERIALIZATION'
-              : null,
+                ? 'PENDING_SERIALIZATION'
+                : null,
             inputImage: hasSerializedInputImage
               ? existingFormData.inputImage
               : inputImageRef.current
-              ? 'PENDING_SERIALIZATION'
-              : null,
+                ? 'PENDING_SERIALIZATION'
+                : null,
             agreedToCondition: agreedToConditionRef.current,
             selectedChainSlug: selectedChainSlugRef.current,
           },
@@ -1039,9 +1060,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   <div className="mb-6">
                     <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
                     <p className="text-slate-400 text-sm leading-relaxed">
-                      Create your unique AI passport photo. Upload a photo with a clear face —
-                      yourself or an avatar. Generation may take up to a minute, so feel free to
-                      continue to the next step.
+                      Upload a photo with a clear face — yourself or an avatar — position the crop,
+                      and we&apos;ll generate your AI passport photo. It renders in the background
+                      (~30–60s) while you keep going; you can regenerate or switch back to your own
+                      photo on the review step.
                     </p>
                   </div>
                   <ImageGenerator
@@ -1053,6 +1075,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     stage={stage}
                     generateInBG
                     onGenerationStateChange={setIsImageGenerating}
+                    onCrop={setCroppedInputImage}
                   />
                   {process.env.NEXT_PUBLIC_ENV === 'dev' && (
                     <button
@@ -1128,8 +1151,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                           citizenImage
                             ? URL.createObjectURL(citizenImage)
                             : inputImage
-                            ? URL.createObjectURL(inputImage)
-                            : '/assets/MoonDAO-Loading-Animation.svg'
+                              ? URL.createObjectURL(inputImage)
+                              : '/assets/MoonDAO-Loading-Animation.svg'
                         }
                         alt="citizen-image"
                         fill
@@ -1155,16 +1178,54 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         </div>
                       )}
                     </div>
-                    {(citizenImage || inputImage) && (
-                      <button
-                        onClick={() => {
-                          setCitizenImage(undefined)
-                          setStage(0)
-                        }}
-                        className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
-                      >
-                        ← Edit Image
-                      </button>
+                    {(citizenImage || inputImage) && !isImageGenerating && (
+                      <div className="flex flex-col items-center gap-3 w-full max-w-[400px]">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full">
+                          <button
+                            onClick={() => {
+                              setCitizenImage(undefined)
+                              setStage(0)
+                            }}
+                            className="flex-1 py-2.5 px-5 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                              />
+                            </svg>
+                            Regenerate
+                          </button>
+                          {(croppedInputImage || inputImage) && (
+                            <button
+                              onClick={() => {
+                                setCitizenImage(croppedInputImage || inputImage)
+                              }}
+                              className="flex-1 py-2.5 px-5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+                            >
+                              Use my photo instead
+                            </button>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setCitizenImage(undefined)
+                            setInputImage(undefined)
+                            setCroppedInputImage(undefined)
+                            setStage(0)
+                          }}
+                          className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2"
+                        >
+                          Change photo
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -1200,8 +1261,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       isLoadingMint
                         ? 'Creating Citizen...'
                         : isLoadingGasEstimate
-                        ? 'Estimating Gas...'
-                        : 'Become a Citizen'
+                          ? 'Estimating Gas...'
+                          : 'Become a Citizen'
                     }
                     className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     isDisabled={!agreedToCondition || isLoadingMint || isLoadingGasEstimate}
