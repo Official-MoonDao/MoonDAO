@@ -179,6 +179,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const citizenDataRef = useRef(citizenData)
   const citizenImageRef = useRef(citizenImage)
   const inputImageRef = useRef(inputImage)
+  const croppedInputImageRef = useRef(croppedInputImage)
   const stageRef = useRef(stage)
   const selectedChainSlugRef = useRef(selectedChainSlug)
 
@@ -875,10 +876,19 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     citizenDataRef.current = citizenData
     citizenImageRef.current = citizenImage
     inputImageRef.current = inputImage
+    croppedInputImageRef.current = croppedInputImage
     stageRef.current = stage
     selectedChainSlugRef.current = selectedChainSlug
     imagesRestoredRef.current = !!citizenImage || !!inputImage
-  }, [agreedToCondition, citizenData, citizenImage, inputImage, stage, selectedChainSlug])
+  }, [
+    agreedToCondition,
+    citizenData,
+    citizenImage,
+    inputImage,
+    croppedInputImage,
+    stage,
+    selectedChainSlug,
+  ])
 
   // ===== Effect Group: Caching =====
   useEffect(() => {
@@ -914,6 +924,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           existingFormData?.citizenImage && isSerializedFile(existingFormData.citizenImage)
         const hasSerializedInputImage =
           existingFormData?.inputImage && isSerializedFile(existingFormData.inputImage)
+        const hasSerializedCroppedInputImage =
+          existingFormData?.croppedInputImage &&
+          isSerializedFile(existingFormData.croppedInputImage)
 
         const cacheData = {
           stage: stageRef.current,
@@ -927,6 +940,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             inputImage: hasSerializedInputImage
               ? existingFormData.inputImage
               : inputImageRef.current
+                ? 'PENDING_SERIALIZATION'
+                : null,
+            croppedInputImage: hasSerializedCroppedInputImage
+              ? existingFormData.croppedInputImage
+              : croppedInputImageRef.current
                 ? 'PENDING_SERIALIZATION'
                 : null,
             agreedToCondition: agreedToConditionRef.current,
@@ -1054,8 +1072,33 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
             {/* Card container */}
             <div className="bg-gradient-to-b from-slate-800/40 to-slate-900/60 backdrop-blur-md border border-white/[0.08] rounded-2xl p-5 sm:p-8">
+              {/* Sign-in guard: the citizen creation flow requires an
+                  authenticated wallet (image generation, typeform submission
+                  and minting all need an address). Without it, users hit
+                  opaque failures like the typeform "failed to get a response"
+                  toast, so block the flow until they sign in. */}
+              {!address && (
+                <div className="animate-fadeIn flex flex-col items-center text-center gap-6 py-6">
+                  <div>
+                    <h2 className="text-2xl font-GoodTimes text-white mb-2">Sign In to Continue</h2>
+                    <p className="text-slate-400 text-sm leading-relaxed max-w-md">
+                      You need to be signed in to create your citizen profile. Sign in with your
+                      wallet, email, or social account to get started.
+                    </p>
+                  </div>
+                  <PrivyWeb3Button
+                    id="citizen-signin-button"
+                    label="Sign In"
+                    showSignInLabel
+                    skipNetworkCheck
+                    action={() => {}}
+                    className="w-full max-w-xs py-3 rounded-2xl font-semibold text-base"
+                  />
+                </div>
+              )}
+
               {/* Stage 0: Design / Image */}
-              {stage === 0 && (
+              {address && stage === 0 && (
                 <div className="animate-fadeIn">
                   <div className="mb-6">
                     <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
@@ -1104,7 +1147,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
               )}
 
               {/* Stage 1: Profile / Typeform */}
-              {stage === 1 && (
+              {address && stage === 1 && (
                 <div className="animate-fadeIn">
                   <div className="mb-6">
                     <h2 className="text-2xl font-GoodTimes text-white mb-2">Profile</h2>
@@ -1134,7 +1177,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
               )}
 
               {/* Stage 2: Review & Mint */}
-              {stage === 2 && (
+              {address && stage === 2 && (
                 <div className="animate-fadeIn flex flex-col gap-8">
                   <div>
                     <h2 className="text-2xl font-GoodTimes text-white mb-2">Review & Mint</h2>
