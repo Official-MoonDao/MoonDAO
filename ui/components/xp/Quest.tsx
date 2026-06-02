@@ -97,8 +97,8 @@ export default function Quest({
   const retryWithBackoff = useCallback(
     async <T,>(
       fn: () => Promise<T>,
-      maxRetries: number = 3,
-      baseDelay: number = 1000
+      maxRetries: number = 2,
+      baseDelay: number = 500
     ): Promise<T> => {
       let lastError: Error
 
@@ -112,13 +112,33 @@ export default function Quest({
             throw lastError
           }
 
-          // Exponential backoff with jitter
-          const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000
+          // Exponential backoff with light jitter (capped so the worst case
+          // stays bounded and a flaky quest can't hang the card for minutes).
+          const delay = Math.min(
+            4000,
+            baseDelay * Math.pow(2, attempt) + Math.random() * 300
+          )
           await new Promise((resolve) => setTimeout(resolve, delay))
         }
       }
 
       throw lastError!
+    },
+    []
+  )
+
+  // fetch wrapper that aborts after `timeoutMs` so a slow/cold serverless
+  // route can't hang the card on "Loading progress..." indefinitely. A timed-
+  // out attempt throws and is then retried by retryWithBackoff.
+  const fetchWithTimeout = useCallback(
+    async (input: string, init: RequestInit = {}, timeoutMs = 8000) => {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), timeoutMs)
+      try {
+        return await fetch(input, { ...init, signal: controller.signal })
+      } finally {
+        clearTimeout(timer)
+      }
     },
     []
   )
@@ -205,7 +225,7 @@ export default function Quest({
             throw new Error('No access token available')
           }
 
-          const response = await fetch(
+          const response = await fetchWithTimeout(
             `${quest.verifier.route}?user=${userAddress}&accessToken=${accessToken}`,
             {
               method: 'GET',
@@ -266,6 +286,7 @@ export default function Quest({
     quest.verifier.metricKey,
     userAddress,
     retryWithBackoff,
+    fetchWithTimeout,
   ])
 
   // Simplified staged progress fetching with retry logic
@@ -606,6 +627,36 @@ export default function Quest({
     }
   }, [])
 
+  // Bounded auto-retry for staged quests: if a fetch finished but produced no
+  // progress (transient network/RPC hiccup), quietly retry a few times with a
+  // short backoff instead of leaving the card stuck until a manual refresh.
+  const autoRetryCountRef = useRef(0)
+  useEffect(() => {
+    if (quest.verifier.type !== 'staged') return
+    if (!userAddress || !verifierContract) return
+    if (stagedProgress || isLoadingStagedProgress) {
+      // Got data (or a fetch is in flight) — reset the counter for next time.
+      if (stagedProgress) autoRetryCountRef.current = 0
+      return
+    }
+    if (autoRetryCountRef.current >= 3) return
+
+    const attempt = autoRetryCountRef.current
+    autoRetryCountRef.current += 1
+    const delay = 1500 * (attempt + 1)
+    const timer = setTimeout(() => {
+      fetchStagedProgress()
+    }, delay)
+    return () => clearTimeout(timer)
+  }, [
+    quest.verifier.type,
+    userAddress,
+    verifierContract,
+    stagedProgress,
+    isLoadingStagedProgress,
+    fetchStagedProgress,
+  ])
+
   const isCompleted: boolean =
     quest.verifier.type === 'staged'
       ? Boolean(
@@ -915,10 +966,24 @@ export default function Quest({
         {/* Progress (consistent across all quest types) */}
         <div className="w-full">
           {isStaged && !stagedProgress ? (
-            <div className="flex items-center gap-2 text-gray-400 text-xs">
-              <LoadingSpinner height="h-4" width="w-4" />
-              Loading progress...
-            </div>
+            isLoadingStagedProgress ? (
+              <div className="flex items-center gap-2 text-gray-400 text-xs">
+                <LoadingSpinner height="h-4" width="w-4" />
+                Loading progress...
+              </div>
+            ) : (
+              // Fetch finished without data (network/RPC hiccup). Don't sit on
+              // a fake "Loading..." forever — let the user retry immediately.
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-gray-400">Couldn't load progress.</span>
+                <button
+                  onClick={() => fetchStagedProgress()}
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors flex-shrink-0"
+                >
+                  Retry
+                </button>
+              </div>
+            )
           ) : (
             <div className="flex flex-col gap-1.5 w-full min-w-0">
               <div className="flex items-center justify-between text-xs gap-2">
