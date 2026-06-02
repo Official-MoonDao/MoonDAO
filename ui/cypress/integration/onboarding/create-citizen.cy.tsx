@@ -6,6 +6,9 @@ describe('<CreateCitizen />', () => {
   let props: any
 
   beforeEach(() => {
+    // The creation flow is gated behind a sign-in guard, so simulate a
+    // connected wallet for the happy-path tests.
+    ;(window as any).__CYPRESS_MOCK_ADDRESS__ = '0x1234567890abcdef'
     props = {
       address: '0x1234567890abcdef',
       selectedChain: CYPRESS_CHAIN_V5,
@@ -19,13 +22,30 @@ describe('<CreateCitizen />', () => {
     )
   })
 
+  afterEach(() => {
+    ;(window as any).__CYPRESS_MOCK_ADDRESS__ = undefined
+  })
+
   it('Should render the component', () => {
     cy.get('div').contains('Join The Network').should('exist')
   })
 
+  it('Should block the flow with a sign-in guard when not signed in', () => {
+    ;(window as any).__CYPRESS_MOCK_ADDRESS__ = undefined
+    cy.mount(
+      <TestnetProviders>
+        <CreateCitizen {...props} />
+      </TestnetProviders>
+    )
+    cy.contains('Sign In to Continue').should('exist')
+    cy.get('#citizen-signin-button').should('exist')
+    // Design-stage content must not render until signed in.
+    cy.contains('Upload a photo with a clear face').should('not.exist')
+  })
+
   it('Should complete citizen onboarding flow', () => {
     //DESIGN
-    cy.contains('Create your unique AI passport photo.').should('exist')
+    cy.contains('Upload a photo with a clear face').should('exist')
 
     // Simulate image upload
     cy.get('input[type="file"]').attachFile('images/Original.png')
@@ -59,7 +79,7 @@ describe('<CreateCitizen />', () => {
       } else {
         // If buttons don't exist (not in dev mode), verify component still renders
         cy.get('input[type="file"]').should('exist')
-        cy.contains('Create your unique AI passport photo.').should('exist')
+        cy.contains('Upload a photo with a clear face').should('exist')
       }
     })
   })
