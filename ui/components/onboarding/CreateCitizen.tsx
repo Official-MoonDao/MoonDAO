@@ -72,6 +72,12 @@ import ContentLayout from '../layout/ContentLayout'
 import { ExpandedFooter } from '../layout/ExpandedFooter'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import {
+  CitizenImageGenerationProgress,
+  computeProgressPct,
+  PHASE_LABELS,
+  type ImageGenProgressSnapshot,
+} from './CitizenImageGenerationProgress'
 import { ImageGenerator } from './CitizenImageGenerator'
 import { DataOverview } from './DataOverview'
 import { TermsCheckbox } from './TermsCheckbox'
@@ -186,6 +192,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // Celebration shown after a successful mint, before landing on the dashboard.
   const [mintComplete, setMintComplete] = useState<boolean>(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
+  const [imageGenProgress, setImageGenProgress] = useState<ImageGenProgressSnapshot | null>(null)
+  const [regenElapsedMs, setRegenElapsedMs] = useState(0)
+  const wasRegeneratingRef = useRef(false)
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [isSubmittingTypeform, setIsSubmittingTypeform] = useState(false)
   // When a signed-out user submits the profile, we hold the Typeform response
@@ -240,13 +249,36 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
 
   // Hook for regenerating AI images from Review step
-  const { generateImage: regenerateAIImage, isLoading: isRegenerating } = useImageGenerator(
-    '/api/image-gen/citizen-image',
-    croppedInputImage,
-    (file: File) => {
-      setCitizenImage(file)
-    },
-  )
+  const {
+    generateImage: regenerateAIImage,
+    isLoading: isRegenerating,
+    phase: regenPhase,
+  } = useImageGenerator('/api/image-gen/citizen-image', croppedInputImage, (file: File) => {
+    setCitizenImage(file)
+  })
+
+  const handleImageGenProgress = useCallback((snapshot: ImageGenProgressSnapshot | null) => {
+    setImageGenProgress(snapshot)
+  }, [])
+
+  // Progress for Review: Design-step generator (hidden mount) or Review regeneration hook.
+  const activeImageGenProgress = useMemo((): ImageGenProgressSnapshot | null => {
+    if (imageGenProgress) return imageGenProgress
+    if (!isRegenerating) return null
+    return {
+      phase: regenPhase,
+      elapsedMs: regenElapsedMs,
+      progressPct: computeProgressPct(regenPhase, regenElapsedMs),
+      phaseLabel: PHASE_LABELS[regenPhase] ?? 'Creating your AI image…',
+      tipIndex: 0,
+    }
+  }, [imageGenProgress, isRegenerating, regenPhase, regenElapsedMs])
+
+  const hasAiPortrait =
+    !!citizenImage && (!croppedInputImage || citizenImage !== croppedInputImage)
+
+  // Keep the hidden Design-step generator mounted while a background job runs.
+  const keepImageGeneratorMounted = stage === 0 || isImageGenerating
 
   // ===== Computed Values =====
   const LAYER_ZERO_TRANSFER_COST = useMemo(() => BigInt('3000000000000000'), [])
@@ -996,14 +1028,27 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     }
   }, [citizenImage, isImageGenerating])
 
-  // Track regeneration state
+  // Sync regeneration loading — only clear when regeneration ends (not while
+  // initial background generation is running with isRegenerating false).
   useEffect(() => {
     if (isRegenerating) {
       setIsImageGenerating(true)
-    } else if (!isRegenerating && isImageGenerating) {
+      wasRegeneratingRef.current = true
+    } else if (wasRegeneratingRef.current) {
+      wasRegeneratingRef.current = false
       setIsImageGenerating(false)
     }
-  }, [isRegenerating, isImageGenerating])
+  }, [isRegenerating])
+
+  useEffect(() => {
+    if (!isRegenerating) {
+      setRegenElapsedMs(0)
+      return
+    }
+    const start = Date.now()
+    const timer = setInterval(() => setRegenElapsedMs(Date.now() - start), 250)
+    return () => clearInterval(timer)
+  }, [isRegenerating])
 
   useEffect(() => {
     if (stage > lastStage) {
@@ -1155,6 +1200,20 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // Memoize the welcome image object URL so the overlay doesn't allocate a new
   // one on every render, and revoke it when the source changes / on unmount.
+  const reviewPreviewFile =
+    hasAiPortrait && citizenImage
+      ? citizenImage
+      : croppedInputImage || inputImage || null
+  const reviewPreviewUrl = useMemo(
+    () => (reviewPreviewFile ? URL.createObjectURL(reviewPreviewFile) : null),
+    [reviewPreviewFile],
+  )
+  useEffect(() => {
+    return () => {
+      if (reviewPreviewUrl) URL.revokeObjectURL(reviewPreviewUrl)
+    }
+  }, [reviewPreviewUrl])
+
   const welcomeImageFile = citizenImage || inputImage
   const welcomeImageUrl = useMemo(
     () => (welcomeImageFile ? URL.createObjectURL(welcomeImageFile) : null),
@@ -1251,18 +1310,27 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
             {/* Card container */}
             <div className="bg-gradient-to-b from-slate-800/40 to-slate-900/60 backdrop-blur-md border border-white/[0.08] rounded-2xl p-5 sm:p-8">
-              {/* Stage 0: Design / Image */}
-              {stage === 0 && (
-                <div className="animate-fadeIn">
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
-                    <p className="text-slate-400 text-sm leading-relaxed">
-                      Upload a photo with a clear face — yourself or an avatar — position the crop,
-                      and we&apos;ll generate your AI passport photo. It renders in the background
-                      (~30–60s) while you keep going; you can regenerate or switch back to your own
-                      photo on the review step.
-                    </p>
-                  </div>
+              {/* Design / Image — stay mounted (hidden) while background AI runs */}
+              {keepImageGeneratorMounted && (
+                <div
+                  className={
+                    stage === 0
+                      ? 'animate-fadeIn'
+                      : 'sr-only fixed w-0 h-0 overflow-hidden opacity-0 pointer-events-none'
+                  }
+                  aria-hidden={stage !== 0}
+                >
+                  {stage === 0 && (
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
+                      <p className="text-slate-400 text-sm leading-relaxed">
+                        Upload a photo with a clear face — yourself or an avatar — position the crop,
+                        and we&apos;ll generate your AI passport photo. It renders in the background
+                        (~30–60s) while you keep going; you can regenerate or switch back to your own
+                        photo on the review step.
+                      </p>
+                    </div>
+                  )}
                   <ImageGenerator
                     image={citizenImage}
                     setImage={setCitizenImage}
@@ -1272,10 +1340,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     stage={stage}
                     generateInBG
                     onGenerationStateChange={setIsImageGenerating}
+                    onGenerationProgress={handleImageGenProgress}
                     onCrop={setCroppedInputImage}
                     authenticated={authenticated}
                   />
-                  {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+                  {stage === 0 && process.env.NEXT_PUBLIC_ENV === 'dev' && (
                     <button
                       className="mt-4 text-xs text-slate-500 hover:text-slate-300 transition-colors"
                       onClick={() => {
@@ -1360,33 +1429,33 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   {/* Image preview */}
                   <div className="flex flex-col items-center gap-4">
                     <div className="relative w-full max-w-[400px] aspect-square rounded-2xl border border-white/[0.08] bg-slate-900/60 overflow-hidden">
-                      <Image
-                        src={
-                          citizenImage
-                            ? URL.createObjectURL(citizenImage)
-                            : croppedInputImage
-                              ? URL.createObjectURL(croppedInputImage)
-                              : inputImage
-                                ? URL.createObjectURL(inputImage)
-                                : '/assets/MoonDAO-Loading-Animation.svg'
-                        }
-                        alt="citizen-image"
-                        fill
-                        style={{ objectFit: 'cover' }}
-                        className="rounded-2xl"
-                      />
-                      {isImageGenerating && !citizenImage && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                          <Image
-                            src="/assets/MoonDAO-Loading-Animation.svg"
-                            alt="generating"
-                            width={100}
-                            height={100}
-                            className="animate-pulse"
-                          />
-                        </div>
+                      {reviewPreviewUrl && (
+                        <Image
+                          src={reviewPreviewUrl}
+                          alt="citizen-image"
+                          fill
+                          style={{ objectFit: 'cover' }}
+                          className={`rounded-2xl transition-opacity duration-300 ${
+                            isImageGenerating && !hasAiPortrait
+                              ? 'opacity-30 blur-[2px]'
+                              : 'opacity-100'
+                          }`}
+                        />
                       )}
-                      {!citizenImage && !inputImage && (
+                      {isImageGenerating && !hasAiPortrait && (
+                        <CitizenImageGenerationProgress
+                          phase={activeImageGenProgress?.phase ?? 'uploading'}
+                          elapsedMs={activeImageGenProgress?.elapsedMs ?? 0}
+                          progressPct={
+                            activeImageGenProgress?.progressPct ??
+                            computeProgressPct('uploading', 0)
+                          }
+                          isBackgroundFlow
+                          tipIndex={activeImageGenProgress?.tipIndex ?? 0}
+                          variant="overlay"
+                        />
+                      )}
+                      {!hasAiPortrait && !croppedInputImage && !inputImage && (
                         <div className="absolute inset-0 flex items-center justify-center bg-slate-800/60">
                           <p className="text-slate-400 text-center text-sm px-6">
                             Complete previous steps to generate your citizen image
@@ -1394,13 +1463,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         </div>
                       )}
                     </div>
-                    {isImageGenerating && !citizenImage && (
-                      <p className="text-center text-xs text-slate-400 max-w-[400px] px-4">
-                        Your AI portrait is still generating in the background — keep reviewing your
-                        details below and it&apos;ll appear here automatically when it&apos;s ready.
-                      </p>
-                    )}
-                    {(citizenImage || inputImage) && (
+                    {(hasAiPortrait || croppedInputImage || inputImage) && (
                       <div className="flex flex-col items-center gap-3 w-full max-w-[400px]">
                         <div className="flex flex-col sm:flex-row gap-3 w-full">
                           <button
@@ -1427,6 +1490,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                             <button
                               onClick={() => {
                                 setCitizenImage(croppedInputImage || inputImage)
+                                setIsImageGenerating(false)
+                                setImageGenProgress(null)
                               }}
                               className="flex-1 py-2.5 px-5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
                             >

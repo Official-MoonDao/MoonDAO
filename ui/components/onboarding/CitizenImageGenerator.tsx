@@ -1,23 +1,17 @@
 import Image from 'next/image'
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import useImageGenerator, {
-  type GenerationPhase,
-} from '@/lib/image-generator/useImageGenerator'
+import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { cropImageWithCoordinates } from '@/lib/utils/images'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import {
+  CitizenImageGenerationProgress,
+  computeProgressPct,
+  PHASE_LABELS,
+  type ImageGenProgressSnapshot,
+} from './CitizenImageGenerationProgress'
 
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w' | null
-
-const PHASE_LABELS: Record<GenerationPhase, string> = {
-  idle: 'Preparing…',
-  uploading: 'Uploading your photo…',
-  queued: 'Waiting in line…',
-  generating: 'Generating your portrait…',
-  finishing: 'Finishing up…',
-  done: 'Done!',
-  error: 'Something went wrong…',
-}
 
 // Rotating messages shown during the wait to keep things feeling alive.
 const GENERATION_TIPS = [
@@ -26,13 +20,6 @@ const GENERATION_TIPS = [
   'Adding some cosmic flair to your image…',
   'Adding the final details to your portrait…',
 ]
-
-function formatElapsed(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000)
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${minutes}:${String(seconds).padStart(2, '0')}`
-}
 
 export function ImageGenerator({
   currImage,
@@ -43,6 +30,7 @@ export function ImageGenerator({
   nextStage,
   generateInBG,
   onGenerationStateChange, // Add this prop
+  onGenerationProgress, // Phase / timer / progress for Review while mounted hidden
   onCrop, // Lifts the cropped upload to the parent (used for "Use my photo")
   authenticated = true, // Whether the user is authenticated (needed for AI generation)
 }: any) {
@@ -94,16 +82,33 @@ export function ImageGenerator({
     }
   }, [generating])
 
-  // Eased progress bar: approaches ~90% over ~45s, with phase-based floors so it
-  // never looks stuck and snaps forward when we hit the final stages.
-  const progressPct = useMemo(() => {
-    if (phase === 'done') return 100
-    const eased = Math.round((1 - Math.exp(-elapsedMs / 22000)) * 100)
-    if (phase === 'finishing') return Math.min(98, Math.max(92, eased))
-    return Math.min(90, Math.max(5, eased))
-  }, [phase, elapsedMs])
+  const progressPct = useMemo(() => computeProgressPct(phase, elapsedMs), [phase, elapsedMs])
 
-  const phaseLabel = PHASE_LABELS[phase] ?? 'Creating your AI image…'
+  // Keep the parent Review step in sync while this instance runs in the background.
+  useEffect(() => {
+    if (!onGenerationProgress) return
+    const isActive = isGenerating || generating
+    if (!isActive) {
+      onGenerationProgress(null)
+      return
+    }
+    const snapshot: ImageGenProgressSnapshot = {
+      phase,
+      elapsedMs,
+      progressPct,
+      phaseLabel: PHASE_LABELS[phase] ?? 'Creating your AI image…',
+      tipIndex,
+    }
+    onGenerationProgress(snapshot)
+  }, [
+    onGenerationProgress,
+    isGenerating,
+    generating,
+    phase,
+    elapsedMs,
+    progressPct,
+    tipIndex,
+  ])
 
   // The working image is an AI result only when it differs from the user's own
   // cropped upload (which is what "Use my photo" / the error fallback set).
@@ -133,14 +138,19 @@ export function ImageGenerator({
         onGenerationStateChange(false)
       }
     }
-    // Cleanup: clear flag on unmount if generation was active to prevent stuck loading state
+    // Don't clear the parent flag on unmount during background onboarding — the
+    // user has already advanced to Profile/Review while generation continues.
     return () => {
-      if (onGenerationStateChange && hasReportedActiveRef.current) {
+      if (
+        onGenerationStateChange &&
+        hasReportedActiveRef.current &&
+        !isBackgroundFlow
+      ) {
         hasReportedActiveRef.current = false
         onGenerationStateChange(false)
       }
     }
-  }, [isGenerating, generating, onGenerationStateChange])
+  }, [isGenerating, generating, onGenerationStateChange, isBackgroundFlow])
 
   const handleGenerateImage = useCallback(async () => {
     if (!inputImage) return
@@ -699,39 +709,14 @@ export function ImageGenerator({
                           aria-hidden="true"
                         />
                       )}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/70 px-6 text-center">
-                        <Image
-                          src="/assets/MoonDAO-Loading-Animation.svg"
-                          width={72}
-                          height={72}
-                          className="animate-pulse"
-                          alt="Generating"
-                        />
-                        <div className="flex w-full max-w-[260px] flex-col gap-2">
-                          <div className="flex items-center justify-between text-xs text-slate-300">
-                            <span>{phaseLabel}</span>
-                            <span className="tabular-nums text-slate-400">
-                              {formatElapsed(elapsedMs)}
-                            </span>
-                          </div>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                            <div
-                              className="h-full rounded-full bg-indigo-400 transition-all duration-700 ease-out"
-                              style={{ width: `${progressPct}%` }}
-                            />
-                          </div>
-                          <p className="text-xs text-slate-500">
-                            {isBackgroundFlow
-                              ? 'Generating in the background • ~30–60s'
-                              : 'Usually takes 30–60 seconds'}
-                          </p>
-                        </div>
-                        <p className="min-h-[1rem] text-xs text-slate-400 transition-opacity duration-300">
-                          {isBackgroundFlow
-                            ? "Keep going with the rest of your citizen creation — your portrait will finish in the background."
-                            : GENERATION_TIPS[tipIndex]}
-                        </p>
-                      </div>
+                      <CitizenImageGenerationProgress
+                        phase={phase}
+                        elapsedMs={elapsedMs}
+                        progressPct={progressPct}
+                        isBackgroundFlow={isBackgroundFlow}
+                        tipIndex={tipIndex}
+                        variant="overlay"
+                      />
                     </div>
                   ) : inputImageUrl ? (
                     <>
