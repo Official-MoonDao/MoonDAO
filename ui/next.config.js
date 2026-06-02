@@ -207,7 +207,7 @@ module.exports = withBundleAnalyzer(
           },
           {
             source: '/discord',
-            destination: 'https://discord.gg/moondao',
+            destination: 'https://discord.gg/CuRRCYYAm5',
             permanent: true,
           },
           {
