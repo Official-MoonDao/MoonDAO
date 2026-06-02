@@ -840,7 +840,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // ===== Effect Group: UI State Sync =====
   useEffect(() => {
-    if (isImageGenerating && (citizenImage || inputImage)) {
+    if (isImageGenerating && citizenImage) {
       setIsImageGenerating(false)
     }
   }, [citizenImage, inputImage, isImageGenerating])
