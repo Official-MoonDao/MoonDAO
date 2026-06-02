@@ -8,6 +8,34 @@ import { getChainById } from '@/lib/thirdweb/chain'
 import { XP_VERIFIERS } from './config'
 
 /**
+ * Builds the request used to *check* (not claim) a quest's eligibility.
+ *
+ * This MUST be a GET. On every XP proof route a GET only reports eligibility,
+ * whereas a POST signs the proof AND relays an on-chain bulk-claim transaction
+ * on the user's behalf (see e.g. `pages/api/xp/voting-power-proof.ts` and the
+ * `submit*BulkClaimFor` helpers). The claimable-quests *count* runs on every
+ * dashboard render, so issuing a POST here would silently auto-claim every
+ * eligible quest — and burn relayer gas — without the user ever clicking
+ * "Claim". Mirrors the read-only `fetchUserMetric` GET in
+ * `components/xp/Quest.tsx`.
+ */
+export function buildQuestEligibilityRequest(
+  route: string,
+  user: string,
+  accessToken: string
+): { url: string; init: RequestInit } {
+  return {
+    url: `${route}?user=${encodeURIComponent(user)}&accessToken=${encodeURIComponent(
+      accessToken
+    )}`,
+    init: {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    },
+  }
+}
+
+/**
  * Returns the number of XP quests the user is eligible to claim but hasn't yet.
  * Checks both on-chain claim status (verifierId) and the quest's backend API.
  * Returns null while still loading (including during revalidation).
@@ -77,16 +105,17 @@ export function useClaimableQuestsCount(userAddress?: string): number | null {
           }
           if (claimed) return false
 
-          // 2. Check eligibility via the quest's backend API. Send the token
-          // in the POST body rather than the query string to avoid leaking it
-          // via logs/history. The proof routes return an explicit `eligible`
-          // boolean that already applies the per-verifier threshold.
+          // 2. Check eligibility via the quest's backend API. Use the
+          // read-only GET request (see `buildQuestEligibilityRequest`): a POST
+          // would relay an on-chain claim. The GET path returns an explicit
+          // `eligible` boolean that already applies the per-verifier threshold.
           try {
-            const res = await fetch(v.route, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user: userAddress, accessToken }),
-            })
+            const { url, init } = buildQuestEligibilityRequest(
+              v.route,
+              userAddress as string,
+              accessToken as string
+            )
+            const res = await fetch(url, init)
             if (!res.ok) return false
             const data = await res.json()
             return Boolean(data.eligible)

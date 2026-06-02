@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
 import { extractTokenIdFromReceipt } from '@/lib/onboarding/shared-utils'
+import { buildQuestEligibilityRequest } from '@/lib/xp/useClaimableQuestsCount'
 
 // ============================================================================
 // Bug #1: Cross-chain slippage protection
@@ -523,5 +524,45 @@ describe('Bug #6: MissionCreated event log null safety', () => {
       ],
     }
     expect(extractMissionId(receipt)).to.equal('5')
+  })
+})
+
+// ============================================================================
+// Bug #7: Claimable-quests count must NOT trigger on-chain claims
+// `useClaimableQuestsCount` runs on every dashboard render to show a badge.
+// On every XP proof route, a GET only *reports* eligibility while a POST
+// signs the proof AND relays an on-chain bulk-claim tx on the user's behalf
+// (submit*BulkClaimFor). A regression switched the eligibility check to POST,
+// which silently auto-claimed every eligible quest — and burned relayer gas —
+// just by rendering the dashboard. The check MUST use a read-only GET.
+// ============================================================================
+describe('Bug #7: claimable-quests eligibility check is read-only (GET)', () => {
+  const ROUTE = '/api/xp/voting-power-proof'
+  const USER = '0x000000000000000000000000abcdef1234567890'
+  const TOKEN = 'header.payload.signature'
+
+  it('issues a GET request, never a claim-triggering POST', () => {
+    const { init } = buildQuestEligibilityRequest(ROUTE, USER, TOKEN)
+    expect(init.method).to.equal('GET')
+    expect(init.method).to.not.equal('POST')
+  })
+
+  it('passes user + accessToken via query string (the GET handler contract)', () => {
+    const { url } = buildQuestEligibilityRequest(ROUTE, USER, TOKEN)
+    expect(url).to.contain(`${ROUTE}?`)
+    expect(url).to.contain(`user=${encodeURIComponent(USER)}`)
+    expect(url).to.contain(`accessToken=${encodeURIComponent(TOKEN)}`)
+  })
+
+  it('does not put credentials in a body that the POST claim path would read', () => {
+    const { init } = buildQuestEligibilityRequest(ROUTE, USER, TOKEN)
+    expect(init.body).to.be.undefined
+  })
+
+  it('encodes special characters in the token so it cannot break the query', () => {
+    const trickyToken = 'a&b=c d/e+f'
+    const { url } = buildQuestEligibilityRequest(ROUTE, USER, trickyToken)
+    expect(url).to.contain(`accessToken=${encodeURIComponent(trickyToken)}`)
+    expect(url).to.not.contain('accessToken=a&b=c')
   })
 })
