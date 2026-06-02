@@ -96,6 +96,10 @@ export function ImageGenerator({
 
   const phaseLabel = PHASE_LABELS[phase] ?? 'Creating your AI image…'
 
+  // The working image is an AI result only when it differs from the user's own
+  // cropped upload (which is what "Use my photo" / the error fallback set).
+  const hasGeneratedImage = !!image && image !== croppedImage
+
   // Store original image when first uploaded
   useEffect(() => {
     if (inputImage) {
@@ -202,15 +206,19 @@ export function ImageGenerator({
 
   // Use the user's own (cropped) photo instead of the AI version.
   const handleUseMyPhoto = useCallback(async () => {
-    let cropped = croppedImage
-    if (!cropped && inputImage) {
-      cropped = await cropImageWithCoordinates(inputImage, cropArea.x, cropArea.y, cropArea.size)
-    }
-    if (cropped) {
-      setCroppedImage(cropped)
-      setImage(cropped)
-      onCrop?.(cropped)
-      if (isBackgroundFlow) nextStage?.()
+    try {
+      let cropped = croppedImage
+      if (!cropped && inputImage) {
+        cropped = await cropImageWithCoordinates(inputImage, cropArea.x, cropArea.y, cropArea.size)
+      }
+      if (cropped) {
+        setCroppedImage(cropped)
+        setImage(cropped)
+        onCrop?.(cropped)
+        if (isBackgroundFlow) nextStage?.()
+      }
+    } catch (error) {
+      console.error('Error cropping image:', error)
     }
   }, [
     croppedImage,
@@ -799,8 +807,9 @@ export function ImageGenerator({
       {inputImage && !image && !generating && (
         <div className="flex flex-col gap-2">
           <button
-            className="w-full py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
+            className="w-full py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
             onClick={handleGenerateImage}
+            disabled={isGenerating || generating}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -819,8 +828,9 @@ export function ImageGenerator({
               : 'Generation usually takes 30–60 seconds.'}
           </p>
           <button
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2 mx-auto"
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleUseCroppedImage}
+            disabled={isGenerating || generating}
           >
             Skip AI and use my photo
           </button>
@@ -854,7 +864,7 @@ export function ImageGenerator({
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  Regenerate
+                  {hasGeneratedImage ? 'Regenerate' : 'Generate AI Photo'}
                 </button>
                 <button
                   className="flex-1 py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
