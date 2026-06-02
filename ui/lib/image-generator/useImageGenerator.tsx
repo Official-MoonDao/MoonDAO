@@ -104,7 +104,7 @@ export default function useImageGenerator(
           (prepared as File).name || file.name
         )
         response = await fetchWithTimeout(
-          '/api/google/storage/upload',
+          '/api/image-gen/upload-input',
           { method: 'POST', body: formData },
           60_000
         )
@@ -128,8 +128,10 @@ export default function useImageGenerator(
             'Failed to upload image to Google Storage: malformed response'
           )
         }
-        const urlParts = result.url.split('/')
-        const filename = urlParts.slice(4).join('/')
+        const filename =
+          typeof result.filename === 'string'
+            ? result.filename
+            : result.url.split('/').slice(4).join('/')
         return { url: result.url, filename }
       }
 
@@ -148,11 +150,6 @@ export default function useImageGenerator(
 
       // Don't retry on auth or client errors — they won't get better.
       if (response.status < 500 || attempt === UPLOAD_MAX_ATTEMPTS) {
-        if (response.status === 401 || response.status === 403) {
-          throw new Error(
-            'You need to be signed in to generate an image. Please sign in and try again.'
-          )
-        }
         throw new Error(
           `Failed to upload image to Google Storage (${response.status})${
             detail ? `: ${detail}` : ''
@@ -171,7 +168,7 @@ export default function useImageGenerator(
   // Delete image from Google Cloud Storage
   async function deleteFromGoogleStorage(filename: string) {
     try {
-      await fetch('/api/google/storage/delete', {
+      await fetch('/api/image-gen/delete-input', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -276,10 +273,7 @@ export default function useImageGenerator(
           ? err.message
           : 'Unable to generate an image, please try again later.'
       setError(
-        message.startsWith('Failed to upload') ||
-          message.startsWith('You need to be signed in')
-          ? message
-          : 'Unable to generate an image, please try again later.'
+        message.startsWith('Failed to upload') ? message : 'Unable to generate an image, please try again later.',
       )
       setIsLoading(false)
     }

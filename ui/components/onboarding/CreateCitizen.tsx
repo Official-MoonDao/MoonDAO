@@ -1342,7 +1342,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     onGenerationStateChange={setIsImageGenerating}
                     onGenerationProgress={handleImageGenProgress}
                     onCrop={setCroppedInputImage}
-                    authenticated={authenticated}
                   />
                   {stage === 0 && process.env.NEXT_PUBLIC_ENV === 'dev' && (
                     <button
