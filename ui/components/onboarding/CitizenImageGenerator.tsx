@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import useImageGenerator, { GenerationPhase } from '@/lib/image-generator/useImageGenerator'
+import useImageGenerator, {
+  type GenerationPhase,
+} from '@/lib/image-generator/useImageGenerator'
 import { cropImageWithCoordinates } from '@/lib/utils/images'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'

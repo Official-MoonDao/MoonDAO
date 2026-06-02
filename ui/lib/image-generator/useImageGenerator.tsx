@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { compressImageForUpload, fitImage } from '../utils/images'
 
 // Tunables for the comfy.icu polling pipeline. These default to fairly generous
@@ -52,9 +52,36 @@ export default function useImageGenerator(
   inputImage: File | undefined,
   setImage: Function
 ) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string>()
-  const [phase, setPhase] = useState<GenerationPhase>('idle')
+  const [isLoading, _setIsLoading] = useState(false)
+  const [error, _setError] = useState<string>()
+  const [phase, _setPhase] = useState<GenerationPhase>('idle')
+
+  // The onboarding "generate in background" flow can advance (and unmount this
+  // hook's owner) while a job is still uploading/polling. Guard our internal
+  // state setters so they no-op after unmount, while leaving `setImage` (the
+  // parent-provided callback) free to deliver the result.
+  const isMountedRef = useRef(true)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  const setIsLoading = (value: boolean) => {
+    if (isMountedRef.current) _setIsLoading(value)
+  }
+  const setError = (value?: string) => {
+    if (isMountedRef.current) _setError(value)
+  }
+  // Only re-render when the phase actually changes. Polling calls this on every
+  // tick (often with the same value), and the functional updater lets React
+  // bail out of a render when the value is unchanged.
+  const setPhase = (value: GenerationPhase) => {
+    if (isMountedRef.current) {
+      _setPhase((prev) => (prev === value ? prev : value))
+    }
+  }
 
   // Upload image to Google Cloud Storage. Retries on transient errors
   // (network blips / 5xx) but bails immediately on auth/validation failures.
