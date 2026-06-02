@@ -181,6 +181,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   // poll Tableland until the real record shows up (see OPTIMISTIC_WINDOW_MS).
   const [optimisticActive, setOptimisticActive] = useState(false)
   const optimisticUntilRef = useRef(0)
+  const optimisticTimerRef = useRef<NodeJS.Timeout | null>(null)
   const account = useActiveAccount()
   const { authenticated, user } = usePrivy()
   const hasLoadedNonDefaultCache = useRef(false)
@@ -195,6 +196,10 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     hasLoadedNonDefaultCache.current = false
     optimisticUntilRef.current = 0
     setOptimisticActive(false)
+    if (optimisticTimerRef.current) {
+      clearTimeout(optimisticTimerRef.current)
+      optimisticTimerRef.current = null
+    }
   }, [address, chainId])
 
   // Load cached data immediately when address/chain are available
@@ -232,15 +237,16 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       ? null
       : `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]} WHERE owner = '${address?.toLowerCase()}'`
 
-  const { data: citizenData, isLoading: isLoadingQuery, mutate } = useTablelandQuery(
-    statement,
-    {
-      revalidateOnFocus: false,
-      // Poll while we're optimistically trusting a just-minted citizen so the
-      // real Tableland row replaces the seed as soon as it's indexed.
-      refreshInterval: optimisticActive ? OPTIMISTIC_POLL_MS : 0,
-    }
-  )
+  const {
+    data: citizenData,
+    isLoading: isLoadingQuery,
+    mutate,
+  } = useTablelandQuery(statement, {
+    revalidateOnFocus: false,
+    // Poll while we're optimistically trusting a just-minted citizen so the
+    // real Tableland row replaces the seed as soon as it's indexed.
+    refreshInterval: optimisticActive ? OPTIMISTIC_POLL_MS : 0,
+  })
 
   // Optimistically mark the wallet as a citizen right after minting. Updates
   // state + cache immediately and kicks off a refetch; the empty-result branch
@@ -255,8 +261,17 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
         setCachedCitizen(address, DEFAULT_CHAIN_V5.id, nft)
       }
       mutate()
+      // Set up a timer to expire the optimistic window, independently of effect re-runs
+      if (optimisticTimerRef.current) {
+        clearTimeout(optimisticTimerRef.current)
+      }
+      optimisticTimerRef.current = setTimeout(() => {
+        setOptimisticActive(false)
+        optimisticUntilRef.current = 0
+        optimisticTimerRef.current = null
+      }, OPTIMISTIC_WINDOW_MS)
     },
-    [address, mutate]
+    [address, mutate],
   )
 
   // Update citizen state when data changes
@@ -312,6 +327,10 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     if (optimisticActive) {
       setOptimisticActive(false)
       optimisticUntilRef.current = 0
+      if (optimisticTimerRef.current) {
+        clearTimeout(optimisticTimerRef.current)
+        optimisticTimerRef.current = null
+      }
     }
   }, [
     citizenData,
@@ -335,6 +354,15 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       hasLoadedNonDefaultCache.current = false
     }
   }, [authenticated, mock])
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (optimisticTimerRef.current) {
+        clearTimeout(optimisticTimerRef.current)
+      }
+    }
+  }, [])
 
   return (
     <CitizenContext.Provider value={{ citizen, setCitizen, seedCitizen, isLoading }}>
