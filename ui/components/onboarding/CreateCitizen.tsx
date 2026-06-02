@@ -124,7 +124,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // In test mode (Cypress), use mock address from window if available
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
-  const { authenticated } = usePrivy()
+  const { authenticated, login } = usePrivy()
 
   // Form state caching - needs to be defined before useOnrampInitialStage
   const { cache, setCache, clearCache, restoreCache } = useFormCache<{
@@ -188,6 +188,14 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [isImageGenerating, setIsImageGenerating] = useState(false)
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [isSubmittingTypeform, setIsSubmittingTypeform] = useState(false)
+  // When a signed-out user submits the profile, we hold the Typeform response
+  // here and prompt sign-in; processing the response needs an authenticated
+  // Privy session (the /api/typeform/response route is auth-guarded).
+  const [pendingTypeform, setPendingTypeform] = useState<{
+    formId: string
+    responseId: string
+  } | null>(null)
+  const processingPendingTypeformRef = useRef(false)
 
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
@@ -871,6 +879,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     async (formResponse: any) => {
       const { formId, responseId } = formResponse
 
+      // Reading back the profile answers requires an authenticated Privy
+      // session. Sign-in is deferred until this point, so if the user is still
+      // signed out, stash the response and prompt login; an effect re-runs this
+      // once they're authenticated.
+      if (!authenticated) {
+        setPendingTypeform({ formId, responseId })
+        login()
+        return
+      }
+
       setIsSubmittingTypeform(true)
       try {
         const cleanedData = await handleTypeformSubmission({
@@ -896,8 +914,21 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         setIsSubmittingTypeform(false)
       }
     },
-    [subscribeToNetworkSignup],
+    [subscribeToNetworkSignup, authenticated, login],
   )
+
+  // Once a signed-out user authenticates (prompted at profile submit), process
+  // the stashed Typeform response so the flow continues to Review.
+  useEffect(() => {
+    if (authenticated && pendingTypeform && !processingPendingTypeformRef.current) {
+      processingPendingTypeformRef.current = true
+      const pending = pendingTypeform
+      setPendingTypeform(null)
+      submitTypeform(pending).finally(() => {
+        processingPendingTypeformRef.current = false
+      })
+    }
+  }, [authenticated, pendingTypeform, submitTypeform])
 
   // Regenerate Handler for Review step
   const handleRegenerateFromReview = useCallback(async () => {
@@ -1287,6 +1318,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         className="animate-pulse"
                       />
                       <p className="text-white font-medium">Processing your profile...</p>
+                    </div>
+                  ) : pendingTypeform && !authenticated ? (
+                    <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
+                      <h3 className="font-GoodTimes text-lg text-white">
+                        One last step — sign in to finish
+                      </h3>
+                      <p className="text-slate-400 text-sm max-w-[420px]">
+                        Your profile is saved. Sign in or create your wallet to finalize your
+                        details and continue to mint your citizenship.
+                      </p>
+                      <button
+                        onClick={() => login()}
+                        className="mt-2 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+                      >
+                        Sign in to continue
+                      </button>
                     </div>
                   ) : (
                     <div className="w-full rounded-xl overflow-hidden border border-white/[0.06]">
