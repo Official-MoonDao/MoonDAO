@@ -168,7 +168,6 @@ export function ImageGenerator({
       onGenerationStateChange(true)
     }
     setImage(null)
-    setHasGeneratedImage(false)
     setShowError(false)
 
     try {
@@ -208,7 +207,7 @@ export function ImageGenerator({
     if (cropped) {
       setCroppedImage(cropped)
       setImage(cropped)
-      setHasGeneratedImage(false)
+      onCrop?.(cropped)
       if (isBackgroundFlow) nextStage?.()
     }
   }, [
@@ -218,6 +217,7 @@ export function ImageGenerator({
     cropArea.y,
     cropArea.size,
     setImage,
+    onCrop,
     isBackgroundFlow,
     nextStage,
   ])
@@ -227,15 +227,10 @@ export function ImageGenerator({
     if (!generating) {
       if (generateError && croppedImage) {
         setImage(croppedImage)
-      } else if (!generateError && image) {
-        // AI generation succeeded — mark it
-        setHasGeneratedImage(true)
       }
       setIsGenerating(false)
     }
   }, [generating, generateError, croppedImage, setImage, image])
-
-  const [hasGeneratedImage, setHasGeneratedImage] = useState(false)
   const [showError, setShowError] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
@@ -589,7 +584,6 @@ export function ImageGenerator({
                   setInputImage(undefined)
                   setImage(null)
                   setCroppedImage(null)
-                  setHasGeneratedImage(false)
                   setIsReCropping(false)
                   setShowError(false)
                 }}
