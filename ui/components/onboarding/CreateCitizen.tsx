@@ -130,6 +130,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     citizenData: CitizenData
     citizenImage: SerializedFile | null
     inputImage: SerializedFile | null
+    croppedInputImage: SerializedFile | null
     agreedToCondition: boolean
     selectedChainSlug: string
   }>('CreateCitizenCacheV1', address)
@@ -158,6 +159,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [lastStage, setLastStage] = useState<number>(0)
   const [inputImage, setInputImage] = useState<File>()
   const [citizenImage, setCitizenImage] = useState<any>()
+  // The user's own cropped upload, kept so they can fall back to it on the
+  // Review step ("Use my photo instead") without re-cropping.
+  const [croppedInputImage, setCroppedInputImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<CitizenData>({
     name: '',
     email: '',
@@ -249,15 +253,27 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const serializeCacheData = useCallback(async () => {
     const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
     const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
+    const serializedCroppedInputImage = croppedInputImage
+      ? await fileToBase64(croppedInputImage)
+      : null
     return {
       stage,
       citizenData,
       citizenImage: serializedCitizenImage,
       inputImage: serializedInputImage,
+      croppedInputImage: serializedCroppedInputImage,
       agreedToCondition,
       selectedChainSlug,
     }
-  }, [stage, citizenData, citizenImage, inputImage, agreedToCondition, selectedChainSlug])
+  }, [
+    stage,
+    citizenData,
+    citizenImage,
+    inputImage,
+    croppedInputImage,
+    agreedToCondition,
+    selectedChainSlug,
+  ])
 
   const restoreImageFromCache = useCallback(
     (imageData: SerializedFile | string | null, setImage: Function, imageName: string) => {
@@ -652,6 +668,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         formData.inputImage,
         setInputImage,
         'input image',
+      )
+      const croppedInputImageRestored = restoreImageFromCache(
+        formData.croppedInputImage,
+        setCroppedInputImage,
+        'cropped input image',
       )
 
       imagesRestoredRef.current = citizenImageRestored || inputImageRestored
@@ -1130,9 +1151,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   <div className="mb-6">
                     <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
                     <p className="text-slate-400 text-sm leading-relaxed">
-                      Create your unique AI passport photo. Upload a photo with a clear face —
-                      yourself or an avatar. Generation may take up to a minute, so feel free to
-                      continue to the next step.
+                      Upload a photo with a clear face — yourself or an avatar — position the crop,
+                      and we&apos;ll generate your AI passport photo. It renders in the background
+                      (~30–60s) while you keep going; you can regenerate or switch back to your own
+                      photo on the review step.
                     </p>
                   </div>
                   <ImageGenerator
@@ -1144,6 +1166,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     stage={stage}
                     generateInBG
                     onGenerationStateChange={setIsImageGenerating}
+                    onCrop={setCroppedInputImage}
                   />
                   {process.env.NEXT_PUBLIC_ENV === 'dev' && (
                     <button
@@ -1246,16 +1269,54 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         </div>
                       )}
                     </div>
-                    {(citizenImage || inputImage) && (
-                      <button
-                        onClick={() => {
-                          setCitizenImage(undefined)
-                          setStage(0)
-                        }}
-                        className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
-                      >
-                        ← Edit Image
-                      </button>
+                    {(citizenImage || inputImage) && !isImageGenerating && (
+                      <div className="flex flex-col items-center gap-3 w-full max-w-[400px]">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full">
+                          <button
+                            onClick={() => {
+                              setCitizenImage(undefined)
+                              setStage(0)
+                            }}
+                            className="flex-1 py-2.5 px-5 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                              />
+                            </svg>
+                            Regenerate
+                          </button>
+                          {(croppedInputImage || inputImage) && (
+                            <button
+                              onClick={() => {
+                                setCitizenImage(croppedInputImage || inputImage)
+                              }}
+                              className="flex-1 py-2.5 px-5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+                            >
+                              Use my photo instead
+                            </button>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setCitizenImage(undefined)
+                            setInputImage(undefined)
+                            setCroppedInputImage(undefined)
+                            setStage(0)
+                          }}
+                          className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2"
+                        >
+                          Change photo
+                        </button>
+                      </div>
                     )}
                   </div>
 
