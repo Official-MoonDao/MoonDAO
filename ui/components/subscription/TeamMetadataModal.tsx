@@ -1,14 +1,15 @@
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import TeamTableABI from 'const/abis/TeamTable.json'
-import { DEFAULT_CHAIN_V5, TEAM_TABLE_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN_V5, TEAM_TABLE_ADDRESSES, TEAM_TABLE_NAMES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin, unpinTeamImage } from '@/lib/ipfs/unpin'
-import cleanData from '@/lib/tableland/cleanData'
+import cleanData, { unescapeQuotes } from '@/lib/tableland/cleanData'
+import { waitForRow } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import deleteResponse from '@/lib/typeform/deleteResponse'
@@ -91,7 +92,7 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
   const [newTeamImage, setNewTeamImage] = useState<File>()
   const [teamData, setTeamData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
-    getAttribute(nft?.metadata?.attributes, 'formId').value
+    getAttribute(nft?.metadata?.attributes, 'formId').value,
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
 
@@ -131,7 +132,7 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
         console.log(err)
       }
     },
-    [teamTableContract, newTeamImage]
+    [teamTableContract, newTeamImage],
   )
 
   useEffect(() => {
@@ -267,7 +268,7 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
 
                       const renamedTeamImage = renameFile(
                         newTeamImage,
-                        `${teamData?.name} Team Image`
+                        `${teamData?.name} Team Image`,
                       )
 
                       //pin new image
@@ -285,7 +286,7 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                       //delete old typeform response
                       await deleteResponse(
                         process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
-                        oldFormResponseId
+                        oldFormResponseId,
                       )
                     }
 
@@ -335,13 +336,34 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                     })
 
                     if (receipt) {
-                      setTimeout(() => {
-                        setEnabled(false)
-                        router.reload()
-                      }, 30000)
+                      toast.success('Profile Edited Successfully')
+                      setEnabled(false)
+                      // Wait until the new data is indexed by Tableland, then
+                      // refresh so the updated image/details show immediately.
+                      const tableName = TEAM_TABLE_NAMES[getChainSlug(selectedChain)]
+                      const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${nft.metadata.id}`
+                      const expectedName = unescapeQuotes(cleanedTeamData.name ?? '')
+                      const expectedDescription = unescapeQuotes(cleanedTeamData.description ?? '')
+                      await waitForRow({
+                        statement,
+                        checkCondition: (rows) => {
+                          const row = Array.isArray(rows) ? rows[0] : undefined
+                          return (
+                            !!row &&
+                            row.image === imageIpfsLink &&
+                            row.name === expectedName &&
+                            (row.description ?? '') === expectedDescription
+                          )
+                        },
+                        pollInterval: 3000,
+                        maxRetries: 20,
+                        cacheBusting: true,
+                      })
+                      router.reload()
                     }
                   } catch (err) {
                     console.log(err)
+                    toast.error('Something went wrong updating your profile. Please try again.')
                   }
                 }}
               />
