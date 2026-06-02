@@ -109,6 +109,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     citizenData: CitizenData
     citizenImage: SerializedFile | null
     inputImage: SerializedFile | null
+    croppedInputImage: SerializedFile | null
     agreedToCondition: boolean
     selectedChainSlug: string
   }>('CreateCitizenCacheV1', address)
@@ -229,15 +230,27 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const serializeCacheData = useCallback(async () => {
     const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
     const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
+    const serializedCroppedInputImage = croppedInputImage
+      ? await fileToBase64(croppedInputImage)
+      : null
     return {
       stage,
       citizenData,
       citizenImage: serializedCitizenImage,
       inputImage: serializedInputImage,
+      croppedInputImage: serializedCroppedInputImage,
       agreedToCondition,
       selectedChainSlug,
     }
-  }, [stage, citizenData, citizenImage, inputImage, agreedToCondition, selectedChainSlug])
+  }, [
+    stage,
+    citizenData,
+    citizenImage,
+    inputImage,
+    croppedInputImage,
+    agreedToCondition,
+    selectedChainSlug,
+  ])
 
   const restoreImageFromCache = useCallback(
     (imageData: SerializedFile | string | null, setImage: Function, imageName: string) => {
@@ -603,6 +616,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         setInputImage,
         'input image',
       )
+      const croppedInputImageRestored = restoreImageFromCache(
+        formData.croppedInputImage,
+        setCroppedInputImage,
+        'cropped input image',
+      )
 
       imagesRestoredRef.current = citizenImageRestored || inputImageRestored
 
@@ -843,7 +861,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     if (isImageGenerating && citizenImage) {
       setIsImageGenerating(false)
     }
-  }, [citizenImage, inputImage, isImageGenerating])
+  }, [citizenImage, isImageGenerating])
 
   useEffect(() => {
     if (stage > lastStage) {
