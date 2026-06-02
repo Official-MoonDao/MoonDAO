@@ -18,26 +18,15 @@ import { BigNumber } from 'ethers'
 import { ethers } from 'ethers'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect, useContext, useMemo } from 'react'
+import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react'
 import toast from 'react-hot-toast'
-import {
-  prepareContractCall,
-  sendAndConfirmTransaction,
-  readContract,
-  getContract,
-} from 'thirdweb'
+import { prepareContractCall, sendAndConfirmTransaction, readContract, getContract } from 'thirdweb'
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { useActiveAccount } from 'thirdweb/react'
-import {
-  arbitrum,
-  base,
-  ethereum,
-  sepolia,
-  arbitrumSepolia,
-  Chain,
-} from '@/lib/rpc/chains'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { arbitrum, base, ethereum, sepolia, arbitrumSepolia, Chain } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -88,8 +77,7 @@ async function safeRead<T>(
     } catch (err: any) {
       const isLast = attempt === retries
       const isBufferDecodeError =
-        err?.message?.includes("reading 'buffer'") ||
-        err?.message?.includes('decodeAbiParameters')
+        err?.message?.includes("reading 'buffer'") || err?.message?.includes('decodeAbiParameters')
       if (!isLast && isBufferDecodeError) {
         await sleep(baseDelay * Math.pow(2, attempt))
         continue
@@ -155,12 +143,8 @@ function StatCard({
           </div>
         ) : (
           <>
-            <div className="text-white font-GoodTimes text-xl sm:text-2xl break-words">
-              {value}
-            </div>
-            {subValue && (
-              <div className="text-gray-400 text-xs sm:text-sm mt-1">{subValue}</div>
-            )}
+            <div className="text-white font-GoodTimes text-xl sm:text-2xl break-words">{value}</div>
+            {subValue && <div className="text-gray-400 text-xs sm:text-sm mt-1">{subValue}</div>}
           </>
         )}
       </div>
@@ -259,15 +243,9 @@ export default function Fees() {
                 const result = data?.result
                 // Guard against malformed responses like '0x' or non-hex strings
                 // that would otherwise throw inside BigNumber.from.
-                if (
-                  typeof result !== 'string' ||
-                  !/^0x[0-9a-fA-F]+$/.test(result)
-                ) {
+                if (typeof result !== 'string' || !/^0x[0-9a-fA-F]+$/.test(result)) {
                   if (result !== undefined && result !== null) {
-                    console.error(
-                      `Invalid eth_getBalance result for ${slug}:`,
-                      result
-                    )
+                    console.error(`Invalid eth_getBalance result for ${slug}:`, result)
                   }
                   return BigNumber.from(0)
                 }
@@ -342,142 +320,146 @@ export default function Fees() {
     fetchEstimates()
   }, [address, chains])
 
-  useEffect(() => {
+  // Reusable on-chain status loader. Exposed as a callback so it can be
+  // re-run after a check-in to reconcile the UI with the real on-chain state
+  // (the txs are already confirmed at that point, so lastCheckIn is updated).
+  const refreshFeeData = useCallback(async () => {
     if (!address) return
 
-    const fetchStatus = async () => {
-      // Each chain is fetched independently. A single chain failure (RPC
-      // hiccup, rate limit, etc.) used to reject the whole Promise.all and
-      // leave `feeData` empty, surfacing as "No fee data available" when the
-      // user tried to check in. Isolate failures per-chain so the remaining
-      // chains still populate.
-      const raw = await Promise.all(
-        chains.map(async (chain) => {
-          const slug = getChainSlug(chain)
-          try {
-            const hookAddress = FEE_HOOK_ADDRESSES[slug]
-            if (!hookAddress) return null
+    // Each chain is fetched independently. A single chain failure (RPC
+    // hiccup, rate limit, etc.) used to reject the whole Promise.all and
+    // leave `feeData` empty, surfacing as "No fee data available" when the
+    // user tried to check in. Isolate failures per-chain so the remaining
+    // chains still populate.
+    const raw = await Promise.all(
+      chains.map(async (chain) => {
+        const slug = getChainSlug(chain)
+        try {
+          const hookAddress = FEE_HOOK_ADDRESSES[slug]
+          if (!hookAddress) return null
 
-            const contract = getContract({
-              client,
-              address: hookAddress,
-              abi: FeeHook.abi as any,
-              chain,
-            })
+          const contract = getContract({
+            client,
+            address: hookAddress,
+            abi: FeeHook.abi as any,
+            chain,
+          })
 
-            // Read each method independently with retry. Previously these
-            // were batched in `Promise.all`; if any single read failed (the
-            // recurring `decodeAbiParameters → buffer` error from a flaky
-            // RPC batch), the whole chain row was dropped from `feeData`,
-            // which surfaced as Arbitrum data going missing.
-            const [start, last, count, vMooneyAddress] = await Promise.all([
-              safeRead(
-                () => readContract({ contract, method: 'weekStart', params: [] }),
-                `${slug}.weekStart`
-              ),
-              safeRead(
-                () =>
-                  readContract({
-                    contract,
-                    method: 'lastCheckIn',
-                    params: [address],
-                  }),
-                `${slug}.lastCheckIn`
-              ),
-              safeRead(
-                () =>
-                  readContract({
-                    contract,
-                    method: 'getCheckedInCount',
-                    params: [],
-                  }),
-                `${slug}.getCheckedInCount`
-              ),
-              safeRead(
-                () =>
-                  readContract({
-                    contract,
-                    method: 'vMooneyAddress',
-                    params: [],
-                  }),
-                `${slug}.vMooneyAddress`
-              ),
-            ])
-
-            // We need at least the week boundaries + vMooney address to do
-            // anything useful. If those are missing the chain is unusable
-            // for this render, but we still don't want to throw — other
-            // chains should keep populating.
-            if (start == null || vMooneyAddress == null) {
-              console.warn(
-                `Skipping ${slug}: missing required FeeHook reads (start=${start}, vMooneyAddress=${vMooneyAddress})`
-              )
-              return null
-            }
-
-            const vMooneyContract = getContract({
-              client,
-              address: vMooneyAddress as `0x${string}`,
-              abi: ERC20ABI as any,
-              chain,
-            })
-
-            const vMooneyBalance = await safeRead(
+          // Read each method independently with retry. Previously these
+          // were batched in `Promise.all`; if any single read failed (the
+          // recurring `decodeAbiParameters → buffer` error from a flaky
+          // RPC batch), the whole chain row was dropped from `feeData`,
+          // which surfaced as Arbitrum data going missing.
+          const [start, last, count, vMooneyAddress] = await Promise.all([
+            safeRead(
+              () => readContract({ contract, method: 'weekStart', params: [] }),
+              `${slug}.weekStart`
+            ),
+            safeRead(
               () =>
                 readContract({
-                  contract: vMooneyContract,
-                  method: 'balanceOf',
+                  contract,
+                  method: 'lastCheckIn',
                   params: [address],
                 }),
-              `${slug}.balanceOf`
+              `${slug}.lastCheckIn`
+            ),
+            safeRead(
+              () =>
+                readContract({
+                  contract,
+                  method: 'getCheckedInCount',
+                  params: [],
+                }),
+              `${slug}.getCheckedInCount`
+            ),
+            safeRead(
+              () =>
+                readContract({
+                  contract,
+                  method: 'vMooneyAddress',
+                  params: [],
+                }),
+              `${slug}.vMooneyAddress`
+            ),
+          ])
+
+          // We need at least the week boundaries + vMooney address to do
+          // anything useful. If those are missing the chain is unusable
+          // for this render, but we still don't want to throw — other
+          // chains should keep populating.
+          if (start == null || vMooneyAddress == null) {
+            console.warn(
+              `Skipping ${slug}: missing required FeeHook reads (start=${start}, vMooneyAddress=${vMooneyAddress})`
             )
-
-            const balance = (vMooneyBalance as bigint | null) ?? BigInt(0)
-            const safeLast = (last as bigint | null) ?? BigInt(0)
-            const safeCount = (count as bigint | null) ?? BigInt(0)
-            const hasVMooney = balance > BigInt(0)
-
-            return {
-              chain,
-              slug,
-              contract,
-              start: start as bigint,
-              last: safeLast,
-              count: safeCount,
-              vMooneyBalance: balance,
-              hasVMooney,
-              checkedInOnChain: safeLast === (start as bigint),
-            }
-          } catch (err) {
-            console.error(`Error fetching check-in status for ${slug}:`, err)
             return null
           }
-        })
-      )
 
-      const results = raw.filter((r) => r !== null) as FeeChainData[]
-      setFeeData(results)
+          const vMooneyContract = getContract({
+            client,
+            address: vMooneyAddress as `0x${string}`,
+            abi: ERC20ABI as any,
+            chain,
+          })
 
-      // Only chains where the user actually holds vMOONEY are eligible to
-      // check in (the FeeHook reverts otherwise). Aggregating "checked in"
-      // across all chains regardless of balance would mean a user with
-      // vMOONEY only on Arbitrum is forever shown as "not checked in"
-      // because they can never check in on Ethereum / Base.
-      const eligibleChains = results.filter((r) => r.hasVMooney)
-      const totalCount = results.reduce(
-        (acc, { count }) => acc + Number(count || BigInt(0)),
-        0
-      )
-      const allChecked =
-        eligibleChains.length > 0 &&
-        eligibleChains.every(({ checkedInOnChain }) => checkedInOnChain)
+          const vMooneyBalance = await safeRead(
+            () =>
+              readContract({
+                contract: vMooneyContract,
+                method: 'balanceOf',
+                params: [address],
+              }),
+            `${slug}.balanceOf`
+          )
 
-      setCheckedInCount(totalCount)
-      setIsCheckedIn(allChecked)
-    }
+          const balance = (vMooneyBalance as bigint | null) ?? BigInt(0)
+          const safeLast = (last as bigint | null) ?? BigInt(0)
+          const safeCount = (count as bigint | null) ?? BigInt(0)
+          const hasVMooney = balance > BigInt(0)
 
-    fetchStatus()
+          return {
+            chain,
+            slug,
+            contract,
+            start: start as bigint,
+            last: safeLast,
+            count: safeCount,
+            vMooneyBalance: balance,
+            hasVMooney,
+            checkedInOnChain: safeLast === (start as bigint),
+          }
+        } catch (err) {
+          console.error(`Error fetching check-in status for ${slug}:`, err)
+          return null
+        }
+      })
+    )
+
+    const results = raw.filter((r) => r !== null) as FeeChainData[]
+    setFeeData(results)
+
+    // checkedInCount is the only thing derived here now. The button's
+    // isCheckedIn state is derived from feeData in a dedicated effect below,
+    // giving a single source of truth that also covers the optimistic
+    // update applied right after a check-in.
+    const totalCount = results.reduce((acc, { count }) => acc + Number(count || BigInt(0)), 0)
+    setCheckedInCount(totalCount)
   }, [address, chains])
+
+  useEffect(() => {
+    refreshFeeData()
+  }, [refreshFeeData])
+
+  // Keep the button's checked-in state in sync with feeData. This covers both
+  // the initial on-chain load and the optimistic update applied right after a
+  // successful check-in, so the button reliably flips to "Checked In" without
+  // depending on the exact tx/skip counts inside handleCheckIn.
+  useEffect(() => {
+    if (!feeData || feeData.length === 0) return
+    const eligible = feeData.filter((d) => d.hasVMooney)
+    const allChecked = eligible.length > 0 && eligible.every((d) => d.checkedInOnChain)
+    setIsCheckedIn(allChecked)
+  }, [feeData])
 
   const handleCheckIn = async () => {
     try {
@@ -494,6 +476,13 @@ export default function Fees() {
       let transactionsSent = 0
       let alreadyCheckedInCount = 0
       let eligibleChainsCount = 0
+      // Chains the user is confirmed checked in on after this run. Used to
+      // optimistically update feeData so re-clicking the button doesn't
+      // re-broadcast no-op transactions.
+      const checkedInChainIds = new Set<number>()
+      // Capture the most useful failure reason so we can show the user what
+      // actually went wrong instead of a generic "please try again".
+      let lastError: string | null = null
 
       const waitForChainSwitch = async (targetChainId: number, maxWait = 5000) => {
         const startTime = Date.now()
@@ -505,21 +494,77 @@ export default function Fees() {
         return false
       }
 
+      // Robustly switch the wallet to a target chain. Injected wallets (e.g.
+      // MetaMask) pop a confirmation the user has to approve, so we (a) give a
+      // generous window for that, (b) retry the request a couple of times, and
+      // (c) report WHY it failed (user rejected vs. timed out) so the toast is
+      // actionable. Returns true only once the wallet actually reports the
+      // target chain.
+      const switchToChain = async (chain: any): Promise<boolean> => {
+        const alreadyOn = () => +wallets[selectedWallet]?.chainId?.split(':')[1] === chain.id
+        if (alreadyOn()) return true
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            await wallets[selectedWallet].switchChain(chain.id)
+            setSelectedChain(chain)
+          } catch (err: any) {
+            // 4001 / ACTION_REJECTED = user dismissed the wallet prompt.
+            if (
+              err?.code === 4001 ||
+              err?.code === 'ACTION_REJECTED' ||
+              err?.message?.toLowerCase().includes('reject') ||
+              err?.message?.toLowerCase().includes('denied')
+            ) {
+              lastError = `You declined the network switch to ${chain.name}. Approve it in your wallet to check in there.`
+              return false
+            }
+            console.warn(`switchChain to ${chain.name} threw:`, err)
+          }
+          // Wait up to 20s for the wallet to report the new chain (covers the
+          // time the user spends approving the MetaMask popup).
+          if (await waitForChainSwitch(chain.id, 20000)) {
+            // Small settle delay so the provider's network is fully updated
+            // before we build a signer / send the tx.
+            await new Promise((resolve) => setTimeout(resolve, 500))
+            return true
+          }
+        }
+        lastError = `Could not switch your wallet to ${chain.name}. Open your wallet, switch to ${chain.name} manually, then press Check In again.`
+        return false
+      }
+
+      // Build a thirdweb account from the Privy wallet's CURRENT ethers
+      // provider. The `account` from useActiveAccount() is bound (via
+      // ethers5Adapter) to the chain selected at render time; reusing it after
+      // switching chains makes ethers v5 throw `underlying network changed`
+      // because the signer's cached network no longer matches the wallet.
+      const getAccountForChain = async () => {
+        try {
+          const wallet = wallets[selectedWallet]
+          const provider = await wallet?.getEthersProvider()
+          const signer = provider?.getSigner()
+          if (!signer) return account
+          return await ethers5Adapter.signer.fromEthers({ signer })
+        } catch (err) {
+          console.warn('Failed to derive fresh account, falling back to active account:', err)
+          return account
+        }
+      }
+
       for (const data of feeData) {
         if (!data.hasVMooney) continue
         eligibleChainsCount++
         if (data.checkedInOnChain) {
           alreadyCheckedInCount++
+          checkedInChainIds.add(data.chain.id)
           continue
         }
 
         const walletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
         if (walletChainId !== data.chain.id) {
-          await wallets[selectedWallet].switchChain(data.chain.id)
-          setSelectedChain(data.chain)
-          const switched = await waitForChainSwitch(data.chain.id)
+          const switched = await switchToChain(data.chain)
           if (!switched) continue
-          await new Promise((resolve) => setTimeout(resolve, 500))
         }
 
         const tx = prepareContractCall({
@@ -527,8 +572,94 @@ export default function Fees() {
           method: 'checkIn' as string,
           params: [],
         })
-        await sendAndConfirmTransaction({ transaction: tx, account })
-        transactionsSent++
+        const txAccount = await getAccountForChain()
+
+        // The ONLY source of truth for "did the check-in happen" is the
+        // on-chain state: lastCheckIn[address] === weekStart. Never trust the
+        // tx promise (or a nonce collision) on its own — a tx that looked
+        // confirmed but never landed previously produced a false "checked in"
+        // toast while nothing changed on-chain.
+        const verifyCheckedIn = async () => {
+          const verifyContract = getContract({
+            client,
+            address: FEE_HOOK_ADDRESSES[data.slug],
+            abi: FeeHook.abi as any,
+            chain: data.chain,
+          })
+          for (let i = 0; i < 3; i++) {
+            try {
+              const [ws, lc] = await Promise.all([
+                readContract({
+                  contract: verifyContract,
+                  method: 'weekStart',
+                  params: [],
+                }),
+                readContract({
+                  contract: verifyContract,
+                  method: 'lastCheckIn',
+                  params: [address],
+                }),
+              ])
+              if (ws != null && lc != null) {
+                // weekStart === 0 means the hook is uninitialized / the RPC
+                // returned an empty read. Treating 0 === 0 as "checked in"
+                // would reintroduce the phantom-success bug, so require a
+                // real (non-zero) week boundary before trusting the match.
+                const wsBig = BigInt(ws as any)
+                return wsBig !== BigInt(0) && BigInt(lc as any) === wsBig
+              }
+            } catch (err) {
+              console.warn(`verify lastCheckIn failed for ${data.slug}:`, err)
+            }
+            await new Promise((r) => setTimeout(r, 800))
+          }
+          return false
+        }
+
+        try {
+          await sendAndConfirmTransaction({ transaction: tx, account: txAccount })
+        } catch (error: any) {
+          // Nonce collisions / network-changed errors don't necessarily mean
+          // failure — fall through to on-chain verification, which decides.
+          // Any other error is a genuine failure for this chain, but we don't
+          // abort the whole loop so other chains still get a chance.
+          const isRecoverable =
+            error?.code === 'NONCE_EXPIRED' ||
+            error?.code === 'NETWORK_ERROR' ||
+            error?.message?.includes('nonce has already been used') ||
+            error?.message?.includes('nonce too low') ||
+            error?.message?.includes('underlying network changed') ||
+            error?.message?.includes('network changed')
+          lastError = error?.shortMessage || error?.message || 'Transaction failed'
+          if (!isRecoverable) {
+            console.error(`Check-in failed for ${data.slug}:`, error)
+            continue
+          }
+        }
+
+        // Only a verified on-chain state counts as a successful check-in.
+        if (await verifyCheckedIn()) {
+          transactionsSent++
+          checkedInChainIds.add(data.chain.id)
+          lastError = null
+        } else if (!lastError) {
+          // The send didn't throw, but the on-chain state never flipped. This
+          // usually means the tx silently failed or was sent on the wrong
+          // network. Record it so the user sees something actionable.
+          lastError = `Your ${data.chain.name} check-in transaction did not register on-chain. Make sure your wallet is on ${data.chain.name} and try again.`
+        }
+      }
+
+      // Optimistically mark the chains we just checked in on so the button
+      // disables and a second click doesn't re-broadcast no-op transactions
+      // (on-chain checkIn() is idempotent, so re-sending only produces a
+      // "No changes" wallet prompt that confuses users).
+      if (checkedInChainIds.size > 0) {
+        setFeeData((prev) =>
+          prev.map((d) =>
+            checkedInChainIds.has(d.chain.id) ? { ...d, checkedInOnChain: true } : d
+          )
+        )
       }
 
       const finalWalletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
@@ -565,15 +696,24 @@ export default function Fees() {
         )
         setIsCheckedIn(true)
       } else {
-        toast.error('No check-ins were submitted. Please try again.', {
-          style: toastStyle,
-        })
+        toast.error(
+          lastError
+            ? `Check-in failed: ${lastError}`
+            : 'No check-ins were submitted. Please try again.',
+          { style: toastStyle }
+        )
       }
     } catch (error) {
       console.error('Error checking in:', error)
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred'
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       toast.error(`Check-in failed: ${errorMessage}`, { style: toastStyle })
+    } finally {
+      // Reconcile the UI with the real on-chain state. The check-in txs are
+      // confirmed by this point, so lastCheckIn is updated on-chain. A short
+      // delay gives the RPC a moment to propagate before we re-read.
+      setTimeout(() => {
+        refreshFeeData()
+      }, 1500)
     }
   }
 
@@ -609,7 +749,7 @@ export default function Fees() {
               //   on a *child* span normally wins, but we still mark it to
               //   be safe.
               // - Layered text-shadows + a subtle backdrop pill give the
-                //   white type guaranteed contrast over the dark gradient
+              //   white type guaranteed contrast over the dark gradient
               //   regardless of what scrolls behind it.
               <div className="pt-24 md:pt-28 lg:pt-20 pb-2 flex flex-col gap-3 sm:gap-4 max-w-3xl">
                 <h1
@@ -631,8 +771,7 @@ export default function Fees() {
                     textShadow: '0 1px 4px rgba(0,0,0,0.7)',
                   }}
                 >
-                  Earn a share of MoonDAO&apos;s weekly trading-fee reward
-                  pool by checking in.
+                  Earn a share of MoonDAO&apos;s weekly trading-fee reward pool by checking in.
                 </p>
               </div>
             }
@@ -662,11 +801,10 @@ export default function Fees() {
                       How Liquidity Rewards Work
                     </h2>
                     <p className="mt-2 text-sm sm:text-base text-gray-300 leading-relaxed">
-                      MoonDAO captures trading fees from MOONEY/ETH liquidity
-                      pools on Ethereum, Arbitrum, and Base. Each week the
-                      collected ETH is split pro-rata among vMOONEY holders
-                      who checked in for that week — your share is proportional
-                      to your vMOONEY balance.
+                      MoonDAO captures trading fees from MOONEY/ETH liquidity pools on Ethereum,
+                      Arbitrum, and Base. Each week the collected ETH is split pro-rata among
+                      vMOONEY holders who checked in for that week — your share is proportional to
+                      your vMOONEY balance.
                     </p>
                   </div>
 
@@ -694,9 +832,7 @@ export default function Fees() {
                   <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs sm:text-sm text-gray-400 border-t border-white/10 pt-4">
                     <div className="flex items-center gap-2">
                       <ClockIcon className="w-4 h-4" />
-                      <span>
-                        Distribution runs every Thursday at 1pm Pacific
-                      </span>
+                      <span>Distribution runs every Thursday at 1pm Pacific</span>
                     </div>
                     <Link
                       href="https://docs.moondao.com"
@@ -733,20 +869,14 @@ export default function Fees() {
                       ? `${yourEth} ETH`
                       : 'Calculating...'
                   }
-                  subValue={
-                    address && hasVMooney && yourUsd ? `~$${yourUsd}` : undefined
-                  }
+                  subValue={address && hasVMooney && yourUsd ? `~$${yourUsd}` : undefined}
                   loading={!!address && hasVMooney && estimatedFees === null}
                   accent="bg-gradient-to-br from-purple-500/40 to-pink-600/40"
                 />
                 <StatCard
                   icon={<UserGroupIcon className="w-5 h-5 text-white" />}
                   label="Participants This Week"
-                  value={
-                    checkedInCount === null
-                      ? 'Loading...'
-                      : checkedInCount.toLocaleString()
-                  }
+                  value={checkedInCount === null ? 'Loading...' : checkedInCount.toLocaleString()}
                   subValue={
                     checkedInCount !== null
                       ? checkedInCount === 1
@@ -790,8 +920,8 @@ export default function Fees() {
                         Connect your wallet to check in
                       </h2>
                       <p className="mt-1 text-sm text-gray-300">
-                        You need a connected wallet with vMOONEY to participate
-                        in this week's reward pool.
+                        You need a connected wallet with vMOONEY to participate in this week's
+                        reward pool.
                       </p>
                     </div>
                     <PrivyWeb3Button
@@ -809,8 +939,8 @@ export default function Fees() {
                         Lock MOONEY to start earning
                       </h2>
                       <p className="mt-1 text-sm text-gray-300">
-                        Only vMOONEY holders qualify for the weekly reward pool.
-                        Lock MOONEY to receive vMOONEY.
+                        Only vMOONEY holders qualify for the weekly reward pool. Lock MOONEY to
+                        receive vMOONEY.
                       </p>
                     </div>
                     <PrivyWeb3Button
@@ -825,9 +955,7 @@ export default function Fees() {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1">
                       <h2 className="font-GoodTimes text-white text-base sm:text-lg">
-                        {isCheckedIn
-                          ? "You're checked in for this week"
-                          : 'Check in for this week'}
+                        {isCheckedIn ? "You're checked in for this week" : 'Check in for this week'}
                       </h2>
                       <p className="mt-1 text-sm text-gray-300">
                         {isCheckedIn
@@ -893,10 +1021,7 @@ export default function Fees() {
                             )
                           }
                           return (
-                            <tr
-                              key={d.slug}
-                              className="border-b border-white/5 last:border-b-0"
-                            >
+                            <tr key={d.slug} className="border-b border-white/5 last:border-b-0">
                               <td className="px-3 py-3 text-white capitalize">
                                 {d.chain.name ?? d.slug}
                               </td>
@@ -914,9 +1039,8 @@ export default function Fees() {
                     </table>
                   </div>
                   <p className="mt-3 text-xs text-gray-500">
-                    A check-in transaction is required on each chain where you
-                    hold vMOONEY. Chains where you have a 0 balance are skipped
-                    automatically.
+                    A check-in transaction is required on each chain where you hold vMOONEY. Chains
+                    where you have a 0 balance are skipped automatically.
                   </p>
                 </div>
               )}

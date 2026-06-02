@@ -8,6 +8,15 @@ const COMFY_WORKFLOW_URL =
 // plenty of time before we abort the request.
 const COMFY_REQUEST_TIMEOUT_MS = 45_000
 
+// The comfy.icu API workers don't have the Juggernaut Lightning checkpoint
+// pre-installed, so we supply it via the `files` map. The worker downloads it on
+// first use and caches it for subsequent runs. Public, ungated HF repo (no token
+// required); the destination filename below must match node 4's `ckpt_name`.
+const JUGGERNAUT_CHECKPOINT_PATH =
+  '/models/checkpoints/juggernautXL_v9Rdphoto2Lighting.safetensors'
+const JUGGERNAUT_CHECKPOINT_URL =
+  'https://huggingface.co/RunDiffusion/Juggernaut-XL-Lightning/resolve/main/Juggernaut_RunDiffusionPhoto2_Lightning_4Steps.safetensors?download=true'
+
 async function fetchComfy(
   init: RequestInit & { method: 'POST' | 'GET' }
 ): Promise<Response> {
@@ -49,6 +58,7 @@ export default async function handler(
     const uuid = v4()
     const files: { [key: string]: string } = {}
     files[`/input/${uuid}.jpg`] = url
+    files[JUGGERNAUT_CHECKPOINT_PATH] = JUGGERNAUT_CHECKPOINT_URL
 
     // generate a random 15 digit number
     let seed = ''
@@ -62,10 +72,10 @@ export default async function handler(
           prompt: {
             '3': {
               inputs: {
-                cfg: 2.6,
+                cfg: 2.3,
                 seed: Number(seed),
                 model: ['60', 0],
-                steps: 7,
+                steps: 6,
                 denoise: 1,
                 negative: ['60', 2],
                 positive: ['60', 1],
@@ -76,7 +86,7 @@ export default async function handler(
               class_type: 'KSampler',
             },
             '4': {
-              inputs: { ckpt_name: 'albedobaseXL_v21.safetensors' },
+              inputs: { ckpt_name: 'juggernautXL_v9Rdphoto2Lighting.safetensors' },
               class_type: 'CheckpointLoaderSimple',
             },
             '5': {
@@ -106,12 +116,15 @@ export default async function handler(
             '39': {
               inputs: {
                 clip: ['4', 1],
-                text: "Create a portrait of an Astronaut wearing a futuristic space suit in the style of Jorodowsky's Dune with the face prominently displayed up to the beginning of the shoulders with a watercolor psychedelic background displaying the moon, stars, and other space elements. Overall make the person look like a badass and make them look as good as possible, something they would be proud to share on social media. Don't put any space element on their face or forehead. High-quality. Portrait mode.\n\n",
+                text: "Head-and-shoulders portrait, cropped at the chest, face and shoulders fill the frame, only head and shoulders visible, of a youthful person with smooth healthy clear skin, bright clear eyes, full hair clearly visible, ears fully visible and uncovered, smooth chin, clear forehead, confident determined gaze, heroic and powerful presence, wearing a sleek futuristic space suit, painterly style of Jodorowsky's Dune, surreal watercolor psychedelic background with the moon, stars and nebulae, clean cinematic lighting, flattering soft key light, vivid colors, sharp focus, high quality, the best most flattering and youthful version of the person",
               },
               class_type: 'CLIPTextEncode',
             },
             '40': {
-              inputs: { clip: ['4', 1], text: 'watermark, text, monochrome' },
+              inputs: {
+                clip: ['4', 1],
+                text: '(watermark:1.9), (signature:1.5), text, logo, stamp, copyright, getty images, shutterstock, stock photo, (wrinkles:1.6), (eye bags:1.5), (aged skin:1.5), old, elderly, saggy skin, gaunt, tired, (beard:1.3), facial hair, stubble, (ear muffs:1.8), (over-ear headphones:1.7), (headphones:1.6), earphones, earbuds, anything on the ears, (helmet:2.0), (space helmet:2.0), (bubble helmet:2.0), visor, face shield, neck ring, glasses, sunglasses, goggles, eyewear, mask, hat, hood, antenna, objects around head, (cleft chin:1.6), (butt chin:1.6), chin dimple, (full body:1.6), (wide shot:1.5), zoomed out, small face, legs, torso, standing pose, rainbow, monochrome',
+              },
               class_type: 'CLIPTextEncode',
             },
             '60': {
@@ -119,7 +132,7 @@ export default async function handler(
                 image: ['13', 0],
                 model: ['4', 0],
                 end_at: 1,
-                weight: 0.8,
+                weight: 0.85,
                 negative: ['40', 0],
                 positive: ['39', 0],
                 start_at: 0,
@@ -135,7 +148,7 @@ export default async function handler(
             },
           },
           files,
-          accelerator: 'L4',
+          accelerator: 'L40S',
         }),
       })
 
