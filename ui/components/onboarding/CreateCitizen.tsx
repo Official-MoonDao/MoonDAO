@@ -1269,7 +1269,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         </div>
                       )}
                     </div>
-                    {(citizenImage || inputImage) && !isImageGenerating && (
+                    {(citizenImage || inputImage) && (
                       <div className="flex flex-col items-center gap-3 w-full max-w-[400px]">
                         <div className="flex flex-col sm:flex-row gap-3 w-full">
                           <button

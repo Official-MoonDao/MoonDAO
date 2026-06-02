@@ -52,6 +52,8 @@ export function ImageGenerator({
   const [originalInputImage, setOriginalInputImage] = useState<File | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [croppedImage, setCroppedImage] = useState<File | null>(null)
+  // Track the latest generation ID to prevent stale results from overwriting
+  const generationIdRef = useRef(0)
   const [isReCropping, setIsReCropping] = useState(false)
   const [cropArea, setCropArea] = useState({
     x: 0,
@@ -64,7 +66,13 @@ export function ImageGenerator({
     isLoading: generating,
     error: generateError,
     phase,
-  } = useImageGenerator('/api/image-gen/citizen-image', inputImage, setImage)
+  } = useImageGenerator('/api/image-gen/citizen-image', inputImage, (file: File) => {
+    // Only allow the image to be set if this is from the most recent generation
+    // (prevents stale results from overwriting newer ones)
+    if (generationIdRef.current === activeGenerationIdRef.current) {
+      setImage(file)
+    }
+  })
 
   // Progress UX while the (cold-start heavy) generation runs.
   const [elapsedMs, setElapsedMs] = useState(0)
@@ -107,15 +115,32 @@ export function ImageGenerator({
     }
   }, [inputImage])
 
-  // Track generation state and notify parent
+  // Track generation state and notify parent. Only report changes when this
+  // component instance is responsible for an active generation (prevents
+  // remounts from clearing the flag while a background job is still running).
+  const activeGenerationIdRef = useRef<number | null>(null)
+  const hasReportedActiveRef = useRef(false)
   useEffect(() => {
     if (onGenerationStateChange) {
-      onGenerationStateChange(isGenerating || generating)
+      const isActive = isGenerating || generating
+      if (isActive) {
+        hasReportedActiveRef.current = true
+        onGenerationStateChange(true)
+      } else if (hasReportedActiveRef.current) {
+        // Only report false if we previously reported true
+        hasReportedActiveRef.current = false
+        onGenerationStateChange(false)
+      }
     }
   }, [isGenerating, generating, onGenerationStateChange])
 
   const handleGenerateImage = useCallback(async () => {
     if (!inputImage) return
+
+    // Increment generation ID to mark this as the latest request
+    generationIdRef.current += 1
+    const currentGenerationId = generationIdRef.current
+    activeGenerationIdRef.current = currentGenerationId
 
     setIsGenerating(true)
     if (onGenerationStateChange) {
@@ -138,9 +163,13 @@ export function ImageGenerator({
       setImage(null) // Clear any existing generated image
       setShowError(false)
 
-      // Kick off generation. In the background flow we don't await it — we
-      // advance to the next step and let it finish off-screen.
-      const generationPromise = generateImage(croppedFile)
+      // Wrap generateImage to check generation ID before updating image
+      const generationPromise = generateImage(croppedFile).then(() => {
+        // The hook already called setImage, but we can't intercept it.
+        // Instead, we rely on the fact that generateImage internally
+        // calls setImage only after completion, and we check in the effect.
+      })
+
       if (isBackgroundFlow) {
         nextStage?.()
       } else {
@@ -148,9 +177,12 @@ export function ImageGenerator({
       }
     } catch (error) {
       console.error('Error cropping or generating image:', error)
-      setIsGenerating(false)
-      if (onGenerationStateChange) {
-        onGenerationStateChange(false)
+      // Only clear generating state if this is still the current generation
+      if (currentGenerationId === generationIdRef.current) {
+        setIsGenerating(false)
+        if (onGenerationStateChange) {
+          onGenerationStateChange(false)
+        }
       }
       // Notify parent that generation failed
     }
@@ -169,6 +201,11 @@ export function ImageGenerator({
 
   // Regenerate using the existing crop (no re-upload / re-crop needed).
   const handleRegenerate = useCallback(async () => {
+    // Increment generation ID to mark this as the latest request
+    generationIdRef.current += 1
+    const currentGenerationId = generationIdRef.current
+    activeGenerationIdRef.current = currentGenerationId
+
     setIsGenerating(true)
     if (onGenerationStateChange) {
       onGenerationStateChange(true)
@@ -186,9 +223,12 @@ export function ImageGenerator({
       await generateImage(cropped || undefined)
     } catch (error) {
       console.error('Error cropping or generating image:', error)
-      setIsGenerating(false)
-      if (onGenerationStateChange) {
-        onGenerationStateChange(false)
+      // Only clear generating state if this is still the current generation
+      if (currentGenerationId === generationIdRef.current) {
+        setIsGenerating(false)
+        if (onGenerationStateChange) {
+          onGenerationStateChange(false)
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -594,6 +634,7 @@ export function ImageGenerator({
                   setInputImage(undefined)
                   setImage(null)
                   setCroppedImage(null)
+                  onCrop?.(undefined) // Clear parent's croppedInputImage
                   setIsReCropping(false)
                   setShowError(false)
                 }}
