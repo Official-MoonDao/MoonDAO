@@ -30,30 +30,36 @@ const CitizenTier = ({
   const { authenticated } = usePrivy()
 
   const handleCitizenClick = async () => {
-    // Don't trust a stale thirdweb address that may linger after logout.
-    // The wrapping <Tier /> normally prompts login when there's no address,
-    // but if the thirdweb wallet hasn't disconnected yet the address can
-    // outlive the Privy session. Bail out so we don't read citizen status
-    // for a previously-signed-in wallet.
-    if (!authenticated) {
-      return toast.error('Please sign in to become a citizen.')
+    // Let users enter the citizen creation flow without signing in first —
+    // wallet sign-in/creation happens later, right before minting. This keeps
+    // the click count low and avoids an upfront login wall.
+    //
+    // If a wallet IS already connected (and the Privy session is live — we
+    // only trust the address when `authenticated` so a stale thirdweb address
+    // can't linger past logout), make sure it isn't already a citizen before
+    // sending them into the flow. Any failure here is non-blocking: we still
+    // let them proceed.
+    if (authenticated && address) {
+      try {
+        const citizenContract = getContract({
+          client,
+          address: CITIZEN_ADDRESSES[chainSlug],
+          abi: CitizenABI as any,
+          chain: selectedChain,
+        })
+        const citizenBalance = await readContract({
+          contract: citizenContract,
+          method: 'balanceOf' as string,
+          params: [address],
+        })
+        if (citizenBalance > 0) {
+          return toast.error('This wallet is already registered as a citizen.')
+        }
+      } catch (err) {
+        console.error('Failed to check existing citizen status:', err)
+      }
     }
-    if (!address) return
 
-    const citizenContract = getContract({
-      client,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      abi: CitizenABI as any,
-      chain: selectedChain,
-    })
-    const citizenBalance = await readContract({
-      contract: citizenContract,
-      method: 'balanceOf' as string,
-      params: [address],
-    })
-    if (citizenBalance > 0) {
-      return toast.error('This wallet is already registered as a citizen.')
-    }
     setSelectedTier('citizen')
   }
 
@@ -74,6 +80,7 @@ const CitizenTier = ({
         onClick={compact ? () => {} : handleCitizenClick}
         type="citizen"
         compact={compact}
+        gateOnAuth={false}
       />
     </div>
   )

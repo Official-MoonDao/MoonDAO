@@ -504,10 +504,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     [estimatedGas, effectiveGasPrice, calculateTotalCost, isCrossChain],
   )
 
-  // Gas Estimation Handler
-  const estimateMintGas = useCallback(async () => {
+  // Gas Estimation Handler. Returns the buffered gas estimate (and also stores
+  // it in state) so callers can use the value immediately without waiting for a
+  // re-render — important right after sign-in, when the gas-estimation effect
+  // may not have run yet.
+  const estimateMintGas = useCallback(async (): Promise<bigint | undefined> => {
     if (!account || !address || !citizenData.name) {
-      return
+      return undefined
     }
 
     setIsLoadingGasEstimate(true)
@@ -610,6 +613,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const gasWithBuffer = applyGasBuffer(gasEstimate, bufferPercent)
       setEstimatedGas(gasWithBuffer)
       setIsLoadingGasEstimate(false)
+      return gasWithBuffer
     } catch (error) {
       console.error('Error estimating gas:', error instanceof Error ? error.message : error)
       const fallbackGas = isCrossChain ? BigInt(500000) : BigInt(350000)
@@ -617,6 +621,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const bufferedFallback = applyGasBuffer(fallbackGas, bufferPercent)
       setEstimatedGas(bufferedFallback)
       setIsLoadingGasEstimate(false)
+      return bufferedFallback
     }
   }, [
     account,
@@ -735,17 +740,26 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       return toast.error('Please connect your wallet to continue.')
     }
 
+    setIsLoadingMint(true)
+
+    // The user may have just signed in at this step (sign-in is deferred until
+    // mint to keep the click count low), so the gas-estimation effect may not
+    // have run yet. Estimate inline and use the returned value rather than
+    // erroring out and forcing a retry.
+    let gasToUse = estimatedGas
+    if (!gasToUse || gasToUse === BigInt(0)) {
+      gasToUse = (await estimateMintGas()) ?? BigInt(0)
+    }
+
     if (
-      !estimatedGas ||
-      estimatedGas === BigInt(0) ||
+      !gasToUse ||
+      gasToUse === BigInt(0) ||
       !effectiveGasPrice ||
       effectiveGasPrice === BigInt(0)
     ) {
       setIsLoadingMint(false)
       return toast.error('Gas estimation is still loading. Please wait a moment and try again.')
     }
-
-    setIsLoadingMint(true)
 
     try {
       // Get cost and check balance
@@ -755,7 +769,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         params: [address, 365 * 24 * 60 * 60],
       })
 
-      const totalCost = calculateTotalCost(cost, estimatedGas, effectiveGasPrice, isCrossChain)
+      const totalCost = calculateTotalCost(cost, gasToUse, effectiveGasPrice, isCrossChain)
 
       if (!freeMint && +(nativeBalance ?? '0') < totalCost) {
         const shortfall = totalCost - +(nativeBalance ?? '0')
@@ -808,6 +822,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     inputImage,
     address,
     estimatedGas,
+    estimateMintGas,
     effectiveGasPrice,
     citizenContract,
     calculateTotalCost,
