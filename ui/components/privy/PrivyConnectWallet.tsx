@@ -1342,12 +1342,19 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                               </p>
                             </div>
                           </div>
-                          {wallet.walletClientType !== 'metamask' &&
-                            wallet.walletClientType !== 'privy' && (
+                          {wallet.walletClientType !== 'privy' && (
                               <button
                                 className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
                                 onClick={async (e) => {
                                   e.stopPropagation()
+
+                                  const removedAddress = wallet.address
+                                  // Remember which wallet is currently selected
+                                  // (by address) so we can keep that selection
+                                  // after the list re-indexes, instead of
+                                  // jumping to the wallet we just removed.
+                                  const selectedAddress =
+                                    wallets[selectedWallet]?.address
 
                                   // Disconnect the active session first. This is
                                   // what actually removes a connected (but not
@@ -1374,7 +1381,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                                   const isLinked = linkedWalletAccounts.some(
                                     (acc: any) =>
                                       acc.address?.toLowerCase() ===
-                                      wallet.address?.toLowerCase()
+                                      removedAddress?.toLowerCase()
                                   )
                                   const isLastLinkedAccount =
                                     (user?.linkedAccounts?.length ?? 0) <= 1
@@ -1385,7 +1392,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                                     !isLastLinkedAccount
                                   ) {
                                     try {
-                                      await unlinkWallet(wallet.address)
+                                      await unlinkWallet(removedAddress)
                                     } catch (err) {
                                       console.warn(
                                         'Failed to unlink wallet:',
@@ -1397,9 +1404,21 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                                     }
                                   }
 
-                                  // Reset selection to the first remaining
-                                  // wallet so the UI stays valid.
-                                  setSelectedWallet(0)
+                                  // Preserve the previous selection. Compute the
+                                  // index of the still-selected wallet in the
+                                  // list with the removed wallet filtered out so
+                                  // we never select the wallet we just removed.
+                                  const remaining = wallets.filter(
+                                    (w) =>
+                                      w.address?.toLowerCase() !==
+                                      removedAddress?.toLowerCase()
+                                  )
+                                  const newIndex = remaining.findIndex(
+                                    (w) =>
+                                      w.address?.toLowerCase() ===
+                                      selectedAddress?.toLowerCase()
+                                  )
+                                  setSelectedWallet(newIndex >= 0 ? newIndex : 0)
                                 }}
                               >
                                 <XMarkIcon className="w-4 h-4" />
