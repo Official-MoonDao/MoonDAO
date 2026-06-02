@@ -231,13 +231,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
 
   // Hook for regenerating AI images from Review step
-  const {
-    generateImage: regenerateAIImage,
-    isLoading: isRegenerating,
-    error: regenerateError,
-  } = useImageGenerator('/api/image-gen/citizen-image', croppedInputImage, (file: File) => {
-    setCitizenImage(file)
-  })
+  const { generateImage: regenerateAIImage, isLoading: isRegenerating } = useImageGenerator(
+    '/api/image-gen/citizen-image',
+    croppedInputImage,
+    (file: File) => {
+      setCitizenImage(file)
+    },
+  )
 
   // ===== Computed Values =====
   const LAYER_ZERO_TRANSFER_COST = useMemo(() => BigInt('3000000000000000'), [])
@@ -1409,7 +1409,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                           : 'Become a Citizen'
                     }
                     className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    isDisabled={!agreedToCondition || isLoadingMint || isLoadingGasEstimate}
+                    isDisabled={
+                      !agreedToCondition ||
+                      isLoadingMint ||
+                      isLoadingGasEstimate ||
+                      isImageGenerating
+                    }
                     action={callMint}
                   />
                   {isLoadingMint && (
