@@ -421,10 +421,37 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         console.error('Error recording referral:', error)
       }
 
+      // Normalize the thirdweb NFT to match the Tableland format before seeding
+      const normalizedCitizen = {
+        id: typeof citizenNFT.id === 'bigint' ? Number(citizenNFT.id) : citizenNFT.id,
+        metadata: {
+          id: typeof citizenNFT.id === 'bigint' ? Number(citizenNFT.id) : citizenNFT.id,
+          uri: citizenNFT.tokenURI || '',
+          name: citizenNFT.metadata?.name || '',
+          description: citizenNFT.metadata?.description || '',
+          image: citizenNFT.metadata?.image || '',
+          animation_url: '',
+          external_url: '',
+          attributes: [
+            { trait_type: 'location', value: JSON.stringify(citizenData.location || '') },
+            { trait_type: 'website', value: citizenData.website || '' },
+            { trait_type: 'discord', value: citizenData.discord || '' },
+            { trait_type: 'twitter', value: citizenData.twitter || '' },
+            { trait_type: 'instagram', value: '' },
+            { trait_type: 'linkedin', value: '' },
+            { trait_type: 'view', value: citizenData.view || '' },
+            { trait_type: 'formId', value: citizenData.formResponseId || '' },
+          ],
+        },
+        owner: citizenNFT.owner || address || '',
+        tokenURI: citizenNFT.tokenURI || '',
+        type: 'ERC721',
+      }
+
       // Seed the citizen into context/cache so the app recognizes them right
       // away. Without this, Tableland indexing lag can land a brand-new citizen
       // on the marketing homepage instead of their dashboard.
-      seedCitizen(citizenNFT)
+      seedCitizen(normalizedCitizen)
 
       // Celebrate: show the welcome screen and fire confetti.
       setMintComplete(true)
@@ -1004,7 +1031,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const welcomeImageFile = citizenImage || inputImage
   const welcomeImageUrl = useMemo(
     () => (welcomeImageFile ? URL.createObjectURL(welcomeImageFile) : null),
-    [welcomeImageFile]
+    [welcomeImageFile],
   )
   useEffect(() => {
     return () => {
