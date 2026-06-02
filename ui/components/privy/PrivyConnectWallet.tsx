@@ -1342,95 +1342,141 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                               </p>
                             </div>
                           </div>
-                          {wallet.walletClientType !== 'privy' && (
-                              <button
-                                className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
-                                onClick={async (e) => {
-                                  e.stopPropagation()
+                          {wallet.walletClientType !== 'privy' &&
+                            (() => {
+                              // A wallet can only be removed programmatically if
+                              // it is a *linked* account AND it isn't the only
+                              // linked account on the user. Injected wallets such
+                              // as MetaMask/Phantom that are merely connected
+                              // (not linked) cannot be disconnected by Privy —
+                              // the user has to disconnect from the extension or
+                              // log out. We still render the ✕ for those, but it
+                              // shows guidance instead of silently doing nothing.
+                              const linkedAccounts = user?.linkedAccounts ?? []
+                              const isLinked = linkedAccounts.some(
+                                (acc: any) =>
+                                  acc.type === 'wallet' &&
+                                  acc.address?.toLowerCase() ===
+                                    wallet.address?.toLowerCase()
+                              )
+                              const canUnlink =
+                                isLinked && linkedAccounts.length > 1
 
-                                  const removedAddress = wallet.address
-                                  const selectedAddress =
-                                    wallets[selectedWallet]?.address
+                              return (
+                                <button
+                                  className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
+                                  onClick={async (e) => {
+                                    e.stopPropagation()
 
-                                  const linkedWalletAccounts =
-                                    user?.linkedAccounts?.filter(
-                                      (acc: any) => acc.type === 'wallet'
-                                    ) ?? []
-                                  const isLinked = linkedWalletAccounts.some(
-                                    (acc: any) =>
-                                      acc.address?.toLowerCase() ===
-                                      removedAddress?.toLowerCase()
-                                  )
-                                  const isLastLinkedAccount =
-                                    (user?.linkedAccounts?.length ?? 0) <= 1
+                                    const removedAddress = wallet.address
+                                    const selectedAddress =
+                                      wallets[selectedWallet]?.address
 
-                                  // Diagnostics — remove once confirmed working.
-                                  console.log('[wallet-remove] clicked', {
-                                    removedAddress,
-                                    walletClientType: wallet.walletClientType,
-                                    hasUnlinkWallet: !!unlinkWallet,
-                                    isLinked,
-                                    isLastLinkedAccount,
-                                    linkedAccounts: user?.linkedAccounts,
-                                  })
+                                    if (canUnlink && unlinkWallet) {
+                                      try {
+                                        await unlinkWallet(removedAddress)
+                                      } catch (err) {
+                                        console.error(
+                                          'Failed to unlink wallet:',
+                                          err
+                                        )
+                                        toast.error(
+                                          'Could not remove wallet. Please try again.'
+                                        )
+                                        return
+                                      }
+                                    } else {
+                                      // Connected-but-not-linked injected wallet
+                                      // (e.g. MetaMask/Phantom). Privy's
+                                      // wallet.disconnect() is unsupported for
+                                      // these, so go straight to the EIP-1193
+                                      // provider and revoke the dApp's account
+                                      // permission. MetaMask implements
+                                      // `wallet_revokePermissions`, which fully
+                                      // disconnects the site. Some wallets (often
+                                      // Phantom's EVM provider) don't, so we fall
+                                      // back to guidance.
+                                      let removed = false
+                                      try {
+                                        const provider: any =
+                                          await wallet.getEthereumProvider()
 
-                                  // Disconnect the active session first.
-                                  try {
-                                    wallet.disconnect()
-                                    console.log(
-                                      '[wallet-remove] disconnect() called'
-                                    )
-                                  } catch (err) {
-                                    console.warn(
-                                      '[wallet-remove] disconnect failed:',
-                                      err
-                                    )
-                                  }
+                                        // Preferred: revoke the eth_accounts
+                                        // permission (MetaMask, Rabby, etc).
+                                        try {
+                                          await provider.request({
+                                            method: 'wallet_revokePermissions',
+                                            params: [{ eth_accounts: {} }],
+                                          })
+                                          removed = true
+                                        } catch (revokeErr) {
+                                          // Provider doesn't support revoke.
+                                        }
 
-                                  // Unlink from the Privy account so it doesn't
-                                  // reappear. Surface the real error if it fails.
-                                  if (
-                                    unlinkWallet &&
-                                    isLinked &&
-                                    !isLastLinkedAccount
-                                  ) {
-                                    try {
-                                      await unlinkWallet(removedAddress)
-                                      console.log(
-                                        '[wallet-remove] unlinkWallet success'
-                                      )
-                                    } catch (err) {
-                                      console.error(
-                                        '[wallet-remove] unlinkWallet failed:',
-                                        err
-                                      )
-                                      toast.error(
-                                        'Could not remove wallet. See console for details.'
-                                      )
+                                        // Phantom's injected provider also
+                                        // exposes a direct disconnect() on the
+                                        // underlying wallet object.
+                                        if (!removed) {
+                                          const phantomProvider: any =
+                                            (window as any)?.phantom?.solana ??
+                                            (window as any)?.solana
+                                          if (
+                                            wallet.walletClientType ===
+                                              'phantom' &&
+                                            typeof phantomProvider?.disconnect ===
+                                              'function'
+                                          ) {
+                                            await phantomProvider.disconnect()
+                                            removed = true
+                                          }
+                                        }
+                                      } catch (err) {
+                                        // getEthereumProvider failed; fall through
+                                        // to guidance below.
+                                      }
+
+                                      // Also drop Privy's own session reference
+                                      // so the entry leaves the list immediately.
+                                      try {
+                                        wallet.disconnect()
+                                      } catch {}
+
+                                      if (!removed) {
+                                        const name =
+                                          (wallet.walletClientType
+                                            ?.charAt(0)
+                                            .toUpperCase() ?? '') +
+                                          (wallet.walletClientType?.slice(1) ??
+                                            'This wallet')
+                                        toast.error(
+                                          `${name} couldn’t be disconnected automatically. Disconnect this site inside the ${name} extension, or use Log Out.`
+                                        )
+                                        return
+                                      }
+
+                                      toast.success('Wallet disconnected.')
                                     }
-                                  } else if (isLastLinkedAccount) {
-                                    toast.error(
-                                      'You cannot remove your only connected wallet. Log out instead.'
-                                    )
-                                  }
 
-                                  // Preserve the previous selection by address.
-                                  const remaining = wallets.filter(
-                                    (w) =>
-                                      w.address?.toLowerCase() !==
-                                      removedAddress?.toLowerCase()
-                                  )
-                                  const newIndex = remaining.findIndex(
-                                    (w) =>
-                                      w.address?.toLowerCase() ===
-                                      selectedAddress?.toLowerCase()
-                                  )
-                                  setSelectedWallet(newIndex >= 0 ? newIndex : 0)
-                                }}
-                              >
-                                <XMarkIcon className="w-4 h-4" />
-                              </button>
-                            )}
+                                    // Preserve the previous selection by address.
+                                    const remaining = wallets.filter(
+                                      (w) =>
+                                        w.address?.toLowerCase() !==
+                                        removedAddress?.toLowerCase()
+                                    )
+                                    const newIndex = remaining.findIndex(
+                                      (w) =>
+                                        w.address?.toLowerCase() ===
+                                        selectedAddress?.toLowerCase()
+                                    )
+                                    setSelectedWallet(
+                                      newIndex >= 0 ? newIndex : 0
+                                    )
+                                  }}
+                                >
+                                  <XMarkIcon className="w-4 h-4" />
+                                </button>
+                              )
+                            })()}
                         </div>
                       </div>
                     ))}
