@@ -201,3 +201,36 @@ export function getNextUnclamedThreshold(
   // If they qualify for all stages, return the highest threshold
   return stages.length > 0 ? Number(stages[stages.length - 1].threshold) : 0
 }
+
+/**
+ * Threshold the progress bar should target for display.
+ *
+ * When the user has unclaimed XP — i.e. they've crossed a stage threshold but
+ * haven't claimed that stage on-chain yet (`totalClaimableXP > 0`) — the bar
+ * should present that COMPLETED stage as full (e.g. 5 / 5 = 100%) so it's clear
+ * there is something to claim. Only after they claim, when `totalClaimableXP`
+ * drops to 0, does the bar advance to target the next threshold (e.g. 5 / 10).
+ *
+ * Falls back to `getNextUnclamedThreshold` when there's nothing to claim.
+ */
+export function getProgressThreshold(
+  progress: StagedQuestProgress | null
+): number {
+  if (!progress || !progress.stages) return 0
+
+  const { stages, currentUserMetric, totalClaimableXP } = progress
+
+  if (totalClaimableXP > 0) {
+    // Highest threshold the user currently meets = the completed-but-unclaimed
+    // stage they're about to claim.
+    let highestMet = 0
+    for (let i = 0; i < stages.length; i++) {
+      if (currentUserMetric >= Number(stages[i].threshold)) {
+        highestMet = Number(stages[i].threshold)
+      }
+    }
+    if (highestMet > 0) return highestMet
+  }
+
+  return getNextUnclamedThreshold(progress)
+}

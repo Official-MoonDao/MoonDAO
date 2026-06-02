@@ -23,6 +23,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import {
   getStagedQuestProgress,
   getNextUnclamedThreshold,
+  getProgressThreshold,
   type StagedQuestProgress,
 } from '@/lib/xp/staged-quest-info'
 import StandardButton from '@/components/layout/StandardButton'
@@ -885,16 +886,25 @@ export default function Quest({
       ? (stagedProgress?.totalClaimableXP ?? 0) > 0
       : singleQuestEligible === true)
 
-  // Progress is unified: staged quests show real progress toward the next
+  // Progress is unified: staged quests show real progress toward the relevant
   // threshold, single quests show a simple binary (0% / 100%) bar so every
-  // card has the same visual structure.
+  // card has the same visual structure. For staged quests with claimable XP,
+  // `getProgressThreshold` targets the COMPLETED-but-unclaimed stage so the bar
+  // shows e.g. 5 / 5 (100%) until the user claims, then advances to 5 / 10.
   const singleQuestDone = isCompleted || singleQuestEligible === true
+  const hasClaimableStage =
+    isStaged && (stagedProgress?.totalClaimableXP ?? 0) > 0
   const progressTargetRaw = isStaged
-    ? Number(getNextUnclamedThreshold(stagedProgress))
+    ? Number(getProgressThreshold(stagedProgress))
     : 1
   const progressTarget = Math.max(1, progressTargetRaw)
+  // When a stage is completed but unclaimed, cap the numerator at the stage
+  // threshold so it reads 5 / 5 rather than e.g. 7 / 5.
+  const stagedDisplayMetric = hasClaimableStage
+    ? Math.min(Number(userMetric), progressTargetRaw)
+    : Number(userMetric)
   const progressCurrent = isStaged
-    ? Number(userMetric)
+    ? stagedDisplayMetric
     : singleQuestDone
     ? 1
     : 0
@@ -904,8 +914,8 @@ export default function Quest({
   )
   const progressLabelCurrent = isStaged
     ? metricFmt
-      ? metricFmt(userMetric)
-      : userMetric.toLocaleString()
+      ? metricFmt(stagedDisplayMetric)
+      : stagedDisplayMetric.toLocaleString()
     : isCompleted
     ? 'Complete'
     : singleQuestEligible === true
