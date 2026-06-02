@@ -1296,9 +1296,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         src={
                           citizenImage
                             ? URL.createObjectURL(citizenImage)
-                            : inputImage
-                              ? URL.createObjectURL(inputImage)
-                              : '/assets/MoonDAO-Loading-Animation.svg'
+                            : croppedInputImage
+                              ? URL.createObjectURL(croppedInputImage)
+                              : inputImage
+                                ? URL.createObjectURL(inputImage)
+                                : '/assets/MoonDAO-Loading-Animation.svg'
                         }
                         alt="citizen-image"
                         fill
