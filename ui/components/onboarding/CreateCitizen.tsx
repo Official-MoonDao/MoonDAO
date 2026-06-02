@@ -1324,6 +1324,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         </div>
                       )}
                     </div>
+                    {isImageGenerating && !citizenImage && (
+                      <p className="text-center text-xs text-slate-400 max-w-[400px] px-4">
+                        Your AI portrait is still generating in the background — keep reviewing your
+                        details below and it&apos;ll appear here automatically when it&apos;s ready.
+                      </p>
+                    )}
                     {(citizenImage || inputImage) && (
                       <div className="flex flex-col items-center gap-3 w-full max-w-[400px]">
                         <div className="flex flex-col sm:flex-row gap-3 w-full">

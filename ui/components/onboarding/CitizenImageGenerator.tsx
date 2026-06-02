@@ -24,7 +24,7 @@ const GENERATION_TIPS = [
   'Crafting your MoonDAO astronaut portrait…',
   'Tip: a clear, front-facing photo gives the best results.',
   'Adding some cosmic flair to your image…',
-  'Hang tight — great art takes a few seconds.',
+  'Adding the final details to your portrait…',
 ]
 
 function formatElapsed(ms: number): string {
@@ -720,10 +720,16 @@ export function ImageGenerator({
                               style={{ width: `${progressPct}%` }}
                             />
                           </div>
-                          <p className="text-xs text-slate-500">Usually takes 30–60 seconds</p>
+                          <p className="text-xs text-slate-500">
+                            {isBackgroundFlow
+                              ? 'Generating in the background • ~30–60s'
+                              : 'Usually takes 30–60 seconds'}
+                          </p>
                         </div>
                         <p className="min-h-[1rem] text-xs text-slate-400 transition-opacity duration-300">
-                          {GENERATION_TIPS[tipIndex]}
+                          {isBackgroundFlow
+                            ? "Keep going with the rest of your citizen creation — your portrait will finish in the background."
+                            : GENERATION_TIPS[tipIndex]}
                         </p>
                       </div>
                     </div>
@@ -878,7 +884,7 @@ export function ImageGenerator({
           <p className="text-xs text-slate-500 px-1 text-center">
             Crop to just your head and shoulders, keeping your whole face inside the box.{' '}
             {isBackgroundFlow
-              ? 'Generation takes ~30–60s — you can keep going while it renders.'
+              ? 'You can continue with the rest of your citizen creation while your portrait generates in the background (~30–60s).'
               : 'Generation usually takes 30–60 seconds.'}
           </p>
           <button
