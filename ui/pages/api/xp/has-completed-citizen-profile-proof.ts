@@ -16,10 +16,11 @@ import {
 const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
 
 function isProfileFieldComplete(citizen: any, field: string): boolean {
-  return JSON.stringify(citizen[field])?.trim() !== ''
+  const value = citizen?.[field]
+  if (value === undefined || value === null) return false
+  return String(value).trim() !== ''
 }
 
-// TODO: Implement logic to check if user has completed citizen profile
 async function hasCompletedCitizenProfile(user: Address): Promise<boolean> {
   try {
     const statement = `SELECT * FROM ${
@@ -36,7 +37,7 @@ async function hasCompletedCitizenProfile(user: Address): Promise<boolean> {
 
     const isProfileComplete =
       isProfileFieldComplete(citizen, 'description') &&
-      (isProfileFieldComplete(JSON.stringify(citizen), 'location') ||
+      (isProfileFieldComplete(citizen, 'location') ||
         isProfileFieldComplete(citizen, 'discord') ||
         isProfileFieldComplete(citizen, 'twitter') ||
         isProfileFieldComplete(citizen, 'website'))

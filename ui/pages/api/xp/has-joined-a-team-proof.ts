@@ -4,6 +4,8 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
+import { hatTreeMatches } from '@/lib/hats/hatTreeMatches'
+import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import {
@@ -14,55 +16,37 @@ import {
 
 const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
 
-// Check if user has joined a team using Hats Protocol subgraph
+// Check if user is wearing any MoonDAO team hats via the Hats Protocol subgraph.
+// Calls the subgraph client directly (no internal HTTP round-trip) so this
+// doesn't depend on a correctly-configured base URL at runtime.
 async function hasJoinedTeam(user: Address): Promise<boolean> {
   try {
-    // Use the Hats subgraph to check if user is wearing any MoonDAO team hats
-    // Need to use absolute URL when calling from API route to API route
-    const baseUrl =
-      process.env.NEXTAUTH_URL ||
-      process.env.VERCEL_URL ||
-      'http://localhost:3000'
-    const propsParam = encodeURIComponent(
-      JSON.stringify({
+    const wearer = await hatsSubgraphClient.getWearer({
+      chainId: DEFAULT_CHAIN_V5.id,
+      wearerAddress: user as `0x${string}`,
+      props: {
         currentHats: {
           props: {
             tree: {},
-            admin: {
-              admin: {
-                admin: {},
-              },
-            },
           },
         },
-      })
-    )
-    const res = await fetch(
-      `${baseUrl}/api/hats/get-wearer?chainId=${DEFAULT_CHAIN_V5.id}&wearerAddress=${user}&props=${propsParam}`
-    )
+      },
+    })
 
-    if (!res.ok) {
-      console.error('Error fetching hats data:', res.statusText)
+    const currentHats = (wearer as any)?.currentHats ?? []
+    if (currentHats.length === 0) {
       return false
     }
 
-    const hats: any = await res.json()
-
-    console.log('hats', hats)
-
-    // Check if user has any current hats
-    if (!hats.currentHats || hats.currentHats.length === 0) {
+    // User has joined a team if they wear any hat in the MoonDAO hat tree
+    return currentHats.some((hat: any) =>
+      hatTreeMatches(hat?.tree?.id, MOONDAO_HAT_TREE_IDS[chainSlug])
+    )
+  } catch (error: any) {
+    // SDK throws when the wearer entity has never been indexed (no hats minted yet)
+    if (error?.name === 'SubgraphWearerNotExistError') {
       return false
     }
-
-    // Filter hats to only include those in the MoonDAO hat tree
-    const moondaoHats = hats.currentHats.filter(
-      (hat: any) => hat.tree.id === MOONDAO_HAT_TREE_IDS[chainSlug]
-    )
-
-    // If user has any MoonDAO hats, they've joined a team
-    return moondaoHats.length > 0
-  } catch (error) {
     console.error('Error checking team membership via Hats subgraph:', error)
     // If there's an error checking team membership, return false to prevent XP claims
     return false
