@@ -743,7 +743,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // Mint Handler
   const callMint = useCallback(async () => {
     // Validation
-    const imageToUse = citizenImage || inputImage
+    const imageToUse = citizenImage || croppedInputImage || inputImage
     if (!imageToUse) return toast.error('Please upload an image and complete the previous steps.')
 
     if (!address) {
@@ -829,6 +829,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     }
   }, [
     citizenImage,
+    croppedInputImage,
     inputImage,
     address,
     estimatedGas,
@@ -902,10 +903,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       toast.error('No image to regenerate from. Please upload a photo first.')
       return
     }
-    
+
     setCitizenImage(undefined)
     setIsImageGenerating(true)
-    
+
     try {
       await regenerateAIImage(croppedInputImage)
     } catch (error) {
