@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
 import { extractTokenIdFromReceipt } from '@/lib/onboarding/shared-utils'
-import { buildQuestEligibilityRequest } from '@/lib/xp/useClaimableQuestsCount'
+import { buildQuestEligibilityRequest } from '@/lib/xp/questEligibilityRequest'
 
 // ============================================================================
 // Bug #1: Cross-chain slippage protection
