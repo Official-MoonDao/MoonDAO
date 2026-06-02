@@ -171,14 +171,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Transform ConvertKit data to our format
     const newsletters =
       publishedBroadcasts.slice(0, 50).map((broadcast: any) => {
-        // Function to convert newsletter title to URL slug
+        // Function to convert newsletter title to URL slug.
+        // Matches news.moondao.com slug generation: non-alphanumeric chars
+        // (apostrophes, punctuation, whitespace) become a single hyphen rather
+        // than being stripped — e.g. "MoonDAO's Update" -> "moondao-s-update".
         const titleToSlug = (title: string): string => {
           return title
             .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9]+/g, '-')
             .replace(/-+/g, '-')
-            .trim()
             .replace(/^-+|-+$/g, '')
         }
 
