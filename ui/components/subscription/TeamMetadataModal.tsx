@@ -342,6 +342,14 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                       // refresh so the updated image/details show immediately.
                       const tableName = TEAM_TABLE_NAMES[getChainSlug(selectedChain)]
                       const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${nft.metadata.id}`
+                      // cleanData strips emojis and SQL-escapes single quotes
+                      // ('' ). Tableland stores the un-escaped value, so mirror
+                      // that when comparing or the poll never matches.
+                      const unescapeQuotes = (v: string) => v.replace(/''/g, "'")
+                      const expectedName = unescapeQuotes(cleanedTeamData.name ?? '')
+                      const expectedDescription = unescapeQuotes(
+                        cleanedTeamData.description ?? ''
+                      )
                       await waitForRow({
                         statement,
                         checkCondition: (rows) => {
@@ -349,8 +357,8 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                           return (
                             !!row &&
                             row.image === imageIpfsLink &&
-                            row.name === cleanedTeamData.name &&
-                            (row.description ?? '') === (cleanedTeamData.description ?? '')
+                            row.name === expectedName &&
+                            (row.description ?? '') === expectedDescription
                           )
                         },
                         pollInterval: 3000,

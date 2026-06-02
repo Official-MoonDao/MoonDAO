@@ -393,6 +393,14 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 // rather than the stale version.
                 const tableName = CITIZEN_TABLE_NAMES[getChainSlug(selectedChain)]
                 const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${nft.metadata.id}`
+                // cleanData both strips emojis and SQL-escapes single quotes
+                // ('' ). Tableland stores the un-escaped value, so mirror that
+                // when comparing or the poll never matches (e.g. "O'Brien").
+                const unescapeQuotes = (v: string) => v.replace(/''/g, "'")
+                const expectedName = unescapeQuotes(cleanedCitizenData.name ?? '')
+                const expectedDescription = unescapeQuotes(
+                  cleanedCitizenData.description ?? ''
+                )
                 await waitForRow({
                   statement,
                   checkCondition: (rows) => {
@@ -400,8 +408,8 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                     return (
                       !!row &&
                       row.image === imageIpfsLink &&
-                      row.name === cleanedCitizenData.name &&
-                      (row.description ?? '') === (cleanedCitizenData.description ?? '')
+                      row.name === expectedName &&
+                      (row.description ?? '') === expectedDescription
                     )
                   },
                   pollInterval: 3000,
