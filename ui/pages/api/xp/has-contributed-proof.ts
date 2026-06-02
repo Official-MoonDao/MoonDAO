@@ -3,8 +3,7 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
-import { getContributions } from '@/lib/coordinape/getContributions'
-import { getUserId } from '@/lib/coordinape/getCoordinapeUser'
+import { getContributionCountForAddress } from '@/lib/contributions/getSheetContributions'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import {
   getUserAndAccessToken,
@@ -16,23 +15,13 @@ const CONTRIBUTIONS_THRESHOLD = BigInt(1) // changing this while using the same 
 
 async function fetchUserContributions(user: Address): Promise<bigint> {
   try {
-    // Get the user's Coordinape profile and user ID
-    const coordinapeUser = await getUserId(user)
+    // Count the user's submissions in the Community Circle contributions sheet
+    // (the Google Form / Sheet pipeline that replaced Coordinape).
+    const count = await getContributionCountForAddress(user)
 
-    // Get all contributions for the circle
-    const allContributions = await getContributions()
+    console.log(`Found ${count} contributions for user ${user}`)
 
-    // Filter contributions for this specific user
-    const userContributions = allContributions.filter(
-      (contribution) => contribution.user_id === coordinapeUser.user_id
-    )
-
-    console.log(
-      `Found ${userContributions.length} contributions for user ${user}`
-    )
-
-    // Return the count of contributions as a bigint
-    return BigInt(userContributions.length)
+    return BigInt(count)
   } catch (error) {
     console.error('Error fetching user contributions:', error)
     // If there's an error fetching contributions, return 0 to prevent XP claims
