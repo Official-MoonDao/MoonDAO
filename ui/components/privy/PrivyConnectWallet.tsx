@@ -1349,31 +1349,9 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                                   e.stopPropagation()
 
                                   const removedAddress = wallet.address
-                                  // Remember which wallet is currently selected
-                                  // (by address) so we can keep that selection
-                                  // after the list re-indexes, instead of
-                                  // jumping to the wallet we just removed.
                                   const selectedAddress =
                                     wallets[selectedWallet]?.address
 
-                                  // Disconnect the active session first. This is
-                                  // what actually removes a connected (but not
-                                  // linked) wallet from the list.
-                                  try {
-                                    wallet.disconnect()
-                                  } catch (err) {
-                                    console.warn(
-                                      'Failed to disconnect wallet:',
-                                      err
-                                    )
-                                  }
-
-                                  // Some wallets are also "linked" to the Privy
-                                  // account and will reappear unless unlinked.
-                                  // Only attempt to unlink wallets that are
-                                  // actually linked accounts, and never unlink
-                                  // the last remaining login method (Privy
-                                  // rejects that). Otherwise unlinkWallet throws.
                                   const linkedWalletAccounts =
                                     user?.linkedAccounts?.filter(
                                       (acc: any) => acc.type === 'wallet'
@@ -1386,6 +1364,31 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                                   const isLastLinkedAccount =
                                     (user?.linkedAccounts?.length ?? 0) <= 1
 
+                                  // Diagnostics — remove once confirmed working.
+                                  console.log('[wallet-remove] clicked', {
+                                    removedAddress,
+                                    walletClientType: wallet.walletClientType,
+                                    hasUnlinkWallet: !!unlinkWallet,
+                                    isLinked,
+                                    isLastLinkedAccount,
+                                    linkedAccounts: user?.linkedAccounts,
+                                  })
+
+                                  // Disconnect the active session first.
+                                  try {
+                                    wallet.disconnect()
+                                    console.log(
+                                      '[wallet-remove] disconnect() called'
+                                    )
+                                  } catch (err) {
+                                    console.warn(
+                                      '[wallet-remove] disconnect failed:',
+                                      err
+                                    )
+                                  }
+
+                                  // Unlink from the Privy account so it doesn't
+                                  // reappear. Surface the real error if it fails.
                                   if (
                                     unlinkWallet &&
                                     isLinked &&
@@ -1393,21 +1396,25 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                                   ) {
                                     try {
                                       await unlinkWallet(removedAddress)
+                                      console.log(
+                                        '[wallet-remove] unlinkWallet success'
+                                      )
                                     } catch (err) {
-                                      console.warn(
-                                        'Failed to unlink wallet:',
+                                      console.error(
+                                        '[wallet-remove] unlinkWallet failed:',
                                         err
                                       )
-                                      // The session was already disconnected, so
-                                      // don't surface a hard error for the
-                                      // unlink step.
+                                      toast.error(
+                                        'Could not remove wallet. See console for details.'
+                                      )
                                     }
+                                  } else if (isLastLinkedAccount) {
+                                    toast.error(
+                                      'You cannot remove your only connected wallet. Log out instead.'
+                                    )
                                   }
 
-                                  // Preserve the previous selection. Compute the
-                                  // index of the still-selected wallet in the
-                                  // list with the removed wallet filtered out so
-                                  // we never select the wallet we just removed.
+                                  // Preserve the previous selection by address.
                                   const remaining = wallets.filter(
                                     (w) =>
                                       w.address?.toLowerCase() !==
