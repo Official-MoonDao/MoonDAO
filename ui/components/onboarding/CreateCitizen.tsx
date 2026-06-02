@@ -204,6 +204,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const citizenDataRef = useRef(citizenData)
   const citizenImageRef = useRef(citizenImage)
   const inputImageRef = useRef(inputImage)
+  const croppedInputImageRef = useRef(croppedInputImage)
   const stageRef = useRef(stage)
   const selectedChainSlugRef = useRef(selectedChainSlug)
 
@@ -933,13 +934,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     checkBalanceSufficient,
     shouldProceed: (restored) => {
       const formData = restored.formData || restored
-      const hasImage = formData.citizenImage || formData.inputImage
+      const hasImage = formData.citizenImage || formData.inputImage || formData.croppedInputImage
       const isImageValid =
         hasImage &&
         ((formData.citizenImage && isSerializedFile(formData.citizenImage)) ||
           (formData.inputImage && isSerializedFile(formData.inputImage)) ||
+          (formData.croppedInputImage && isSerializedFile(formData.croppedInputImage)) ||
           (formData.citizenImage && formData.citizenImage !== 'PENDING_SERIALIZATION') ||
-          (formData.inputImage && formData.inputImage !== 'PENDING_SERIALIZATION'))
+          (formData.inputImage && formData.inputImage !== 'PENDING_SERIALIZATION') ||
+          (formData.croppedInputImage && formData.croppedInputImage !== 'PENDING_SERIALIZATION'))
       return formData.agreedToCondition && isImageValid
     },
     restoreCache: getCachedForm,
@@ -949,7 +952,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     waitForReady: () => {
       const gasEstimateReady = !isLoadingGasEstimate && estimatedGas > BigInt(0)
       const gasPriceReady = effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
-      const imagesReady = imagesRestoredRef.current || !!citizenImage || !!inputImage
+      const imagesReady =
+        imagesRestoredRef.current || !!citizenImage || !!inputImage || !!croppedInputImage
       return gasEstimateReady && gasPriceReady && imagesReady
     },
   })
@@ -982,10 +986,19 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     citizenDataRef.current = citizenData
     citizenImageRef.current = citizenImage
     inputImageRef.current = inputImage
+    croppedInputImageRef.current = croppedInputImage
     stageRef.current = stage
     selectedChainSlugRef.current = selectedChainSlug
     imagesRestoredRef.current = !!citizenImage || !!inputImage
-  }, [agreedToCondition, citizenData, citizenImage, inputImage, stage, selectedChainSlug])
+  }, [
+    agreedToCondition,
+    citizenData,
+    citizenImage,
+    inputImage,
+    croppedInputImage,
+    stage,
+    selectedChainSlug,
+  ])
 
   // ===== Effect Group: Caching =====
   useEffect(() => {
@@ -1021,6 +1034,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           existingFormData?.citizenImage && isSerializedFile(existingFormData.citizenImage)
         const hasSerializedInputImage =
           existingFormData?.inputImage && isSerializedFile(existingFormData.inputImage)
+        const hasSerializedCroppedInputImage =
+          existingFormData?.croppedInputImage &&
+          isSerializedFile(existingFormData.croppedInputImage)
 
         const cacheData = {
           stage: stageRef.current,
@@ -1034,6 +1050,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             inputImage: hasSerializedInputImage
               ? existingFormData.inputImage
               : inputImageRef.current
+                ? 'PENDING_SERIALIZATION'
+                : null,
+            croppedInputImage: hasSerializedCroppedInputImage
+              ? existingFormData.croppedInputImage
+              : croppedInputImageRef.current
                 ? 'PENDING_SERIALIZATION'
                 : null,
             agreedToCondition: agreedToConditionRef.current,
