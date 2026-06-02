@@ -77,6 +77,14 @@ export default function Quest({
   const [isLoadingStagedProgress, setIsLoadingStagedProgress] = useState(false)
   const [userMetric, setUserMetric] = useState(0)
 
+  // For single (non-staged) quests: whether the user actually meets the
+  // requirement. `null` = not yet determined (don't show a Claim button until
+  // we know), `false` = not eligible, `true` = eligible. This prevents showing
+  // a "Claim" button for a quest the user hasn't completed.
+  const [singleQuestEligible, setSingleQuestEligible] = useState<
+    boolean | null
+  >(null)
+
   const [hasClaimed, setHasClaimed] = useState(false)
   const [isLoadingClaim, setIsLoadingClaim] = useState(false)
   const [isCheckingClaimed, setIsCheckingClaimed] = useState(true)
@@ -571,15 +579,14 @@ export default function Quest({
       setError(null)
     }
 
-    // For single quests with GitHub dependencies, fetch user metric to check for GitHub linking errors
-    if (
-      quest.verifier.type !== 'staged' &&
-      quest.verifier.errorButtons &&
-      quest.verifier.errorButtons[
-        'No GitHub account linked to your Privy account'
-      ]
-    ) {
-      fetchUserMetric()
+    // For single (non-staged) quests, fetch the user metric to determine real
+    // eligibility. This both surfaces GitHub-linking errors AND lets us hide
+    // the Claim button until the user has actually completed the requirement.
+    if (quest.verifier.type !== 'staged') {
+      fetchUserMetric().then((metric) => {
+        setUserMetric(metric)
+        setSingleQuestEligible(metric >= 1)
+      })
     }
   }, [
     fetchHasClaimed,
@@ -817,19 +824,29 @@ export default function Quest({
     ? stagedProgress?.totalClaimableXP ?? 0
     : xpAmount
 
+  // Only show "Claim" when the user genuinely has something to claim:
+  //  - staged: the contract reports claimable XP from thresholds they crossed
+  //  - single: they actually meet the requirement (metric >= 1)
   const canClaim =
     !isCompleted &&
     !needsGitHubLink &&
-    (!isStaged || (stagedProgress?.totalClaimableXP ?? 0) !== 0)
+    (isStaged
+      ? (stagedProgress?.totalClaimableXP ?? 0) > 0
+      : singleQuestEligible === true)
 
   // Progress is unified: staged quests show real progress toward the next
   // threshold, single quests show a simple binary (0% / 100%) bar so every
   // card has the same visual structure.
+  const singleQuestDone = isCompleted || singleQuestEligible === true
   const progressTargetRaw = isStaged
     ? Number(getNextUnclamedThreshold(stagedProgress))
     : 1
   const progressTarget = Math.max(1, progressTargetRaw)
-  const progressCurrent = isStaged ? Number(userMetric) : isCompleted ? 1 : 0
+  const progressCurrent = isStaged
+    ? Number(userMetric)
+    : singleQuestDone
+    ? 1
+    : 0
   const progressPct = Math.min(
     100,
     Math.max(0, Math.round((progressCurrent / progressTarget) * 100))
@@ -840,6 +857,10 @@ export default function Quest({
       : userMetric.toLocaleString()
     : isCompleted
     ? 'Complete'
+    : singleQuestEligible === true
+    ? 'Ready to claim'
+    : singleQuestEligible === null
+    ? 'Checking...'
     : 'Not started'
   const progressLabelTarget = isStaged
     ? metricFmt
