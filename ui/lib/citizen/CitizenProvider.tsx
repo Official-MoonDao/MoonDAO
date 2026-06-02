@@ -352,6 +352,14 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       setCitizen(undefined)
       setIsLoading(false)
       hasLoadedNonDefaultCache.current = false
+      // Drop any optimistic seed so re-authenticating doesn't resurrect the
+      // just-minted state (or keep Tableland polling alive via refreshInterval).
+      optimisticUntilRef.current = 0
+      setOptimisticActive(false)
+      if (optimisticTimerRef.current) {
+        clearTimeout(optimisticTimerRef.current)
+        optimisticTimerRef.current = null
+      }
     }
   }, [authenticated, mock])
 

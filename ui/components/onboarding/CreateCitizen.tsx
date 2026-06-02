@@ -999,11 +999,28 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     router.push('/dashboard')
   }, [router])
 
+  // Memoize the welcome image object URL so the overlay doesn't allocate a new
+  // one on every render, and revoke it when the source changes / on unmount.
+  const welcomeImageFile = citizenImage || inputImage
+  const welcomeImageUrl = useMemo(
+    () => (welcomeImageFile ? URL.createObjectURL(welcomeImageFile) : null),
+    [welcomeImageFile]
+  )
+  useEffect(() => {
+    return () => {
+      if (welcomeImageUrl) URL.revokeObjectURL(welcomeImageUrl)
+    }
+  }, [welcomeImageUrl])
+
+  const welcomeButtonRef = useRef<HTMLButtonElement>(null)
+
   // ===== Effect Group: Post-Mint Celebration =====
   // Auto-advance to the dashboard a few seconds after the welcome screen so the
-  // user lands there even if they don't click the button.
+  // user lands there even if they don't click the button. Move keyboard focus to
+  // the primary action so keyboard users can proceed without extra tabbing.
   useEffect(() => {
     if (!mintComplete) return
+    welcomeButtonRef.current?.focus()
     const timer = setTimeout(goToDashboard, 6000)
     return () => clearTimeout(timer)
   }, [mintComplete, goToDashboard])
@@ -1321,11 +1338,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       {/* Post-mint celebration / welcome screen */}
       {mintComplete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md px-4 animate-fadeIn">
-          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-gradient-to-b from-slate-800/80 to-slate-900/95 p-8 text-center shadow-2xl">
-            {(citizenImage || inputImage) && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="citizen-welcome-heading"
+            className="relative w-full max-w-md rounded-3xl border border-white/10 bg-gradient-to-b from-slate-800/80 to-slate-900/95 p-8 text-center shadow-2xl"
+          >
+            {welcomeImageUrl && (
               <div className="mx-auto mb-6 h-28 w-28 overflow-hidden rounded-2xl border border-white/15 shadow-lg">
                 <Image
-                  src={URL.createObjectURL(citizenImage || inputImage)}
+                  src={welcomeImageUrl}
                   alt={citizenData.name || 'Your citizen'}
                   width={112}
                   height={112}
@@ -1337,7 +1359,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             <p className="text-xs uppercase tracking-[0.2em] text-amber-300/80 mb-2">
               Welcome to MoonDAO
             </p>
-            <h2 className="font-GoodTimes text-2xl sm:text-3xl text-white mb-3">
+            <h2
+              id="citizen-welcome-heading"
+              className="font-GoodTimes text-2xl sm:text-3xl text-white mb-3"
+            >
               You&apos;re a Citizen!
             </h2>
             <p className="text-slate-300 text-sm leading-relaxed mb-7">
@@ -1346,6 +1371,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
               everything you can do next.
             </p>
             <button
+              ref={welcomeButtonRef}
               onClick={goToDashboard}
               className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
             >
