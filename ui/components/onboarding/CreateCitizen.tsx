@@ -965,10 +965,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   useEffect(() => {
     if (isRegenerating) {
       setIsImageGenerating(true)
-    } else if (!isRegenerating && isImageGenerating && citizenImage) {
+    } else if (!isRegenerating && isImageGenerating) {
       setIsImageGenerating(false)
     }
-  }, [isRegenerating, isImageGenerating, citizenImage])
+  }, [isRegenerating, isImageGenerating])
 
   useEffect(() => {
     if (stage > lastStage) {
