@@ -336,7 +336,7 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
                     })
 
                     if (receipt) {
-                      toast.success('Profile Editing Successful')
+                      toast.success('Profile Edited Successfully')
                       setEnabled(false)
                       // Wait until the new data is indexed by Tableland, then
                       // refresh so the updated image/details show immediately.

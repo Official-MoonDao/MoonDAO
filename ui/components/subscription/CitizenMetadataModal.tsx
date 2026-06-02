@@ -386,7 +386,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
               })
 
               if (receipt) {
-                toast.success('Profile Editing Successful')
+                toast.success('Profile Edited Successfully')
                 setEnabled(false)
                 // Wait until the new data is indexed by Tableland, then refresh
                 // the profile so the user sees their updated image/details
