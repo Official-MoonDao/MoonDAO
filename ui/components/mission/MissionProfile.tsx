@@ -760,6 +760,14 @@ export default function MissionProfile({
                   flushSync(() => {
                     setSelectedChain(g.target)
                   })
+                  // Mark this as an explicit user choice so the contribute
+                  // modal pins the pay network to the chain we just switched
+                  // to (the richest / best-balance chain). Without this, the
+                  // modal's `syncContextToRecommendedFunding` can silently
+                  // override the user's selection with a stale/different
+                  // async `recommendedFundingChain`, dropping them onto the
+                  // wrong pay network.
+                  stayOnSelectedAppChainForContributeRef.current = true
                   if (g.nextUsd !== undefined) {
                     setUsdInput(g.nextUsd)
                   }
