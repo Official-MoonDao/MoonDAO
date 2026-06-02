@@ -73,9 +73,18 @@ export async function getSheetContributions(): Promise<Contribution[]> {
     return []
   }
 
-  const response = await fetch(CONTRIBUTIONS_SHEET_CSV_URL)
+  let response: Response
+  try {
+    response = await fetch(CONTRIBUTIONS_SHEET_CSV_URL)
+  } catch (err) {
+    console.error('[getSheetContributions] Sheet fetch failed:', err)
+    return []
+  }
   if (!response.ok) {
-    throw new Error(`Sheet fetch failed: ${response.status}`)
+    console.error(
+      `[getSheetContributions] Sheet fetch failed: ${response.status}`
+    )
+    return []
   }
 
   const csv = await response.text()

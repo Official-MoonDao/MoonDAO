@@ -953,7 +953,8 @@ export default function Quest({
 
           <div className="flex-shrink-0">
             <span className="inline-flex items-center text-green-300 text-xs font-semibold bg-green-500/15 px-2.5 py-1 rounded-full border border-green-400/25 whitespace-nowrap">
-              {isLoadingXpAmount && !isStaged ? (
+              {(isStaged && (isLoadingStagedProgress || !stagedProgress)) ||
+              (!isStaged && isLoadingXpAmount) ? (
                 <LoadingSpinner height="h-3" width="w-3" />
               ) : (
                 `+${rewardAmount.toLocaleString()}`
