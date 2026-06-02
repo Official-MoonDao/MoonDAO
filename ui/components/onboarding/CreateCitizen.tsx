@@ -62,6 +62,7 @@ import {
   SerializedFile,
 } from '@/lib/utils/files'
 import { useFormCache } from '@/lib/utils/hooks/useFormCache'
+import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
@@ -227,6 +228,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const tagToNetworkSignup = useTag(CK_NETWORK_SIGNUP_TAG_ID)
 
   const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
+
+  // Hook for regenerating AI images from Review step
+  const {
+    generateImage: regenerateAIImage,
+    isLoading: isRegenerating,
+    error: regenerateError,
+  } = useImageGenerator('/api/image-gen/citizen-image', croppedInputImage, (file: File) => {
+    setCitizenImage(file)
+  })
 
   // ===== Computed Values =====
   const LAYER_ZERO_TRANSFER_COST = useMemo(() => BigInt('3000000000000000'), [])
@@ -886,6 +896,24 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     [subscribeToNetworkSignup],
   )
 
+  // Regenerate Handler for Review step
+  const handleRegenerateFromReview = useCallback(async () => {
+    if (!croppedInputImage) {
+      toast.error('No image to regenerate from. Please upload a photo first.')
+      return
+    }
+    
+    setCitizenImage(undefined)
+    setIsImageGenerating(true)
+    
+    try {
+      await regenerateAIImage(croppedInputImage)
+    } catch (error) {
+      console.error('Regeneration error:', error)
+      toast.error('Failed to regenerate image. Please try again.')
+    }
+  }, [croppedInputImage, regenerateAIImage])
+
   // ===== Effect Group: Gas Estimation =====
   useEffect(() => {
     if (stage === 2 && address && citizenData.name) {
@@ -930,6 +958,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       setIsImageGenerating(false)
     }
   }, [citizenImage, isImageGenerating])
+
+  // Track regeneration state
+  useEffect(() => {
+    if (isRegenerating) {
+      setIsImageGenerating(true)
+    } else if (!isRegenerating && isImageGenerating && citizenImage) {
+      setIsImageGenerating(false)
+    }
+  }, [isRegenerating, isImageGenerating, citizenImage])
 
   useEffect(() => {
     if (stage > lastStage) {
@@ -1288,11 +1325,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       <div className="flex flex-col items-center gap-3 w-full max-w-[400px]">
                         <div className="flex flex-col sm:flex-row gap-3 w-full">
                           <button
-                            onClick={() => {
-                              setCitizenImage(undefined)
-                              setStage(0)
-                            }}
-                            className="flex-1 py-2.5 px-5 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
+                            onClick={handleRegenerateFromReview}
+                            disabled={isImageGenerating || !croppedInputImage}
+                            className="flex-1 py-2.5 px-5 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                           >
                             <svg
                               className="w-4 h-4"

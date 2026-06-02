@@ -132,6 +132,13 @@ export function ImageGenerator({
         onGenerationStateChange(false)
       }
     }
+    // Cleanup: clear flag on unmount if generation was active to prevent stuck loading state
+    return () => {
+      if (onGenerationStateChange && hasReportedActiveRef.current) {
+        hasReportedActiveRef.current = false
+        onGenerationStateChange(false)
+      }
+    }
   }, [isGenerating, generating, onGenerationStateChange])
 
   const handleGenerateImage = useCallback(async () => {
