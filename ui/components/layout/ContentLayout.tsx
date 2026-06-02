@@ -40,6 +40,9 @@ const ContentLayout: React.FC<ContentProps> = ({
   maxWidth = '1200px',
 }) => {
   const isCompact = mode === 'compact'
+  // Onboarding flows (citizen/team create) center body content at 720px; match that
+  // in the title band so the hero header doesn't sit flush-left on wide screens.
+  const profileOnboardingLayout = isCompact && isProfile
 
   return (
     <div className="">
@@ -94,11 +97,13 @@ const ContentLayout: React.FC<ContentProps> = ({
                 className={`
                                     z-50 w-full overflow-x-hidden pt-0 mt-[-80px]
                                     ${
-                                      isCompact
-                                        ? isProfile
-                                          ? 'px-4 sm:px-5 md:px-0'
-                                          : 'px-2 sm:px-5'
-                                        : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5 px-2 sm:px-5'
+                                      profileOnboardingLayout
+                                        ? 'px-4 sm:px-5 md:px-0 w-full flex flex-col items-center'
+                                        : isCompact
+                                          ? isProfile
+                                            ? 'px-4 sm:px-5 md:px-0'
+                                            : 'px-2 sm:px-5'
+                                          : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5 px-2 sm:px-5'
                                     } 
                                     ${
                                       children
@@ -114,14 +119,27 @@ const ContentLayout: React.FC<ContentProps> = ({
                   id="title-container"
                   className={`
                                         flex flex-col pb-5 md:pb-0 w-full h-full 
-                                        ${isCompact ? '' : 'md:max-w-[700px] lg:max-w-[100%]'}
+                                        ${
+                                          profileOnboardingLayout
+                                            ? 'max-w-[720px] px-4 md:px-0'
+                                            : isCompact
+                                              ? ''
+                                              : 'md:max-w-[700px] lg:max-w-[100%]'
+                                        }
                                     `}
                 >
                   <div
                     id="header-element"
-                    className={`block w-full max-w-[1200px] header-responsive leading-[1] font-GoodTimes ${
-                      isCompact ? 'pt-0' : 'lg:pt-20'
+                    className={`block w-full header-responsive leading-[1] font-GoodTimes ${
+                      profileOnboardingLayout
+                        ? 'max-w-[720px] pt-0'
+                        : `max-w-[1200px] ${isCompact ? 'pt-0' : 'lg:pt-20'}`
                     }`}
+                    style={
+                      headerSize && profileOnboardingLayout
+                        ? { fontSize: headerSize }
+                        : undefined
+                    }
                   >
                     {header}
                   </div>
