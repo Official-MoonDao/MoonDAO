@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Options } from '@layerzerolabs/lz-v2-utilities'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { getAccessToken } from '@privy-io/react-auth'
+import { getAccessToken, usePrivy } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import {
   CITIZEN_ADDRESSES,
@@ -124,6 +124,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // In test mode (Cypress), use mock address from window if available
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
+  const { authenticated } = usePrivy()
 
   // Form state caching - needs to be defined before useOnrampInitialStage
   const { cache, setCache, clearCache, restoreCache } = useFormCache<{
@@ -1220,6 +1221,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     generateInBG
                     onGenerationStateChange={setIsImageGenerating}
                     onCrop={setCroppedInputImage}
+                    authenticated={authenticated}
                   />
                   {process.env.NEXT_PUBLIC_ENV === 'dev' && (
                     <button

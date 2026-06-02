@@ -44,6 +44,7 @@ export function ImageGenerator({
   generateInBG,
   onGenerationStateChange, // Add this prop
   onCrop, // Lifts the cropped upload to the parent (used for "Use my photo")
+  authenticated = true, // Whether the user is authenticated (needed for AI generation)
 }: any) {
   // In the onboarding flow we generate in the background and advance to the next
   // step immediately; the AI image (and Regenerate / Use-my-photo choices) then
@@ -857,7 +858,7 @@ export function ImageGenerator({
           <button
             className="w-full py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
             onClick={handleGenerateImage}
-            disabled={isGenerating || generating}
+            disabled={isGenerating || generating || !authenticated}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -869,6 +870,11 @@ export function ImageGenerator({
             </svg>
             Generate AI Photo
           </button>
+          {!authenticated && (
+            <p className="text-xs text-amber-400/80 px-1 text-center">
+              AI photo generation will be available after you sign in at the mint step.
+            </p>
+          )}
           <p className="text-xs text-slate-500 px-1 text-center">
             Crop to just your head and shoulders, keeping your whole face inside the box.{' '}
             {isBackgroundFlow
