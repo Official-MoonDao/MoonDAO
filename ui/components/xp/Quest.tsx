@@ -460,12 +460,24 @@ export default function Quest({
         body: JSON.stringify({ user: userAddress, accessToken }),
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      // Parse the body first: the API returns its real failure reason in
+      // `{ error }` even on non-2xx responses. Throwing on `!response.ok`
+      // before reading the body collapses every server error into a useless
+      // "HTTP 500:" message and hides the actual cause.
+      let data: any = null
+      try {
+        data = await response.json()
+      } catch {
+        // Non-JSON body (e.g. gateway/proxy error page)
       }
 
-      const data = await response.json()
-      const { eligible, error, txHash } = data
+      if (!response.ok) {
+        const serverError =
+          data?.error || `HTTP ${response.status}: ${response.statusText}`
+        throw new Error(serverError)
+      }
+
+      const { eligible, error, txHash } = data || {}
 
       // Check if this is a GitHub linking error
       if (error && error.includes('No GitHub account linked')) {
