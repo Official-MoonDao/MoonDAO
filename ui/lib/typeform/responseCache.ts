@@ -54,7 +54,12 @@ export async function readCachedTypeformAnswers(
   const client = getRedis()
   if (!client || !responseId) return null
   try {
-    const cached = await client.get<CachedTypeformResponse>(cacheKey(responseId))
+    // Bound the read so a misconfigured/unreachable Upstash endpoint can't hang
+    // the onboarding request (this runs before anything else in the handler).
+    const cached = await Promise.race([
+      client.get<CachedTypeformResponse>(cacheKey(responseId)),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+    ])
     if (cached?.answers && Array.isArray(cached.answers)) {
       return cached.answers
     }

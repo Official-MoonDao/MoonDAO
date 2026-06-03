@@ -59,9 +59,33 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-const TYPEFORM_POLL_MAX_ATTEMPTS = 24
+/**
+ * Privy's `getAccessToken()` can hang indefinitely right after an OAuth redirect
+ * (the SDK reports `authenticated` from cached state while the token layer is
+ * still re-initializing). Awaiting it directly would freeze the whole submission
+ * with no timeout and no logs, so we race it against a timeout and treat a
+ * non-resolving call as "no token yet" (the next poll attempt retries).
+ */
+async function getAccessTokenWithTimeout(timeoutMs: number): Promise<string | null> {
+  try {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timeout = new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), timeoutMs)
+    })
+    const token = await Promise.race([getAccessToken(), timeout])
+    if (timer) clearTimeout(timer)
+    return (token as string | null) ?? null
+  } catch {
+    return null
+  }
+}
+
+// Each server poll is now cheap (it bails out fast with 404 until Typeform has
+// indexed the response), so we poll frequently to catch the answer within ~1s
+// of it becoming available, over a ~45s total window before surfacing a retry.
+const TYPEFORM_POLL_MAX_ATTEMPTS = 36
 const TYPEFORM_POLL_INITIAL_DELAY_MS = 250
-const TYPEFORM_POLL_MAX_DELAY_MS = 1500
+const TYPEFORM_POLL_MAX_DELAY_MS = 1000
 
 /**
  * Handles Typeform submission with data formatting and cleaning.
@@ -74,15 +98,32 @@ export async function handleTypeformSubmission(params: {
   /** Skips heavy Tableland ownership checks — use for new citizen/team onboarding only. */
   onboarding?: boolean
 }): Promise<any> {
-  const accessToken = await getAccessToken()
   const onboarding = params.onboarding ?? true
 
   let lastStatus = 0
-  const authHeaders: HeadersInit = accessToken
-    ? { Authorization: `Bearer ${accessToken}` }
-    : {}
+  // Fetch the token up front, but with a timeout so a stalled Privy SDK can't
+  // freeze the whole submission. If it's not ready we retry a bounded number of
+  // times below (a late-arriving token is common right after an OAuth redirect).
+  let accessToken = await getAccessTokenWithTimeout(8000)
+  let tokenRetries = 0
+  const MAX_TOKEN_RETRIES = 4
 
   for (let attempt = 0; attempt < TYPEFORM_POLL_MAX_ATTEMPTS; attempt++) {
+    if (!accessToken && tokenRetries < MAX_TOKEN_RETRIES) {
+      tokenRetries++
+      accessToken = await getAccessTokenWithTimeout(3000)
+    }
+    if (!accessToken && tokenRetries >= MAX_TOKEN_RETRIES) {
+      // Privy never produced a session token — polling would just 401 forever.
+      // Fail fast so the UI shows the retry prompt instead of hanging.
+      throw new Error(
+        'Could not verify your session. Please try again in a moment.'
+      )
+    }
+    const authHeaders: HeadersInit = accessToken
+      ? { Authorization: `Bearer ${accessToken}` }
+      : {}
+
     const response = await fetch('/api/typeform/response', {
       method: 'POST',
       headers: {

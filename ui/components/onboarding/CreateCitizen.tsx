@@ -343,6 +343,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const wasRegeneratingRef = useRef(false)
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [isSubmittingTypeform, setIsSubmittingTypeform] = useState(false)
+  // Seconds elapsed while we wait on Typeform indexing, so the processing UI
+  // can reassure the user during the (sometimes long) wait.
+  const [processingElapsedSec, setProcessingElapsedSec] = useState(0)
+  // True when polling for the submitted response timed out — lets the user
+  // retry without re-filling the form (instead of being dropped back to it).
+  const [typeformProcessingFailed, setTypeformProcessingFailed] = useState(false)
+  const lastTypeformPayloadRef = useRef<{ formId: string; responseId: string } | null>(null)
   const [hasPendingImageJob, setHasPendingImageJob] = useState(false)
   // When a signed-out user submits the profile, we hold the Typeform response
   // here and prompt sign-in; processing the response needs an authenticated
@@ -1045,6 +1052,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     setIsImageGenerating(false)
     setHasPendingImageJob(false)
     setImageGenProgress(null)
+    setTypeformProcessingFailed(false)
+    lastTypeformPayloadRef.current = null
     setStage(0)
   }, [clearCache, setAgreedToCondition])
 
@@ -1298,6 +1307,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         return
       }
 
+      lastTypeformPayloadRef.current = { formId, responseId }
+      setTypeformProcessingFailed(false)
       setIsSubmittingTypeform(true)
       try {
         const cleanedData = await handleTypeformSubmission({
@@ -1313,12 +1324,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
         clearPendingTypeformSession()
         setCitizenData(cleanedData as any)
+        // Only advance to checkout once the response is actually available.
         setStage(2)
       } catch (error: any) {
         console.error('Typeform submission error:', error)
+        // Keep the user on the Profile step and offer a retry rather than
+        // dumping them back to a blank form (their answers are saved in Typeform).
+        setTypeformProcessingFailed(true)
         toast.error(
-          error?.message || 'Failed to process your profile. Please try again or contact support.',
-          { duration: 8000 },
+          error?.message || 'Still finalizing your profile. Please try again in a moment.',
+          { duration: 6000 },
         )
       } finally {
         setIsSubmittingTypeform(false)
@@ -1326,6 +1341,27 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     },
     [subscribeToNetworkSignup, authenticated, login],
   )
+
+  const retryTypeformProcessing = useCallback(() => {
+    if (lastTypeformPayloadRef.current) {
+      void submitTypeform(lastTypeformPayloadRef.current)
+    }
+  }, [submitTypeform])
+
+  // Tick a 1s counter while the profile is processing so the UI can show
+  // elapsed time and progressively reassuring copy during the Typeform wait.
+  useEffect(() => {
+    if (!isSubmittingTypeform) {
+      setProcessingElapsedSec(0)
+      return
+    }
+    setProcessingElapsedSec(0)
+    const startedAt = Date.now()
+    const timer = setInterval(() => {
+      setProcessingElapsedSec(Math.floor((Date.now() - startedAt) / 1000))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [isSubmittingTypeform])
 
   // Persist original upload (compressed) so re-cropping survives a Privy navigation.
   // This is the lowest-priority artifact — the resilient session writer will evict
@@ -1440,6 +1476,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
     const pending = pendingTypeform || readPendingTypeformFromSession()
     if (pending) {
+      // We're authenticated and about to process, so the OAuth redirect has
+      // already happened — clear the persisted payload now so a failed/slow
+      // attempt can't auto-retrigger this effect into a perpetual spinner.
+      // The explicit "Try again" button replays from an in-memory ref instead.
+      clearPendingTypeformSession()
       startTransition(() => {
         if (stage === 0) setStage(1)
         setPendingTypeform(null)
@@ -1487,6 +1528,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         handleFormRestore(anon)
       }
     })
+
+    // Lock after the first authenticated restore pass. This effect exists to
+    // restore in-progress state once (e.g. after a Privy remount wipes React
+    // state). Without this lock it re-runs on every `stage` change and would
+    // bounce the user back to checkout when they intentionally navigate
+    // backward (e.g. "Change photo" on the Review step sets stage 0).
+    hasRestoredInProgressFlowRef.current = true
   }, [
     isClientHydrated,
     authenticated,
@@ -1921,7 +1969,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     setImage={setCitizenImage}
                     inputImage={inputImage}
                     setInputImage={setInputImage}
-                    nextStage={() => setStage(1)}
+                    // If the profile is already done (e.g. user hit "Change
+                    // photo" on Review), return straight to checkout instead of
+                    // making them redo the Profile step.
+                    nextStage={() => setStage(citizenData.name ? 2 : 1)}
                     stage={stage}
                     generateInBG
                     onGenerationStateChange={setIsImageGenerating}
@@ -1962,7 +2013,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     <p className="text-slate-400 text-sm">Complete your citizen profile below.</p>
                   </div>
                   {isSubmittingTypeform ? (
-                    <div className="flex flex-col items-center gap-4 py-12">
+                    <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
                       <Image
                         src="/assets/MoonDAO-Loading-Animation.svg"
                         alt="Processing"
@@ -1970,7 +2021,21 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         height={80}
                         className="animate-pulse"
                       />
-                      <p className="text-white font-medium">Processing your profile...</p>
+                      <p className="text-white font-medium">
+                        {processingElapsedSec < 12
+                          ? 'Processing your profile...'
+                          : processingElapsedSec < 30
+                          ? 'Saving your answers...'
+                          : 'Almost there — finalizing your profile...'}
+                      </p>
+                      <p className="text-slate-400 text-sm max-w-[420px]">
+                        This can take up to a minute while we securely sync your responses.
+                        We&apos;ll move you to checkout automatically as soon as it&apos;s ready —
+                        no need to refresh or resubmit.
+                      </p>
+                      <p className="text-slate-500 text-xs tabular-nums">
+                        Elapsed: {processingElapsedSec}s
+                      </p>
                     </div>
                   ) : pendingTypeform && !authenticated ? (
                     <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
@@ -1986,6 +2051,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         className="mt-2 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
                       >
                         Sign in to continue
+                      </button>
+                    </div>
+                  ) : typeformProcessingFailed ? (
+                    <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
+                      <h3 className="font-GoodTimes text-lg text-white">
+                        Still finalizing your profile
+                      </h3>
+                      <p className="text-slate-400 text-sm max-w-[420px]">
+                        Your answers are saved with Typeform — they&apos;re just taking a little
+                        longer than usual to sync. No need to fill anything out again.
+                      </p>
+                      <button
+                        onClick={retryTypeformProcessing}
+                        className="mt-2 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+                      >
+                        Try again
                       </button>
                     </div>
                   ) : (

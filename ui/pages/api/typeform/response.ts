@@ -2,7 +2,6 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getPrivyUserData } from '@/lib/privy'
-import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 import {
   hasAccessToResponse,
   fetchResponseFromFormIds,
@@ -22,14 +21,22 @@ async function wait(ms: number) {
 }
 
 async function getResponse(formId: string, responseId: string) {
-  return await fetch(
-    `https://api.typeform.com/forms/${formId}/responses?included_response_ids=${responseId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.TYPEFORM_PERSONAL_ACCESS_TOKEN}`,
+  // Bound the Typeform call so a stalled request can't hang the whole API route.
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    return await fetch(
+      `https://api.typeform.com/forms/${formId}/responses?included_response_ids=${responseId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.TYPEFORM_PERSONAL_ACCESS_TOKEN}`,
+        },
+        signal: controller.signal,
       },
-    },
-  )
+    )
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 async function retryGetResponse(
@@ -66,11 +73,6 @@ async function retryGetResponse(
   return null
 }
 
-function responsePayload(data: any) {
-  const response = data.items[0]
-  return { answers: response.answers }
-}
-
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed')
@@ -93,21 +95,35 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(500).json({ message: 'Server configuration error' })
     }
 
-    // New citizen/team onboarding: verify token, then read from webhook cache or API.
-    // Client handles retry backoff; server does one quick Typeform read per request.
+    // New citizen/team onboarding. The client polls this endpoint repeatedly
+    // while Typeform indexes the submission, so the common case is "not ready
+    // yet". To keep each poll cheap we do the readiness check FIRST (Redis
+    // cache -> one Typeform read) and bail out fast with 404 when there's
+    // nothing to return. The expensive Privy user fetch + on-chain IDOR check
+    // only runs on the single request that actually has answers. The Bearer
+    // token was already verified by authMiddleware, so no extra verify here.
     if (onboarding) {
-      const verified = await verifyPrivyAuth(accessToken as string)
-      if (!verified) {
-        return res.status(401).json({ message: 'Invalid access token' })
-      }
-
       // Fast path: webhook caches answers within ~1s of submit (see /api/typeform/webhook).
-      const cachedAnswers = await readCachedTypeformAnswers(responseId as string)
-      if (cachedAnswers) {
-        return res.status(200).json({ answers: cachedAnswers })
+      let answers = await readCachedTypeformAnswers(responseId as string)
+
+      if (!answers) {
+        const data = await retryGetResponse(formId as string, responseId as string, {
+          maxAttempts: 1,
+        })
+        if (data?.items?.[0]) {
+          answers = data.items[0].answers
+          void cacheTypeformAnswers(responseId as string, answers)
+        }
       }
 
-      // Prevent IDOR for responses already minted on-chain.
+      if (!answers) {
+        return res
+          .status(404)
+          .json({ message: 'Response not yet available from Typeform' })
+      }
+
+      // We have answers — confirm identity and prevent IDOR for responses
+      // already minted on-chain before handing them back.
       const privyUserData = await getPrivyUserData(accessToken as string)
       if (!privyUserData) {
         return res.status(401).json({ message: 'Invalid access token' })
@@ -119,20 +135,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         responseId
       )
 
-      if (error && error !== 'Response not found' && !hasAccess) {
+      // Only block when we DEFINITIVELY determine the response is owned by a
+      // different on-chain citizen/team. Transient infra failures (Tableland /
+      // RPC rate limits surface as 'Internal server error') must NOT 403 the
+      // user's own freshly-submitted onboarding response — the client can't
+      // distinguish a 403 from "not ready yet" and would poll until timeout,
+      // so a transient error here used to stall onboarding indefinitely.
+      const DEFINITIVE_ACCESS_DENIALS = [
+        'User is not a manager of the team',
+        'User does not own the citizen nft',
+      ]
+      if (!hasAccess && error && DEFINITIVE_ACCESS_DENIALS.includes(error)) {
         return res.status(403).json({ message: 'Access denied to this response' })
       }
 
-      const data = await retryGetResponse(formId as string, responseId as string, {
-        maxAttempts: 1,
-      })
-      if (data?.items?.[0]) {
-        void cacheTypeformAnswers(responseId as string, data.items[0].answers)
-        return res.status(200).json(responsePayload(data))
-      }
-      return res
-        .status(404)
-        .json({ message: 'Response not yet available from Typeform' })
+      return res.status(200).json({ answers })
     }
 
     const privyUserData = await getPrivyUserData(accessToken as string)

@@ -16,18 +16,28 @@ export async function getPrivyUserData(
       return null
     }
 
-    // Fetch user data with linked accounts from Privy API
-    const userResponse = await fetch(
-      `https://auth.privy.io/api/v1/users/${verifiedClaims.userId}`,
-      {
-        headers: {
-          Authorization: `Basic ${Buffer.from(
-            `${process.env.NEXT_PUBLIC_PRIVY_APP_ID}:${process.env.PRIVY_APP_SECRET}`
-          ).toString('base64')}`,
-          'privy-app-id': process.env.NEXT_PUBLIC_PRIVY_APP_ID as string,
-        },
-      }
-    )
+    // Fetch user data with linked accounts from Privy API. Bound it with an
+    // AbortController timeout so flaky connectivity to Privy can't hang the
+    // request indefinitely (it would otherwise stall the whole API route).
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000)
+    let userResponse: Response
+    try {
+      userResponse = await fetch(
+        `https://auth.privy.io/api/v1/users/${verifiedClaims.userId}`,
+        {
+          headers: {
+            Authorization: `Basic ${Buffer.from(
+              `${process.env.NEXT_PUBLIC_PRIVY_APP_ID}:${process.env.PRIVY_APP_SECRET}`
+            ).toString('base64')}`,
+            'privy-app-id': process.env.NEXT_PUBLIC_PRIVY_APP_ID as string,
+          },
+          signal: controller.signal,
+        }
+      )
+    } finally {
+      clearTimeout(timeout)
+    }
 
     if (!userResponse.ok) {
       throw new Error('Failed to fetch user data from Privy')
