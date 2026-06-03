@@ -17,15 +17,12 @@ async function fetchSnapshotVP(user: Address, space: string): Promise<bigint> {
   const endpoint = 'https://hub.snapshot.org/graphql'
   const query = gql`
   {
-    vp (voter: "${user}", space: "tomoondao.eth") {
+    vp (voter: "${user}", space: "${space}") {
       vp
     }
   }`
   try {
-    const data = (await gqlRequest(endpoint, query, {
-      voter: user,
-      space,
-    })) as any
+    const data = (await gqlRequest(endpoint, query)) as any
     const value = Number(data?.vp?.vp ?? 0)
     const floored = Number.isFinite(value) ? Math.floor(value) : 0
     return BigInt(floored)

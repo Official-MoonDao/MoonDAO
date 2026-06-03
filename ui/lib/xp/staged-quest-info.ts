@@ -222,10 +222,12 @@ export function getProgressThreshold(
 
   if (totalClaimableXP > 0) {
     // Highest threshold the user currently meets = the completed-but-unclaimed
-    // stage they're about to claim.
+    // stage they're about to claim. Only consider active stages so the bar
+    // never targets a threshold the contract won't actually let you claim
+    // (calculateTotalClaimableXP skips inactive stages too).
     let highestMet = 0
     for (let i = 0; i < stages.length; i++) {
-      if (currentUserMetric >= Number(stages[i].threshold)) {
+      if (stages[i].active && currentUserMetric >= Number(stages[i].threshold)) {
         highestMet = Number(stages[i].threshold)
       }
     }

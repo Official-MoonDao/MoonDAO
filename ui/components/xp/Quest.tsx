@@ -624,10 +624,15 @@ export default function Quest({
     // eligibility. This both surfaces GitHub-linking errors AND lets us hide
     // the Claim button until the user has actually completed the requirement.
     if (quest.verifier.type !== 'staged') {
-      fetchUserMetric().then((metric) => {
-        setUserMetric(metric)
-        setSingleQuestEligible(metric >= 1)
-      })
+      // Reset to null immediately so any stale Claim button disappears while
+      // the new fetch is in flight (e.g. when userAddress or quest changes).
+      setSingleQuestEligible(null)
+      fetchUserMetric()
+        .then((metric) => {
+          setUserMetric(metric)
+          setSingleQuestEligible(metric >= 1)
+        })
+        .catch(console.error)
     }
   }, [
     fetchHasClaimed,

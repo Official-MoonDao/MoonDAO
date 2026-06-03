@@ -48,6 +48,8 @@ async function fetchOnchainVotesCount(user: Address): Promise<number> {
   return total
 }
 
+const SNAPSHOT_SPACE = process.env.SNAPSHOT_SPACE || 'tomoondao.eth'
+
 // Legacy: votes cast in MoonDAO's historical Snapshot space. Retained so
 // Citizens who voted before the migration to on-chain governance still qualify.
 async function fetchSnapshotVotesCount(user: Address): Promise<number> {
@@ -57,7 +59,7 @@ async function fetchSnapshotVotesCount(user: Address): Promise<number> {
       votes(
         first: 1000
         skip: 0
-        where: { voter: $address, space: "tomoondao.eth" }
+        where: { voter: $address, space: "${SNAPSHOT_SPACE}" }
       ) {
         id
         voter

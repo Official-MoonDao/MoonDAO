@@ -18,9 +18,6 @@ async function fetchUserContributions(user: Address): Promise<bigint> {
     // Count the user's submissions in the Community Circle contributions sheet
     // (the Google Form / Sheet pipeline that replaced Coordinape).
     const count = await getContributionCountForAddress(user)
-
-    console.log(`Found ${count} contributions for user ${user}`)
-
     return BigInt(count)
   } catch (error) {
     console.error('Error fetching user contributions:', error)
