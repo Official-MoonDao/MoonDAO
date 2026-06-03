@@ -3,7 +3,14 @@ import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getPrivyUserData } from '@/lib/privy'
 import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
-import { hasAccessToResponse, fetchResponseFromFormIds } from '@/lib/typeform/hasAccessToResponse'
+import {
+  hasAccessToResponse,
+  fetchResponseFromFormIds,
+} from '@/lib/typeform/hasAccessToResponse'
+import {
+  cacheTypeformAnswers,
+  readCachedTypeformAnswers,
+} from '@/lib/typeform/responseCache'
 
 //https://github.com/mathio/nextjs-embed-demo/blob/main/pages/api/response.js
 
@@ -80,7 +87,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(500).json({ message: 'Server configuration error' })
     }
 
-    // New citizen/team onboarding: verify token only (no Privy user API fetch per poll).
+    // New citizen/team onboarding: verify token, then read from webhook cache or API.
     // Client handles retry backoff; server does one quick Typeform read per request.
     if (onboarding) {
       const verified = await verifyPrivyAuth(accessToken as string)
@@ -88,18 +95,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         return res.status(401).json({ message: 'Invalid access token' })
       }
 
-      // Get user's wallet addresses to prevent IDOR for already-minted responses
+      // Fast path: webhook caches answers within ~1s of submit (see /api/typeform/webhook).
+      const cachedAnswers = await readCachedTypeformAnswers(responseId as string)
+      if (cachedAnswers) {
+        return res.status(200).json({ answers: cachedAnswers })
+      }
+
+      // Prevent IDOR for responses already minted on-chain.
       const privyUserData = await getPrivyUserData(accessToken as string)
       if (!privyUserData) {
         return res.status(401).json({ message: 'Invalid access token' })
       }
 
       const { walletAddresses } = privyUserData
+      const { hasAccess, error } = await hasAccessToResponse(
+        walletAddresses,
+        responseId
+      )
 
-      // Check if this responseId is already minted on-chain. If it is, verify ownership.
-      const { hasAccess, error } = await hasAccessToResponse(walletAddresses, responseId)
-
-      // If the response is on-chain and the user doesn't have access, deny
       if (error && error !== 'Response not found' && !hasAccess) {
         return res.status(403).json({ message: 'Access denied to this response' })
       }
@@ -108,9 +121,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         maxAttempts: 1,
       })
       if (data?.items?.[0]) {
+        void cacheTypeformAnswers(responseId as string, data.items[0].answers)
         return res.status(200).json(responsePayload(data))
       }
-      return res.status(404).json({ message: 'Response not yet available from Typeform' })
+      return res
+        .status(404)
+        .json({ message: 'Response not yet available from Typeform' })
     }
 
     const privyUserData = await getPrivyUserData(accessToken as string)
@@ -121,7 +137,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { walletAddresses } = privyUserData
 
     // Profile updates: verify on-chain ownership before returning answers.
-    const { hasAccess, error, formIds } = await hasAccessToResponse(walletAddresses, responseId)
+    const { hasAccess, error, formIds } = await hasAccessToResponse(
+      walletAddresses,
+      responseId
+    )
 
     if (!hasAccess) {
       return res.status(401).json({ message: error || 'Access denied' })
@@ -137,7 +156,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     if (!data) {
-      return res.status(500).json({ message: 'Error while fetching from typeform api' })
+      return res
+        .status(500)
+        .json({ message: 'Error while fetching from typeform api' })
     }
 
     const response = data.items[0]

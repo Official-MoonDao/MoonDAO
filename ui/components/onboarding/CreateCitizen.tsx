@@ -17,7 +17,15 @@ import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  startTransition,
+} from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -61,6 +69,7 @@ import {
   SerializedFile,
 } from '@/lib/utils/files'
 import { compressImageForStorage } from '@/lib/utils/images'
+import { useClientHydrated } from '@/lib/utils/hooks/useClientHydrated'
 import { useFormCache } from '@/lib/utils/hooks/useFormCache'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import {
@@ -255,6 +264,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
   const { authenticated, login } = usePrivy()
+  const isClientHydrated = useClientHydrated()
 
   // Form state caching - needs to be defined before useOnrampInitialStage
   const { cache, setCache, clearCache, restoreCache } = useFormCache<{
@@ -280,11 +290,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [])
 
   const restoredStage = useOnrampInitialStage(address, getCachedForm, 0, 2, getAddressFromJWT)
-  useEffect(() => {
-    if (restoredStage !== 0) {
-      setStage(restoredStage)
-    }
-  }, [restoredStage])
 
   // ===== State: Form State =====
   // Always 0 on first render so SSR markup matches the client (session restore runs in useEffect).
@@ -331,6 +336,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const hasRestoredInProgressFlowRef = useRef(false)
   const hasRestoredFromSessionRef = useRef(false)
   const hasRestoredWizardArtifactsRef = useRef(false)
+
+  useEffect(() => {
+    if (!isClientHydrated || restoredStage === 0) return
+    startTransition(() => setStage(restoredStage))
+  }, [isClientHydrated, restoredStage])
 
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
@@ -1061,6 +1071,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   useEffect(() => {
     if (
+      !isClientHydrated ||
       !router.isReady ||
       router.query.onrampSuccess !== 'true' ||
       hasRestoredFormDataRef.current
@@ -1074,10 +1085,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     if (restored) {
       const formData = restored.formData || restored
       if (formData && formData.citizenData) {
-        handleFormRestore(restored)
+        startTransition(() => handleFormRestore(restored))
       }
     }
   }, [
+    isClientHydrated,
     router.isReady,
     router.query.onrampSuccess,
     restoreCache,
@@ -1271,27 +1283,28 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // Client-only: restore wizard step, cached images, and in-flight AI jobs after Privy / reload.
   useEffect(() => {
-    if (hasRestoredFromSessionRef.current) return
+    if (!isClientHydrated || hasRestoredFromSessionRef.current) return
     hasRestoredFromSessionRef.current = true
 
     const pendingTypeform = readPendingTypeformFromSession()
-    if (pendingTypeform) {
-      setPendingTypeform(pendingTypeform)
-    }
-
     const restoredStage = restoreWizardStageFromSession()
-    if (restoredStage > 0) {
-      setStage((current) => (current < restoredStage ? restoredStage : current))
-    }
+
+    startTransition(() => {
+      if (pendingTypeform) {
+        setPendingTypeform(pendingTypeform)
+      }
+      if (restoredStage > 0) {
+        setStage((current) => (current < restoredStage ? restoredStage : current))
+      }
+      if (!isAiPortraitReady() && citizenImageRef.current) {
+        setCitizenImage(undefined)
+      }
+    })
 
     if (!hasRestoredWizardArtifactsRef.current) {
       hasRestoredWizardArtifactsRef.current = true
       const { cropped } = restoreWizardArtifacts()
       const sourceForGen = getGenerationSourceImage(cropped, undefined)
-
-      if (!isAiPortraitReady() && citizenImageRef.current) {
-        setCitizenImage(undefined)
-      }
 
       const pendingJob = readPendingImageJob()
       if (pendingJob && isPendingImageJobStale(pendingJob)) {
@@ -1310,18 +1323,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       })
 
       if (resumeAction === 'resume-polling') {
-        // Resuming only needs the jobId; source image is just a failure fallback.
         void runImageJobPolling(sourceForGen)
       } else if (resumeAction === 'restart-generation' && sourceForGen) {
         clearPendingImageJob()
         void restartImageGeneration(sourceForGen)
       } else if (freshJob && freshJob.status === 'uploading') {
-        // Nothing recoverable (no source for an un-created job).
         clearPendingImageJob()
-        setHasPendingImageJob(false)
+        startTransition(() => setHasPendingImageJob(false))
       }
     }
   }, [
+    isClientHydrated,
     restoreWizardArtifacts,
     runImageJobPolling,
     restartImageGeneration,
@@ -1330,7 +1342,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // Copy anonymous localStorage progress to the wallet-scoped key once an address exists.
   const hasMigratedAnonCacheRef = useRef(false)
   useEffect(() => {
-    if (!address || hasMigratedAnonCacheRef.current) return
+    if (!isClientHydrated || !address || hasMigratedAnonCacheRef.current) return
     const anon = restoreAnonymousFormCache()
     if (!anon) return
     const walletCache = restoreCache()
@@ -1345,24 +1357,36 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     if (formData?.citizenData) {
       setCache(formData, anon.stage)
     }
-    if (!hasRestoredFormDataRef.current && (anon.stage ?? 0) >= 1) {
-      handleFormRestore(anon)
-    } else if (!imagesRestoredRef.current) {
-      applyCachedFormImages(formData)
-    }
-  }, [address, restoreCache, setCache, stage, handleFormRestore, applyCachedFormImages])
+    startTransition(() => {
+      if (!hasRestoredFormDataRef.current && (anon.stage ?? 0) >= 1) {
+        handleFormRestore(anon)
+      } else if (!imagesRestoredRef.current) {
+        applyCachedFormImages(formData)
+      }
+    })
+  }, [
+    isClientHydrated,
+    address,
+    restoreCache,
+    setCache,
+    stage,
+    handleFormRestore,
+    applyCachedFormImages,
+  ])
 
   // After profile submit we prompt Privy sign-in. That can remount this tree and
   // wipe React state, so we also persist the pending Typeform in sessionStorage
   // and restore in-progress flow from the anonymous form cache when needed.
   useEffect(() => {
-    if (!authenticated || processingPendingTypeformRef.current) return
+    if (!isClientHydrated || !authenticated || processingPendingTypeformRef.current) return
 
     const pending = pendingTypeform || readPendingTypeformFromSession()
     if (pending) {
-      if (stage === 0) setStage(1)
+      startTransition(() => {
+        if (stage === 0) setStage(1)
+        setPendingTypeform(null)
+      })
       processingPendingTypeformRef.current = true
-      setPendingTypeform(null)
       submitTypeform(pending).finally(() => {
         processingPendingTypeformRef.current = false
       })
@@ -1371,40 +1395,42 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
     if (hasRestoredInProgressFlowRef.current) return
 
-    // Typeform already processed before a remount — jump straight to checkout.
-    if (stage < 2) {
-      if (citizenData.name) {
-        hasRestoredInProgressFlowRef.current = true
-        setStage(2)
-        clearPendingTypeformSession()
-        return
+    startTransition(() => {
+      // Typeform already processed before a remount — jump straight to checkout.
+      if (stage < 2) {
+        if (citizenData.name) {
+          hasRestoredInProgressFlowRef.current = true
+          setStage(2)
+          clearPendingTypeformSession()
+          return
+        }
+        const walletCache = address ? restoreCache() : null
+        const cachedName =
+          walletCache?.formData?.citizenData?.name ||
+          restoreAnonymousFormCache()?.formData?.citizenData?.name
+        if (cachedName) {
+          hasRestoredInProgressFlowRef.current = true
+          const toRestore = walletCache || restoreAnonymousFormCache()
+          if (toRestore) handleFormRestore(toRestore)
+          else setStage(2)
+          clearPendingTypeformSession()
+          return
+        }
       }
-      const walletCache = address ? restoreCache() : null
-      const cachedName =
-        walletCache?.formData?.citizenData?.name ||
-        restoreAnonymousFormCache()?.formData?.citizenData?.name
-      if (cachedName) {
-        hasRestoredInProgressFlowRef.current = true
-        const toRestore = walletCache || restoreAnonymousFormCache()
-        if (toRestore) handleFormRestore(toRestore)
-        else setStage(2)
-        clearPendingTypeformSession()
-        return
+
+      if (!imagesRestoredRef.current) {
+        restoreWizardArtifacts()
       }
-    }
 
-    if (!imagesRestoredRef.current) {
-      restoreWizardArtifacts()
-    }
-
-    // Restore design/profile progress saved before the wallet existed.
-    const anon = restoreAnonymousFormCache()
-    const formData = anon?.formData || anon
-    if (anon && formData && (anon.stage ?? 0) >= 1 && !hasRestoredInProgressFlowRef.current) {
-      hasRestoredInProgressFlowRef.current = true
-      handleFormRestore(anon)
-    }
+      const anon = restoreAnonymousFormCache()
+      const formData = anon?.formData || anon
+      if (anon && formData && (anon.stage ?? 0) >= 1 && !hasRestoredInProgressFlowRef.current) {
+        hasRestoredInProgressFlowRef.current = true
+        handleFormRestore(anon)
+      }
+    })
   }, [
+    isClientHydrated,
     authenticated,
     pendingTypeform,
     submitTypeform,
