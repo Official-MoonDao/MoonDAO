@@ -80,7 +80,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({
         eligible: false,
         issueCount: issueCount.toString(),
-        error: `You need at least ${ISSUE_THRESHOLD.toString()} issue(s) to be eligible. You currently have ${issueCount.toString()} issue(s).`,
       })
 
     // For GET requests, just return eligibility

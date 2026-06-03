@@ -70,13 +70,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const teamJoined = await hasJoinedTeam(user as Address)
 
     if (!teamJoined)
-      return res.status(200).json({ eligible: false, teamJoined: false })
+      return res.status(200).json({ eligible: false, teamsJoined: false })
 
     // For GET requests, just return eligibility
     if (req.method === 'GET') {
       return res.status(200).json({
         eligible: true,
-        teamJoined: true,
+        teamsJoined: true,
       })
     }
 
@@ -95,7 +95,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     return res.status(200).json({
       eligible: true,
-      teamJoined: true,
+      teamsJoined: true,
       validAfter: Number(validAfter),
       validBefore: Number(validBefore),
       signature,

@@ -1056,13 +1056,14 @@ export async function signHasCompletedCitizenProfileProof(params: {
     XP_ORACLE_CHAIN
   ] as Address
 
-  // For HasCompletedCitizenProfile, we need to use the actual XP amount (5) that the contract expects
-  const xpAmount = BigInt(5) // This should match xpPerClaim in the contract
+  // Fetch the actual XP amount from the verifier contract so the oracle proof
+  // is always consistent with whatever xpPerClaim the contract was deployed with.
+  const xpAmount = await fetchVerifierXp(verifierAddress)
   const { validAfter, validBefore, signature } = await signOracleProof({
     user: params.user,
     verifier: verifierAddress,
     contextHash,
-    xpAmount, // Use the actual XP amount, not 0
+    xpAmount,
     validitySeconds: params.validitySeconds,
   })
 
@@ -1071,7 +1072,7 @@ export async function signHasCompletedCitizenProfileProof(params: {
     ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
     [
       profileCompleted.toString(), // 1 indicates profile is completed
-      xpAmount.toString(), // Use the actual XP amount (5)
+      xpAmount.toString(),
       validAfter.toString(),
       validBefore.toString(),
       signature,
@@ -1183,6 +1184,83 @@ export async function submitHasJoinedTeamClaimFor(params: {
     address: contractAddress,
     abi: XP_MANAGER_ABI as any,
   })
+
+  // Pre-validate the oracle proof to surface signing errors before wasting gas
+  try {
+    const [teamsJoined, xpAmount, validAfter, validBefore, signature] =
+      defaultAbiCoder.decode(
+        ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+        params.context
+      ) as any
+
+    const oracleAddress = XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN] as Address
+    const contextHash = keccak256(
+      defaultAbiCoder.encode(['uint256'], [teamsJoined])
+    ) as Hex
+
+    const oracleContract = getContract({
+      client: serverClient,
+      chain: twChain,
+      address: oracleAddress,
+      abi: XP_ORACLE_ABI as any,
+    })
+
+    const ok = (await readContract({
+      contract: oracleContract,
+      method: 'verifyProof',
+      params: [
+        {
+          user: params.user,
+          verifier: verifierAddress,
+          contextHash,
+          xpAmount: xpAmount.toString(),
+          validAfter: validAfter.toString(),
+          validBefore: validBefore.toString(),
+        },
+        signature,
+      ],
+    })) as boolean
+
+    if (!ok) {
+      let recovered: string | undefined
+      try {
+        recovered = ethersUtils.verifyTypedData(
+          {
+            name: XP_ORACLE_NAME,
+            version: XP_ORACLE_VERSION,
+            chainId: Number(XP_ORACLE_CHAIN_ID),
+            verifyingContract: oracleAddress,
+          } as any,
+          {
+            Proof: [
+              { name: 'user', type: 'address' },
+              { name: 'verifier', type: 'address' },
+              { name: 'contextHash', type: 'bytes32' },
+              { name: 'xpAmount', type: 'uint256' },
+              { name: 'validAfter', type: 'uint256' },
+              { name: 'validBefore', type: 'uint256' },
+            ],
+          } as any,
+          {
+            user: params.user,
+            verifier: verifierAddress,
+            contextHash,
+            xpAmount: xpAmount.toString(),
+            validAfter: validAfter.toString(),
+            validBefore: validBefore.toString(),
+          } as any,
+          signature as Hex
+        )
+      } catch {}
+
+      throw new Error(
+        `Error - Invalid oracle proof\n\ncontract: ${contractAddress}\nchainId: ${twChain.id}` +
+          (recovered ? `\nrecoveredSigner: ${recovered}` : '')
+      )
+    }
+  } catch (e) {
+    throw e as Error
+  }
 
   const transaction = prepareContractCall({
     contract,

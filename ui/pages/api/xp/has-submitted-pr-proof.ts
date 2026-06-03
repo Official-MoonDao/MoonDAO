@@ -80,7 +80,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({
         eligible: false,
         prCount: prCount.toString(),
-        error: `You need at least ${PR_THRESHOLD.toString()} merged PR(s) to be eligible. You currently have ${prCount.toString()} merged PR(s).`,
       })
 
     // For GET requests, just return eligibility

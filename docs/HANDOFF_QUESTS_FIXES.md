@@ -129,6 +129,27 @@ ui/lib/xp/staged-quest-info.ts — threshold/stage helpers for staged quests
 
 ---
 
+## Full Logical Audit — All 8 Quests (June 2, 2026)
+
+Performed without live testing by tracing every route → sign → submit → UI path. Findings:
+
+| Quest | Severity | Issue Found | Status |
+|-------|----------|-------------|--------|
+| Voting Power | — | No issues | ✅ Tested live |
+| Has Voted | — | No issues | ✅ Tested live |
+| Contributions | INFO | Requires `CONTRIBUTIONS_SHEET_CSV_URL` env var; silent `[]` if unset | ⚠️ Config-only |
+| Citizen Profile | MEDIUM | `signHasCompletedCitizenProfileProof` hardcoded `xpAmount=5` instead of `fetchVerifierXp()` | ✅ Fixed |
+| Join a Team | HIGH | `has-joined-a-team-proof.ts` returned `teamJoined` but `config.ts` reads `metricKey: 'teamsJoined'` → Claim button permanently hidden for eligible users | ✅ Fixed |
+| Join a Team | LOW | `submitHasJoinedTeamClaimFor` had no oracle proof pre-validation (sends tx blind) | ✅ Fixed |
+| Submit PR | LOW UX | Ineligible response included `error: "You need at least 1 merged PR…"` → red error box for normal "not started" state | ✅ Fixed |
+| Submit Issue | LOW UX | Same as PR — spurious error box for 0-issue state | ✅ Fixed |
+| Citizen Referral | LOW | POST handler submits tx without pre-checking eligibility (UI gates on `totalClaimableXP > 0`; on-chain revert is safety net) | Acceptable |
+
+### `CONTRIBUTIONS_SHEET_CSV_URL` check
+Verify this env var is set in Vercel → Project Settings → Environment Variables. If missing, all users show 0 contributions.
+
+---
+
 ## Additional Fixes — June 2, 2026 session
 
 | File | What changed |
@@ -141,7 +162,11 @@ ui/lib/xp/staged-quest-info.ts — threshold/stage helpers for staged quests
 
 ## Next Steps for New Chat
 
-1. **Test the remaining quests** (Citizen Profile, Join a Team, Contributions, Submit PR, Submit Issue, Citizen Referral) on the Vercel preview
-2. **Verify on-chain** — for any successful claim, pull the `txHash` from Vercel function logs and check on [Arbiscan](https://arbiscan.io)
-3. **Watch the polling toast** — after the first "Quest claimed successfully!" toast, the UI polls `hasClaimedFromVerifier` and should show "Quest claim confirmed on blockchain!" within 30-60 seconds. If this second toast doesn't appear, the tx may still be pending or the polling is failing silently.
-4. Once all 8 quests are verified end-to-end, **merge the PR** (#1352)
+1. **Verify `CONTRIBUTIONS_SHEET_CSV_URL`** is set in Vercel env vars (silent failure if missing)
+2. **Verify `GITHUB_TOKEN`** is set for PR and Issue quests (returns 0 silently if missing)
+3. **End-to-end test with a citizen account that has:**
+   - Completed profile → Citizen Profile quest claim
+   - Wears a MoonDAO hat → Join a Team quest claim
+   - Has contributions in the sheet → Contributions quest claim
+4. **Watch the blockchain confirmation toast** — after "Quest claimed successfully!" the UI polls on-chain and should fire "Quest claim confirmed on blockchain!" within ~30s. If it doesn't appear, the tx may be pending (refresh after a minute).
+5. Once all 8 quests are verified end-to-end, **merge the PR** (#1352)
