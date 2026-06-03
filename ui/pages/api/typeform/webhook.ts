@@ -31,17 +31,14 @@ function readRawBody(req: NextApiRequest): Promise<Buffer> {
 
 function isValidSignature(rawBody: Buffer, signatureHeader?: string): boolean {
   const secret = process.env.TYPEFORM_WEBHOOK_SECRET
-  // If no secret is configured we cannot verify; accept so the cache still
-  // works, but this should be set in production for authenticity.
+  // Reject requests when secret is not configured to prevent unsigned payloads.
   if (!secret) {
-    console.warn('[typeform webhook] TYPEFORM_WEBHOOK_SECRET not set — skipping verification')
-    return true
+    console.error('[typeform webhook] TYPEFORM_WEBHOOK_SECRET not set — rejecting unsigned request')
+    return false
   }
   if (!signatureHeader) return false
 
-  const expected =
-    'sha256=' +
-    crypto.createHmac('sha256', secret).update(rawBody).digest('base64')
+  const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('base64')
 
   const a = Buffer.from(signatureHeader)
   const b = Buffer.from(expected)
@@ -49,10 +46,7 @@ function isValidSignature(rawBody: Buffer, signatureHeader?: string): boolean {
   return crypto.timingSafeEqual(a, b)
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' })
   }
@@ -77,8 +71,7 @@ export default async function handler(
   }
 
   const formResponse = payload?.form_response
-  const responseId: string | undefined =
-    formResponse?.token || formResponse?.response_id
+  const responseId: string | undefined = formResponse?.token || formResponse?.response_id
   const answers = formResponse?.answers
 
   if (responseId && Array.isArray(answers)) {

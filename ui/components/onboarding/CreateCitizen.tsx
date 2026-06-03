@@ -251,7 +251,7 @@ function restoreWizardStageFromSession(): number {
   return 1
 }
 
-export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
+export default function CreateCitizen({ selectedChain, setSelectedTier, freeMintProp }: any) {
   // ===== Context & Constants =====
   const router = useRouter()
   const { setSelectedChain } = useContext(ChainContextV5)
@@ -349,7 +349,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
   const [requiredEthAmount, setRequiredEthAmount] = useState(0)
-  const [freeMint, setFreeMint] = useState(false)
+  const [freeMint, setFreeMint] = useState(freeMintProp || false)
 
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
@@ -1545,7 +1545,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     croppedInputImageRef.current = croppedInputImage
     stageRef.current = stage
     selectedChainSlugRef.current = selectedChainSlug
-    imagesRestoredRef.current = !!citizenImage || !!inputImage
+    imagesRestoredRef.current = !!citizenImage || !!inputImage || !!croppedInputImage
   }, [
     agreedToCondition,
     citizenData,
