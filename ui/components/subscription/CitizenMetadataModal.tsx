@@ -124,6 +124,10 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
 
   const [inputImage, setInputImage] = useState<File>()
   const [newCitizenImage, setNewCitizenImage] = useState<File>()
+  // The user's cropped upload, lifted from the image generator. Used as the
+  // saved image when the user uploads a photo but never generates an AI
+  // portrait, so they don't have to click "Use my photo" first.
+  const [croppedInputImage, setCroppedInputImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
     getAttribute(nft?.metadata?.attributes, 'formId').value,
@@ -209,6 +213,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
             setImage={setNewCitizenImage}
             inputImage={inputImage}
             setInputImage={setInputImage}
+            onCrop={setCroppedInputImage}
           />
         </div>
 
@@ -279,14 +284,18 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
             try {
               let imageIpfsLink
               const currCitizenImage = nft.metadata.image || ''
+              // Prefer a generated AI portrait, otherwise fall back to the
+              // user's cropped upload so an uploaded photo is saved even when
+              // no AI image was generated.
+              const chosenImage = newCitizenImage || croppedInputImage
 
-              if (!newCitizenImage && currCitizenImage && currCitizenImage !== '') {
+              if (!chosenImage && currCitizenImage && currCitizenImage !== '') {
                 imageIpfsLink = currCitizenImage
               } else {
-                if (!newCitizenImage) return console.error('No new image')
+                if (!chosenImage) return console.error('No new image')
 
                 const renamedCitizenImage = renameFile(
-                  newCitizenImage,
+                  chosenImage,
                   `${citizenData?.name} Citizen Image`,
                 )
 

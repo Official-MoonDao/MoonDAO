@@ -81,6 +81,7 @@ import {
 import { resumePendingComfyJob } from '@/lib/image-generator/pollComfyImageJob'
 import {
   clearAiPortraitReady,
+  markAiPortraitReady,
   decideImageResumeAction,
   getGenerationSourceImage,
   getReviewPreviewFile,
@@ -326,6 +327,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   // The user's own cropped upload, kept so they can fall back to it on the
   // Review step ("Use my photo instead") without re-cropping.
   const [croppedInputImage, setCroppedInputImage] = useState<File>()
+  // Preserves the last completed AI portrait when the user switches to "Use my
+  // photo instead" so they can restore it without regenerating.
+  const [savedAiImage, setSavedAiImage] = useState<File | undefined>()
   const [citizenData, setCitizenData] = useState<CitizenData>({
     name: '',
     email: '',
@@ -1093,6 +1097,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
 
     setPendingTypeform(null)
     setCitizenImage(undefined)
+    setSavedAiImage(undefined)
     setInputImage(undefined)
     setCroppedInputImage(undefined)
     setCitizenData({
@@ -1615,6 +1620,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
 
     clearAiPortraitReady()
     setCitizenImage(undefined)
+    setSavedAiImage(undefined)
     setIsImageGenerating(true)
     setHasPendingImageJob(true)
 
@@ -2001,9 +2007,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                 setStep={(value) => {
                   const next =
                     typeof value === 'function' ? value(stage) : value
-                  if (next === 0 && stage !== 0) {
-                    setCitizenImage(undefined)
-                  }
                   setStage(next)
                 }}
               />
@@ -2243,9 +2246,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                             </svg>
                             Regenerate
                           </button>
-                          {croppedInputImage && (
+                          {croppedInputImage && hasAiPortrait && (
                             <button
                               onClick={() => {
+                                // Preserve the AI portrait so the user can
+                                // restore it without regenerating.
+                                setSavedAiImage(citizenImage)
                                 clearAiPortraitReady()
                                 setCitizenImage(croppedInputImage)
                                 setIsImageGenerating(false)
@@ -2258,10 +2264,23 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                               Use my photo instead
                             </button>
                           )}
+                          {savedAiImage && !hasAiPortrait && (
+                            <button
+                              onClick={() => {
+                                setCitizenImage(savedAiImage)
+                                markAiPortraitReady()
+                                setSavedAiImage(undefined)
+                              }}
+                              className="flex-1 py-2.5 px-5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+                            >
+                              Use AI photo
+                            </button>
+                          )}
                         </div>
                         <button
                           onClick={() => {
                             setCitizenImage(undefined)
+                            setSavedAiImage(undefined)
                             setInputImage(undefined)
                             setCroppedInputImage(undefined)
                             setStage(0)

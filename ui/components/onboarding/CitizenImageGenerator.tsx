@@ -406,6 +406,49 @@ export function ImageGenerator({
     }
   }, [imageSize, calculateDisplayedImageSize])
 
+  // In the standalone flow (e.g. the edit-profile modal), keep the cropped
+  // upload lifted to the parent as the user positions the crop. This way an
+  // uploaded photo becomes the selected image automatically — the user can
+  // just save without first clicking "Skip AI and use my photo" / "Use my
+  // photo instead". The onboarding background flow manages its own selection,
+  // so it's intentionally excluded.
+  useEffect(() => {
+    if (isBackgroundFlow) return
+    if (!inputImage || !cropArea.size) return
+    if (generating || isGenerating) return
+    if (hasGeneratedImage) return
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const cropped = await cropImageWithCoordinates(
+          inputImage,
+          cropArea.x,
+          cropArea.y,
+          cropArea.size,
+        )
+        if (cancelled) return
+        setCroppedImage(cropped)
+        onCrop?.(cropped)
+      } catch (error) {
+        console.error('Error auto-cropping uploaded image:', error)
+      }
+    }, 300)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [
+    isBackgroundFlow,
+    inputImage,
+    cropArea.x,
+    cropArea.y,
+    cropArea.size,
+    generating,
+    isGenerating,
+    hasGeneratedImage,
+    onCrop,
+  ])
+
   // Show error when generateError occurs
   useEffect(() => {
     if (generateError) {

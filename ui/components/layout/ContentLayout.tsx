@@ -65,7 +65,7 @@ const ContentLayout: React.FC<ContentProps> = ({
             <div
               id="content-container"
               className={`
-                                flex flex-col h-full relative mx-auto w-full
+                                flex flex-col h-full relative mx-auto
                                 ${profileOnboardingLayout ? `items-stretch w-full ${profileOnboardingPadding}` : ''}
                                 ${isCompact ? '' : 'lg:flex-row lg:items-start'} 
                             `}
@@ -148,7 +148,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                         : `max-w-[1200px] ${isCompact ? 'pt-0' : 'lg:pt-20'}`
                     }`}
                     style={
-                      headerSize
+                      profileOnboardingLayout && headerSize
                         ? { fontSize: headerSize }
                         : undefined
                     }
