@@ -239,6 +239,73 @@ const MAX_UPLOAD_BYTES = 4 * 1024 * 1024 // 4 MB (Vercel limit is 4.5 MB, leave 
 const MAX_DIMENSION = 2048
 
 /**
+ * Downscale + JPEG-encode an image so it is small enough to survive in
+ * sessionStorage/localStorage (which cap around ~5 MB per origin). Unlike
+ * compressImageForUpload this ALWAYS re-encodes, so a multi-MB PNG photo
+ * shrinks to a few tens of KB. Used to persist onboarding images across the
+ * Privy sign-in page navigation. Non-image blobs are returned unchanged.
+ */
+export async function compressImageForStorage(
+  blob: Blob | File,
+  maxDimension = 768,
+  quality = 0.72
+): Promise<Blob | File> {
+  if (typeof window === 'undefined') return blob
+  if (!blob.type.startsWith('image/')) return blob
+
+  return new Promise((resolve) => {
+    const img = new window.Image()
+    const objectUrl = URL.createObjectURL(blob)
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+
+      let { width, height } = img
+      if (width === 0 || height === 0) {
+        resolve(blob)
+        return
+      }
+      if (width > maxDimension || height > maxDimension) {
+        const scale = maxDimension / Math.max(width, height)
+        width = Math.round(width * scale)
+        height = Math.round(height * scale)
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(blob)
+        return
+      }
+      ctx.drawImage(img, 0, 0, width, height)
+
+      canvas.toBlob(
+        (result) => {
+          if (result) {
+            const baseName =
+              blob instanceof File ? blob.name.replace(/\.\w+$/, '') : 'image'
+            resolve(new File([result], `${baseName}.jpg`, { type: 'image/jpeg' }))
+          } else {
+            resolve(blob)
+          }
+        },
+        'image/jpeg',
+        quality
+      )
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(blob)
+    }
+
+    img.src = objectUrl
+  })
+}
+
+/**
  * Compress an image File/Blob so it stays under Vercel's 4.5 MB payload limit.
  * Downscales to MAX_DIMENSION and converts to JPEG at decreasing quality until
  * the result fits. Non-image blobs are returned unchanged.

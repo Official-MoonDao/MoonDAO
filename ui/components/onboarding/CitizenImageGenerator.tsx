@@ -1,38 +1,27 @@
 import Image from 'next/image'
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import useImageGenerator, {
-  type GenerationPhase,
-} from '@/lib/image-generator/useImageGenerator'
+import useImageGenerator from '@/lib/image-generator/useImageGenerator'
+import { clearAiPortraitReady } from '@/lib/image-generator/citizenOnboardingImage'
+import { markPendingImageJobUploading } from '@/lib/image-generator/pendingImageJob'
 import { cropImageWithCoordinates } from '@/lib/utils/images'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import {
+  CitizenImageGenerationProgress,
+  computeProgressPct,
+  PHASE_LABELS,
+  type ImageGenProgressSnapshot,
+} from './CitizenImageGenerationProgress'
 
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w' | null
-
-const PHASE_LABELS: Record<GenerationPhase, string> = {
-  idle: 'Preparing…',
-  uploading: 'Uploading your photo…',
-  queued: 'Waiting in line…',
-  generating: 'Generating your portrait…',
-  finishing: 'Finishing up…',
-  done: 'Done!',
-  error: 'Something went wrong…',
-}
 
 // Rotating messages shown during the wait to keep things feeling alive.
 const GENERATION_TIPS = [
   'Crafting your MoonDAO astronaut portrait…',
   'Tip: a clear, front-facing photo gives the best results.',
   'Adding some cosmic flair to your image…',
-  'Hang tight — great art takes a few seconds.',
+  'Adding the final details to your portrait…',
 ]
-
-function formatElapsed(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000)
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${minutes}:${String(seconds).padStart(2, '0')}`
-}
 
 export function ImageGenerator({
   currImage,
@@ -43,10 +32,18 @@ export function ImageGenerator({
   nextStage,
   generateInBG,
   onGenerationStateChange, // Add this prop
+  onGenerationProgress, // Phase / timer / progress for Review while mounted hidden
+  onCrop, // Lifts the cropped upload to the parent (used for "Use my photo")
 }: any) {
+  // In the onboarding flow we generate in the background and advance to the next
+  // step immediately; the AI image (and Regenerate / Use-my-photo choices) then
+  // live on the Review step. Standalone usages (e.g. the edit modal) stay put.
+  const isBackgroundFlow = !!(generateInBG && nextStage)
   const [originalInputImage, setOriginalInputImage] = useState<File | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [croppedImage, setCroppedImage] = useState<File | null>(null)
+  // Track the latest generation ID to prevent stale results from overwriting
+  const generationIdRef = useRef(0)
   const [isReCropping, setIsReCropping] = useState(false)
   const [cropArea, setCropArea] = useState({
     x: 0,
@@ -59,7 +56,13 @@ export function ImageGenerator({
     isLoading: generating,
     error: generateError,
     phase,
-  } = useImageGenerator('/api/image-gen/citizen-image', inputImage, setImage)
+  } = useImageGenerator('/api/image-gen/citizen-image', inputImage, (file: File) => {
+    // Only allow the image to be set if this is from the most recent generation
+    // (prevents stale results from overwriting newer ones)
+    if (generationIdRef.current === activeGenerationIdRef.current) {
+      setImage(file)
+    }
+  })
 
   // Progress UX while the (cold-start heavy) generation runs.
   const [elapsedMs, setElapsedMs] = useState(0)
@@ -80,16 +83,37 @@ export function ImageGenerator({
     }
   }, [generating])
 
-  // Eased progress bar: approaches ~90% over ~45s, with phase-based floors so it
-  // never looks stuck and snaps forward when we hit the final stages.
-  const progressPct = useMemo(() => {
-    if (phase === 'done') return 100
-    const eased = Math.round((1 - Math.exp(-elapsedMs / 22000)) * 100)
-    if (phase === 'finishing') return Math.min(98, Math.max(92, eased))
-    return Math.min(90, Math.max(5, eased))
-  }, [phase, elapsedMs])
+  const progressPct = useMemo(() => computeProgressPct(phase, elapsedMs), [phase, elapsedMs])
 
-  const phaseLabel = PHASE_LABELS[phase] ?? 'Creating your AI image…'
+  // Keep the parent Review step in sync while this instance runs in the background.
+  useEffect(() => {
+    if (!onGenerationProgress) return
+    const isActive = isGenerating || generating
+    if (!isActive) {
+      onGenerationProgress(null)
+      return
+    }
+    const snapshot: ImageGenProgressSnapshot = {
+      phase,
+      elapsedMs,
+      progressPct,
+      phaseLabel: PHASE_LABELS[phase] ?? 'Creating your AI image…',
+      tipIndex,
+    }
+    onGenerationProgress(snapshot)
+  }, [
+    onGenerationProgress,
+    isGenerating,
+    generating,
+    phase,
+    elapsedMs,
+    progressPct,
+    tipIndex,
+  ])
+
+  // The working image is an AI result only when it differs from the user's own
+  // cropped upload (which is what "Use my photo" / the error fallback set).
+  const hasGeneratedImage = !!image && image !== croppedImage
 
   // Store original image when first uploaded
   useEffect(() => {
@@ -98,20 +122,53 @@ export function ImageGenerator({
     }
   }, [inputImage])
 
-  // Track generation state and notify parent
+  // Track generation state and notify parent. Only report changes when this
+  // component instance is responsible for an active generation (prevents
+  // remounts from clearing the flag while a background job is still running).
+  const activeGenerationIdRef = useRef<number | null>(null)
+  const hasReportedActiveRef = useRef(false)
   useEffect(() => {
     if (onGenerationStateChange) {
-      onGenerationStateChange(isGenerating || generating)
+      const isActive = isGenerating || generating
+      if (isActive) {
+        hasReportedActiveRef.current = true
+        onGenerationStateChange(true)
+      } else if (hasReportedActiveRef.current) {
+        // Only report false if we previously reported true
+        hasReportedActiveRef.current = false
+        onGenerationStateChange(false)
+      }
     }
-  }, [isGenerating, generating, onGenerationStateChange])
+    // Don't clear the parent flag on unmount during background onboarding — the
+    // user has already advanced to Profile/Review while generation continues.
+    return () => {
+      if (
+        onGenerationStateChange &&
+        hasReportedActiveRef.current &&
+        !isBackgroundFlow
+      ) {
+        hasReportedActiveRef.current = false
+        onGenerationStateChange(false)
+      }
+    }
+  }, [isGenerating, generating, onGenerationStateChange, isBackgroundFlow])
 
   const handleGenerateImage = useCallback(async () => {
     if (!inputImage) return
+
+    // Increment generation ID to mark this as the latest request
+    generationIdRef.current += 1
+    const currentGenerationId = generationIdRef.current
+    activeGenerationIdRef.current = currentGenerationId
 
     setIsGenerating(true)
     if (onGenerationStateChange) {
       onGenerationStateChange(true)
     }
+
+    // Persist immediately so Privy redirect during crop/upload can resume.
+    clearAiPortraitReady()
+    markPendingImageJobUploading('/api/image-gen/citizen-image')
 
     try {
       // First crop the image
@@ -122,19 +179,33 @@ export function ImageGenerator({
         cropArea.size,
       )
 
-      // Store the cropped image for fallback
+      // Store the cropped image for fallback / "Use my photo" and lift to parent
       setCroppedImage(croppedFile)
+      onCrop?.(croppedFile)
 
       setImage(null) // Clear any existing generated image
       setShowError(false)
 
-      // Generate the AI image using the cropped version (pass directly to avoid mutating inputImage)
-      await generateImage(croppedFile)
+      // Wrap generateImage to check generation ID before updating image
+      const generationPromise = generateImage(croppedFile).then(() => {
+        // The hook already called setImage, but we can't intercept it.
+        // Instead, we rely on the fact that generateImage internally
+        // calls setImage only after completion, and we check in the effect.
+      })
+
+      if (isBackgroundFlow) {
+        nextStage?.()
+      } else {
+        await generationPromise
+      }
     } catch (error) {
       console.error('Error cropping or generating image:', error)
-      setIsGenerating(false)
-      if (onGenerationStateChange) {
-        onGenerationStateChange(false)
+      // Only clear generating state if this is still the current generation
+      if (currentGenerationId === generationIdRef.current) {
+        setIsGenerating(false)
+        if (onGenerationStateChange) {
+          onGenerationStateChange(false)
+        }
       }
       // Notify parent that generation failed
     }
@@ -146,6 +217,82 @@ export function ImageGenerator({
     setImage,
     generateImage,
     onGenerationStateChange,
+    onCrop,
+    isBackgroundFlow,
+    nextStage,
+  ])
+
+  // Regenerate using the existing crop (no re-upload / re-crop needed).
+  const handleRegenerate = useCallback(async () => {
+    // Increment generation ID to mark this as the latest request
+    generationIdRef.current += 1
+    const currentGenerationId = generationIdRef.current
+    activeGenerationIdRef.current = currentGenerationId
+
+    setIsGenerating(true)
+    if (onGenerationStateChange) {
+      onGenerationStateChange(true)
+    }
+    setImage(null)
+    setShowError(false)
+
+    try {
+      let cropped = croppedImage
+      if (!cropped && inputImage) {
+        cropped = await cropImageWithCoordinates(inputImage, cropArea.x, cropArea.y, cropArea.size)
+        setCroppedImage(cropped)
+        onCrop?.(cropped)
+      }
+      await generateImage(cropped || undefined)
+    } catch (error) {
+      console.error('Error cropping or generating image:', error)
+      // Only clear generating state if this is still the current generation
+      if (currentGenerationId === generationIdRef.current) {
+        setIsGenerating(false)
+        if (onGenerationStateChange) {
+          onGenerationStateChange(false)
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    croppedImage,
+    inputImage,
+    cropArea.x,
+    cropArea.y,
+    cropArea.size,
+    generateImage,
+    onCrop,
+    onGenerationStateChange,
+    setImage,
+  ])
+
+  // Use the user's own (cropped) photo instead of the AI version.
+  const handleUseMyPhoto = useCallback(async () => {
+    try {
+      let cropped = croppedImage
+      if (!cropped && inputImage) {
+        cropped = await cropImageWithCoordinates(inputImage, cropArea.x, cropArea.y, cropArea.size)
+      }
+      if (cropped) {
+        setCroppedImage(cropped)
+        setImage(cropped)
+        onCrop?.(cropped)
+        if (isBackgroundFlow) nextStage?.()
+      }
+    } catch (error) {
+      console.error('Error cropping image:', error)
+    }
+  }, [
+    croppedImage,
+    inputImage,
+    cropArea.x,
+    cropArea.y,
+    cropArea.size,
+    setImage,
+    onCrop,
+    isBackgroundFlow,
+    nextStage,
   ])
 
   // When generation completes (success or failure), update image and reset local generating
@@ -153,15 +300,10 @@ export function ImageGenerator({
     if (!generating) {
       if (generateError && croppedImage) {
         setImage(croppedImage)
-      } else if (!generateError && image) {
-        // AI generation succeeded — mark it
-        setHasGeneratedImage(true)
       }
       setIsGenerating(false)
     }
   }, [generating, generateError, croppedImage, setImage, image])
-
-  const [hasGeneratedImage, setHasGeneratedImage] = useState(false)
   const [showError, setShowError] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
@@ -263,6 +405,49 @@ export function ImageGenerator({
       calculateDisplayedImageSize()
     }
   }, [imageSize, calculateDisplayedImageSize])
+
+  // In the standalone flow (e.g. the edit-profile modal), keep the cropped
+  // upload lifted to the parent as the user positions the crop. This way an
+  // uploaded photo becomes the selected image automatically — the user can
+  // just save without first clicking "Skip AI and use my photo" / "Use my
+  // photo instead". The onboarding background flow manages its own selection,
+  // so it's intentionally excluded.
+  useEffect(() => {
+    if (isBackgroundFlow) return
+    if (!inputImage || !cropArea.size) return
+    if (generating || isGenerating) return
+    if (hasGeneratedImage) return
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const cropped = await cropImageWithCoordinates(
+          inputImage,
+          cropArea.x,
+          cropArea.y,
+          cropArea.size,
+        )
+        if (cancelled) return
+        setCroppedImage(cropped)
+        onCrop?.(cropped)
+      } catch (error) {
+        console.error('Error auto-cropping uploaded image:', error)
+      }
+    }, 300)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [
+    isBackgroundFlow,
+    inputImage,
+    cropArea.x,
+    cropArea.y,
+    cropArea.size,
+    generating,
+    isGenerating,
+    hasGeneratedImage,
+    onCrop,
+  ])
 
   // Show error when generateError occurs
   useEffect(() => {
@@ -455,13 +640,14 @@ export function ImageGenerator({
       // Set the cropped image as the final image
       setImage(croppedFile)
       setCroppedImage(croppedFile)
+      onCrop?.(croppedFile)
       setIsReCropping(false)
 
       nextStage?.()
     } catch (error) {
       console.error('Error cropping image:', error)
     }
-  }, [inputImage, cropArea.x, cropArea.y, cropArea.size, setImage, nextStage])
+  }, [inputImage, cropArea.x, cropArea.y, cropArea.size, setImage, onCrop, nextStage])
 
   // Calculate the scale and position for the crop overlay
   const cropScale = displayedImageSize.width / imageSize.width
@@ -472,13 +658,26 @@ export function ImageGenerator({
     <div className="animate-fadeIn flex flex-col gap-6" key={forceRerender}>
       {/* Upload zone — only show when no image yet, or allow re-upload */}
       {!inputImage && (
-        <FileInput
-          file={inputImage}
-          setFile={setInputImage}
-          noBlankImages
-          accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
-          acceptText="PNG, JPEG, WEBP, GIF, SVG — must contain a face"
-        />
+        <>
+          <FileInput
+            file={inputImage}
+            setFile={setInputImage}
+            noBlankImages
+            accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+            acceptText="PNG, JPEG, WEBP, GIF, SVG — must contain a face"
+          />
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+            <p className="text-xs font-semibold text-slate-300 mb-1.5">
+              For the best result:
+            </p>
+            <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
+              <li>Use a photo cropped to just your head and shoulders.</li>
+              <li>Make sure your face is fully visible.</li>
+              <li>Pick a clear, well-lit, front-facing photo.</li>
+              <li>Avoid hats, sunglasses, or anything covering your face.</li>
+            </ul>
+          </div>
+        </>
       )}
 
       {/* Image preview / crop area */}
@@ -501,7 +700,7 @@ export function ImageGenerator({
                   setInputImage(undefined)
                   setImage(null)
                   setCroppedImage(null)
-                  setHasGeneratedImage(false)
+                  onCrop?.(undefined) // Clear parent's croppedInputImage
                   setIsReCropping(false)
                   setShowError(false)
                 }}
@@ -558,33 +757,14 @@ export function ImageGenerator({
                           aria-hidden="true"
                         />
                       )}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/70 px-6 text-center">
-                        <Image
-                          src="/assets/MoonDAO-Loading-Animation.svg"
-                          width={72}
-                          height={72}
-                          className="animate-pulse"
-                          alt="Generating"
-                        />
-                        <div className="flex w-full max-w-[260px] flex-col gap-2">
-                          <div className="flex items-center justify-between text-xs text-slate-300">
-                            <span>{phaseLabel}</span>
-                            <span className="tabular-nums text-slate-400">
-                              {formatElapsed(elapsedMs)}
-                            </span>
-                          </div>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                            <div
-                              className="h-full rounded-full bg-indigo-400 transition-all duration-700 ease-out"
-                              style={{ width: `${progressPct}%` }}
-                            />
-                          </div>
-                          <p className="text-xs text-slate-500">Usually takes 30–60 seconds</p>
-                        </div>
-                        <p className="min-h-[1rem] text-xs text-slate-400 transition-opacity duration-300">
-                          {GENERATION_TIPS[tipIndex]}
-                        </p>
-                      </div>
+                      <CitizenImageGenerationProgress
+                        phase={phase}
+                        elapsedMs={elapsedMs}
+                        progressPct={progressPct}
+                        isBackgroundFlow={isBackgroundFlow}
+                        tipIndex={tipIndex}
+                        variant="overlay"
+                      />
                     </div>
                   ) : inputImageUrl ? (
                     <>
@@ -711,88 +891,83 @@ export function ImageGenerator({
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Primary action: position the crop, then generate (defaults to AI) */}
       {inputImage && !image && !generating && (
         <div className="flex flex-col gap-2">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
-              onClick={handleGenerateImage}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
-              Generate AI Photo
-            </button>
-            <button
-              className="flex-1 py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
-              onClick={handleUseCroppedImage}
-            >
-              Use Cropped Image
-            </button>
-          </div>
-          <p className="text-xs text-slate-500 px-1 text-center sm:text-left">
-            AI generation usually takes 30–60 seconds.
-          </p>
-        </div>
-      )}
-
-      {inputImage && (image || generating) && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          {!generating && (
-            <button
-              className="py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-medium text-white text-sm"
-              onClick={() => {
-                if (originalInputImage) {
-                  setIsReCropping(true)
-                  setInputImage(originalInputImage)
-                  setCroppedImage(null)
-                  setImage(null)
-                  setHasGeneratedImage(false)
-                  setShowError(false)
-                  const minDimension = Math.min(imageSize.width, imageSize.height)
-                  setCropArea({
-                    x: (imageSize.width - minDimension) / 2,
-                    y: (imageSize.height - minDimension) / 2,
-                    size: minDimension,
-                  })
-                }
-              }}
-            >
-              Re-crop
-            </button>
-          )}
           <button
-            className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
-            onClick={() => {
-              setIsGenerating(true)
-              setImage(null)
-              setHasGeneratedImage(false)
-              setShowError(false)
-              generateImage(croppedImage || undefined)
-            }}
+            className="w-full py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
+            onClick={handleGenerateImage}
+            disabled={isGenerating || generating}
           >
-            {generating ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Generating…
-              </>
-            ) : hasGeneratedImage ? (
-              'Regenerate'
-            ) : (
-              'Generate AI Photo'
-            )}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
+            </svg>
+            Generate AI Photo
+          </button>
+          <p className="text-xs text-slate-500 px-1 text-center">
+            Crop to just your head and shoulders, keeping your whole face inside the box.{' '}
+            {isBackgroundFlow
+              ? 'You can continue with the rest of your citizen creation while your portrait generates in the background (~30–60s).'
+              : 'Generation usually takes 30–60 seconds.'}
+          </p>
+          <button
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleUseCroppedImage}
+            disabled={isGenerating || generating}
+          >
+            Skip AI and use my photo
           </button>
         </div>
       )}
 
-      {/* Next / Continue — hidden when nextStage is not provided */}
-      {nextStage && ((currImage && !inputImage) || image || (generateInBG && inputImage)) && (
+      {/* Post-generation choices (in-component for standalone / edit usage; the
+          onboarding flow surfaces the same choices on the Review step). */}
+      {inputImage && (image || generating) && (
+        <div className="flex flex-col gap-3">
+          {generating ? (
+            <button
+              disabled
+              className="w-full py-3 px-6 gradient-2 opacity-70 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 cursor-not-allowed"
+            >
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Generating…
+            </button>
+          ) : (
+            <>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  className="flex-1 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2"
+                  onClick={handleRegenerate}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  {hasGeneratedImage ? 'Regenerate' : 'Generate AI Photo'}
+                </button>
+                <button
+                  className="flex-1 py-3 px-6 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+                  onClick={handleUseMyPhoto}
+                >
+                  Use my photo instead
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Next / Continue — only once an image exists (generation auto-advances) */}
+      {nextStage && !generating && ((currImage && !inputImage) || image) && (
         <button
           className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
           onClick={submitImage}

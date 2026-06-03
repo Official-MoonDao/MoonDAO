@@ -75,7 +75,7 @@ export default async function handler(
                 cfg: 2.3,
                 seed: Number(seed),
                 model: ['60', 0],
-                steps: 6,
+                steps: 5,
                 denoise: 1,
                 negative: ['60', 2],
                 positive: ['60', 1],
@@ -116,14 +116,14 @@ export default async function handler(
             '39': {
               inputs: {
                 clip: ['4', 1],
-                text: "Head-and-shoulders portrait, cropped at the chest, face and shoulders fill the frame, only head and shoulders visible, of a youthful person with smooth healthy clear skin, bright clear eyes, full hair clearly visible, ears fully visible and uncovered, smooth chin, clear forehead, confident determined gaze, heroic and powerful presence, wearing a sleek futuristic space suit, painterly style of Jodorowsky's Dune, surreal watercolor psychedelic background with the moon, stars and nebulae, clean cinematic lighting, flattering soft key light, vivid colors, sharp focus, high quality, the best most flattering and youthful version of the person",
+                text: "Head-and-shoulders portrait, tightly cropped at the upper chest, face and shoulders completely filling the frame, only head and shoulders visible, no lower torso, of a youthful person with smooth healthy clear skin, bright clear eyes, full hair clearly visible, ears fully visible and uncovered, smooth chin, clear forehead, confident determined heroic powerful gaze, wearing thick opaque futuristic sweater with high collar and long sleeves, heavy fabric completely covering the chest and body, detailed textured futuristic clothing, fully dressed in layered non-revealing clothes, no skin exposed below neck, painterly style of Jodorowsky's Dune, surreal watercolor psychedelic cosmic background dominating the composition, vibrant colorful nebulae swirling with intense purples blues pinks greens, glowing stars scattered densely across deep space, multiple planets with rings and atmospheric details, distant spaceships flying through the void, epic cosmic scene, rich psychedelic watercolor textures blending into the portrait edges, dramatic celestial lighting interacting with the subject, clean cinematic lighting, flattering soft key light on the face, vivid saturated colors, sharp focus, high quality, best most flattering youthful version of the person, correct eye color, only one person",
               },
               class_type: 'CLIPTextEncode',
             },
             '40': {
               inputs: {
                 clip: ['4', 1],
-                text: '(watermark:1.9), (signature:1.5), text, logo, stamp, copyright, getty images, shutterstock, stock photo, (wrinkles:1.6), (eye bags:1.5), (aged skin:1.5), old, elderly, saggy skin, gaunt, tired, (beard:1.3), facial hair, stubble, (ear muffs:1.8), (over-ear headphones:1.7), (headphones:1.6), earphones, earbuds, anything on the ears, (helmet:2.0), (space helmet:2.0), (bubble helmet:2.0), visor, face shield, neck ring, glasses, sunglasses, goggles, eyewear, mask, hat, hood, antenna, objects around head, (cleft chin:1.6), (butt chin:1.6), chin dimple, (full body:1.6), (wide shot:1.5), zoomed out, small face, legs, torso, standing pose, rainbow, monochrome',
+                text: '(watermark:1.9), (signature:1.5), text, logo, stamp, copyright, (wrinkles:1.6), (eye bags:1.5), (aged skin:1.5), old, elderly, saggy skin, gaunt, tired, (beard:1.3), facial hair, stubble, (ear muffs:1.8), (over-ear headphones:1.7), (headphones:1.6), helmet, space helmet, bubble helmet, visor, face shield, glasses, sunglasses, goggles, mask, hat, hood, (full body:1.6), (wide shot:1.5), zoomed out, legs, torso, standing pose, (nipples:2.5), (erect nipples:2.6), (boobs:2.6), (breasts:2.6), (cleavage:2.5), (underboob:2.5), (exposed breasts:2.7), (naked:2.7), (nude:2.7), (topless:2.7), (bare chest:2.6), (exposed chest:2.6), (exposed skin on torso:2.5), (see-through clothing:2.4), (sheer fabric:2.4), (transparent clothing:2.4), (wet clothing:2.3), (revealing outfit:2.5), (low cut top:2.4), (deep neckline:2.4), (plunging neckline:2.4), (off-shoulder:2.3), (cropped top:2.3), pornography, explicit, erotic, sensual, suggestive pose, (knitted sweater:1.8), (knit texture:1.9), (cable knit:1.8), (bulky sweater:1.8), (wool sweater:1.7), overly detailed clothing texture, (blouse:2.0)',
               },
               class_type: 'CLIPTextEncode',
             },

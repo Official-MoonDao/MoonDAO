@@ -14,6 +14,10 @@ type TierProps = {
   tierDescription?: string
   type: string
   compact?: boolean
+  /** When true (default), clicking the card prompts Privy login before
+   *  invoking `onClick` if no wallet is connected. Set to false to let the
+   *  user proceed into the flow while signed out (sign-in happens later). */
+  gateOnAuth?: boolean
 }
 
 export default function Tier({
@@ -27,6 +31,7 @@ export default function Tier({
   onClick,
   type,
   compact = false,
+  gateOnAuth = true,
 }: TierProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -48,8 +53,10 @@ export default function Tier({
           } cursor-pointer text-white text-opacity-[90%] hover:text-opacity-100`}
           onClick={() => {
             if (!compact) {
-              if (!address && user) logout()
-              if (!address) return login()
+              if (gateOnAuth) {
+                if (!address && user) logout()
+                if (!address) return login()
+              }
 
               onClick()
             }

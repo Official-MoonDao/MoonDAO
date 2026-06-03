@@ -11,14 +11,7 @@ export async function authMiddleware(
 ) {
   secureHeaders(res)
 
-  // Try NextAuth session first
-  const session = await getServerSession(req, res, authOptions)
-  if (session) {
-    next()
-    return
-  }
-
-  // Fallback: check for Privy Bearer token
+  // Privy Bearer first — avoids a NextAuth session lookup on every poll during onboarding.
   const authHeader = req.headers.authorization
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
@@ -29,8 +22,14 @@ export async function authMiddleware(
         return
       }
     } catch (err) {
-      // Privy verification failed, fall through to 401
+      // Privy verification failed, fall through to session / 401
     }
+  }
+
+  const session = await getServerSession(req, res, authOptions)
+  if (session) {
+    next()
+    return
   }
 
   res.status(401).json('Unauthorized')

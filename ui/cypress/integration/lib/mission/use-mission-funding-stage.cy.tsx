@@ -17,42 +17,28 @@ const MissionFundingStageWrapper = ({ missionId }: { missionId: number | undefin
 describe('useMissionFundingStage', () => {
   beforeEach(() => {
     cy.mountNextRouter('/')
+    const readStub = cy.stub(thirdweb, 'readContract')
+    readStub.callsFake(async (options: { method?: string }) => {
+      if (options?.method === 'stage') return BigInt(1)
+      return BigInt(0)
+    })
   })
 
   it('returns undefined when missionId is undefined', () => {
     cy.mount(
       <TestnetProviders>
         <MissionFundingStageWrapper missionId={undefined} />
-      </TestnetProviders>
+      </TestnetProviders>,
     )
 
     cy.get('[data-testid="stage"]').should('contain', 'undefined')
   })
 
   it('returns stage from contract when missionId is provided', () => {
-    cy.intercept('POST', '**/rpc/**', (req) => {
-      if (req.body && req.body.method === 'eth_call') {
-        // Return stage 1 as a bigint-encoded hex value
-        // Stage 1 = 0x1, padded to 32 bytes (64 hex chars)
-        req.reply({ result: '0x' + '1'.padStart(64, '0') })
-      } else if (req.body && req.body.method === 'eth_getBalance') {
-        req.reply({ result: '0x0' })
-      }
-    }).as('rpcCalls')
-
-    cy.intercept('POST', '**/thirdweb.com/**', (req) => {
-      if (req.body && req.body.method === 'eth_call') {
-        // Return stage 1
-        req.reply({ result: '0x' + '1'.padStart(64, '0') })
-      } else if (req.body && req.body.method === 'eth_getBalance') {
-        req.reply({ result: '0x0' })
-      }
-    }).as('thirdwebRpc')
-
     cy.mount(
       <TestnetProviders>
         <MissionFundingStageWrapper missionId={1} />
-      </TestnetProviders>
+      </TestnetProviders>,
     )
 
     cy.get('[data-testid="stage"]', { timeout: 10000 }).should('not.contain', 'undefined')

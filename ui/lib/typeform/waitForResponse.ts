@@ -1,22 +1,42 @@
 import { getAccessToken } from '@privy-io/react-auth'
 
+const DEFAULT_MAX_RETRIES = 12
+const INITIAL_DELAY_MS = 600
+const MAX_DELAY_MS = 2500
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Poll until Typeform indexes a fresh response. Uses short backoff (not 5s fixed).
+ * Prefer handleTypeformSubmission for onboarding — it uses a single request loop.
+ */
 export default async function waitForResponse(
   formId: string,
   responseId: string,
-  maxRetries: number = 20
+  maxRetries: number = DEFAULT_MAX_RETRIES,
+  options?: { onboarding?: boolean }
 ): Promise<boolean> {
-  let retries = 0
+  const accessToken = await getAccessToken()
 
-  while (retries < maxRetries) {
+  const authHeaders: HeadersInit = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : {}
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const accessToken = await getAccessToken()
-
       const res = await fetch(`/api/typeform/response`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
         body: JSON.stringify({
-          accessToken: accessToken,
-          responseId: responseId,
-          formId: formId,
+          accessToken,
+          responseId,
+          formId,
+          onboarding: options?.onboarding ?? false,
         }),
       })
 
@@ -32,9 +52,9 @@ export default async function waitForResponse(
       console.error('Error in waitForResponse:', error)
     }
 
-    retries++
-    if (retries < maxRetries) {
-      await new Promise((resolve) => setTimeout(resolve, 5000))
+    if (attempt < maxRetries - 1) {
+      const delay = Math.min(INITIAL_DELAY_MS + attempt * 400, MAX_DELAY_MS)
+      await sleep(delay)
     }
   }
 

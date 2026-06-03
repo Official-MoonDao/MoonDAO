@@ -6,6 +6,11 @@ import {
   hasAccessToResponse,
   fetchResponseFromFormIds,
 } from '@/lib/typeform/hasAccessToResponse'
+import { parseTypeformApiRequestBody } from '@/lib/typeform/parseApiRequestBody'
+import {
+  cacheTypeformAnswers,
+  readCachedTypeformAnswers,
+} from '@/lib/typeform/responseCache'
 
 //https://github.com/mathio/nextjs-embed-demo/blob/main/pages/api/response.js
 
@@ -16,52 +21,56 @@ async function wait(ms: number) {
 }
 
 async function getResponse(formId: string, responseId: string) {
-  return await fetch(
-    `https://api.typeform.com/forms/${formId}/responses?included_response_ids=${responseId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.TYPEFORM_PERSONAL_ACCESS_TOKEN}`,
+  // Bound the Typeform call so a stalled request can't hang the whole API route.
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    return await fetch(
+      `https://api.typeform.com/forms/${formId}/responses?included_response_ids=${responseId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.TYPEFORM_PERSONAL_ACCESS_TOKEN}`,
+        },
+        signal: controller.signal,
       },
-    }
-  )
+    )
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
-async function retryGetResponse(formId: string, responseId: string) {
-  let result: any
-  let data: any = {}
-  let totalItems = 0
-  let counter = 1
+async function retryGetResponse(
+  formId: string,
+  responseId: string,
+  options?: { maxAttempts?: number; delayMs?: number },
+) {
+  const maxAttempts = options?.maxAttempts ?? 5
+  const delayMs = options?.delayMs ?? 700
 
-  while (totalItems === 0 && counter < 5) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      result = await getResponse(formId, responseId)
-      data = await result.json()
+      const result = await getResponse(formId, responseId)
+      const data = await result.json()
+
+      if (result.ok && data.total_items > 0 && data.items?.[0]) {
+        return data
+      }
 
       if (!result.ok) {
         console.error(
-          `Typeform API error: ${result.status} - ${
-            data.description || 'Unknown error'
-          }`
+          `Typeform API error: ${result.status} - ${data.description || 'Unknown error'}`,
         )
-        if (counter >= 4) {
-          return null
-        }
-      } else {
-        totalItems = data.total_items
       }
-
-      await wait(1000)
-      counter += 1
     } catch (error) {
-      console.error(`Error on attempt ${counter}:`, error)
-      counter += 1
-      if (counter < 5) {
-        await wait(1000)
-      }
+      console.error(`Error on attempt ${attempt}:`, error)
+    }
+
+    if (attempt < maxAttempts) {
+      await wait(delayMs)
     }
   }
 
-  return result?.ok ? data : null
+  return null
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -69,17 +78,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).send('Method Not Allowed')
   }
 
-  const { accessToken, responseId, formId } = JSON.parse(req.body)
+  const parsedBody = parseTypeformApiRequestBody(req.body)
+  if (!parsedBody) {
+    return res.status(400).json({ message: 'Invalid request body' })
+  }
+
+  const { accessToken, responseId, formId, onboarding } = parsedBody
 
   try {
-    const privyUserData = await getPrivyUserData(accessToken as string)
-
-    if (!privyUserData) {
-      return res.status(401).json({ message: 'Invalid access token' })
-    }
-
-    const { walletAddresses } = privyUserData
-
     if (!formId || !responseId) {
       return res.status(400).json({ message: 'Missing formId or responseId' })
     }
@@ -89,7 +95,71 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(500).json({ message: 'Server configuration error' })
     }
 
-    // Check if user has access to this response
+    // New citizen/team onboarding. The client polls this endpoint repeatedly
+    // while Typeform indexes the submission, so the common case is "not ready
+    // yet". To keep each poll cheap we do the readiness check FIRST (Redis
+    // cache -> one Typeform read) and bail out fast with 404 when there's
+    // nothing to return. The expensive Privy user fetch + on-chain IDOR check
+    // only runs on the single request that actually has answers. The Bearer
+    // token was already verified by authMiddleware, so no extra verify here.
+    if (onboarding) {
+      // Fast path: webhook caches answers within ~1s of submit (see /api/typeform/webhook).
+      let answers = await readCachedTypeformAnswers(responseId as string)
+
+      if (!answers) {
+        const data = await retryGetResponse(formId as string, responseId as string, {
+          maxAttempts: 1,
+        })
+        if (data?.items?.[0]) {
+          answers = data.items[0].answers
+          void cacheTypeformAnswers(responseId as string, answers)
+        }
+      }
+
+      if (!answers) {
+        return res
+          .status(404)
+          .json({ message: 'Response not yet available from Typeform' })
+      }
+
+      // We have answers — confirm identity and prevent IDOR for responses
+      // already minted on-chain before handing them back.
+      const privyUserData = await getPrivyUserData(accessToken as string)
+      if (!privyUserData) {
+        return res.status(401).json({ message: 'Invalid access token' })
+      }
+
+      const { walletAddresses } = privyUserData
+      const { hasAccess, error } = await hasAccessToResponse(
+        walletAddresses,
+        responseId
+      )
+
+      // Only block when we DEFINITIVELY determine the response is owned by a
+      // different on-chain citizen/team. Transient infra failures (Tableland /
+      // RPC rate limits surface as 'Internal server error') must NOT 403 the
+      // user's own freshly-submitted onboarding response — the client can't
+      // distinguish a 403 from "not ready yet" and would poll until timeout,
+      // so a transient error here used to stall onboarding indefinitely.
+      const DEFINITIVE_ACCESS_DENIALS = [
+        'User is not a manager of the team',
+        'User does not own the citizen nft',
+      ]
+      if (!hasAccess && error && DEFINITIVE_ACCESS_DENIALS.includes(error)) {
+        return res.status(403).json({ message: 'Access denied to this response' })
+      }
+
+      return res.status(200).json({ answers })
+    }
+
+    const privyUserData = await getPrivyUserData(accessToken as string)
+    if (!privyUserData) {
+      return res.status(401).json({ message: 'Invalid access token' })
+    }
+
+    const { walletAddresses } = privyUserData
+
+    // Profile updates: verify on-chain ownership before returning answers.
     const { hasAccess, error, formIds } = await hasAccessToResponse(
       walletAddresses,
       responseId
@@ -99,13 +169,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(401).json({ message: error || 'Access denied' })
     }
 
-    // Fetch response from the appropriate form IDs based on type
     let data: any = null
     if (formIds && formIds.length > 0) {
       data = await fetchResponseFromFormIds(formIds, responseId as string)
     }
 
-    // Fallback to the original formId if no data found from type-specific forms
     if (!data && formId) {
       data = await retryGetResponse(formId as string, responseId as string)
     }

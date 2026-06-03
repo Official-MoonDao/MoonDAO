@@ -44,6 +44,37 @@ const citizenTableContract = getContract({
   chain: DEFAULT_CHAIN_V5,
 })
 
+// Tableland table names are immutable once the table is created, so cache them
+// after the first successful read. This removes two thirdweb contract reads per
+// request (a meaningful win when the RPC is being rate-limited) and avoids a
+// throw site that would otherwise bubble up as a spurious 403.
+let cachedTeamTableName: string | null = null
+let cachedCitizenTableName: string | null = null
+
+async function getCachedTableNames(): Promise<{
+  teamTableName: string
+  citizenTableName: string
+}> {
+  if (!cachedTeamTableName) {
+    cachedTeamTableName = (await readContract({
+      contract: teamTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })) as string
+  }
+  if (!cachedCitizenTableName) {
+    cachedCitizenTableName = (await readContract({
+      contract: citizenTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })) as string
+  }
+  return {
+    teamTableName: cachedTeamTableName,
+    citizenTableName: cachedCitizenTableName,
+  }
+}
+
 // Helper function to get form IDs based on type
 async function getFormIdsByType(type: 'team' | 'citizen'): Promise<string[]> {
   if (type === 'team') {
@@ -104,18 +135,8 @@ export async function hasAccessToResponse(
       return { hasAccess: false, error: 'No wallet addresses found' }
     }
 
-    // Get table names
-    const teamTableName = await readContract({
-      contract: teamTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-
-    const citizenTableName = await readContract({
-      contract: citizenTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
+    // Get table names (cached — these never change for a deployment)
+    const { teamTableName, citizenTableName } = await getCachedTableNames()
 
     // Check if response belongs to a team
     let team: any
