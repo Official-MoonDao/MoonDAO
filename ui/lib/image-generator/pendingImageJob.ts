@@ -11,6 +11,7 @@ export type PendingImageJob = {
   status: PendingImageJobStatus
   jobId?: string
   uploadedFilename?: string
+  generationId?: string
 }
 
 export function savePendingImageJob(job: PendingImageJob) {
@@ -56,7 +57,8 @@ export function isPendingImageJobStale(job: PendingImageJob): boolean {
 export function markPendingImageJobPolling(
   jobId: string,
   uploadedFilename: string,
-  apiRoute: string
+  apiRoute: string,
+  generationId?: string
 ) {
   savePendingImageJob({
     apiRoute,
@@ -64,14 +66,16 @@ export function markPendingImageJobPolling(
     status: 'polling',
     jobId,
     uploadedFilename,
+    generationId,
   })
 }
 
-export function markPendingImageJobUploading(apiRoute: string) {
+export function markPendingImageJobUploading(apiRoute: string, generationId?: string) {
   // Dynamic import avoided — caller clears AI flag when starting a new job.
   savePendingImageJob({
     apiRoute,
     startedAt: Date.now(),
     status: 'uploading',
+    generationId,
   })
 }

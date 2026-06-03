@@ -80,6 +80,7 @@ export async function pollComfyImageJob(
   uploadedFilename: string,
   sourceImage: File | undefined,
   callbacks: PollComfyJobCallbacks,
+  generationId?: string,
 ): Promise<void> {
   if (inFlightJobIds.has(jobId)) {
     const existingPromise = inFlightPromises.get(jobId)
@@ -157,8 +158,12 @@ export async function pollComfyImageJob(
             const blob = await res.blob()
             const fileName = `image_${jobId}.png`
             const file = new File([blob], fileName, { type: blob.type })
-            setImage(file)
-            markAiPortraitReady()
+            // Bug fix: check if this job is still current before applying result
+            const currentJob = readPendingImageJob()
+            if (!generationId || currentJob?.generationId === generationId) {
+              setImage(file)
+              markAiPortraitReady()
+            }
             setPhase('done')
             return
           } catch (err) {
@@ -197,7 +202,11 @@ export async function pollComfyImageJob(
       inFlightJobIds.delete(jobId)
       inFlightPromises.delete(jobId)
       await deleteFromGoogleStorage(uploadedFilename)
-      clearPendingImageJob()
+      // Bug fix: only clear if this job is still the current pending job
+      const currentJob = readPendingImageJob()
+      if (currentJob?.jobId === jobId) {
+        clearPendingImageJob()
+      }
       setIsLoading?.(false)
     }
   })()
@@ -221,6 +230,7 @@ export async function resumePendingComfyJob(
     pending.uploadedFilename,
     sourceImage,
     callbacks,
+    pending.generationId,
   )
   return true
 }

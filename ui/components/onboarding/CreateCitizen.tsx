@@ -1164,6 +1164,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       setIsLoadingMint(false)
     }
   }, [
+    hasAiPortrait,
     citizenImage,
     croppedInputImage,
     inputImage,

@@ -1,8 +1,6 @@
 import { Storage } from '@google-cloud/storage'
 import formidable from 'formidable'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { authMiddleware } from 'middleware/authMiddleware'
-import withMiddleware from 'middleware/withMiddleware'
 
 /** Temp uploads for citizen AI generation (readable by comfy.icu via signed URL). */
 const UPLOAD_PREFIX = 'citizen-gen-temp/'
@@ -92,4 +90,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withMiddleware(handler, authMiddleware)
+export default handler

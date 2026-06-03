@@ -207,8 +207,11 @@ export default function useImageGenerator(
     setPhase('uploading')
     let uploadedFilename: string | null = null
 
+    // Generate unique ID to track this generation attempt
+    const generationId = `gen_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+
     // Persist before upload so Privy redirect during upload can resume/restart.
-    markPendingImageJobUploading(generateApiRoute)
+    markPendingImageJobUploading(generateApiRoute, generationId)
 
     try {
       const { url, filename } = await uploadToGoogleStorage(sourceImage)
@@ -217,14 +220,14 @@ export default function useImageGenerator(
       setPhase('queued')
       const jobId = await createJob(url)
 
-      markPendingImageJobPolling(jobId, filename, generateApiRoute)
+      markPendingImageJobPolling(jobId, filename, generateApiRoute, generationId)
 
       await pollComfyImageJob(generateApiRoute, jobId, filename, sourceImage, {
         setPhase,
         setImage: (file) => setImage(file),
         setError,
         setIsLoading,
-      })
+      }, generationId)
     } catch (err: any) {
       console.error('Image generation failed:', err)
       setPhase('error')
