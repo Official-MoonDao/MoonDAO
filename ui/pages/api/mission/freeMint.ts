@@ -165,14 +165,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (balance !== BigInt(0)) {
       return res.status(400).json({ error: 'You are already a citizen!' })
     }
-    const [totalPaid, whitelisted] = await Promise.all([
-      getTotalPaid(address),
-      isCitizenWhitelisted(address),
-    ])
-    if (!whitelisted && totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
-      return res.status(400).json({
-        error: 'You have not contributed enough to earn a free citizen NFT!',
-      })
+    const whitelisted = await isCitizenWhitelisted(address)
+    if (!whitelisted) {
+      const totalPaid = await getTotalPaid(address)
+      if (totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
+        return res.status(400).json({
+          error: 'You have not contributed enough to earn a free citizen NFT!',
+        })
+      }
     }
     const cost: any = await readContract({
       contract: citizenContract,
@@ -208,10 +208,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'Invalid wallet address format.' })
     }
 
-    const [totalPaid, whitelisted] = await Promise.all([
-      getTotalPaid(address as string),
-      isCitizenWhitelisted(address as string),
-    ])
+    const whitelisted = await isCitizenWhitelisted(address as string)
+    let totalPaid = BigInt(0)
+    if (!whitelisted) {
+      totalPaid = await getTotalPaid(address as string)
+    } else {
+      // For whitelisted users, try to get totalPaid but don't fail if subgraph is down
+      try {
+        totalPaid = await getTotalPaid(address as string)
+      } catch (err) {
+        console.error('Could not fetch totalPaid for whitelisted user:', err)
+        // totalPaid stays 0, but user is still eligible due to whitelist
+      }
+    }
     res.status(200).json({
       success: true,
       message: 'Fetched total paid.',
