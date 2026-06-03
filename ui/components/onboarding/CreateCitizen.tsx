@@ -52,6 +52,7 @@ import {
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
@@ -142,6 +143,15 @@ const PENDING_TYPEFORM_SESSION_KEY = 'CreateCitizen_pendingTypeform'
 const RESUME_STAGE_SESSION_KEY = 'CreateCitizen_resumeStage'
 const CROPPED_IMAGE_SESSION_KEY = 'CreateCitizen_croppedImage'
 const INPUT_IMAGE_SESSION_KEY = 'CreateCitizen_inputImage'
+
+const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60
+
+/** Format small ETH amounts for display without noisy trailing zeros. */
+function formatEthAmount(eth: number): string {
+  if (!Number.isFinite(eth) || eth <= 0) return '0'
+  if (eth >= 0.01) return eth.toFixed(4).replace(/\.?0+$/, '')
+  return eth.toFixed(6).replace(/\.?0+$/, '')
+}
 
 type PendingTypeformPayload = { formId: string; responseId: string }
 
@@ -372,6 +382,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
 
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
+  const [renewalPriceWei, setRenewalPriceWei] = useState<bigint | null>(null)
+  const [isLoadingRenewalPrice, setIsLoadingRenewalPrice] = useState(false)
 
   // ===== Refs =====
   const hasRestoredFormDataRef = useRef(false)
@@ -508,6 +520,52 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     () => selectedChainSlug !== defaultChainSlug,
     [selectedChainSlug, defaultChainSlug],
   )
+
+  const nativeSymbol = selectedChain?.nativeCurrency?.symbol ?? 'ETH'
+
+  const mintCostBreakdown = useMemo(() => {
+    if (freeMint) {
+      return { renewalEth: 0, gasEth: 0, bridgeEth: 0, totalEth: 0 }
+    }
+    const renewalEth = renewalPriceWei
+      ? Number(ethers.utils.formatEther(renewalPriceWei))
+      : 0
+    const gasEth =
+      estimatedGas > BigInt(0) && effectiveGasPrice && effectiveGasPrice > BigInt(0)
+        ? Number(estimatedGas * effectiveGasPrice) / 1e18
+        : 0
+    const bridgeEth = isCrossChain ? Number(LAYER_ZERO_TRANSFER_COST) / 1e18 : 0
+    return {
+      renewalEth,
+      gasEth,
+      bridgeEth,
+      totalEth: renewalEth + gasEth + bridgeEth,
+    }
+  }, [
+    freeMint,
+    renewalPriceWei,
+    estimatedGas,
+    effectiveGasPrice,
+    isCrossChain,
+    LAYER_ZERO_TRANSFER_COST,
+  ])
+
+  const { data: renewalUsd, isLoading: isLoadingRenewalUsd } = useETHPrice(
+    mintCostBreakdown.renewalEth,
+    'ETH_TO_USD',
+  )
+  const { data: totalMintUsd, isLoading: isLoadingTotalMintUsd } = useETHPrice(
+    mintCostBreakdown.totalEth,
+    'ETH_TO_USD',
+  )
+
+  const isLoadingMintCosts =
+    !freeMint &&
+    (isLoadingRenewalPrice ||
+      isLoadingGasEstimate ||
+      isLoadingRenewalUsd ||
+      isLoadingTotalMintUsd ||
+      !renewalPriceWei)
 
   // ===== Internal Helper Functions =====
 
@@ -1577,6 +1635,38 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
 
   // ===== Effect Group: Gas Estimation =====
   useEffect(() => {
+    if (stage !== 2 || !address) {
+      setRenewalPriceWei(null)
+      return
+    }
+
+    let cancelled = false
+    setIsLoadingRenewalPrice(true)
+    readContract({
+      contract: citizenContract,
+      method: 'getRenewalPrice' as string,
+      params: [address, ONE_YEAR_SECONDS],
+    })
+      .then((cost: unknown) => {
+        if (!cancelled) {
+          setRenewalPriceWei(BigInt(String(cost)))
+          setIsLoadingRenewalPrice(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch citizenship renewal price:', err)
+        if (!cancelled) {
+          setRenewalPriceWei(null)
+          setIsLoadingRenewalPrice(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [stage, address, citizenContract])
+
+  useEffect(() => {
     if (stage === 2 && address && citizenData.name) {
       estimateMintGas()
     }
@@ -2190,6 +2280,62 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                     title="Citizen Overview"
                     excludeKeys={['newsletterSub', 'formResponseId']}
                   />
+
+                  {/* Cost breakdown */}
+                  <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
+                    <h3 className="font-GoodTimes text-base mb-3 text-white">Mint cost</h3>
+                    {freeMint ? (
+                      <p className="text-slate-400 text-sm leading-relaxed">
+                        This mint is sponsored — you will not be charged for citizenship or network
+                        fees.
+                      </p>
+                    ) : isLoadingMintCosts ? (
+                      <p className="text-slate-400 text-sm">Calculating costs…</p>
+                    ) : (
+                      <dl className="space-y-3 text-sm">
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-slate-400">1-year citizenship</dt>
+                          <dd className="text-white text-right tabular-nums">
+                            {formatEthAmount(mintCostBreakdown.renewalEth)} ETH
+                            {renewalUsd > 0 && (
+                              <span className="block text-slate-400 text-xs mt-0.5">
+                                ~${Math.round(renewalUsd)} / year
+                              </span>
+                            )}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-slate-400">Network fee (est.)</dt>
+                          <dd className="text-white text-right tabular-nums">
+                            {formatEthAmount(mintCostBreakdown.gasEth)} {nativeSymbol}
+                          </dd>
+                        </div>
+                        {isCrossChain && mintCostBreakdown.bridgeEth > 0 && (
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-slate-400">Cross-chain bridge (est.)</dt>
+                            <dd className="text-white text-right tabular-nums">
+                              {formatEthAmount(mintCostBreakdown.bridgeEth)} {nativeSymbol}
+                            </dd>
+                          </div>
+                        )}
+                        <div className="flex justify-between gap-4 pt-3 border-t border-white/[0.08]">
+                          <dt className="text-slate-300 font-medium">Total due at mint</dt>
+                          <dd className="text-white font-medium text-right tabular-nums">
+                            {formatEthAmount(mintCostBreakdown.totalEth)} {nativeSymbol}
+                            {totalMintUsd > 0 && (
+                              <span className="block text-slate-400 text-xs font-normal mt-0.5">
+                                ~${Math.round(totalMintUsd)} today
+                              </span>
+                            )}
+                          </dd>
+                        </div>
+                      </dl>
+                    )}
+                    <p className="mt-4 text-slate-500 text-xs leading-relaxed">
+                      Citizenship is paid in {nativeSymbol} on {selectedChain?.name ?? 'your network'}.
+                      Gas varies with network conditions. Renewal is ~1 year from mint.
+                    </p>
+                  </div>
 
                   {/* Info box */}
                   <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
