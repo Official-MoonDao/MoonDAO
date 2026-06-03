@@ -219,6 +219,22 @@ function clearSessionImageSnapshots() {
   }
 }
 
+/**
+ * Wipe every localStorage key that backs the onboarding wizard so a "Start over"
+ * truly survives a reload. Covers the anonymous cache and any wallet-scoped
+ * variants (`CreateCitizenCacheV1_<address>`).
+ */
+function clearAnonymousFormCache() {
+  if (typeof window === 'undefined') return
+  try {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith(ANONYMOUS_FORM_CACHE_KEY))
+      .forEach((key) => localStorage.removeItem(key))
+  } catch {
+    /* ignore */
+  }
+}
+
 function restoreAnonymousFormCache(): { stage?: number; formData?: any; timestamp?: number } | null {
   if (typeof window === 'undefined') return null
   try {
@@ -989,6 +1005,48 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
     return { cropped, input }
   }, [address, restoreCache, applyCachedFormImages])
+
+  /**
+   * Full reset: clear every persisted artifact (local + session storage) and
+   * reset React state so the user genuinely starts from step 1. Restore guards
+   * are flipped back on so a subsequent reload won't re-hydrate stale data.
+   */
+  const handleStartOver = useCallback(() => {
+    clearCache()
+    clearAnonymousFormCache()
+    clearPendingTypeformSession()
+    clearPendingImageJob()
+    clearSessionImageSnapshots()
+    clearAiPortraitReady()
+
+    imagesRestoredRef.current = false
+    hasRestoredFromSessionRef.current = false
+    hasRestoredWizardArtifactsRef.current = false
+    hasRestoredInProgressFlowRef.current = false
+    hasMigratedAnonCacheRef.current = false
+    processingPendingTypeformRef.current = false
+
+    setPendingTypeform(null)
+    setCitizenImage(undefined)
+    setInputImage(undefined)
+    setCroppedInputImage(undefined)
+    setCitizenData({
+      name: '',
+      email: '',
+      description: '',
+      location: '',
+      view: '',
+      discord: '',
+      website: '',
+      twitter: '',
+      formResponseId: '',
+    })
+    setAgreedToCondition(false)
+    setIsImageGenerating(false)
+    setHasPendingImageJob(false)
+    setImageGenProgress(null)
+    setStage(0)
+  }, [clearCache, setAgreedToCondition])
 
   // Form Restoration Handler
   const handleFormRestore = useCallback(
@@ -1811,13 +1869,28 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   setStage(next)
                 }}
               />
-              <button
-                onClick={() => setSelectedTier(null)}
-                className="ml-4 p-2 rounded-xl hover:bg-white/5 transition-colors flex-shrink-0"
-                aria-label="Close"
-              >
-                <XMarkIcon width={28} height={28} className="text-slate-400" />
-              </button>
+              <div className="ml-4 flex items-center gap-2 flex-shrink-0">
+                {(stage > 0 ||
+                  !!inputImage ||
+                  !!croppedInputImage ||
+                  !!citizenImage ||
+                  !!citizenData.name) && (
+                  <button
+                    onClick={handleStartOver}
+                    className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2"
+                    aria-label="Start over"
+                  >
+                    Start over
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedTier(null)}
+                  className="p-2 rounded-xl hover:bg-white/5 transition-colors"
+                  aria-label="Close"
+                >
+                  <XMarkIcon width={28} height={28} className="text-slate-400" />
+                </button>
+              </div>
             </div>
 
             {/* Card container */}
