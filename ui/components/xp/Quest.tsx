@@ -22,8 +22,8 @@ import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import {
   getStagedQuestProgress,
-  getHighestQualifyingStage,
   getNextUnclamedThreshold,
+  getProgressThreshold,
   type StagedQuestProgress,
 } from '@/lib/xp/staged-quest-info'
 import StandardButton from '@/components/layout/StandardButton'
@@ -78,6 +78,14 @@ export default function Quest({
   const [isLoadingStagedProgress, setIsLoadingStagedProgress] = useState(false)
   const [userMetric, setUserMetric] = useState(0)
 
+  // For single (non-staged) quests: whether the user actually meets the
+  // requirement. `null` = not yet determined (don't show a Claim button until
+  // we know), `false` = not eligible, `true` = eligible. This prevents showing
+  // a "Claim" button for a quest the user hasn't completed.
+  const [singleQuestEligible, setSingleQuestEligible] = useState<
+    boolean | null
+  >(null)
+
   const [hasClaimed, setHasClaimed] = useState(false)
   const [isLoadingClaim, setIsLoadingClaim] = useState(false)
   const [isCheckingClaimed, setIsCheckingClaimed] = useState(true)
@@ -90,8 +98,8 @@ export default function Quest({
   const retryWithBackoff = useCallback(
     async <T,>(
       fn: () => Promise<T>,
-      maxRetries: number = 3,
-      baseDelay: number = 1000
+      maxRetries: number = 2,
+      baseDelay: number = 500
     ): Promise<T> => {
       let lastError: Error
 
@@ -105,13 +113,33 @@ export default function Quest({
             throw lastError
           }
 
-          // Exponential backoff with jitter
-          const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000
+          // Exponential backoff with light jitter (capped so the worst case
+          // stays bounded and a flaky quest can't hang the card for minutes).
+          const delay = Math.min(
+            4000,
+            baseDelay * Math.pow(2, attempt) + Math.random() * 300
+          )
           await new Promise((resolve) => setTimeout(resolve, delay))
         }
       }
 
       throw lastError!
+    },
+    []
+  )
+
+  // fetch wrapper that aborts after `timeoutMs` so a slow/cold serverless
+  // route can't hang the card on "Loading progress..." indefinitely. A timed-
+  // out attempt throws and is then retried by retryWithBackoff.
+  const fetchWithTimeout = useCallback(
+    async (input: string, init: RequestInit = {}, timeoutMs = 8000) => {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), timeoutMs)
+      try {
+        return await fetch(input, { ...init, signal: controller.signal })
+      } finally {
+        clearTimeout(timer)
+      }
     },
     []
   )
@@ -198,7 +226,7 @@ export default function Quest({
             throw new Error('No access token available')
           }
 
-          const response = await fetch(
+          const response = await fetchWithTimeout(
             `${quest.verifier.route}?user=${userAddress}&accessToken=${accessToken}`,
             {
               method: 'GET',
@@ -259,6 +287,7 @@ export default function Quest({
     quest.verifier.metricKey,
     userAddress,
     retryWithBackoff,
+    fetchWithTimeout,
   ])
 
   // Simplified staged progress fetching with retry logic
@@ -418,7 +447,14 @@ export default function Quest({
         params: [xpManagerContract.address],
       })
 
-      if (+xpManagerMooneyBalance.toString() / 1e18 < xpAmount) {
+      // For staged quests xpAmount stays 0 (set by xpPerClaim, not used for staged).
+      // Use the actual claimable XP from staged progress so the check isn't a no-op.
+      const isQuestStaged = quest.verifier.type === 'staged'
+      const balanceCheckAmount = isQuestStaged
+        ? (stagedProgress?.totalClaimableXP ?? 0)
+        : xpAmount
+
+      if (+xpManagerMooneyBalance.toString() / 1e18 < balanceCheckAmount) {
         return toast.error('Insufficient rewards. Please contact support.', {
           duration: 5000,
           style: toastStyle,
@@ -431,12 +467,24 @@ export default function Quest({
         body: JSON.stringify({ user: userAddress, accessToken }),
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      // Parse the body first: the API returns its real failure reason in
+      // `{ error }` even on non-2xx responses. Throwing on `!response.ok`
+      // before reading the body collapses every server error into a useless
+      // "HTTP 500:" message and hides the actual cause.
+      let data: any = null
+      try {
+        data = await response.json()
+      } catch {
+        // Non-JSON body (e.g. gateway/proxy error page)
       }
 
-      const data = await response.json()
-      const { eligible, error, txHash } = data
+      if (!response.ok) {
+        const serverError =
+          data?.error || `HTTP ${response.status}: ${response.statusText}`
+        throw new Error(serverError)
+      }
+
+      const { eligible, error, txHash } = data || {}
 
       // Check if this is a GitHub linking error
       if (error && error.includes('No GitHub account linked')) {
@@ -522,7 +570,7 @@ export default function Quest({
     } finally {
       setIsLoadingClaim(false)
     }
-  }, [quest.verifier, userAddress, pollForClaimConfirmation])
+  }, [quest.verifier, userAddress, pollForClaimConfirmation, stagedProgress, xpAmount])
 
   useEffect(() => {
     async function fetchXpAmount() {
@@ -572,15 +620,19 @@ export default function Quest({
       setError(null)
     }
 
-    // For single quests with GitHub dependencies, fetch user metric to check for GitHub linking errors
-    if (
-      quest.verifier.type !== 'staged' &&
-      quest.verifier.errorButtons &&
-      quest.verifier.errorButtons[
-        'No GitHub account linked to your Privy account'
-      ]
-    ) {
+    // For single (non-staged) quests, fetch the user metric to determine real
+    // eligibility. This both surfaces GitHub-linking errors AND lets us hide
+    // the Claim button until the user has actually completed the requirement.
+    if (quest.verifier.type !== 'staged') {
+      // Reset to null immediately so any stale Claim button disappears while
+      // the new fetch is in flight (e.g. when userAddress or quest changes).
+      setSingleQuestEligible(null)
       fetchUserMetric()
+        .then((metric) => {
+          setUserMetric(metric)
+          setSingleQuestEligible(metric >= 1)
+        })
+        .catch(console.error)
     }
   }, [
     fetchHasClaimed,
@@ -600,12 +652,45 @@ export default function Quest({
     }
   }, [])
 
-  const isCompleted =
+  // Bounded auto-retry for staged quests: if a fetch finished but produced no
+  // progress (transient network/RPC hiccup), quietly retry a few times with a
+  // short backoff instead of leaving the card stuck until a manual refresh.
+  const autoRetryCountRef = useRef(0)
+  useEffect(() => {
+    if (quest.verifier.type !== 'staged') return
+    if (!userAddress || !verifierContract) return
+    if (stagedProgress || isLoadingStagedProgress) {
+      // Got data (or a fetch is in flight) — reset the counter for next time.
+      if (stagedProgress) autoRetryCountRef.current = 0
+      return
+    }
+    if (autoRetryCountRef.current >= 3) return
+
+    const attempt = autoRetryCountRef.current
+    autoRetryCountRef.current += 1
+    const delay = 1500 * (attempt + 1)
+    const timer = setTimeout(() => {
+      fetchStagedProgress()
+    }, delay)
+    return () => clearTimeout(timer)
+  }, [
+    quest.verifier.type,
+    userAddress,
+    verifierContract,
+    stagedProgress,
+    isLoadingStagedProgress,
+    fetchStagedProgress,
+  ])
+
+  const isCompleted: boolean =
     quest.verifier.type === 'staged'
-      ? stagedProgress?.currentUserMetric &&
-        stagedProgress?.currentUserMetric >=
-          stagedProgress?.stages[stagedProgress.stages.length - 1]?.threshold &&
-        stagedProgress?.totalClaimableXP === 0
+      ? Boolean(
+          stagedProgress?.currentUserMetric &&
+            stagedProgress?.currentUserMetric >=
+              stagedProgress?.stages[stagedProgress.stages.length - 1]
+                ?.threshold &&
+            stagedProgress?.totalClaimableXP === 0
+        )
       : Boolean(hasClaimed)
 
   // Streamlined styling with better visual hierarchy
@@ -633,13 +718,14 @@ export default function Quest({
       : 'bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-blue-300 shadow-lg shadow-blue-500/20 hover:scale-110 transition-transform duration-300'
   }
 
-  const getButtonClasses = () => {
-    const baseClasses =
-      'w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center'
-    if (variant === 'weekly') {
-      return `${baseClasses} bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 hover:from-purple-700 hover:via-purple-600 hover:to-purple-700 text-white`
-    }
-    return `${baseClasses} bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 text-white`
+  // Consistent secondary (navigation / action) button styling used in the
+  // unified footer action row.
+  const getSecondaryButtonClasses = () => {
+    const base =
+      'w-full sm:flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center'
+    return variant === 'weekly'
+      ? `${base} bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white`
+      : `${base} bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white`
   }
 
   // Base classes for different error button types
@@ -795,435 +881,307 @@ export default function Quest({
   const ModalButton = quest?.modalButton || null
   const QuestIcon = quest.icon
 
+  // ---- Unified, consistent display values (shared by every quest type) ----
+  const isStaged = quest.verifier.type === 'staged'
+  const metricFmt = quest.verifier.metricFormatting
+
+  // Reward shown in the header badge: staged shows the next stage reward,
+  // single shows its fixed reward.
+  const rewardAmount = isStaged
+    ? stagedProgress?.nextStageXP ??
+      Number(
+        stagedProgress?.stages?.[stagedProgress.stages.length - 1]?.xpAmount ??
+          0
+      )
+    : xpAmount
+
+  // Amount currently claimable.
+  const claimAmount = isStaged
+    ? stagedProgress?.totalClaimableXP ?? 0
+    : xpAmount
+
+  // Only show "Claim" when the user genuinely has something to claim:
+  //  - staged: the contract reports claimable XP from thresholds they crossed
+  //  - single: they actually meet the requirement (metric >= 1)
+  const canClaim =
+    !isCompleted &&
+    !needsGitHubLink &&
+    (isStaged
+      ? (stagedProgress?.totalClaimableXP ?? 0) > 0
+      : singleQuestEligible === true)
+
+  // Progress is unified: staged quests show real progress toward the relevant
+  // threshold, single quests show a simple binary (0% / 100%) bar so every
+  // card has the same visual structure. For staged quests with claimable XP,
+  // `getProgressThreshold` targets the COMPLETED-but-unclaimed stage so the bar
+  // shows e.g. 5 / 5 (100%) until the user claims, then advances to 5 / 10.
+  const singleQuestDone = isCompleted || singleQuestEligible === true
+  const hasClaimableStage =
+    isStaged && (stagedProgress?.totalClaimableXP ?? 0) > 0
+  const progressTargetRaw = isStaged
+    ? Number(getProgressThreshold(stagedProgress))
+    : 1
+  const progressTarget = Math.max(1, progressTargetRaw)
+  // When a stage is completed but unclaimed, cap the numerator at the stage
+  // threshold so it reads 5 / 5 rather than e.g. 7 / 5.
+  const stagedDisplayMetric = hasClaimableStage
+    ? Math.min(Number(userMetric), progressTargetRaw)
+    : Number(userMetric)
+  const progressCurrent = isStaged
+    ? stagedDisplayMetric
+    : singleQuestDone
+    ? 1
+    : 0
+  const progressPct = Math.min(
+    100,
+    Math.max(0, Math.round((progressCurrent / progressTarget) * 100))
+  )
+  const progressLabelCurrent = isStaged
+    ? metricFmt
+      ? metricFmt(stagedDisplayMetric)
+      : stagedDisplayMetric.toLocaleString()
+    : isCompleted
+    ? 'Complete'
+    : singleQuestEligible === true
+    ? 'Ready to claim'
+    : singleQuestEligible === null
+    ? 'Checking...'
+    : 'Not started'
+  const progressLabelTarget = isStaged
+    ? metricFmt
+      ? metricFmt(progressTargetRaw)
+      : progressTargetRaw.toLocaleString()
+    : ''
+
   return (
     <div
-      className={`w-full px-3 py-3 sm:px-4 sm:py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
+      className={`w-full p-4 sm:p-5 rounded-xl border transition-all duration-300 group relative overflow-hidden flex flex-col ${getContainerClasses()}`}
     >
-      <div className="flex flex-col gap-3 w-full relative z-10 min-w-0">
-        {/* Header: stack on mobile, row on larger screens */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 w-full min-w-0">
-          <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-            {/* Icon Section */}
-            <div
-              className={`p-2.5 rounded-xl flex-shrink-0 transition-all duration-500 ${getIconClasses()} h-10 w-10`}
-            >
-              <QuestIcon className="w-5 h-5 group-hover:rotate-12 transition-transform duration-500" />
-            </div>
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+      {/* Body: header + progress (grows to keep footer aligned across cards) */}
+      <div className="flex flex-col gap-4 w-full relative z-10 min-w-0 flex-1">
+        {/* Header: icon + title/description + reward badge */}
+        <div className="flex items-start gap-3 w-full min-w-0">
+          <div
+            className={`p-2.5 rounded-xl flex-shrink-0 transition-all duration-300 ${getIconClasses()} h-10 w-10`}
+          >
+            <QuestIcon className="w-5 h-5" />
+          </div>
+
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 min-w-0">
               <h3
-                className={`font-semibold text-sm sm:text-base transition-all duration-300 break-words ${
-                  isCheckingClaimed || isPollingClaim
-                    ? 'text-white'
-                    : isCompleted
-                    ? 'text-green-300 group-hover:from-green-400 group-hover:to-emerald-400'
-                    : variant === 'weekly'
-                    ? 'text-white group-hover:from-purple-400 group-hover:to-purple-300'
-                    : 'text-white group-hover:from-blue-400 group-hover:to-blue-300'
+                className={`font-semibold text-sm sm:text-base leading-tight break-words ${
+                  isCompleted ? 'text-green-300' : 'text-white'
                 }`}
               >
-                {quest.description}
+                {quest.title}
               </h3>
-              {isCompleted ? (
-                <CheckBadgeIcon className="w-5 h-5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-              ) : null}
+              {isCompleted && (
+                <CheckBadgeIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
+              )}
             </div>
+            <p className="text-gray-400 text-xs sm:text-sm leading-snug mt-0.5 break-words">
+              {quest.description}
+            </p>
           </div>
 
-          {/* MOONEY amount - full width on mobile, auto on larger */}
-          {quest.verifier.type === 'staged' &&
-            stagedProgress &&
-            !isLoadingStagedProgress && (
-              <div className="flex items-center sm:items-end sm:justify-end flex-shrink-0">
-                <span className="text-green-300 text-xs sm:text-sm font-medium bg-gradient-to-r from-green-500/30 to-emerald-500/30 px-2.5 py-1 rounded-full border border-green-400/30 shadow-lg shadow-green-500/20 backdrop-blur-sm whitespace-nowrap">
-                  +
-                  {stagedProgress.nextStageXP ??
-                    Number(
-                      stagedProgress.stages[
-                        stagedProgress.stages.length - 1
-                      ]?.xpAmount ?? 0
-                    )}{' '}
-                  MOONEY
-                </span>
-              </div>
-            )}
+          <div className="flex-shrink-0">
+            <span className="inline-flex items-center text-green-300 text-xs font-semibold bg-green-500/15 px-2.5 py-1 rounded-full border border-green-400/25 whitespace-nowrap">
+              {(isStaged && (isLoadingStagedProgress || !stagedProgress)) ||
+              (!isStaged && isLoadingXpAmount) ? (
+                <LoadingSpinner height="h-3" width="w-3" />
+              ) : (
+                `+${rewardAmount.toLocaleString()}`
+              )}
+              <span className="ml-1 hidden sm:inline">MOONEY</span>
+            </span>
+          </div>
         </div>
 
-        {/* Content Section */}
-        <div className="flex-1 w-full space-y-3">
-          {/* Progress Section */}
-          <div className="w-full space-y-3">
-            {quest.verifier.type === 'staged' ? (
-              <div className="w-full space-y-3">
-                {isLoadingStagedProgress ? (
-                  <div className="flex items-center gap-2 text-gray-400 text-sm">
-                    <LoadingSpinner height="h-4" width="w-4" />
-                    Loading progress...
-                  </div>
-                ) : stagedProgress ? (
-                  <div className="flex flex-col gap-4 w-full min-w-0">
-                    {/* Referral quest: progress bar + link + buttons (same layout as other quests) */}
-                    {quest.actionText?.includes('Copy Referral Link') && (
-                      <div className="flex flex-col gap-4 w-full min-w-0">
-                        {/* Progress bar - matches other staged quests */}
-                        {stagedProgress && (
-                          <div className="w-full min-w-0 flex flex-col gap-1.5">
-                            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden shadow-inner">
-                              <div
-                                className="h-full min-w-[4px] bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 rounded-full transition-all duration-500 ease-out shadow-sm"
-                                style={{
-                                  width: `${Math.min(
-                                    100,
-                                    Math.max(
-                                      0,
-                                      (Number(userMetric) /
-                                        Math.max(
-                                          1,
-                                          Number(getNextUnclamedThreshold(stagedProgress))
-                                        )) *
-                                        100
-                                    )
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                            <p className="text-gray-400 text-xs font-medium min-w-0">
-                              {userMetric} / {getNextUnclamedThreshold(stagedProgress)} referrals
-                            </p>
-                          </div>
-                        )}
-                        {/* Copy Referral Link + Record Referral - same line, matching quest button style */}
-                        <div className="flex flex-row gap-2">
-                          {quest.action && citizen?.owner && (
-                            <button
-                              onClick={quest.action}
-                              className={`${getButtonClasses()} flex-1 min-w-0 gap-2`}
-                            >
-                              <ClipboardDocumentIcon className="w-4 h-4 flex-shrink-0" />
-                              Copy Referral Link
-                            </button>
-                          )}
-                          {!isCompleted && ModalButton && (
-                            <ModalButton className={`${getButtonClasses()} flex-1 min-w-0 gap-2`} />
-                          )}
-                        </div>
-                        {/* Claim button + error */}
-                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
-                          {!isCompleted &&
-                            !needsGitHubLink &&
-                            stagedProgress?.totalClaimableXP !== 0 && (
-                              <PrivyWeb3Button
-                                label={`Claim +${stagedProgress.totalClaimableXP} $MOONEY`}
-                                action={async () => {
-                                  await claimQuest()
-                                }}
-                                isDisabled={
-                                  isLoadingClaim ||
-                                  (quest.verifier.type === 'staged' &&
-                                    stagedProgress?.totalClaimableXP === 0)
-                                }
-                                requiredChain={DEFAULT_CHAIN_V5}
-                                className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/20 text-green-300 font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
-                                noPadding
-                                noGradient
-                              />
-                            )}
-                          {getErrorButton(error || '')}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Non-referral: progress bar + action buttons */}
-                    {!quest.actionText?.includes('Copy Referral Link') && (
-                    <div className="flex flex-col gap-3 w-full min-w-0">
-                      {/* Progress bar - full width, stacked above buttons on all screens */}
-                      {quest.verifier.type === 'staged' &&
-                        stagedProgress &&
-                        !isLoadingStagedProgress &&
-                        !quest.actionText?.includes('Copy Referral Link') && (
-                          <div className="w-full min-w-0 flex flex-col gap-1.5">
-                            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden shadow-inner">
-                              <div
-                                className="h-full min-w-[4px] bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 rounded-full transition-all duration-500 ease-out shadow-sm"
-                                style={{
-                                  width: `${Math.min(
-                                    100,
-                                    Math.max(
-                                      0,
-                                      (Number(userMetric) /
-                                        Math.max(
-                                          1,
-                                          Number(
-                                            getNextUnclamedThreshold(
-                                              stagedProgress
-                                            )
-                                          )
-                                        )) *
-                                        100
-                                    )
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                            <p className="text-gray-400 text-xs font-medium min-w-0">
-                              {quest.verifier.metricFormatting
-                                ? quest.verifier.metricFormatting(userMetric)
-                                : userMetric >= 1000
-                                ? userMetric.toLocaleString()
-                                : userMetric}
-                              /
-                              {quest.verifier.metricFormatting
-                                ? quest.verifier.metricFormatting(
-                                    Number(getNextUnclamedThreshold(stagedProgress))
-                                  )
-                                : Number(
-                                    getNextUnclamedThreshold(stagedProgress)
-                                  ) >= 1000
-                                ? Number(
-                                    getNextUnclamedThreshold(stagedProgress)
-                                  ).toLocaleString()
-                                : Number(
-                                    getNextUnclamedThreshold(stagedProgress)
-                                  )}{' '}
-                              (
-                              {Math.min(
-                                100,
-                                Math.round(
-                                  (Number(userMetric) /
-                                    Math.max(
-                                      1,
-                                      Number(
-                                        getNextUnclamedThreshold(stagedProgress)
-                                      )
-                                    )) *
-                                    100
-                                )
-                              )}
-                              %)
-                            </p>
-                          </div>
-                        )}
-
-                      {/* Action buttons - stack on mobile, wrap on larger screens */}
-                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
-                        {!isCompleted &&
-                          !needsGitHubLink &&
-                          stagedProgress?.totalClaimableXP !== 0 && (
-                            <PrivyWeb3Button
-                              label={`Claim +${stagedProgress.totalClaimableXP} $MOONEY`}
-                              action={async () => {
-                                await claimQuest()
-                              }}
-                              isDisabled={
-                                isLoadingClaim ||
-                                (quest.verifier.type === 'staged' &&
-                                  stagedProgress?.totalClaimableXP === 0)
-                              }
-                              requiredChain={DEFAULT_CHAIN_V5}
-                              className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/20 text-green-300 font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
-                              noPadding
-                              noGradient
-                            />
-                          )}
-
-                        {getErrorButton(error || '')}
-
-                        {!isCompleted &&
-                          quest.link &&
-                          quest.linkText &&
-                          !needsGitHubLink && (
-                            <StandardButton
-                              className={getButtonClasses()}
-                              link={
-                                quest.link === 'citizenProfile'
-                                  ? `/citizen/${generatePrettyLinkWithId(
-                                      citizen.name,
-                                      citizen.id
-                                    )}`
-                                  : quest.link
-                              }
-                              target={
-                                quest.link.startsWith('/') ||
-                                quest.link === 'citizenProfile'
-                                  ? '_self'
-                                  : '_blank'
-                              }
-                            >
-                              {quest.linkText}
-                            </StandardButton>
-                          )}
-
-                        {!isCompleted &&
-                          quest.action &&
-                          quest.actionText &&
-                          !quest.actionText.includes('Copy Referral Link') &&
-                          !needsGitHubLink && (
-                            <button
-                              onClick={quest.action}
-                              className={getButtonClasses()}
-                            >
-                              {quest.actionText}
-                            </button>
-                          )}
-                        {!isCompleted && ModalButton && <ModalButton />}
-                      </div>
-                    </div>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-gray-400 text-sm">
-                    No progress data available
-                  </span>
-                )}
+        {/* Progress (consistent across all quest types) */}
+        <div className="w-full">
+          {isStaged && !stagedProgress ? (
+            isLoadingStagedProgress ? (
+              <div className="flex items-center gap-2 text-gray-400 text-xs">
+                <LoadingSpinner height="h-4" width="w-4" />
+                Loading progress...
               </div>
             ) : (
-              // Single quest XP display with buttons
-              <div className="flex flex-col gap-3 w-full min-w-0">
-                <span className="text-green-300 text-xs sm:text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 w-fit self-start">
-                  +
-                  {isLoadingXpAmount ? (
-                    <div className="inline-flex items-center gap-1">
-                      <LoadingSpinner height="h-4" width="w-4" />
-                    </div>
-                  ) : (
-                    xpAmount
-                  )}{' '}
-                  MOONEY
-                </span>
-
-                {/* Action Buttons - stack on mobile, wrap on larger */}
-                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full sm:w-auto">
-                  {!isCompleted && !needsGitHubLink && (
-                    <PrivyWeb3Button
-                      label={`Claim +${xpAmount} $MOONEY`}
-                      action={async () => {
-                        await claimQuest()
-                      }}
-                      isDisabled={isLoadingClaim}
-                      requiredChain={DEFAULT_CHAIN_V5}
-                      className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/20 text-green-300 font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
-                      noPadding
-                      noGradient
-                    />
-                  )}
-
-                  {getErrorButton(error || '')}
-
-                  {!isCompleted &&
-                    quest.link &&
-                    quest.linkText &&
-                    !needsGitHubLink && (
-                      <StandardButton
-                        className={getButtonClasses()}
-                        link={
-                          quest.link === 'citizenProfile'
-                            ? `/citizen/${generatePrettyLinkWithId(
-                                citizen.metadata.name,
-                                citizen.id
-                              )}`
-                            : quest.link
-                        }
-                        target={
-                          quest.link.startsWith('/') ||
-                          quest.link === 'citizenProfile'
-                            ? '_self'
-                            : '_blank'
-                        }
-                      >
-                        {quest.linkText}
-                      </StandardButton>
-                    )}
-
-                  {!isCompleted &&
-                    quest.action &&
-                    quest.actionText &&
-                    !needsGitHubLink && (
-                      <button
-                        onClick={quest.action}
-                        className={getButtonClasses()}
-                      >
-                        {quest.actionText}
-                      </button>
-                    )}
-
-                  {!isCompleted && ModalButton && <ModalButton />}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Status and Actions */}
-          <div className="pt-2">
-            {isCheckingClaimed ? (
-              <></>
-            ) : isPollingClaim ? (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-yellow-400 text-sm">
-                  <LoadingSpinner height="h-4" width="w-4" />
-                  Waiting for blockchain confirmation...
-                </div>
+              // Fetch finished without data (network/RPC hiccup). Don't sit on
+              // a fake "Loading..." forever — let the user retry immediately.
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-gray-400">Couldn't load progress.</span>
                 <button
-                  onClick={async () => {
-                    const claimed = await fetchHasClaimed(false)
-                    if (claimed) {
-                      setIsPollingClaim(false)
-                      if (pollingTimeoutRef.current) {
-                        clearTimeout(pollingTimeoutRef.current)
-                        pollingTimeoutRef.current = null
-                      }
-                      toast.success('Quest claim confirmed!', {
-                        duration: 3000,
-                        style: toastStyle,
-                      })
-                      if (onClaimConfirmed) {
-                        onClaimConfirmed()
-                      }
-                    }
-                  }}
-                  className="text-blue-400 hover:text-blue-300 text-sm underline transition-colors"
+                  onClick={() => fetchStagedProgress()}
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors flex-shrink-0"
                 >
-                  Refresh Status
+                  Retry
                 </button>
               </div>
-            ) : null}
-
-            {/* Show error messages and dynamic error buttons */}
-            {!isCompleted && error && (
-              <div className="flex flex-col gap-2 w-full">
-                {/* Dynamic error button if configured */}
-                {/* Fallback error handling for specific error types */}
-                {error.includes('ERC20: transfer amount exceeds balance') && (
-                  <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-lg p-3 backdrop-blur-sm">
-                    <p className="text-red-300 text-sm mb-2">
-                      ⚠️ Insufficient token balance detected. This usually
-                      means:
-                    </p>
-                    <ul className="text-red-200 text-xs space-y-1 ml-4">
-                      <li>
-                        • The contract doesn't have enough tokens to distribute
-                      </li>
-                      <li>
-                        • There might be a temporary issue with the reward pool
-                      </li>
-                      <li>• The quest reward amount may need adjustment</li>
-                    </ul>
-                    <p className="text-red-200 text-xs mt-2">
-                      💡 Try refreshing the data or retrying. If the issue
-                      persists, please contact support.
-                    </p>
-                  </div>
-                )}
-
-                {/* Generic error display if no specific handling and no dynamic error button */}
-                {!error.includes('ERC20: transfer amount exceeds balance') &&
-                  !getErrorButton(error) && (
-                    <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-lg p-3 backdrop-blur-sm">
-                      <p className="text-red-300 text-sm">⚠️ {error}</p>
-                    </div>
-                  )}
+            )
+          ) : (
+            <div className="flex flex-col gap-1.5 w-full min-w-0">
+              <div className="flex items-center justify-between text-xs gap-2">
+                <span className="text-gray-300 font-medium truncate min-w-0">
+                  {progressLabelCurrent}
+                  {progressLabelTarget ? ` / ${progressLabelTarget}` : ''}
+                </span>
+                <span className="text-gray-400 font-medium flex-shrink-0">
+                  {progressPct}%
+                </span>
               </div>
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ease-out ${
+                    isCompleted
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-400'
+                      : variant === 'weekly'
+                      ? 'bg-gradient-to-r from-purple-500 to-purple-400'
+                      : 'bg-gradient-to-r from-blue-500 to-blue-400'
+                  }`}
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer: status + actions (consistent bottom row on every card) */}
+      <div className="mt-4 w-full relative z-10">
+        {isPollingClaim ? (
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-yellow-400 text-sm">
+              <LoadingSpinner height="h-4" width="w-4" />
+              Confirming on-chain...
+            </div>
+            <button
+              onClick={async () => {
+                const claimed = await fetchHasClaimed(false)
+                if (claimed) {
+                  setIsPollingClaim(false)
+                  if (pollingTimeoutRef.current) {
+                    clearTimeout(pollingTimeoutRef.current)
+                    pollingTimeoutRef.current = null
+                  }
+                  toast.success('Quest claim confirmed!', {
+                    duration: 3000,
+                    style: toastStyle,
+                  })
+                  if (onClaimConfirmed) onClaimConfirmed()
+                }
+              }}
+              className="text-blue-400 hover:text-blue-300 text-sm underline transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+        ) : isCheckingClaimed ? (
+          <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <LoadingSpinner height="h-4" width="w-4" />
+            Checking status...
+          </div>
+        ) : isCompleted ? (
+          <div className="flex items-center gap-2 text-green-300 text-sm font-medium">
+            <CheckBadgeIcon className="w-5 h-5 text-green-400" />
+            Quest completed
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
+            {/* Primary action: claim */}
+            {canClaim && (
+              <PrivyWeb3Button
+                label={`Claim +${claimAmount.toLocaleString()} $MOONEY`}
+                action={async () => {
+                  await claimQuest()
+                }}
+                isDisabled={isLoadingClaim}
+                requiredChain={DEFAULT_CHAIN_V5}
+                className="w-full sm:flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                noPadding
+                noGradient
+              />
+            )}
+
+            {/* Error-driven action (e.g. link GitHub) */}
+            {getErrorButton(error || '')}
+
+            {/* Secondary: copy referral link */}
+            {quest.action &&
+              quest.actionText?.includes('Copy Referral Link') &&
+              citizen?.owner && (
+                <button
+                  onClick={quest.action}
+                  className={`${getSecondaryButtonClasses()} gap-2`}
+                >
+                  <ClipboardDocumentIcon className="w-4 h-4 flex-shrink-0" />
+                  Copy Referral Link
+                </button>
+              )}
+
+            {/* Secondary: generic action */}
+            {quest.action &&
+              quest.actionText &&
+              !quest.actionText.includes('Copy Referral Link') &&
+              !needsGitHubLink && (
+                <button
+                  onClick={quest.action}
+                  className={getSecondaryButtonClasses()}
+                >
+                  {quest.actionText}
+                </button>
+              )}
+
+            {/* Secondary: navigation link */}
+            {quest.link && quest.linkText && !needsGitHubLink && (
+              <StandardButton
+                className={getSecondaryButtonClasses()}
+                link={
+                  quest.link === 'citizenProfile'
+                    ? `/citizen/${generatePrettyLinkWithId(
+                        citizen?.metadata?.name ?? citizen?.name,
+                        citizen?.id
+                      )}`
+                    : quest.link
+                }
+                target={
+                  quest.link.startsWith('/') ||
+                  quest.link === 'citizenProfile'
+                    ? '_self'
+                    : '_blank'
+                }
+              >
+                {quest.linkText}
+              </StandardButton>
+            )}
+
+            {/* Secondary: modal (e.g. referral) */}
+            {ModalButton && (
+              <ModalButton className={getSecondaryButtonClasses()} />
             )}
           </div>
-        </div>
+        )}
+
+        {/* Error details */}
+        {!isCompleted && error && (
+          <div className="mt-2 w-full">
+            {error.includes('ERC20: transfer amount exceeds balance') ? (
+              <div className="bg-red-500/15 border border-red-400/30 rounded-lg p-3">
+                <p className="text-red-300 text-sm mb-1">
+                  ⚠️ Insufficient reward pool balance.
+                </p>
+                <p className="text-red-200 text-xs">
+                  The reward pool may be temporarily depleted. Please try again
+                  later or contact support.
+                </p>
+              </div>
+            ) : !getErrorButton(error) ? (
+              <div className="bg-red-500/15 border border-red-400/30 rounded-lg p-3">
+                <p className="text-red-300 text-sm">⚠️ {error}</p>
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   )
