@@ -116,7 +116,7 @@ export default async function handler(
             '39': {
               inputs: {
                 clip: ['4', 1],
-                text: "Head-and-shoulders portrait, cropped at the chest, face and shoulders fill the frame, only head and shoulders visible, of a youthful person with smooth healthy clear skin, bright clear eyes, full hair clearly visible, ears fully visible and uncovered, smooth chin, clear forehead, confident determined gaze, heroic and powerful presence, painterly style of Jodorowsky's Dune, wearing futuristic clothing, surreal watercolor psychedelic background with stars, colorful nebulae, planets, cosmic background, spaceships, clean cinematic lighting, flattering soft key light, vivid colors, sharp focus, high quality, the best most flattering and youthful version of the person. Fully clothed. No cleavage. All clothes on no matter what.",
+                text: "Head-and-shoulders portrait, cropped at the chest, face and shoulders fill the frame, only head and shoulders visible, of a youthful person with smooth healthy clear skin, bright clear eyes, full hair clearly visible, ears fully visible and uncovered, smooth chin, clear forehead, confident determined gaze, heroic and powerful presence, painterly style of Jodorowsky's Dune, wearing futuristic clothing, surreal watercolor psychedelic background with stars, colorful nebulae, planets, cosmic background, spaceships, clean cinematic lighting, flattering soft key light, vivid colors, sharp focus, high quality, the best most flattering and youthful version of the person. Fully clothed. clothes on no matter what. Make sure the eye color is correct. Wearing a futuristic sweater.",
               },
               class_type: 'CLIPTextEncode',
             },
