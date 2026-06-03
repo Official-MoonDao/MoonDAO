@@ -1,5 +1,7 @@
 import { Storage } from '@google-cloud/storage'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { authMiddleware } from 'middleware/authMiddleware'
+import withMiddleware from 'middleware/withMiddleware'
 
 const UPLOAD_PREFIX = 'citizen-gen-temp/'
 
@@ -25,7 +27,7 @@ function isAllowedTempFile(filename: string): boolean {
   return normalized.startsWith(UPLOAD_PREFIX) && !normalized.includes('..')
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'DELETE' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
@@ -55,3 +57,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Failed to delete file', details: errorMessage })
   }
 }
+
+export default withMiddleware(handler, authMiddleware)

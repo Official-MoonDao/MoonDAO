@@ -1,10 +1,6 @@
 import { fitImage } from '../utils/images'
 import { markAiPortraitReady } from './citizenOnboardingImage'
-import {
-  clearPendingImageJob,
-  type PendingImageJob,
-  readPendingImageJob,
-} from './pendingImageJob'
+import { clearPendingImageJob, type PendingImageJob, readPendingImageJob } from './pendingImageJob'
 
 export type GenerationPhase =
   | 'idle'
@@ -23,6 +19,7 @@ const GET_IMAGE_MAX_RETRIES = 3
 const PENDING_STATUSES = new Set(['QUEUED', 'STARTED', 'INIT', 'PENDING'])
 
 const inFlightJobIds = new Set<string>()
+const inFlightPromises = new Map<string, Promise<void>>()
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -31,7 +28,7 @@ function sleep(ms: number) {
 async function fetchWithTimeout(
   input: RequestInfo,
   init: RequestInit = {},
-  timeoutMs = 30_000
+  timeoutMs = 30_000,
 ): Promise<Response> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
@@ -82,128 +79,137 @@ export async function pollComfyImageJob(
   jobId: string,
   uploadedFilename: string,
   sourceImage: File | undefined,
-  callbacks: PollComfyJobCallbacks
+  callbacks: PollComfyJobCallbacks,
 ): Promise<void> {
-  if (inFlightJobIds.has(jobId)) return
-  inFlightJobIds.add(jobId)
-
-  const { setPhase, setImage, setError, setIsLoading } = callbacks
-  setIsLoading?.(true)
-
-  let job: any
-  let consecutiveErrors = 0
-  let attempts = 0
-
-  try {
-    while (attempts < POLL_MAX_ATTEMPTS) {
-      attempts++
-      try {
-        job = await fetchJob(generateApiRoute, jobId)
-        consecutiveErrors = 0
-      } catch (pollErr) {
-        consecutiveErrors++
-        console.warn(
-          `Poll error (${consecutiveErrors}/${POLL_TRANSIENT_ERROR_LIMIT}):`,
-          pollErr
-        )
-        if (consecutiveErrors >= POLL_TRANSIENT_ERROR_LIMIT) {
-          throw pollErr
-        }
-        await sleep(POLL_INTERVAL_MS)
-        continue
-      }
-
-      if (!job) {
-        await sleep(POLL_INTERVAL_MS)
-        continue
-      }
-
-      if (PENDING_STATUSES.has(job.status)) {
-        setPhase(job.status === 'STARTED' ? 'generating' : 'queued')
-        await sleep(POLL_INTERVAL_MS)
-        continue
-      }
-
-      break
+  if (inFlightJobIds.has(jobId)) {
+    const existingPromise = inFlightPromises.get(jobId)
+    if (existingPromise) {
+      return existingPromise
     }
+  }
 
-    if (!job || PENDING_STATUSES.has(job?.status)) {
-      throw new Error('Image generation timed out')
-    }
+  const pollPromise = (async () => {
+    inFlightJobIds.add(jobId)
 
-    if (job.status === 'COMPLETED') {
-      const outputUrl = job?.output?.[0]?.url
-      if (!outputUrl) {
-        throw new Error('Job completed without an output image')
-      }
+    const { setPhase, setImage, setError, setIsLoading } = callbacks
+    setIsLoading?.(true)
 
-      setPhase('finishing')
-      let lastErr: any
-      for (let attempt = 0; attempt < GET_IMAGE_MAX_RETRIES; attempt++) {
+    let job: any
+    let consecutiveErrors = 0
+    let attempts = 0
+
+    try {
+      while (attempts < POLL_MAX_ATTEMPTS) {
+        attempts++
         try {
-          const res = await fetchWithTimeout(
-            '/api/image-gen/get-image',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url: outputUrl }),
-            },
-            30_000
-          )
-          if (!res.ok) {
-            throw new Error(`Image fetch failed (${res.status})`)
+          job = await fetchJob(generateApiRoute, jobId)
+          consecutiveErrors = 0
+        } catch (pollErr) {
+          consecutiveErrors++
+          console.warn(`Poll error (${consecutiveErrors}/${POLL_TRANSIENT_ERROR_LIMIT}):`, pollErr)
+          if (consecutiveErrors >= POLL_TRANSIENT_ERROR_LIMIT) {
+            throw pollErr
           }
-          const blob = await res.blob()
-          const fileName = `image_${jobId}.png`
+          await sleep(POLL_INTERVAL_MS)
+          continue
+        }
+
+        if (!job) {
+          await sleep(POLL_INTERVAL_MS)
+          continue
+        }
+
+        if (PENDING_STATUSES.has(job.status)) {
+          setPhase(job.status === 'STARTED' ? 'generating' : 'queued')
+          await sleep(POLL_INTERVAL_MS)
+          continue
+        }
+
+        break
+      }
+
+      if (!job || PENDING_STATUSES.has(job?.status)) {
+        throw new Error('Image generation timed out')
+      }
+
+      if (job.status === 'COMPLETED') {
+        const outputUrl = job?.output?.[0]?.url
+        if (!outputUrl) {
+          throw new Error('Job completed without an output image')
+        }
+
+        setPhase('finishing')
+        let lastErr: any
+        for (let attempt = 0; attempt < GET_IMAGE_MAX_RETRIES; attempt++) {
+          try {
+            const res = await fetchWithTimeout(
+              '/api/image-gen/get-image',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: outputUrl }),
+              },
+              30_000,
+            )
+            if (!res.ok) {
+              throw new Error(`Image fetch failed (${res.status})`)
+            }
+            const blob = await res.blob()
+            const fileName = `image_${jobId}.png`
             const file = new File([blob], fileName, { type: blob.type })
             setImage(file)
             markAiPortraitReady()
             setPhase('done')
             return
-        } catch (err) {
-          lastErr = err
-          await sleep(1500 * (attempt + 1))
+          } catch (err) {
+            lastErr = err
+            await sleep(1500 * (attempt + 1))
+          }
         }
+        throw lastErr ?? new Error('Failed to download generated image')
       }
-      throw lastErr ?? new Error('Failed to download generated image')
-    }
 
-    if (job.status === 'INSUFFICIENT_CREDIT') {
-      setError?.('There was an error generating your image, please contact support.')
-    } else {
-      console.error('Job failed with status:', job.status)
-      setError?.('Unable to generate an image, please try again with a different picture.')
-    }
+      if (job.status === 'INSUFFICIENT_CREDIT') {
+        setError?.('There was an error generating your image, please contact support.')
+      } else {
+        console.error('Job failed with status:', job.status)
+        setError?.('Unable to generate an image, please try again with a different picture.')
+      }
 
-    setPhase('error')
-    if (sourceImage) {
-      const fittedImage = await fitImage(sourceImage, 1024, 1024)
-      setImage(fittedImage)
-    }
-  } catch (err: any) {
-    console.error('Image generation polling failed:', err)
-    setPhase('error')
-    setError?.('Unable to generate an image, please try again later.')
-    if (sourceImage) {
-      try {
+      setPhase('error')
+      if (sourceImage) {
         const fittedImage = await fitImage(sourceImage, 1024, 1024)
         setImage(fittedImage)
-      } catch (fitErr) {
-        console.error('Failed to fall back to fitted image:', fitErr)
       }
+    } catch (err: any) {
+      console.error('Image generation polling failed:', err)
+      setPhase('error')
+      setError?.('Unable to generate an image, please try again later.')
+      if (sourceImage) {
+        try {
+          const fittedImage = await fitImage(sourceImage, 1024, 1024)
+          setImage(fittedImage)
+        } catch (fitErr) {
+          console.error('Failed to fall back to fitted image:', fitErr)
+        }
+      }
+    } finally {
+      inFlightJobIds.delete(jobId)
+      inFlightPromises.delete(jobId)
+      await deleteFromGoogleStorage(uploadedFilename)
+      clearPendingImageJob()
+      setIsLoading?.(false)
     }
-  } finally {
-    inFlightJobIds.delete(jobId)
-    await deleteFromGoogleStorage(uploadedFilename)
-    clearPendingImageJob()
-    setIsLoading?.(false)
-  }
+  })()
+
+  inFlightPromises.set(jobId, pollPromise)
+  return pollPromise
 }
 
 /** Resume polling after Privy (or any full navigation) interrupted the React tree. */
 export async function resumePendingComfyJob(
   callbacks: PollComfyJobCallbacks,
-  sourceImage?: File
+  sourceImage?: File,
 ): Promise<boolean> {
   const pending = readPendingImageJob()
   // Only a job that reached the polling stage has a jobId we can poll against.
@@ -214,7 +220,7 @@ export async function resumePendingComfyJob(
     pending.jobId,
     pending.uploadedFilename,
     sourceImage,
-    callbacks
+    callbacks,
   )
   return true
 }

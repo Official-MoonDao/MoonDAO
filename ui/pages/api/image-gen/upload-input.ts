@@ -1,6 +1,8 @@
 import { Storage } from '@google-cloud/storage'
 import formidable from 'formidable'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { authMiddleware } from 'middleware/authMiddleware'
+import withMiddleware from 'middleware/withMiddleware'
 
 /** Temp uploads for citizen AI generation (readable by comfy.icu via signed URL). */
 const UPLOAD_PREFIX = 'citizen-gen-temp/'
@@ -35,7 +37,7 @@ try {
   console.error('GCS initialization failed (image-gen upload-input):', initError)
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
@@ -89,3 +91,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Upload failed', details: errorMessage })
   }
 }
+
+export default withMiddleware(handler, authMiddleware)
