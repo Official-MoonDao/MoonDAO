@@ -5,7 +5,10 @@ import { useEffect, useState } from 'react'
 import { readContract, getContract } from 'thirdweb'
 import client from '@/lib/thirdweb/client'
 import { getChainById } from '@/lib/thirdweb/chain'
+import { buildQuestEligibilityRequest } from './questEligibilityRequest'
 import { XP_VERIFIERS } from './config'
+
+export { buildQuestEligibilityRequest }
 
 /**
  * Returns the number of XP quests the user is eligible to claim but hasn't yet.
