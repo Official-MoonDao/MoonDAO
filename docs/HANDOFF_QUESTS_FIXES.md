@@ -63,25 +63,21 @@ All working tree is clean (`git status` shows no uncommitted changes).
 
 ---
 
-## Unresolved: Claim Transactions Failing
+## Claim Flow: CONFIRMED WORKING (June 2, 2026)
 
-### Symptom
-Clicking "Claim" returns a 500. The real error message is now surfaced in the toast (as of the latest commit), but hasn't been re-tested yet on the preview.
+Voting Power and Has Voted (both staged quests) were successfully claimed on the Vercel preview. **No wallet signature is required — this is by design.** The server-side HSM signer (or `XP_ORACLE_SIGNER_PK` fallback) submits the `claimBulkXPFor` transaction on behalf of the user. The user never signs anything.
 
-### Root Cause — UNKNOWN (pending re-test)
-The claim flow is: **frontend** → `POST /api/xp/has-voted-proof` (or equivalent) → `signOracleProof()` → `submitBulkClaimFor()` → on-chain `claimBulkXPFor`. The failure happens server-side in one of those steps.
+When the "Quest claimed successfully!" toast appears with a tx hash, the claim went through.
 
-Most likely candidates:
-1. **Signer EOA out of gas** — `signOracleProof` checks the signer's ETH balance and throws if < 0.01 ETH. The HSM signer address can be found by calling `getAddressFromEnvPublicKey()` in `ui/lib/google/hsm-signer.ts`. Fund it on Arbitrum.
-2. **Signer not authorized on oracle** — `isSigner(signerAddress)` returns false. Add signer via oracle admin.
-3. **XP Manager out of MOONEY** — the contract that distributes rewards has no tokens. Fund `XP_MANAGER_ADDRESSES[arbitrum]`.
-4. **Oracle EIP-712 domain mismatch** — chain or contract address mismatch between env config and deployed oracle.
-
-### How to diagnose
-1. Push the latest `Quest.tsx` (already committed) and trigger a Vercel Preview deploy
-2. Attempt a claim
-3. Read the toast — the real server error message will now appear
-4. Match against the candidates above
+### How the relayer works
+```
+Frontend POST /api/xp/<quest>-proof
+  → server fetches user metric (votes, VP, etc.)
+  → signOracleProof() — HSM or PK signs EIP-712 proof server-side
+  → submitBulkClaimFor() — server submits claimBulkXPFor() to Arbitrum
+  → returns { eligible: true, txHash: '0x...' }
+  → frontend shows success toast, polls hasClaimedFromVerifier() for confirmation
+```
 
 ### Key signing files
 - `ui/lib/oracle/index.ts` — `signOracleProof()`, balance/authorization pre-flight checks, HSM signing path
@@ -133,10 +129,19 @@ ui/lib/xp/staged-quest-info.ts — threshold/stage helpers for staged quests
 
 ---
 
+## Additional Fixes — June 2, 2026 session
+
+| File | What changed |
+|------|-------------|
+| `ui/lib/xp/index.ts` | Removed dead-code `submitHasVotingPowerClaimFor` and `submitHasVotedClaimFor` (both called `getVerifierId` with the XP Manager address instead of the verifier address, and used `claimXPFor` instead of `claimBulkXPFor`; neither was imported by any route) |
+| `ui/lib/xp/config.ts` | Added explicit `type: 'single'` to Citizen Profile verifier (was implicitly treated as single but lacked the field) |
+| `ui/components/xp/Quest.tsx` | Fixed MOONEY balance pre-flight check in `claimQuest`: for staged quests `xpAmount` state is always 0, so the check was a no-op. Now uses `stagedProgress?.totalClaimableXP` for staged quests |
+
+---
+
 ## Next Steps for New Chat
 
-1. **Trigger Vercel Preview deploy** (or check if it auto-deployed from the last push)
-2. **Attempt a claim** on any quest
-3. **Read the real error toast** — this will tell you exactly what's wrong on the server
-4. Most likely fix: **fund the HSM signer address with ETH on Arbitrum** or **fund the XP Manager with MOONEY**
-5. Once claims work end-to-end, the PR is ready to merge
+1. **Test the remaining quests** (Citizen Profile, Join a Team, Contributions, Submit PR, Submit Issue, Citizen Referral) on the Vercel preview
+2. **Verify on-chain** — for any successful claim, pull the `txHash` from Vercel function logs and check on [Arbiscan](https://arbiscan.io)
+3. **Watch the polling toast** — after the first "Quest claimed successfully!" toast, the UI polls `hasClaimedFromVerifier` and should show "Quest claim confirmed on blockchain!" within 30-60 seconds. If this second toast doesn't appear, the tx may still be pending or the polling is failing silently.
+4. Once all 8 quests are verified end-to-end, **merge the PR** (#1352)

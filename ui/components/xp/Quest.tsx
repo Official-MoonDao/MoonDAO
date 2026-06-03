@@ -447,7 +447,14 @@ export default function Quest({
         params: [xpManagerContract.address],
       })
 
-      if (+xpManagerMooneyBalance.toString() / 1e18 < xpAmount) {
+      // For staged quests xpAmount stays 0 (set by xpPerClaim, not used for staged).
+      // Use the actual claimable XP from staged progress so the check isn't a no-op.
+      const isQuestStaged = quest.verifier.type === 'staged'
+      const balanceCheckAmount = isQuestStaged
+        ? (stagedProgress?.totalClaimableXP ?? 0)
+        : xpAmount
+
+      if (+xpManagerMooneyBalance.toString() / 1e18 < balanceCheckAmount) {
         return toast.error('Insufficient rewards. Please contact support.', {
           duration: 5000,
           style: toastStyle,
@@ -563,7 +570,7 @@ export default function Quest({
     } finally {
       setIsLoadingClaim(false)
     }
-  }, [quest.verifier, userAddress, pollForClaimConfirmation])
+  }, [quest.verifier, userAddress, pollForClaimConfirmation, stagedProgress, xpAmount])
 
   useEffect(() => {
     async function fetchXpAmount() {

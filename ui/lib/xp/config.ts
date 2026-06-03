@@ -78,6 +78,7 @@ export const XP_VERIFIERS = [
     verifierAddress:
       HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-completed-citizen-profile-proof',
+    type: 'single',
     metricKey: 'profileCompleted',
     title: 'Citizen Profile',
     description:
