@@ -19,8 +19,7 @@ function paddedUint(value: number | bigint): string {
   return '0x' + BigInt(value).toString(16).padStart(64, '0')
 }
 
-const MOCK_ADDR =
-  '0x' + '1234567890123456789012345678901234567890'.slice(2).padStart(64, '0')
+const MOCK_ADDR = '0x' + '1234567890123456789012345678901234567890'.slice(2).padStart(64, '0')
 
 export type MissionRpcMockOptions = {
   stage?: number
@@ -75,7 +74,10 @@ function handleRpcItem(item: any, opts: MissionRpcMockOptions) {
 export function interceptMissionRpc(opts: MissionRpcMockOptions = {}) {
   cy.intercept('POST', '**', (req) => {
     const body = req.body
-    if (!body) return
+    if (!body) {
+      req.continue()
+      return
+    }
 
     if (Array.isArray(body)) {
       const responses = body.map(
@@ -88,6 +90,8 @@ export function interceptMissionRpc(opts: MissionRpcMockOptions = {}) {
     const response = handleRpcItem(body, opts)
     if (response) {
       req.reply({ statusCode: 200, body: response })
+    } else {
+      req.continue()
     }
   }).as('missionRpc')
 }
