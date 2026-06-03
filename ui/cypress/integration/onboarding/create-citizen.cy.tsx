@@ -3,11 +3,21 @@ import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
 
 describe('<CreateCitizen />', () => {
+  const mockAddress = '0x1234567890abcdef'
+  const cacheKey = `CreateCitizenCacheV1_${mockAddress.toLowerCase()}`
   let props: any
 
   beforeEach(() => {
+    cy.clearLocalStorage()
+    cy.window().then((win) => {
+      win.sessionStorage.clear()
+      win.localStorage.removeItem(cacheKey)
+      win.localStorage.removeItem('CreateCitizenCacheV1')
+      ;(win as any).__CYPRESS_MOCK_ADDRESS__ = mockAddress
+    })
+
     props = {
-      address: '0x1234567890abcdef',
+      address: mockAddress,
       selectedChain: CYPRESS_CHAIN_V5,
       setSelectedTier: cy.stub(),
     }
@@ -24,16 +34,10 @@ describe('<CreateCitizen />', () => {
   })
 
   it('Should complete citizen onboarding flow', () => {
-    //DESIGN
-    cy.contains('Create your unique AI passport photo.').should('exist')
+    // DESIGN — dev shortcuts advance stages without live AI / GCS uploads
+    cy.contains('h2', 'Design', { timeout: 10000 }).should('exist')
+    cy.contains('generate your AI passport photo').should('exist')
 
-    // Simulate image upload
-    cy.get('input[type="file"]').attachFile('images/Original.png')
-
-    // Click generate to start image generation
-    cy.contains('Generate AI Photo').click({ force: true })
-
-    // Click Next to advance to the typeform stage (only available in dev mode)
     cy.get('body').then(($body) => {
       if ($body.find('#citizen-next-button').length > 0) {
         cy.get('#citizen-next-button').click()
@@ -59,7 +63,7 @@ describe('<CreateCitizen />', () => {
       } else {
         // If buttons don't exist (not in dev mode), verify component still renders
         cy.get('input[type="file"]').should('exist')
-        cy.contains('Create your unique AI passport photo.').should('exist')
+        cy.contains('generate your AI passport photo').should('exist')
       }
     })
   })

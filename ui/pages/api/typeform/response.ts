@@ -7,6 +7,7 @@ import {
   hasAccessToResponse,
   fetchResponseFromFormIds,
 } from '@/lib/typeform/hasAccessToResponse'
+import { parseTypeformApiRequestBody } from '@/lib/typeform/parseApiRequestBody'
 import {
   cacheTypeformAnswers,
   readCachedTypeformAnswers,
@@ -75,7 +76,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).send('Method Not Allowed')
   }
 
-  const { accessToken, responseId, formId, onboarding } = JSON.parse(req.body)
+  const parsedBody = parseTypeformApiRequestBody(req.body)
+  if (!parsedBody) {
+    return res.status(400).json({ message: 'Invalid request body' })
+  }
+
+  const { accessToken, responseId, formId, onboarding } = parsedBody
 
   try {
     if (!formId || !responseId) {
