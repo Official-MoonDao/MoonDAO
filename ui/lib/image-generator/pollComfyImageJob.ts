@@ -219,8 +219,8 @@ export async function pollComfyImageJob(
       const currentJob = readPendingImageJob()
       if (currentJob?.jobId === jobId) {
         clearPendingImageJob()
+        setIsLoading?.(false)
       }
-      setIsLoading?.(false)
     }
   })()
 
