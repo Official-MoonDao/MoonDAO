@@ -98,11 +98,13 @@ async function getTotalPaid(address: string) {
       }
     }
   `
-  const subgraphRes = await subgraphClient.query(query, {
-    addr: address.toLowerCase(),
-    projectIds: moonDAOProjectIds,
-    version: Number(BENDYSTRAW_JB_VERSION),
-  }).toPromise()
+  const subgraphRes = await subgraphClient
+    .query(query, {
+      addr: address.toLowerCase(),
+      projectIds: moonDAOProjectIds,
+      version: Number(BENDYSTRAW_JB_VERSION),
+    })
+    .toPromise()
   if (subgraphRes.error) {
     console.error('Bendystraw query error:', subgraphRes.error)
     throw new Error(subgraphRes.error.message)
@@ -167,10 +169,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'You are already a citizen!' })
     }
     const whitelisted = await isCitizenWhitelisted(address)
-    if (whitelisted === null) {
-      return res.status(503).json({ error: 'Unable to verify whitelist status. Please try again.' })
-    }
-    if (!whitelisted) {
+    if (whitelisted !== true) {
       const totalPaid = await getTotalPaid(address)
       if (totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
         return res.status(400).json({
