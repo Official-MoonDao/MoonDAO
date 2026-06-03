@@ -528,17 +528,18 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   const nativeSymbol = selectedChain?.nativeCurrency?.symbol ?? 'ETH'
 
   const mintCostBreakdown = useMemo(() => {
-    if (freeMint) {
-      return { renewalEth: 0, gasEth: 0, bridgeEth: 0, totalEth: 0 }
-    }
-    const renewalEth = renewalPriceWei
-      ? Number(ethers.utils.formatEther(renewalPriceWei))
-      : 0
     const gasEth =
       estimatedGas > BigInt(0) && effectiveGasPrice && effectiveGasPrice > BigInt(0)
         ? Number(estimatedGas * effectiveGasPrice) / 1e18
         : 0
     const bridgeEth = isCrossChain ? Number(LAYER_ZERO_TRANSFER_COST) / 1e18 : 0
+    if (freeMint) {
+      // Citizenship fee is waived; network gas is still paid by the user.
+      return { renewalEth: 0, gasEth, bridgeEth, totalEth: gasEth + bridgeEth }
+    }
+    const renewalEth = renewalPriceWei
+      ? Number(ethers.utils.formatEther(renewalPriceWei))
+      : 0
     return {
       renewalEth,
       gasEth,
@@ -563,13 +564,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     'ETH_TO_USD',
   )
 
-  const isLoadingMintCosts =
-    !freeMint &&
-    (isLoadingRenewalPrice ||
+  const isLoadingMintCosts = freeMint
+    ? isLoadingGasEstimate || isLoadingTotalMintUsd
+    : isLoadingRenewalPrice ||
       isLoadingGasEstimate ||
       isLoadingRenewalUsd ||
       isLoadingTotalMintUsd ||
-      !renewalPriceWei)
+      !renewalPriceWei
 
   // ===== Internal Helper Functions =====
 
@@ -2303,23 +2304,24 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                   {/* Cost breakdown */}
                   <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
                     <h3 className="font-GoodTimes text-base mb-3 text-white">Mint cost</h3>
-                    {freeMint ? (
-                      <p className="text-slate-400 text-sm leading-relaxed">
-                        This mint is sponsored — you will not be charged for citizenship or network
-                        fees.
-                      </p>
-                    ) : isLoadingMintCosts ? (
+                    {isLoadingMintCosts ? (
                       <p className="text-slate-400 text-sm">Calculating costs…</p>
                     ) : (
                       <dl className="space-y-3 text-sm">
                         <div className="flex justify-between gap-4">
                           <dt className="text-slate-400">1-year citizenship</dt>
-                          <dd className="text-white text-right tabular-nums">
-                            {formatEthAmount(mintCostBreakdown.renewalEth)} ETH
-                            {renewalUsd > 0 && (
-                              <span className="block text-slate-400 text-xs mt-0.5">
-                                ~${Math.round(renewalUsd)} / year
-                              </span>
+                          <dd className="text-right tabular-nums">
+                            {freeMint ? (
+                              <span className="text-emerald-400 font-medium">Sponsored</span>
+                            ) : (
+                              <>
+                                <span className="text-white">{formatEthAmount(mintCostBreakdown.renewalEth)} ETH</span>
+                                {renewalUsd > 0 && (
+                                  <span className="block text-slate-400 text-xs mt-0.5">
+                                    ~${Math.round(renewalUsd)} / year
+                                  </span>
+                                )}
+                              </>
                             )}
                           </dd>
                         </div>
@@ -2351,7 +2353,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                       </dl>
                     )}
                     <p className="mt-4 text-slate-500 text-xs leading-relaxed">
-                      Citizenship is paid in {nativeSymbol} on {selectedChain?.name ?? 'your network'}.
+                      {freeMint
+                        ? `Your citizenship fee is sponsored. You only pay the network gas fee in ${nativeSymbol} on ${selectedChain?.name ?? 'your network'}.`
+                        : `Citizenship is paid in ${nativeSymbol} on ${selectedChain?.name ?? 'your network'}.`}{' '}
                       Gas varies with network conditions. Renewal is ~1 year from mint.
                     </p>
                   </div>
