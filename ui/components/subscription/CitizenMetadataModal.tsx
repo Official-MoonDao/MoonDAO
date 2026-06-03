@@ -2,7 +2,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
-import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { CITIZEN_TABLE_ADDRESSES, CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -10,7 +10,8 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpinCitizenImage } from '@/lib/ipfs/unpin'
-import cleanData from '@/lib/tableland/cleanData'
+import cleanData, { unescapeQuotes } from '@/lib/tableland/cleanData'
+import { waitForRow } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import deleteResponse from '@/lib/typeform/deleteResponse'
@@ -88,7 +89,9 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         value={citizenData?.instagram}
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, instagram: e.target.value }))}
         placeholder="Enter your Instagram link including https://"
-        maxLength={bytesOfString(citizenData?.instagram) >= 1024 ? citizenData?.instagram.length : 1024}
+        maxLength={
+          bytesOfString(citizenData?.instagram) >= 1024 ? citizenData?.instagram.length : 1024
+        }
         formatNumbers={false}
       />
       <Input
@@ -97,7 +100,9 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         value={citizenData?.linkedin}
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, linkedin: e.target.value }))}
         placeholder="Enter your LinkedIn link including https://"
-        maxLength={bytesOfString(citizenData?.linkedin) >= 1024 ? citizenData?.linkedin.length : 1024}
+        maxLength={
+          bytesOfString(citizenData?.linkedin) >= 1024 ? citizenData?.linkedin.length : 1024
+        }
         formatNumbers={false}
       />
       <Input
@@ -121,7 +126,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
   const [newCitizenImage, setNewCitizenImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
-    getAttribute(nft?.metadata?.attributes, 'formId').value
+    getAttribute(nft?.metadata?.attributes, 'formId').value,
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
   const [showEmailUpdate, setShowEmailUpdate] = useState(false)
@@ -162,7 +167,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
         console.log(err)
       }
     },
-    [citizenTableContract]
+    [citizenTableContract],
   )
 
   useEffect(() => {
@@ -231,7 +236,10 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
             )}
           </button>
           {showEmailUpdate && (
-            <div data-testid="email-update-section" className="mt-3 w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
+            <div
+              data-testid="email-update-section"
+              className="mt-3 w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative"
+            >
               <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
                 {process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID ? (
                   <Widget
@@ -241,9 +249,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                     height={500}
                   />
                 ) : (
-                  <p className="text-sm text-gray-400 p-4">
-                    Email update form is not available.
-                  </p>
+                  <p className="text-sm text-gray-400 p-4">Email update form is not available.</p>
                 )}
               </div>
             </div>
@@ -281,7 +287,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
 
                 const renamedCitizenImage = renameFile(
                   newCitizenImage,
-                  `${citizenData?.name} Citizen Image`
+                  `${citizenData?.name} Citizen Image`,
                 )
 
                 const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
@@ -296,7 +302,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
               if (oldFormResponseId !== formResponseId) {
                 await deleteResponse(
                   process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
-                  oldFormResponseId
+                  oldFormResponseId,
                 )
               }
 
@@ -379,15 +385,36 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 account,
               })
 
-              setEnabled(false)
-
               if (receipt) {
-                setTimeout(() => {
-                  router.reload()
-                }, 30000)
+                toast.success('Profile Edited Successfully')
+                setEnabled(false)
+                // Wait until the new data is indexed by Tableland, then refresh
+                // the profile so the user sees their updated image/details
+                // rather than the stale version.
+                const tableName = CITIZEN_TABLE_NAMES[getChainSlug(selectedChain)]
+                const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${nft.metadata.id}`
+                const expectedName = unescapeQuotes(cleanedCitizenData.name ?? '')
+                const expectedDescription = unescapeQuotes(cleanedCitizenData.description ?? '')
+                await waitForRow({
+                  statement,
+                  checkCondition: (rows) => {
+                    const row = Array.isArray(rows) ? rows[0] : undefined
+                    return (
+                      !!row &&
+                      row.image === imageIpfsLink &&
+                      row.name === expectedName &&
+                      (row.description ?? '') === expectedDescription
+                    )
+                  },
+                  pollInterval: 3000,
+                  maxRetries: 20,
+                  cacheBusting: true,
+                })
+                router.reload()
               }
             } catch (err) {
               console.log(err)
+              toast.error('Something went wrong updating your profile. Please try again.')
             }
           }}
         />
@@ -398,7 +425,9 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
             Danger Zone
           </h3>
           <p className="text-gray-400 text-xs mb-4 leading-relaxed">
-            Deleting your profile data is permanent and cannot be undone. All information — including your name, bio, image, and social links — will be erased from the blockchain. Your citizen NFT will remain, but your profile will be blank.
+            Deleting your profile data is permanent and cannot be undone. All information —
+            including your name, bio, image, and social links — will be erased from the blockchain.
+            Your citizen NFT will remain, but your profile will be blank.
           </p>
           <DeleteProfileData
             nft={nft}

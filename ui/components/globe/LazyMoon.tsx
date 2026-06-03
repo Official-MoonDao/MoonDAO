@@ -16,49 +16,36 @@ const Moon = dynamic(() => import('./Moon'), {
 })
 
 export default function LazyMoon() {
-  const [isVisible, setIsVisible] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
+  // Keep the globe mounted once it has appeared. Unmounting it when the tab is
+  // hidden or it scrolls out of view tears down the WebGL context and replays
+  // the intro animation on return, which looks like the map "reloading".
+  const [hasMounted, setHasMounted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const node = containerRef.current
+    if (!node) return
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsVisible(entry.isIntersecting)
+        if (entry.isIntersecting) {
+          setHasMounted(true)
+          observer.disconnect()
+        }
       },
       { threshold: 0.1 }
     )
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current)
-    }
+    observer.observe(node)
 
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPaused(document.hidden)
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      observer.disconnect()
     }
   }, [])
 
   return (
     <div ref={containerRef} className="w-full h-full">
-      {isVisible && !isPaused && <Moon />}
-      {isVisible && isPaused && (
-        <div className="flex items-center justify-center w-full h-full">
-          <div className="w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full bg-gradient-to-br from-gray-700/30 to-gray-900/30" />
-        </div>
-      )}
+      {hasMounted && <Moon />}
     </div>
   )
 }

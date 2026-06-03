@@ -39,15 +39,6 @@ index 5c61e055..a31f1231 100644
      }
  
      function constructSafeCallData(address caller, address[] memory members) internal returns (bytes memory) {
-diff --git a/subscription-contracts/test/TableOperatorsTest.t.sol b/subscription-contracts/test/TableOperatorsTest.t.sol
---- a/subscription-contracts/test/TableOperatorsTest.t.sol
-+++ b/subscription-contracts/test/TableOperatorsTest.t.sol
-@@ -113,4 +113,3 @@
-         MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
--            name: "Test Team", bio: "bio", image: "", twitter: "",
--            communications: "", website: "", _view: "public", formId: ""
-+            _view: "public", formId: ""
-         });
 diff --git a/subscription-contracts/test/EntityCreatorTest.t.sol b/subscription-contracts/test/EntityCreatorTest.t.sol
 index 5b3fb39f..21296fbd 100644
 --- a/subscription-contracts/test/EntityCreatorTest.t.sol
