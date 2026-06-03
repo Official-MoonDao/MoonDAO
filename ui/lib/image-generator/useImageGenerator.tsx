@@ -4,6 +4,7 @@ import {
   clearPendingImageJob,
   markPendingImageJobPolling,
   markPendingImageJobUploading,
+  readPendingImageJob,
 } from './pendingImageJob'
 import {
   pollComfyImageJob,
@@ -231,7 +232,14 @@ export default function useImageGenerator(
     } catch (err: any) {
       console.error('Image generation failed:', err)
       setPhase('error')
-      clearPendingImageJob()
+      
+      // Only clear pending job and apply fallback if this generation is still current
+      const currentJob = readPendingImageJob()
+      const isCurrentGeneration = currentJob?.generationId === generationId
+      
+      if (isCurrentGeneration) {
+        clearPendingImageJob()
+      }
 
       if (uploadedFilename) {
         try {
@@ -245,11 +253,13 @@ export default function useImageGenerator(
         }
       }
 
-      try {
-        const fittedImage = await fitImage(sourceImage, 1024, 1024)
-        setImage(fittedImage)
-      } catch (fitErr) {
-        console.error('Failed to fall back to fitted image:', fitErr)
+      if (isCurrentGeneration) {
+        try {
+          const fittedImage = await fitImage(sourceImage, 1024, 1024)
+          setImage(fittedImage)
+        } catch (fitErr) {
+          console.error('Failed to fall back to fitted image:', fitErr)
+        }
       }
       const message: string =
         typeof err?.message === 'string' && err.message

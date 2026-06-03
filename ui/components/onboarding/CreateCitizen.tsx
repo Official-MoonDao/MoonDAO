@@ -1028,10 +1028,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
       input = base64ToFile(formData.inputImage)
       setInputImage(input)
     }
-    if (isAiPortraitReady() && formData.citizenImage && isSerializedFile(formData.citizenImage)) {
-      setCitizenImage(base64ToFile(formData.citizenImage))
+    if (formData.citizenImage && isSerializedFile(formData.citizenImage)) {
+      const restoredCitizenImage = base64ToFile(formData.citizenImage)
+      setCitizenImage(restoredCitizenImage)
+      // If citizenImage differs from croppedInputImage, it's an AI portrait - mark it ready
+      if (!cropped || restoredCitizenImage !== cropped) {
+        markAiPortraitReady()
+      }
     }
-    if (cropped || input || (isAiPortraitReady() && formData.citizenImage)) {
+    if (cropped || input || formData.citizenImage) {
       imagesRestoredRef.current = true
     }
     return { cropped, input }
@@ -1146,19 +1151,30 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
         setCitizenData(formData.citizenData)
       }
 
-      const citizenImageRestored =
-        isAiPortraitReady() &&
-        restoreImageFromCache(formData.citizenImage, setCitizenImage, 'citizen image')
-      const inputImageRestored = restoreImageFromCache(
-        formData.inputImage,
-        setInputImage,
-        'input image',
-      )
       const croppedInputImageRestored = restoreImageFromCache(
         formData.croppedInputImage,
         setCroppedInputImage,
         'cropped input image',
       )
+      const inputImageRestored = restoreImageFromCache(
+        formData.inputImage,
+        setInputImage,
+        'input image',
+      )
+      const citizenImageRestored = restoreImageFromCache(
+        formData.citizenImage,
+        setCitizenImage,
+        'citizen image',
+      )
+      // If citizenImage was restored and differs from croppedInputImage, it's an AI portrait
+      if (citizenImageRestored && formData.citizenImage && isSerializedFile(formData.citizenImage)) {
+        // Compare serialized data to determine if it's an AI portrait
+        if (!formData.croppedInputImage || 
+            !isSerializedFile(formData.croppedInputImage) ||
+            formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL) {
+          markAiPortraitReady()
+        }
+      }
 
       imagesRestoredRef.current =
         citizenImageRestored || inputImageRestored || croppedInputImageRestored
