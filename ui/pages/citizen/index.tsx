@@ -24,6 +24,8 @@ export default function Join() {
     [router],
   )
 
+  const freeMint = router.query.freeMint === 'true'
+
   return (
     <>
       <Head
@@ -36,6 +38,7 @@ export default function Join() {
       <CreateCitizen
         selectedChain={selectedChain}
         setSelectedTier={handleExitFlow}
+        freeMintProp={freeMint}
       />
     </>
   )

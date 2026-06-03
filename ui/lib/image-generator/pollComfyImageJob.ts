@@ -160,11 +160,14 @@ export async function pollComfyImageJob(
             const file = new File([blob], fileName, { type: blob.type })
             // Bug fix: check if this job is still current before applying result
             const currentJob = readPendingImageJob()
-            if (!generationId || currentJob?.generationId === generationId) {
+            if (
+              generationId ? currentJob?.generationId === generationId : currentJob?.jobId === jobId
+            ) {
               setImage(file)
               markAiPortraitReady()
+              setPhase('done')
             }
-            setPhase('done')
+            // Don't mark phase as done if this is a stale job
             return
           } catch (err) {
             lastErr = err
@@ -185,7 +188,9 @@ export async function pollComfyImageJob(
       if (sourceImage) {
         const fittedImage = await fitImage(sourceImage, 1024, 1024)
         const currentJob = readPendingImageJob()
-        if (!generationId || currentJob?.generationId === generationId) {
+        if (
+          generationId ? currentJob?.generationId === generationId : currentJob?.jobId === jobId
+        ) {
           setImage(fittedImage)
         }
       }
@@ -197,7 +202,9 @@ export async function pollComfyImageJob(
         try {
           const fittedImage = await fitImage(sourceImage, 1024, 1024)
           const currentJob = readPendingImageJob()
-          if (!generationId || currentJob?.generationId === generationId) {
+          if (
+            generationId ? currentJob?.generationId === generationId : currentJob?.jobId === jobId
+          ) {
             setImage(fittedImage)
           }
         } catch (fitErr) {
