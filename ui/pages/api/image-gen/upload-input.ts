@@ -1,6 +1,7 @@
 import { Storage } from '@google-cloud/storage'
 import formidable from 'formidable'
 import { NextApiRequest, NextApiResponse } from 'next'
+import path from 'path'
 
 /** Temp uploads for citizen AI generation (readable by comfy.icu via signed URL). */
 const UPLOAD_PREFIX = 'citizen-gen-temp/'
@@ -67,10 +68,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'Unsupported file type' })
     }
 
-    const filename = file.originalFilename
-    const lastDotIndex = filename.lastIndexOf('.')
-    const nameWithoutExt = lastDotIndex > 0 ? filename.substring(0, lastDotIndex) : filename
-    const extension = lastDotIndex > 0 ? filename.substring(lastDotIndex) : '.jpg'
+    const safeBasename = path.basename(file.originalFilename).replace(/[^a-zA-Z0-9._-]/g, '_')
+    const lastDotIndex = safeBasename.lastIndexOf('.')
+    const nameWithoutExt = lastDotIndex > 0 ? safeBasename.substring(0, lastDotIndex) : safeBasename
+    const extension = lastDotIndex > 0 ? safeBasename.substring(lastDotIndex) : '.jpg'
     const destination = `${UPLOAD_PREFIX}${nameWithoutExt}-${Date.now()}${extension}`
 
     await bucket.upload(file.filepath, {

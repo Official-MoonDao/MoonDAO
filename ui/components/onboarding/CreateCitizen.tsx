@@ -1921,7 +1921,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     }
   }, [reviewPreviewUrl])
 
-  const welcomeImageFile = citizenImage || inputImage
+  const welcomeImageFile = citizenImage || croppedInputImage || inputImage
   const welcomeImageUrl = useMemo(
     () => (welcomeImageFile ? URL.createObjectURL(welcomeImageFile) : null),
     [welcomeImageFile],

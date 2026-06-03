@@ -148,7 +148,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                         : `max-w-[1200px] ${isCompact ? 'pt-0' : 'lg:pt-20'}`
                     }`}
                     style={
-                      headerSize && profileOnboardingLayout
+                      headerSize
                         ? { fontSize: headerSize }
                         : undefined
                     }
