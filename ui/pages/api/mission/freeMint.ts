@@ -1,8 +1,10 @@
 import CitizenABI from 'const/abis/Citizen.json'
+import WhitelistABI from 'const/abis/Whitelist.json'
 import {
   BENDYSTRAW_JB_VERSION,
   DEFAULT_CHAIN_V5,
   CITIZEN_ADDRESSES,
+  CITIZEN_WHITELIST_ADDRESSES,
   FREE_MINT_THRESHOLD,
   MISSION_TABLE_NAMES,
 } from 'const/config'
@@ -113,6 +115,32 @@ async function getTotalPaid(address: string) {
   return totalPaid
 }
 
+// Addresses on the Citizen whitelist contract get a free (fully sponsored)
+// mint regardless of how much they've contributed. The whitelist also makes
+// getRenewalPrice() return 0, so the relayer only pays gas for these mints.
+async function isCitizenWhitelisted(address: string): Promise<boolean> {
+  if (!isValidEvmAddress(address)) return false
+  const whitelistAddress = CITIZEN_WHITELIST_ADDRESSES[chainSlug]
+  if (!whitelistAddress) return false
+  try {
+    const whitelistContract = getContract({
+      client: serverClient,
+      address: whitelistAddress,
+      abi: WhitelistABI as any,
+      chain,
+    })
+    const whitelisted = await readContract({
+      contract: whitelistContract,
+      method: 'isWhitelisted' as string,
+      params: [address],
+    })
+    return Boolean(whitelisted)
+  } catch (err) {
+    console.error('Error checking citizen whitelist:', err)
+    return false
+  }
+}
+
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   setCDNCacheHeaders(res, 60, 60, 'Accept-Encoding, address')
   if (req.method === 'POST') {
@@ -137,8 +165,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (balance !== BigInt(0)) {
       return res.status(400).json({ error: 'You are already a citizen!' })
     }
-    const totalPaid = await getTotalPaid(address)
-    if (totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
+    const [totalPaid, whitelisted] = await Promise.all([
+      getTotalPaid(address),
+      isCitizenWhitelisted(address),
+    ])
+    if (!whitelisted && totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
       return res.status(400).json({
         error: 'You have not contributed enough to earn a free citizen NFT!',
       })
@@ -177,13 +208,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'Invalid wallet address format.' })
     }
 
-    const totalPaid = await getTotalPaid(address as string)
+    const [totalPaid, whitelisted] = await Promise.all([
+      getTotalPaid(address as string),
+      isCitizenWhitelisted(address as string),
+    ])
     res.status(200).json({
       success: true,
       message: 'Fetched total paid.',
       data: {
         totalPaid: totalPaid.toString(),
-        eligible: totalPaid >= BigInt(FREE_MINT_THRESHOLD),
+        whitelisted,
+        eligible: whitelisted || totalPaid >= BigInt(FREE_MINT_THRESHOLD),
       },
     })
   }
