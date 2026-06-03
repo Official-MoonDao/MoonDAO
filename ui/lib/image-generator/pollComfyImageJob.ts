@@ -163,8 +163,9 @@ export async function pollComfyImageJob(
             if (!generationId || currentJob?.generationId === generationId) {
               setImage(file)
               markAiPortraitReady()
+              setPhase('done')
             }
-            setPhase('done')
+            // Don't mark phase as done if this is a stale job
             return
           } catch (err) {
             lastErr = err

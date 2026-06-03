@@ -219,7 +219,11 @@ function clearSessionImageSnapshots() {
   }
 }
 
-function restoreAnonymousFormCache(): { stage?: number; formData?: any; timestamp?: number } | null {
+function restoreAnonymousFormCache(): {
+  stage?: number
+  formData?: any
+  timestamp?: number
+} | null {
   if (typeof window === 'undefined') return null
   try {
     const stored = localStorage.getItem(ANONYMOUS_FORM_CACHE_KEY)
@@ -397,50 +401,47 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     setImageGenProgress(snapshot)
   }, [])
 
-  const runImageJobPolling = useCallback(
-    (sourceImage: File | undefined) => {
-      setIsImageGenerating(true)
-      setHasPendingImageJob(true)
-      const start = Date.now()
-      const elapsedTimer = setInterval(() => {
-        setImageGenProgress((prev) => {
-          const phase = prev?.phase ?? 'queued'
+  const runImageJobPolling = useCallback((sourceImage: File | undefined) => {
+    setIsImageGenerating(true)
+    setHasPendingImageJob(true)
+    const start = Date.now()
+    const elapsedTimer = setInterval(() => {
+      setImageGenProgress((prev) => {
+        const phase = prev?.phase ?? 'queued'
+        const elapsed = Date.now() - start
+        return {
+          phase,
+          elapsedMs: elapsed,
+          progressPct: computeProgressPct(phase, elapsed),
+          phaseLabel: PHASE_LABELS[phase] ?? 'Creating your AI image…',
+          tipIndex: prev?.tipIndex ?? 0,
+        }
+      })
+    }, 250)
+
+    return resumePendingComfyJob(
+      {
+        setPhase: (phase) => {
           const elapsed = Date.now() - start
-          return {
+          setImageGenProgress({
             phase,
             elapsedMs: elapsed,
             progressPct: computeProgressPct(phase, elapsed),
             phaseLabel: PHASE_LABELS[phase] ?? 'Creating your AI image…',
-            tipIndex: prev?.tipIndex ?? 0,
-          }
-        })
-      }, 250)
-
-      return resumePendingComfyJob(
-        {
-          setPhase: (phase) => {
-            const elapsed = Date.now() - start
-            setImageGenProgress({
-              phase,
-              elapsedMs: elapsed,
-              progressPct: computeProgressPct(phase, elapsed),
-              phaseLabel: PHASE_LABELS[phase] ?? 'Creating your AI image…',
-              tipIndex: 0,
-            })
-          },
-          setImage: (file) => setCitizenImage(file),
-          setError: (msg) => console.warn('[CreateCitizen] image resume:', msg),
+            tipIndex: 0,
+          })
         },
-        sourceImage,
-      ).finally(() => {
-        clearInterval(elapsedTimer)
-        setIsImageGenerating(false)
-        setHasPendingImageJob(false)
-        setImageGenProgress(null)
-      })
-    },
-    [],
-  )
+        setImage: (file) => setCitizenImage(file),
+        setError: (msg) => console.warn('[CreateCitizen] image resume:', msg),
+      },
+      sourceImage,
+    ).finally(() => {
+      clearInterval(elapsedTimer)
+      setIsImageGenerating(false)
+      setHasPendingImageJob(false)
+      setImageGenProgress(null)
+    })
+  }, [])
 
   const restartImageGeneration = useCallback(
     async (sourceImage: File) => {
@@ -471,13 +472,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     }
   }, [imageGenProgress, isRegenerating, regenPhase, regenElapsedMs])
 
-  const hasAiPortrait =
-    hasAiPortraitImage(citizenImage, croppedInputImage) && isAiPortraitReady()
+  const hasAiPortrait = hasAiPortraitImage(citizenImage, croppedInputImage) && isAiPortraitReady()
 
   const isAwaitingAiPortrait = isImageGenerating || hasPendingImageJob
 
-  const keepImageGeneratorMounted =
-    stage === 0 || isImageGenerating || hasPendingImageJob
+  const keepImageGeneratorMounted = stage === 0 || isImageGenerating || hasPendingImageJob
 
   // ===== Computed Values =====
   const LAYER_ZERO_TRANSFER_COST = useMemo(() => BigInt('3000000000000000'), [])
@@ -933,29 +932,26 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     defaultChainSlug,
   ])
 
-  const applyCachedFormImages = useCallback(
-    (formData: any): { cropped?: File; input?: File } => {
-      if (!formData) return {}
-      let cropped: File | undefined
-      let input: File | undefined
-      if (formData.croppedInputImage && isSerializedFile(formData.croppedInputImage)) {
-        cropped = base64ToFile(formData.croppedInputImage)
-        setCroppedInputImage(cropped)
-      }
-      if (formData.inputImage && isSerializedFile(formData.inputImage)) {
-        input = base64ToFile(formData.inputImage)
-        setInputImage(input)
-      }
-      if (isAiPortraitReady() && formData.citizenImage && isSerializedFile(formData.citizenImage)) {
-        setCitizenImage(base64ToFile(formData.citizenImage))
-      }
-      if (cropped || input || (isAiPortraitReady() && formData.citizenImage)) {
-        imagesRestoredRef.current = true
-      }
-      return { cropped, input }
-    },
-    [],
-  )
+  const applyCachedFormImages = useCallback((formData: any): { cropped?: File; input?: File } => {
+    if (!formData) return {}
+    let cropped: File | undefined
+    let input: File | undefined
+    if (formData.croppedInputImage && isSerializedFile(formData.croppedInputImage)) {
+      cropped = base64ToFile(formData.croppedInputImage)
+      setCroppedInputImage(cropped)
+    }
+    if (formData.inputImage && isSerializedFile(formData.inputImage)) {
+      input = base64ToFile(formData.inputImage)
+      setInputImage(input)
+    }
+    if (isAiPortraitReady() && formData.citizenImage && isSerializedFile(formData.citizenImage)) {
+      setCitizenImage(base64ToFile(formData.citizenImage))
+    }
+    if (cropped || input || (isAiPortraitReady() && formData.citizenImage)) {
+      imagesRestoredRef.current = true
+    }
+    return { cropped, input }
+  }, [])
 
   /** Restore uploads + resume/restart AI gen after Privy or a full page reload. */
   const restoreWizardArtifacts = useCallback((): { cropped?: File; input?: File } => {
@@ -1002,9 +998,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       const hasProfile = !!formData?.citizenData?.name
       const hasImages =
-        !!formData?.croppedInputImage ||
-        !!formData?.inputImage ||
-        !!formData?.citizenImage
+        !!formData?.croppedInputImage || !!formData?.inputImage || !!formData?.citizenImage
 
       if (!formData || (!hasProfile && !hasImages)) {
         console.error('[CreateCitizen] Invalid cache structure, nothing to restore')
@@ -1100,8 +1094,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // Mint Handler
   const callMint = useCallback(async () => {
     // Validation
-    const imageToUse =
-      hasAiPortrait && citizenImage ? citizenImage : croppedInputImage
+    const imageToUse = hasAiPortrait && citizenImage ? citizenImage : croppedInputImage
     if (!imageToUse) return toast.error('Please upload an image and complete the previous steps.')
 
     if (!address) {
@@ -1332,12 +1325,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         startTransition(() => setHasPendingImageJob(false))
       }
     }
-  }, [
-    isClientHydrated,
-    restoreWizardArtifacts,
-    runImageJobPolling,
-    restartImageGeneration,
-  ])
+  }, [isClientHydrated, restoreWizardArtifacts, runImageJobPolling, restartImageGeneration])
 
   // Copy anonymous localStorage progress to the wallet-scoped key once an address exists.
   const hasMigratedAnonCacheRef = useRef(false)
@@ -1527,7 +1515,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       wasRegeneratingRef.current = true
     } else if (wasRegeneratingRef.current) {
       wasRegeneratingRef.current = false
-      setIsImageGenerating(false)
+      // Don't force isImageGenerating to false here - the ImageGenerator's own
+      // effect will handle that based on whether background generation is still active
     }
   }, [isRegenerating])
 
@@ -1648,11 +1637,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     if (
       stage >= 0 &&
       !mintComplete &&
-      (citizenData.name ||
-        citizenImage ||
-        inputImage ||
-        croppedInputImage ||
-        stage > 0)
+      (citizenData.name || citizenImage || inputImage || croppedInputImage || stage > 0)
     ) {
       const performCache = async () => {
         const cacheData = await serializeCacheData()
@@ -1707,13 +1692,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         hasPendingImageJob,
         aiPortraitReady: isAiPortraitReady(),
       }),
-    [
-      citizenImage,
-      croppedInputImage,
-      inputImage,
-      isImageGenerating,
-      hasPendingImageJob,
-    ],
+    [citizenImage, croppedInputImage, inputImage, isImageGenerating, hasPendingImageJob],
   )
   const reviewPreviewUrl = useMemo(
     () => (reviewPreviewFile ? URL.createObjectURL(reviewPreviewFile) : null),
@@ -1795,325 +1774,318 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         description=""
       >
         <div className="w-full">
-            {/* Header bar with steps + close */}
-            <div className="flex items-center justify-between mb-6">
-              <Steps
-                className="w-full max-w-[480px]"
-                steps={['Design', 'Profile', 'Checkout']}
-                currStep={stage}
-                lastStep={lastStage}
-                setStep={(value) => {
-                  const next =
-                    typeof value === 'function' ? value(stage) : value
-                  if (next === 0 && stage !== 0) {
-                    setCitizenImage(undefined)
-                  }
-                  setStage(next)
-                }}
-              />
-              <button
-                onClick={() => setSelectedTier(null)}
-                className="ml-4 p-2 rounded-xl hover:bg-white/5 transition-colors flex-shrink-0"
-                aria-label="Close"
+          {/* Header bar with steps + close */}
+          <div className="flex items-center justify-between mb-6">
+            <Steps
+              className="w-full max-w-[480px]"
+              steps={['Design', 'Profile', 'Checkout']}
+              currStep={stage}
+              lastStep={lastStage}
+              setStep={(value) => {
+                const next = typeof value === 'function' ? value(stage) : value
+                if (next === 0 && stage !== 0) {
+                  setCitizenImage(undefined)
+                }
+                setStage(next)
+              }}
+            />
+            <button
+              onClick={() => setSelectedTier(null)}
+              className="ml-4 p-2 rounded-xl hover:bg-white/5 transition-colors flex-shrink-0"
+              aria-label="Close"
+            >
+              <XMarkIcon width={28} height={28} className="text-slate-400" />
+            </button>
+          </div>
+
+          {/* Card container */}
+          <div className="bg-gradient-to-b from-slate-800/40 to-slate-900/60 backdrop-blur-md border border-white/[0.08] rounded-2xl p-5 sm:p-8">
+            {/* Design / Image — stay mounted (hidden) while background AI runs */}
+            {keepImageGeneratorMounted && (
+              <div
+                className={
+                  stage === 0
+                    ? 'animate-fadeIn'
+                    : 'sr-only fixed w-0 h-0 overflow-hidden opacity-0 pointer-events-none'
+                }
+                aria-hidden={stage !== 0}
               >
-                <XMarkIcon width={28} height={28} className="text-slate-400" />
-              </button>
-            </div>
-
-            {/* Card container */}
-            <div className="bg-gradient-to-b from-slate-800/40 to-slate-900/60 backdrop-blur-md border border-white/[0.08] rounded-2xl p-5 sm:p-8">
-              {/* Design / Image — stay mounted (hidden) while background AI runs */}
-              {keepImageGeneratorMounted && (
-                <div
-                  className={
-                    stage === 0
-                      ? 'animate-fadeIn'
-                      : 'sr-only fixed w-0 h-0 overflow-hidden opacity-0 pointer-events-none'
-                  }
-                  aria-hidden={stage !== 0}
-                >
-                  {stage === 0 && (
-                    <div className="mb-6">
-                      <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
-                      <p className="text-slate-400 text-sm leading-relaxed">
-                        Upload a photo with a clear face — yourself or an avatar — position the crop,
-                        and we&apos;ll generate your AI passport photo. It renders in the background
-                        (~30–60s) while you keep going; you can regenerate or switch back to your own
-                        photo on the review step.
-                      </p>
-                    </div>
-                  )}
-                  <ImageGenerator
-                    image={citizenImage}
-                    setImage={setCitizenImage}
-                    inputImage={inputImage}
-                    setInputImage={setInputImage}
-                    nextStage={() => setStage(1)}
-                    stage={stage}
-                    generateInBG
-                    onGenerationStateChange={setIsImageGenerating}
-                    onGenerationProgress={handleImageGenProgress}
-                    onCrop={handleCrop}
-                  />
-                  {stage === 0 && process.env.NEXT_PUBLIC_ENV === 'dev' && (
-                    <button
-                      className="mt-4 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                      onClick={() => {
-                        setCitizenData({
-                          name: 'Test',
-                          description: 'Testing',
-                          email: 'test@test.com',
-                          discord: '',
-                          website: 'https://moondao.com',
-                          twitter: '',
-                          location: 'Earth',
-                          view: 'public',
-                          formResponseId: '0000',
-                        })
-                        const file = new File([''], 'test.png', { type: 'image/png' })
-                        setCitizenImage(file)
-                        setStage(2)
-                      }}
-                    >
-                      Use Testing Data
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Stage 1: Profile / Typeform */}
-              {stage === 1 && (
-                <div className="animate-fadeIn">
+                {stage === 0 && (
                   <div className="mb-6">
-                    <h2 className="text-2xl font-GoodTimes text-white mb-2">Profile</h2>
-                    <p className="text-slate-400 text-sm">Complete your citizen profile below.</p>
-                  </div>
-                  {isSubmittingTypeform ? (
-                    <div className="flex flex-col items-center gap-4 py-12">
-                      <Image
-                        src="/assets/MoonDAO-Loading-Animation.svg"
-                        alt="Processing"
-                        width={80}
-                        height={80}
-                        className="animate-pulse"
-                      />
-                      <p className="text-white font-medium">Processing your profile...</p>
-                    </div>
-                  ) : pendingTypeform && !authenticated ? (
-                    <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
-                      <h3 className="font-GoodTimes text-lg text-white">
-                        One last step — sign in to finish
-                      </h3>
-                      <p className="text-slate-400 text-sm max-w-[420px]">
-                        Your profile is saved. Sign in or create your wallet to finalize your
-                        details and continue to mint your citizenship.
-                      </p>
-                      <button
-                        onClick={() => login()}
-                        className="mt-2 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
-                      >
-                        Sign in to continue
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="w-full rounded-xl overflow-hidden border border-white/[0.06]">
-                      <iframe
-                        src={`https://form.typeform.com/to/${process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID}`}
-                        style={{ width: '100%', height: '700px', border: 'none' }}
-                        allow="microphone; camera"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Stage 2: Review & Mint */}
-              {stage === 2 && (
-                <div className="animate-fadeIn flex flex-col gap-8">
-                  <div>
-                    <h2 className="text-2xl font-GoodTimes text-white mb-2">Review & Mint</h2>
-                    <p className="text-slate-400 text-sm">
-                      Review your profile before finalizing your registration on-chain.
+                    <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
+                    <p className="text-slate-400 text-sm leading-relaxed">
+                      Upload a photo with a clear face — yourself or an avatar — position the crop,
+                      and we&apos;ll generate your AI passport photo. It renders in the background
+                      (~30–60s) while you keep going; you can regenerate or switch back to your own
+                      photo on the review step.
                     </p>
                   </div>
+                )}
+                <ImageGenerator
+                  image={citizenImage}
+                  setImage={setCitizenImage}
+                  inputImage={inputImage}
+                  setInputImage={setInputImage}
+                  nextStage={() => setStage(1)}
+                  stage={stage}
+                  generateInBG
+                  onGenerationStateChange={setIsImageGenerating}
+                  onGenerationProgress={handleImageGenProgress}
+                  onCrop={handleCrop}
+                />
+                {stage === 0 && process.env.NEXT_PUBLIC_ENV === 'dev' && (
+                  <button
+                    className="mt-4 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                    onClick={() => {
+                      setCitizenData({
+                        name: 'Test',
+                        description: 'Testing',
+                        email: 'test@test.com',
+                        discord: '',
+                        website: 'https://moondao.com',
+                        twitter: '',
+                        location: 'Earth',
+                        view: 'public',
+                        formResponseId: '0000',
+                      })
+                      const file = new File([''], 'test.png', { type: 'image/png' })
+                      setCitizenImage(file)
+                      setStage(2)
+                    }}
+                  >
+                    Use Testing Data
+                  </button>
+                )}
+              </div>
+            )}
 
-                  {/* Image preview */}
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="relative w-full max-w-[400px] aspect-square rounded-2xl border border-white/[0.08] bg-slate-900/60 overflow-hidden">
-                      {reviewPreviewUrl && (
-                        <Image
-                          src={reviewPreviewUrl}
-                          alt="citizen-image"
-                          fill
-                          style={{ objectFit: 'cover' }}
-                          className={`rounded-2xl transition-opacity duration-300 ${
-                            isAwaitingAiPortrait && !hasAiPortrait
-                              ? 'opacity-30 blur-[2px]'
-                              : 'opacity-100'
-                          }`}
-                        />
-                      )}
-                      {isAwaitingAiPortrait && !hasAiPortrait && (
-                        <CitizenImageGenerationProgress
-                          phase={activeImageGenProgress?.phase ?? 'uploading'}
-                          elapsedMs={activeImageGenProgress?.elapsedMs ?? 0}
-                          progressPct={
-                            activeImageGenProgress?.progressPct ??
-                            computeProgressPct('uploading', 0)
-                          }
-                          isBackgroundFlow
-                          tipIndex={activeImageGenProgress?.tipIndex ?? 0}
-                          variant="overlay"
-                        />
-                      )}
-                      {!hasAiPortrait &&
-                        !croppedInputImage &&
-                        !isAwaitingAiPortrait && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-slate-800/60">
-                          <p className="text-slate-400 text-center text-sm px-6">
-                            Complete previous steps to generate your citizen image
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    {(hasAiPortrait || croppedInputImage) && (
-                      <div className="flex flex-col items-center gap-3 w-full max-w-[400px]">
-                        <div className="flex flex-col sm:flex-row gap-3 w-full">
-                          <button
-                            onClick={handleRegenerateFromReview}
-                            disabled={isImageGenerating || !croppedInputImage}
-                            className="flex-1 py-2.5 px-5 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                              />
-                            </svg>
-                            Regenerate
-                          </button>
-                          {croppedInputImage && (
-                            <button
-                              onClick={() => {
-                                clearAiPortraitReady()
-                                setCitizenImage(croppedInputImage)
-                                setIsImageGenerating(false)
-                                setHasPendingImageJob(false)
-                                clearPendingImageJob()
-                                setImageGenProgress(null)
-                              }}
-                              className="flex-1 py-2.5 px-5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
-                            >
-                              Use my photo instead
-                            </button>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => {
-                            setCitizenImage(undefined)
-                            setInputImage(undefined)
-                            setCroppedInputImage(undefined)
-                            setStage(0)
-                          }}
-                          className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2"
-                        >
-                          Change photo
-                        </button>
+            {/* Stage 1: Profile / Typeform */}
+            {stage === 1 && (
+              <div className="animate-fadeIn">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-GoodTimes text-white mb-2">Profile</h2>
+                  <p className="text-slate-400 text-sm">Complete your citizen profile below.</p>
+                </div>
+                {isSubmittingTypeform ? (
+                  <div className="flex flex-col items-center gap-4 py-12">
+                    <Image
+                      src="/assets/MoonDAO-Loading-Animation.svg"
+                      alt="Processing"
+                      width={80}
+                      height={80}
+                      className="animate-pulse"
+                    />
+                    <p className="text-white font-medium">Processing your profile...</p>
+                  </div>
+                ) : pendingTypeform && !authenticated ? (
+                  <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
+                    <h3 className="font-GoodTimes text-lg text-white">
+                      One last step — sign in to finish
+                    </h3>
+                    <p className="text-slate-400 text-sm max-w-[420px]">
+                      Your profile is saved. Sign in or create your wallet to finalize your details
+                      and continue to mint your citizenship.
+                    </p>
+                    <button
+                      onClick={() => login()}
+                      className="mt-2 py-3 px-6 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+                    >
+                      Sign in to continue
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-full rounded-xl overflow-hidden border border-white/[0.06]">
+                    <iframe
+                      src={`https://form.typeform.com/to/${process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID}`}
+                      style={{ width: '100%', height: '700px', border: 'none' }}
+                      allow="microphone; camera"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Stage 2: Review & Mint */}
+            {stage === 2 && (
+              <div className="animate-fadeIn flex flex-col gap-8">
+                <div>
+                  <h2 className="text-2xl font-GoodTimes text-white mb-2">Review & Mint</h2>
+                  <p className="text-slate-400 text-sm">
+                    Review your profile before finalizing your registration on-chain.
+                  </p>
+                </div>
+
+                {/* Image preview */}
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative w-full max-w-[400px] aspect-square rounded-2xl border border-white/[0.08] bg-slate-900/60 overflow-hidden">
+                    {reviewPreviewUrl && (
+                      <Image
+                        src={reviewPreviewUrl}
+                        alt="citizen-image"
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        className={`rounded-2xl transition-opacity duration-300 ${
+                          isAwaitingAiPortrait && !hasAiPortrait
+                            ? 'opacity-30 blur-[2px]'
+                            : 'opacity-100'
+                        }`}
+                      />
+                    )}
+                    {isAwaitingAiPortrait && !hasAiPortrait && (
+                      <CitizenImageGenerationProgress
+                        phase={activeImageGenProgress?.phase ?? 'uploading'}
+                        elapsedMs={activeImageGenProgress?.elapsedMs ?? 0}
+                        progressPct={
+                          activeImageGenProgress?.progressPct ?? computeProgressPct('uploading', 0)
+                        }
+                        isBackgroundFlow
+                        tipIndex={activeImageGenProgress?.tipIndex ?? 0}
+                        variant="overlay"
+                      />
+                    )}
+                    {!hasAiPortrait && !croppedInputImage && !isAwaitingAiPortrait && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-slate-800/60">
+                        <p className="text-slate-400 text-center text-sm px-6">
+                          Complete previous steps to generate your citizen image
+                        </p>
                       </div>
                     )}
                   </div>
-
-                  {/* Data overview */}
-                  <DataOverview
-                    data={citizenData}
-                    title="Citizen Overview"
-                    excludeKeys={['newsletterSub', 'formResponseId']}
-                  />
-
-                  {/* Info box */}
-                  <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
-                    <h3 className="font-GoodTimes text-base mb-3 text-white">Citizenship</h3>
-                    <p className="text-slate-400 text-sm leading-relaxed">
-                      Citizenship lasts for one year and can be renewed at any time. Wallet funds
-                      are self-custodied and not dependent on registration.
-                    </p>
-                    <p className="mt-4 text-slate-500 text-xs text-center">
-                      Welcome to the future of on-chain, off-world coordination with MoonDAO.
-                    </p>
-                  </div>
-
-                  {/* Terms + Network + Mint */}
-                  <TermsCheckbox
-                    checked={agreedToCondition}
-                    onChange={(newValue) => setAgreedToCondition(newValue)}
-                  />
-                  <NetworkSelector chains={chains} />
-                  <PrivyWeb3Button
-                    id="citizen-checkout-button"
-                    skipNetworkCheck={true}
-                    label={
-                      isLoadingMint
-                        ? 'Creating Citizen...'
-                        : isLoadingGasEstimate
-                          ? 'Estimating Gas...'
-                          : 'Become a Citizen'
-                    }
-                    className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    isDisabled={
-                      !agreedToCondition ||
-                      isLoadingMint ||
-                      isLoadingGasEstimate ||
-                      isImageGenerating
-                    }
-                    action={callMint}
-                  />
-                  {isLoadingMint && (
-                    <div className="flex flex-col items-center gap-3 py-6 px-4 bg-slate-800/30 border border-white/[0.06] rounded-2xl">
-                      <Image
-                        src="/assets/MoonDAO-Loading-Animation.svg"
-                        alt="loading"
-                        width={48}
-                        height={48}
-                        className="animate-pulse"
-                      />
-                      <p className="text-slate-300 text-sm text-center">
-                        Creating your citizen profile on the blockchain...
-                      </p>
-                      <p className="text-slate-500 text-xs text-center">
-                        This can take up to a minute. Please don't close this page.
-                      </p>
+                  {(hasAiPortrait || croppedInputImage) && (
+                    <div className="flex flex-col items-center gap-3 w-full max-w-[400px]">
+                      <div className="flex flex-col sm:flex-row gap-3 w-full">
+                        <button
+                          onClick={handleRegenerateFromReview}
+                          disabled={isImageGenerating || !croppedInputImage}
+                          className="flex-1 py-2.5 px-5 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                          </svg>
+                          Regenerate
+                        </button>
+                        {croppedInputImage && (
+                          <button
+                            onClick={() => {
+                              clearAiPortraitReady()
+                              setCitizenImage(croppedInputImage)
+                              setIsImageGenerating(false)
+                              setHasPendingImageJob(false)
+                              clearPendingImageJob()
+                              setImageGenProgress(null)
+                            }}
+                            className="flex-1 py-2.5 px-5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
+                          >
+                            Use my photo instead
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setCitizenImage(undefined)
+                          setInputImage(undefined)
+                          setCroppedInputImage(undefined)
+                          setStage(0)
+                        }}
+                        className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2"
+                      >
+                        Change photo
+                      </button>
                     </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            {/* Dev Buttons */}
-            {process.env.NEXT_PUBLIC_ENV === 'dev' && (
-              <div className="flex justify-center gap-4 mt-4">
-                <button
-                  id="citizen-back-button"
-                  className="text-xs text-slate-500 hover:text-white transition-colors"
-                  onClick={() => setStage(stage - 1)}
-                >
-                  ← BACK
-                </button>
-                <button
-                  id="citizen-next-button"
-                  className="text-xs text-slate-500 hover:text-white transition-colors"
-                  onClick={() => setStage(stage + 1)}
-                >
-                  NEXT →
-                </button>
+                {/* Data overview */}
+                <DataOverview
+                  data={citizenData}
+                  title="Citizen Overview"
+                  excludeKeys={['newsletterSub', 'formResponseId']}
+                />
+
+                {/* Info box */}
+                <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
+                  <h3 className="font-GoodTimes text-base mb-3 text-white">Citizenship</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Citizenship lasts for one year and can be renewed at any time. Wallet funds are
+                    self-custodied and not dependent on registration.
+                  </p>
+                  <p className="mt-4 text-slate-500 text-xs text-center">
+                    Welcome to the future of on-chain, off-world coordination with MoonDAO.
+                  </p>
+                </div>
+
+                {/* Terms + Network + Mint */}
+                <TermsCheckbox
+                  checked={agreedToCondition}
+                  onChange={(newValue) => setAgreedToCondition(newValue)}
+                />
+                <NetworkSelector chains={chains} />
+                <PrivyWeb3Button
+                  id="citizen-checkout-button"
+                  skipNetworkCheck={true}
+                  label={
+                    isLoadingMint
+                      ? 'Creating Citizen...'
+                      : isLoadingGasEstimate
+                        ? 'Estimating Gas...'
+                        : 'Become a Citizen'
+                  }
+                  className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  isDisabled={
+                    !agreedToCondition || isLoadingMint || isLoadingGasEstimate || isImageGenerating
+                  }
+                  action={callMint}
+                />
+                {isLoadingMint && (
+                  <div className="flex flex-col items-center gap-3 py-6 px-4 bg-slate-800/30 border border-white/[0.06] rounded-2xl">
+                    <Image
+                      src="/assets/MoonDAO-Loading-Animation.svg"
+                      alt="loading"
+                      width={48}
+                      height={48}
+                      className="animate-pulse"
+                    />
+                    <p className="text-slate-300 text-sm text-center">
+                      Creating your citizen profile on the blockchain...
+                    </p>
+                    <p className="text-slate-500 text-xs text-center">
+                      This can take up to a minute. Please don't close this page.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
+          </div>
+
+          {/* Dev Buttons */}
+          {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+            <div className="flex justify-center gap-4 mt-4">
+              <button
+                id="citizen-back-button"
+                className="text-xs text-slate-500 hover:text-white transition-colors"
+                onClick={() => setStage(stage - 1)}
+              >
+                ← BACK
+              </button>
+              <button
+                id="citizen-next-button"
+                className="text-xs text-slate-500 hover:text-white transition-colors"
+                onClick={() => setStage(stage + 1)}
+              >
+                NEXT →
+              </button>
+            </div>
+          )}
         </div>
       </ContentLayout>
       {address && (
