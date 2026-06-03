@@ -116,14 +116,14 @@ export default async function handler(
             '39': {
               inputs: {
                 clip: ['4', 1],
-                text: "Head-and-shoulders portrait, cropped at the chest, face and shoulders fill the frame, only head and shoulders visible, of a youthful person with smooth healthy clear skin, bright clear eyes, full hair clearly visible, ears fully visible and uncovered, smooth chin, clear forehead, confident determined gaze, heroic and powerful presence, painterly style of Jodorowsky's Dune, wearing futuristic clothing, surreal watercolor psychedelic background with stars, colorful nebulae, planets, cosmic background, spaceships, clean cinematic lighting, flattering soft key light, vivid colors, sharp focus, high quality, the best most flattering and youthful version of the person. Fully clothed. No cleavage.",
+                text: "Head-and-shoulders portrait, cropped at the chest, face and shoulders fill the frame, only head and shoulders visible, of a youthful person with smooth healthy clear skin, bright clear eyes, full hair clearly visible, ears fully visible and uncovered, smooth chin, clear forehead, confident determined gaze, heroic and powerful presence, painterly style of Jodorowsky's Dune, wearing futuristic clothing, surreal watercolor psychedelic background with stars, colorful nebulae, planets, cosmic background, spaceships, clean cinematic lighting, flattering soft key light, vivid colors, sharp focus, high quality, the best most flattering and youthful version of the person. Fully clothed. No cleavage. All clothes on no matter what.",
               },
               class_type: 'CLIPTextEncode',
             },
             '40': {
               inputs: {
                 clip: ['4', 1],
-                text: '(watermark:1.9), (signature:1.5), text, logo, stamp, copyright, getty images, shutterstock, stock photo, (wrinkles:1.6), (eye bags:1.5), (aged skin:1.5), old, elderly, saggy skin, gaunt, tired, (beard:1.3), facial hair, stubble, (ear muffs:1.8), (over-ear headphones:1.7), (headphones:1.6), earphones, earbuds, anything on the ears, (helmet:2.5), (space helmet:2.5), (bubble helmet: 2.1), visor, face shield, neck ring, glasses, sunglasses, goggles, eyewear, mask, hat, hood, antenna, objects around head, (cleft chin:1.6), (butt chin:2.0), (chin dimple: 2.0), (full body:1.6), (wide shot:1.5), zoomed out, small face, legs, torso, standing pose, rainbow, monochrome, (nipples: 2.0), (boobs:2.0), (cleavage:2.0)',
+                text: '(watermark:1.9), (signature:1.5), text, logo, stamp, copyright, getty images, shutterstock, stock photo, (wrinkles:1.6), (eye bags:1.5), (aged skin:1.5), old, elderly, saggy skin, gaunt, tired, (beard:1.3), facial hair, stubble, (ear muffs:1.8), (over-ear headphones:1.7), (headphones:1.6), earphones, earbuds, anything on the ears, (helmet:2.5), (space helmet:2.5), (bubble helmet: 2.1), visor, face shield, neck ring, glasses, sunglasses, goggles, eyewear, mask, hat, hood, antenna, objects around head, (cleft chin:1.6), (butt chin:2.0), (chin dimple: 2.0), (full body:1.6), (wide shot:1.5), zoomed out, small face, legs, torso, standing pose, rainbow, monochrome, (nipples: 2.0), (boobs:2.0), (blouse:2.0), (naked:2.0), (nude:2.0), (cleavage:2.0)',
               },
               class_type: 'CLIPTextEncode',
             },
