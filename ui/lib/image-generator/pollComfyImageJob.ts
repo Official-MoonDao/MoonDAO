@@ -184,7 +184,10 @@ export async function pollComfyImageJob(
       setPhase('error')
       if (sourceImage) {
         const fittedImage = await fitImage(sourceImage, 1024, 1024)
-        setImage(fittedImage)
+        const currentJob = readPendingImageJob()
+        if (!generationId || currentJob?.generationId === generationId) {
+          setImage(fittedImage)
+        }
       }
     } catch (err: any) {
       console.error('Image generation polling failed:', err)
@@ -193,7 +196,10 @@ export async function pollComfyImageJob(
       if (sourceImage) {
         try {
           const fittedImage = await fitImage(sourceImage, 1024, 1024)
-          setImage(fittedImage)
+          const currentJob = readPendingImageJob()
+          if (!generationId || currentJob?.generationId === generationId) {
+            setImage(fittedImage)
+          }
         } catch (fitErr) {
           console.error('Failed to fall back to fitted image:', fitErr)
         }

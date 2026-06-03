@@ -541,8 +541,18 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   )
 
   const handleCrop = useCallback(
-    async (file: File) => {
+    async (file: File | undefined) => {
       setCroppedInputImage(file)
+      if (!file) {
+        try {
+          sessionStorage.removeItem(CROPPED_IMAGE_SESSION_KEY)
+          const cacheData = await serializeCacheData()
+          setCache({ ...cacheData, croppedInputImage: null }, stage)
+        } catch (err) {
+          console.warn('[CreateCitizen] Failed to clear cropped image:', err)
+        }
+        return
+      }
       try {
         // Compress so this reliably fits in sessionStorage (the cropped image is
         // the critical artifact for restore + "Use my photo" after Privy returns).
