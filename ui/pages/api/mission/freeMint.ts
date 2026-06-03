@@ -118,22 +118,28 @@ async function getTotalPaid(address: string) {
 // Addresses on the Citizen whitelist contract get a free (fully sponsored)
 // mint regardless of how much they've contributed. The whitelist also makes
 // getRenewalPrice() return 0, so the relayer only pays gas for these mints.
-async function isCitizenWhitelisted(address: string): Promise<boolean> {
+// Returns true if whitelisted, false if not, null if RPC check failed.
+async function isCitizenWhitelisted(address: string): Promise<boolean | null> {
   if (!isValidEvmAddress(address)) return false
   const whitelistAddress = CITIZEN_WHITELIST_ADDRESSES[chainSlug]
   if (!whitelistAddress) return false
-  const whitelistContract = getContract({
-    client: serverClient,
-    address: whitelistAddress,
-    abi: WhitelistABI as any,
-    chain,
-  })
-  const whitelisted = await readContract({
-    contract: whitelistContract,
-    method: 'isWhitelisted' as string,
-    params: [address],
-  })
-  return Boolean(whitelisted)
+  try {
+    const whitelistContract = getContract({
+      client: serverClient,
+      address: whitelistAddress,
+      abi: WhitelistABI as any,
+      chain,
+    })
+    const whitelisted = await readContract({
+      contract: whitelistContract,
+      method: 'isWhitelisted' as string,
+      params: [address],
+    })
+    return Boolean(whitelisted)
+  } catch (err) {
+    console.error('Error checking citizen whitelist:', err)
+    return null
+  }
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -161,6 +167,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'You are already a citizen!' })
     }
     const whitelisted = await isCitizenWhitelisted(address)
+    if (whitelisted === null) {
+      return res.status(503).json({ error: 'Unable to verify whitelist status. Please try again.' })
+    }
     if (!whitelisted) {
       const totalPaid = await getTotalPaid(address)
       if (totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
@@ -205,9 +214,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const whitelisted = await isCitizenWhitelisted(address as string)
     let totalPaid = BigInt(0)
-    if (!whitelisted) {
-      totalPaid = await getTotalPaid(address as string)
-    } else {
+    if (whitelisted === true) {
       // For whitelisted users, try to get totalPaid but don't fail if subgraph is down
       try {
         totalPaid = await getTotalPaid(address as string)
@@ -215,14 +222,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         console.error('Could not fetch totalPaid for whitelisted user:', err)
         // totalPaid stays 0, but user is still eligible due to whitelist
       }
+    } else if (whitelisted === false) {
+      totalPaid = await getTotalPaid(address as string)
+    } else {
+      // whitelisted === null (RPC error): fall back to contribution check only
+      try {
+        totalPaid = await getTotalPaid(address as string)
+      } catch (err) {
+        console.error('Both whitelist and subgraph checks failed:', err)
+        return res.status(503).json({ error: 'Unable to verify eligibility. Please try again.' })
+      }
     }
     res.status(200).json({
       success: true,
       message: 'Fetched total paid.',
       data: {
         totalPaid: totalPaid.toString(),
-        whitelisted,
-        eligible: whitelisted || totalPaid >= BigInt(FREE_MINT_THRESHOLD),
+        whitelisted: whitelisted === true,
+        eligible: whitelisted === true || totalPaid >= BigInt(FREE_MINT_THRESHOLD),
       },
     })
   }

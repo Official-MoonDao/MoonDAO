@@ -527,16 +527,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   const nativeSymbol = selectedChain?.nativeCurrency?.symbol ?? 'ETH'
 
   const mintCostBreakdown = useMemo(() => {
+    if (freeMint) {
+      // Sponsored mint: the server relayer signs and submits the mint, so the
+      // user pays nothing (no citizenship fee, no network gas, no bridge fee).
+      return { renewalEth: 0, gasEth: 0, bridgeEth: 0, totalEth: 0 }
+    }
     const gasEth =
       estimatedGas > BigInt(0) && effectiveGasPrice && effectiveGasPrice > BigInt(0)
         ? Number(estimatedGas * effectiveGasPrice) / 1e18
         : 0
     const bridgeEth = isCrossChain ? Number(LAYER_ZERO_TRANSFER_COST) / 1e18 : 0
-    if (freeMint) {
-      // Sponsored mint: the server relayer signs and submits the mint, so the
-      // user pays neither the citizenship fee nor network gas.
-      return { renewalEth: 0, gasEth: 0, bridgeEth: 0, totalEth: 0 }
-    }
     const renewalEth = renewalPriceWei ? Number(ethers.utils.formatEther(renewalPriceWei)) : 0
     return {
       renewalEth,
