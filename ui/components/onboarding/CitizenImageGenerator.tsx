@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
+import { clearAiPortraitReady } from '@/lib/image-generator/citizenOnboardingImage'
+import { markPendingImageJobUploading } from '@/lib/image-generator/pendingImageJob'
 import { cropImageWithCoordinates } from '@/lib/utils/images'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
@@ -163,6 +165,10 @@ export function ImageGenerator({
     if (onGenerationStateChange) {
       onGenerationStateChange(true)
     }
+
+    // Persist immediately so Privy redirect during crop/upload can resume.
+    clearAiPortraitReady()
+    markPendingImageJobUploading('/api/image-gen/citizen-image')
 
     try {
       // First crop the image

@@ -2,6 +2,7 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getPrivyUserData } from '@/lib/privy'
+import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 import {
   hasAccessToResponse,
   fetchResponseFromFormIds,
@@ -26,16 +27,22 @@ async function getResponse(formId: string, responseId: string) {
   )
 }
 
-async function retryGetResponse(formId: string, responseId: string) {
-  let result: any
-  let data: any = {}
-  let totalItems = 0
-  let counter = 1
+async function retryGetResponse(
+  formId: string,
+  responseId: string,
+  options?: { maxAttempts?: number; delayMs?: number }
+) {
+  const maxAttempts = options?.maxAttempts ?? 5
+  const delayMs = options?.delayMs ?? 700
 
-  while (totalItems === 0 && counter < 5) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      result = await getResponse(formId, responseId)
-      data = await result.json()
+      const result = await getResponse(formId, responseId)
+      const data = await result.json()
+
+      if (result.ok && data.total_items > 0 && data.items?.[0]) {
+        return data
+      }
 
       if (!result.ok) {
         console.error(
@@ -43,25 +50,22 @@ async function retryGetResponse(formId: string, responseId: string) {
             data.description || 'Unknown error'
           }`
         )
-        if (counter >= 4) {
-          return null
-        }
-      } else {
-        totalItems = data.total_items
       }
-
-      await wait(1000)
-      counter += 1
     } catch (error) {
-      console.error(`Error on attempt ${counter}:`, error)
-      counter += 1
-      if (counter < 5) {
-        await wait(1000)
-      }
+      console.error(`Error on attempt ${attempt}:`, error)
+    }
+
+    if (attempt < maxAttempts) {
+      await wait(delayMs)
     }
   }
 
-  return result?.ok ? data : null
+  return null
+}
+
+function responsePayload(data: any) {
+  const response = data.items[0]
+  return { answers: response.answers }
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -69,17 +73,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).send('Method Not Allowed')
   }
 
-  const { accessToken, responseId, formId } = JSON.parse(req.body)
+  const { accessToken, responseId, formId, onboarding } = JSON.parse(req.body)
 
   try {
-    const privyUserData = await getPrivyUserData(accessToken as string)
-
-    if (!privyUserData) {
-      return res.status(401).json({ message: 'Invalid access token' })
-    }
-
-    const { walletAddresses } = privyUserData
-
     if (!formId || !responseId) {
       return res.status(400).json({ message: 'Missing formId or responseId' })
     }
@@ -89,7 +85,33 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(500).json({ message: 'Server configuration error' })
     }
 
-    // Check if user has access to this response
+    // New citizen/team onboarding: verify token only (no Privy user API fetch per poll).
+    // Client handles retry backoff; server does one quick Typeform read per request.
+    if (onboarding) {
+      const verified = await verifyPrivyAuth(accessToken as string)
+      if (!verified) {
+        return res.status(401).json({ message: 'Invalid access token' })
+      }
+
+      const data = await retryGetResponse(formId as string, responseId as string, {
+        maxAttempts: 1,
+      })
+      if (data?.items?.[0]) {
+        return res.status(200).json(responsePayload(data))
+      }
+      return res
+        .status(404)
+        .json({ message: 'Response not yet available from Typeform' })
+    }
+
+    const privyUserData = await getPrivyUserData(accessToken as string)
+    if (!privyUserData) {
+      return res.status(401).json({ message: 'Invalid access token' })
+    }
+
+    const { walletAddresses } = privyUserData
+
+    // Profile updates: verify on-chain ownership before returning answers.
     const { hasAccess, error, formIds } = await hasAccessToResponse(
       walletAddresses,
       responseId
@@ -99,13 +121,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(401).json({ message: error || 'Access denied' })
     }
 
-    // Fetch response from the appropriate form IDs based on type
     let data: any = null
     if (formIds && formIds.length > 0) {
       data = await fetchResponseFromFormIds(formIds, responseId as string)
     }
 
-    // Fallback to the original formId if no data found from type-specific forms
     if (!data && formId) {
       data = await retryGetResponse(formId as string, responseId as string)
     }

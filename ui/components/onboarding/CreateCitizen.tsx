@@ -53,7 +53,6 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import { CitizenData, formatCitizenShortFormData } from '@/lib/typeform/citizenFormData'
-import waitForResponse from '@/lib/typeform/waitForResponse'
 import {
   renameFile,
   fileToBase64,
@@ -61,8 +60,23 @@ import {
   isSerializedFile,
   SerializedFile,
 } from '@/lib/utils/files'
+import { compressImageForStorage } from '@/lib/utils/images'
 import { useFormCache } from '@/lib/utils/hooks/useFormCache'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
+import {
+  clearPendingImageJob,
+  isPendingImageJobStale,
+  readPendingImageJob,
+} from '@/lib/image-generator/pendingImageJob'
+import { resumePendingComfyJob } from '@/lib/image-generator/pollComfyImageJob'
+import {
+  clearAiPortraitReady,
+  decideImageResumeAction,
+  getGenerationSourceImage,
+  getReviewPreviewFile,
+  hasAiPortraitImage,
+  isAiPortraitReady,
+} from '@/lib/image-generator/citizenOnboardingImage'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
@@ -114,6 +128,116 @@ function fireCelebrationConfetti() {
   setTimeout(() => fire(0.5, 100, 90), 550)
 }
 
+const ANONYMOUS_FORM_CACHE_KEY = 'CreateCitizenCacheV1'
+const PENDING_TYPEFORM_SESSION_KEY = 'CreateCitizen_pendingTypeform'
+const RESUME_STAGE_SESSION_KEY = 'CreateCitizen_resumeStage'
+const CROPPED_IMAGE_SESSION_KEY = 'CreateCitizen_croppedImage'
+const INPUT_IMAGE_SESSION_KEY = 'CreateCitizen_inputImage'
+
+type PendingTypeformPayload = { formId: string; responseId: string }
+
+function readPendingTypeformFromSession(): PendingTypeformPayload | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(PENDING_TYPEFORM_SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (parsed?.formId && parsed?.responseId) return parsed
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function writePendingTypeformToSession(payload: PendingTypeformPayload) {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.setItem(PENDING_TYPEFORM_SESSION_KEY, JSON.stringify(payload))
+    sessionStorage.setItem(RESUME_STAGE_SESSION_KEY, '2')
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearPendingTypeformSession() {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.removeItem(PENDING_TYPEFORM_SESSION_KEY)
+    sessionStorage.removeItem(RESUME_STAGE_SESSION_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+function readSerializedImageFromSession(key: string): SerializedFile | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return isSerializedFile(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function writeSerializedImageToSession(key: string, serialized: SerializedFile) {
+  if (typeof window === 'undefined') return
+  const payload = JSON.stringify(serialized)
+  try {
+    sessionStorage.setItem(key, payload)
+  } catch {
+    // Quota exceeded: the full-size input image is the least critical thing to
+    // keep, so evict it and retry the (critical) cropped image / current write.
+    try {
+      if (key !== INPUT_IMAGE_SESSION_KEY) {
+        sessionStorage.removeItem(INPUT_IMAGE_SESSION_KEY)
+        sessionStorage.setItem(key, payload)
+      }
+    } catch {
+      /* give up silently — restore will fall back to resuming the comfy job */
+    }
+  }
+}
+
+function clearSessionImageSnapshots() {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.removeItem(CROPPED_IMAGE_SESSION_KEY)
+    sessionStorage.removeItem(INPUT_IMAGE_SESSION_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+function restoreAnonymousFormCache(): { stage?: number; formData?: any; timestamp?: number } | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const stored = localStorage.getItem(ANONYMOUS_FORM_CACHE_KEY)
+    if (!stored) return null
+    const parsed = JSON.parse(stored)
+    if (parsed?.formData) return parsed
+    if (parsed?.citizenData || parsed?.stage !== undefined) {
+      const { stage, timestamp, ...formData } = parsed
+      return { stage, formData, timestamp }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+/** Client-only: restore wizard step after Privy remount (must not run during SSR). */
+function restoreWizardStageFromSession(): number {
+  if (readPendingTypeformFromSession()) return 1
+  const resume = sessionStorage.getItem(RESUME_STAGE_SESSION_KEY)
+  if (resume !== '2') return 0
+  const anon = restoreAnonymousFormCache()
+  const formData = anon?.formData || anon
+  if (formData?.citizenData?.name) return 2
+  return 1
+}
+
 export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // ===== Context & Constants =====
   const router = useRouter()
@@ -163,6 +287,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [restoredStage])
 
   // ===== State: Form State =====
+  // Always 0 on first render so SSR markup matches the client (session restore runs in useEffect).
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
   const [inputImage, setInputImage] = useState<File>()
@@ -197,14 +322,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const wasRegeneratingRef = useRef(false)
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [isSubmittingTypeform, setIsSubmittingTypeform] = useState(false)
+  const [hasPendingImageJob, setHasPendingImageJob] = useState(false)
   // When a signed-out user submits the profile, we hold the Typeform response
   // here and prompt sign-in; processing the response needs an authenticated
   // Privy session (the /api/typeform/response route is auth-guarded).
-  const [pendingTypeform, setPendingTypeform] = useState<{
-    formId: string
-    responseId: string
-  } | null>(null)
+  const [pendingTypeform, setPendingTypeform] = useState<PendingTypeformPayload | null>(null)
   const processingPendingTypeformRef = useRef(false)
+  const hasRestoredInProgressFlowRef = useRef(false)
+  const hasRestoredFromSessionRef = useRef(false)
+  const hasRestoredWizardArtifactsRef = useRef(false)
 
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
@@ -261,6 +387,67 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     setImageGenProgress(snapshot)
   }, [])
 
+  const runImageJobPolling = useCallback(
+    (sourceImage: File | undefined) => {
+      setIsImageGenerating(true)
+      setHasPendingImageJob(true)
+      const start = Date.now()
+      const elapsedTimer = setInterval(() => {
+        setImageGenProgress((prev) => {
+          const phase = prev?.phase ?? 'queued'
+          const elapsed = Date.now() - start
+          return {
+            phase,
+            elapsedMs: elapsed,
+            progressPct: computeProgressPct(phase, elapsed),
+            phaseLabel: PHASE_LABELS[phase] ?? 'Creating your AI image…',
+            tipIndex: prev?.tipIndex ?? 0,
+          }
+        })
+      }, 250)
+
+      return resumePendingComfyJob(
+        {
+          setPhase: (phase) => {
+            const elapsed = Date.now() - start
+            setImageGenProgress({
+              phase,
+              elapsedMs: elapsed,
+              progressPct: computeProgressPct(phase, elapsed),
+              phaseLabel: PHASE_LABELS[phase] ?? 'Creating your AI image…',
+              tipIndex: 0,
+            })
+          },
+          setImage: (file) => setCitizenImage(file),
+          setError: (msg) => console.warn('[CreateCitizen] image resume:', msg),
+        },
+        sourceImage,
+      ).finally(() => {
+        clearInterval(elapsedTimer)
+        setIsImageGenerating(false)
+        setHasPendingImageJob(false)
+        setImageGenProgress(null)
+      })
+    },
+    [],
+  )
+
+  const restartImageGeneration = useCallback(
+    async (sourceImage: File) => {
+      clearAiPortraitReady()
+      setCitizenImage(undefined)
+      setIsImageGenerating(true)
+      setHasPendingImageJob(true)
+      try {
+        await regenerateAIImage(sourceImage)
+      } finally {
+        setIsImageGenerating(false)
+        setHasPendingImageJob(false)
+      }
+    },
+    [regenerateAIImage],
+  )
+
   // Progress for Review: Design-step generator (hidden mount) or Review regeneration hook.
   const activeImageGenProgress = useMemo((): ImageGenProgressSnapshot | null => {
     if (imageGenProgress) return imageGenProgress
@@ -275,10 +462,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [imageGenProgress, isRegenerating, regenPhase, regenElapsedMs])
 
   const hasAiPortrait =
-    !!citizenImage && (!croppedInputImage || citizenImage !== croppedInputImage)
+    hasAiPortraitImage(citizenImage, croppedInputImage) && isAiPortraitReady()
 
-  // Keep the hidden Design-step generator mounted while a background job runs.
-  const keepImageGeneratorMounted = stage === 0 || isImageGenerating
+  const isAwaitingAiPortrait = isImageGenerating || hasPendingImageJob
+
+  const keepImageGeneratorMounted =
+    stage === 0 || isImageGenerating || hasPendingImageJob
 
   // ===== Computed Values =====
   const LAYER_ZERO_TRANSFER_COST = useMemo(() => BigInt('3000000000000000'), [])
@@ -302,12 +491,23 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     [LAYER_ZERO_TRANSFER_COST],
   )
 
+  // Persisted images are JPEG-compressed so the cache survives the storage quota
+  // across a Privy sign-in navigation. Full-resolution copies stay in React state
+  // for the active session; this only affects what we can restore after a remount.
+  const serializeForStorage = useCallback(async (file: File | undefined | null) => {
+    if (!file) return null
+    try {
+      const compressed = (await compressImageForStorage(file)) as File
+      return await fileToBase64(compressed)
+    } catch {
+      return null
+    }
+  }, [])
+
   const serializeCacheData = useCallback(async () => {
-    const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
-    const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
-    const serializedCroppedInputImage = croppedInputImage
-      ? await fileToBase64(croppedInputImage)
-      : null
+    const serializedCitizenImage = await serializeForStorage(citizenImage)
+    const serializedInputImage = await serializeForStorage(inputImage)
+    const serializedCroppedInputImage = await serializeForStorage(croppedInputImage)
     return {
       stage,
       citizenData,
@@ -325,6 +525,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     croppedInputImage,
     agreedToCondition,
     selectedChainSlug,
+    serializeForStorage,
   ])
 
   const restoreImageFromCache = useCallback(
@@ -337,6 +538,25 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       return false
     },
     [],
+  )
+
+  const handleCrop = useCallback(
+    async (file: File) => {
+      setCroppedInputImage(file)
+      try {
+        // Compress so this reliably fits in sessionStorage (the cropped image is
+        // the critical artifact for restore + "Use my photo" after Privy returns).
+        const serialized = await serializeForStorage(file)
+        if (serialized) {
+          writeSerializedImageToSession(CROPPED_IMAGE_SESSION_KEY, serialized)
+        }
+        const cacheData = await serializeCacheData()
+        setCache({ ...cacheData, croppedInputImage: serialized }, stage)
+      } catch (err) {
+        console.warn('[CreateCitizen] Failed to persist cropped image:', err)
+      }
+    },
+    [stage, setCache, serializeCacheData, serializeForStorage],
   )
 
   const executeFreeMint = useCallback(
@@ -533,6 +753,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       // Clear the onboarding form cache (the citizen cache was just seeded).
       clearCache()
+      clearPendingTypeformSession()
+      clearPendingImageJob()
+      clearSessionImageSnapshots()
+      clearAiPortraitReady()
     },
     [
       tagToNetworkSignup,
@@ -689,6 +913,63 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     defaultChainSlug,
   ])
 
+  const applyCachedFormImages = useCallback(
+    (formData: any): { cropped?: File; input?: File } => {
+      if (!formData) return {}
+      let cropped: File | undefined
+      let input: File | undefined
+      if (formData.croppedInputImage && isSerializedFile(formData.croppedInputImage)) {
+        cropped = base64ToFile(formData.croppedInputImage)
+        setCroppedInputImage(cropped)
+      }
+      if (formData.inputImage && isSerializedFile(formData.inputImage)) {
+        input = base64ToFile(formData.inputImage)
+        setInputImage(input)
+      }
+      if (isAiPortraitReady() && formData.citizenImage && isSerializedFile(formData.citizenImage)) {
+        setCitizenImage(base64ToFile(formData.citizenImage))
+      }
+      if (cropped || input || (isAiPortraitReady() && formData.citizenImage)) {
+        imagesRestoredRef.current = true
+      }
+      return { cropped, input }
+    },
+    [],
+  )
+
+  /** Restore uploads + resume/restart AI gen after Privy or a full page reload. */
+  const restoreWizardArtifacts = useCallback((): { cropped?: File; input?: File } => {
+    let cropped: File | undefined
+    let input: File | undefined
+
+    const sessionCropped = readSerializedImageFromSession(CROPPED_IMAGE_SESSION_KEY)
+    if (sessionCropped) {
+      cropped = base64ToFile(sessionCropped)
+      setCroppedInputImage(cropped)
+    }
+    const sessionInput = readSerializedImageFromSession(INPUT_IMAGE_SESSION_KEY)
+    if (sessionInput) {
+      input = base64ToFile(sessionInput)
+      setInputImage(input)
+    }
+
+    const caches = [restoreAnonymousFormCache(), address ? restoreCache() : null].filter(
+      Boolean,
+    ) as any[]
+
+    for (const entry of caches) {
+      const formData = entry?.formData || entry
+      const applied = applyCachedFormImages(formData)
+      cropped = cropped || applied.cropped
+      input = input || applied.input
+      if (formData?.citizenData?.name && !citizenDataRef.current.name) {
+        setCitizenData(formData.citizenData)
+      }
+    }
+
+    return { cropped, input }
+  }, [address, restoreCache, applyCachedFormImages])
+
   // Form Restoration Handler
   const handleFormRestore = useCallback(
     (restored: any) => {
@@ -699,28 +980,32 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       // Handle both old and new cache formats
       const formData = restored.formData || restored
 
-      if (!formData || !formData.citizenData) {
-        console.error('[CreateCitizen] Invalid cache structure, missing formData or citizenData')
+      const hasProfile = !!formData?.citizenData?.name
+      const hasImages =
+        !!formData?.croppedInputImage ||
+        !!formData?.inputImage ||
+        !!formData?.citizenImage
+
+      if (!formData || (!hasProfile && !hasImages)) {
+        console.error('[CreateCitizen] Invalid cache structure, nothing to restore')
         return
       }
 
       hasRestoredFormDataRef.current = true
 
-      setStage(restored.stage || 2)
-      setCitizenData(formData.citizenData)
+      if (typeof restored.stage === 'number') {
+        setStage((current) => Math.max(current, restored.stage))
+      } else if (hasProfile) {
+        setStage((current) => (current < 2 ? 2 : current))
+      }
 
-      // Trigger gas estimation after form restore
-      setTimeout(() => {
-        if (restored.stage === 2 && formData.citizenData?.name) {
-          estimateMintGas()
-        }
-      }, 100)
+      if (hasProfile) {
+        setCitizenData(formData.citizenData)
+      }
 
-      const citizenImageRestored = restoreImageFromCache(
-        formData.citizenImage,
-        setCitizenImage,
-        'citizen image',
-      )
+      const citizenImageRestored =
+        isAiPortraitReady() &&
+        restoreImageFromCache(formData.citizenImage, setCitizenImage, 'citizen image')
       const inputImageRestored = restoreImageFromCache(
         formData.inputImage,
         setInputImage,
@@ -732,7 +1017,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         'cropped input image',
       )
 
-      imagesRestoredRef.current = citizenImageRestored || inputImageRestored
+      imagesRestoredRef.current =
+        citizenImageRestored || inputImageRestored || croppedInputImageRestored
+
+      // Trigger gas estimation after form restore
+      setTimeout(() => {
+        if (restored.stage === 2 && formData.citizenData?.name) {
+          estimateMintGas()
+        }
+      }, 100)
 
       const agreedValue = formData.agreedToCondition ?? false
       setAgreedToCondition(agreedValue)
@@ -785,7 +1078,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // Mint Handler
   const callMint = useCallback(async () => {
     // Validation
-    const imageToUse = citizenImage || croppedInputImage || inputImage
+    const imageToUse =
+      hasAiPortrait && citizenImage ? citizenImage : croppedInputImage
     if (!imageToUse) return toast.error('Please upload an image and complete the previous steps.')
 
     if (!address) {
@@ -916,7 +1210,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       // signed out, stash the response and prompt login; an effect re-runs this
       // once they're authenticated.
       if (!authenticated) {
-        setPendingTypeform({ formId, responseId })
+        const payload = { formId, responseId }
+        setPendingTypeform(payload)
+        writePendingTypeformToSession(payload)
         login()
         return
       }
@@ -934,6 +1230,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           console.warn('ConvertKit signup failed (non-blocking):', err)
         })
 
+        clearPendingTypeformSession()
         setCitizenData(cleanedData as any)
         setStage(2)
       } catch (error: any) {
@@ -949,18 +1246,164 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     [subscribeToNetworkSignup, authenticated, login],
   )
 
-  // Once a signed-out user authenticates (prompted at profile submit), process
-  // the stashed Typeform response so the flow continues to Review.
+  // Persist original upload (compressed) so re-cropping survives a Privy navigation.
+  // This is the lowest-priority artifact — the resilient session writer will evict
+  // it first under quota pressure in favor of the cropped image / pending job.
   useEffect(() => {
-    if (authenticated && pendingTypeform && !processingPendingTypeformRef.current) {
+    if (!inputImage) return
+    serializeForStorage(inputImage)
+      .then((serialized) => {
+        if (serialized) writeSerializedImageToSession(INPUT_IMAGE_SESSION_KEY, serialized)
+      })
+      .catch((err) => console.warn('[CreateCitizen] Failed to persist input image:', err))
+  }, [inputImage, serializeForStorage])
+
+  // Client-only: restore wizard step, cached images, and in-flight AI jobs after Privy / reload.
+  useEffect(() => {
+    if (hasRestoredFromSessionRef.current) return
+    hasRestoredFromSessionRef.current = true
+
+    const pendingTypeform = readPendingTypeformFromSession()
+    if (pendingTypeform) {
+      setPendingTypeform(pendingTypeform)
+    }
+
+    const restoredStage = restoreWizardStageFromSession()
+    if (restoredStage > 0) {
+      setStage((current) => (current < restoredStage ? restoredStage : current))
+    }
+
+    if (!hasRestoredWizardArtifactsRef.current) {
+      hasRestoredWizardArtifactsRef.current = true
+      const { cropped } = restoreWizardArtifacts()
+      const sourceForGen = getGenerationSourceImage(cropped, undefined)
+
+      if (!isAiPortraitReady() && citizenImageRef.current) {
+        setCitizenImage(undefined)
+      }
+
+      const pendingJob = readPendingImageJob()
+      if (pendingJob && isPendingImageJobStale(pendingJob)) {
+        clearPendingImageJob()
+      }
+
+      const freshJob = readPendingImageJob()
+      const hasAiPortraitAlready =
+        isAiPortraitReady() && hasAiPortraitImage(citizenImageRef.current, cropped)
+
+      const resumeAction = decideImageResumeAction({
+        job: freshJob,
+        jobStale: freshJob ? isPendingImageJobStale(freshJob) : true,
+        hasAiPortraitReady: hasAiPortraitAlready,
+        hasSourceImage: !!sourceForGen,
+      })
+
+      if (resumeAction === 'resume-polling') {
+        // Resuming only needs the jobId; source image is just a failure fallback.
+        void runImageJobPolling(sourceForGen)
+      } else if (resumeAction === 'restart-generation' && sourceForGen) {
+        clearPendingImageJob()
+        void restartImageGeneration(sourceForGen)
+      } else if (freshJob && freshJob.status === 'uploading') {
+        // Nothing recoverable (no source for an un-created job).
+        clearPendingImageJob()
+        setHasPendingImageJob(false)
+      }
+    }
+  }, [
+    restoreWizardArtifacts,
+    runImageJobPolling,
+    restartImageGeneration,
+  ])
+
+  // Copy anonymous localStorage progress to the wallet-scoped key once an address exists.
+  const hasMigratedAnonCacheRef = useRef(false)
+  useEffect(() => {
+    if (!address || hasMigratedAnonCacheRef.current) return
+    const anon = restoreAnonymousFormCache()
+    if (!anon) return
+    const walletCache = restoreCache()
+    if (walletCache?.formData?.citizenData?.name) {
+      hasMigratedAnonCacheRef.current = true
+      return
+    }
+    const formData = anon.formData || anon
+    if (!formData?.citizenData && (anon.stage ?? 0) < 1) return
+
+    hasMigratedAnonCacheRef.current = true
+    if (formData?.citizenData) {
+      setCache(formData, anon.stage)
+    }
+    if (!hasRestoredFormDataRef.current && (anon.stage ?? 0) >= 1) {
+      handleFormRestore(anon)
+    } else if (!imagesRestoredRef.current) {
+      applyCachedFormImages(formData)
+    }
+  }, [address, restoreCache, setCache, stage, handleFormRestore, applyCachedFormImages])
+
+  // After profile submit we prompt Privy sign-in. That can remount this tree and
+  // wipe React state, so we also persist the pending Typeform in sessionStorage
+  // and restore in-progress flow from the anonymous form cache when needed.
+  useEffect(() => {
+    if (!authenticated || processingPendingTypeformRef.current) return
+
+    const pending = pendingTypeform || readPendingTypeformFromSession()
+    if (pending) {
+      if (stage === 0) setStage(1)
       processingPendingTypeformRef.current = true
-      const pending = pendingTypeform
       setPendingTypeform(null)
       submitTypeform(pending).finally(() => {
         processingPendingTypeformRef.current = false
       })
+      return
     }
-  }, [authenticated, pendingTypeform, submitTypeform])
+
+    if (hasRestoredInProgressFlowRef.current) return
+
+    // Typeform already processed before a remount — jump straight to checkout.
+    if (stage < 2) {
+      if (citizenData.name) {
+        hasRestoredInProgressFlowRef.current = true
+        setStage(2)
+        clearPendingTypeformSession()
+        return
+      }
+      const walletCache = address ? restoreCache() : null
+      const cachedName =
+        walletCache?.formData?.citizenData?.name ||
+        restoreAnonymousFormCache()?.formData?.citizenData?.name
+      if (cachedName) {
+        hasRestoredInProgressFlowRef.current = true
+        const toRestore = walletCache || restoreAnonymousFormCache()
+        if (toRestore) handleFormRestore(toRestore)
+        else setStage(2)
+        clearPendingTypeformSession()
+        return
+      }
+    }
+
+    if (!imagesRestoredRef.current) {
+      restoreWizardArtifacts()
+    }
+
+    // Restore design/profile progress saved before the wallet existed.
+    const anon = restoreAnonymousFormCache()
+    const formData = anon?.formData || anon
+    if (anon && formData && (anon.stage ?? 0) >= 1 && !hasRestoredInProgressFlowRef.current) {
+      hasRestoredInProgressFlowRef.current = true
+      handleFormRestore(anon)
+    }
+  }, [
+    authenticated,
+    pendingTypeform,
+    submitTypeform,
+    stage,
+    citizenData.name,
+    handleFormRestore,
+    address,
+    restoreCache,
+    restoreWizardArtifacts,
+  ])
 
   // Regenerate Handler for Review step
   const handleRegenerateFromReview = useCallback(async () => {
@@ -969,14 +1412,23 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       return
     }
 
+    clearAiPortraitReady()
     setCitizenImage(undefined)
     setIsImageGenerating(true)
+    setHasPendingImageJob(true)
 
     try {
       await regenerateAIImage(croppedInputImage)
     } catch (error) {
       console.error('Regeneration error:', error)
-      toast.error('Failed to regenerate image. Please try again.')
+      toast.error(
+        'Image generation is unavailable right now — you can continue with your uploaded photo.',
+      )
+    } finally {
+      // Always release the generating state so the user can keep their cropped
+      // photo and proceed to mint even when AI generation fails.
+      setIsImageGenerating(false)
+      setHasPendingImageJob(false)
     }
   }, [croppedInputImage, regenerateAIImage])
 
@@ -1023,10 +1475,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // ===== Effect Group: UI State Sync =====
   useEffect(() => {
-    if (isImageGenerating && citizenImage) {
+    if (isImageGenerating && hasAiPortrait) {
       setIsImageGenerating(false)
+      setHasPendingImageJob(false)
+      setImageGenProgress(null)
     }
-  }, [citizenImage, isImageGenerating])
+  }, [citizenImage, croppedInputImage, isImageGenerating, hasAiPortrait])
 
   // Sync regeneration loading — only clear when regeneration ends (not while
   // initial background generation is running with isRegenerating false).
@@ -1150,13 +1604,18 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [stage, address])
 
-  // Cache form state continuously (removed onrampModalOpen guard for more aggressive caching)
+  // Cache form state continuously (removed onrampModalOpen guard for more aggressive caching).
+  // Do not require a wallet address — signed-out users use the anonymous cache key
+  // until they authenticate at profile submit.
   useEffect(() => {
     if (
       stage >= 0 &&
-      address &&
-      (citizenData.name || citizenImage || inputImage) &&
-      !mintComplete
+      !mintComplete &&
+      (citizenData.name ||
+        citizenImage ||
+        inputImage ||
+        croppedInputImage ||
+        stage > 0)
     ) {
       const performCache = async () => {
         const cacheData = await serializeCacheData()
@@ -1172,6 +1631,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     citizenData.name,
     citizenImage,
     inputImage,
+    croppedInputImage,
     agreedToCondition,
     selectedChainSlug,
     mintComplete,
@@ -1200,10 +1660,24 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // Memoize the welcome image object URL so the overlay doesn't allocate a new
   // one on every render, and revoke it when the source changes / on unmount.
-  const reviewPreviewFile =
-    hasAiPortrait && citizenImage
-      ? citizenImage
-      : croppedInputImage || inputImage || null
+  const reviewPreviewFile = useMemo(
+    () =>
+      getReviewPreviewFile({
+        citizenImage,
+        croppedInputImage,
+        inputImage,
+        isImageGenerating,
+        hasPendingImageJob,
+        aiPortraitReady: isAiPortraitReady(),
+      }),
+    [
+      citizenImage,
+      croppedInputImage,
+      inputImage,
+      isImageGenerating,
+      hasPendingImageJob,
+    ],
+  )
   const reviewPreviewUrl = useMemo(
     () => (reviewPreviewFile ? URL.createObjectURL(reviewPreviewFile) : null),
     [reviewPreviewFile],
@@ -1283,8 +1757,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         }
         description=""
       >
-        <div className="flex justify-center w-full px-4 md:px-0">
-          <div className="w-full max-w-[720px]">
+        <div className="w-full">
             {/* Header bar with steps + close */}
             <div className="flex items-center justify-between mb-6">
               <Steps
@@ -1292,11 +1765,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 steps={['Design', 'Profile', 'Checkout']}
                 currStep={stage}
                 lastStep={lastStage}
-                setStep={(step: number) => {
-                  if (step === 0 && stage !== 0) {
+                setStep={(value) => {
+                  const next =
+                    typeof value === 'function' ? value(stage) : value
+                  if (next === 0 && stage !== 0) {
                     setCitizenImage(undefined)
                   }
-                  setStage(step)
+                  setStage(next)
                 }}
               />
               <button
@@ -1341,7 +1816,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     generateInBG
                     onGenerationStateChange={setIsImageGenerating}
                     onGenerationProgress={handleImageGenProgress}
-                    onCrop={setCroppedInputImage}
+                    onCrop={handleCrop}
                   />
                   {stage === 0 && process.env.NEXT_PUBLIC_ENV === 'dev' && (
                     <button
@@ -1435,13 +1910,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                           fill
                           style={{ objectFit: 'cover' }}
                           className={`rounded-2xl transition-opacity duration-300 ${
-                            isImageGenerating && !hasAiPortrait
+                            isAwaitingAiPortrait && !hasAiPortrait
                               ? 'opacity-30 blur-[2px]'
                               : 'opacity-100'
                           }`}
                         />
                       )}
-                      {isImageGenerating && !hasAiPortrait && (
+                      {isAwaitingAiPortrait && !hasAiPortrait && (
                         <CitizenImageGenerationProgress
                           phase={activeImageGenProgress?.phase ?? 'uploading'}
                           elapsedMs={activeImageGenProgress?.elapsedMs ?? 0}
@@ -1454,7 +1929,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                           variant="overlay"
                         />
                       )}
-                      {!hasAiPortrait && !croppedInputImage && !inputImage && (
+                      {!hasAiPortrait &&
+                        !croppedInputImage &&
+                        !isAwaitingAiPortrait && (
                         <div className="absolute inset-0 flex items-center justify-center bg-slate-800/60">
                           <p className="text-slate-400 text-center text-sm px-6">
                             Complete previous steps to generate your citizen image
@@ -1462,7 +1939,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         </div>
                       )}
                     </div>
-                    {(hasAiPortrait || croppedInputImage || inputImage) && (
+                    {(hasAiPortrait || croppedInputImage) && (
                       <div className="flex flex-col items-center gap-3 w-full max-w-[400px]">
                         <div className="flex flex-col sm:flex-row gap-3 w-full">
                           <button
@@ -1485,11 +1962,14 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                             </svg>
                             Regenerate
                           </button>
-                          {(croppedInputImage || inputImage) && (
+                          {croppedInputImage && (
                             <button
                               onClick={() => {
-                                setCitizenImage(croppedInputImage || inputImage)
+                                clearAiPortraitReady()
+                                setCitizenImage(croppedInputImage)
                                 setIsImageGenerating(false)
+                                setHasPendingImageJob(false)
+                                clearPendingImageJob()
                                 setImageGenProgress(null)
                               }}
                               className="flex-1 py-2.5 px-5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 rounded-2xl font-semibold text-white text-sm"
@@ -1597,7 +2077,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 </button>
               </div>
             )}
-          </div>
         </div>
       </ContentLayout>
       {address && (

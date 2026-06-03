@@ -1,7 +1,6 @@
 import { getAccessToken } from '@privy-io/react-auth'
 import { ethers } from 'ethers'
 import cleanData from '@/lib/tableland/cleanData'
-import waitForResponse from '@/lib/typeform/waitForResponse'
 
 /**
  * Estimates gas for a transaction using the gas estimation API
@@ -56,6 +55,72 @@ export function calculateTotalMintCost(
   return totalCost
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+const TYPEFORM_POLL_MAX_ATTEMPTS = 24
+const TYPEFORM_POLL_INITIAL_DELAY_MS = 250
+const TYPEFORM_POLL_MAX_DELAY_MS = 1500
+
+/**
+ * Handles Typeform submission with data formatting and cleaning.
+ * Single request loop (no separate wait-then-fetch) with short backoff between polls.
+ */
+export async function handleTypeformSubmission(params: {
+  formId: string
+  responseId: string
+  formatter: (answers: any, responseId: string) => any
+  /** Skips heavy Tableland ownership checks — use for new citizen/team onboarding only. */
+  onboarding?: boolean
+}): Promise<any> {
+  const accessToken = await getAccessToken()
+  const onboarding = params.onboarding ?? true
+
+  let lastStatus = 0
+  const authHeaders: HeadersInit = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : {}
+
+  for (let attempt = 0; attempt < TYPEFORM_POLL_MAX_ATTEMPTS; attempt++) {
+    const response = await fetch('/api/typeform/response', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
+      body: JSON.stringify({
+        accessToken,
+        responseId: params.responseId,
+        formId: params.formId,
+        onboarding,
+      }),
+    })
+
+    lastStatus = response.status
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data.answers) {
+        const formattedData = params.formatter(data.answers, params.responseId)
+        return cleanData(formattedData)
+      }
+    }
+
+    if (attempt < TYPEFORM_POLL_MAX_ATTEMPTS - 1) {
+      const delay = Math.min(
+        TYPEFORM_POLL_INITIAL_DELAY_MS + attempt * 250,
+        TYPEFORM_POLL_MAX_DELAY_MS
+      )
+      await sleep(delay)
+    }
+  }
+
+  throw new Error(
+    `Failed to load Typeform response (last status: ${lastStatus}). Please try again.`
+  )
+}
+
 /**
  * Extracts token ID from a transaction receipt by parsing the ERC-721 Transfer event.
  * ERC-721 Transfer has 4 topics (sig + from + to + tokenId), while ERC-20 Transfer
@@ -72,39 +137,4 @@ export function extractTokenIdFromReceipt(receipt: any): string | null {
   if (!transferLog) return null
 
   return ethers.BigNumber.from(transferLog.topics[3]).toString()
-}
-
-/**
- * Handles Typeform submission with data formatting and cleaning
- */
-export async function handleTypeformSubmission(params: {
-  formId: string
-  responseId: string
-  formatter: (answers: any, responseId: string) => any
-}): Promise<any> {
-  await waitForResponse(params.formId, params.responseId)
-
-  const accessToken = await getAccessToken()
-
-  const response = await fetch('/api/typeform/response', {
-    method: 'POST',
-    body: JSON.stringify({
-      accessToken,
-      responseId: params.responseId,
-      formId: params.formId,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`API call failed with status: ${response.status}`)
-  }
-
-  const data = await response.json()
-
-  if (!data.answers) {
-    throw new Error('No answers found in response')
-  }
-
-  const formattedData = params.formatter(data.answers, params.responseId)
-  return cleanData(formattedData)
 }

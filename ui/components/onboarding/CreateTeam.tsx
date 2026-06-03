@@ -395,8 +395,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           }
           description=""
         >
-          <div className="flex justify-center w-full px-4 md:px-0">
-            <div className="w-full max-w-[720px]">
+          <div className="w-full">
               {/* Header bar with steps + close */}
               <div className="flex items-center justify-between mb-6">
                 <Steps
@@ -550,7 +549,6 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   </button>
                 </div>
               )}
-            </div>
           </div>
         </ContentLayout>
       </div>
