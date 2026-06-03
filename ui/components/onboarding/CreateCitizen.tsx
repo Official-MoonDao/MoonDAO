@@ -535,7 +535,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     if (freeMint) {
       // Sponsored mint: the server relayer signs and submits the mint, so the
       // user pays neither the citizenship fee nor network gas.
-      return { renewalEth: 0, gasEth, bridgeEth, totalEth: gasEth + bridgeEth }
+      return { renewalEth: 0, gasEth: 0, bridgeEth: 0, totalEth: 0 }
     }
     const renewalEth = renewalPriceWei ? Number(ethers.utils.formatEther(renewalPriceWei)) : 0
     return {
@@ -563,7 +563,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   )
 
   const isLoadingMintCosts = freeMint
-    ? isLoadingGasEstimate || isLoadingTotalMintUsd
+    ? false
     : isLoadingRenewalPrice ||
       isLoadingGasEstimate ||
       isLoadingRenewalUsd ||

@@ -122,23 +122,18 @@ async function isCitizenWhitelisted(address: string): Promise<boolean> {
   if (!isValidEvmAddress(address)) return false
   const whitelistAddress = CITIZEN_WHITELIST_ADDRESSES[chainSlug]
   if (!whitelistAddress) return false
-  try {
-    const whitelistContract = getContract({
-      client: serverClient,
-      address: whitelistAddress,
-      abi: WhitelistABI as any,
-      chain,
-    })
-    const whitelisted = await readContract({
-      contract: whitelistContract,
-      method: 'isWhitelisted' as string,
-      params: [address],
-    })
-    return Boolean(whitelisted)
-  } catch (err) {
-    console.error('Error checking citizen whitelist:', err)
-    return false
-  }
+  const whitelistContract = getContract({
+    client: serverClient,
+    address: whitelistAddress,
+    abi: WhitelistABI as any,
+    chain,
+  })
+  const whitelisted = await readContract({
+    contract: whitelistContract,
+    method: 'isWhitelisted' as string,
+    params: [address],
+  })
+  return Boolean(whitelisted)
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
