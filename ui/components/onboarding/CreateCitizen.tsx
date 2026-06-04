@@ -1957,19 +1957,26 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     const getTotalPaid = async () => {
       // A magic-link invite token makes this wallet eligible for a sponsored
       // mint even without a contribution history or on-chain allowlist entry.
-      const query = inviteToken
-        ? `address=${address}&invite=${encodeURIComponent(inviteToken)}`
-        : `address=${address}`
-      const res = await fetch(`/api/mission/freeMint?${query}`, {
+      // Send the invite token via header instead of query string to prevent
+      // leakage via browser history, analytics, and Referer headers.
+      const headers: Record<string, string> = {}
+      if (inviteToken) {
+        headers['x-invite-token'] = inviteToken
+      }
+      const res = await fetch(`/api/mission/freeMint?address=${address}`, {
         method: 'GET',
+        headers,
       })
       if (!res.ok) {
         const errorText = await res.text() // Or response.json()
         console.error(errorText)
+        setFreeMint(false)
       } else {
         const { data } = await res.json()
         if (data.eligible) {
           setFreeMint(true)
+        } else {
+          setFreeMint(false)
         }
       }
     }

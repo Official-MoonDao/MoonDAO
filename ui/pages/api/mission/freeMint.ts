@@ -224,14 +224,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           .status(401)
           .json({ error: 'You must be signed in with this wallet to redeem an invite.' })
       }
+      // Peek to get invite metadata for potential restore, but always attempt
+      // consume even if peek fails (peek failures might be transient Redis
+      // errors while the key still exists). consumeInvite is atomic and will
+      // return false if the invite doesn't exist, is expired, or was already used.
       const invite = await peekInvite(inviteToken)
-      const consumed = invite ? await consumeInvite(inviteToken, address) : false
+      const consumed = await consumeInvite(inviteToken, address)
       if (!consumed) {
         return res
           .status(400)
           .json({ error: 'This invite link is invalid or has already been used.' })
       }
-      consumedInvite = invite
+      // Use peeked metadata if available; fall back to minimal record if peek
+      // failed but consume succeeded (transient Redis error during peek).
+      consumedInvite = invite || { createdAt: Date.now() }
     } else {
       // Existing eligibility: on-chain allowlist or contribution threshold.
       const listed = await isCitizenFreeMintListed(address)
@@ -245,6 +251,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
     }
 
+    // Track whether the mint transaction succeeded so we only restore the invite
+    // on actual mint failures, not on subsequent response serialization errors.
+    let mintSucceeded = false
     try {
       const cost: any = await readContract({
         contract: citizenContract,
@@ -262,6 +271,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         transaction,
         account,
       })
+      mintSucceeded = true
       const jsonReceipt = JSON.stringify(receipt, (key, value) => {
         if (typeof value === 'bigint') {
           return value.toString()
@@ -270,9 +280,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
       res.status(200).json(JSON.parse(jsonReceipt))
     } catch (err) {
-      // The mint failed after the invite was consumed — restore the token so a
-      // legitimate recipient isn't left with a burned link.
-      if (inviteToken && consumedInvite) {
+      // Only restore the invite if the mint transaction itself failed. If the
+      // transaction succeeded but response serialization/sending failed, the
+      // citizen already exists and we must not restore the one-time token.
+      if (!mintSucceeded && inviteToken && consumedInvite) {
         await restoreInvite(inviteToken, consumedInvite)
       }
       console.error('Free mint failed:', err)
@@ -281,8 +292,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
   if (req.method === 'GET') {
     const address = req.query.address
+    // Accept invite token from header instead of query string to prevent leakage
+    // via browser history, analytics, proxies, and Referer headers.
     const inviteToken =
-      typeof req.query.invite === 'string' ? req.query.invite : undefined
+      req.headers['x-invite-token'] || typeof req.query.invite === 'string'
+        ? req.query.invite
+        : undefined
 
     if (!address || typeof address !== 'string') {
       return res.status(400).json({ error: 'Address is required.' })
@@ -292,8 +307,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // A valid (unconsumed) invite token makes the user eligible for a sponsored
-    // mint. We only peek here — the token is consumed at mint time (POST).
+    // mint, but only if they don't already hold a citizen NFT. We only peek
+    // here — the token is consumed at mint time (POST).
     if (inviteToken && (await peekInvite(inviteToken))) {
+      const citizenContract = getContract({
+        client: serverClient,
+        address: CITIZEN_ADDRESSES[chainSlug],
+        abi: CitizenABI as any,
+        chain: chain,
+      })
+      const balance: any = await readContract({
+        contract: citizenContract,
+        method: 'balanceOf' as string,
+        params: [address as string],
+      })
+      if (balance !== BigInt(0)) {
+        return res.status(400).json({ error: 'You are already a citizen!' })
+      }
       return res.status(200).json({
         success: true,
         message: 'Invite is valid.',
