@@ -543,7 +543,7 @@ function TeamDetailPageContent({
               />
             </div>
           )}
-          {subIsValid && !isDeleted && canViewContent ? (
+          {subIsValid && !isDeleted && canViewContent && (
             <>
               {/* Team Members */}
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
@@ -607,8 +607,10 @@ function TeamDetailPageContent({
                   <EBRewards isManager={isManager} teamId={tokenId} />
                 )}
             </>
-          ) : (
-            // Subscription Expired
+          )}
+
+          {/* Subscription expired — only shown to managers/owners who can act on it */}
+          {(!subIsValid || isDeleted) && (isManager || isTableOperator || address === nft.owner) && (
             <div className="bg-gradient-to-b from-red-900/20 to-red-800/30 rounded-2xl border border-red-600/30 p-6 mb-10">
               <div className="text-center mb-6">
                 <h3 className="text-xl font-GoodTimes text-white mb-2">
