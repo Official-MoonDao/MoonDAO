@@ -295,9 +295,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Accept invite token from header instead of query string to prevent leakage
     // via browser history, analytics, proxies, and Referer headers.
     const inviteToken =
-      req.headers['x-invite-token'] || typeof req.query.invite === 'string'
-        ? req.query.invite
-        : undefined
+      req.headers['x-invite-token'] ||
+      (typeof req.query.invite === 'string' ? req.query.invite : undefined)
 
     if (!address || typeof address !== 'string') {
       return res.status(400).json({ error: 'Address is required.' })
