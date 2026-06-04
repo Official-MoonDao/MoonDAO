@@ -24,6 +24,7 @@ export default function GetMooney() {
           mode="compact"
           popOverEffect={false}
           isProfile
+          centerHeader
           description={
             <>
               Get MOONEY tokens to participate in MoonDAO governance. After buying, lock them for
