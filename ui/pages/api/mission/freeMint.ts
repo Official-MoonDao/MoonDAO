@@ -4,6 +4,7 @@ import {
   BENDYSTRAW_JB_VERSION,
   DEFAULT_CHAIN_V5,
   CITIZEN_ADDRESSES,
+  CITIZEN_DISCOUNTLIST_ADDRESSES,
   CITIZEN_WHITELIST_ADDRESSES,
   FREE_MINT_THRESHOLD,
   MISSION_TABLE_NAMES,
@@ -117,31 +118,53 @@ async function getTotalPaid(address: string) {
   return totalPaid
 }
 
-// Addresses on the Citizen whitelist contract get a free (fully sponsored)
-// mint regardless of how much they've contributed. The whitelist also makes
-// getRenewalPrice() return 0, so the relayer only pays gas for these mints.
-// Returns true if whitelisted, false if not, null if RPC check failed.
-async function isCitizenWhitelisted(address: string): Promise<boolean | null> {
-  if (!isValidEvmAddress(address)) return false
-  const whitelistAddress = CITIZEN_WHITELIST_ADDRESSES[chainSlug]
-  if (!whitelistAddress) return false
+// The Citizen contract has two separate allowlists (both `Whitelist` contracts):
+//   - whitelist:    gates who may call mintTo (the msg.sender), unless openAccess
+//   - discountList: zeroes getRenewalPrice() for the recipient (discount == 1000)
+// We sponsor a free mint for addresses on either list. Being on the *discount*
+// list is what makes the mint truly gas-only (renewal price 0); an address that
+// is only on the mint whitelist still mints free, but the relayer also covers
+// the renewal fee (which is paid to moonDAOTreasury).
+// Returns true if listed, false if confirmed not listed, null if the RPC failed.
+async function isOnCitizenList(
+  address: string,
+  listAddress: string | undefined
+): Promise<boolean | null> {
+  if (!listAddress) return false
   try {
-    const whitelistContract = getContract({
+    const listContract = getContract({
       client: serverClient,
-      address: whitelistAddress,
+      address: listAddress,
       abi: WhitelistABI as any,
       chain,
     })
-    const whitelisted = await readContract({
-      contract: whitelistContract,
+    const listed = await readContract({
+      contract: listContract,
       method: 'isWhitelisted' as string,
       params: [address],
     })
-    return Boolean(whitelisted)
+    return Boolean(listed)
   } catch (err) {
-    console.error('Error checking citizen whitelist:', err)
+    console.error('Error checking citizen allowlist:', err)
     return null
   }
+}
+
+// True when the address is on either the mint whitelist or the (price-zeroing)
+// discount list. Returns null only when a list check failed and the address was
+// not confirmed on the other list, so callers can fall back to the contribution
+// check rather than wrongly rejecting an eligible user.
+async function isCitizenFreeMintListed(
+  address: string
+): Promise<boolean | null> {
+  if (!isValidEvmAddress(address)) return false
+  const [whitelisted, discounted] = await Promise.all([
+    isOnCitizenList(address, CITIZEN_WHITELIST_ADDRESSES[chainSlug]),
+    isOnCitizenList(address, CITIZEN_DISCOUNTLIST_ADDRESSES[chainSlug]),
+  ])
+  if (whitelisted === true || discounted === true) return true
+  if (whitelisted === null || discounted === null) return null
+  return false
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -168,8 +191,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (balance !== BigInt(0)) {
       return res.status(400).json({ error: 'You are already a citizen!' })
     }
-    const whitelisted = await isCitizenWhitelisted(address)
-    if (whitelisted !== true) {
+    const listed = await isCitizenFreeMintListed(address)
+    if (listed !== true) {
       const totalPaid = await getTotalPaid(address)
       if (totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
         return res.status(400).json({
@@ -211,24 +234,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'Invalid wallet address format.' })
     }
 
-    const whitelisted = await isCitizenWhitelisted(address as string)
+    const listed = await isCitizenFreeMintListed(address as string)
     let totalPaid = BigInt(0)
-    if (whitelisted === true) {
-      // For whitelisted users, try to get totalPaid but don't fail if subgraph is down
+    if (listed === true) {
+      // For listed users, try to get totalPaid but don't fail if subgraph is down
       try {
         totalPaid = await getTotalPaid(address as string)
       } catch (err) {
-        console.error('Could not fetch totalPaid for whitelisted user:', err)
-        // totalPaid stays 0, but user is still eligible due to whitelist
+        console.error('Could not fetch totalPaid for listed user:', err)
+        // totalPaid stays 0, but user is still eligible due to the allowlist
       }
-    } else if (whitelisted === false) {
+    } else if (listed === false) {
       totalPaid = await getTotalPaid(address as string)
     } else {
-      // whitelisted === null (RPC error): fall back to contribution check only
+      // listed === null (RPC error): fall back to contribution check only
       try {
         totalPaid = await getTotalPaid(address as string)
       } catch (err) {
-        console.error('Both whitelist and subgraph checks failed:', err)
+        console.error('Both allowlist and subgraph checks failed:', err)
         return res.status(503).json({ error: 'Unable to verify eligibility. Please try again.' })
       }
     }
@@ -237,8 +260,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       message: 'Fetched total paid.',
       data: {
         totalPaid: totalPaid.toString(),
-        whitelisted: whitelisted === true,
-        eligible: whitelisted === true || totalPaid >= BigInt(FREE_MINT_THRESHOLD),
+        whitelisted: listed === true,
+        eligible: listed === true || totalPaid >= BigInt(FREE_MINT_THRESHOLD),
       },
     })
   }
