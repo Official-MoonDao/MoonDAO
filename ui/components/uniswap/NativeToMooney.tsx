@@ -1,4 +1,5 @@
 import { CHAIN_TOKEN_NAMES, MOONEY_ADDRESSES, FEE_HOOK_ADDRESSES, TICK_SPACING } from 'const/config'
+import confetti from 'canvas-confetti'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -12,6 +13,23 @@ import GasIcon from '../assets/GasIcon'
 import Input from '../layout/Input'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
+
+function fireMooneyConfetti() {
+  if (typeof window === 'undefined') return
+  const colors = ['#ffffff', '#FFD700', '#7B61FF', '#00CFFF', '#FF69B4']
+  const fire = (originX: number, originY: number, angle: number) =>
+    confetti({
+      particleCount: 80,
+      angle,
+      spread: 55,
+      origin: { x: originX, y: originY },
+      shapes: ['circle', 'star'],
+      colors,
+    })
+  fire(0.2, 0.8, 60)
+  setTimeout(() => fire(0.8, 0.8, 120), 150)
+  setTimeout(() => fire(0.5, 0.6, 90), 300)
+}
 
 export default function NativeToMooney({ selectedChain }: any) {
   const chainSlug = getChainSlug(selectedChain)
@@ -335,6 +353,7 @@ export default function NativeToMooney({ selectedChain }: any) {
                   const minOut = (parseFloat(output) * 0.95).toString() // 5% slippage
                   await swap(amount, minOut)
                   toast.success('Swap completed! MOONEY incoming.')
+                  fireMooneyConfetti()
                 } catch (error) {
                   console.error('Swap error:', error)
                   toast.error('Swap failed — transaction rejected or price slipped.')
