@@ -278,7 +278,7 @@ function restoreWizardStageFromSession(): number {
   return 1
 }
 
-export default function CreateCitizen({ selectedChain, setSelectedTier, freeMintProp }: any) {
+export default function CreateCitizen({ selectedChain, setSelectedTier, freeMintProp, inviteToken }: any) {
   // ===== Context & Constants =====
   const router = useRouter()
   const { setSelectedChain } = useContext(ChainContextV5)
@@ -665,15 +665,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
 
   const executeFreeMint = useCallback(
     async (imageIpfsHash: string) => {
+      // Invite-sponsored mints must prove the signed-in Privy user owns this
+      // wallet, so the one-time token can only be redeemed by its recipient.
+      const accessToken = inviteToken ? await getAccessToken() : null
       const res = await fetch(`/api/mission/freeMint`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           address: address,
           name: citizenData.name,
           image: `ipfs://${imageIpfsHash}`,
           privacy: 'public',
           formId: citizenData.formResponseId,
+          ...(inviteToken ? { inviteToken, accessToken } : {}),
         }),
       })
       if (!res.ok) {
@@ -683,7 +690,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
       }
       return await res.json()
     },
-    [address, citizenData.name, citizenData.formResponseId],
+    [address, citizenData.name, citizenData.formResponseId, inviteToken],
   )
 
   const executeCrossChainMint = useCallback(
@@ -1948,7 +1955,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     if (!address) return
 
     const getTotalPaid = async () => {
-      const res = await fetch(`/api/mission/freeMint?address=${address}`, {
+      // A magic-link invite token makes this wallet eligible for a sponsored
+      // mint even without a contribution history or on-chain allowlist entry.
+      const query = inviteToken
+        ? `address=${address}&invite=${encodeURIComponent(inviteToken)}`
+        : `address=${address}`
+      const res = await fetch(`/api/mission/freeMint?${query}`, {
         method: 'GET',
       })
       if (!res.ok) {
@@ -1962,7 +1974,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
       }
     }
     getTotalPaid()
-  }, [address])
+  }, [address, inviteToken])
 
   // ===== JSX Render =====
   return (
