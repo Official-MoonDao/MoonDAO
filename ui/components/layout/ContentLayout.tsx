@@ -40,14 +40,6 @@ const ContentLayout: React.FC<ContentProps> = ({
   maxWidth = '1200px',
 }) => {
   const isCompact = mode === 'compact'
-  // Onboarding flows (citizen/team create) center body content at 720px; match that
-  // in the title band so the hero header and artwork align with the wizard body.
-  const profileOnboardingLayout = isCompact && isProfile
-  const layoutMaxWidth = profileOnboardingLayout ? '720px' : maxWidth
-  // One horizontal inset for hero artwork + title + body so they stay aligned at every breakpoint.
-  const profileOnboardingPadding = profileOnboardingLayout
-    ? 'px-4 sm:px-5 md:px-0'
-    : ''
 
   return (
     <div className="">
@@ -66,23 +58,16 @@ const ContentLayout: React.FC<ContentProps> = ({
               id="content-container"
               className={`
                                 flex flex-col h-full relative mx-auto
-                                ${profileOnboardingLayout ? `items-stretch w-full ${profileOnboardingPadding}` : ''}
                                 ${isCompact ? '' : 'lg:flex-row lg:items-start'} 
                             `}
-              style={{ maxWidth: layoutMaxWidth }}
+              style={{ maxWidth }}
             >
-              <div
-                id="image-container"
-                className={`w-full h-full relative mb-10 z-10 ${
-                  profileOnboardingLayout ? 'max-w-[720px]' : ''
-                }`}
-              >
+              <div id="image-container" className="w-full h-full relative mb-10 z-10">
                 {logo ? (
                   <div
                     id="logo"
                     className={`
                     ${branded ? 'min-h-[200px]' : 'absolute min-h-[350px] min-w-[350px]'} 
-                    ${profileOnboardingLayout && branded ? 'branded-profile' : ''}
                     ${isCompact ? '' : 'md:min-h-[200px] lg:min-h-[600px] md:min-w-[450px]'}`}
                   >
                     {logo}
@@ -93,7 +78,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                     className={`
                                     ${
                                       branded
-                                        ? `branded min-h-[200px]${profileOnboardingLayout ? ' branded-profile' : ''}`
+                                        ? 'branded min-h-[200px]'
                                         : 'absolute unbranded min-h-[350px] min-w-[350px]'
                                     } 
                                     ${
@@ -109,13 +94,11 @@ const ContentLayout: React.FC<ContentProps> = ({
                 className={`
                                     z-50 w-full overflow-x-hidden pt-0 mt-[-80px]
                                     ${
-                                      profileOnboardingLayout
-                                        ? 'w-full flex flex-col items-start px-0'
-                                        : isCompact
-                                          ? isProfile
-                                            ? 'px-4 sm:px-5 md:px-0'
-                                            : 'px-2 sm:px-5'
-                                          : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5 px-2 sm:px-5'
+                                      isCompact
+                                        ? isProfile
+                                          ? 'px-4 sm:px-5 md:px-0'
+                                          : 'px-2 sm:px-5'
+                                        : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5 px-2 sm:px-5'
                                     } 
                                     ${
                                       children
@@ -131,27 +114,14 @@ const ContentLayout: React.FC<ContentProps> = ({
                   id="title-container"
                   className={`
                                         flex flex-col pb-5 md:pb-0 w-full h-full 
-                                        ${
-                                          profileOnboardingLayout
-                                            ? 'w-full'
-                                            : isCompact
-                                              ? ''
-                                              : 'md:max-w-[700px] lg:max-w-[100%]'
-                                        }
+                                        ${isCompact ? '' : 'md:max-w-[700px] lg:max-w-[100%]'}
                                     `}
                 >
                   <div
                     id="header-element"
-                    className={`block w-full header-responsive leading-[1] font-GoodTimes ${
-                      profileOnboardingLayout
-                        ? 'w-full pt-0 text-left'
-                        : `max-w-[1200px] ${isCompact ? 'pt-0' : 'lg:pt-20'}`
+                    className={`block w-full max-w-[1200px] header-responsive leading-[1] font-GoodTimes ${
+                      isCompact ? 'pt-0' : 'lg:pt-20'
                     }`}
-                    style={
-                      profileOnboardingLayout && headerSize
-                        ? { fontSize: headerSize }
-                        : undefined
-                    }
                   >
                     {header}
                   </div>
@@ -188,7 +158,6 @@ const ContentLayout: React.FC<ContentProps> = ({
                           contentwide ? 'max-w-full' : ''
                         } ${contentwide ? '' : 'mx-auto'} mt-0 
                         ${mainPadding || contentwide ? 'p-0' : 'pb-5'} 
-                        ${profileOnboardingLayout ? profileOnboardingPadding : ''}
                         ${
                           isCompact && !isProfile
                             ? 'mt-0 md:mt-[-120px] lg:mt-[-200px]'
@@ -200,7 +169,7 @@ const ContentLayout: React.FC<ContentProps> = ({
             style={
               contentwide
                 ? { width: '100%', maxWidth: '100%' }
-                : { maxWidth: layoutMaxWidth }
+                : { maxWidth }
             }
           >
             <div
@@ -246,8 +215,8 @@ const ContentLayout: React.FC<ContentProps> = ({
                                       contentwide
                                         ? 'm-0 p-0'
                                         : isCompact
-                                            ? ''
-                                            : 'm-5'
+                                        ? ''
+                                        : 'm-5'
                                     }
                                 `}
                   style={

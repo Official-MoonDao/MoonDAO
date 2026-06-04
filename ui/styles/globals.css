@@ -723,13 +723,6 @@ html {
   background-size: contain;
 }
 
-/* Citizen/team onboarding: artwork left edge lines up with the title column */
-.branded-profile {
-  background-position: top left;
-  background-size: contain;
-  background-repeat: no-repeat;
-}
-
 .unbranded {
   background-image: none;
   background-repeat: no-repeat;
