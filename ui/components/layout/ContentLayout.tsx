@@ -64,7 +64,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                             `}
               style={{ maxWidth }}
             >
-              <div id="image-container" className="w-full h-full relative mb-10 z-10">
+              <div id="image-container" className={`w-full h-full relative mb-10 z-10 ${centerHeader ? 'max-w-2xl mx-auto' : ''}`}>
                 {logo ? (
                   <div
                     id="logo"
