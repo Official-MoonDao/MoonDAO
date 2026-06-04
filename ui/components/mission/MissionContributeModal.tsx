@@ -9,7 +9,6 @@ import {
   MISSION_CROSS_CHAIN_PAY_ADDRESS,
   LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
   JB_NATIVE_TOKEN_ADDRESS,
-  DEPLOYED_ORIGIN,
   LAYERZERO_MAX_CONTRIBUTION_ETH,
   LAYERZERO_MAX_ETH,
   OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL,
@@ -66,7 +65,7 @@ import StandardButton from '@/components/layout/StandardButton'
 import Modal from '@/components/layout/Modal'
 import Tooltip from '@/components/layout/Tooltip'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
-import { CBOnramp } from '../coinbase/CBOnramp'
+import { MoonPayOnramp } from '../moonpay/MoonPayOnramp'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import ProgressBar from '../layout/ProgressBar'
@@ -287,7 +286,6 @@ export default function MissionContributeModal({
   const [coinbaseEthInsufficient, setCoinbaseEthInsufficient] = useState<boolean>(false)
 
   const {
-    generateJWT: generateOnrampJWT,
     clearJWT: clearOnrampJWT,
     getStoredJWT,
     verifyJWT: verifyOnrampJWT,
@@ -2413,28 +2411,16 @@ export default function MissionContributeModal({
                     ethDeficit > 0 &&
                     agreedToCondition &&
                     isValidContributorEmail(contributorEmail.trim()) && (
-                    <CBOnramp
+                    <MoonPayOnramp
                       fullWidth
                       address={address || ''}
                       selectedChain={payChain}
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
-                      onQuoteCalculated={handleCoinbaseQuote}
-                      onBeforeNavigate={async () => {
-                        await generateOnrampJWT({
-                          address: address || '',
-                          chainSlug: chainSlug,
-                          usdAmount: usdInput.replace(/,/g, ''),
-                          agreed: agreedToCondition,
-                          message: message || '',
-                          selectedWallet: selectedWallet,
-                          missionId: mission?.id?.toString(),
-                          context: mission?.id?.toString(),
-                          contributorEmail: contributorEmail.trim(),
-                          newsletterOptIn,
-                        })
+                      checkBalanceSufficient={async () => !!hasEnoughBalance}
+                      onBalanceSufficient={() => {
+                        buyMissionToken()
                       }}
-                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
                     />
                   )}
 
