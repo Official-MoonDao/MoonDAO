@@ -150,12 +150,14 @@ contract MockMarket {
     address public weth;
     uint256 public slots;
     uint256 public price; // WETH per outcome token, fixed-point 1e18
+    bytes32 public conditionId;
 
     constructor(address _ctf, address _weth, uint256 _slots, uint256 _price) {
         ctf = _ctf;
         weth = _weth;
         slots = _slots;
         price = _price;
+        conditionId = keccak256("condition");
     }
 
     function pmSystem() external view returns (address) {
@@ -168,6 +170,10 @@ contract MockMarket {
 
     function atomicOutcomeSlotCount() external view returns (uint256) {
         return slots;
+    }
+
+    function conditionIds(uint256) external view returns (bytes32) {
+        return conditionId;
     }
 
     function fee() external pure returns (uint64) {

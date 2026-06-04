@@ -37,4 +37,7 @@ interface ILMSRWithTWAP {
 
     /// @notice Lifecycle stage of the market maker (0 = Running, 1 = Paused, 2 = Closed).
     function stage() external view returns (uint8);
+
+    /// @notice Condition ID at the given index (for single-condition markets, use index 0).
+    function conditionIds(uint256 index) external view returns (bytes32);
 }

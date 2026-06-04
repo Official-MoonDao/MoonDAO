@@ -78,6 +78,7 @@ contract DePrizeMint is
     error MarketCtfMismatch();
     error MarketCollateralMismatch();
     error MarketSlotMismatch(uint256 slots, uint256 teams);
+    error MarketConditionMismatch(bytes32 marketCondition, bytes32 registryCondition);
     error UnexpectedERC1155();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -105,8 +106,9 @@ contract DePrizeMint is
     // ---------------------------------------------------------------------
 
     /// @notice Bind a DePrize to its LMSRWithTWAP market. Validates that the market
-    ///         settles against the configured CTF + WETH and that its outcome-slot
-    ///         count matches the DePrize's team count.
+    ///         settles against the configured CTF + WETH, that its outcome-slot
+    ///         count matches the DePrize's team count, and that the market's condition
+    ///         ID matches the registry's stored condition ID.
     function setMarket(uint256 deprizeId, address market) external onlyOwner {
         if (market == address(0)) revert ZeroMarket();
         if (ILMSRWithTWAP(market).pmSystem() != address(ctf)) revert MarketCtfMismatch();
@@ -114,6 +116,11 @@ contract DePrizeMint is
         uint256 teams = registry.teamIds(deprizeId).length;
         uint256 slots = ILMSRWithTWAP(market).atomicOutcomeSlotCount();
         if (slots != teams) revert MarketSlotMismatch(slots, teams);
+        bytes32 marketCondition = ILMSRWithTWAP(market).conditionIds(0);
+        bytes32 registryCondition = registry.getDePrize(deprizeId).ctfConditionId;
+        if (marketCondition != registryCondition) {
+            revert MarketConditionMismatch(marketCondition, registryCondition);
+        }
         marketOf[deprizeId] = market;
         emit MarketSet(deprizeId, market);
     }
@@ -168,7 +175,7 @@ contract DePrizeMint is
         weth.deposit{value: cost}();
         weth.approve(market, cost);
         _inBet = true;
-        ILMSRWithTWAP(market).tradeWithTWAP(amounts, int256(cost));
+        ILMSRWithTWAP(market).trade(amounts, int256(cost));
         _inBet = false;
 
         // 4. Forward outcome tokens to the bettor and refund any unspent ETH.
