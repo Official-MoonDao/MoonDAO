@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
+import { getMoonPayCurrencyCode, useMoonPay } from '@/lib/privy/hooks/useMoonPay'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -53,9 +53,10 @@ export function MoonPayOnramp({
   const [error, setError] = useState<string | null>(null)
   const [pollCount, setPollCount] = useState(0)
 
-  // Derive the chain's native token symbol for display
+  // Derive the symbol from the MoonPay currency code so display and funding
+  // always agree. Format is "{SYMBOL}_{NETWORK}" (e.g. ETH_ARBITRUM → "ETH").
   const nativeSymbol: string = useMemo(
-    () => selectedChain?.nativeCurrency?.symbol || 'ETH',
+    () => getMoonPayCurrencyCode(selectedChain?.id).split('_')[0],
     [selectedChain]
   )
 
@@ -146,7 +147,9 @@ export function MoonPayOnramp({
         await onBeforeOpen()
       }
 
-      // Opens the MoonPay widget — resolves when widget closes
+      // wallet.fund() resolves when the user closes the MoonPay widget, not when the
+      // purchase is confirmed. This is the expected Privy behavior as of @privy-io/react-auth
+      // ≥1.91 — verify against the installed version before cutover if behavior is unclear.
       await fund(ethAmount > 0 ? ethAmount : undefined, selectedChain?.id)
 
       setFundingState('waiting')

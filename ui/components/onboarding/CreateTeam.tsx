@@ -1,6 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
-import viemChains from '@/lib/viem/viemChains'
 import { Widget } from '@typeform/embed-react'
 import {
   DEPLOYED_ORIGIN,
@@ -32,6 +31,7 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
 import { renameFile } from '@/lib/utils/files'
+import viemChains from '@/lib/viem/viemChains'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import TeamABI from '../../const/abis/Team.json'
 import Container from '../layout/Container'

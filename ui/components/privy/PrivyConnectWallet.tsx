@@ -680,8 +680,10 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
     }
 
     try {
+      // Generate session token
       const token = await generateSessionToken()
 
+      // Generate URL with session token
       const url = generateOnRampURL({
         appId: projectId,
         sessionToken: token,
@@ -694,6 +696,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
         defaultAsset: 'ETH',
       })
 
+      // Open in popup
       const popup = window.open(
         url,
         'coinbase-onramp',
@@ -706,6 +709,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
 
       let isHandled = false
 
+      // Listen for message events from Coinbase onramp
       const handleMessage = (event: MessageEvent) => {
         let hostname: string
         try {
@@ -725,6 +729,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
         if (event.data && typeof event.data === 'object') {
           const { eventName, success } = event.data
 
+          // Handle success events
           if (
             eventName === 'charge_confirmed' ||
             eventName === 'payment_success' ||
@@ -737,7 +742,9 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
               cleanup()
               toast.success('Purchase completed successfully!')
             }
-          } else if (
+          }
+          // Handle exit/cancel events
+          else if (
             eventName === 'popup_closed' ||
             eventName === 'user_closed' ||
             event.data.type === 'onramp_exit'
@@ -751,6 +758,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
         }
       }
 
+      // Listen for popup being manually closed
       const checkClosed = setInterval(() => {
         if (popup.closed && !isHandled) {
           isHandled = true
@@ -758,13 +766,16 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
         }
       }, 1000)
 
+      // Cleanup function
       const cleanup = () => {
         clearInterval(checkClosed)
         window.removeEventListener('message', handleMessage)
       }
 
+      // Add event listener
       window.addEventListener('message', handleMessage, false)
 
+      // Cleanup after 10 minutes
       setTimeout(() => {
         if (!isHandled) {
           isHandled = true

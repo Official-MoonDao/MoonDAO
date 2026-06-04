@@ -1,10 +1,10 @@
 import { useFundWallet } from '@privy-io/react-auth'
-import viemChains from '@/lib/viem/viemChains'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import viemChains from '@/lib/viem/viemChains'
 import Frame from '@/components/layout/Frame'
 import Action from './Action'
 
