@@ -1,5 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
+import { useFundWallet } from '@privy-io/react-auth'
+import viemChains from '@/lib/viem/viemChains'
 import { Widget } from '@typeform/embed-react'
 import {
   DEPLOYED_ORIGIN,
@@ -101,7 +102,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   })
 
   const { nativeBalance } = useNativeBalance()
-  const moonPayFund = useMoonPay()
+  const { fundWallet } = useFundWallet()
 
   // ===== Internal Helper Functions =====
 
@@ -173,7 +174,10 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       if (+(nativeBalance ?? '0') < totalCost) {
         const roundedCost = Math.ceil(totalCost * 1000000) / 1000000
         setIsLoadingMint(false)
-        return await moonPayFund(roundedCost, selectedChain?.id)
+        return await fundWallet(address, {
+          amount: String(roundedCost),
+          chain: viemChains[chainSlug],
+        })
       }
 
       const adminHatCid = await pinHatMetadata(teamData.name, teamData.description, 'Admin')
@@ -239,7 +243,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     teamContract,
     calculateCost,
     nativeBalance,
-    moonPayFund,
+    fundWallet,
     chainSlug,
     pinHatMetadata,
     teamData,

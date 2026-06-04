@@ -1,4 +1,5 @@
-import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
+import { useFundWallet } from '@privy-io/react-auth'
+import viemChains from '@/lib/viem/viemChains'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -16,7 +17,7 @@ export default function GuestActions({
 
   const [canBuyCitizen, setCanBuyCitizen] = useState(false)
 
-  const moonPayFund = useMoonPay()
+  const { fundWallet } = useFundWallet()
 
   useEffect(() => {
     async function checkIfCanBuyCitizen() {
@@ -83,7 +84,11 @@ export default function GuestActions({
                 />
               }
               onClick={() => {
-                if (address) moonPayFund(undefined, 42161) // Arbitrum
+                if (address)
+                  fundWallet(address, {
+                    chain: viemChains['arbitrum'],
+                    asset: 'native-currency',
+                  })
               }}
             />
           )}

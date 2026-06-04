@@ -30,13 +30,18 @@ function PaymentMethod({
 }
 
 /*
-MoonPay Onramp:
-- Debit & Credit cards
-- Apple Pay / Google Pay
-- Bank transfers
+Coinbase Onramp:
+- Debit
+- Coinbase transfer
+- Apple Pay (only accepts certain debit cards)
 */
 
 const PAYMENT_METHODS = [
+  {
+    icon: '/assets/pay-method-coinbase.svg',
+    scale: 0.95,
+    className: 'mr-3',
+  },
   {
     icon: '/assets/pay-method-debit.svg',
     scale: 0.75,
@@ -46,11 +51,10 @@ const PAYMENT_METHODS = [
 export default function AcceptedPaymentMethods() {
   return (
     <div>
-      <div className="p-1 h-full rounded-2xl flex items-center justify-center flex-wrap gap-1">
+      <div className="p-1 h-full rounded-2xl flex items-center justify-center flex-wrap">
         {PAYMENT_METHODS.map((method: any, i) => (
           <PaymentMethod key={'payment-method' + i} {...method} />
         ))}
-        <PaymentMethod label="MoonPay" className="bg-indigo-600/20 border border-indigo-500/30 text-indigo-200" />
       </div>
     </div>
   )
