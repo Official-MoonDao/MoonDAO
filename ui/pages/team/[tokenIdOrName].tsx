@@ -5,6 +5,7 @@ import {
   ChatBubbleLeftIcon,
   ClipboardDocumentListIcon,
   GlobeAltIcon,
+  LockOpenIcon,
   PencilIcon,
   UserGroupIcon,
   BriefcaseIcon,
@@ -194,6 +195,9 @@ function TeamDetailPageContent({
   const safeData = useSafe(nft?.owner)
 
   const isSigner = safeOwners.includes(address || '')
+
+  // Only citizens (or team managers / owners / signers) can see team content
+  const canViewContent = !!(citizen || isManager || isTableOperator || isSigner || address === nft.owner)
 
   //Subscription Data
   const { data: expiresAt } = useRead({
@@ -449,8 +453,18 @@ function TeamDetailPageContent({
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px] mx-auto pb-10"
         >
+          {/* Lock banner for non-citizens */}
+          {!canViewContent && subIsValid && !isDeleted && (
+            <Action
+              title="Unlock Full Profile"
+              description="Become a Citizen of the Space Acceleration Network to view the full team profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
+              icon={<LockOpenIcon width={30} height={30} />}
+              onClick={() => router.push('/citizen')}
+            />
+          )}
+
           {/* Team Statistics Overview */}
-          {!isDeleted && subIsValid && (
+          {!isDeleted && subIsValid && canViewContent && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title="Team Members"
@@ -507,7 +521,7 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {subIsValid && (
+          {subIsValid && canViewContent && (
             <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
               <TeamTreasury
                 isSigner={isSigner}
@@ -518,8 +532,7 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {/* Header and socials */}
-          {subIsValid && (
+          {subIsValid && canViewContent && (
             <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
               <TeamMissions
                 isManager={isManager}
@@ -530,7 +543,7 @@ function TeamDetailPageContent({
               />
             </div>
           )}
-          {subIsValid && !isDeleted ? (
+          {subIsValid && !isDeleted && canViewContent ? (
             <>
               {/* Team Members */}
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
