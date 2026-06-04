@@ -20,6 +20,7 @@ export default function Bridge() {
           mode="compact"
           popOverEffect={false}
           isProfile
+          centerHeader
           description={
             <>
               Transfer your ETH and MOONEY tokens from Ethereum mainnet to Arbitrum for faster

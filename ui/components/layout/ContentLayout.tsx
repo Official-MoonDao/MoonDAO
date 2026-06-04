@@ -19,6 +19,7 @@ interface ContentProps {
   branded?: boolean
   isProfile?: boolean
   maxWidth?: string
+  centerHeader?: boolean
 }
 
 const ContentLayout: React.FC<ContentProps> = ({
@@ -38,6 +39,7 @@ const ContentLayout: React.FC<ContentProps> = ({
   branded = true,
   isProfile = false,
   maxWidth = '1200px',
+  centerHeader = false,
 }) => {
   const isCompact = mode === 'compact'
 
@@ -115,6 +117,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                   className={`
                                         flex flex-col pb-5 md:pb-0 w-full h-full 
                                         ${isCompact ? '' : 'md:max-w-[700px] lg:max-w-[100%]'}
+                                        ${centerHeader ? 'max-w-2xl mx-auto' : ''}
                                     `}
                 >
                   <div

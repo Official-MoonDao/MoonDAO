@@ -217,6 +217,7 @@ export default function Lock() {
           mode="compact"
           popOverEffect={false}
           isProfile
+          centerHeader
           description={
             <>
               Lock MOONEY to receive vMOONEY and gain voting power in MoonDAO governance.
