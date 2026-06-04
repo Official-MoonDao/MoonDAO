@@ -161,27 +161,42 @@ contract DePrizeMint is
             ""
         );
 
-        // 2. Price the trade. calcNetCost and trade are atomic within this tx, so
-        //    the quote equals the charged cost.
+        // 2. Price the trade. `calcNetCost` is the outcome-token net cost EXCLUDING
+        //    the market-maker fee; MarketMaker.trade pulls `netCost + calcMarketFee(netCost)`
+        //    and checks that fee-inclusive total against `collateralLimit`. We compute
+        //    the same total (calcMarketFee uses identical integer math) and cap on it.
+        ILMSRWithTWAP market_ = ILMSRWithTWAP(market);
         int256[] memory amounts = new int256[](teams.length);
         amounts[outcomeIndex] = int256(outcomeTokenAmount);
-        int256 net = ILMSRWithTWAP(market).calcNetCost(amounts);
+        int256 net = market_.calcNetCost(amounts);
         if (net <= 0) revert NonPositiveCost();
-        uint256 cost = uint256(net);
+        uint256 cost = uint256(net) + market_.calcMarketFee(uint256(net));
         if (cost > budget || cost > maxCost) revert CostTooHigh(cost, budget, maxCost);
 
-        // 3. Wrap collateral and buy outcome tokens. Minted ERC-1155 tokens land on
-        //    this contract and are captured by the receiver hooks below.
+        // 3. Wrap collateral and buy outcome tokens. We update TWAP then call `trade`
+        //    DIRECTLY: `tradeWithTWAP` internally does `this.trade(...)`, which would
+        //    make the market (not this router) the trader, so collateral/outcome-token
+        //    flows would be misattributed. Minted ERC-1155 tokens land on this contract
+        //    and are captured by the receiver hooks below.
         weth.deposit{value: cost}();
         weth.approve(market, cost);
         _inBet = true;
-        ILMSRWithTWAP(market).trade(amounts, int256(cost));
+        market_.updateCumulativeTWAP();
+        market_.trade(amounts, int256(cost));
         _inBet = false;
+
+        // Defensive: sweep any collateral the trade didn't consume back to ETH so it
+        // is returned to the bettor rather than stranded in the router.
+        uint256 residualWeth = weth.balanceOf(address(this));
+        if (residualWeth > 0) {
+            weth.approve(market, 0);
+            weth.withdraw(residualWeth);
+        }
 
         // 4. Forward outcome tokens to the bettor and refund any unspent ETH.
         _flushOutcomeTokens(msg.sender);
 
-        uint256 leftover = msg.value - slice - cost;
+        uint256 leftover = budget - cost + residualWeth;
         if (leftover > 0) {
             (bool ok,) = msg.sender.call{value: leftover}("");
             if (!ok) revert RefundFailed();
@@ -233,4 +248,7 @@ contract DePrizeMint is
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
+
+    /// @dev Accepts ETH from `weth.withdraw` when sweeping unconsumed collateral.
+    receive() external payable {}
 }

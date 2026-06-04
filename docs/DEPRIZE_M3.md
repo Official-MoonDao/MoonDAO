@@ -9,7 +9,7 @@
 - `subscription-contracts/src/deprize/interfaces/ILMSRWithTWAP.sol` (new)
 - `subscription-contracts/src/deprize/interfaces/IConditionalTokens.sol` (new)
 - `subscription-contracts/src/deprize/interfaces/IWETH.sol` (new)
-- `subscription-contracts/test/deprize/DePrizeMint.t.sol` (new — 15 unit + 3 guarded fork tests)
+- `subscription-contracts/test/deprize/DePrizeMint.t.sol` (new — 18 unit + 3 guarded fork tests)
 - `subscription-contracts/script/deprize/DePrizeMint.s.sol` (new — UUPS proxy deploy)
 - `prediction/migrations/08_create_deprize_market.js` + `prediction/deprize.config.js` (new — per-DePrize market provisioning)
 - `fee-hook/script/base/Config.sol` (WETH / ConditionalTokens / LMSR address config)
@@ -41,10 +41,11 @@ DePrizeMint.bet()
      budget = msg.value - slice         (95%)
   3. jbTerminal.pay{value: slice}(jbProjectId, …, beneficiary = bettor)
         → bettor receives $OVERVIEW (cash-out floor)
-  4. cost = market.calcNetCost(amounts[outcomeIndex] = qty)
-     require cost <= budget && cost <= maxCost          ── slippage guard
+  4. net  = market.calcNetCost(amounts[outcomeIndex] = qty)   (excludes fee)
+     cost = net + market.calcMarketFee(net)                   (what the market pulls)
+     require cost <= budget && cost <= maxCost                ── slippage guard
   5. weth.deposit{value: cost}; weth.approve(market, cost)
-  6. market.tradeWithTWAP(amounts, cost)
+  6. market.updateCumulativeTWAP(); market.trade(amounts, cost)
         → CTF mints ERC-1155 outcome tokens to DePrizeMint
         → captured in onERC1155(Batch)Received
   7. forward outcome tokens → bettor (safeBatchTransferFrom)
@@ -53,7 +54,11 @@ DePrizeMint.bet()
 
 ### Why "quantity + maxCost + refund"
 
-LMSR prices a *quantity* of outcome tokens, not a fixed spend. The frontend derives `qty` from the bettor's desired ETH (via `calcNetCost`, the pattern in the archived `ui/archive/components/betting/Market.tsx`). `calcNetCost` and `tradeWithTWAP` execute atomically in the same tx, so the quote equals the charged cost; any unspent ETH is refunded. `maxCost` is the explicit slippage cap.
+LMSR prices a *quantity* of outcome tokens, not a fixed spend. The frontend derives `qty` from the bettor's desired ETH (via `calcNetCost`, the pattern in the archived `ui/archive/components/betting/Market.tsx`). The Gnosis `MarketMaker.trade` charges `calcNetCost(amounts) + calcMarketFee(calcNetCost(amounts))` — i.e. `calcNetCost` **excludes** the 1% LMSR fee — so the router funds, approves, and caps `maxCost` against that fee-inclusive total. Both calls are atomic in the same tx (and `calcMarketFee` uses identical integer math), so the computed `cost` equals exactly what the market pulls; any unspent ETH is refunded. `maxCost` is the explicit slippage cap.
+
+### Why `trade` and not `tradeWithTWAP`
+
+The deployed `LMSRWithTWAP.tradeWithTWAP` performs an external **self-call** (`this.trade(...)`), which would make the *market* — not `DePrizeMint` — the `msg.sender` of the actual trade, so collateral would be pulled from / outcome tokens delivered to the market instead of the router. The router therefore calls `updateCumulativeTWAP()` (to preserve the TWAP accumulation) and then `trade(...)` directly, keeping itself as the trader.
 
 ## `DePrizeMint` shape
 
@@ -84,14 +89,16 @@ Deploy the router with `script/deprize/DePrizeMint.s.sol` (`DEPRIZE_REGISTRY=0x�
 
 ## Tests
 
-`forge test --match-path 'test/deprize/DePrizeMint.t.sol'` — **18 passing**:
+`forge test --match-path 'test/deprize/DePrizeMint.t.sol'` — **21 passing**:
 
-**`DePrizeMintTest` (15, deterministic, no RPC)** — real `DePrizeRegistry` + lightweight mocks for the JB terminal, WETH, CTF, and an LMSR (linear-price) market:
+**`DePrizeMintTest` (18, deterministic, no RPC)** — real `DePrizeRegistry` + lightweight mocks for the JB terminal, WETH, CTF, and an LMSR (linear-price) market that faithfully models the fee and the self-calling `tradeWithTWAP`:
 
 - happy path: 5% routed to JB with the bettor as beneficiary, 95% wrapped, outcome tokens forwarded to the bettor, leftover refunded, no funds stuck (money conservation asserted); buying a non-zero outcome index;
+- fee handling: the market is charged `calcNetCost + calcMarketFee` (under-funding by the 1% fee would revert the trade);
+- TWAP: every bet calls `updateCumulativeTWAP` (the router uses `trade`, not the self-calling `tradeWithTWAP`);
 - gates: `bettingOpen` false (LOCKED and cancellation-pending), bad outcome index, market not set;
-- slippage: `maxCost` exceeded and cost-exceeds-budget both revert with the exact cost/budget/cap;
-- `setMarket` validations: CTF mismatch, collateral mismatch, slot/team mismatch, zero address, onlyOwner;
+- slippage: `maxCost` exceeded and cost-exceeds-budget both revert with the exact (fee-inclusive) cost/budget/cap;
+- `setMarket` validations: CTF mismatch, collateral mismatch, slot/team mismatch, condition-id mismatch, zero address, onlyOwner;
 - ERC-1155 guard: unsolicited transfers revert; `supportsInterface`.
 
 **`DePrizeMintForkTest` (3, guarded)** — reuses the **live** Arbitrum-Sepolia CTF + `LMSRWithTWAP` market and mocks only the JB terminal. Skips (no-ops) unless `DEPRIZE_FORK_RPC` is set, so CI without an RPC is unaffected. Run with:

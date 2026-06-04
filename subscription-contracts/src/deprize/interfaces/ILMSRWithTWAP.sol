@@ -8,9 +8,23 @@ pragma solidity ^0.8.20;
 ///      call the deployed instance through this interface. See
 ///      `prediction/contracts/LMSRWithTWAP.sol` for the source.
 interface ILMSRWithTWAP {
-    /// @notice Net collateral cost (positive) or proceeds (negative) of a trade.
+    /// @notice Outcome-token net cost (positive) or proceeds (negative) of a trade,
+    ///         **excluding** the market-maker fee.
+    /// @dev The total collateral {trade} actually pulls is
+    ///      `calcNetCost(amounts) + calcMarketFee(|calcNetCost(amounts)|)`. Callers
+    ///      must fund/approve and cap (`collateralLimit`) against that fee-inclusive
+    ///      total, not `calcNetCost` alone.
     /// @param outcomeTokenAmounts Signed amount per outcome slot; positive = buy.
     function calcNetCost(int256[] calldata outcomeTokenAmounts) external view returns (int256);
+
+    /// @notice Fee the market maker charges on `outcomeTokenCost`, computed as
+    ///         `outcomeTokenCost * fee() / 1e18` (matches MarketMaker.calcMarketFee).
+    function calcMarketFee(uint256 outcomeTokenCost) external view returns (uint256);
+
+    /// @notice Accumulate the time-weighted price. Called by the router before
+    ///         `trade` to preserve TWAP (since calling `trade` directly skips the
+    ///         update that `tradeWithTWAP` would otherwise perform via a self-call).
+    function updateCumulativeTWAP() external;
 
     /// @notice Current marginal price (probability, fixed-point) for an outcome slot.
     function calcMarginalPrice(uint8 outcomeTokenIndex) external view returns (uint256);

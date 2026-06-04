@@ -176,12 +176,22 @@ contract MockMarket {
         return conditionId;
     }
 
-    function fee() external pure returns (uint64) {
-        return 1e16;
+    function setConditionId(bytes32 c) external {
+        conditionId = c;
+    }
+
+    function fee() public pure returns (uint64) {
+        return 1e16; // 1%
     }
 
     function stage() external pure returns (uint8) {
         return 0;
+    }
+
+    bool public twapUpdated;
+
+    function updateCumulativeTWAP() external {
+        twapUpdated = true;
     }
 
     function calcMarginalPrice(uint8) external view returns (uint256) {
@@ -194,19 +204,29 @@ contract MockMarket {
         }
     }
 
+    /// @dev Mirrors MarketMaker.calcMarketFee: outcomeTokenCost * fee / 1e18.
+    function calcMarketFee(uint256 outcomeTokenCost) public pure returns (uint256) {
+        return (outcomeTokenCost * uint256(fee())) / 1e18;
+    }
+
     function trade(int256[] memory amounts, int256 collateralLimit) public returns (int256) {
         return _trade(amounts, collateralLimit);
     }
 
     function tradeWithTWAP(int256[] memory amounts, int256 collateralLimit) external {
-        _trade(amounts, collateralLimit);
+        // Faithful to the deployed LMSRWithTWAP: an external self-call makes the
+        // market the trader. The router must NOT use this (it would misattribute
+        // collateral/outcome flows) — it calls updateCumulativeTWAP() + trade().
+        this.trade(amounts, collateralLimit);
     }
 
-    function _trade(int256[] memory amounts, int256 collateralLimit) internal returns (int256 cost) {
-        cost = calcNetCost(amounts);
-        require(cost <= collateralLimit, "limit");
-        require(cost >= 0, "negative");
-        MockWETH(payable(weth)).transferFrom(msg.sender, address(this), uint256(cost));
+    function _trade(int256[] memory amounts, int256 collateralLimit) internal returns (int256 total) {
+        int256 net = calcNetCost(amounts);
+        require(net >= 0, "negative");
+        // MarketMaker charges netCost + fee and checks the total against the limit.
+        total = net + int256(calcMarketFee(uint256(net)));
+        require(total <= collateralLimit, "limit");
+        MockWETH(payable(weth)).transferFrom(msg.sender, address(this), uint256(total));
 
         uint256 n;
         for (uint256 i = 0; i < amounts.length; i++) {
@@ -262,12 +282,14 @@ contract DePrizeMintTest is Test {
         // Mint router (real, behind a proxy).
         DePrizeMint mintImpl = new DePrizeMint();
         mint = DePrizeMint(
-            address(
-                new ERC1967Proxy(
-                    address(mintImpl),
-                    abi.encodeCall(
-                        DePrizeMint.initialize,
-                        (owner, address(registry), address(terminal), address(weth), address(ctf))
+            payable(
+                address(
+                    new ERC1967Proxy(
+                        address(mintImpl),
+                        abi.encodeCall(
+                            DePrizeMint.initialize,
+                            (owner, address(registry), address(terminal), address(weth), address(ctf))
+                        )
                     )
                 )
             )
@@ -295,10 +317,12 @@ contract DePrizeMintTest is Test {
     // -- happy path ---------------------------------------------------------
 
     function testBetRoutesSliceWrapsAndForwardsOutcomeTokens() public {
-        uint256 qty = 1 ether; // buy 1 outcome token, cost = 0.5 ETH
+        uint256 qty = 1 ether; // buy 1 outcome token
         uint256 value = 1 ether; // slice = 0.05, budget = 0.95
         uint256 expectedSlice = value / 20;
-        uint256 expectedCost = (qty * PRICE) / 1e18; // 0.5 ETH
+        uint256 outcomeCost = (qty * PRICE) / 1e18; // 0.5 ETH (excludes fee)
+        uint256 expectedFee = (outcomeCost * 1e16) / 1e18; // 1% = 0.005 ETH
+        uint256 expectedCost = outcomeCost + expectedFee; // 0.505 ETH (what the market pulls)
         uint256 expectedRefund = value - expectedSlice - expectedCost;
 
         uint256 balBefore = bettor.balance;
@@ -323,6 +347,29 @@ contract DePrizeMintTest is Test {
         assertEq(balBefore - bettor.balance, expectedSlice + expectedCost);
         // sanity: refund matches
         assertEq(expectedRefund, value - expectedSlice - expectedCost);
+    }
+
+    function testBetChargesLmsrFee() public {
+        uint256 qty = 1 ether;
+        uint256 outcomeCost = (qty * PRICE) / 1e18; // 0.5 ETH
+        uint256 expectedFee = (outcomeCost * 1e16) / 1e18; // 1% = 0.005 ETH
+        assertGt(expectedFee, 0, "fee should be non-zero");
+
+        vm.prank(bettor);
+        mint.bet{value: 1 ether}(deprizeId, 0, qty, type(uint256).max);
+
+        // The market pulls outcomeCost + fee (not just outcomeCost). If the router
+        // under-funded by the fee, the trade would have reverted instead.
+        assertEq(weth.balanceOf(address(market)), outcomeCost + expectedFee, "market gets net + fee");
+    }
+
+    function testBetUpdatesTwapBeforeTrade() public {
+        assertFalse(market.twapUpdated(), "precondition");
+        vm.prank(bettor);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        // The router calls updateCumulativeTWAP() (it uses trade(), not the
+        // self-calling tradeWithTWAP, so it must update TWAP itself).
+        assertTrue(market.twapUpdated(), "TWAP must be updated on every bet");
     }
 
     function testBetOnSecondOutcome() public {
@@ -360,19 +407,19 @@ contract DePrizeMintTest is Test {
     }
 
     function testBetRevertsMaxCostExceeded() public {
-        uint256 qty = 1 ether; // cost = 0.5 ETH
-        uint256 cap = 0.4 ether; // below cost
+        uint256 qty = 1 ether; // outcome cost 0.5 + 1% fee = 0.505 ETH total
+        uint256 cap = 0.4 ether; // below total cost
         vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.5 ether, 0.95 ether, cap));
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.505 ether, 0.95 ether, cap));
         mint.bet{value: 1 ether}(deprizeId, 0, qty, cap);
     }
 
     function testBetRevertsWhenCostExceedsBudget() public {
-        // qty needs 0.5 ETH cost but only ~0.095 ETH budget from 0.1 ETH value.
+        // qty needs 0.505 ETH total cost but only 0.095 ETH budget from 0.1 ETH value.
         uint256 qty = 1 ether;
         vm.prank(bettor);
         vm.expectRevert(
-            abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.5 ether, 0.095 ether, type(uint256).max)
+            abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.505 ether, 0.095 ether, type(uint256).max)
         );
         mint.bet{value: 0.1 ether}(deprizeId, 0, qty, type(uint256).max);
     }
@@ -411,6 +458,21 @@ contract DePrizeMintTest is Test {
         MockMarket badMarket = new MockMarket(address(ctf), address(weth), 2, PRICE);
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.MarketSlotMismatch.selector, 2, 3));
+        mint.setMarket(deprizeId, address(badMarket));
+    }
+
+    function testSetMarketRevertsOnConditionMismatch() public {
+        // Valid CTF/collateral/slots, but the market settles a different condition
+        // than the one the registry will resolve.
+        MockMarket badMarket = new MockMarket(address(ctf), address(weth), 3, PRICE);
+        bytes32 wrongCondition = keccak256("other-condition");
+        badMarket.setConditionId(wrongCondition);
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                DePrizeMint.MarketConditionMismatch.selector, wrongCondition, keccak256("condition")
+            )
+        );
         mint.setMarket(deprizeId, address(badMarket));
     }
 
@@ -483,10 +545,12 @@ contract DePrizeMintForkTest is Test {
 
         DePrizeMint mintImpl = new DePrizeMint();
         mint = DePrizeMint(
-            address(
-                new ERC1967Proxy(
-                    address(mintImpl),
-                    abi.encodeCall(DePrizeMint.initialize, (owner, address(registry), address(terminal), WETH, CTF))
+            payable(
+                address(
+                    new ERC1967Proxy(
+                        address(mintImpl),
+                        abi.encodeCall(DePrizeMint.initialize, (owner, address(registry), address(terminal), WETH, CTF))
+                    )
                 )
             )
         );
@@ -516,7 +580,8 @@ contract DePrizeMintForkTest is Test {
         uint256 qty = 0.01 ether; // small order against the live market
         int256[] memory amounts = new int256[](slots);
         amounts[0] = int256(qty);
-        uint256 cost = uint256(ILMSRWithTWAP(MARKET).calcNetCost(amounts));
+        uint256 net = uint256(ILMSRWithTWAP(MARKET).calcNetCost(amounts));
+        uint256 cost = net + ILMSRWithTWAP(MARKET).calcMarketFee(net); // fee-inclusive
         assertGt(cost, 0, "expected positive cost");
 
         uint256 value = cost * 2 + 1 ether; // ample for slice + cost
@@ -544,7 +609,8 @@ contract DePrizeMintForkTest is Test {
         uint256 qty = 0.01 ether;
         int256[] memory amounts = new int256[](slots);
         amounts[0] = int256(qty);
-        uint256 cost = uint256(ILMSRWithTWAP(MARKET).calcNetCost(amounts));
+        uint256 net = uint256(ILMSRWithTWAP(MARKET).calcNetCost(amounts));
+        uint256 cost = net + ILMSRWithTWAP(MARKET).calcMarketFee(net); // fee-inclusive
 
         uint256 value = cost * 2 + 1 ether;
         uint256 cap = cost - 1; // just below the quote
