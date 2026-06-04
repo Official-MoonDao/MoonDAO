@@ -383,10 +383,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     startTransition(() => setStage(restoredStage))
   }, [isClientHydrated, restoredStage])
 
+  // Sync freeMint state when freeMintProp or inviteToken becomes available
+  useEffect(() => {
+    if (freeMintProp || inviteToken) {
+      setFreeMint(true)
+    }
+  }, [freeMintProp, inviteToken])
+
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
   const [requiredEthAmount, setRequiredEthAmount] = useState(0)
-  const [freeMint, setFreeMint] = useState(freeMintProp || false)
+  const [freeMint, setFreeMint] = useState(false)
 
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))

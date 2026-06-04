@@ -185,7 +185,6 @@ async function isCitizenFreeMintListed(
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-  setCDNCacheHeaders(res, 60, 60, 'Accept-Encoding, address')
   if (req.method === 'POST') {
     const { address, name, image, privacy, formId, inviteToken } = req.body
     if (!address || !name || !image || !privacy || !formId) {
@@ -294,9 +293,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const address = req.query.address
     // Accept invite token from header instead of query string to prevent leakage
     // via browser history, analytics, proxies, and Referer headers.
-    const inviteToken =
+    let inviteToken =
       req.headers['x-invite-token'] ||
       (typeof req.query.invite === 'string' ? req.query.invite : undefined)
+    
+    // Normalize header to string (Next.js can provide string | string[])
+    if (Array.isArray(inviteToken)) {
+      inviteToken = inviteToken[0]
+    }
 
     if (!address || typeof address !== 'string') {
       return res.status(400).json({ error: 'Address is required.' })
@@ -309,6 +313,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // mint, but only if they don't already hold a citizen NFT. We only peek
     // here — the token is consumed at mint time (POST).
     if (inviteToken && (await peekInvite(inviteToken))) {
+      // Invite-based eligibility responses should not be cached since they
+      // depend on the one-time token header, not just the address.
+      res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate')
       const citizenContract = getContract({
         client: serverClient,
         address: CITIZEN_ADDRESSES[chainSlug],
@@ -330,6 +337,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
+    // Standard eligibility check (allowlist or contribution threshold) can be cached
+    setCDNCacheHeaders(res, 60, 60, 'Accept-Encoding')
     const listed = await isCitizenFreeMintListed(address as string)
     let totalPaid = BigInt(0)
     if (listed === true) {
