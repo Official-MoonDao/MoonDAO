@@ -14,9 +14,9 @@ export function getMoonPayCurrencyCode(chainId?: number): MoonpayCurrencyCode {
       return 'ETH_BASE'
     case 137: // Polygon
       return 'MATIC_POLYGON'
-    case 10: // Optimism — no ETH_OPTIMISM in MoonPay; Arbitrum is the closest L2
+    case 10: // Optimism — no ETH_OPTIMISM in MoonPay; fall back to Ethereum mainnet
     case 11155420: // Optimism Sepolia
-      return 'ETH_ARBITRUM'
+      return 'ETH_ETHEREUM'
     case 1: // Ethereum Mainnet
     case 11155111: // Sepolia
     default:

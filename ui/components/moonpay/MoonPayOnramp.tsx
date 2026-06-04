@@ -1,6 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -10,12 +10,12 @@ type FundingState = 'idle' | 'opening' | 'waiting' | 'sufficient'
 interface MoonPayOnrampProps {
   address: string
   selectedChain: any
-  /** ETH amount to pre-fill in the MoonPay widget */
+  /** Native token amount to pre-fill in the MoonPay widget */
   ethAmount: number
   onExit?: () => void
   /** Called just before the MoonPay widget opens (e.g. cache form data) */
   onBeforeOpen?: () => Promise<void>
-  /** Called when the MoonPay widget closes (purchase submitted, ETH in flight) */
+  /** Called when the MoonPay widget closes (purchase submitted, funds in flight) */
   onPurchaseSubmitted?: () => void
   /** When true, stretches to parent width */
   fullWidth?: boolean
@@ -53,8 +53,16 @@ export function MoonPayOnramp({
   const [error, setError] = useState<string | null>(null)
   const [pollCount, setPollCount] = useState(0)
 
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  // Derive the chain's native token symbol for display
+  const nativeSymbol: string = useMemo(
+    () => selectedChain?.nativeCurrency?.symbol || 'ETH',
+    [selectedChain]
+  )
+
+  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pollStartRef = useRef<number | null>(null)
+  const isPollInFlightRef = useRef(false)
+
   const onBalanceSufficientRef = useRef(onBalanceSufficient)
   useEffect(() => {
     onBalanceSufficientRef.current = onBalanceSufficient
@@ -66,45 +74,61 @@ export function MoonPayOnramp({
   }, [checkBalanceSufficient])
 
   const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current)
-      pollIntervalRef.current = null
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current)
+      pollTimeoutRef.current = null
     }
+    isPollInFlightRef.current = false
   }, [])
+
+  // Recursive setTimeout instead of setInterval to prevent overlapping async polls
+  const schedulePoll = useCallback(
+    (delayMs: number) => {
+      pollTimeoutRef.current = setTimeout(async () => {
+        if (isPollInFlightRef.current) return
+        isPollInFlightRef.current = true
+
+        const elapsed = Date.now() - (pollStartRef.current ?? Date.now())
+        const maxMs = pollMaxMinutes * 60 * 1000
+
+        setPollCount((c) => c + 1)
+
+        try {
+          const sufficient = await checkBalanceSufficientRef.current?.()
+          if (sufficient) {
+            stopPolling()
+            setFundingState('sufficient')
+            onBalanceSufficientRef.current?.()
+            return
+          }
+        } catch {
+          // Swallow polling errors — just keep trying
+        }
+
+        isPollInFlightRef.current = false
+
+        if (elapsed >= maxMs) {
+          stopPolling()
+          setError(
+            `Funds haven't arrived after ${pollMaxMinutes} minutes. Please check your MoonPay email for status and try again.`
+          )
+          return
+        }
+
+        // Schedule the next poll only after this one finishes
+        schedulePoll(pollIntervalMs)
+      }, delayMs)
+    },
+    [pollIntervalMs, pollMaxMinutes, stopPolling]
+  )
 
   const startPolling = useCallback(() => {
     if (!checkBalanceSufficientRef.current) return
-
     stopPolling()
     pollStartRef.current = Date.now()
     setPollCount(0)
-
-    pollIntervalRef.current = setInterval(async () => {
-      const elapsed = Date.now() - (pollStartRef.current ?? Date.now())
-      const maxMs = pollMaxMinutes * 60 * 1000
-
-      setPollCount((c) => c + 1)
-
-      try {
-        const sufficient = await checkBalanceSufficientRef.current!()
-        if (sufficient) {
-          stopPolling()
-          setFundingState('sufficient')
-          onBalanceSufficientRef.current?.()
-          return
-        }
-      } catch {
-        // Swallow polling errors — just keep trying
-      }
-
-      if (elapsed >= maxMs) {
-        stopPolling()
-        setError(
-          `ETH hasn't arrived after ${pollMaxMinutes} minutes. Please check your MoonPay email for status and try again.`
-        )
-      }
-    }, pollIntervalMs)
-  }, [pollIntervalMs, pollMaxMinutes, stopPolling])
+    schedulePoll(pollIntervalMs)
+  }, [pollIntervalMs, schedulePoll, stopPolling])
 
   useEffect(() => () => stopPolling(), [stopPolling])
 
@@ -145,6 +169,12 @@ export function MoonPayOnramp({
     checkBalanceSufficient,
     startPolling,
   ])
+
+  const handleExit = useCallback(() => {
+    stopPolling()
+    setFundingState('idle')
+    onExit?.()
+  }, [stopPolling, onExit])
 
   if (error) {
     return (
@@ -188,14 +218,14 @@ export function MoonPayOnramp({
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-              <Image src="/coins/ETH.svg" alt="ETH" width={20} height={20} className="w-6 h-6" />
+              <Image src="/coins/ETH.svg" alt={nativeSymbol} width={20} height={20} className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">MoonPay Processing</h2>
-              <p className="text-gray-400 text-xs">Waiting for ETH to arrive</p>
+              <p className="text-gray-400 text-xs">Waiting for {nativeSymbol} to arrive</p>
             </div>
           </div>
-          <button onClick={() => onExit?.()} className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
+          <button onClick={handleExit} className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
             <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
           </button>
         </div>
@@ -211,7 +241,7 @@ export function MoonPayOnramp({
                   Your purchase is being processed
                 </p>
                 <p className="text-blue-100/80 text-xs leading-relaxed">
-                  MoonPay typically delivers ETH within <strong>5–30 minutes</strong>. Once your ETH arrives, your transaction will proceed automatically.
+                  MoonPay typically delivers {nativeSymbol} within <strong>5–30 minutes</strong>. Once your funds arrive, your transaction will proceed automatically.
                 </p>
                 {checkBalanceSufficient && (
                   <p className="text-blue-100/60 text-xs mt-2">
@@ -228,14 +258,14 @@ export function MoonPayOnramp({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p className="text-emerald-100/80 text-xs leading-relaxed">
-                You'll receive an email from MoonPay with your purchase status. You can safely leave this page and return once ETH has arrived.
+                You'll receive an email from MoonPay with your purchase status. You can safely leave this page and return once funds have arrived.
               </p>
             </div>
           </div>
 
           {!checkBalanceSufficient && (
             <button
-              onClick={() => { setFundingState('idle'); onExit?.() }}
+              onClick={handleExit}
               className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg font-medium transition-all duration-200 text-sm"
             >
               Done
@@ -254,14 +284,14 @@ export function MoonPayOnramp({
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-            <Image src="/coins/ETH.svg" alt="ETH" width={20} height={20} className="w-6 h-6" />
+            <Image src="/coins/ETH.svg" alt={nativeSymbol} width={20} height={20} className="w-6 h-6" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-white">Fund Wallet</h2>
           </div>
         </div>
         <button
-          onClick={() => onExit?.()}
+          onClick={handleExit}
           className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
         >
           <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
@@ -285,7 +315,7 @@ export function MoonPayOnramp({
               {ethAmount > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Amount needed:</span>
-                  <span className="text-white font-medium">{ethAmount.toFixed(4)} ETH</span>
+                  <span className="text-white font-medium">{ethAmount.toFixed(4)} {nativeSymbol}</span>
                 </div>
               )}
             </>
@@ -305,7 +335,7 @@ export function MoonPayOnramp({
                 Pay by card or bank transfer
               </p>
               <p className="text-emerald-100/80 text-xs leading-relaxed">
-                MoonPay supports debit &amp; credit cards, Apple Pay, Google Pay, and bank transfers. ETH typically arrives within 5–30 minutes.
+                MoonPay supports debit &amp; credit cards, Apple Pay, Google Pay, and bank transfers. Funds typically arrive within 5–30 minutes.
               </p>
             </div>
           </div>
@@ -317,8 +347,8 @@ export function MoonPayOnramp({
             fundingState === 'opening'
               ? 'Opening MoonPay…'
               : ethAmount > 0
-              ? `Buy ${ethAmount.toFixed(4)} ETH with MoonPay`
-              : 'Buy ETH with MoonPay'
+              ? `Buy ${ethAmount.toFixed(4)} ${nativeSymbol} with MoonPay`
+              : `Buy ${nativeSymbol} with MoonPay`
           }
           showSignInLabel={false}
           action={handleFund}
