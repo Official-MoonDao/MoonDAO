@@ -62,7 +62,7 @@ contract DePrizeMint is
     event Bet(
         uint256 indexed deprizeId,
         address indexed bettor,
-        uint8 outcomeIndex,
+        uint256 outcomeIndex,
         uint256 outcomeTokenAmount,
         uint256 cost,
         uint256 slice
@@ -70,7 +70,7 @@ contract DePrizeMint is
 
     error BettingClosed(uint256 deprizeId);
     error MarketNotSet(uint256 deprizeId);
-    error BadOutcomeIndex(uint256 deprizeId, uint8 outcomeIndex);
+    error BadOutcomeIndex(uint256 deprizeId, uint256 outcomeIndex);
     error NonPositiveCost();
     error CostTooHigh(uint256 cost, uint256 budget, uint256 maxCost);
     error RefundFailed();
@@ -134,7 +134,7 @@ contract DePrizeMint is
     /// @dev The bettor specifies a token quantity (the frontend derives it from a
     ///      desired ETH amount via `calcNetCost`); unspent ETH is refunded. msg.value
     ///      must cover the 5% slice plus the trade cost.
-    function bet(uint256 deprizeId, uint8 outcomeIndex, uint256 outcomeTokenAmount, uint256 maxCost)
+    function bet(uint256 deprizeId, uint256 outcomeIndex, uint256 outcomeTokenAmount, uint256 maxCost)
         external
         payable
         nonReentrant
