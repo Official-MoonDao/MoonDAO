@@ -498,7 +498,7 @@ contract DePrizeMintForkTest is Test {
 
         vm.startPrank(owner);
         deprizeId = registry.register(4, teams, block.timestamp + 30 days);
-        registry.setCondition(deprizeId, keccak256("fork-condition"));
+        registry.setCondition(deprizeId, ILMSRWithTWAP(MARKET).conditionIds(0));
         registry.open(deprizeId);
         mint.setMarket(deprizeId, MARKET); // validates pmSystem()/collateralToken()/slots
         vm.stopPrank();
