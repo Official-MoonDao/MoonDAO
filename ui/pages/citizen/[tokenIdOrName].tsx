@@ -454,12 +454,14 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
         )}
 
         {!isGuest && !citizen && !isOwner && subIsValid && !isDeleted && (
-          <Action
-            title="Unlock Full Profile"
-            description="Become a Citizen of the Space Acceleration Network to view the full profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
-            icon={<LockOpenIcon width={30} height={30} />}
-            onClick={() => router.push('/citizen')}
-          />
+          <div className="w-full max-w-[1080px] mx-auto">
+            <Action
+              title="Unlock Full Profile"
+              description="Become a Citizen of the Space Acceleration Network to view the full profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
+              icon={<LockOpenIcon width={30} height={30} />}
+              onClick={() => router.push('/citizen')}
+            />
+          </div>
         )}
         {subIsValid && !isDeleted && !isGuest ? (
           <div className="flex flex-col gap-5 w-full max-w-[1080px] mx-auto pb-10">
@@ -520,7 +522,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
               </div>
             )}
             */}
-            {hats && hats?.length > 0 && (
+            {(citizen || isOwner) && hats && hats?.length > 0 && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
