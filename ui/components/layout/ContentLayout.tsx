@@ -20,6 +20,7 @@ interface ContentProps {
   isProfile?: boolean
   maxWidth?: string
   centerHeader?: boolean
+  centerHeaderWidth?: string
 }
 
 const ContentLayout: React.FC<ContentProps> = ({
@@ -40,6 +41,7 @@ const ContentLayout: React.FC<ContentProps> = ({
   isProfile = false,
   maxWidth = '1200px',
   centerHeader = false,
+  centerHeaderWidth = 'max-w-2xl',
 }) => {
   const isCompact = mode === 'compact'
 
@@ -64,7 +66,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                             `}
               style={{ maxWidth }}
             >
-              <div id="image-container" className={`w-full h-full relative mb-10 z-10 ${centerHeader ? 'max-w-2xl mx-auto' : ''}`}>
+              <div id="image-container" className={`w-full h-full relative mb-10 z-10 ${centerHeader ? `${centerHeaderWidth} mx-auto` : ''}`}>
                 {logo ? (
                   <div
                     id="logo"
@@ -117,7 +119,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                   className={`
                                         flex flex-col pb-5 md:pb-0 w-full h-full 
                                         ${isCompact ? '' : 'md:max-w-[700px] lg:max-w-[100%]'}
-                                        ${centerHeader ? 'max-w-2xl mx-auto' : ''}
+                                        ${centerHeader ? `${centerHeaderWidth} mx-auto` : ''}
                                     `}
                 >
                   <div
