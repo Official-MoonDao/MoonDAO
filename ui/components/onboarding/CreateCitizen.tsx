@@ -278,7 +278,12 @@ function restoreWizardStageFromSession(): number {
   return 1
 }
 
-export default function CreateCitizen({ selectedChain, setSelectedTier, freeMintProp, inviteToken }: any) {
+export default function CreateCitizen({
+  selectedChain,
+  setSelectedTier,
+  freeMintProp,
+  inviteToken,
+}: any) {
   // ===== Context & Constants =====
   const router = useRouter()
   const { setSelectedChain } = useContext(ChainContextV5)
@@ -1182,11 +1187,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
         'citizen image',
       )
       // If citizenImage was restored and differs from croppedInputImage, it's an AI portrait
-      if (citizenImageRestored && formData.citizenImage && isSerializedFile(formData.citizenImage)) {
+      if (
+        citizenImageRestored &&
+        formData.citizenImage &&
+        isSerializedFile(formData.citizenImage)
+      ) {
         // Compare serialized data to determine if it's an AI portrait
-        if (!formData.croppedInputImage || 
-            !isSerializedFile(formData.croppedInputImage) ||
-            formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL) {
+        if (
+          !formData.croppedInputImage ||
+          !isSerializedFile(formData.croppedInputImage) ||
+          formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL
+        ) {
           markAiPortraitReady()
         }
       }
@@ -1977,13 +1988,23 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
       if (!res.ok) {
         const errorText = await res.text() // Or response.json()
         console.error(errorText)
-        setFreeMint(false)
+        // Don't clear freeMint if we have an invite token — transient GET
+        // failures shouldn't block the sponsored flow. The token is validated
+        // again at mint time (POST).
+        if (!inviteToken) {
+          setFreeMint(false)
+        }
       } else {
         const { data } = await res.json()
         if (data.eligible) {
           setFreeMint(true)
         } else {
-          setFreeMint(false)
+          // Don't clear freeMint if we have an invite token — the server's
+          // eligibility check can return false due to Redis errors even when
+          // the token is valid. It will be re-validated at mint time (POST).
+          if (!inviteToken) {
+            setFreeMint(false)
+          }
         }
       }
     }
