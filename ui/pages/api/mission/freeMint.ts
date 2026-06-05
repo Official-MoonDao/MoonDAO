@@ -208,45 +208,62 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'You are already a citizen!' })
     }
 
-    // Magic-link path: a one-time invite token sponsors the mint. We require
-    // the caller to prove (via Privy auth) that they own `address`, then
-    // atomically consume the token so it can never be reused. `consumedInvite`
-    // is kept so we can restore the token if the mint later fails.
+    // Check existing eligibility first (allowlist or contribution threshold)
+    // before consuming any invite token. This prevents burning a one-time invite
+    // when the user is already eligible through other means.
+    const listed = await isCitizenFreeMintListed(address)
+    const alreadyEligible = listed === true
+    let totalPaid = BigInt(0)
+    if (!alreadyEligible && listed !== null) {
+      totalPaid = await getTotalPaid(address)
+      if (totalPaid >= BigInt(FREE_MINT_THRESHOLD)) {
+        // User meets contribution threshold; no invite needed.
+        // (Don't set alreadyEligible in the `listed === null` branch since
+        // that signals an RPC error, and we should still accept a valid invite.)
+      }
+    }
+
+    // Magic-link path: a one-time invite token sponsors the mint, but only
+    // consume it if the user is NOT already eligible. We require the caller to
+    // prove (via Privy auth) that they own `address`, then atomically consume
+    // the token so it can never be reused. `consumedInvite` is kept so we can
+    // restore the token if the mint later fails.
     let consumedInvite: CitizenInvite | null = null
     if (inviteToken) {
-      const accessToken = getAccessTokenFromReq(req)
-      if (
-        !accessToken ||
-        !(await addressBelongsToPrivyUser(accessToken, address))
-      ) {
-        return res
-          .status(401)
-          .json({ error: 'You must be signed in with this wallet to redeem an invite.' })
-      }
-      // Peek to get invite metadata for potential restore, but always attempt
-      // consume even if peek fails (peek failures might be transient Redis
-      // errors while the key still exists). consumeInvite is atomic and will
-      // return false if the invite doesn't exist, is expired, or was already used.
-      const invite = await peekInvite(inviteToken)
-      const consumed = await consumeInvite(inviteToken, address)
-      if (!consumed) {
-        return res
-          .status(400)
-          .json({ error: 'This invite link is invalid or has already been used.' })
-      }
-      // Use peeked metadata if available; fall back to minimal record if peek
-      // failed but consume succeeded (transient Redis error during peek).
-      consumedInvite = invite || { createdAt: Date.now() }
-    } else {
-      // Existing eligibility: on-chain allowlist or contribution threshold.
-      const listed = await isCitizenFreeMintListed(address)
-      if (listed !== true) {
-        const totalPaid = await getTotalPaid(address)
-        if (totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
-          return res.status(400).json({
-            error: 'You have not contributed enough to earn a free citizen NFT!',
-          })
+      if (alreadyEligible || totalPaid >= BigInt(FREE_MINT_THRESHOLD)) {
+        // User is already eligible; ignore the invite token (don't consume it)
+        // so they can share it with someone who needs it.
+      } else {
+        const accessToken = getAccessTokenFromReq(req)
+        if (
+          !accessToken ||
+          !(await addressBelongsToPrivyUser(accessToken, address))
+        ) {
+          return res
+            .status(401)
+            .json({ error: 'You must be signed in with this wallet to redeem an invite.' })
         }
+        // Peek to get invite metadata for potential restore, but always attempt
+        // consume even if peek fails (peek failures might be transient Redis
+        // errors while the key still exists). consumeInvite is atomic and will
+        // return false if the invite doesn't exist, is expired, or was already used.
+        const invite = await peekInvite(inviteToken)
+        const consumed = await consumeInvite(inviteToken, address)
+        if (!consumed) {
+          return res
+            .status(400)
+            .json({ error: 'This invite link is invalid or has already been used.' })
+        }
+        // Use peeked metadata if available; fall back to minimal record if peek
+        // failed but consume succeeded (transient Redis error during peek).
+        consumedInvite = invite || { createdAt: Date.now() }
+      }
+    } else {
+      // No invite token: user must be eligible via allowlist or contribution.
+      if (!alreadyEligible && totalPaid < BigInt(FREE_MINT_THRESHOLD)) {
+        return res.status(400).json({
+          error: 'You have not contributed enough to earn a free citizen NFT!',
+        })
       }
     }
 
