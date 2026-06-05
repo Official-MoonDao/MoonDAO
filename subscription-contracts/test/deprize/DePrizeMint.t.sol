@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {DePrizeMint} from "../../src/deprize/DePrizeMint.sol";
 import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
@@ -124,6 +125,12 @@ contract MockCTF {
         require(ret == IERC1155Receiver.onERC1155BatchReceived.selector, "1155 rejected");
     }
 
+    function mintToSingle(address to, uint256 id, uint256 value) external {
+        balances[id][to] += value;
+        bytes4 ret = IERC1155Receiver(to).onERC1155Received(msg.sender, address(0), id, value, "");
+        require(ret == IERC1155Receiver.onERC1155Received.selector, "1155 rejected");
+    }
+
     function safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes calldata) external {
         balances[id][from] -= value;
         balances[id][to] += value;
@@ -152,12 +159,34 @@ contract MockMarket {
     uint256 public price; // WETH per outcome token, fixed-point 1e18
     bytes32 public conditionId;
 
+    // Test knobs to exercise router edge cases.
+    uint64 private _fee = 1e16; // 1%
+    uint256 public underpull; // collateral the market leaves unconsumed
+    bool public skipMint; // pull collateral but mint no outcome tokens
+    bool public singleTransfer; // deliver via onERC1155Received (single) instead of batch
+
     constructor(address _ctf, address _weth, uint256 _slots, uint256 _price) {
         ctf = _ctf;
         weth = _weth;
         slots = _slots;
         price = _price;
         conditionId = keccak256("condition");
+    }
+
+    function setFee(uint64 f) external {
+        _fee = f;
+    }
+
+    function setUnderpull(uint256 u) external {
+        underpull = u;
+    }
+
+    function setSkipMint(bool s) external {
+        skipMint = s;
+    }
+
+    function setSingleTransfer(bool s) external {
+        singleTransfer = s;
     }
 
     function pmSystem() external view returns (address) {
@@ -180,8 +209,8 @@ contract MockMarket {
         conditionId = c;
     }
 
-    function fee() public pure returns (uint64) {
-        return 1e16; // 1%
+    function fee() public view returns (uint64) {
+        return _fee;
     }
 
     function stage() external pure returns (uint8) {
@@ -205,7 +234,7 @@ contract MockMarket {
     }
 
     /// @dev Mirrors MarketMaker.calcMarketFee: outcomeTokenCost * fee / 1e18.
-    function calcMarketFee(uint256 outcomeTokenCost) public pure returns (uint256) {
+    function calcMarketFee(uint256 outcomeTokenCost) public view returns (uint256) {
         return (outcomeTokenCost * uint256(fee())) / 1e18;
     }
 
@@ -226,7 +255,10 @@ contract MockMarket {
         // MarketMaker charges netCost + fee and checks the total against the limit.
         total = net + int256(calcMarketFee(uint256(net)));
         require(total <= collateralLimit, "limit");
-        MockWETH(payable(weth)).transferFrom(msg.sender, address(this), uint256(total));
+        // `underpull` lets a test leave collateral unconsumed to exercise the router's sweep.
+        MockWETH(payable(weth)).transferFrom(msg.sender, address(this), uint256(total) - underpull);
+
+        if (skipMint) return total;
 
         uint256 n;
         for (uint256 i = 0; i < amounts.length; i++) {
@@ -242,7 +274,31 @@ contract MockMarket {
                 j++;
             }
         }
-        MockCTF(ctf).mintTo(msg.sender, ids, values);
+        if (singleTransfer && n == 1) {
+            MockCTF(ctf).mintToSingle(msg.sender, ids[0], values[0]);
+        } else {
+            MockCTF(ctf).mintTo(msg.sender, ids, values);
+        }
+    }
+}
+
+/// @dev Trivial UUPS upgrade target to exercise _authorizeUpgrade.
+contract DePrizeMintV2 is DePrizeMint {
+    function version() external pure returns (uint256) {
+        return 2;
+    }
+}
+
+/// @dev Bettor with no payable receive/fallback: the ETH refund call reverts.
+contract RevertingBettor {
+    DePrizeMint internal mint;
+
+    constructor(DePrizeMint m) {
+        mint = m;
+    }
+
+    function placeBet(uint256 deprizeId, uint256 outcomeIndex, uint256 qty, uint256 maxCost) external payable {
+        mint.bet{value: msg.value}(deprizeId, outcomeIndex, qty, maxCost);
     }
 }
 
@@ -370,6 +426,98 @@ contract DePrizeMintTest is Test {
         // The router calls updateCumulativeTWAP() (it uses trade(), not the
         // self-calling tradeWithTWAP, so it must update TWAP itself).
         assertTrue(market.twapUpdated(), "TWAP must be updated on every bet");
+    }
+
+    function testBetExactBudgetNoRefund() public {
+        // Fee-free, 1:1 priced market so cost can equal budget exactly (leftover == 0).
+        MockMarket m = new MockMarket(address(ctf), address(weth), 3, 1 ether);
+        m.setFee(0);
+        vm.prank(owner);
+        mint.setMarket(deprizeId, address(m));
+
+        uint256 value = 20 ether; // slice = 1, budget = 19
+        uint256 qty = 19 ether; // cost = 19 (no fee) == budget
+        uint256 balBefore = bettor.balance;
+
+        vm.prank(bettor);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
+
+        assertEq(weth.balanceOf(address(m)), 19 ether, "market collateral == budget");
+        assertEq(address(mint).balance, 0, "no stuck ETH");
+        assertEq(balBefore - bettor.balance, value, "entire value spent, nothing refunded");
+        assertEq(ctf.balanceOf(bettor, _positionId(0)), qty);
+    }
+
+    function testBetSweepsResidualCollateral() public {
+        // Market consumes less collateral than approved; the router must unwrap and
+        // refund the remainder rather than leaving WETH stranded.
+        uint256 underpull = 0.01 ether;
+        market.setUnderpull(underpull);
+
+        uint256 qty = 1 ether; // total cost (incl fee) = 0.505 ETH
+        uint256 outcomeCost = (qty * PRICE) / 1e18;
+        uint256 cost = outcomeCost + (outcomeCost * 1e16) / 1e18; // 0.505
+        uint256 value = 1 ether;
+        uint256 slice = value / 20;
+        uint256 balBefore = bettor.balance;
+
+        vm.prank(bettor);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
+
+        // Market kept cost - underpull; router holds no WETH or ETH.
+        assertEq(weth.balanceOf(address(market)), cost - underpull, "market kept net of underpull");
+        assertEq(weth.balanceOf(address(mint)), 0, "residual WETH swept");
+        assertEq(address(mint).balance, 0, "no stuck ETH");
+        // Net spend = slice + (cost - underpull); the swept residual is refunded.
+        assertEq(balBefore - bettor.balance, slice + cost - underpull, "residual refunded");
+    }
+
+    function testBetDeliversViaSingleTransfer() public {
+        // Exercises onERC1155Received (single) instead of the batch hook.
+        market.setSingleTransfer(true);
+        vm.prank(bettor);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        assertEq(ctf.balanceOf(bettor, _positionId(0)), 1 ether, "single-transfer delivery");
+    }
+
+    function testBetWithNoMintedTokens() public {
+        // Market mints nothing: the forward step's empty-buffer early return is taken.
+        market.setSkipMint(true);
+        vm.prank(bettor);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        assertEq(ctf.balanceOf(bettor, _positionId(0)), 0, "no tokens minted");
+        assertEq(address(mint).balance, 0, "no stuck ETH");
+    }
+
+    function testBetRevertsNonPositiveCost() public {
+        // qty == 0 -> calcNetCost == 0 -> NonPositiveCost.
+        vm.prank(bettor);
+        vm.expectRevert(DePrizeMint.NonPositiveCost.selector);
+        mint.bet{value: 1 ether}(deprizeId, 0, 0, type(uint256).max);
+    }
+
+    function testBetRevertsWhenRefundFails() public {
+        RevertingBettor rb = new RevertingBettor(mint);
+        vm.deal(address(rb), 10 ether);
+        // leftover refund to rb fails because rb has no payable receive.
+        vm.expectRevert(DePrizeMint.RefundFailed.selector);
+        rb.placeBet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+    }
+
+    // -- upgradeability -----------------------------------------------------
+
+    function testUpgradeAuthorized() public {
+        DePrizeMintV2 v2 = new DePrizeMintV2();
+        vm.prank(owner);
+        mint.upgradeToAndCall(address(v2), "");
+        assertEq(DePrizeMintV2(payable(address(mint))).version(), 2);
+    }
+
+    function testUpgradeOnlyOwner() public {
+        DePrizeMintV2 v2 = new DePrizeMintV2();
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", bettor));
+        mint.upgradeToAndCall(address(v2), "");
     }
 
     function testBetOnSecondOutcome() public {
@@ -501,8 +649,27 @@ contract DePrizeMintTest is Test {
         IERC1155Receiver(address(mint)).onERC1155BatchReceived(address(this), address(0), ids, values, "");
     }
 
+    function testRejectsUnsolicitedERC1155Single() public {
+        vm.prank(address(ctf));
+        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
+        IERC1155Receiver(address(mint)).onERC1155Received(address(this), address(0), 1, 1, "");
+    }
+
+    function testRejectsERC1155FromNonCtf() public {
+        // A non-CTF caller is rejected even if a bet were in progress (here it isn't).
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory values = new uint256[](1);
+        ids[0] = 1;
+        values[0] = 1;
+        vm.prank(address(0xDEAD));
+        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
+        IERC1155Receiver(address(mint)).onERC1155BatchReceived(address(this), address(0), ids, values, "");
+    }
+
     function testSupportsInterface() public view {
-        assertTrue(mint.supportsInterface(type(IERC1155Receiver).interfaceId));
+        assertTrue(mint.supportsInterface(type(IERC1155Receiver).interfaceId), "ERC1155Receiver");
+        assertTrue(mint.supportsInterface(type(IERC165).interfaceId), "ERC165");
+        assertFalse(mint.supportsInterface(0xffffffff), "unknown");
     }
 }
 
