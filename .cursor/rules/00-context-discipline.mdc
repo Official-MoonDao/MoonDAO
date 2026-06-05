@@ -1,18 +1,20 @@
 ---
-description: Context discipline — no speculative scanning
+description: Context discipline — purposeful lookup only, no aimless scanning
 alwaysApply: true
 ---
 # Context Discipline (HIGHEST PRIORITY)
 
-- DO NOT speculatively scan or explore the repository to "build context". Never read a file
-  unless you already know why you need it.
-- Targeted lookups are fine: if you know a specific file, symbol, or path you need, go get it
-  directly. What is forbidden is exploratory reading — opening files just to see what is there.
-- Do not read whole directories as discovery. If you need to know what exists in a folder, ask
-  the user rather than listing and reading everything inside.
-- If you are missing context and cannot infer the right file from what is already provided,
-  ask one precise question (e.g. "can you share the path or contents of the file that handles X?")
-  rather than going on a broad search.
+- You are expected to locate files autonomously when given a high-level task (e.g. "the profile
+  page is broken, fix it"). Search for the relevant files, trace the code, and resolve the issue
+  without requiring the user to specify paths.
+- Every file you open must serve the current task. Ask yourself: "do I need this to complete
+  what was asked?" If the answer is no, don't open it.
+- What is forbidden is aimless exploration — reading files to "understand the codebase" or
+  "get context" with no specific goal tied to the task at hand.
+- Do not read entire directories speculatively. Search or grep for what you need; open only
+  the files the results point to.
+- If you are genuinely blocked and cannot locate something, ask one precise question rather
+  than broadening your search indiscriminately.
 - NEVER read `node_modules`, `.next`, `yarn.lock`, `package-lock.json`, `archive/`, `public/`,
   or generated artifacts unless explicitly asked.
 - Keep edits surgical — change only what the task requires; no unrelated refactors or tidying.
