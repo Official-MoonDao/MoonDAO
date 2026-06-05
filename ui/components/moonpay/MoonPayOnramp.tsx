@@ -2,6 +2,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
+import { clearOnrampReturn, setOnrampReturn } from '@/lib/onramp/onrampReturn'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -188,9 +189,18 @@ export function MoonPayOnramp({
         }
       }
 
+      // Remember where we are before opening the widget. The provider's KYC /
+      // 3-D Secure step can perform a top-level redirect (Privy's in-app onramp
+      // has no return-URL option), which would otherwise drop the user on the
+      // site root. The breadcrumb lets us send them back here on the next load.
+      setOnrampReturn()
+
       // fund() opens Privy's in-app modal and resolves once the user finishes (or
       // exits) the flow. It rejects if the user closes the modal before submitting.
       const result = await fund(fiatAmount, selectedChain?.id)
+
+      // Resolved in-context (no redirect happened) — the breadcrumb isn't needed.
+      clearOnrampReturn()
 
       setFundingState('waiting')
       onPurchaseSubmitted?.()
@@ -207,6 +217,7 @@ export function MoonPayOnramp({
       // submitting — treat that as a quiet cancel rather than a hard error.
       const message: string = err?.message ?? ''
       const userCancelled = /exit|close|cancel|dismiss/i.test(message)
+      clearOnrampReturn()
       setFundingState('idle')
       if (!userCancelled) {
         setError('Failed to open the funding flow: ' + (message || 'Unknown error'))
@@ -225,6 +236,7 @@ export function MoonPayOnramp({
 
   const handleExit = useCallback(() => {
     stopPolling()
+    clearOnrampReturn()
     setFundingState('idle')
     onExit?.()
   }, [stopPolling, onExit])

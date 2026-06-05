@@ -15,6 +15,7 @@ import CitizenProvider from '@/lib/citizen/CitizenProvider'
 import { reportWebVitals as reportVitals, monitorLongTasks, monitorPageVisibility, NextWebVitalsMetric } from '@/lib/performance/webVitals'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
+import { OnrampReturnHandler } from '@/components/onramp/OnrampReturnHandler'
 import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
@@ -83,6 +84,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
               <PrivyThirdwebV5Provider selectedChain={selectedChainV5}>
                 <CitizenProvider selectedChain={selectedChainV5}>
                   <NextQueryParamProvider>
+                    <OnrampReturnHandler />
                     <Layout lightMode={lightMode} setLightMode={setLightMode}>
                       <FlagProvider>
                         <Component {...pageProps} />
