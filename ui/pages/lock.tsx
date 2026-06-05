@@ -682,6 +682,7 @@ export default function Lock() {
                         <div className="p-5 border-t border-white/10 bg-black/10">
                           <PrivyWeb3Button
                             v5
+                            signInLabel="Sign In to Lock MOONEY"
                             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
                             label={
                               !hasLock
