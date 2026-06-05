@@ -4,29 +4,56 @@ import { useEffect, useState } from 'react'
 
 export default function CookieBanner() {
   const [cookieConsent, setCookieConsent] = useState<any>(false)
-  const [hasLoadedLocalStorage, setHasLoadedLocalStorage] = useState(false)
+  const [hasResolvedConsent, setHasResolvedConsent] = useState(false)
 
   useEffect(() => {
     const storedCookieConsent = localStorage.getItem('cookie_consent')
 
+    // Respect any decision the user already made.
     if (storedCookieConsent !== null && storedCookieConsent !== undefined) {
       setCookieConsent(JSON.parse(storedCookieConsent))
-    } else {
-      setCookieConsent(null)
+      setHasResolvedConsent(true)
+      return
     }
 
-    setHasLoadedLocalStorage(true)
-  }, [setCookieConsent])
+    // US users don't need to make a cookie decision, so skip the banner and
+    // grant analytics consent automatically. Anyone else (or unknown geo) sees
+    // the banner so the privacy-protective default is to ask.
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const res = await fetch('/api/geo/country')
+        const data = await res.json()
+        if (!cancelled && data?.country === 'US') {
+          setCookieConsent(true)
+          setHasResolvedConsent(true)
+          return
+        }
+      } catch (err) {
+        // Fall through to showing the banner on any failure.
+      }
+
+      if (!cancelled) {
+        setCookieConsent(null)
+        setHasResolvedConsent(true)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
-    if (cookieConsent != null && hasLoadedLocalStorage) {
+    if (cookieConsent != null && hasResolvedConsent) {
       const newValue = cookieConsent ? 'granted' : 'denied'
 
       window.gtag('consent', 'update', { analytics_storage: newValue })
 
       localStorage.setItem('cookie_consent', JSON.stringify(cookieConsent))
     }
-  }, [cookieConsent, hasLoadedLocalStorage])
+  }, [cookieConsent, hasResolvedConsent])
 
   if (cookieConsent != null) return null
 
