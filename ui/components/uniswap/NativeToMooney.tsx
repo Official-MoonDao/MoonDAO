@@ -327,6 +327,7 @@ export default function NativeToMooney({ selectedChain }: any) {
           <div className="w-full">
             <PrivyWeb3Button
               v5
+              signInLabel="Sign In to Buy MOONEY"
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 sm:py-4 px-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
               label={
                 isGeneratingRoute
