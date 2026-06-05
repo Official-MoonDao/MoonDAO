@@ -208,7 +208,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const alreadyEligible = listed === true
     let totalPaid = BigInt(0)
     if (!alreadyEligible) {
-      totalPaid = await getTotalPaid(address)
+      // Wrap getTotalPaid so subgraph failures don't block invite redemption.
+      // Users with valid invite tokens should be able to mint even during a
+      // subgraph outage, since invites don't depend on contribution history.
+      try {
+        totalPaid = await getTotalPaid(address)
+      } catch (err) {
+        console.error('getTotalPaid failed (non-blocking for invite flow):', err)
+        // totalPaid stays 0; if user has an invite token it will still work
+      }
       if (totalPaid >= BigInt(FREE_MINT_THRESHOLD)) {
         // User meets contribution threshold; no invite needed.
         // (Don't set alreadyEligible in the `listed === null` branch since

@@ -76,6 +76,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   } catch (err: any) {
     console.error('create-citizen-invite failed:', err)
+    // Return partial success so operators know which links were created
+    if (links.length > 0) {
+      return res.status(207).json({
+        success: false,
+        error: err?.message || 'Partial failure while creating invite links.',
+        count: links.length,
+        requested: count,
+        ttlDays,
+        label: label ?? null,
+        links,
+      })
+    }
     return res
       .status(500)
       .json({ error: err?.message || 'Failed to create invite links.' })

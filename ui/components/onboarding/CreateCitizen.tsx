@@ -388,12 +388,12 @@ export default function CreateCitizen({
     startTransition(() => setStage(restoredStage))
   }, [isClientHydrated, restoredStage])
 
-  // Sync freeMint state when freeMintProp or inviteToken becomes available
+  // Sync freeMint state when freeMintProp becomes available
   useEffect(() => {
-    if (freeMintProp || inviteToken) {
+    if (freeMintProp) {
       setFreeMint(true)
     }
-  }, [freeMintProp, inviteToken])
+  }, [freeMintProp])
 
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
@@ -1986,12 +1986,16 @@ export default function CreateCitizen({
         headers,
       })
       if (!res.ok) {
-        const errorText = await res.text() // Or response.json()
+        const errorText = await res.text()
         console.error(errorText)
-        // Don't clear freeMint if we have an invite token — transient GET
-        // failures shouldn't block the sponsored flow. The token is validated
-        // again at mint time (POST).
-        if (!inviteToken) {
+        // For invite tokens: only keep sponsored state on transient errors (5xx),
+        // not on validation failures (4xx). Expired/used tokens return 400.
+        if (inviteToken && res.status >= 500) {
+          // Transient server error with invite - keep sponsored state
+        } else if (inviteToken && res.status === 400) {
+          // Invite validation failed - clear sponsored state
+          setFreeMint(false)
+        } else if (!inviteToken) {
           setFreeMint(false)
         }
       } else {
@@ -1999,12 +2003,9 @@ export default function CreateCitizen({
         if (data.eligible) {
           setFreeMint(true)
         } else {
-          // Don't clear freeMint if we have an invite token — the server's
-          // eligibility check can return false due to Redis errors even when
-          // the token is valid. It will be re-validated at mint time (POST).
-          if (!inviteToken) {
-            setFreeMint(false)
-          }
+          // Clear sponsored state when definitively ineligible. Only preserve
+          // it on Redis errors (which would have returned 503, not 200 OK).
+          setFreeMint(false)
         }
       }
     }
