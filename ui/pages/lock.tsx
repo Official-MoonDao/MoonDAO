@@ -31,6 +31,19 @@ import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrowABI from '../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
 
+// Safely parse a user-typed amount to wei. Returns null for intermediate
+// states like '', '.' or '1.' so callers don't crash on parseEther.
+function safeParseEther(value?: string) {
+  if (!value) return null
+  const normalized = value.endsWith('.') ? value.slice(0, -1) : value
+  if (normalized === '' || isNaN(parseFloat(normalized))) return null
+  try {
+    return ethers.utils.parseEther(normalized)
+  } catch {
+    return null
+  }
+}
+
 export default function Lock() {
   const router = useRouter()
   const { selectedChain }: any = useContext(ChainContextV5)
@@ -184,12 +197,12 @@ export default function Lock() {
       })
 
       setCanIncrease({
-        amount:
+        amount: !!(
           lockAmount &&
-          lockAmount !== '' &&
           lockAmount !== '0' &&
           VMOONEYLock &&
-          ethers.utils.parseEther(lockAmount).gt(VMOONEYLock[0]),
+          safeParseEther(lockAmount)?.gt(VMOONEYLock[0])
+        ),
         time:
           lockTime?.value &&
           lockTime.value.gt(BigNumber.from(VMOONEYLock[1]).mul(1000)) && // New time must be greater than current lock end
@@ -229,6 +242,11 @@ export default function Lock() {
         )
       : parseFloat(ethers.utils.formatEther(MOONEYBalance.toString()))
     : undefined
+
+  const isOverBalance =
+    maxAmountValue !== undefined &&
+    !!lockAmount &&
+    (parseFloat(lockAmount) || 0) > maxAmountValue
 
   function selectAddMode() {
     if (lockMode === 'add') return
@@ -382,7 +400,6 @@ export default function Lock() {
                                   disabled={
                                     (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
                                   }
-                                  max={maxAmountValue}
                                   onFocus={() => {
                                     setIsAmountInputFocused(true)
                                     // Remove formatting when focusing for easier editing
@@ -412,13 +429,6 @@ export default function Lock() {
                                     // Prevent negative values
                                     if (parseFloat(value) < 0) {
                                       value = '0'
-                                    }
-
-                                    // Enforce max value (already-locked + wallet balance)
-                                    if (maxAmountValue !== undefined) {
-                                      if (parseFloat(value) > maxAmountValue) {
-                                        value = maxAmountValue.toString()
-                                      }
                                     }
 
                                     // Remove leading zero if user types a number after it
@@ -685,7 +695,9 @@ export default function Lock() {
                             signInLabel="Sign In to Lock MOONEY"
                             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
                             label={
-                              !hasLock
+                              isOverBalance && (!hasLock || lockMode === 'add')
+                                ? 'Not Enough MOONEY'
+                                : !hasLock
                                 ? 'Lock MOONEY'
                                 : lockMode === 'add'
                                 ? 'Add MOONEY'
@@ -709,7 +721,10 @@ export default function Lock() {
                                 }
 
                                 const lockedMooney = VMOONEYLock?.[0]
-                                const lockAmountBigNum = ethers.utils.parseEther(lockAmount)
+                                const lockAmountBigNum = safeParseEther(lockAmount)
+                                if (!lockAmountBigNum) {
+                                  throw new Error('Please enter a valid amount.')
+                                }
 
                                 const increaseAmount = lockedMooney
                                   ? lockAmountBigNum.sub(lockedMooney)
@@ -738,7 +753,7 @@ export default function Lock() {
                                   : await createLock({
                                       account,
                                       votingEscrowContract: vMooneyContract,
-                                      amount: lockAmount && ethers.utils.parseEther(lockAmount),
+                                      amount: lockAmountBigNum,
                                       time: lockTime?.value.div(1000),
                                     })
 
@@ -766,8 +781,10 @@ export default function Lock() {
                               }
                             }}
                             isDisabled={
+                              // Never let the user submit more than they hold
+                              (isOverBalance && (!hasLock || lockMode === 'add')) ||
                               // For new locks, require both amount and time
-                              !hasLock
+                              (!hasLock
                                 ? !lockAmount ||
                                   lockAmount === '' ||
                                   lockAmount === '0' ||
@@ -775,7 +792,7 @@ export default function Lock() {
                                 : // For existing locks, only the active mode's change is required
                                 lockMode === 'add'
                                 ? !canIncrease.amount
-                                : !canIncrease.time
+                                : !canIncrease.time)
                             }
                           />
 
