@@ -1,12 +1,18 @@
 ---
-description: Context discipline — never blindly scan the monorepo
+description: Context discipline — no speculative scanning
 alwaysApply: true
 ---
 # Context Discipline (HIGHEST PRIORITY)
 
-- DO NOT scan, glob, or traverse the repository. This is a large monorepo; broad scans waste context and cause wrong assumptions.
-- Work ONLY with files the user names in their prompt, files already open/attached in the editor, and files those directly import.
-- The user prompts in plain text and does not use file-mentions. When you need a file, ask the user to paste it or state its path in text — do not go hunting for it.
-- If required context is missing, STOP and ask one precise question naming what you need. Never guess a path and start reading around.
-- NEVER read `node_modules`, `.next`, `yarn.lock`, `package-lock.json`, `archive/`, `public/`, generated artifacts, or ABI JSON unless explicitly asked.
-- Keep edits surgical — change only what the task requires; no unrelated refactors or "tidying".
+- DO NOT speculatively scan or explore the repository to "build context". Never read a file
+  unless you already know why you need it.
+- Targeted lookups are fine: if you know a specific file, symbol, or path you need, go get it
+  directly. What is forbidden is exploratory reading — opening files just to see what is there.
+- Do not read whole directories as discovery. If you need to know what exists in a folder, ask
+  the user rather than listing and reading everything inside.
+- If you are missing context and cannot infer the right file from what is already provided,
+  ask one precise question (e.g. "can you share the path or contents of the file that handles X?")
+  rather than going on a broad search.
+- NEVER read `node_modules`, `.next`, `yarn.lock`, `package-lock.json`, `archive/`, `public/`,
+  or generated artifacts unless explicitly asked.
+- Keep edits surgical — change only what the task requires; no unrelated refactors or tidying.
