@@ -1,20 +1,39 @@
 ---
-description: Context discipline — purposeful lookup only, no aimless scanning
+description: Context discipline — scale reading depth to task complexity
 alwaysApply: true
 ---
 # Context Discipline (HIGHEST PRIORITY)
 
-- You are expected to locate files autonomously when given a high-level task (e.g. "the profile
-  page is broken, fix it"). Search for the relevant files, trace the code, and resolve the issue
-  without requiring the user to specify paths.
-- Every file you open must serve the current task. Ask yourself: "do I need this to complete
-  what was asked?" If the answer is no, don't open it.
-- What is forbidden is aimless exploration — reading files to "understand the codebase" or
-  "get context" with no specific goal tied to the task at hand.
-- Do not read entire directories speculatively. Search or grep for what you need; open only
-  the files the results point to.
-- If you are genuinely blocked and cannot locate something, ask one precise question rather
-  than broadening your search indiscriminately.
+## Core principle
+Read with purpose. Every file you open must have a clear reason tied to the current task.
+Aimless exploration — opening files to "understand the codebase" with no specific goal — is
+forbidden. But complex tasks genuinely require reading more, and that is expected.
+
+## Scale your reading to the task
+
+**Targeted fix** (bug in a named component or file)
+→ Read that file + its direct imports. Fix. Done.
+
+**Cross-cutting bug** (stale data, broken state, wrong value across pages)
+→ Trace freely across all files in the call chain. Read as many as needed to find the root cause.
+  Don't stop at the first plausible fix if the real cause may be upstream.
+
+**New feature in an existing domain** (adding to marketplace, subscription, etc.)
+→ Read 1–2 existing files in the same feature folder as a pattern reference, then implement.
+  Prefer `lib/<feature>/` and `components/<feature>/` for the relevant domain.
+
+**Refactor or migration**
+→ Read all files you intend to touch before writing a single line. Understand the full blast
+  radius before starting.
+
+**Unfamiliar area**
+→ Read one representative page + its primary component + the lib module it calls. That is
+  enough to understand the pattern. Do not read the entire feature folder.
+
+## Hard limits — always apply regardless of task type
 - NEVER read `node_modules`, `.next`, `yarn.lock`, `package-lock.json`, `archive/`, `public/`,
-  or generated artifacts unless explicitly asked.
+  or generated artifacts.
+- Do not read files outside the task's domain without a specific reason.
+- If genuinely blocked after targeted searching, ask one precise question rather than
+  broadening the search indiscriminately.
 - Keep edits surgical — change only what the task requires; no unrelated refactors or tidying.

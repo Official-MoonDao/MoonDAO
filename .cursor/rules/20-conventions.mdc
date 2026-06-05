@@ -4,15 +4,30 @@ globs: ui/**/*.{ts,tsx}
 ---
 # Style, Imports & Naming
 
-## Prettier (do not fight it)
-- Single quotes, **no semicolons**, 2-space indent, width 100, `arrowParens: always`.
-- ESLint: `next/core-web-vitals` + `prettier` + `cypress`. Don't introduce lint errors.
+## Prettier — do not fight it
+- Single quotes, **no semicolons**, 2-space indent, print width 100, `arrowParens: always`.
+- ESLint extends `next/core-web-vitals` + `prettier` + `cypress`. Do not introduce lint errors.
+- Run `yarn lint` to verify before declaring a task done.
 
-## Imports (these are code path aliases, not prompt mentions)
-- Aliases: `@/components/*`, `@/lib/*`, `@/pages/*`, `@/cypress/*`. Bare `const/...` and `components/...` also resolve.
-- Import order (auto-sorted): `lib/*` -> `components/*` -> `pages/*` -> relative -> css.
-- ABIs from `const/abis/<Name>.json`; addresses/chains from `const/config`.
+## Import aliases (these are TypeScript path aliases, not prompt mentions)
+- `@/components/*` → `components/`
+- `@/lib/*` → `lib/`
+- `@/pages/*` → `pages/`
+- `@/cypress/*` → `cypress/`
+- Bare `const/...` and `components/...` also resolve (baseUrl is `./`).
+- ABIs: always from `const/abis/<Name>.json`.
+- Addresses and chain config: always from `const/config`.
+
+## Import order (auto-sorted by prettier-plugin-sort-imports)
+`lib/*` → `components/*` → `pages/*` → relative → css.
+Do not manually reorder against this — let the formatter handle it.
 
 ## Naming
-- Components: PascalCase `.tsx`. Hooks: `useXxx.tsx` in `lib/**/hooks/`.
-- Utils: camelCase `.ts` named by action. Constants: SCREAMING_SNAKE_CASE. ABIs: PascalCase `.json`.
+| Thing | Convention | Extension |
+|---|---|---|
+| React component | PascalCase | `.tsx` |
+| Hook | `useXxx` | `.tsx` (in `lib/**/hooks/`) |
+| Utility / helper | camelCase, named by action | `.ts` |
+| Constant | SCREAMING_SNAKE_CASE | — |
+| Contract ABI | PascalCase | `.json` |
+| API route file | camelCase or kebab-case | `.ts` |
