@@ -345,7 +345,9 @@ export default function WalletInfoCard({
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={() => fundWallet && fundWallet(address as `0x${string}`)}
+          onClick={() =>
+            fundWallet && fundWallet({ address: address as `0x${string}` })
+          }
           className="flex items-center justify-center gap-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-300 py-2 px-3 rounded-lg text-xs font-medium transition-all"
         >
           <ArrowDownIcon className="w-3.5 h-3.5" />

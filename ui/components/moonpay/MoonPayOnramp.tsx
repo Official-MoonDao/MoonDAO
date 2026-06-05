@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getMoonPayCurrencyCode, useMoonPay } from '@/lib/privy/hooks/useMoonPay'
+import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -68,10 +68,10 @@ export function MoonPayOnramp({
   const [error, setError] = useState<string | null>(null)
   const [pollCount, setPollCount] = useState(0)
 
-  // Derive the symbol from the MoonPay currency code so display and funding
-  // always agree. Format is "{SYMBOL}_{NETWORK}" (e.g. ETH_ARBITRUM → "ETH").
+  // Display the chain's native token symbol (all supported onramp chains are
+  // ETH-native, so this is "ETH" in practice).
   const nativeSymbol: string = useMemo(
-    () => getMoonPayCurrencyCode(selectedChain?.id).split('_')[0],
+    () => selectedChain?.nativeCurrency?.symbol ?? 'ETH',
     [selectedChain]
   )
 
@@ -169,20 +169,48 @@ export function MoonPayOnramp({
         await onBeforeOpen()
       }
 
-      // wallet.fund() resolves when the user closes the MoonPay widget, not when the
-      // purchase is confirmed. This is the expected Privy behavior as of @privy-io/react-auth
-      // ≥1.91 — verify against the installed version before cutover if behavior is unclear.
-      await fund(ethAmount > 0 ? ethAmount : undefined, selectedChain?.id)
+      // Privy's fiat onramp pre-fills a FIAT (USD) amount, not a token amount.
+      // Convert the native-token deficit to USD (with a small buffer for fees and
+      // price drift) so the purchase covers the amount the user actually needs.
+      // All supported onramp chains are ETH-native, so the ETH spot price applies.
+      let fiatAmount: number | undefined
+      if (ethAmount > 0) {
+        try {
+          const res = await fetch('/api/coinbase/eth-price')
+          if (res.ok) {
+            const { price } = await res.json()
+            if (price > 0) {
+              fiatAmount = Math.ceil(ethAmount * price * 1.05)
+            }
+          }
+        } catch {
+          // Price lookup failed — fall back to letting the user enter the amount.
+        }
+      }
+
+      // fund() opens Privy's in-app modal and resolves once the user finishes (or
+      // exits) the flow. It rejects if the user closes the modal before submitting.
+      const result = await fund(fiatAmount, selectedChain?.id)
 
       setFundingState('waiting')
       onPurchaseSubmitted?.()
 
+      // If Privy already confirmed delivery, the balance poll will pick it up on
+      // its first tick. Otherwise we keep polling until funds arrive.
       if (checkBalanceSufficient) {
         startPolling()
+      } else if (result?.status === 'confirmed') {
+        setFundingState('sufficient')
       }
     } catch (err: any) {
-      setError('Failed to open MoonPay: ' + (err?.message ?? 'Unknown error'))
+      // A rejection most often means the user closed the funding modal before
+      // submitting — treat that as a quiet cancel rather than a hard error.
+      const message: string = err?.message ?? ''
+      const userCancelled = /exit|close|cancel|dismiss/i.test(message)
       setFundingState('idle')
+      if (!userCancelled) {
+        setError('Failed to open the funding flow: ' + (message || 'Unknown error'))
+      }
     }
   }, [
     address,

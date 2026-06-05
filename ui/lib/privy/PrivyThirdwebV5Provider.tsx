@@ -10,6 +10,7 @@ import {
 } from 'thirdweb/react'
 import { createWalletAdapter } from 'thirdweb/wallets'
 import client from '@/lib/thirdweb/client'
+import { getWalletEthersProvider } from './getWalletEthersProvider'
 import PrivyWalletContext from './privy-wallet-context'
 
 export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
@@ -59,8 +60,8 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
           console.warn('Chain switch failed:', switchError.message)
         }
 
-        // Get provider and signer AFTER chain switch
-        const provider = await wallet?.getEthersProvider()
+        // Get provider and signer AFTER chain switch.
+        const provider = await getWalletEthersProvider(wallet)
         const signer = provider?.getSigner()
 
         const adaptedAccount = await ethers5Adapter.signer.fromEthers({

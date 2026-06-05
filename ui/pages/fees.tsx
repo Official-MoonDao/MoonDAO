@@ -25,6 +25,7 @@ import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { getWalletEthersProvider } from '@/lib/privy/getWalletEthersProvider'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { arbitrum, base, ethereum, sepolia, arbitrumSepolia, Chain } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -542,7 +543,7 @@ export default function Fees() {
       const getAccountForChain = async () => {
         try {
           const wallet = wallets[selectedWallet]
-          const provider = await wallet?.getEthersProvider()
+          const provider = await getWalletEthersProvider(wallet)
           const signer = provider?.getSigner()
           if (!signer) return account
           return await ethers5Adapter.signer.fromEthers({ signer })

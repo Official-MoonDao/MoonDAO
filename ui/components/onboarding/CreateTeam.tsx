@@ -174,9 +174,12 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       if (+(nativeBalance ?? '0') < totalCost) {
         const roundedCost = Math.ceil(totalCost * 1000000) / 1000000
         setIsLoadingMint(false)
-        return await fundWallet(address, {
-          amount: String(roundedCost),
-          chain: viemChains[chainSlug],
+        return await fundWallet({
+          address,
+          options: {
+            amount: String(roundedCost),
+            chain: viemChains[chainSlug],
+          },
         })
       }
 

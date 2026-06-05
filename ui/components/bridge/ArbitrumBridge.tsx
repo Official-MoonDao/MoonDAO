@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { EIP1193 } from 'thirdweb/wallets'
+import { getWalletEthersProvider } from '../../lib/privy/getWalletEthersProvider'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { arbitrum, ethereum } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -64,7 +65,7 @@ export default function ArbitrumBridge() {
   async function depositEth() {
     const l2Network = await getL2Network(arbitrum.id)
     const ethBridger = new EthBridger(l2Network)
-    const provider = await wallets[selectedWallet]?.getEthersProvider()
+    const provider = await getWalletEthersProvider(wallets[selectedWallet])
     const signer = provider.getSigner()
     const depositTx = await ethBridger.deposit({
       amount: ethers.utils.parseEther(amount),
@@ -79,7 +80,7 @@ export default function ArbitrumBridge() {
 
   useEffect(() => {
     async function checkIsEOA() {
-      const provider = await wallets[selectedWallet]?.getEthersProvider()
+      const provider = await getWalletEthersProvider(wallets[selectedWallet])
       // Get the code at the given address
       if (provider && address) {
         const code = await provider.getCode(address)
@@ -93,7 +94,7 @@ export default function ArbitrumBridge() {
   async function withdrawEth() {
     const l2Network = await getL2Network(arbitrum.id)
     const ethBridger = new EthBridger(l2Network)
-    const provider = await wallets[selectedWallet]?.getEthersProvider()
+    const provider = await getWalletEthersProvider(wallets[selectedWallet])
     const signer = provider.getSigner()
     const withdrawTx = await ethBridger.withdraw({
       amount: ethers.utils.parseEther(amount),
@@ -111,7 +112,7 @@ export default function ArbitrumBridge() {
     if (!wallet) return
     const l2Network = await getL2Network(arbitrum.id)
     const erc20Bridger = new Erc20Bridger(l2Network)
-    const provider = await wallets[selectedWallet]?.getEthersProvider()
+    const provider = await getWalletEthersProvider(wallets[selectedWallet])
     const signer = provider.getSigner()
     const l2Provider = new ethers.providers.JsonRpcProvider(
       `https://42161.rpc.thirdweb.com/${process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`
@@ -134,7 +135,7 @@ export default function ArbitrumBridge() {
   async function withdrawMooney() {
     const l2Network = await getL2Network(arbitrum.id)
     const erc20Bridger = new Erc20Bridger(l2Network)
-    const provider = await wallets[selectedWallet]?.getEthersProvider()
+    const provider = await getWalletEthersProvider(wallets[selectedWallet])
     const signer = provider.getSigner()
 
     //withdraw mooney
