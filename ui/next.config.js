@@ -408,6 +408,20 @@ module.exports = withBundleAnalyzer(
           config.resolve.fallback.child_process = false
         }
 
+        // @privy-io/react-auth v3 ships optional connectors for features we
+        // don't use (Solana wallets, Farcaster mini-apps, the Stripe fiat
+        // onramp — we use MoonPay). Their peer dependencies aren't installed,
+        // so alias them to empty modules. This keeps webpack from failing to
+        // resolve them and stops the cascade into their deeper optional deps.
+        config.resolve.alias = {
+          ...config.resolve.alias,
+          '@stripe/crypto': false,
+          '@stripe/stripe-js': false,
+          '@farcaster/mini-app-solana': false,
+          '@farcaster/miniapp-sdk': false,
+          '@solana/wallet-adapter-react': false,
+        }
+
         // Optimize chunk splitting for better LCP and First Load JS
         config.optimization = {
           ...config.optimization,
