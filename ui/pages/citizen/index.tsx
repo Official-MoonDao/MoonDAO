@@ -24,7 +24,11 @@ export default function Join() {
     [router],
   )
 
-  const freeMint = router.query.freeMint === 'true'
+  // A one-time magic-link invite (`?invite=<token>`) sponsors a free mint for
+  // whoever redeems it; eligibility is verified server-side against the token.
+  const inviteToken =
+    typeof router.query.invite === 'string' ? router.query.invite : undefined
+  const freeMint = router.query.freeMint === 'true' || Boolean(inviteToken)
 
   return (
     <>
@@ -39,6 +43,7 @@ export default function Join() {
         selectedChain={selectedChain}
         setSelectedTier={handleExitFlow}
         freeMintProp={freeMint}
+        inviteToken={inviteToken}
       />
     </>
   )
