@@ -1,0 +1,20 @@
+---
+description: Architecture, folders, and recurring patterns in ui
+globs: ui/**/*.{ts,tsx}
+---
+# Architecture & Patterns
+
+## Folders (ui/)
+- `pages/` routes; `pages/api/**` domain-grouped API routes.
+- `components/` feature-grouped React components.
+- `lib/` feature-grouped logic; hooks in `lib/**/hooks/`.
+- `const/` config + ABIs + static data. `middleware/` composable API middleware.
+
+## Patterns
+- API routes compose middleware: `export default withMiddleware(handler, rateLimit, secureHeaders, ...)`. Reuse existing `middleware/*`.
+- Read on-chain via thirdweb v5 hooks (`useContract`, `useRead`) from the thirdweb hooks lib.
+- Use chain helpers (`DEFAULT_CHAIN_V5`, chain utils); never hardcode RPCs/chains.
+- Pin media via the ipfs lib; user feedback via `react-hot-toast`.
+
+## Don'ts
+- No App Router/RSC. No new global-state libs (use react-query/SWR/context). No narrating comments. No new top-level folders/config unasked. No committing secrets (`.env.local`, `.pem`).

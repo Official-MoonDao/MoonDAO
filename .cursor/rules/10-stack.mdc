@@ -1,0 +1,12 @@
+---
+description: MoonDAO monorepo layout and stack overview
+alwaysApply: true
+---
+# Repo & Stack
+
+- Monorepo. Web app: `ui/` (Next.js). Solidity: `contracts/`, `fee-hook/`, `prediction/`, `subscription-contracts/`, `xp/`. Services: `dispatcher/`, `townhall-summarizer/`, `tui/`.
+- Default to `ui/` unless another package is named. Don't edit across packages in one task unasked.
+- `ui/`: Next.js 13 **Pages Router** (no `app/`), React 18, TypeScript 5 `strict`.
+- Package manager **Yarn**, Node ≥18. Never suggest npm/pnpm.
+- Web3: thirdweb v5 (primary), wagmi v2 + viem v2, ethers 5.7 (legacy). Auth: Privy. Also Safe, Hats, Juicebox, Uniswap v4, Tableland, LayerZero.
+- Data: react-query, SWR, urql/graphql-request, axios. Forms: react-hook-form. Toasts: react-hot-toast. i18n: next-translate. Styling: Tailwind 3 + daisyUI, `darkMode: 'class'`.

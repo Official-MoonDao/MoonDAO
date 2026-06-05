@@ -1,0 +1,18 @@
+---
+description: Style, imports, and naming conventions for ui
+globs: ui/**/*.{ts,tsx}
+---
+# Style, Imports & Naming
+
+## Prettier (do not fight it)
+- Single quotes, **no semicolons**, 2-space indent, width 100, `arrowParens: always`.
+- ESLint: `next/core-web-vitals` + `prettier` + `cypress`. Don't introduce lint errors.
+
+## Imports (these are code path aliases, not prompt mentions)
+- Aliases: `@/components/*`, `@/lib/*`, `@/pages/*`, `@/cypress/*`. Bare `const/...` and `components/...` also resolve.
+- Import order (auto-sorted): `lib/*` -> `components/*` -> `pages/*` -> relative -> css.
+- ABIs from `const/abis/<Name>.json`; addresses/chains from `const/config`.
+
+## Naming
+- Components: PascalCase `.tsx`. Hooks: `useXxx.tsx` in `lib/**/hooks/`.
+- Utils: camelCase `.ts` named by action. Constants: SCREAMING_SNAKE_CASE. ABIs: PascalCase `.json`.
