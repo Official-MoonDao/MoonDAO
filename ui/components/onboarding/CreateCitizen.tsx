@@ -278,7 +278,12 @@ function restoreWizardStageFromSession(): number {
   return 1
 }
 
-export default function CreateCitizen({ selectedChain, setSelectedTier, freeMintProp }: any) {
+export default function CreateCitizen({
+  selectedChain,
+  setSelectedTier,
+  freeMintProp,
+  inviteToken,
+}: any) {
   // ===== Context & Constants =====
   const router = useRouter()
   const { setSelectedChain } = useContext(ChainContextV5)
@@ -383,10 +388,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     startTransition(() => setStage(restoredStage))
   }, [isClientHydrated, restoredStage])
 
+  // Sync freeMint state when freeMintProp or inviteToken becomes available
+  useEffect(() => {
+    if (freeMintProp || inviteToken) {
+      setFreeMint(true)
+    }
+  }, [freeMintProp, inviteToken])
+
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
   const [requiredEthAmount, setRequiredEthAmount] = useState(0)
-  const [freeMint, setFreeMint] = useState(freeMintProp || false)
+  const [freeMint, setFreeMint] = useState(false)
 
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
@@ -665,15 +677,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
 
   const executeFreeMint = useCallback(
     async (imageIpfsHash: string) => {
+      // Invite-sponsored mints must prove the signed-in Privy user owns this
+      // wallet, so the one-time token can only be redeemed by its recipient.
+      const accessToken = inviteToken ? await getAccessToken() : null
       const res = await fetch(`/api/mission/freeMint`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           address: address,
           name: citizenData.name,
           image: `ipfs://${imageIpfsHash}`,
           privacy: 'public',
           formId: citizenData.formResponseId,
+          ...(inviteToken ? { inviteToken, accessToken } : {}),
         }),
       })
       if (!res.ok) {
@@ -683,7 +702,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
       }
       return await res.json()
     },
-    [address, citizenData.name, citizenData.formResponseId],
+    [address, citizenData.name, citizenData.formResponseId, inviteToken],
   )
 
   const executeCrossChainMint = useCallback(
@@ -1168,11 +1187,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
         'citizen image',
       )
       // If citizenImage was restored and differs from croppedInputImage, it's an AI portrait
-      if (citizenImageRestored && formData.citizenImage && isSerializedFile(formData.citizenImage)) {
+      if (
+        citizenImageRestored &&
+        formData.citizenImage &&
+        isSerializedFile(formData.citizenImage)
+      ) {
         // Compare serialized data to determine if it's an AI portrait
-        if (!formData.croppedInputImage || 
-            !isSerializedFile(formData.croppedInputImage) ||
-            formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL) {
+        if (
+          !formData.croppedInputImage ||
+          !isSerializedFile(formData.croppedInputImage) ||
+          formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL
+        ) {
           markAiPortraitReady()
         }
       }
@@ -1948,21 +1973,43 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     if (!address) return
 
     const getTotalPaid = async () => {
+      // A magic-link invite token makes this wallet eligible for a sponsored
+      // mint even without a contribution history or on-chain allowlist entry.
+      // Send the invite token via header instead of query string to prevent
+      // leakage via browser history, analytics, and Referer headers.
+      const headers: Record<string, string> = {}
+      if (inviteToken) {
+        headers['x-invite-token'] = inviteToken
+      }
       const res = await fetch(`/api/mission/freeMint?address=${address}`, {
         method: 'GET',
+        headers,
       })
       if (!res.ok) {
         const errorText = await res.text() // Or response.json()
         console.error(errorText)
+        // Don't clear freeMint if we have an invite token — transient GET
+        // failures shouldn't block the sponsored flow. The token is validated
+        // again at mint time (POST).
+        if (!inviteToken) {
+          setFreeMint(false)
+        }
       } else {
         const { data } = await res.json()
         if (data.eligible) {
           setFreeMint(true)
+        } else {
+          // Don't clear freeMint if we have an invite token — the server's
+          // eligibility check can return false due to Redis errors even when
+          // the token is valid. It will be re-validated at mint time (POST).
+          if (!inviteToken) {
+            setFreeMint(false)
+          }
         }
       }
     }
     getTotalPaid()
-  }, [address])
+  }, [address, inviteToken])
 
   // ===== JSX Render =====
   return (
