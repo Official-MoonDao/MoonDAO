@@ -65,11 +65,13 @@ export function FundOnramp({
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
 
   return (
-    <div className={`${shellWidthClass} space-y-3`}>
+    <div
+      className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
+    >
       {/* Provider selector */}
       <div
         data-testid="onramp-provider-select"
-        className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white p-4 space-y-3"
+        className="p-4 space-y-3 border-b border-white/10"
       >
         <p className="text-gray-400 font-semibold text-xs uppercase tracking-wider">
           Choose how to pay
@@ -132,9 +134,10 @@ export function FundOnramp({
         )}
       </div>
 
-      {/* Selected provider */}
+      {/* Selected provider (embedded so it shares this single card) */}
       {provider === 'moonpay' ? (
         <MoonPayOnramp
+          embedded
           fullWidth
           address={address}
           selectedChain={selectedChain}
@@ -151,6 +154,7 @@ export function FundOnramp({
         />
       ) : (
         <CBOnramp
+          embedded
           fullWidth
           address={address}
           selectedChain={selectedChain}

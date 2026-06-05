@@ -67,6 +67,15 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
                 termsAndConditionsUrl: 'https://docs.moondao.com/Legal/Website-Terms-and-Conditions',
                 privacyPolicyUrl: 'https://docs.moondao.com/Legal/Website-Privacy-Policy',
               },
+              fundingMethodConfig: {
+                moonpay: {
+                  paymentMethod: 'credit_debit_card',
+                  uiConfig: {
+                    accentColor: '#696FFD',
+                    theme: 'dark',
+                  },
+                },
+              },
             }}
           >
             <ThirdwebProvider>

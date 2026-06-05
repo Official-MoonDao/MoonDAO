@@ -19,6 +19,8 @@ interface MoonPayOnrampProps {
   onPurchaseSubmitted?: () => void
   /** When true, stretches to parent width */
   fullWidth?: boolean
+  /** When true, drops the outer card chrome so it can be nested inside another card */
+  embedded?: boolean
   /** Optional: poll until balance is sufficient, then call onBalanceSufficient */
   checkBalanceSufficient?: () => Promise<boolean>
   onBalanceSufficient?: () => void
@@ -42,6 +44,7 @@ export function MoonPayOnramp({
   onBeforeOpen,
   onPurchaseSubmitted,
   fullWidth = false,
+  embedded = false,
   checkBalanceSufficient,
   onBalanceSufficient,
   refetchBalance,
@@ -50,6 +53,15 @@ export function MoonPayOnramp({
   isWaitingForGasEstimate = false,
 }: MoonPayOnrampProps) {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
+  // When embedded, render transparent so we blend into the parent card.
+  const shellChrome = (accent: 'blue' | 'red') =>
+    embedded
+      ? 'w-full text-white'
+      : `${shellWidthClass} bg-gradient-to-br from-gray-900 ${
+          accent === 'red' ? 'via-red-900/30' : 'via-blue-900/30'
+        } to-purple-900/20 backdrop-blur-xl border ${
+          accent === 'red' ? 'border-red-500/20' : 'border-white/10'
+        } rounded-2xl shadow-2xl text-white overflow-hidden`
   const fund = useMoonPay()
 
   const [fundingState, setFundingState] = useState<FundingState>('idle')
@@ -191,9 +203,7 @@ export function MoonPayOnramp({
 
   if (error) {
     return (
-      <div
-        className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-red-900/30 to-purple-900/20 backdrop-blur-xl border border-red-500/20 rounded-2xl shadow-2xl text-white overflow-hidden`}
-      >
+      <div className={shellChrome('red')}>
         <div className="flex items-center justify-between p-6 border-b border-red-500/20">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
@@ -225,9 +235,7 @@ export function MoonPayOnramp({
 
   if (fundingState === 'waiting') {
     return (
-      <div
-        className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
-      >
+      <div className={shellChrome('blue')}>
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
@@ -290,9 +298,7 @@ export function MoonPayOnramp({
   }
 
   return (
-    <div
-      className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
-    >
+    <div className={shellChrome('blue')}>
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">

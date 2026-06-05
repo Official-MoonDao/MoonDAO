@@ -29,6 +29,8 @@ interface CBOnrampProps {
   ) => void
   /** When true, stretches to parent width (e.g. embedded in contribute modal). */
   fullWidth?: boolean
+  /** When true, drops the outer card chrome so it can be nested inside another card */
+  embedded?: boolean
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
@@ -45,6 +47,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   allowAmountInput = false,
   onQuoteCalculated,
   fullWidth = false,
+  embedded = false,
 }) => {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
 
@@ -480,11 +483,15 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     return (
       <div
         data-testid="cbonramp-modal-content"
-        className={`${shellWidthClass} bg-gradient-to-br from-gray-900 ${
-          isGuide ? 'via-amber-950/40' : 'via-red-900/30'
-        } to-purple-900/20 backdrop-blur-xl border ${
-          isGuide ? 'border-amber-500/25' : 'border-red-500/20'
-        } rounded-2xl shadow-2xl text-white overflow-hidden`}
+        className={
+          embedded
+            ? 'w-full text-white'
+            : `${shellWidthClass} bg-gradient-to-br from-gray-900 ${
+                isGuide ? 'via-amber-950/40' : 'via-red-900/30'
+              } to-purple-900/20 backdrop-blur-xl border ${
+                isGuide ? 'border-amber-500/25' : 'border-red-500/20'
+              } rounded-2xl shadow-2xl text-white overflow-hidden`
+        }
       >
         {/* Header with close button */}
         <div
@@ -579,7 +586,11 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   return (
     <div
       data-testid="cbonramp-modal-content"
-      className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
+      className={
+        embedded
+          ? 'w-full text-white'
+          : `${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`
+      }
     >
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
