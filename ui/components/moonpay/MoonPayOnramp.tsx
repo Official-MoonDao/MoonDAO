@@ -22,6 +22,8 @@ interface MoonPayOnrampProps {
   /** Optional: poll until balance is sufficient, then call onBalanceSufficient */
   checkBalanceSufficient?: () => Promise<boolean>
   onBalanceSufficient?: () => void
+  /** Optional: refetch on-chain balance before each poll so newly arrived funds are detected */
+  refetchBalance?: () => Promise<void>
   /** Milliseconds between each balance poll. Default: 15000 */
   pollIntervalMs?: number
   /** How long (minutes) to keep polling. Default: 30 */
@@ -42,6 +44,7 @@ export function MoonPayOnramp({
   fullWidth = false,
   checkBalanceSufficient,
   onBalanceSufficient,
+  refetchBalance,
   pollIntervalMs = POLL_INTERVAL_DEFAULT,
   pollMaxMinutes = POLL_MAX_MINUTES_DEFAULT,
   isWaitingForGasEstimate = false,
@@ -74,6 +77,11 @@ export function MoonPayOnramp({
     checkBalanceSufficientRef.current = checkBalanceSufficient
   }, [checkBalanceSufficient])
 
+  const refetchBalanceRef = useRef(refetchBalance)
+  useEffect(() => {
+    refetchBalanceRef.current = refetchBalance
+  }, [refetchBalance])
+
   const stopPolling = useCallback(() => {
     if (pollTimeoutRef.current) {
       clearTimeout(pollTimeoutRef.current)
@@ -95,6 +103,8 @@ export function MoonPayOnramp({
         setPollCount((c) => c + 1)
 
         try {
+          // Refetch on-chain balance first so newly arrived funds are seen
+          await refetchBalanceRef.current?.()
           const sufficient = await checkBalanceSufficientRef.current?.()
           if (sufficient) {
             stopPolling()
