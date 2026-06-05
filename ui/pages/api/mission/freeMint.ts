@@ -15,12 +15,7 @@ import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
-import {
-  CitizenInvite,
-  consumeInvite,
-  peekInvite,
-  restoreInvite,
-} from '@/lib/citizen/inviteTokens'
+import { CitizenInvite, consumeInvite, peekInvite, restoreInvite } from '@/lib/citizen/inviteTokens'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
@@ -145,7 +140,7 @@ async function getTotalPaid(address: string) {
 // Returns true if listed, false if confirmed not listed, null if the RPC failed.
 async function isOnCitizenList(
   address: string,
-  listAddress: string | undefined
+  listAddress: string | undefined,
 ): Promise<boolean | null> {
   if (!listAddress) return false
   try {
@@ -171,9 +166,7 @@ async function isOnCitizenList(
 // discount list. Returns null only when a list check failed and the address was
 // not confirmed on the other list, so callers can fall back to the contribution
 // check rather than wrongly rejecting an eligible user.
-async function isCitizenFreeMintListed(
-  address: string
-): Promise<boolean | null> {
+async function isCitizenFreeMintListed(address: string): Promise<boolean | null> {
   if (!isValidEvmAddress(address)) return false
   const [whitelisted, discounted] = await Promise.all([
     isOnCitizenList(address, CITIZEN_WHITELIST_ADDRESSES[chainSlug]),
@@ -214,7 +207,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const listed = await isCitizenFreeMintListed(address)
     const alreadyEligible = listed === true
     let totalPaid = BigInt(0)
-    if (!alreadyEligible && listed !== null) {
+    if (!alreadyEligible) {
       totalPaid = await getTotalPaid(address)
       if (totalPaid >= BigInt(FREE_MINT_THRESHOLD)) {
         // User meets contribution threshold; no invite needed.
@@ -235,10 +228,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // so they can share it with someone who needs it.
       } else {
         const accessToken = getAccessTokenFromReq(req)
-        if (
-          !accessToken ||
-          !(await addressBelongsToPrivyUser(accessToken, address))
-        ) {
+        if (!accessToken || !(await addressBelongsToPrivyUser(accessToken, address))) {
           return res
             .status(401)
             .json({ error: 'You must be signed in with this wallet to redeem an invite.' })
@@ -313,7 +303,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     let inviteToken =
       req.headers['x-invite-token'] ||
       (typeof req.query.invite === 'string' ? req.query.invite : undefined)
-    
+
     // Normalize header to string (Next.js can provide string | string[])
     if (Array.isArray(inviteToken)) {
       inviteToken = inviteToken[0]
