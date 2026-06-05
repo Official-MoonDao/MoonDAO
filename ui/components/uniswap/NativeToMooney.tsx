@@ -335,7 +335,7 @@ export default function NativeToMooney({ selectedChain }: any) {
                   : !amount || parseFloat(amount) === 0
                   ? 'Enter Amount'
                   : isOverBalance
-                  ? 'Not Enough ETH'
+                  ? `Not Enough ${CHAIN_TOKEN_NAMES[chainSlug] ?? 'ETH'}`
                   : !hasValidRoute
                   ? 'No Route Available'
                   : 'Swap'
