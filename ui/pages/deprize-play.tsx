@@ -63,8 +63,8 @@ type Outcome = {
 
 type Preview = { qty: number; exact: boolean }
 
-const emptyOutcomes = (): Outcome[] =>
-  Array.from({ length: MAX_OUTCOMES }, (_, i) => ({
+const emptyOutcomes = (count: number): Outcome[] =>
+  Array.from({ length: count }, (_, i) => ({
     index: i,
     probability: NaN,
     balance: NaN,
@@ -111,7 +111,7 @@ export default function DePrizePlay() {
 
   const [ethBet, setEthBet] = useState('')
   const [wrapAmount, setWrapAmount] = useState('0.01')
-  const [outcomes, setOutcomes] = useState<Outcome[]>(emptyOutcomes)
+  const [outcomes, setOutcomes] = useState<Outcome[]>([])
   const [previews, setPreviews] = useState<(Preview | undefined)[]>([])
   const [conditionId, setConditionId] = useState<string | undefined>()
   const [stage, setStage] = useState<number | undefined>()
@@ -123,9 +123,9 @@ export default function DePrizePlay() {
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  // Static-per-market values (conditionId + ERC-1155 position ids) never change,
+  // Static-per-market values (conditionId + ERC-1155 position ids + outcome count) never change,
   // so resolve them once and reuse — keeps every refresh to the dynamic reads.
-  const staticRef = useRef<{ conditionId: string; positionIds: bigint[] } | null>(null)
+  const staticRef = useRef<{ conditionId: string; positionIds: bigint[]; outcomeCount: number } | null>(null)
 
   // Read contracts: no-batching client (avoids the viem batch-decode bug).
   const lmsr = useContract({
@@ -183,8 +183,15 @@ export default function DePrizePlay() {
           method: 'conditionIds' as string,
           params: [0n],
         })) as string
+        const outcomeCount = Number(
+          (await readContract({
+            contract: lmsr,
+            method: 'atomicOutcomeSlotCount' as string,
+            params: [],
+          })) as bigint,
+        )
         const positionIds = await Promise.all(
-          Array.from({ length: MAX_OUTCOMES }, async (_, i) => {
+          Array.from({ length: outcomeCount }, async (_, i) => {
             const indexSet = BigInt(1 << i)
             const collectionId = (await readContract({
               contract: ctf,
@@ -198,10 +205,11 @@ export default function DePrizePlay() {
             })) as bigint
           }),
         )
-        staticRef.current = { conditionId: cond, positionIds }
+        staticRef.current = { conditionId: cond, positionIds, outcomeCount }
         setConditionId(cond)
+        setOutcomes(emptyOutcomes(outcomeCount))
       }
-      const { conditionId: cond, positionIds } = staticRef.current
+      const { conditionId: cond, positionIds, outcomeCount } = staticRef.current
 
       // 2) Dynamic data, all in parallel.
       const [stg, fee, prices, balances, wb, allow, approved] = await Promise.all([
@@ -212,7 +220,7 @@ export default function DePrizePlay() {
           .then((v) => (Number(v) / 1e18) * 100)
           .catch(() => undefined),
         Promise.all(
-          Array.from({ length: MAX_OUTCOMES }, (_, i) =>
+          Array.from({ length: outcomeCount }, (_, i) =>
             readContract({
               contract: lmsr,
               method: 'calcMarginalPrice' as string,
@@ -300,7 +308,9 @@ export default function DePrizePlay() {
   // of collateral buy? calcNetCost is monotonic in quantity, so binary search.
   const lmsrNetCost = useCallback(
     async (index: number, qty: bigint) => {
-      const amounts = Array.from({ length: MAX_OUTCOMES }, (_, j) => (j === index ? qty : 0n))
+      if (!lmsr || !staticRef.current) return 0n
+      const { outcomeCount } = staticRef.current
+      const amounts = Array.from({ length: outcomeCount }, (_, j) => (j === index ? qty : 0n))
       return (await readContract({
         contract: lmsr!,
         method: 'calcNetCost' as string,
@@ -546,10 +556,11 @@ export default function DePrizePlay() {
       toast.error('Enter an ETH amount to bet.', { style: toastStyle })
       return
     }
-    if (!lmsr || !weth) return
+    if (!lmsr || !weth || !staticRef.current) return
     setBusy(true)
     toast.loading('Quoting…', { id: 'quote', style: toastStyle })
     try {
+      const { outcomeCount } = staticRef.current
       let feeRateBigInt = 0n
       try {
         feeRateBigInt = (await readContract({
@@ -562,7 +573,7 @@ export default function DePrizePlay() {
         feeRateBigInt > 0n ? (ethBetWei * UNIT) / (UNIT + feeRateBigInt) : ethBetWei
       const qty = await quoteQtyForCost(index, adjustedTarget)
       if (qty <= 0n) throw new Error('Bet too small for this market.')
-      const amounts = Array.from({ length: MAX_OUTCOMES }, (_, i) => (i === index ? qty : 0n))
+      const amounts = Array.from({ length: outcomeCount }, (_, i) => (i === index ? qty : 0n))
       const net = (await readContract({
         contract: lmsr,
         method: 'calcNetCost' as string,
@@ -652,11 +663,12 @@ export default function DePrizePlay() {
 
   // Cash out the full position in an outcome.
   const sellAll = async (index: number) => {
-    if (!account || !lmsr || !ctf) return
+    if (!account || !lmsr || !ctf || !staticRef.current) return
     const pid = outcomes[index]?.positionId
     if (!pid) return
     setBusy(true)
     try {
+      const { outcomeCount } = staticRef.current
       const bal = (await readContract({
         contract: ctf,
         method: 'balanceOf' as string,
@@ -682,7 +694,7 @@ export default function DePrizePlay() {
         toast.dismiss('approve')
       }
 
-      const amounts = Array.from({ length: MAX_OUTCOMES }, (_, i) => (i === index ? -bal : 0n))
+      const amounts = Array.from({ length: outcomeCount }, (_, i) => (i === index ? -bal : 0n))
       const net = (await readContract({
         contract: lmsr,
         method: 'calcNetCost' as string,
@@ -720,10 +732,11 @@ export default function DePrizePlay() {
   }
 
   const redeem = async () => {
-    if (!account || !ctf || !conditionId) return
+    if (!account || !ctf || !conditionId || !staticRef.current) return
     setBusy(true)
     try {
-      const indexSets = Array.from({ length: MAX_OUTCOMES }, (_, i) => BigInt(1 << i))
+      const { outcomeCount } = staticRef.current
+      const indexSets = Array.from({ length: outcomeCount }, (_, i) => BigInt(1 << i))
       await sendTx(
         prepareContractCall({
           contract: ctfW,
@@ -767,11 +780,14 @@ export default function DePrizePlay() {
   }
 
   const resolve = async (winningIndex: number) => {
-    if (!account || !ctf) return
+    if (!account || !ctf || !staticRef.current) return
     setBusy(true)
     try {
-      const payouts = Array.from({ length: MAX_OUTCOMES }, (_, i) => (i === winningIndex ? 1n : 0n))
-      const questionId = '0x0000000000000000000000000000000000000000000000000000000000000001'
+      const { outcomeCount } = staticRef.current
+      const payouts = Array.from({ length: outcomeCount }, (_, i) => (i === winningIndex ? 1n : 0n))
+      const questionId =
+        (process.env.NEXT_PUBLIC_DEPRIZE_QUESTION_ID as string) ||
+        '0x0000000000000000000000000000000000000000000000000000000000000001'
       await sendTx(
         prepareContractCall({
           contract: ctfW,
