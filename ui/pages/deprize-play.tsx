@@ -30,8 +30,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
 
-const ZERO_BYTES32 =
-  '0x0000000000000000000000000000000000000000000000000000000000000000'
+const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
 const UNIT = 10n ** BigInt(COLLATERAL_DECIMALS)
 const MAX_UINT256 = (1n << 256n) - 1n
 
@@ -78,10 +77,7 @@ const fmt = (n: number, d = 4) =>
 const toWei = (v: string): bigint => {
   if (!v || Number(v) <= 0) return 0n
   const [whole, frac = ''] = v.split('.')
-  const fracPadded = (frac + '0'.repeat(COLLATERAL_DECIMALS)).slice(
-    0,
-    COLLATERAL_DECIMALS
-  )
+  const fracPadded = (frac + '0'.repeat(COLLATERAL_DECIMALS)).slice(0, COLLATERAL_DECIMALS)
   try {
     return BigInt(whole || '0') * UNIT + BigInt(fracPadded || '0')
   } catch {
@@ -129,9 +125,7 @@ export default function DePrizePlay() {
 
   // Static-per-market values (conditionId + ERC-1155 position ids) never change,
   // so resolve them once and reuse — keeps every refresh to the dynamic reads.
-  const staticRef = useRef<{ conditionId: string; positionIds: bigint[] } | null>(
-    null
-  )
+  const staticRef = useRef<{ conditionId: string; positionIds: bigint[] } | null>(null)
 
   // Read contracts: no-batching client (avoids the viem batch-decode bug).
   const lmsr = useContract({
@@ -169,10 +163,8 @@ export default function DePrizePlay() {
     abi: WETHABI as any,
   })
 
-  const isOracle =
-    !!userAddress && userAddress.toLowerCase() === ORACLE_ADDRESS.toLowerCase()
-  const isOperator =
-    !!userAddress && userAddress.toLowerCase() === OPERATOR_ADDRESS.toLowerCase()
+  const isOracle = !!userAddress && userAddress.toLowerCase() === ORACLE_ADDRESS.toLowerCase()
+  const isOperator = !!userAddress && userAddress.toLowerCase() === OPERATOR_ADDRESS.toLowerCase()
 
   const configured = !!lmsrAddress && !!ctfAddress && !!wethAddress
 
@@ -204,7 +196,7 @@ export default function DePrizePlay() {
               method: 'getPositionId' as string,
               params: [wethAddress, collectionId],
             })) as bigint
-          })
+          }),
         )
         staticRef.current = { conditionId: cond, positionIds }
         setConditionId(cond)
@@ -212,66 +204,65 @@ export default function DePrizePlay() {
       const { conditionId: cond, positionIds } = staticRef.current
 
       // 2) Dynamic data, all in parallel.
-      const [stg, fee, prices, balances, wb, allow, approved] =
-        await Promise.all([
-          readContract({ contract: lmsr, method: 'stage' as string, params: [] })
-            .then((v) => Number(v))
-            .catch(() => undefined),
-          readContract({ contract: lmsr, method: 'fee' as string, params: [] })
-            .then((v) => (Number(v) / 1e18) * 100)
-            .catch(() => undefined),
-          Promise.all(
-            Array.from({ length: MAX_OUTCOMES }, (_, i) =>
-              readContract({
-                contract: lmsr,
-                method: 'calcMarginalPrice' as string,
-                params: [i],
-              })
-                .then((p) => (Number(p as bigint) / 2 ** 64) * 100)
-                .catch(() => NaN)
-            )
+      const [stg, fee, prices, balances, wb, allow, approved] = await Promise.all([
+        readContract({ contract: lmsr, method: 'stage' as string, params: [] })
+          .then((v) => Number(v))
+          .catch(() => undefined),
+        readContract({ contract: lmsr, method: 'fee' as string, params: [] })
+          .then((v) => (Number(v) / 1e18) * 100)
+          .catch(() => undefined),
+        Promise.all(
+          Array.from({ length: MAX_OUTCOMES }, (_, i) =>
+            readContract({
+              contract: lmsr,
+              method: 'calcMarginalPrice' as string,
+              params: [i],
+            })
+              .then((p) => (Number(p as bigint) / 2 ** 64) * 100)
+              .catch(() => NaN),
           ),
-          userAddress
-            ? Promise.all(
-                positionIds.map((pid) =>
-                  readContract({
-                    contract: ctf,
-                    method: 'balanceOf' as string,
-                    params: [userAddress, pid],
-                  })
-                    .then((b) => Number(b as bigint) / Number(UNIT))
-                    .catch(() => NaN)
-                )
-              )
-            : Promise.resolve(positionIds.map(() => NaN)),
-          userAddress
-            ? readContract({
-                contract: weth,
-                method: 'balanceOf' as string,
-                params: [userAddress],
-              })
-                .then((b) => Number(b as bigint) / Number(UNIT))
-                .catch(() => undefined)
-            : Promise.resolve(undefined),
-          userAddress
-            ? readContract({
-                contract: weth,
-                method: 'allowance' as string,
-                params: [userAddress, lmsrAddress],
-              })
-                .then((a) => a as bigint)
-                .catch(() => undefined)
-            : Promise.resolve(undefined),
-          userAddress
-            ? readContract({
-                contract: ctf,
-                method: 'isApprovedForAll' as string,
-                params: [userAddress, lmsrAddress],
-              })
-                .then((a) => a as boolean)
-                .catch(() => undefined)
-            : Promise.resolve(undefined),
-        ])
+        ),
+        userAddress
+          ? Promise.all(
+              positionIds.map((pid) =>
+                readContract({
+                  contract: ctf,
+                  method: 'balanceOf' as string,
+                  params: [userAddress, pid],
+                })
+                  .then((b) => Number(b as bigint) / Number(UNIT))
+                  .catch(() => NaN),
+              ),
+            )
+          : Promise.resolve(positionIds.map(() => NaN)),
+        userAddress
+          ? readContract({
+              contract: weth,
+              method: 'balanceOf' as string,
+              params: [userAddress],
+            })
+              .then((b) => Number(b as bigint) / Number(UNIT))
+              .catch(() => undefined)
+          : Promise.resolve(undefined),
+        userAddress
+          ? readContract({
+              contract: weth,
+              method: 'allowance' as string,
+              params: [userAddress, lmsrAddress],
+            })
+              .then((a) => a as bigint)
+              .catch(() => undefined)
+          : Promise.resolve(undefined),
+        userAddress
+          ? readContract({
+              contract: ctf,
+              method: 'isApprovedForAll' as string,
+              params: [userAddress, lmsrAddress],
+            })
+              .then((a) => a as boolean)
+              .catch(() => undefined)
+          : Promise.resolve(undefined),
+      ])
 
       setStage(stg)
       setFeePct(fee)
@@ -284,13 +275,11 @@ export default function DePrizePlay() {
           probability: prices[i],
           balance: balances[i],
           positionId: pid,
-        }))
+        })),
       )
     } catch (err: any) {
       console.error('[deprize-play] loadMarket failed', err)
-      setLoadError(
-        err?.shortMessage || err?.message || 'Failed to read the market.'
-      )
+      setLoadError(err?.shortMessage || err?.message || 'Failed to read the market.')
     } finally {
       setLoading(false)
     }
@@ -311,16 +300,14 @@ export default function DePrizePlay() {
   // of collateral buy? calcNetCost is monotonic in quantity, so binary search.
   const lmsrNetCost = useCallback(
     async (index: number, qty: bigint) => {
-      const amounts = Array.from({ length: MAX_OUTCOMES }, (_, j) =>
-        j === index ? qty : 0n
-      )
+      const amounts = Array.from({ length: MAX_OUTCOMES }, (_, j) => (j === index ? qty : 0n))
       return (await readContract({
         contract: lmsr!,
         method: 'calcNetCost' as string,
         params: [amounts],
       })) as bigint
     },
-    [lmsr]
+    [lmsr],
   )
 
   const quoteQtyForCost = useCallback(
@@ -344,7 +331,7 @@ export default function DePrizePlay() {
       }
       return lo
     },
-    [lmsr, lmsrNetCost]
+    [lmsr, lmsrNetCost],
   )
 
   // Instant estimate from the marginal price (ignores price impact), so the
@@ -359,8 +346,8 @@ export default function DePrizePlay() {
       outcomes.map((o) =>
         Number.isFinite(o.probability) && o.probability > 0
           ? { qty: (ethNum * 100) / o.probability, exact: false }
-          : undefined
-      )
+          : undefined,
+      ),
     )
   }, [ethBetWei, outcomes])
 
@@ -422,7 +409,7 @@ export default function DePrizePlay() {
         }
       }
     },
-    [account]
+    [account],
   )
 
   const copy = async (label: string, value: string) => {
@@ -471,7 +458,7 @@ export default function DePrizePlay() {
           method: 'deposit' as string,
           params: [],
           value: wrapAmountWei,
-        })
+        }),
       )
       toast.dismiss('wrap')
       toast.success(`Wrapped ${fmt(Number(wrapAmountWei) / Number(UNIT))} ETH.`, {
@@ -500,7 +487,7 @@ export default function DePrizePlay() {
           contract: wethW,
           method: 'approve' as string,
           params: [lmsrAddress, MAX_UINT256],
-        })
+        }),
       )
       toast.dismiss('approve')
       toast.success('WETH approved for the market.', { style: toastStyle })
@@ -530,7 +517,7 @@ export default function DePrizePlay() {
           contract: ctfW,
           method: 'setApprovalForAll' as string,
           params: [lmsrAddress, true],
-        })
+        }),
       )
       toast.dismiss('ctfapprove')
       toast.success('Outcome tokens approved (needed to sell).', {
@@ -563,11 +550,19 @@ export default function DePrizePlay() {
     setBusy(true)
     toast.loading('Quoting…', { id: 'quote', style: toastStyle })
     try {
-      const qty = await quoteQtyForCost(index, ethBetWei)
+      let feeRateBigInt = 0n
+      try {
+        feeRateBigInt = (await readContract({
+          contract: lmsr,
+          method: 'fee' as string,
+          params: [],
+        })) as bigint
+      } catch {}
+      const adjustedTarget =
+        feeRateBigInt > 0n ? (ethBetWei * UNIT) / (UNIT + feeRateBigInt) : ethBetWei
+      const qty = await quoteQtyForCost(index, adjustedTarget)
       if (qty <= 0n) throw new Error('Bet too small for this market.')
-      const amounts = Array.from({ length: MAX_OUTCOMES }, (_, i) =>
-        i === index ? qty : 0n
-      )
+      const amounts = Array.from({ length: MAX_OUTCOMES }, (_, i) => (i === index ? qty : 0n))
       const net = (await readContract({
         contract: lmsr,
         method: 'calcNetCost' as string,
@@ -598,7 +593,7 @@ export default function DePrizePlay() {
             method: 'deposit' as string,
             params: [],
             value: limit - wethBal,
-          })
+          }),
         )
         toast.dismiss('wrap')
       }
@@ -618,7 +613,7 @@ export default function DePrizePlay() {
             contract: wethW,
             method: 'approve' as string,
             params: [lmsrAddress, MAX_UINT256],
-          })
+          }),
         )
         toast.dismiss('approve')
       }
@@ -629,15 +624,15 @@ export default function DePrizePlay() {
           contract: lmsrW,
           method: 'trade' as string,
           params: [amounts, limit],
-        })
+        }),
       )
       toast.dismiss('trade')
       const qtyNum = Number(qty) / Number(UNIT)
       toast.success(
         `Bet ${fmt(Number(cost) / Number(UNIT))} WETH on #${index + 1} → ${fmt(
-          qtyNum
+          qtyNum,
         )} tokens. Payout if it wins ≈ ${fmt(qtyNum)} WETH.`,
-        { style: toastStyle, duration: 8000 }
+        { style: toastStyle, duration: 8000 },
       )
       refreshSoon()
     } catch (err: any) {
@@ -682,14 +677,12 @@ export default function DePrizePlay() {
             contract: ctfW,
             method: 'setApprovalForAll' as string,
             params: [lmsrAddress, true],
-          })
+          }),
         )
         toast.dismiss('approve')
       }
 
-      const amounts = Array.from({ length: MAX_OUTCOMES }, (_, i) =>
-        i === index ? -bal : 0n
-      )
+      const amounts = Array.from({ length: MAX_OUTCOMES }, (_, i) => (i === index ? -bal : 0n))
       const net = (await readContract({
         contract: lmsr,
         method: 'calcNetCost' as string,
@@ -703,14 +696,14 @@ export default function DePrizePlay() {
           contract: lmsrW,
           method: 'trade' as string,
           params: [amounts, limit],
-        })
+        }),
       )
       toast.dismiss('sell')
       toast.success(
         `Sold ${fmt(Number(bal) / Number(UNIT))} of #${index + 1} for ~${fmt(
-          Number(-net) / Number(UNIT)
+          Number(-net) / Number(UNIT),
         )} WETH.`,
-        { style: toastStyle }
+        { style: toastStyle },
       )
       refreshSoon()
     } catch (err: any) {
@@ -730,15 +723,13 @@ export default function DePrizePlay() {
     if (!account || !ctf || !conditionId) return
     setBusy(true)
     try {
-      const indexSets = Array.from({ length: MAX_OUTCOMES }, (_, i) =>
-        BigInt(1 << i)
-      )
+      const indexSets = Array.from({ length: MAX_OUTCOMES }, (_, i) => BigInt(1 << i))
       await sendTx(
         prepareContractCall({
           contract: ctfW,
           method: 'redeemPositions' as string,
           params: [wethAddress, ZERO_BYTES32, conditionId, indexSets],
-        })
+        }),
       )
       toast.success('Redeemed winning positions.', { style: toastStyle })
       refreshSoon()
@@ -762,7 +753,7 @@ export default function DePrizePlay() {
           contract: lmsrW,
           method: 'close' as string,
           params: [],
-        })
+        }),
       )
       toast.success('Market closed.', { style: toastStyle })
       refreshSoon()
@@ -779,17 +770,14 @@ export default function DePrizePlay() {
     if (!account || !ctf) return
     setBusy(true)
     try {
-      const payouts = Array.from({ length: MAX_OUTCOMES }, (_, i) =>
-        i === winningIndex ? 1n : 0n
-      )
-      const questionId =
-        '0x0000000000000000000000000000000000000000000000000000000000000001'
+      const payouts = Array.from({ length: MAX_OUTCOMES }, (_, i) => (i === winningIndex ? 1n : 0n))
+      const questionId = '0x0000000000000000000000000000000000000000000000000000000000000001'
       await sendTx(
         prepareContractCall({
           contract: ctfW,
           method: 'reportPayouts' as string,
           params: [questionId, payouts],
-        })
+        }),
       )
       toast.success(`Reported outcome #${winningIndex + 1} as winner.`, {
         style: toastStyle,
@@ -827,10 +815,9 @@ export default function DePrizePlay() {
             {!configured ? (
               <div className="p-5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-200 text-sm">
                 No market is configured for the current chain (
-                <span className="font-mono">{chainSlug}</span>). This harness
-                targets the testnet deployments (sepolia / arbitrum-sepolia). Set{' '}
-                <span className="font-mono">NEXT_PUBLIC_TEST_CHAIN</span> and
-                reload.
+                <span className="font-mono">{chainSlug}</span>). This harness targets the testnet
+                deployments (sepolia / arbitrum-sepolia). Set{' '}
+                <span className="font-mono">NEXT_PUBLIC_TEST_CHAIN</span> and reload.
               </div>
             ) : (
               <>
@@ -890,8 +877,8 @@ export default function DePrizePlay() {
                         Connect a wallet on Sepolia to bet
                       </p>
                       <p className="text-indigo-300/80 text-xs mt-1">
-                        You can read live odds without connecting, but betting
-                        needs a connected Sepolia wallet with a little test ETH.
+                        You can read live odds without connecting, but betting needs a connected
+                        Sepolia wallet with a little test ETH.
                       </p>
                     </div>
                     <button
@@ -906,13 +893,10 @@ export default function DePrizePlay() {
                 {/* One-time setup */}
                 {userAddress && (
                   <div className="p-4 sm:p-5 rounded-2xl bg-black/20 border border-white/10">
-                    <p className="text-sm font-medium text-white">
-                      One-time setup
-                    </p>
+                    <p className="text-sm font-medium text-white">One-time setup</p>
                     <p className="text-gray-400 text-xs mb-3">
-                      Do these once. Each is a single transaction, so MetaMask
-                      won't trip on a stale nonce. After this, a bet is a single
-                      transaction.
+                      Do these once. Each is a single transaction, so MetaMask won't trip on a stale
+                      nonce. After this, a bet is a single transaction.
                     </p>
                     <div className="flex items-end gap-2 flex-wrap mb-3">
                       <div className="flex-1 min-w-[160px]">
@@ -969,9 +953,8 @@ export default function DePrizePlay() {
                     How much ETH do you want to bet?
                   </label>
                   <p className="text-gray-400 text-xs mb-2">
-                    Pick an outcome below — each row shows how many tokens your bet
-                    buys and the payout if that outcome wins (each winning token
-                    redeems for ~1 WETH).
+                    Pick an outcome below — each row shows how many tokens your bet buys and the
+                    payout if that outcome wins (each winning token redeems for ~1 WETH).
                   </p>
                   <input
                     type="number"
@@ -987,8 +970,8 @@ export default function DePrizePlay() {
                 {/* Load error (non-fatal) */}
                 {loadError && (
                   <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-200 text-xs break-words">
-                    Couldn't fully load market data: {loadError}. You can still
-                    try to trade, or hit Refresh.
+                    Couldn't fully load market data: {loadError}. You can still try to trade, or hit
+                    Refresh.
                   </div>
                 )}
 
@@ -996,17 +979,14 @@ export default function DePrizePlay() {
                 <div className="flex flex-col gap-3">
                   {outcomes.map((o) => {
                     const p = previews[o.index]
-                    const mult =
-                      p && ethBetNum > 0 ? p.qty / ethBetNum : undefined
+                    const mult = p && ethBetNum > 0 ? p.qty / ethBetNum : undefined
                     return (
                       <div
                         key={o.index}
                         className="p-4 rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10 flex items-center gap-3 flex-wrap"
                       >
                         <div className="flex-1 min-w-[180px]">
-                          <p className="text-white font-medium">
-                            Outcome #{o.index + 1}
-                          </p>
+                          <p className="text-white font-medium">Outcome #{o.index + 1}</p>
                           <p className="text-gray-400 text-xs">
                             Implied odds{' '}
                             {Number.isNaN(o.probability)
@@ -1015,19 +995,14 @@ export default function DePrizePlay() {
                                 : '—'
                               : `${fmt(o.probability, 1)}%`}{' '}
                             · your tokens{' '}
-                            {Number.isNaN(o.balance)
-                              ? userAddress
-                                ? '…'
-                                : '—'
-                              : fmt(o.balance)}
+                            {Number.isNaN(o.balance) ? (userAddress ? '…' : '—') : fmt(o.balance)}
                           </p>
                           {ethBet && (
                             <p className="text-moon-green text-xs mt-1">
                               {p ? (
                                 <>
                                   Get {p.exact ? '' : '≈'}
-                                  {fmt(p.qty)} tokens · payout if this wins{' '}
-                                  {p.exact ? '' : '≈'}
+                                  {fmt(p.qty)} tokens · payout if this wins {p.exact ? '' : '≈'}
                                   {fmt(p.qty)} WETH
                                   {mult ? ` (${fmt(mult, 2)}x)` : ''}
                                   {!p.exact ? ' …' : ''}
@@ -1040,10 +1015,7 @@ export default function DePrizePlay() {
                           {o.positionId > 0n && (
                             <button
                               onClick={() =>
-                                copy(
-                                  `outcome #${o.index + 1} token id`,
-                                  o.positionId.toString()
-                                )
+                                copy(`outcome #${o.index + 1} token id`, o.positionId.toString())
                               }
                               className="text-gray-500 hover:text-gray-300 text-[10px] mt-1 underline"
                             >
@@ -1061,12 +1033,7 @@ export default function DePrizePlay() {
                         </StandardButton>
                         <StandardButton
                           onClick={() => sellAll(o.index)}
-                          disabled={
-                            busy ||
-                            isClosed ||
-                            !userAddress ||
-                            !(o.balance > 0)
-                          }
+                          disabled={busy || isClosed || !userAddress || !(o.balance > 0)}
                           className="rounded-full"
                           backgroundColor="bg-moon-orange"
                         >
@@ -1084,25 +1051,22 @@ export default function DePrizePlay() {
 
                 {/* Outcome-token note */}
                 <p className="text-gray-500 text-[11px]">
-                  Outcome tokens are ERC-1155 positions in the Conditional Tokens
-                  contract (
+                  Outcome tokens are ERC-1155 positions in the Conditional Tokens contract (
                   <button
                     onClick={() => copy('CTF address', ctfAddress)}
                     className="underline hover:text-gray-300"
                   >
                     {ctfAddress.slice(0, 6)}…{ctfAddress.slice(-4)}
                   </button>
-                  ). MetaMask can't track them as a fungible balance — use “Copy
-                  token id” above to import/track a position in wallets that
-                  support ERC-1155.
+                  ). MetaMask can't track them as a fungible balance — use “Copy token id” above to
+                  import/track a position in wallets that support ERC-1155.
                 </p>
 
                 {/* Redeem */}
                 {isClosed && (
                   <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3 flex-wrap">
                     <p className="text-emerald-200 text-sm">
-                      Market is resolved. Redeem your winning outcome tokens for
-                      WETH.
+                      Market is resolved. Redeem your winning outcome tokens for WETH.
                     </p>
                     <StandardButton
                       onClick={redeem}
