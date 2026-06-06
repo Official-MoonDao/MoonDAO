@@ -1,12 +1,14 @@
 # Overview Prize Design Doc
 
-**Status:** Draft proposal — pre-implementation
+**Status:** Draft proposal — partially implemented (M1–M3 built; see §Implementation status)
 **Owner:** pmoncada
-**Last updated:** 2026-05-27 (v2.1 restructure — main body tightened, detail moved to Appendices E–J)
+**Last updated:** 2026-06-05 (v2.2 — reconciled with the as-built M1–M3 implementation: market layer is CTF + `LMSRWithTWAP`, not Uniswap v4 LP)
 
 ---
 
 > Internally, the system described here is called "DePrize." This document is titled "Overview Prize" to reflect its tight coupling with the `$OVERVIEW` token and the existing Overview Effect Flight mission. The two names refer to the same mechanism.
+
+> **Implementation note (2026-06-05).** Milestones 1–3 are built and tested. During implementation the market layer changed from the speculative "per-team Uniswap v4 pools + treasury-as-LP + `DePrizeFeeHook`" design to **reusing MoonDAO's existing Gnosis Conditional Tokens (CTF) + `LMSRWithTWAP` prediction-market stack**, with the **1% fee implemented as the LMSR market-maker's built-in `fee` parameter** rather than a Uniswap swap-fee hook. Sections that still describe the Uniswap/LP model are kept for design-rationale history and are flagged inline; the authoritative as-built description is in [Part III §Implementation status](#implementation-status-as-built) and the per-milestone docs [`DEPRIZE_M1.md`](./DEPRIZE_M1.md), [`DEPRIZE_M2.md`](./DEPRIZE_M2.md), [`DEPRIZE_M3.md`](./DEPRIZE_M3.md).
 
 ## Reading guide
 
@@ -43,9 +45,9 @@ DePrize lets the MoonDAO community bet on which of several competing providers w
 The recommended design is a **simplified ETH-based prediction market** with two key MoonDAO-specific properties:
 
 1. **Every bet routes 5% to the launchpad prize pool**, growing the prize alongside betting interest. Bettors receive `$OVERVIEW` (the mission's project token) as a receipt for this contribution.
-2. **A small swap fee (1%) on every trade also routes to the prize pool**, so trading volume continuously grows the prize — not just primary contributions.
+2. **A small trade fee (1%)** on every trade underwrites the market maker that provides live odds and liquidity.
 
-Bettors interact in ETH end-to-end. `$OVERVIEW` exists as a participation receipt with downstream utility but isn't required to think about. The architecture is ~6 contracts, ~900 lines of Solidity, deliberately scoped to the minimum needed for a robust pilot.
+Bettors interact in ETH end-to-end. `$OVERVIEW` exists as a participation receipt with downstream utility but isn't required to think about. The as-built market layer reuses MoonDAO's existing Gnosis CTF + `LMSRWithTWAP` stack; the new on-chain surface is three small contracts (`DePrizeRegistry`, registry-aware `LaunchPadPayHook`, `DePrizeMint`), with resolution/redemption/escrow planned for later milestones.
 
 **Whether the first DePrize launches on the Overview Effect Flight depends on a 3-way vote of existing `$OVERVIEW` holders.** The community will choose between:
 
@@ -99,7 +101,7 @@ Active decisions for the bettor: choose team, choose amount, click bet, optional
 
 A subtle but important point: **bettors and providers are paid from different pools.**
 
-- **The prize pool** (JB project balance + `DePrizePrizeEscrow`) is paid to the **winning provider** at settlement. This is what funds the actual Frank + Candidate flight. It grows from primary mint slices, swap fees, and direct contributions.
+- **The prize pool** (the JB project balance) is paid to the **winning provider** at settlement. This is what funds the actual Frank + Candidate flight. It grows from the 5% primary-mint slices and direct contributions. (As built, the 1% LMSR trade fee accrues inside the market and is recovered by the treasury at unwind, rather than flowing into the prize pool via a separate `DePrizePrizeEscrow`.)
 - **The CTF collateral pool** (Gnosis ConditionalTokens) is paid to **winning bettors** via parimutuel redemption. It comes from the 95% of every bet that goes into CTF. Bettors win from other bettors' losses.
 
 Practical implications for bettors:
@@ -109,13 +111,13 @@ Practical implications for bettors:
 | You receive ~2.32 ETH from the CTF collateral pool (your gain comes from losing bettors on other providers). |
 | You do NOT directly receive a share of the prize pool. The prize pool goes to the provider. |
 | Watching the prize pool grow is exciting (it unlocks higher-tier providers), but your maximum payout per bet is bounded by other bettors' losses, not by the prize size. |
-| The 1% swap fee you pay benefits the provider, not you directly. It's how your trading activity helps fund the mission. |
+| The 1% LMSR trade fee you pay is retained by the treasury-seeded market maker (it underwrites liquidity and is recovered at unwind), not paid to you directly. |
 
 This two-pool structure is essential to keep clean. If bettors and providers were paid from the same pool, the math breaks down (winners would need to fund both the next provider's mission AND each other's parimutuel payouts, which is impossible). The two-pool model is standard for prediction markets that fund external prizes.
 
 ## How a bet plays out (summary)
 
-Four scenarios at a glance. Setup: 100 ETH prize pool, three teams at equilibrium prices Stratos = Helios = 0.40, Aurora = 0.20. 1.0% LP + 1.0% protocol fee on swaps. Team names illustrative; real providers are Virgin / Zephalto / third provider.
+Four scenarios at a glance. Setup: 100 ETH prize pool, three teams at equilibrium prices Stratos = Helios = 0.40, Aurora = 0.20. 1% LMSR trade fee. Team names illustrative; real providers are Virgin / Zephalto / third provider.
 
 | Scenario | Outcome | Bettor net |
 |---|---|---|
@@ -215,46 +217,70 @@ The alternatives considered (and why they fall short):
 
 # Part III — Technical deep dive
 
+## Implementation status (as-built)
+
+Milestones 1–3 are implemented and tested in `subscription-contracts/src/deprize/` (Foundry, Solidity `0.8.20`). The single most important deviation from the original draft below: **the market layer reuses MoonDAO's existing Gnosis CTF + `LMSRWithTWAP` stack instead of building per-team Uniswap v4 pools with the treasury as LP.** This deleted several planned contracts (`DePrizeFeeHook`, `DePrizePrizeEscrow`) — the 1% fee is now the LMSR market-maker's built-in `fee` parameter (`1e16`).
+
+| Component | Plan (original draft) | As built | Status |
+|---|---|---|---|
+| Lifecycle state machine | `DePrizeRegistry` | `DePrizeRegistry` (UUPS, `Ownable`) | **M1 ✅** |
+| Refund/cashout gating | Registry-aware `LaunchPadPayHook` | `LaunchPadPayHook` reads `registry` via write-once optional pointer | **M2 ✅** |
+| Bet entry point | `DePrizeMint` → split CTF + route via Uniswap pools | `DePrizeMint` → split 5% to JB, 95% → WETH → `LMSRWithTWAP.trade()` | **M3 ✅** |
+| Market maker / liquidity | Per-team Uniswap v4 pools, treasury-as-LP | One Gnosis CTF condition + one `LMSRWithTWAP` market per DePrize (external Solidity `0.5` deployments, treasury-seeded) | **Reused (external)** |
+| Swap/protocol fee | `DePrizeFeeHook` (1% LP + 1% protocol) | LMSR built-in `fee = 1e16` (1%), retained by the market | **Superseded** |
+| Winner reporting | `DePrizeReporter` → `CTF.reportPayouts` | not yet built | **M4 (planned)** |
+| Winner redemption | `CTF.redeemPositions` wrapper | not yet built | **M4 (planned)** |
+| Milestone prize escrow | `DePrizeMilestoneEscrow` (30/70) | not yet built | **M5 (planned)** |
+| Unified refund (`refundAll`) | `DePrizeRefund` | not yet built | **M4 (planned)** |
+
+The milestone-based prize escrow, Senate-reporting bridge, CTF redemption, and unified refund described later in this Part are **design intent, not yet implemented**. See [`DEPRIZE_M1.md`](./DEPRIZE_M1.md)/[`M2`](./DEPRIZE_M2.md)/[`M3`](./DEPRIZE_M3.md) for what exists today.
+
 ## State machine
+
+The implemented `DePrizeRegistry` (M1) uses the following states. Note two refinements over the earlier draft: an explicit **`SETTLED`** state (winner declared, before the M1 prize release) and a distinct **`NO_WINNER`** terminal separate from `CANCELLED`.
 
 | From | To | Trigger |
 |---|---|---|
-| `DRAFT` | `OPEN` | Admin opens DePrize; competitors registered |
-| `OPEN` | `LOCKED` | Deadline elapsed, or admin lock |
-| `LOCKED` | `VOTING` | Senate proposal auto-created |
-| `VOTING` | `M1_RELEASED` | Senate vote tallied, winner identified, capability demonstrated; 30% of prize disbursed to winning provider |
-| `VOTING` | `CANCELLED` | Senate vote tallied, "no winner" outcome |
-| `M1_RELEASED` | `M2_COMPLETE` | Frank + Candidate actually flown; Senate confirms M2; remaining 70% disbursed |
-| `M1_RELEASED` | `M2_FAILED` | 18 months elapsed without flight (optional 6-month extension via Senate vote); M2 escrow returns to `$OVERVIEW` governance for re-allocation |
-| `M1_RELEASED` | `CANCELLED` | Frank-can't-fly trigger before M2; `$OVERVIEW` governance vote per Overview Effect Terms Section 8.3 |
-| `M2_COMPLETE` | (terminal) | Bettor claims and provider receipt complete |
-| `CANCELLED` | (refunds open) | Immediate; JB refund payhook activated per Overview Effect Terms Section 8 |
+| `NONE` | `DRAFT` | `register(jbProjectId, teamIds, sunset)` |
+| `DRAFT` | `OPEN` | `open()` — requires CTF condition set and future sunset |
+| `OPEN` | `LOCKED` | `lock()` (deadline elapsed or admin lock) |
+| `LOCKED` | `VOTING` | `startVote()` — Senate winner proposal created |
+| `LOCKED` / `VOTING` | `SETTLED` | `settleWinner(teamId)` — winner declared (capability demonstrated) |
+| `LOCKED` / `VOTING` | `NO_WINNER` | `settleNoWinner()` — vote failed / no eligible winner (refundable) |
+| `SETTLED` | `M1_RELEASED` | `releaseM1()` — 30% of prize disbursed to winning provider |
+| `M1_RELEASED` | `M2_COMPLETE` | `completeM2()` — Frank + Candidate flown; remaining 70% disbursed |
+| `M1_RELEASED` | `M2_FAILED` | `failM2()` — 18 months elapsed without flight (refundable) |
+| any non-terminal | `CANCELLED` | `cancel()` — only after a 7-day public notice window (refundable) |
 
-Bettor payouts (CTF redemption) happen at `M1_RELEASED` — bettors do NOT wait until M2. Only the provider's prize disbursement is split across milestones. See §Two pools, one mechanism in Part I.
+Refundable terminals: `CANCELLED`, `NO_WINNER`, `M2_FAILED`. Success terminal: `M2_COMPLETE`. `bettingOpen` is true only in `OPEN` and is forced false the moment a cancellation notice is announced. Bettor payouts (CTF redemption, M4) happen at `SETTLED`/`M1_RELEASED` — bettors do NOT wait until M2; only the provider's prize disbursement is split across milestones. See §Two pools, one mechanism in Part I.
 
 ## Shared infrastructure (exists, reused)
 
 | System | Role | Status |
 |---|---|---|
 | Juicebox V5 + `MissionCreator` | Prize pool custody, `$OVERVIEW` issuance | Exists |
-| Gnosis ConditionalTokens (CTF) | Outcome token accounting, settlement | External dependency (Gnosis `conditional-tokens-contracts`); needs fresh Arbitrum deployment. `prediction/` only holds legacy LMSR/TWAP market-maker contracts (Solidity 0.5.x) that reference CTF via npm — not a reusable CTF deployment/interface. |
-| Uniswap v4 + `PoolDeployer` | Per-team pool creation | Exists; small extension for early invocation |
-| `Proposals.sol` + Senate | Winner declaration | Exists; small extension for discrete winner selection |
+| Gnosis ConditionalTokens (CTF) | Outcome token accounting, settlement | **Reused as built.** Externally-deployed Solidity `0.5.x` contract; the `0.8` router calls it via `IConditionalTokens`. Testnet deployments already exist (`ui/const/config.ts` → `CONDITIONAL_TOKEN_ADDRESSES`). |
+| `LMSRWithTWAP` market maker | Per-DePrize AMM / live odds / liquidity | **Reused as built.** MoonDAO's existing `prediction/` LMSR variant (Solidity `0.5.x`), one market per DePrize, treasury-seeded; called via `ILMSRWithTWAP`. Replaces the planned Uniswap v4 pools. |
+| ~~Uniswap v4 + `PoolDeployer`~~ | ~~Per-team pool creation~~ | **Superseded** by CTF + `LMSRWithTWAP` (see §Implementation status). |
+| `Proposals.sol` + Senate | Winner declaration | Exists; small extension for discrete winner selection (M4) |
 | MoonDAOTeam NFTs + Hats | Competitor identity & admin gating | Exists, unchanged |
 
-## New contracts (5 essential + 1 optional)
+## New contracts
 
-| Contract | Purpose | LoC estimate |
+As-built status shown. The CTF + `LMSRWithTWAP` decision (see §Implementation status) deleted `DePrizeFeeHook` and `DePrizePrizeEscrow` (the 1% fee is now the LMSR built-in `fee`, retained inside the market).
+
+| Contract | Purpose | Status |
 |---|---|---|
-| `DePrizeRegistry` | Per-DePrize config: mission, competitors, deadlines, state machine | ~150 |
-| `DePrizeMint` | Entry point: takes ETH, routes 5% to JB, 95% to CTF, helpers for outcome consolidation | ~250 |
-| `DePrizePrizeEscrow` | Holds 1% swap fees during campaign; forwards to milestone escrow at settlement | ~100 |
-| `DePrizeMilestoneEscrow` | Holds prize pool post-settlement; releases 30% at M1 (capability), 70% at M2 (Frank flew) | ~120 |
-| `DePrizeReporter` | Reads Senate result, calls `CTF.reportPayouts` | ~80 |
-| `DePrizeFeeHook` | Uniswap v4 hook: charges LP + protocol fee, routes protocol fee to escrow | ~150 |
-| `DePrizeRefund` (optional) | Convenience: single-tx cancellation refund | ~100 |
+| `DePrizeRegistry` | Per-DePrize config: mission, competitors, deadlines, state machine | **Built (M1)** |
+| `LaunchPadPayHook` (registry-aware) | Gate JB cashOut/contributions by DePrize state | **Built (M2)** |
+| `DePrizeMint` | Entry point: takes ETH, routes 5% to JB, wraps 95% to WETH, buys outcome tokens on the `LMSRWithTWAP` market, forwards tokens + refunds leftover | **Built (M3)** |
+| `DePrizeReporter` | Reads Senate result, calls `CTF.reportPayouts` | Planned (M4) |
+| `DePrizeRedeem` / `DePrizeRefund` | Winner `redeemPositions`; unified cancellation refund (CTF collateral + `$OVERVIEW` floor) | Planned (M4) |
+| `DePrizeMilestoneEscrow` | Holds prize pool post-settlement; releases 30% at M1 (capability), 70% at M2 (Frank flew) | Planned (M5) |
+| ~~`DePrizePrizeEscrow`~~ | ~~Holds 1% swap fees during campaign~~ | **Deleted** — LMSR built-in fee |
+| ~~`DePrizeFeeHook`~~ | ~~Uniswap v4 hook for LP + protocol fee~~ | **Deleted** — no Uniswap layer |
 
-Total: ~700–900 lines of new Solidity. Compared to the original D draft (~1,500 LoC), this is ~50% smaller.
+The market maker itself (`LMSRWithTWAP`) and `ConditionalTokens` are **reused external Solidity `0.5` deployments**, not new contracts in this repo — see §Shared infrastructure.
 
 ### Upgrade pattern
 
@@ -288,9 +314,18 @@ Kept the Senate vote. The simplification savings weren't worth the loss of accou
 
 ## The bet, in code
 
-The `bet` entrypoint takes ETH, routes 5% to the JB project (minting `$OVERVIEW`), uses the remaining 95% as CTF collateral, and consolidates the bettor's outcome tokens into their chosen team via the per-team Uniswap pools. Each swap triggers `DePrizeFeeHook` (1.0% LP + 1.0% protocol fee). Protocol fee routes to `DePrizePrizeEscrow`. LP fee accrues to the treasury (sole LP in v1).
+As built (M3), `DePrizeMint.bet(deprizeId, outcomeIndex, outcomeTokenAmount, maxCost)`:
 
-→ See [Appendix H](#appendix-h--contract-code-stubs) for the full Solidity stubs (`DePrizeMint.bet`, `LaunchPadPayHook.stage` upgrade, Senate proposal interface).
+1. requires `registry.bettingOpen(deprizeId)`;
+2. splits `msg.value` into a 5% slice and 95% budget;
+3. pays the slice into the DePrize's JB project with the bettor as beneficiary (mints `$OVERVIEW`);
+4. prices the trade on the LMSR market: `cost = market.calcNetCost(amounts) + market.calcMarketFee(net)` (the Gnosis `MarketMaker.trade` pulls `netCost + fee`, so `calcNetCost` **excludes** the 1% fee), and reverts if `cost > budget || cost > maxCost`;
+5. wraps `cost` to WETH, approves the market, calls `market.updateCumulativeTWAP()` then `market.trade()` **directly** (not `tradeWithTWAP`, which self-calls and would make the market the trader);
+6. captures the minted ERC-1155 outcome tokens via the receiver hooks, forwards them to the bettor, and refunds any leftover ETH.
+
+There is no Uniswap swap and no separate fee hook — the 1% fee is charged inside the LMSR market. `outcomeIndex` is the team's position in `registry.teamIds(deprizeId)`.
+
+→ See [Appendix H](#appendix-h--contract-code-stubs) for the Solidity stub and [`DEPRIZE_M3.md`](./DEPRIZE_M3.md) for the full flow, money-conservation invariant, and tests.
 
 ## Settlement (with milestone-based prize escrow)
 
@@ -427,9 +462,11 @@ Frank White is the central beneficiary of the mission and is also a **Senator in
 
 ## Pool seeding and LP economics
 
-Outcome-token AMM pools are notoriously hostile to liquidity providers (cliff risk at settlement: an LP holding the losing side gets zero; walk-toward-edge dynamics drive maximum IL; settlement-day total loss). Without explicit incentives, external LPs won't show up and the market becomes illiquid. **Launch-blocker if unaddressed.**
+> **As built:** there are no Uniswap LP pools. Each DePrize is one Gnosis CTF condition + one `LMSRWithTWAP` market, **seeded by the treasury with `funding` at creation** (`LMSRWithTWAPFactory.createLMSRWithTWAP(ctf, weth, [conditionId], fee = 1e16, 0x0, funding)`, default ~1 ETH × #teams — the same seed magnitude discussed below). LMSR is a bounded-loss market maker: the treasury's maximum loss is capped by `funding` and the curve's `b` parameter, so the "LP cliff risk" framing below is moot — there is no external-LP role to attract. The LMSR's 1% fee accrues to the market and is recovered by the treasury at unwind. The treasury-as-Uniswap-LP analysis below is retained as design-rationale history.
 
-**v1 approach: Treasury-as-sole-LP with bumped fees.**
+Outcome-token AMM pools are notoriously hostile to liquidity providers (cliff risk at settlement: an LP holding the losing side gets zero; walk-toward-edge dynamics drive maximum IL; settlement-day total loss). Without explicit incentives, external LPs won't show up and the market becomes illiquid. **Launch-blocker if unaddressed.** This is precisely why the as-built design uses an LMSR market maker (bounded operator loss, no LP needed) rather than constant-product LP pools.
+
+**Original v1 approach (superseded): Treasury-as-sole-LP with bumped fees.**
 
 | Parameter | Value |
 |---|---|
@@ -447,7 +484,9 @@ At moderate activity ($5M swap volume), treasury earns ~15 ETH in LP fees agains
 
 ## Fee structure: why 5% slice + 1% swap fee
 
-The protocol takes revenue in two places: a one-time 5% slice on primary mints (routes to JB project, mints `$OVERVIEW` to the bettor), and a 1% fee on every Uniswap swap (routes to `DePrizePrizeEscrow`). The split between these two mechanisms is deliberate.
+The protocol takes revenue in two places: a one-time 5% slice on primary mints (routes to JB project, mints `$OVERVIEW` to the bettor), and a 1% fee on every trade. The split between these two mechanisms is deliberate.
+
+> **As built:** the 1% fee is the `LMSRWithTWAP` market-maker's built-in `fee` parameter (`1e16`), charged on every `trade()` and retained inside the market (which the treasury seeds and ultimately unwinds) — **not** a Uniswap LP fee + protocol fee split. There is a single 1% trade fee, not the "1% LP + 1% protocol = 2%" structure described in the original draft below. The revenue tables below remain directionally valid for the 5%-slice-vs-trade-fee tradeoff but should be read with that single-1%-fee correction.
 
 ### Revenue dynamics at different activity levels
 
@@ -489,11 +528,11 @@ This is a 3.5× asymmetry favoring secondary buyers (smaller than the 5× under 
 
 At 5% slice (vs 10%) the asymmetry is 5× instead of 10×. Still asymmetric but materially less punitive on the people we want to encourage. This is an acknowledged design tradeoff. A future tuning consideration is to introduce a small exit fee on secondary sells to better balance entry and exit friction — not in v1.
 
-### Why exactly 1% swap fee (not higher or lower)?
+### Why exactly 1% trade fee (not higher or lower)?
 
-- Above 1%: LP returns drop, liquidity providers withdraw, secondary market becomes thin, bid-ask spreads widen, the prediction market loses signal quality.
-- Below 1%: revenue at scale becomes negligible. 1% is the standard high-end of Uniswap pool fees that LPs still tolerate.
-- 1% in combination with the 1.0% LP fee = 2.0% total swap cost. Higher than Polymarket's 0.0–0.2% spreads but covers LP cliff risk without requiring external LPs. Still well below sportsbook vig (3–10%).
+- Above 1%: trading friction rises, price-sensitive volume avoids the market, and signal quality drops.
+- Below 1%: revenue at scale becomes negligible.
+- As built, 1% is the LMSR market-maker fee — the **total** per-trade cost (there is no separate LP fee). This is well below sportsbook vig (3–10%) and, combined with LMSR's bounded-loss curve, lets the treasury seed the market without needing external LPs.
 
 ## The holder vote (1 vs 2 vs 3)
 
@@ -1193,6 +1232,8 @@ The cuts don't affect the bettor experience. They affect contract surface, audit
 # Appendix E — Worked examples (full money tracking)
 
 > **Note**: team names below (Stratos, Helios, Aurora) are illustrative placeholders to demonstrate the math at a clean equilibrium. The actual Frank DePrize providers are Virgin Galactic, Zephalto, and the (to-be-named) third provider. The mechanism is identical; only the names differ.
+>
+> **As-built fee note:** these examples predate the CTF + `LMSRWithTWAP` implementation and model a "2.0% swap fee split to LPs + `PrizeEscrow`." As built there is a **single 1% LMSR trade fee** retained inside the treasury-seeded market (no LP/PrizeEscrow split). The parimutuel payout intuition is unchanged; only the per-swap fee figures and their destination differ. See [Part III §Implementation status](#implementation-status-as-built).
 
 ### Setup
 
@@ -1417,16 +1458,17 @@ Without explicit incentives, external LPs simply won't show up. Bid-ask spreads 
 | **Treasury-as-LP** *(chosen)* | (proposed) | Eliminates need to attract external LPs; treasury earns all fees and accepts IL | Treasury bears all cliff risk; capital cost |
 | **Hybrid: CLOB orderbook + small AMM backstop** | (proposed) | Tight spreads from CLOB; AMM ensures always-on liquidity | Complex; requires order book infra |
 
-### Why not LMSR?
+### Why LMSR (the as-built choice — this reverses the original draft)
 
-LMSR is mathematically elegant for outcome-token pricing (used by classical Gnosis/Augur). It has bounded operator loss and smooth price discovery. However:
+> **The original draft rejected LMSR; the implementation chose it.** This section is updated to reflect that reversal.
 
-- Requires a bonded operator (treasury) to underwrite the LMSR
-- Less composable with Uniswap v4 ecosystem
-- Custom math implementation = larger audit surface
-- Loses the FeeHook integration that funds the prize pool
+LMSR is mathematically elegant for outcome-token pricing (used by classical Gnosis/Augur): bounded operator loss and smooth price discovery, with no LP cliff risk to underwrite. The original draft rejected it for three reasons, each of which dissolved during implementation:
 
-LMSR is the right answer for a pure prediction market product. For DePrize, the FeeHook integration is too valuable to give up.
+- *"Requires a bonded operator (treasury)"* — true, but the treasury was already going to be the sole LP under the Uniswap plan, so this is not a new cost; and LMSR's loss is **bounded** by `funding`, which is strictly better than open-ended LP cliff risk.
+- *"Less composable with Uniswap v4 / custom math = larger audit surface"* — moot, because MoonDAO **already has a deployed, working LMSR stack** (`prediction/contracts/LMSRWithTWAP.sol` + Gnosis CTF) used by the archived betting UI. Reusing it is *less* new code and audit surface than building Uniswap v4 pools + a custom `DePrizeFeeHook`.
+- *"Loses the FeeHook integration that funds the prize pool"* — the FeeHook existed only to skim a protocol fee from swaps; LMSR has a **built-in `fee` parameter** that serves the same purpose without a separate contract. (The 5% primary slice — the main prize-funding mechanism — is unchanged and lives in `DePrizeMint`, independent of the market.)
+
+Net: reusing CTF + `LMSRWithTWAP` deleted two planned contracts (`DePrizeFeeHook`, `DePrizePrizeEscrow`), removed the need to attract or model external LPs, and gave bounded treasury downside. That is why the as-built market layer is LMSR, not Uniswap LP pools.
 
 ### Why not CLOB (Polymarket-style)?
 
@@ -1482,68 +1524,73 @@ For the treasury's LP position:
 
 # Appendix H — Contract code stubs
 
-### `DePrizeMint.bet`
+### `DePrizeMint.bet` (as built, M3)
 
 ```solidity
-function bet(uint256 deprizeId, uint256 teamId, uint256 minOut) external payable {
-    require(registry.state(deprizeId) == State.OPEN);
+function bet(uint256 deprizeId, uint256 outcomeIndex, uint256 outcomeTokenAmount, uint256 maxCost)
+    external payable nonReentrant
+{
+    if (!registry.bettingOpen(deprizeId)) revert BettingClosed(deprizeId);
+    uint256[] memory teams = registry.teamIds(deprizeId);
+    if (outcomeIndex >= teams.length) revert BadOutcomeIndex(deprizeId, outcomeIndex);
+    address market = marketOf[deprizeId];
+    if (market == address(0)) revert MarketNotSet(deprizeId);
 
-    uint256 slice = msg.value / 20; // 5%
-    uint256 collateral = msg.value - slice;
+    uint256 slice  = msg.value / SLICE_DENOMINATOR; // 5%
+    uint256 budget = msg.value - slice;             // 95%
 
-    IJBMultiTerminal(JB_TERMINAL).pay{value: slice}(
-        registry.jbProjectId(deprizeId),
-        JB_NATIVE_TOKEN, slice, msg.sender, 0, "DePrize bet", ""
+    // 5% slice -> Juicebox; bettor is beneficiary (receives $OVERVIEW).
+    jbTerminal.pay{value: slice}(
+        registry.getDePrize(deprizeId).jbProjectId,
+        JBConstants.NATIVE_TOKEN, slice, msg.sender, 0, "DePrize bet", ""
     );
 
-    ctf.splitPosition{value: collateral}(
-        WETH, bytes32(0),
-        registry.ctfConditionId(deprizeId),
-        registry.partition(deprizeId)
-    );
+    // Price on LMSR. calcNetCost EXCLUDES the fee; MarketMaker.trade pulls net + fee.
+    ILMSRWithTWAP m = ILMSRWithTWAP(market);
+    int256[] memory amounts = new int256[](teams.length);
+    amounts[outcomeIndex] = int256(outcomeTokenAmount);
+    int256 net = m.calcNetCost(amounts);
+    if (net <= 0) revert NonPositiveCost();
+    uint256 cost = uint256(net) + m.calcMarketFee(uint256(net));
+    if (cost > budget || cost > maxCost) revert CostTooHigh(cost, budget, maxCost);
 
-    _routeToBettor(deprizeId, teamId, collateral, minOut);
+    // Wrap, update TWAP, then trade DIRECTLY (tradeWithTWAP self-calls -> wrong msg.sender).
+    weth.deposit{value: cost}();
+    weth.approve(market, cost);
+    _inBet = true;
+    m.updateCumulativeTWAP();
+    m.trade(amounts, int256(cost)); // CTF mints ERC-1155 to this contract (captured in receiver hooks)
+    _inBet = false;
+
+    _flushOutcomeTokens(msg.sender);          // forward outcome tokens to bettor
+    uint256 leftover = budget - cost;          // (+ any swept residual WETH)
+    if (leftover > 0) { (bool ok,) = msg.sender.call{value: leftover}(""); if (!ok) revert RefundFailed(); }
+    emit Bet(deprizeId, msg.sender, outcomeIndex, outcomeTokenAmount, cost, slice);
 }
 ```
 
-`_routeToBettor` sells the non-chosen teams' outcome tokens and consolidates into the chosen team's tokens via the per-team Uniswap pools. Each swap triggers `DePrizeFeeHook` which charges 1.0% LP fee + 1.0% protocol fee (2.0% total). Protocol fee routes 100% to `DePrizePrizeEscrow`. LP fee accrues to the treasury (sole LP in v1).
+No Uniswap swap, no fee hook, no `splitPosition` — the LMSR market mints the chosen team's outcome tokens directly and charges its built-in 1% fee. `setMarket(deprizeId, market)` (onlyOwner) validates `pmSystem == ctf`, `collateralToken == weth`, `atomicOutcomeSlotCount == #teams`, and `conditionIds(0) == registry.ctfConditionId` before binding.
 
-### `LaunchPadPayHook.stage` (Registry-aware upgrade)
+### `LaunchPadPayHook` (Registry-aware upgrade, as built M2)
+
+The hook gains one **optional, write-once** pointer, `IDePrizeRegistry public deprizeRegistry` (set via owner-gated `setDePrizeRegistry`, which reverts once set so it can't be detached or repointed). A single helper decides whether DePrize gating applies:
 
 ```solidity
-function stage(address terminal, uint256 projectId) public view returns (uint256) {
-    uint256 deprizeId = registry.deprizeIdByJBProject(projectId);
-
-    // No DePrize attached → original behavior (backwards compatible).
-    if (deprizeId == 0) {
-        return _originalStage(terminal, projectId);
-    }
-
-    DePrizeState state = registry.state(deprizeId);
-
-    if (
-        state == DePrizeState.CANCELLED
-            || state == DePrizeState.NO_WINNER
-            || state == DePrizeState.M2_FAILED
-    ) {
-        return 3; // Refund stage — cashOut enabled (matches Registry.isRefundable).
-    }
-
-    if (state == DePrizeState.SETTLED) {
-        // M2 milestone may still gate cashOut; check milestone escrow.
-        return milestoneEscrow.cashOutAllowed(deprizeId) ? 2 : 1;
-    }
-
-    if (state == DePrizeState.M2_COMPLETE) {
-        return 2; // Post-mission — cashOut enabled per standard launchpad rules.
-    }
-
-    // DRAFT / OPEN / LOCKED / VOTING / M1_RELEASED:
-    return 1; // Active campaign — cashOut disabled (5% slice protected).
+function _deprizeIdFor(uint256 projectId) internal view returns (uint256) {
+    if (address(deprizeRegistry) == address(0)) return 0; // no registry → original behavior
+    return deprizeRegistry.deprizeIdByJBProject(projectId); // 0 → original behavior
 }
 ```
 
-This keeps the hook backwards-compatible for non-DePrize missions while gating cashOut for DePrize-attached projects without separate per-DePrize contracts. The hook becomes the single source of truth for "is cashOut allowed right now" by delegating to Registry state.
+So every path keeps its **exact original behavior** unless a registry is set *and* the project is bound to a DePrize. When a DePrize is attached:
+
+| Hook path | Non-terminal (DRAFT…M1_RELEASED) | Refundable terminal (CANCELLED / NO_WINNER / M2_FAILED) | Success terminal (M2_COMPLETE) |
+|---|---|---|---|
+| `beforePayRecordedWith` | contributions **allowed** (immutable deadline ignored) | **reverts** (closed) | **reverts** (closed) |
+| `beforeCashOutRecordedWith` | **reverts** (DePrize active) | refund **allowed**, no expiry window | **reverts** (DePrize active) |
+| `stage()` | `1` | `3` | `1` |
+
+`fundingTurnedOff` remains an emergency owner override that wins over everything. Finer milestone-gated staging (a `2` stage tied to `DePrizeMilestoneEscrow`) was **deliberately deferred** to keep M2 free of the escrow dependency — `SETTLED`/`M2_COMPLETE` return `1` for now. The refund-supply math (`currentFunding × rulesetWeight / 2e18`) is unchanged from the original hook. See [`DEPRIZE_M2.md`](./DEPRIZE_M2.md).
 
 # Appendix I — `$OVERVIEW` dilution math
 
