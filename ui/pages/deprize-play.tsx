@@ -125,7 +125,11 @@ export default function DePrizePlay() {
 
   // Static-per-market values (conditionId + ERC-1155 position ids + outcome count) never change,
   // so resolve them once and reuse — keeps every refresh to the dynamic reads.
-  const staticRef = useRef<{ conditionId: string; positionIds: bigint[]; outcomeCount: number } | null>(null)
+  const staticRef = useRef<{
+    conditionId: string
+    positionIds: bigint[]
+    outcomeCount: number
+  } | null>(null)
 
   // Read contracts: no-batching client (avoids the viem batch-decode bug).
   const lmsr = useContract({
@@ -192,7 +196,7 @@ export default function DePrizePlay() {
         )
         const positionIds = await Promise.all(
           Array.from({ length: outcomeCount }, async (_, i) => {
-            const indexSet = BigInt(1 << i)
+            const indexSet = 1n << BigInt(i)
             const collectionId = (await readContract({
               contract: ctf,
               method: 'getCollectionId' as string,
@@ -369,11 +373,21 @@ export default function DePrizePlay() {
     if (!lmsr || ethBetWei <= 0n) return
     let cancelled = false
     const ethNum = Number(ethBetWei) / Number(UNIT)
-    const t = setTimeout(() => {
+    const t = setTimeout(async () => {
+      let feeRateBigInt = 0n
+      try {
+        feeRateBigInt = (await readContract({
+          contract: lmsr,
+          method: 'fee' as string,
+          params: [],
+        })) as bigint
+      } catch {}
+      const adjustedTarget =
+        feeRateBigInt > 0n ? (ethBetWei * UNIT) / (UNIT + feeRateBigInt) : ethBetWei
       outcomes.forEach((o, i) => {
         if (!Number.isFinite(o.probability) || o.probability <= 0) return
         const hint = toWei(String((ethNum * 100) / o.probability))
-        quoteQtyForCost(i, ethBetWei, hint)
+        quoteQtyForCost(i, adjustedTarget, hint)
           .then((q) => {
             if (cancelled || q <= 0n) return
             const qty = Number(q) / Number(UNIT)
@@ -700,7 +714,16 @@ export default function DePrizePlay() {
         method: 'calcNetCost' as string,
         params: [amounts],
       })) as bigint // negative: collateral returned
-      const limit = (net * 99n) / 100n // 1% slippage
+      let fee = 0n
+      try {
+        fee = (await readContract({
+          contract: lmsr,
+          method: 'calcMarketFee' as string,
+          params: [net < 0n ? -net : net],
+        })) as bigint
+      } catch {}
+      const cost = net < 0n ? net + fee : net - fee
+      const limit = (cost * 99n) / 100n // 1% slippage
 
       toast.loading('Selling…', { id: 'sell', style: toastStyle })
       await sendTx(
@@ -736,7 +759,7 @@ export default function DePrizePlay() {
     setBusy(true)
     try {
       const { outcomeCount } = staticRef.current
-      const indexSets = Array.from({ length: outcomeCount }, (_, i) => BigInt(1 << i))
+      const indexSets = Array.from({ length: outcomeCount }, (_, i) => 1n << BigInt(i))
       await sendTx(
         prepareContractCall({
           contract: ctfW,
