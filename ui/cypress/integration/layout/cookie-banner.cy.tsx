@@ -6,11 +6,26 @@ describe('<CookieBanner />', () => {
     cy.window().then((win: any) => {
       win.gtag = cy.stub().as('gtagStub')
     })
+    // Default to a non-US country so the banner renders for most tests.
+    cy.intercept('GET', '/api/geo/country', { body: { country: 'GB' } }).as('geoCountry')
   })
 
   it('Renders when cookie consent is null', () => {
     cy.mount(<CookieBanner />)
     cy.contains('We use cookies for analytics and personalization').should('be.visible')
+  })
+
+  it('Hides the banner and grants consent for US users', () => {
+    cy.intercept('GET', '/api/geo/country', { body: { country: 'US' } }).as('geoCountryUS')
+    cy.mount(<CookieBanner />)
+    cy.wait('@geoCountryUS')
+    cy.contains('We use cookies for analytics and personalization').should('not.exist')
+    cy.get('@gtagStub').should('have.been.calledWith', 'consent', 'update', {
+      analytics_storage: 'granted',
+    })
+    cy.should(() => {
+      expect(localStorage.getItem('cookie_consent')).to.eq('true')
+    })
   })
 
   it('Updates localStorage and calls gtag when Accept is clicked', () => {
