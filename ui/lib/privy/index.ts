@@ -6,9 +6,7 @@ export interface PrivyUserData {
   userData: any
 }
 
-export async function getPrivyUserData(
-  accessToken: string
-): Promise<PrivyUserData | null> {
+export async function getPrivyUserData(accessToken: string): Promise<PrivyUserData | null> {
   try {
     // Verify Privy auth and get user data
     const verifiedClaims = await verifyPrivyAuth(accessToken)
@@ -23,18 +21,15 @@ export async function getPrivyUserData(
     const timeout = setTimeout(() => controller.abort(), 8000)
     let userResponse: Response
     try {
-      userResponse = await fetch(
-        `https://auth.privy.io/api/v1/users/${verifiedClaims.userId}`,
-        {
-          headers: {
-            Authorization: `Basic ${Buffer.from(
-              `${process.env.NEXT_PUBLIC_PRIVY_APP_ID}:${process.env.PRIVY_APP_SECRET}`
-            ).toString('base64')}`,
-            'privy-app-id': process.env.NEXT_PUBLIC_PRIVY_APP_ID as string,
-          },
-          signal: controller.signal,
-        }
-      )
+      userResponse = await fetch(`https://auth.privy.io/api/v1/users/${verifiedClaims.userId}`, {
+        headers: {
+          Authorization: `Basic ${Buffer.from(
+            `${process.env.NEXT_PUBLIC_PRIVY_APP_ID}:${process.env.PRIVY_APP_SECRET}`,
+          ).toString('base64')}`,
+          'privy-app-id': process.env.NEXT_PUBLIC_PRIVY_APP_ID as string,
+        },
+        signal: controller.signal,
+      })
     } finally {
       clearTimeout(timeout)
     }
@@ -73,7 +68,7 @@ export async function getPrivyUserData(
 
 export async function addressBelongsToPrivyUser(
   accessToken: string,
-  address: string
+  address: string,
 ): Promise<boolean> {
   const privyUserData = await getPrivyUserData(accessToken)
   if (!privyUserData) {
@@ -82,5 +77,7 @@ export async function addressBelongsToPrivyUser(
   if (privyUserData.walletAddresses.length === 0) {
     return false
   }
-  return privyUserData.walletAddresses.includes(address)
+  return privyUserData.walletAddresses
+    .map((addr) => addr.toLowerCase())
+    .includes(address.toLowerCase())
 }

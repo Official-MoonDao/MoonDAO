@@ -278,7 +278,12 @@ function restoreWizardStageFromSession(): number {
   return 1
 }
 
-export default function CreateCitizen({ selectedChain, setSelectedTier, freeMintProp }: any) {
+export default function CreateCitizen({
+  selectedChain,
+  setSelectedTier,
+  freeMintProp,
+  inviteToken,
+}: any) {
   // ===== Context & Constants =====
   const router = useRouter()
   const { setSelectedChain } = useContext(ChainContextV5)
@@ -383,10 +388,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     startTransition(() => setStage(restoredStage))
   }, [isClientHydrated, restoredStage])
 
+  // Sync freeMint state when freeMintProp becomes available
+  useEffect(() => {
+    if (freeMintProp) {
+      setFreeMint(true)
+    }
+  }, [freeMintProp])
+
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
   const [requiredEthAmount, setRequiredEthAmount] = useState(0)
-  const [freeMint, setFreeMint] = useState(freeMintProp || false)
+  const [freeMint, setFreeMint] = useState(false)
 
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
@@ -527,15 +539,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   const nativeSymbol = selectedChain?.nativeCurrency?.symbol ?? 'ETH'
 
   const mintCostBreakdown = useMemo(() => {
+    if (freeMint) {
+      // Sponsored mint: the server relayer signs and submits the mint, so the
+      // user pays nothing (no citizenship fee, no network gas, no bridge fee).
+      return { renewalEth: 0, gasEth: 0, bridgeEth: 0, totalEth: 0 }
+    }
     const gasEth =
       estimatedGas > BigInt(0) && effectiveGasPrice && effectiveGasPrice > BigInt(0)
         ? Number(estimatedGas * effectiveGasPrice) / 1e18
         : 0
     const bridgeEth = isCrossChain ? Number(LAYER_ZERO_TRANSFER_COST) / 1e18 : 0
-    if (freeMint) {
-      // Citizenship fee is waived; network gas is still paid by the user.
-      return { renewalEth: 0, gasEth, bridgeEth, totalEth: gasEth + bridgeEth }
-    }
     const renewalEth = renewalPriceWei ? Number(ethers.utils.formatEther(renewalPriceWei)) : 0
     return {
       renewalEth,
@@ -562,7 +575,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   )
 
   const isLoadingMintCosts = freeMint
-    ? isLoadingGasEstimate || isLoadingTotalMintUsd
+    ? false
     : isLoadingRenewalPrice ||
       isLoadingGasEstimate ||
       isLoadingRenewalUsd ||
@@ -664,15 +677,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
 
   const executeFreeMint = useCallback(
     async (imageIpfsHash: string) => {
+      // Invite-sponsored mints must prove the signed-in Privy user owns this
+      // wallet, so the one-time token can only be redeemed by its recipient.
+      const accessToken = inviteToken ? await getAccessToken() : null
       const res = await fetch(`/api/mission/freeMint`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           address: address,
           name: citizenData.name,
           image: `ipfs://${imageIpfsHash}`,
           privacy: 'public',
           formId: citizenData.formResponseId,
+          ...(inviteToken ? { inviteToken, accessToken } : {}),
         }),
       })
       if (!res.ok) {
@@ -682,7 +702,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
       }
       return await res.json()
     },
-    [address, citizenData.name, citizenData.formResponseId],
+    [address, citizenData.name, citizenData.formResponseId, inviteToken],
   )
 
   const executeCrossChainMint = useCallback(
@@ -1167,11 +1187,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
         'citizen image',
       )
       // If citizenImage was restored and differs from croppedInputImage, it's an AI portrait
-      if (citizenImageRestored && formData.citizenImage && isSerializedFile(formData.citizenImage)) {
+      if (
+        citizenImageRestored &&
+        formData.citizenImage &&
+        isSerializedFile(formData.citizenImage)
+      ) {
         // Compare serialized data to determine if it's an AI portrait
-        if (!formData.croppedInputImage || 
-            !isSerializedFile(formData.croppedInputImage) ||
-            formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL) {
+        if (
+          !formData.croppedInputImage ||
+          !isSerializedFile(formData.croppedInputImage) ||
+          formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL
+        ) {
           markAiPortraitReady()
         }
       }
@@ -1248,23 +1274,25 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
 
     setIsLoadingMint(true)
 
-    // The user may have just signed in at this step (sign-in is deferred until
-    // mint to keep the click count low), so the gas-estimation effect may not
-    // have run yet. Estimate inline and use the returned value rather than
-    // erroring out and forcing a retry.
-    let gasToUse = estimatedGas
-    if (!gasToUse || gasToUse === BigInt(0)) {
-      gasToUse = (await estimateMintGas()) ?? BigInt(0)
-    }
+    // Sponsored mints skip gas checks (the relayer pays everything).
+    // For paid mints, the user may have just signed in at this step, so the
+    // gas-estimation effect may not have run yet. Estimate inline and use the
+    // returned value rather than erroring out and forcing a retry.
+    if (!freeMint) {
+      let gasToUse = estimatedGas
+      if (!gasToUse || gasToUse === BigInt(0)) {
+        gasToUse = (await estimateMintGas()) ?? BigInt(0)
+      }
 
-    if (
-      !gasToUse ||
-      gasToUse === BigInt(0) ||
-      !effectiveGasPrice ||
-      effectiveGasPrice === BigInt(0)
-    ) {
-      setIsLoadingMint(false)
-      return toast.error('Gas estimation is still loading. Please wait a moment and try again.')
+      if (
+        !gasToUse ||
+        gasToUse === BigInt(0) ||
+        !effectiveGasPrice ||
+        effectiveGasPrice === BigInt(0)
+      ) {
+        setIsLoadingMint(false)
+        return toast.error('Gas estimation is still loading. Please wait a moment and try again.')
+      }
     }
 
     try {
@@ -1947,21 +1975,46 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     if (!address) return
 
     const getTotalPaid = async () => {
+      // A magic-link invite token makes this wallet eligible for a sponsored
+      // mint even without a contribution history or on-chain allowlist entry.
+      // Send the invite token via header instead of query string to prevent
+      // leakage via browser history, analytics, and Referer headers.
+      const headers: Record<string, string> = {}
+      if (inviteToken) {
+        headers['x-invite-token'] = inviteToken
+      }
       const res = await fetch(`/api/mission/freeMint?address=${address}`, {
         method: 'GET',
+        headers,
       })
       if (!res.ok) {
-        const errorText = await res.text() // Or response.json()
+        const errorText = await res.text()
         console.error(errorText)
+        // For invite tokens: distinguish between transient errors (5xx) and
+        // validation failures (4xx). Invalid/expired tokens return 400.
+        if (inviteToken && res.status >= 500) {
+          // Transient server error (e.g. Redis down) with invite - keep
+          // sponsored state so a valid invite isn't wrongly shown as paid.
+          console.warn('Eligibility check temporarily unavailable (5xx), keeping current state')
+        } else if (inviteToken && res.status === 400) {
+          // Invite validation failed (invalid/expired/used) - clear sponsored state
+          setFreeMint(false)
+        } else if (!inviteToken) {
+          setFreeMint(false)
+        }
       } else {
         const { data } = await res.json()
         if (data.eligible) {
           setFreeMint(true)
+        } else {
+          // Clear sponsored state when definitively ineligible (200 OK means the
+          // service is up and the invite/eligibility was checked successfully).
+          setFreeMint(false)
         }
       }
     }
     getTotalPaid()
-  }, [address])
+  }, [address, inviteToken])
 
   // ===== JSX Render =====
   return (
@@ -2315,11 +2368,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                       </div>
                       <div className="flex justify-between gap-4">
                         <dt className="text-slate-400">Network fee (est.)</dt>
-                        <dd className="text-white text-right tabular-nums">
-                          {formatEthAmount(mintCostBreakdown.gasEth)} {nativeSymbol}
+                        <dd className="text-right tabular-nums">
+                          {freeMint ? (
+                            <span className="text-emerald-400 font-medium">Sponsored</span>
+                          ) : (
+                            <span className="text-white">
+                              {formatEthAmount(mintCostBreakdown.gasEth)} {nativeSymbol}
+                            </span>
+                          )}
                         </dd>
                       </div>
-                      {isCrossChain && mintCostBreakdown.bridgeEth > 0 && (
+                      {!freeMint && isCrossChain && mintCostBreakdown.bridgeEth > 0 && (
                         <div className="flex justify-between gap-4">
                           <dt className="text-slate-400">Cross-chain bridge (est.)</dt>
                           <dd className="text-white text-right tabular-nums">
@@ -2330,11 +2389,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                       <div className="flex justify-between gap-4 pt-3 border-t border-white/[0.08]">
                         <dt className="text-slate-300 font-medium">Total due at mint</dt>
                         <dd className="text-white font-medium text-right tabular-nums">
-                          {formatEthAmount(mintCostBreakdown.totalEth)} {nativeSymbol}
-                          {totalMintUsd > 0 && (
-                            <span className="block text-slate-400 text-xs font-normal mt-0.5">
-                              ~${Math.round(totalMintUsd)} today
-                            </span>
+                          {freeMint ? (
+                            <span className="text-emerald-400">Free</span>
+                          ) : (
+                            <>
+                              {formatEthAmount(mintCostBreakdown.totalEth)} {nativeSymbol}
+                              {totalMintUsd > 0 && (
+                                <span className="block text-slate-400 text-xs font-normal mt-0.5">
+                                  ~${Math.round(totalMintUsd)} today
+                                </span>
+                              )}
+                            </>
                           )}
                         </dd>
                       </div>
@@ -2342,9 +2407,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                   )}
                   <p className="mt-4 text-slate-500 text-xs leading-relaxed">
                     {freeMint
-                      ? `Your citizenship fee is sponsored. You only pay the network gas fee in ${nativeSymbol} on ${selectedChain?.name ?? 'your network'}.`
-                      : `Citizenship is paid in ${nativeSymbol} on ${selectedChain?.name ?? 'your network'}.`}{' '}
-                    Gas varies with network conditions. Renewal is ~1 year from mint.
+                      ? `Your citizenship and network fees are fully sponsored — you pay nothing to mint. Renewal is ~1 year from mint.`
+                      : `Citizenship is paid in ${nativeSymbol} on ${selectedChain?.name ?? 'your network'}. Gas varies with network conditions. Renewal is ~1 year from mint.`}
                   </p>
                 </div>
 
