@@ -1274,23 +1274,25 @@ export default function CreateCitizen({
 
     setIsLoadingMint(true)
 
-    // The user may have just signed in at this step (sign-in is deferred until
-    // mint to keep the click count low), so the gas-estimation effect may not
-    // have run yet. Estimate inline and use the returned value rather than
-    // erroring out and forcing a retry.
-    let gasToUse = estimatedGas
-    if (!gasToUse || gasToUse === BigInt(0)) {
-      gasToUse = (await estimateMintGas()) ?? BigInt(0)
-    }
+    // Sponsored mints skip gas checks (the relayer pays everything).
+    // For paid mints, the user may have just signed in at this step, so the
+    // gas-estimation effect may not have run yet. Estimate inline and use the
+    // returned value rather than erroring out and forcing a retry.
+    if (!freeMint) {
+      let gasToUse = estimatedGas
+      if (!gasToUse || gasToUse === BigInt(0)) {
+        gasToUse = (await estimateMintGas()) ?? BigInt(0)
+      }
 
-    if (
-      !gasToUse ||
-      gasToUse === BigInt(0) ||
-      !effectiveGasPrice ||
-      effectiveGasPrice === BigInt(0)
-    ) {
-      setIsLoadingMint(false)
-      return toast.error('Gas estimation is still loading. Please wait a moment and try again.')
+      if (
+        !gasToUse ||
+        gasToUse === BigInt(0) ||
+        !effectiveGasPrice ||
+        effectiveGasPrice === BigInt(0)
+      ) {
+        setIsLoadingMint(false)
+        return toast.error('Gas estimation is still loading. Please wait a moment and try again.')
+      }
     }
 
     try {
@@ -1998,13 +2000,18 @@ export default function CreateCitizen({
         } else if (!inviteToken) {
           setFreeMint(false)
         }
+      } else if (res.status === 503) {
+        // Transient error (Redis unavailable for invite check); keep the current
+        // freeMint state instead of clearing it, so a valid invite isn't wrongly
+        // shown as a paid flow during a temporary service hiccup.
+        console.warn('Eligibility check temporarily unavailable (503), keeping current state')
       } else {
         const { data } = await res.json()
         if (data.eligible) {
           setFreeMint(true)
         } else {
-          // Clear sponsored state when definitively ineligible. Only preserve
-          // it on Redis errors (which would have returned 503, not 200 OK).
+          // Clear sponsored state when definitively ineligible (200 OK means the
+          // service is up and the invite/eligibility was checked successfully).
           setFreeMint(false)
         }
       }

@@ -49,10 +49,16 @@ export default function CitizenInvitesAdmin() {
         }),
       })
       const json = await res.json()
-      if (!res.ok) {
+      if (!res.ok && res.status !== 207) {
         throw new Error(json?.error || `Request failed (${res.status})`)
       }
       setLinks(json.links || [])
+      if (res.status === 207) {
+        toast(`Partial success: ${json.links?.length || 0} of ${count} links created.`, {
+          style: toastStyle,
+          icon: '⚠️',
+        })
+      }
       setStatus('success')
       toast.success(`Created ${json.links?.length || 0} invite link(s).`, {
         style: toastStyle,

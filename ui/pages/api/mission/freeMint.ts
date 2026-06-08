@@ -306,11 +306,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
   if (req.method === 'GET') {
     const address = req.query.address
-    // Accept invite token from header instead of query string to prevent leakage
+    // Accept invite token from header only (not query string) to prevent leakage
     // via browser history, analytics, proxies, and Referer headers.
-    let inviteToken =
-      req.headers['x-invite-token'] ||
-      (typeof req.query.invite === 'string' ? req.query.invite : undefined)
+    let inviteToken = req.headers['x-invite-token']
 
     // Normalize header to string (Next.js can provide string | string[])
     if (Array.isArray(inviteToken)) {
@@ -327,7 +325,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // A valid (unconsumed) invite token makes the user eligible for a sponsored
     // mint, but only if they don't already hold a citizen NFT. We only peek
     // here — the token is consumed at mint time (POST).
-    if (inviteToken && (await peekInvite(inviteToken))) {
+    if (inviteToken) {
+      const invite = await peekInvite(inviteToken)
+      if (invite === null) {
+        // Redis error or missing invite. Return 503 so the client knows this is
+        // a transient failure, not a definitive "invite is invalid."
+        return res.status(503).json({
+          error: 'Unable to verify invite at this time. Please try again in a moment.',
+        })
+      }
       // Invite-based eligibility responses should not be cached since they
       // depend on the one-time token header, not just the address.
       res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate')
