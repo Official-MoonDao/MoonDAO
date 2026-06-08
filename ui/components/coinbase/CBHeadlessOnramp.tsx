@@ -55,13 +55,14 @@ function isCoinbaseOrigin(origin: string): boolean {
   }
 }
 
-// Pick the right guest payment method for the user's device. Apple Pay falls
-// back to a QR code on non-Safari browsers, so it's the safe web default.
+// Apple Pay on the web is only available in Safari/WebKit — window.ApplePaySession
+// is undefined in Chrome, Firefox, and all Android browsers. Fall back to Google Pay
+// for any browser that doesn't expose the ApplePaySession API.
 function detectPaymentMethod(): 'GUEST_CHECKOUT_APPLE_PAY' | 'GUEST_CHECKOUT_GOOGLE_PAY' {
-  if (typeof navigator === 'undefined') return 'GUEST_CHECKOUT_APPLE_PAY'
-  const ua = navigator.userAgent || ''
-  if (/android/i.test(ua)) return 'GUEST_CHECKOUT_GOOGLE_PAY'
-  return 'GUEST_CHECKOUT_APPLE_PAY'
+  if (typeof window !== 'undefined' && (window as any).ApplePaySession) {
+    return 'GUEST_CHECKOUT_APPLE_PAY'
+  }
+  return 'GUEST_CHECKOUT_GOOGLE_PAY'
 }
 
 export function CBHeadlessOnramp({
