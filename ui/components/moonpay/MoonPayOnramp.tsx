@@ -32,6 +32,8 @@ interface MoonPayOnrampProps {
   /** How long (minutes) to keep polling. Default: 30 */
   pollMaxMinutes?: number
   isWaitingForGasEstimate?: boolean
+  /** Optional content rendered just beneath the "Fund Wallet" header */
+  headerSlot?: React.ReactNode
 }
 
 const POLL_INTERVAL_DEFAULT = 15_000
@@ -52,6 +54,7 @@ export function MoonPayOnramp({
   pollIntervalMs = POLL_INTERVAL_DEFAULT,
   pollMaxMinutes = POLL_MAX_MINUTES_DEFAULT,
   isWaitingForGasEstimate = false,
+  headerSlot,
 }: MoonPayOnrampProps) {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
   // When embedded, render transparent so we blend into the parent card.
@@ -356,6 +359,8 @@ export function MoonPayOnramp({
           <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
         </button>
       </div>
+
+      {headerSlot}
 
       <div className="p-6 space-y-6">
         {/* Amount summary */}

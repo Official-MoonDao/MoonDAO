@@ -31,6 +31,8 @@ interface CBOnrampProps {
   fullWidth?: boolean
   /** When true, drops the outer card chrome so it can be nested inside another card */
   embedded?: boolean
+  /** Optional content rendered just beneath the "Fund" header */
+  headerSlot?: React.ReactNode
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
@@ -48,6 +50,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   onQuoteCalculated,
   fullWidth = false,
   embedded = false,
+  headerSlot,
 }) => {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
 
@@ -610,6 +613,8 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
         </button>
       </div>
+
+      {headerSlot}
 
       <div className="p-6 space-y-6">
         {/* Amount Input (when allowAmountInput is true) */}
