@@ -264,6 +264,11 @@ export default function ArbitrumBridge() {
     setSelectedChain(ethereum)
   }, [setSelectedChain])
 
+  const numAmount = parseFloat(String(amount)) || 0
+  const isOverBalance =
+    balance !== undefined && numAmount > 0 && numAmount > Number(balance)
+  const tokenLabel = inputToken === 'eth' ? 'ETH' : 'MOONEY'
+
   return (
     <div className="w-full mt-3 sm:mt-4">
       <div className="text-sm font-RobotoMono rounded-xl sm:rounded-2xl animate-fadeIn p-3 sm:p-4 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white">
@@ -305,7 +310,6 @@ export default function ArbitrumBridge() {
                     className="text-white bg-transparent text-xl sm:text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none w-full min-w-0 border-0 !p-0 min-h-[28px] tabular-nums"
                     bare
                     value={amount}
-                    max={balance ? Number(balance) : undefined}
                     onChange={(e) => {
                       let value = e.target.value
                       value = value.replace(/[^0-9.]/g, '')
@@ -314,9 +318,6 @@ export default function ArbitrumBridge() {
                         value = parts[0] + '.' + parts.slice(1).join('')
                       }
                       if (parseFloat(value) < 0) value = '0'
-                      if (balance && parseFloat(value) > balance) {
-                        value = String(balance)
-                      }
                       if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
                         value = value.substring(1)
                       }
@@ -393,14 +394,21 @@ export default function ArbitrumBridge() {
 
         {/* Action Button */}
         <div className="w-full">
-          {isEOA ? (
+          {!address || isEOA ? (
             <PrivyWeb3Button
               v5
+              signInLabel="Sign In to Bridge to Arbitrum"
               skipNetworkCheck={skipNetworkCheck}
               requiredChain={ethereum}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 sm:py-4 px-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
-              label="Bridge to Arbitrum"
-              isDisabled={!isEOA}
+              label={
+                numAmount === 0
+                  ? 'Enter Amount'
+                  : isOverBalance
+                  ? `Not Enough ${tokenLabel}`
+                  : 'Bridge to Arbitrum'
+              }
+              isDisabled={!isEOA || numAmount === 0 || isOverBalance}
               action={async () => {
                 try {
                   if (inputToken === 'eth') {

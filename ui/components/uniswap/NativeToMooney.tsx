@@ -1,4 +1,5 @@
 import { CHAIN_TOKEN_NAMES, MOONEY_ADDRESSES, FEE_HOOK_ADDRESSES, TICK_SPACING } from 'const/config'
+import confetti from 'canvas-confetti'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -12,6 +13,23 @@ import GasIcon from '../assets/GasIcon'
 import Input from '../layout/Input'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
+
+function fireMooneyConfetti() {
+  if (typeof window === 'undefined') return
+  const colors = ['#ffffff', '#FFD700', '#7B61FF', '#00CFFF', '#FF69B4']
+  const fire = (originX: number, originY: number, angle: number) =>
+    confetti({
+      particleCount: 80,
+      angle,
+      spread: 55,
+      origin: { x: originX, y: originY },
+      shapes: ['circle', 'star'],
+      colors,
+    })
+  fire(0.2, 0.8, 60)
+  setTimeout(() => fire(0.8, 0.8, 120), 150)
+  setTimeout(() => fire(0.5, 0.6, 90), 300)
+}
 
 export default function NativeToMooney({ selectedChain }: any) {
   const chainSlug = getChainSlug(selectedChain)
@@ -38,9 +56,13 @@ export default function NativeToMooney({ selectedChain }: any) {
   const { effectiveGasPrice } = useGasPrice(selectedChain)
   const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
+  const isOverBalance =
+    nativeBalance !== undefined && !!amount && parseFloat(amount) > nativeBalance
+
   useEffect(() => {
     const numAmount = parseFloat(amount) || 0
-    if (numAmount > 0 && mooneyAddress) {
+    const overBalance = nativeBalance !== undefined && numAmount > nativeBalance
+    if (numAmount > 0 && mooneyAddress && !overBalance) {
       setIsGeneratingRoute(true)
       quote(amount)
         .then(async (quotedAmount) => {
@@ -114,7 +136,7 @@ export default function NativeToMooney({ selectedChain }: any) {
       setEstimatedGasUsedUSD('0.00')
       setPriceImpact(null)
     }
-  }, [amount, mooneyAddress, quote, estimateGas, effectiveGasPrice, ethPrice])
+  }, [amount, nativeBalance, mooneyAddress, quote, estimateGas, effectiveGasPrice, ethPrice])
 
   return (
     <div className="w-full mt-3 sm:mt-4">
@@ -170,7 +192,6 @@ export default function NativeToMooney({ selectedChain }: any) {
                     className="text-white bg-transparent text-xl sm:text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none w-full min-w-0 border-0 !p-0 min-h-[28px] tabular-nums"
                     bare
                     value={amount}
-                    max={nativeBalance ? parseFloat(nativeBalance) : undefined}
                     onChange={(e) => {
                       let value = e.target.value
                       value = value.replace(/[^0-9.]/g, '')
@@ -179,9 +200,6 @@ export default function NativeToMooney({ selectedChain }: any) {
                         value = parts[0] + '.' + parts.slice(1).join('')
                       }
                       if (parseFloat(value) < 0) value = '0'
-                      if (nativeBalance && parseFloat(value) > parseFloat(nativeBalance)) {
-                        value = nativeBalance
-                      }
                       setAmount(value)
                     }}
                     formatNumbers={true}
@@ -196,8 +214,16 @@ export default function NativeToMooney({ selectedChain }: any) {
                       </p>
                       <button
                         className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-lg border border-blue-400/20 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-400/10"
-                        onClick={() => setAmount(nativeBalance ?? '0')}
-                        disabled={!nativeBalance || parseFloat(nativeBalance) === 0}
+                        onClick={() => {
+                          // Reserve gas so the swap doesn't fail due to no ETH left for fees
+                          const gasReserveEth =
+                            effectiveGasPrice > BigInt(0)
+                              ? Number(effectiveGasPrice * BigInt(350000)) / 1e18
+                              : 0.002
+                          const maxAmount = Math.max(0, (nativeBalance || 0) - gasReserveEth)
+                          setAmount(maxAmount > 0 ? String(parseFloat(maxAmount.toFixed(7))) : '0')
+                        }}
+                        disabled={!nativeBalance || nativeBalance === 0}
                       >
                         MAX
                       </button>
@@ -301,12 +327,15 @@ export default function NativeToMooney({ selectedChain }: any) {
           <div className="w-full">
             <PrivyWeb3Button
               v5
+              signInLabel="Sign In to Buy MOONEY"
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 sm:py-4 px-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
               label={
                 isGeneratingRoute
                   ? 'Finding Route...'
                   : !amount || parseFloat(amount) === 0
                   ? 'Enter Amount'
+                  : isOverBalance
+                  ? `Not Enough ${CHAIN_TOKEN_NAMES[chainSlug] ?? 'ETH'}`
                   : !hasValidRoute
                   ? 'No Route Available'
                   : 'Swap'
@@ -325,13 +354,18 @@ export default function NativeToMooney({ selectedChain }: any) {
                   const minOut = (parseFloat(output) * 0.95).toString() // 5% slippage
                   await swap(amount, minOut)
                   toast.success('Swap completed! MOONEY incoming.')
+                  fireMooneyConfetti()
                 } catch (error) {
                   console.error('Swap error:', error)
                   toast.error('Swap failed — transaction rejected or price slipped.')
                 }
               }}
               isDisabled={
-                isGeneratingRoute || !amount || parseFloat(amount) === 0 || !hasValidRoute
+                isGeneratingRoute ||
+                !amount ||
+                parseFloat(amount) === 0 ||
+                isOverBalance ||
+                !hasValidRoute
               }
             />
           </div>

@@ -31,6 +31,19 @@ import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrowABI from '../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
 
+// Safely parse a user-typed amount to wei. Returns null for intermediate
+// states like '', '.' or '1.' so callers don't crash on parseEther.
+function safeParseEther(value?: string) {
+  if (!value) return null
+  const normalized = value.endsWith('.') ? value.slice(0, -1) : value
+  if (normalized === '' || isNaN(parseFloat(normalized))) return null
+  try {
+    return ethers.utils.parseEther(normalized)
+  } catch {
+    return null
+  }
+}
+
 export default function Lock() {
   const router = useRouter()
   const { selectedChain }: any = useContext(ChainContextV5)
@@ -89,6 +102,8 @@ export default function Lock() {
   //reset lock amount on chain switch
   useEffect(() => {
     setLockAmount('')
+    setLockMode('add')
+    setWantsToIncrease(false)
     setLockTime({
       value: ethers.BigNumber.from(+oneWeekOut),
       formatted: dateToReadable(oneWeekOut),
@@ -106,6 +121,9 @@ export default function Lock() {
 
   const [canIncrease, setCanIncrease] = useState({ amount: true, time: true })
   const [wantsToIncrease, setWantsToIncrease] = useState(false)
+  // For an existing lock the contract can only do one thing per tx (add amount OR
+  // extend time), so we make the user pick one explicitly instead of showing both.
+  const [lockMode, setLockMode] = useState<'add' | 'extend'>('add')
 
   const { data: tokenAllowance } = useRead({
     contract: mooneyContract,
@@ -149,9 +167,10 @@ export default function Lock() {
     }
   }, [hasLock, VMOONEYLock, selectedChain, address])
 
-  // Sync lockTime when invalid (e.g. before lock end when extending)
+  // Sync lockTime when invalid (e.g. before lock end when extending).
+  // Only relevant in extend mode — in add mode we keep the existing lock end.
   useEffect(() => {
-    if (hasLock && VMOONEYLock && lockTime?.formatted) {
+    if (hasLock && lockMode === 'extend' && VMOONEYLock && lockTime?.formatted) {
       const lockEnd = bigNumberToDate(BigNumber.from(VMOONEYLock[1]))
       if (!lockEnd) return
       const minExtendDate = new Date(lockEnd.getTime())
@@ -164,7 +183,7 @@ export default function Lock() {
         })
       }
     }
-  }, [hasLock, VMOONEYLock, lockTime?.formatted])
+  }, [hasLock, lockMode, VMOONEYLock, lockTime?.formatted])
 
   //Lock time min/max
   useEffect(() => {
@@ -178,12 +197,12 @@ export default function Lock() {
       })
 
       setCanIncrease({
-        amount:
+        amount: !!(
           lockAmount &&
-          lockAmount !== '' &&
           lockAmount !== '0' &&
           VMOONEYLock &&
-          ethers.utils.parseEther(lockAmount).gt(VMOONEYLock[0]),
+          safeParseEther(lockAmount)?.gt(VMOONEYLock[0])
+        ),
         time:
           lockTime?.value &&
           lockTime.value.gt(BigNumber.from(VMOONEYLock[1]).mul(1000)) && // New time must be greater than current lock end
@@ -203,6 +222,63 @@ export default function Lock() {
       })
     }
   }, [hasLock, lockAmount, lockTime, VMOONEYLock, address])
+
+  const currentLockedAmount =
+    hasLock && VMOONEYLock
+      ? parseFloat(ethers.utils.formatEther(VMOONEYLock[0]))
+      : 0
+  const currentLockEndDate =
+    hasLock && VMOONEYLock
+      ? bigNumberToDate(BigNumber.from(VMOONEYLock[1]))
+      : null
+
+  // Max amount the user can lock in total (already-locked + wallet balance).
+  const maxAmountValue = MOONEYBalance
+    ? hasLock && VMOONEYLock
+      ? parseFloat(
+          ethers.utils.formatEther(
+            BigNumber.from(VMOONEYLock[0]).add(MOONEYBalance)
+          )
+        )
+      : parseFloat(ethers.utils.formatEther(MOONEYBalance.toString()))
+    : undefined
+
+  const isOverBalance =
+    maxAmountValue !== undefined &&
+    !!lockAmount &&
+    (parseFloat(lockAmount) || 0) > maxAmountValue
+
+  function selectAddMode() {
+    if (lockMode === 'add') return
+    setLockMode('add')
+    setWantsToIncrease(false)
+    // Keep the existing lock end so we don't accidentally extend the duration.
+    if (VMOONEYLock) {
+      setLockTime((prev: any) => ({
+        ...prev,
+        value: BigNumber.from(VMOONEYLock[1]).mul(1000),
+        formatted: dateToReadable(bigNumberToDate(BigNumber.from(VMOONEYLock[1]))),
+      }))
+    }
+  }
+
+  function selectExtendMode() {
+    if (lockMode === 'extend') return
+    setLockMode('extend')
+    setWantsToIncrease(false)
+    // Keep the current amount so we don't accidentally add more MOONEY.
+    if (VMOONEYLock) {
+      setLockAmount(ethers.utils.formatEther(VMOONEYLock[0]))
+    }
+  }
+
+  const showPreview =
+    wantsToIncrease &&
+    (!hasLock
+      ? canIncrease.amount && canIncrease.time
+      : lockMode === 'add'
+      ? canIncrease.amount
+      : canIncrease.time)
 
   const { t } = useTranslation('common')
 
@@ -271,7 +347,38 @@ export default function Lock() {
 
                         {/* Lock Configuration */}
                         <div className="p-5 space-y-5">
+                          {/* Mode Toggle (existing lock only) */}
+                          {hasLock && (
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2 p-1 bg-black/30 rounded-xl border border-white/10">
+                                <button
+                                  type="button"
+                                  onClick={selectAddMode}
+                                  className={`py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                                    lockMode === 'add'
+                                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow'
+                                      : 'text-gray-400 hover:text-white'
+                                  }`}
+                                >
+                                  Add MOONEY
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={selectExtendMode}
+                                  className={`py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                                    lockMode === 'extend'
+                                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow'
+                                      : 'text-gray-400 hover:text-white'
+                                  }`}
+                                >
+                                  Extend Lock
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Amount Input */}
+                          {(!hasLock || lockMode === 'add') && (
                           <div className="space-y-2">
                             <label className="text-gray-300 text-sm font-medium">Amount</label>
                             <div className="bg-black/30 rounded-xl p-3 border border-white/10 focus-within:border-blue-400/50 transition-colors">
@@ -292,13 +399,6 @@ export default function Lock() {
                                   }
                                   disabled={
                                     (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
-                                  }
-                                  max={
-                                    MOONEYBalance
-                                      ? parseFloat(
-                                          ethers.utils.formatEther(MOONEYBalance.toString())
-                                        )
-                                      : undefined
                                   }
                                   onFocus={() => {
                                     setIsAmountInputFocused(true)
@@ -329,16 +429,6 @@ export default function Lock() {
                                     // Prevent negative values
                                     if (parseFloat(value) < 0) {
                                       value = '0'
-                                    }
-
-                                    // Enforce max value (available MOONEY balance)
-                                    if (MOONEYBalance) {
-                                      const maxValue = parseFloat(
-                                        ethers.utils.formatEther(MOONEYBalance.toString())
-                                      )
-                                      if (parseFloat(value) > maxValue) {
-                                        value = maxValue.toString()
-                                      }
                                     }
 
                                     // Remove leading zero if user types a number after it
@@ -418,11 +508,31 @@ export default function Lock() {
                                 </div>
                               </div>
                             </div>
+                            {hasLock && currentLockEndDate && (
+                              <p className="text-gray-400 text-xs flex items-center gap-1.5">
+                                <InformationCircleIcon className="h-4 w-4 flex-shrink-0" aria-hidden />
+                                Unlock date stays {dateToReadable(currentLockEndDate)}. Switch to
+                                &nbsp;Extend Lock&nbsp;to change it.
+                              </p>
+                            )}
                           </div>
+                          )}
 
                           {/* Duration Selection */}
+                          {(!hasLock || lockMode === 'extend') && (
                           <div className="space-y-3">
                             <label className="text-gray-300 text-sm font-medium">Lock Until</label>
+                            {hasLock && (
+                              <p className="text-gray-400 text-xs flex items-center gap-1.5">
+                                <InformationCircleIcon className="h-4 w-4 flex-shrink-0" aria-hidden />
+                                Locked amount stays{' '}
+                                {currentLockedAmount.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}{' '}
+                                MOONEY. Switch to Add MOONEY to change it.
+                              </p>
+                            )}
 
                             {(() => {
                               const now = new Date()
@@ -496,9 +606,10 @@ export default function Lock() {
                               )
                             })()}
                           </div>
+                          )}
 
                           {/* Voting Power Preview */}
-                          {(canIncrease.time || canIncrease.amount) && wantsToIncrease && (
+                          {showPreview && (
                             <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-4 border border-blue-400/20 space-y-3">
                               <p className="text-gray-300 text-xs">
                                 Locking MOONEY gives you vMOONEY tokens. Your voting power is
@@ -581,17 +692,16 @@ export default function Lock() {
                         <div className="p-5 border-t border-white/10 bg-black/10">
                           <PrivyWeb3Button
                             v5
+                            signInLabel="Sign In to Lock MOONEY"
                             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
                             label={
-                              !hasLock
+                              isOverBalance && (!hasLock || lockMode === 'add')
+                                ? 'Not Enough MOONEY'
+                                : !hasLock
                                 ? 'Lock MOONEY'
-                                : canIncrease.amount && canIncrease.time
-                                ? 'Increase Lock'
-                                : canIncrease.amount && !canIncrease.time
-                                ? 'Increase Amount'
-                                : !canIncrease.amount && canIncrease.time
-                                ? 'Extend Duration'
-                                : 'Update Lock'
+                                : lockMode === 'add'
+                                ? 'Add MOONEY'
+                                : 'Extend Lock'
                             }
                             action={async () => {
                               try {
@@ -611,7 +721,10 @@ export default function Lock() {
                                 }
 
                                 const lockedMooney = VMOONEYLock?.[0]
-                                const lockAmountBigNum = ethers.utils.parseEther(lockAmount)
+                                const lockAmountBigNum = safeParseEther(lockAmount)
+                                if (!lockAmountBigNum) {
+                                  throw new Error('Please enter a valid amount.')
+                                }
 
                                 const increaseAmount = lockedMooney
                                   ? lockAmountBigNum.sub(lockedMooney)
@@ -640,7 +753,7 @@ export default function Lock() {
                                   : await createLock({
                                       account,
                                       votingEscrowContract: vMooneyContract,
-                                      amount: lockAmount && ethers.utils.parseEther(lockAmount),
+                                      amount: lockAmountBigNum,
                                       time: lockTime?.value.div(1000),
                                     })
 
@@ -668,14 +781,18 @@ export default function Lock() {
                               }
                             }}
                             isDisabled={
+                              // Never let the user submit more than they hold
+                              (isOverBalance && (!hasLock || lockMode === 'add')) ||
                               // For new locks, require both amount and time
-                              !hasLock
+                              (!hasLock
                                 ? !lockAmount ||
                                   lockAmount === '' ||
                                   lockAmount === '0' ||
                                   !canIncrease.time
-                                : // For existing locks, allow if either amount or time can be increased
-                                  !canIncrease.amount && !canIncrease.time
+                                : // For existing locks, only the active mode's change is required
+                                lockMode === 'add'
+                                ? !canIncrease.amount
+                                : !canIncrease.time)
                             }
                           />
 
