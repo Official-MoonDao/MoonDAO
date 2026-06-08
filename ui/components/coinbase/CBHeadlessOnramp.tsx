@@ -30,6 +30,9 @@ interface CBHeadlessOnrampProps {
   refetchBalance?: () => Promise<void>
   /** Called after a successful purchase (e.g. to resume the parent flow). */
   onSuccess?: () => void
+  /** Called when the device doesn't support Apple Pay or Google Pay so the
+   *  parent can fall back to MoonPay automatically. */
+  onUnsupported?: () => void
 }
 
 type FundingState =
@@ -79,6 +82,7 @@ export function CBHeadlessOnramp({
   onBalanceSufficient,
   refetchBalance,
   onSuccess,
+  onUnsupported,
 }: CBHeadlessOnrampProps) {
   const { user } = usePrivy()
   const verification = useOnrampVerification()
@@ -102,12 +106,14 @@ export function CBHeadlessOnramp({
   const refetchBalanceRef = useRef(refetchBalance)
   const checkBalanceSufficientRef = useRef(checkBalanceSufficient)
   const onSuccessRef = useRef(onSuccess)
+  const onUnsupportedRef = useRef(onUnsupported)
   useEffect(() => {
     onBalanceSufficientRef.current = onBalanceSufficient
     refetchBalanceRef.current = refetchBalance
     checkBalanceSufficientRef.current = checkBalanceSufficient
     onSuccessRef.current = onSuccess
-  }, [onBalanceSufficient, refetchBalance, checkBalanceSufficient, onSuccess])
+    onUnsupportedRef.current = onUnsupported
+  }, [onBalanceSufficient, refetchBalance, checkBalanceSufficient, onSuccess, onUnsupported])
 
   // Fetch a fee estimate to display (and surface to the parent) before paying.
   useEffect(() => {
@@ -267,14 +273,23 @@ export function CBHeadlessOnramp({
       if (!eventName) return
 
       switch (eventName) {
-        case 'onramp_api.load_error':
-          setError(
-            errorMessage ||
-              'The Coinbase payment button failed to load. Please try again.'
-          )
+        case 'onramp_api.load_error': {
+          const msg = errorMessage || ''
+          const isUnsupported =
+            /not supported/i.test(msg) ||
+            /apple pay/i.test(msg) ||
+            /google pay/i.test(msg)
+          if (isUnsupported && onUnsupportedRef.current) {
+            // Payment method not available on this device — let the parent
+            // fall back to MoonPay automatically.
+            onUnsupportedRef.current()
+          } else {
+            setError(msg || 'The Coinbase payment button failed to load. Please try again.')
+          }
           setFundingState('idle')
           setPaymentLinkUrl(null)
           break
+        }
         case 'onramp_api.commit_error':
           setError(
             errorMessage || 'Your payment could not be completed. Please try again.'
@@ -380,8 +395,8 @@ export function CBHeadlessOnramp({
               title="Coinbase payment"
               src={paymentLinkUrl}
               allow="payment"
-              sandbox="allow-scripts allow-same-origin"
-              referrerPolicy="no-referrer"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
+              referrerPolicy="strict-origin-when-cross-origin"
               className="w-full"
               style={{ height: 220, border: 'none' }}
             />

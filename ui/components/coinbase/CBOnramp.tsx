@@ -34,6 +34,9 @@ interface CBOnrampProps {
   embedded?: boolean
   /** Optional content rendered just beneath the "Fund" header */
   headerSlot?: React.ReactNode
+  /** Called when the device doesn't support Apple/Google Pay so the parent
+   *  can fall back to MoonPay automatically. */
+  onUnsupported?: () => void
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
@@ -52,6 +55,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   fullWidth = false,
   embedded = false,
   headerSlot,
+  onUnsupported,
 }) => {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
 
@@ -553,6 +557,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         isWaitingForGasEstimate={isWaitingForGasEstimate}
         onQuoteCalculated={onQuoteCalculated}
         onSuccess={handleHeadlessSuccess}
+        onUnsupported={onUnsupported}
       />
     )
   }
