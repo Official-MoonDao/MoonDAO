@@ -126,9 +126,10 @@ export const FundOnrampModal: React.FC<FundOnrampModalProps> = ({
     <Modal
       id="fund-onramp-modal"
       setEnabled={setEnabled}
-      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[9999] overflow-auto bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent animate-fadeIn"
+      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex flex-col justify-start items-center z-[9999] overflow-y-auto bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent animate-fadeIn py-6 px-4"
       showCloseButton={false}
     >
+      <div className="my-auto w-full max-w-md">
       <FundOnramp
         address={address}
         selectedChain={selectedChain}
@@ -148,6 +149,7 @@ export const FundOnrampModal: React.FC<FundOnrampModalProps> = ({
         pollIntervalMs={pollIntervalMs}
         pollMaxMinutes={pollMaxMinutes}
       />
+      </div>
     </Modal>
   )
 }

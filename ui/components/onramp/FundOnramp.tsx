@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CBOnramp } from '../coinbase/CBOnramp'
 import { MoonPayOnramp } from '../moonpay/MoonPayOnramp'
 
@@ -36,10 +36,8 @@ interface FundOnrampProps {
 }
 
 /**
- * Combined fiat onramp that leads with MoonPay (recommended for everyone — no
- * account required) and offers Coinbase as a secondary option for users who
- * already have a Coinbase account. Coinbase's onramp is deprecated June 30,
- * 2026, so MoonPay is the default.
+ * Combined fiat onramp. Defaults to Coinbase (Apple/Google Pay) for US users
+ * and MoonPay for everyone else. The user can always switch manually.
  */
 export function FundOnramp({
   address,
@@ -48,7 +46,7 @@ export function FundOnramp({
   fullWidth = false,
   isWaitingForGasEstimate = false,
   onExit,
-  defaultProvider = 'moonpay',
+  defaultProvider,
   onMoonPayBeforeOpen,
   onMoonPayPurchaseSubmitted,
   checkBalanceSufficient,
@@ -61,7 +59,40 @@ export function FundOnramp({
   onCoinbaseQuoteCalculated,
   allowAmountInput = false,
 }: FundOnrampProps) {
-  const [provider, setProvider] = useState<OnrampProvider>(defaultProvider)
+  // Start with the caller's override (if any), otherwise 'moonpay' until
+  // region detection resolves.
+  const [provider, setProvider] = useState<OnrampProvider>(
+    defaultProvider ?? 'moonpay'
+  )
+  // Track whether the user has manually switched so we don't override them.
+  const userSwitchedRef = useRef(false)
+  const [isUS, setIsUS] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    // Only auto-select when the caller hasn't forced a defaultProvider.
+    if (defaultProvider) return
+    let cancelled = false
+    fetch('/api/coinbase/region')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || userSwitchedRef.current) return
+        // US → Coinbase (Apple/Google Pay); everyone else → MoonPay
+        setIsUS(data ? !!data.isUS : false)
+        setProvider(data?.isUS ? 'coinbase' : 'moonpay')
+      })
+      .catch(() => {
+        if (!cancelled) setIsUS(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [defaultProvider])
+
+  const handleSetProvider = (p: OnrampProvider) => {
+    userSwitchedRef.current = true
+    setProvider(p)
+  }
+
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
 
   // Rendered just beneath the embedded provider's "Fund Wallet" header so the
@@ -78,7 +109,7 @@ export function FundOnramp({
         <button
           type="button"
           data-testid="onramp-select-moonpay"
-          onClick={() => setProvider('moonpay')}
+          onClick={() => handleSetProvider('moonpay')}
           aria-pressed={provider === 'moonpay'}
           className={`relative flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all duration-200 ${
             provider === 'moonpay'
@@ -88,13 +119,13 @@ export function FundOnramp({
         >
           <span className="text-sm font-semibold text-white">MoonPay</span>
           <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-            Recommended
+            {isUS ? 'Card / bank transfer' : 'Recommended'}
           </span>
         </button>
         <button
           type="button"
           data-testid="onramp-select-coinbase"
-          onClick={() => setProvider('coinbase')}
+          onClick={() => handleSetProvider('coinbase')}
           aria-pressed={provider === 'coinbase'}
           className={`relative flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all duration-200 ${
             provider === 'coinbase'
@@ -103,31 +134,38 @@ export function FundOnramp({
           }`}
         >
           <span className="text-sm font-semibold text-white">Coinbase</span>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-            Have an account?
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+            {isUS ? 'Recommended' : 'Have an account?'}
           </span>
         </button>
       </div>
 
       {provider === 'coinbase' ? (
-        <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
-          <p className="text-amber-200/90 text-xs leading-relaxed">
-            <strong>Only choose Coinbase if you already have a Coinbase account.</strong> If you
-            don&apos;t, switch to{' '}
-            <button
-              type="button"
-              onClick={() => setProvider('moonpay')}
-              className="underline font-semibold text-emerald-300 hover:text-emerald-200"
-            >
-              MoonPay
-            </button>{' '}
-            — no account needed, just a debit/credit card, Apple Pay, or Google Pay.
+        isUS ? (
+          <p className="text-gray-300/80 text-xs leading-relaxed">
+            Pay with Apple Pay or Google Pay — no Coinbase account needed.
           </p>
-        </div>
+        ) : (
+          <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-3">
+            <p className="text-amber-200/90 text-xs leading-relaxed">
+              <strong>Only choose Coinbase if you already have a Coinbase account.</strong> If you
+              don&apos;t, switch to{' '}
+              <button
+                type="button"
+                onClick={() => handleSetProvider('moonpay')}
+                className="underline font-semibold text-emerald-300 hover:text-emerald-200"
+              >
+                MoonPay
+              </button>{' '}
+              — no account needed, just a debit/credit card, Apple Pay, or Google Pay.
+            </p>
+          </div>
+        )
       ) : (
         <p className="text-gray-300/80 text-xs leading-relaxed">
-          Recommended for everyone. Pay with a debit/credit card, Apple Pay, Google Pay, or bank
-          transfer — no account required.
+          {isUS
+            ? 'Pay with a debit/credit card, Apple Pay, Google Pay, or bank transfer — no account required.'
+            : 'Recommended for everyone. Pay with a debit/credit card, Apple Pay, Google Pay, or bank transfer — no account required.'}
         </p>
       )}
     </div>
