@@ -1,0 +1,562 @@
+import { XMarkIcon } from '@heroicons/react/24/outline'
+import { usePrivy } from '@privy-io/react-auth'
+import Image from 'next/image'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import useOnrampVerification from '@/lib/coinbase/useOnrampVerification'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+
+interface CBHeadlessOnrampProps {
+  address: string
+  selectedChain: any
+  ethAmount: number
+  onExit?: () => void
+  isWaitingForGasEstimate?: boolean
+  fullWidth?: boolean
+  embedded?: boolean
+  /** Optional content rendered just beneath the "Fund" header. */
+  headerSlot?: React.ReactNode
+  onQuoteCalculated?: (
+    ethAmount: number,
+    paymentSubtotal: number,
+    paymentTotal: number,
+    totalFees: number
+  ) => void
+  /** Optional: confirm the on-chain balance is now sufficient. */
+  checkBalanceSufficient?: () => Promise<boolean>
+  /** Called once funds have arrived and the flow can proceed. */
+  onBalanceSufficient?: () => void
+  /** Refetch the on-chain balance so newly arrived funds are detected. */
+  refetchBalance?: () => Promise<void>
+  /** Called after a successful purchase (e.g. to resume the parent flow). */
+  onSuccess?: () => void
+}
+
+type FundingState =
+  | 'idle'
+  | 'creating'
+  | 'ready'
+  | 'processing'
+  | 'success'
+
+const MOCK_ONRAMP = process.env.NEXT_PUBLIC_MOCK_ONRAMP === 'true'
+
+const COINBASE_TERMS_URL = 'https://www.coinbase.com/legal/guest-checkout/us'
+const COINBASE_USER_AGREEMENT_URL = 'https://www.coinbase.com/legal/user_agreement'
+const COINBASE_PRIVACY_URL = 'https://www.coinbase.com/legal/privacy'
+
+// Coinbase post-message event origins for the embedded payment link.
+function isCoinbaseOrigin(origin: string): boolean {
+  try {
+    const { hostname } = new URL(origin)
+    return hostname === 'coinbase.com' || hostname.endsWith('.coinbase.com')
+  } catch {
+    return false
+  }
+}
+
+// Pick the right guest payment method for the user's device. Apple Pay falls
+// back to a QR code on non-Safari browsers, so it's the safe web default.
+function detectPaymentMethod(): 'GUEST_CHECKOUT_APPLE_PAY' | 'GUEST_CHECKOUT_GOOGLE_PAY' {
+  if (typeof navigator === 'undefined') return 'GUEST_CHECKOUT_APPLE_PAY'
+  const ua = navigator.userAgent || ''
+  if (/android/i.test(ua)) return 'GUEST_CHECKOUT_GOOGLE_PAY'
+  return 'GUEST_CHECKOUT_APPLE_PAY'
+}
+
+export function CBHeadlessOnramp({
+  address,
+  selectedChain,
+  ethAmount,
+  onExit,
+  isWaitingForGasEstimate = false,
+  fullWidth = false,
+  embedded = false,
+  headerSlot,
+  onQuoteCalculated,
+  checkBalanceSufficient,
+  onBalanceSufficient,
+  refetchBalance,
+  onSuccess,
+}: CBHeadlessOnrampProps) {
+  const { user } = usePrivy()
+  const verification = useOnrampVerification()
+
+  const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
+  const shellChrome = embedded
+    ? 'w-full text-white'
+    : `${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`
+
+  const [fundingState, setFundingState] = useState<FundingState>('idle')
+  const [error, setError] = useState<string | null>(null)
+  const [agreed, setAgreed] = useState(false)
+  const [paymentLinkUrl, setPaymentLinkUrl] = useState<string | null>(null)
+  const [paymentTotal, setPaymentTotal] = useState<number | null>(null)
+  const [quoteLoading, setQuoteLoading] = useState(false)
+
+  const paymentMethod = useMemo(() => detectPaymentMethod(), [])
+  const payLabel = paymentMethod === 'GUEST_CHECKOUT_GOOGLE_PAY' ? 'Google Pay' : 'Apple Pay'
+
+  const onBalanceSufficientRef = useRef(onBalanceSufficient)
+  const refetchBalanceRef = useRef(refetchBalance)
+  const checkBalanceSufficientRef = useRef(checkBalanceSufficient)
+  const onSuccessRef = useRef(onSuccess)
+  useEffect(() => {
+    onBalanceSufficientRef.current = onBalanceSufficient
+    refetchBalanceRef.current = refetchBalance
+    checkBalanceSufficientRef.current = checkBalanceSufficient
+    onSuccessRef.current = onSuccess
+  }, [onBalanceSufficient, refetchBalance, checkBalanceSufficient, onSuccess])
+
+  // Fetch a fee estimate to display (and surface to the parent) before paying.
+  useEffect(() => {
+    let cancelled = false
+    const fetchEstimate = async () => {
+      if (!address || !ethAmount || ethAmount <= 0 || isWaitingForGasEstimate) {
+        return
+      }
+      setQuoteLoading(true)
+      try {
+        const priceRes = await fetch('/api/coinbase/eth-price')
+        if (!priceRes.ok) throw new Error('price')
+        const { price } = await priceRes.json()
+        if (!price || price <= 0) throw new Error('price')
+
+        const estimateUSD = ethAmount * price * 1.05
+        const quoteRes = await fetch('/api/coinbase/buy-quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentAmount: estimateUSD,
+            destinationAddress: address,
+            purchaseNetwork: 'ethereum',
+            purchaseCurrency: 'ETH',
+          }),
+        })
+        if (!quoteRes.ok) throw new Error('quote')
+        const data = await quoteRes.json()
+        const quote = data?.quote
+        const subtotal = parseFloat(quote?.payment_subtotal?.value || '0')
+        const total = parseFloat(quote?.payment_total?.value || '0')
+        if (!cancelled && total > 0) {
+          setPaymentTotal(total)
+          onQuoteCalculated?.(ethAmount, subtotal, total, total - subtotal)
+        }
+      } catch {
+        // Estimate is best-effort; the real total comes from the created order.
+      } finally {
+        if (!cancelled) setQuoteLoading(false)
+      }
+    }
+    fetchEstimate()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, ethAmount, isWaitingForGasEstimate])
+
+  const handleExit = useCallback(() => {
+    setFundingState('idle')
+    setPaymentLinkUrl(null)
+    onExit?.()
+  }, [onExit])
+
+  const handleCreateOrder = useCallback(async () => {
+    if (!verification.isReady) {
+      setError('Please verify your phone and email before continuing.')
+      return
+    }
+    if (!agreed) {
+      setError('Please accept the Coinbase guest checkout terms to continue.')
+      return
+    }
+
+    try {
+      setError(null)
+      setFundingState('creating')
+
+      const partnerUserRef = user?.id || address
+
+      const res = await fetch('/api/coinbase/create-onramp-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destinationAddress: address,
+          selectedChain: {
+            id: selectedChain?.id,
+            name: selectedChain?.name,
+          },
+          ethAmount,
+          paymentMethod,
+          email: verification.email,
+          phoneNumber: verification.phoneNumber,
+          phoneNumberVerifiedAt: verification.phoneVerifiedAt,
+          agreementAcceptedAt: new Date().toISOString(),
+          partnerUserRef,
+          domain:
+            typeof window !== 'undefined' ? window.location.host : undefined,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data?.error || 'Unable to create the Coinbase order.')
+        setFundingState('idle')
+        return
+      }
+
+      let url: string | undefined = data?.paymentLink?.url
+      if (!url) {
+        setError('Coinbase did not return a payment link. Please try again.')
+        setFundingState('idle')
+        return
+      }
+
+      const total = parseFloat(data?.order?.paymentTotal || '0')
+      if (total > 0) setPaymentTotal(total)
+
+      // Sandbox mode swaps the real payment sheet for a fake popup.
+      if (MOCK_ONRAMP) {
+        const param =
+          paymentMethod === 'GUEST_CHECKOUT_GOOGLE_PAY'
+            ? 'useGooglePaySandbox=true'
+            : 'useApplePaySandbox=true'
+        url += (url.includes('?') ? '&' : '?') + param
+      }
+
+      setPaymentLinkUrl(url)
+      setFundingState('ready')
+    } catch (err: any) {
+      setError(
+        'Failed to start the Coinbase checkout: ' +
+          (err?.message || 'Unknown error')
+      )
+      setFundingState('idle')
+    }
+  }, [
+    address,
+    agreed,
+    ethAmount,
+    paymentMethod,
+    selectedChain,
+    user?.id,
+    verification.email,
+    verification.isReady,
+    verification.phoneNumber,
+    verification.phoneVerifiedAt,
+  ])
+
+  // Listen to the embedded payment link's post-message events.
+  useEffect(() => {
+    if (fundingState !== 'ready' && fundingState !== 'processing') return
+
+    const handleMessage = async (event: MessageEvent) => {
+      if (!isCoinbaseOrigin(event.origin)) return
+
+      let payload: any = event.data
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload)
+        } catch {
+          return
+        }
+      }
+      const eventName: string | undefined = payload?.eventName
+      const errorMessage: string | undefined = payload?.data?.errorMessage
+      if (!eventName) return
+
+      switch (eventName) {
+        case 'onramp_api.load_error':
+          setError(
+            errorMessage ||
+              'The Coinbase payment button failed to load. Please try again.'
+          )
+          setFundingState('idle')
+          setPaymentLinkUrl(null)
+          break
+        case 'onramp_api.commit_error':
+          setError(
+            errorMessage || 'Your payment could not be completed. Please try again.'
+          )
+          setFundingState('ready')
+          break
+        case 'onramp_api.commit_success':
+          setError(null)
+          setFundingState('processing')
+          break
+        case 'onramp_api.polling_success':
+          setFundingState('success')
+          try {
+            await refetchBalanceRef.current?.()
+            if (checkBalanceSufficientRef.current) {
+              await checkBalanceSufficientRef.current()
+            }
+          } catch {
+            // ignore
+          }
+          onBalanceSufficientRef.current?.()
+          onSuccessRef.current?.()
+          break
+        case 'onramp_api.polling_error':
+          setError(
+            errorMessage ||
+              'There was a problem processing your transaction. Please try again.'
+          )
+          setFundingState('ready')
+          break
+        case 'onramp_api.cancel':
+          setFundingState('ready')
+          break
+        default:
+          break
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [fundingState])
+
+  // --- Success state ---
+  if (fundingState === 'success') {
+    return (
+      <div className={shellChrome}>
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <svg className="w-6 h-6 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-white">Funds on the way</h2>
+          </div>
+          <button onClick={handleExit} className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
+            <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
+          </button>
+        </div>
+        <div className="p-6">
+          <p className="text-gray-300 text-sm text-center">
+            Your purchase was successful. Your {selectedChain?.name || 'wallet'} balance will update shortly.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // --- Payment link (iframe) state ---
+  if ((fundingState === 'ready' || fundingState === 'processing') && paymentLinkUrl) {
+    return (
+      <div className={shellChrome}>
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <Image src="/coins/ETH.svg" alt="ETH" width={20} height={20} className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                {fundingState === 'processing' ? 'Processing payment' : `Pay with ${payLabel}`}
+              </h2>
+              {paymentTotal != null && (
+                <p className="text-gray-400 text-xs">Total: ${paymentTotal.toFixed(2)}</p>
+              )}
+            </div>
+          </div>
+          <button onClick={handleExit} className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
+            <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
+          </button>
+        </div>
+
+        {headerSlot}
+
+        <div className="p-6 space-y-4">
+          {fundingState === 'processing' && (
+            <div className="flex items-center justify-center space-x-2 text-gray-300">
+              <LoadingSpinner />
+              <span className="text-sm">Completing your purchase…</span>
+            </div>
+          )}
+          <div className="bg-black/20 rounded-lg border border-white/10 overflow-hidden">
+            <iframe
+              title="Coinbase payment"
+              src={paymentLinkUrl}
+              allow="payment"
+              sandbox="allow-scripts allow-same-origin"
+              referrerPolicy="no-referrer"
+              className="w-full"
+              style={{ height: 220, border: 'none' }}
+            />
+          </div>
+          <p className="text-gray-400 text-xs text-center leading-relaxed">
+            Press the {payLabel} button above to complete your purchase securely with Coinbase.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // --- Config state (quote + verification + terms) ---
+  return (
+    <div className={shellChrome}>
+      <div className="flex items-center justify-between p-6 border-b border-white/10">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+            <Image src="/coins/ETH.svg" alt="ETH" width={20} height={20} className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-white">Fund</h2>
+          </div>
+        </div>
+        <button onClick={() => onExit?.()} className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
+          <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
+        </button>
+      </div>
+
+      {headerSlot}
+
+      <div className="p-6 space-y-6">
+        {/* Amount summary */}
+        <div className="bg-black/20 rounded-lg p-4 border border-white/5 space-y-3">
+          {isWaitingForGasEstimate || quoteLoading ? (
+            <div className="flex items-center justify-center">
+              <LoadingSpinner />
+              <span className="ml-2 text-gray-400 text-sm">Getting quote…</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 text-sm">Network:</span>
+                <span className="text-white font-medium">{selectedChain?.name || 'Arbitrum'}</span>
+              </div>
+              {ethAmount > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">Amount:</span>
+                  <span className="text-white font-medium">{ethAmount.toFixed(4)} ETH</span>
+                </div>
+              )}
+              {paymentTotal != null && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">Estimated total:</span>
+                  <span className="text-white font-medium">${paymentTotal.toFixed(2)}</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Verification */}
+        <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
+          <p className="text-gray-200 font-semibold text-sm">Verify your details</p>
+          <p className="text-gray-400 text-xs leading-relaxed">
+            Coinbase Apple Pay / Google Pay checkout requires a verified US phone number and email.
+          </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <StatusDot ok={verification.hasPhone} />
+              <span className="text-gray-300">
+                Phone{verification.phoneNumber ? `: ${verification.phoneNumber}` : ''}
+              </span>
+            </div>
+            {!verification.hasPhone && (
+              <button
+                type="button"
+                onClick={verification.linkPhone}
+                className="text-xs font-semibold text-blue-300 hover:text-blue-200 underline"
+              >
+                {verification.phoneVerificationStale ? 'Re-verify' : 'Add phone'}
+              </button>
+            )}
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <StatusDot ok={verification.hasEmail} />
+              <span className="text-gray-300">
+                Email{verification.email ? `: ${verification.email}` : ''}
+              </span>
+            </div>
+            {!verification.hasEmail && (
+              <button
+                type="button"
+                onClick={verification.linkEmail}
+                className="text-xs font-semibold text-blue-300 hover:text-blue-200 underline"
+              >
+                Add email
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Terms */}
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-white/20 bg-black/30 text-blue-500 focus:ring-blue-500/50"
+          />
+          <span className="text-gray-300 text-xs leading-relaxed">
+            By continuing, I agree to Coinbase&apos;s{' '}
+            <a href={COINBASE_TERMS_URL} target="_blank" rel="noreferrer" className="underline text-blue-300 hover:text-blue-200">
+              Guest Checkout Terms
+            </a>
+            ,{' '}
+            <a href={COINBASE_USER_AGREEMENT_URL} target="_blank" rel="noreferrer" className="underline text-blue-300 hover:text-blue-200">
+              User Agreement
+            </a>
+            , and{' '}
+            <a href={COINBASE_PRIVACY_URL} target="_blank" rel="noreferrer" className="underline text-blue-300 hover:text-blue-200">
+              Privacy Policy
+            </a>
+            .
+          </span>
+        </label>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-3">
+            <p className="text-red-200 text-xs leading-relaxed">{error}</p>
+          </div>
+        )}
+
+        {/* Continue button */}
+        <PrivyWeb3Button
+          label={
+            fundingState === 'creating'
+              ? 'Preparing checkout…'
+              : `Continue to ${payLabel}`
+          }
+          showSignInLabel={false}
+          action={handleCreateOrder}
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          skipNetworkCheck={true}
+          isDisabled={
+            fundingState === 'creating' ||
+            isWaitingForGasEstimate ||
+            !verification.isReady ||
+            !agreed
+          }
+        />
+
+        {/* Secured footer */}
+        <div className="bg-black/10 rounded-lg p-4 border border-white/5">
+          <div className="flex items-center justify-center space-x-2 text-gray-400 mb-2">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+            <span className="text-xs font-medium uppercase tracking-wide">Secured by Coinbase</span>
+          </div>
+          <p className="text-gray-300 text-xs text-center leading-relaxed">
+            Pay with {payLabel} without leaving this page. Funds typically arrive within a few minutes.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StatusDot({ ok }: { ok: boolean }) {
+  return (
+    <span
+      className={`inline-block w-2.5 h-2.5 rounded-full ${
+        ok ? 'bg-emerald-400' : 'bg-gray-500'
+      }`}
+    />
+  )
+}

@@ -6,6 +6,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { arbitrum } from '@/lib/rpc/chains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import { CBHeadlessOnramp } from './CBHeadlessOnramp'
 import { CoinbaseQuoteUnavailableGuide } from './CoinbaseQuoteUnavailableGuide'
 import {
   LARGE_ONRAMP_FIAT_THRESHOLD_USD,
@@ -53,6 +54,39 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   headerSlot,
 }) => {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
+
+  // US users get the Headless (Apple Pay / Google Pay) onramp; everyone else
+  // keeps the hosted Coinbase redirect. `null` = still detecting region.
+  const [isUS, setIsUS] = useState<boolean | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/coinbase/region')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled) setIsUS(data ? !!data.isUS : false)
+      })
+      .catch(() => {
+        if (!cancelled) setIsUS(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Bridge a successful Headless purchase into the existing post-onramp flow
+  // (cache state via onBeforeNavigate, then reload with the onrampSuccess flag
+  // that callers already handle on return).
+  const handleHeadlessSuccess = useCallback(async () => {
+    try {
+      await onBeforeNavigate?.()
+    } catch (error) {
+      console.error('[CBOnramp] onBeforeNavigate (headless) failed:', error)
+    }
+    const url = new URL(window.location.href)
+    url.searchParams.set('onrampSuccess', 'true')
+    window.history.replaceState({}, '', url.toString())
+    window.location.reload()
+  }, [onBeforeNavigate])
 
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
@@ -116,6 +150,10 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   // Fetch quote on component load and calculate fees
   useEffect(() => {
     const fetchQuote = async () => {
+      // Skip while detecting region or when US (Headless handles its own quote).
+      if (isUS !== false) {
+        return
+      }
       if (!address || !debouncedEthAmount || debouncedEthAmount <= 0) {
         setIsLoadingQuote(false)
         return
@@ -292,6 +330,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     isArbitrum,
     isWaitingForGasEstimate,
     onQuoteCalculated,
+    isUS,
   ])
 
   // Map chain to network name for Coinbase QUOTE API
@@ -478,6 +517,37 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       setError('Failed to initialize payment system: ' + error.message)
       setIsLoading(false)
     }
+  }
+
+  // While detecting region, show a light loading shell to avoid flashing the
+  // hosted flow before we know whether to use the Headless onramp.
+  if (isUS === null) {
+    return (
+      <div
+        data-testid="cbonramp-modal-content"
+        className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
+      >
+        <div className="flex items-center justify-center p-10">
+          <LoadingSpinner />
+        </div>
+      </div>
+    )
+  }
+
+  // US users: Headless (Apple Pay / Google Pay) in-app checkout.
+  if (isUS) {
+    return (
+      <CBHeadlessOnramp
+        address={address}
+        selectedChain={selectedChain}
+        ethAmount={ethAmount}
+        onExit={onExit}
+        isWaitingForGasEstimate={isWaitingForGasEstimate}
+        fullWidth={fullWidth}
+        onQuoteCalculated={onQuoteCalculated}
+        onSuccess={handleHeadlessSuccess}
+      />
+    )
   }
 
   // Error state (or Coinbase quote unavailable → exchange funding guide)
