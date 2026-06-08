@@ -123,11 +123,12 @@ export default function BuyTeamListingModal({
   async function buyListing() {
     if (!account) return
 
+    const numericPrice = parseFloat(listing.price.replace(/,/g, ''))
     let price
     if (citizen) {
-      price = +listing.price
+      price = numericPrice
     } else {
-      price = +listing.price + +listing.price * 0.1 // 10% upcharge for non-citizens
+      price = numericPrice * 1.1 // 10% upcharge for non-citizens
     }
 
     setIsLoading(true)
@@ -135,7 +136,7 @@ export default function BuyTeamListingModal({
 
     try {
       // Execute the transaction
-      if (+listing.price <= 0) {
+      if (numericPrice <= 0) {
         transactionHash = 'none'
       } else if (listing.currency === 'ETH') {
         // buy with eth
@@ -165,7 +166,7 @@ export default function BuyTeamListingModal({
             ? 'https://arbiscan.io/tx/'
             : 'https://sepolia.etherscan.io/tx/'
 
-        const transactionLink = +listing.price <= 0 ? 'none' : etherscanUrl + transactionHash
+        const transactionLink = numericPrice <= 0 ? 'none' : etherscanUrl + transactionHash
 
         const shipping = Object.values(shippingInfo).join(', ')
 
@@ -179,7 +180,7 @@ export default function BuyTeamListingModal({
             email,
             item: listing.title,
             value: price,
-            originalValue: +listing.price,
+            originalValue: numericPrice,
             currency: listing.currency,
             decimals: currencyDecimals[listing.currency],
             quantity: 1,
@@ -247,7 +248,7 @@ export default function BuyTeamListingModal({
             <p id="listing-price" className="font-bold">{`${
               citizen
                 ? truncateTokenValue(listing.price, listing.currency)
-                : truncateTokenValue(+listing.price * 1.1, listing.currency)
+                : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
             } ${listing.currency}`}</p>
           </div>
         </div>

@@ -193,17 +193,17 @@ export default function TeamListing({
                 <span id="listing-price" className="text-white font-bold text-sm">
                   {`${isCitizen
                     ? truncateTokenValue(listing.price, listing.currency)
-                    : truncateTokenValue(+listing.price * 1.1, listing.currency)
+                    : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
                   } ${listing.currency}`}
                 </span>
                 {isCitizen && (
                   <span id="listing-original-price" className="text-white/30 text-xs line-through ml-1.5">
-                    {`${truncateTokenValue(+listing.price * 1.1, listing.currency)} ${listing.currency}`}
+                    {`${truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)} ${listing.currency}`}
                   </span>
                 )}
                 {!isCitizen && listing.price && (
                   <p id="listing-savings" className="text-white/40 text-xs mt-0.5">
-                    {`Save ${+listing.price * 0.1} ${listing.currency} with citizenship`}
+                    {`Save ${truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 0.1, listing.currency)} ${listing.currency} with citizenship`}
                   </p>
                 )}
               </div>
