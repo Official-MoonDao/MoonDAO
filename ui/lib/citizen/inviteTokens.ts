@@ -81,18 +81,15 @@ export async function createInvite(
 
 /**
  * Read an invite without consuming it (used for UI eligibility checks).
- * Returns the invite record if the token exists and is unredeemed, else null.
+ * Returns the invite record if the token exists and is unredeemed, null if
+ * the token is missing/expired/consumed. Throws on Redis errors so callers
+ * can distinguish transient failures from invalid invites.
  */
 export async function peekInvite(token: string): Promise<CitizenInvite | null> {
   const client = getRedis()
   if (!client || !token) return null
-  try {
-    const invite = await client.get<CitizenInvite>(tokenKey(token))
-    return invite ?? null
-  } catch (err) {
-    console.warn('[citizen-invite] peek failed:', err)
-    return null
-  }
+  const invite = await client.get<CitizenInvite>(tokenKey(token))
+  return invite ?? null
 }
 
 /**

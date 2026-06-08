@@ -326,12 +326,22 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // mint, but only if they don't already hold a citizen NFT. We only peek
     // here — the token is consumed at mint time (POST).
     if (inviteToken) {
-      const invite = await peekInvite(inviteToken)
-      if (invite === null) {
-        // Redis error or missing invite. Return 503 so the client knows this is
-        // a transient failure, not a definitive "invite is invalid."
+      let invite: CitizenInvite | null
+      try {
+        invite = await peekInvite(inviteToken)
+      } catch (err) {
+        // Redis error or other infrastructure failure. Return 503 so the client
+        // knows this is a transient failure, not a definitive "invite is invalid."
+        console.error('peekInvite failed:', err)
         return res.status(503).json({
           error: 'Unable to verify invite at this time. Please try again in a moment.',
+        })
+      }
+      if (invite === null) {
+        // Invite not found, expired, or already consumed. Return 400 so the
+        // client clears the sponsored state instead of misleading the user.
+        return res.status(400).json({
+          error: 'This invite link is invalid, expired, or has already been used.',
         })
       }
       // Invite-based eligibility responses should not be cached since they

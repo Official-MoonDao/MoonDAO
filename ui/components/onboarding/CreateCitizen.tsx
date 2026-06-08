@@ -1990,21 +1990,18 @@ export default function CreateCitizen({
       if (!res.ok) {
         const errorText = await res.text()
         console.error(errorText)
-        // For invite tokens: only keep sponsored state on transient errors (5xx),
-        // not on validation failures (4xx). Expired/used tokens return 400.
+        // For invite tokens: distinguish between transient errors (5xx) and
+        // validation failures (4xx). Invalid/expired tokens return 400.
         if (inviteToken && res.status >= 500) {
-          // Transient server error with invite - keep sponsored state
+          // Transient server error (e.g. Redis down) with invite - keep
+          // sponsored state so a valid invite isn't wrongly shown as paid.
+          console.warn('Eligibility check temporarily unavailable (5xx), keeping current state')
         } else if (inviteToken && res.status === 400) {
-          // Invite validation failed - clear sponsored state
+          // Invite validation failed (invalid/expired/used) - clear sponsored state
           setFreeMint(false)
         } else if (!inviteToken) {
           setFreeMint(false)
         }
-      } else if (res.status === 503) {
-        // Transient error (Redis unavailable for invite check); keep the current
-        // freeMint state instead of clearing it, so a valid invite isn't wrongly
-        // shown as a paid flow during a temporary service hiccup.
-        console.warn('Eligibility check temporarily unavailable (503), keeping current state')
       } else {
         const { data } = await res.json()
         if (data.eligible) {
