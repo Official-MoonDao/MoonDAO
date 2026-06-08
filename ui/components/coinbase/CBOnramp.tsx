@@ -525,8 +525,13 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     return (
       <div
         data-testid="cbonramp-modal-content"
-        className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
+        className={
+          embedded
+            ? 'w-full text-white'
+            : `${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`
+        }
       >
+        {headerSlot}
         <div className="flex items-center justify-center p-10">
           <LoadingSpinner />
         </div>
@@ -538,12 +543,14 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   if (isUS) {
     return (
       <CBHeadlessOnramp
+        embedded={embedded}
+        fullWidth={fullWidth}
+        headerSlot={headerSlot}
         address={address}
         selectedChain={selectedChain}
         ethAmount={ethAmount}
         onExit={onExit}
         isWaitingForGasEstimate={isWaitingForGasEstimate}
-        fullWidth={fullWidth}
         onQuoteCalculated={onQuoteCalculated}
         onSuccess={handleHeadlessSuccess}
       />
