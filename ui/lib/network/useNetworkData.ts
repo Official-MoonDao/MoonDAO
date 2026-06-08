@@ -117,7 +117,10 @@ export function useCitizensCount(
   const { citizenTableName } = useTableNames()
   const searchClause = buildSearchClause(search)
   const excludeCondition = buildExcludeIdsCondition(BLOCKED_CITIZENS)
-  const whereClause = appendToWhereClause(searchClause, excludeCondition)
+  const whereClause = appendToWhereClause(
+    appendToWhereClause(searchClause, excludeCondition),
+    "view != ''"
+  )
   const statement = citizenTableName
     ? `SELECT COUNT(*) as count FROM ${citizenTableName} ${whereClause}`
     : null
@@ -194,7 +197,10 @@ export function useCitizens(options: UseNetworkDataOptions = {}): NetworkDataRes
 
   const searchClause = buildSearchClause(search)
   const excludeCondition = buildExcludeIdsCondition(BLOCKED_CITIZENS)
-  const whereClause = appendToWhereClause(searchClause, excludeCondition)
+  const whereClause = appendToWhereClause(
+    appendToWhereClause(searchClause, excludeCondition),
+    "view != ''"
+  )
   const paginationClause = buildPaginationClause(page, pageSize)
   const statement = citizenTableName
     ? `SELECT * FROM ${citizenTableName} ${whereClause} ORDER BY id DESC ${paginationClause}`
