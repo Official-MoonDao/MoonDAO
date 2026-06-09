@@ -204,6 +204,7 @@ export default function DePrizePlay() {
   const [depositAmount, setDepositAmount] = useState('0.01')
   const [outcomes, setOutcomes] = useState<Outcome[]>(emptyOutcomes)
   const [oddsHistory, setOddsHistory] = useState<OddsSample[]>([])
+  const [sellQuotes, setSellQuotes] = useState<Map<number, number>>(new Map())
   const [conditionId, setConditionId] = useState<string | undefined>()
   const [stage, setStage] = useState<number | undefined>()
   const [feePct, setFeePct] = useState<number | undefined>()
@@ -483,6 +484,48 @@ export default function DePrizePlay() {
     loadMarket()
     setTimeout(() => loadMarket(), 2500)
   }, [loadMarket])
+
+  // Sell-out quote: for each outcome the user holds, compute the ETH they'd
+  // receive by selling their full position right now (calcNetCost with negative
+  // amounts returns negative collateral, i.e. what the LMSR pays back).
+  useEffect(() => {
+    if (!lmsr) return
+    const held = outcomes.filter(
+      (o) => Number.isFinite(o.balance) && o.balance > 0
+    )
+    if (!held.length) {
+      setSellQuotes(new Map())
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      const entries = await Promise.all(
+        held.map(async (o) => {
+          try {
+            const balWei = BigInt(Math.floor(o.balance * 1e18))
+            const amounts = Array.from({ length: MAX_OUTCOMES }, (_, j) =>
+              j === o.index ? -balWei : 0n
+            )
+            const net = await rpcRead<bigint>({
+              contract: lmsr,
+              method: 'calcNetCost' as string,
+              params: [amounts],
+            }) // negative — collateral returned
+            return [o.index, Number(-net) / Number(UNIT)] as [number, number]
+          } catch {
+            return null
+          }
+        })
+      )
+      if (cancelled) return
+      setSellQuotes(
+        new Map(entries.filter((e): e is [number, number] => e !== null))
+      )
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [lmsr, outcomes])
 
   // Inverse of the LMSR cost curve: how many outcome tokens does `targetWei`
   // of collateral buy? calcNetCost is monotonic in quantity, so binary search.
@@ -1123,7 +1166,7 @@ export default function DePrizePlay() {
                           </p>
                           {holding && (
                             <p className="text-gray-500 text-xs mt-0.5">
-                              You'd get ≈ {fmt(o.balance)} ETH if this wins
+                              Wins: ≈ {fmt(o.balance)} ETH
                             </p>
                           )}
                         </div>
@@ -1141,14 +1184,25 @@ export default function DePrizePlay() {
                           Bet
                         </StandardButton>
                         {holding && (
-                          <StandardButton
-                            onClick={() => sellAll(o.index)}
-                            disabled={busy || isClosed || !userAddress}
-                            className="rounded-full"
-                            backgroundColor="bg-moon-orange"
-                          >
-                            Cash out
-                          </StandardButton>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <StandardButton
+                              onClick={() => sellAll(o.index)}
+                              disabled={busy || isClosed || !userAddress}
+                              className="rounded-full"
+                              backgroundColor="bg-moon-orange"
+                            >
+                              Cash out
+                            </StandardButton>
+                            {sellQuotes.has(o.index) ? (
+                              <span className="text-gray-400 text-[11px]">
+                                ≈ {fmt(sellQuotes.get(o.index)!)} ETH now
+                              </span>
+                            ) : (
+                              <span className="text-gray-600 text-[11px]">
+                                quoting…
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                     )
