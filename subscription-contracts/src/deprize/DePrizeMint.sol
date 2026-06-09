@@ -83,6 +83,8 @@ contract DePrizeMint is
     error MarketSlotMismatch(uint256 slots, uint256 teams);
     error MarketConditionMismatch(bytes32 marketCondition, bytes32 registryCondition);
     error UnexpectedERC1155();
+    error NoOutcomeTokensReceived();
+    error OutcomeTokenAmountMismatch(uint256 expected, uint256 received);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -187,6 +189,16 @@ contract DePrizeMint is
         market_.updateCumulativeTWAP();
         market_.trade(amounts, int256(cost));
         _inBet = false;
+
+        // Verify that outcome tokens were actually received and match the expected amount.
+        if (_rcvIds.length == 0) revert NoOutcomeTokensReceived();
+        uint256 totalReceived;
+        for (uint256 i = 0; i < _rcvValues.length; i++) {
+            totalReceived += _rcvValues[i];
+        }
+        if (totalReceived != outcomeTokenAmount) {
+            revert OutcomeTokenAmountMismatch(outcomeTokenAmount, totalReceived);
+        }
 
         // Defensive: sweep any collateral the trade didn't consume back to ETH so it
         // is returned to the bettor rather than stranded in the router.

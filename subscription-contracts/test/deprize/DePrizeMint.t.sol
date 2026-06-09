@@ -481,12 +481,11 @@ contract DePrizeMintTest is Test {
     }
 
     function testBetWithNoMintedTokens() public {
-        // Market mints nothing: the forward step's empty-buffer early return is taken.
+        // Market mints nothing: should revert with NoOutcomeTokensReceived.
         market.setSkipMint(true);
         vm.prank(bettor);
+        vm.expectRevert(DePrizeMint.NoOutcomeTokensReceived.selector);
         mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
-        assertEq(ctf.balanceOf(bettor, _positionId(0)), 0, "no tokens minted");
-        assertEq(address(mint).balance, 0, "no stuck ETH");
     }
 
     function testBetRevertsNonPositiveCost() public {
