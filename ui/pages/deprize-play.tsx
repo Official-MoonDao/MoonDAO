@@ -205,6 +205,7 @@ export default function DePrizePlay() {
   const [outcomes, setOutcomes] = useState<Outcome[]>(emptyOutcomes)
   const [oddsHistory, setOddsHistory] = useState<OddsSample[]>([])
   const [sellQuotes, setSellQuotes] = useState<Map<number, number>>(new Map())
+  const [costBasis, setCostBasis] = useState<Record<number, number>>({})
   const [conditionId, setConditionId] = useState<string | undefined>()
   const [stage, setStage] = useState<number | undefined>()
   const [feePct, setFeePct] = useState<number | undefined>()
@@ -484,6 +485,78 @@ export default function DePrizePlay() {
     loadMarket()
     setTimeout(() => loadMarket(), 2500)
   }, [loadMarket])
+
+  // Cost basis (what the user has bet per outcome) — there's no on-chain record
+  // of it, so we track it client-side to show profit. Per market + wallet.
+  const costStorageKey = useMemo(
+    () =>
+      lmsrAddress && userAddress
+        ? `deprize:costBasis:v1:${lmsrAddress}:${userAddress}`
+        : null,
+    [lmsrAddress, userAddress]
+  )
+
+  useEffect(() => {
+    if (!costStorageKey || typeof window === 'undefined') {
+      setCostBasis({})
+      return
+    }
+    try {
+      const raw = window.localStorage.getItem(costStorageKey)
+      setCostBasis(raw ? (JSON.parse(raw) as Record<number, number>) : {})
+    } catch {
+      setCostBasis({})
+    }
+  }, [costStorageKey])
+
+  const persistCostBasis = useCallback(
+    (next: Record<number, number>) => {
+      if (costStorageKey && typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(costStorageKey, JSON.stringify(next))
+        } catch {
+          /* private mode / quota — profit just won't persist */
+        }
+      }
+    },
+    [costStorageKey]
+  )
+
+  const addCostBasis = useCallback(
+    (index: number, deltaEth: number) => {
+      setCostBasis((prev) => {
+        const next = {
+          ...prev,
+          [index]: Math.max(0, (prev[index] ?? 0) + deltaEth),
+        }
+        persistCostBasis(next)
+        return next
+      })
+    },
+    [persistCostBasis]
+  )
+
+  const resetCostBasis = useCallback(
+    (index: number) => {
+      setCostBasis((prev) => {
+        const next = { ...prev, [index]: 0 }
+        persistCostBasis(next)
+        return next
+      })
+    },
+    [persistCostBasis]
+  )
+
+  const clearCostBasis = useCallback(() => {
+    setCostBasis({})
+    if (costStorageKey && typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(costStorageKey)
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [costStorageKey])
 
   // Sell-out quote: for each outcome the user holds, compute the ETH they'd
   // receive by selling their full position right now (calcNetCost with negative
@@ -796,6 +869,7 @@ export default function DePrizePlay() {
       )
       toast.dismiss('trade')
       const qtyNum = Number(qty) / Number(UNIT)
+      addCostBasis(index, Number(cost) / Number(UNIT))
       toast.success(
         `Bet ${fmt(Number(cost) / Number(UNIT))} ETH on outcome #${
           index + 1
@@ -866,6 +940,7 @@ export default function DePrizePlay() {
         })
       )
       toast.dismiss('sell')
+      resetCostBasis(index)
       toast.success(
         `Cashed out outcome #${index + 1} for ≈ ${fmt(
           Number(-net) / Number(UNIT)
@@ -900,6 +975,7 @@ export default function DePrizePlay() {
           params: [wethAddress, ZERO_BYTES32, conditionId, indexSets],
         })
       )
+      clearCostBasis()
       toast.success('Winnings claimed.', { style: toastStyle })
       refreshSoon()
     } catch (err: any) {
@@ -1138,70 +1214,118 @@ export default function DePrizePlay() {
                 {/* Outcomes */}
                 <div className="flex flex-col gap-3">
                   {outcomes.map((o) => {
-                    const holding =
-                      Number.isFinite(o.balance) && o.balance > 0
+                    const holding = Number.isFinite(o.balance) && o.balance > 0
+                    const color = OUTCOME_COLORS[o.index % OUTCOME_COLORS.length]
+                    const valueNow = sellQuotes.get(o.index)
+                    const invested = costBasis[o.index] ?? 0
+                    const pnl =
+                      valueNow !== undefined && invested > 0
+                        ? valueNow - invested
+                        : undefined
                     return (
                       <div
                         key={o.index}
-                        className="p-4 rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10 flex items-center gap-4 flex-wrap"
+                        className="p-4 rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10"
                       >
-                        {/* Chance (leads, Polymarket-style) */}
-                        <div className="text-center min-w-[60px]">
-                          <p className="text-2xl font-bold text-white leading-none">
-                            {Number.isNaN(o.probability)
-                              ? loading
-                                ? '…'
-                                : '—'
-                              : `${fmt(o.probability, 0)}%`}
-                          </p>
-                          <p className="text-gray-500 text-[10px] mt-1">chance</p>
-                        </div>
-                        {/* Outcome + position */}
-                        <div className="flex-1 min-w-[150px]">
-                          <p className="text-white font-semibold">
-                            Outcome #{o.index + 1}
-                          </p>
-                          <p className="text-gray-400 text-xs mt-0.5">
-                            Tap Bet to see your exact payout
-                          </p>
-                          {holding && (
-                            <p className="text-gray-500 text-xs mt-0.5">
-                              Wins: ≈ {fmt(o.balance)} ETH
+                        {/* Top row: chance · name · actions */}
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="flex items-center gap-3 min-w-[110px]">
+                            <span
+                              className="inline-block w-2.5 h-8 rounded-full shrink-0"
+                              style={{ background: color }}
+                            />
+                            <div>
+                              <p className="text-2xl font-bold text-white leading-none">
+                                {Number.isNaN(o.probability)
+                                  ? loading
+                                    ? '…'
+                                    : '—'
+                                  : `${fmt(o.probability, 0)}%`}
+                              </p>
+                              <p className="text-gray-500 text-[10px] mt-1">
+                                chance
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex-1 min-w-[130px]">
+                            <p className="text-white font-semibold">
+                              Outcome #{o.index + 1}
                             </p>
-                          )}
-                        </div>
-                        {/* Actions */}
-                        <StandardButton
-                          onClick={() => {
-                            setBetAmount('')
-                            setBetQuote(null)
-                            setBetIndex(o.index)
-                          }}
-                          disabled={busy || isClosed || !userAddress}
-                          className="rounded-full"
-                          backgroundColor="bg-moon-green"
-                        >
-                          Bet
-                        </StandardButton>
-                        {holding && (
-                          <div className="flex flex-col items-center gap-0.5">
+                            <p className="text-gray-400 text-xs mt-0.5">
+                              {holding
+                                ? 'You have a position'
+                                : 'Tap Bet to see your payout'}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap">
                             <StandardButton
-                              onClick={() => sellAll(o.index)}
+                              onClick={() => {
+                                setBetAmount('')
+                                setBetQuote(null)
+                                setBetIndex(o.index)
+                              }}
                               disabled={busy || isClosed || !userAddress}
                               className="rounded-full"
-                              backgroundColor="bg-moon-orange"
+                              backgroundColor="bg-moon-green"
                             >
-                              Cash out
+                              Bet
                             </StandardButton>
-                            {sellQuotes.has(o.index) ? (
-                              <span className="text-gray-400 text-[11px]">
-                                ≈ {fmt(sellQuotes.get(o.index)!)} ETH now
-                              </span>
-                            ) : (
-                              <span className="text-gray-600 text-[11px]">
-                                quoting…
-                              </span>
+                            {holding && (
+                              <StandardButton
+                                onClick={() => sellAll(o.index)}
+                                disabled={busy || isClosed || !userAddress}
+                                className="rounded-full"
+                                backgroundColor="bg-moon-orange"
+                              >
+                                {valueNow !== undefined
+                                  ? `Cash out ≈ ${fmt(valueNow)} ETH`
+                                  : 'Cash out'}
+                              </StandardButton>
                             )}
+                          </div>
+                        </div>
+
+                        {/* Position summary */}
+                        {holding && (
+                          <div className="mt-3 grid grid-cols-3 gap-2">
+                            <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
+                              <p className="text-[10px] text-gray-500">
+                                Cash out now
+                              </p>
+                              <p className="text-sm font-semibold text-white">
+                                {valueNow !== undefined
+                                  ? `${fmt(valueNow)} ETH`
+                                  : '…'}
+                              </p>
+                            </div>
+                            <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
+                              <p className="text-[10px] text-gray-500">
+                                If this wins
+                              </p>
+                              <p className="text-sm font-semibold text-moon-green">
+                                {fmt(o.balance)} ETH
+                              </p>
+                            </div>
+                            <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
+                              <p className="text-[10px] text-gray-500">
+                                Profit so far
+                              </p>
+                              <p
+                                className={`text-sm font-semibold ${
+                                  pnl === undefined
+                                    ? 'text-gray-400'
+                                    : pnl >= 0
+                                    ? 'text-moon-green'
+                                    : 'text-red-400'
+                                }`}
+                              >
+                                {pnl === undefined
+                                  ? '—'
+                                  : `${pnl >= 0 ? '+' : ''}${fmt(pnl)} ETH`}
+                              </p>
+                            </div>
                           </div>
                         )}
                       </div>
