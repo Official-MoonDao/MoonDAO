@@ -430,6 +430,8 @@ export function CBHeadlessOnramp({
             </div>
           )}
           <div className="bg-black/20 rounded-lg border border-white/10 overflow-hidden">
+            {/* Safari renders just the Apple Pay button (short); other browsers
+                render a full QR-code screen that needs much more height. */}
             <iframe
               title="Coinbase payment"
               src={paymentLinkUrl}
@@ -437,7 +439,11 @@ export function CBHeadlessOnramp({
               sandbox="allow-scripts allow-same-origin"
               referrerPolicy="no-referrer"
               className="w-full"
-              style={{ height: 220, border: 'none' }}
+              style={{
+                height: nativeApplePay ? 220 : 520,
+                maxHeight: '60vh',
+                border: 'none',
+              }}
             />
           </div>
           <p className="text-gray-400 text-xs text-center leading-relaxed">
