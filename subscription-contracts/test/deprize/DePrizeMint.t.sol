@@ -472,12 +472,11 @@ contract DePrizeMintTest is Test {
         assertEq(balBefore - bettor.balance, slice + cost - underpull, "residual refunded");
     }
 
-    function testResidualSweepLeaksStrayWeth() public {
-        // PoC: the residual-collateral sweep reads the router's ABSOLUTE WETH balance
-        // instead of this bet's own unconsumed collateral. Any WETH already sitting in
-        // the router (a donation, or dust an operator/future-upgrade parked there) is
-        // therefore unwrapped and refunded to whoever bets next, even though it has
-        // nothing to do with their trade.
+    function testResidualSweepIgnoresStrayWeth() public {
+        // The residual-collateral sweep must be scoped to THIS bet's own unconsumed
+        // collateral, not the router's absolute WETH balance. WETH already sitting in
+        // the router (a donation, dust, or balance a future upgrade/operator parked
+        // there) must NOT be swept into the bettor's refund.
         address donor = address(0xD0E);
         vm.deal(donor, 1 ether);
         vm.startPrank(donor);
@@ -488,15 +487,20 @@ contract DePrizeMintTest is Test {
 
         uint256 qty = 1 ether; // cost (incl 1% fee) = 0.505 ETH
         uint256 value = 1 ether; // slice 0.05, budget 0.95
+        uint256 outcomeCost = (qty * PRICE) / 1e18;
+        uint256 cost = outcomeCost + (outcomeCost * 1e16) / 1e18; // 0.505
+        uint256 slice = value / 20;
         uint256 balBefore = bettor.balance;
 
         vm.prank(bettor);
         mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
 
-        // The unrelated 1 WETH is drained out of the router ...
-        assertEq(weth.balanceOf(address(mint)), 0, "stray WETH swept out of the router");
-        // ... and handed to the bettor: a 1 ETH bet leaves them RICHER than they began.
-        assertGt(bettor.balance, balBefore, "bettor pockets the stray WETH");
+        // The stray 1 WETH is untouched by the bet ...
+        assertEq(weth.balanceOf(address(mint)), 1 ether, "stray WETH left in the router");
+        assertEq(address(mint).balance, 0, "no stuck ETH");
+        // ... and the bettor only ever pays its own slice + cost (no windfall, no loss).
+        assertEq(balBefore - bettor.balance, slice + cost, "bettor pays exactly slice + cost");
+        assertEq(ctf.balanceOf(bettor, _positionId(0)), qty, "outcome tokens delivered");
     }
 
     function testBetDeliversViaSingleTransfer() public {

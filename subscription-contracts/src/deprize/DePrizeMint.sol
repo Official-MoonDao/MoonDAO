@@ -183,6 +183,7 @@ contract DePrizeMint is
         //    make the market (not this router) the trader, so collateral/outcome-token
         //    flows would be misattributed. Minted ERC-1155 tokens land on this contract
         //    and are captured by the receiver hooks below.
+        uint256 wethBefore = weth.balanceOf(address(this));
         weth.deposit{value: cost}();
         weth.approve(market, cost);
         _inBet = true;
@@ -201,8 +202,10 @@ contract DePrizeMint is
         }
 
         // Defensive: sweep any collateral the trade didn't consume back to ETH so it
-        // is returned to the bettor rather than stranded in the router.
-        uint256 residualWeth = weth.balanceOf(address(this));
+        // is returned to the bettor rather than stranded in the router. Scope this to
+        // THIS bet's own collateral (the post-trade balance net of any pre-existing
+        // balance) so unrelated WETH parked in the router is never swept into a refund.
+        uint256 residualWeth = weth.balanceOf(address(this)) - wethBefore;
         if (residualWeth > 0) {
             weth.approve(market, 0);
             weth.withdraw(residualWeth);
