@@ -172,6 +172,14 @@ export function CBHeadlessOnramp({
     onExit?.()
   }, [onExit])
 
+  // Called when the user acknowledges the post-purchase confirmation screen.
+  // Deferring these until the user clicks lets them actually see the success
+  // state before the modal closes / onboarding advances.
+  const handleSuccessAck = useCallback(() => {
+    onBalanceSufficientRef.current?.()
+    onSuccessRef.current?.()
+  }, [])
+
   const handleCreateOrder = useCallback(async () => {
     if (!verification.isReady) {
       setError('Please verify your phone and email before continuing.')
@@ -334,8 +342,8 @@ export function CBHeadlessOnramp({
           } catch {
             // ignore
           }
-          onBalanceSufficientRef.current?.()
-          onSuccessRef.current?.()
+          // onBalanceSufficient / onSuccess are deferred to handleSuccessAck so
+          // the confirmation screen stays up until the user acknowledges it.
           break
         case 'onramp_api.polling_error':
           setError(
@@ -369,14 +377,21 @@ export function CBHeadlessOnramp({
             </div>
             <h2 className="text-lg font-semibold text-white">Funds on the way</h2>
           </div>
-          <button onClick={handleExit} className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
+          <button onClick={handleSuccessAck} className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
             <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
           </button>
         </div>
-        <div className="p-6">
+        <div className="p-6 space-y-5">
           <p className="text-gray-300 text-sm text-center">
-            Your purchase was successful. Your {selectedChain?.name || 'wallet'} balance will update shortly.
+            Your purchase was successful. Your {selectedChain?.name || 'wallet'} balance will
+            update shortly — funds typically arrive within a few minutes.
           </p>
+          <button
+            onClick={handleSuccessAck}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:opacity-90 transition-opacity duration-200"
+          >
+            Continue
+          </button>
         </div>
       </div>
     )
