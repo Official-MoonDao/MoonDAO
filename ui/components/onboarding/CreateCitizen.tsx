@@ -1278,8 +1278,9 @@ export default function CreateCitizen({
     // For paid mints, the user may have just signed in at this step, so the
     // gas-estimation effect may not have run yet. Estimate inline and use the
     // returned value rather than erroring out and forcing a retry.
+    let gasToUse = BigInt(0)
     if (!freeMint) {
-      let gasToUse = estimatedGas
+      gasToUse = estimatedGas ?? BigInt(0)
       if (!gasToUse || gasToUse === BigInt(0)) {
         gasToUse = (await estimateMintGas()) ?? BigInt(0)
       }
@@ -1303,16 +1304,25 @@ export default function CreateCitizen({
         params: [address, 365 * 24 * 60 * 60],
       })
 
-      const totalCost = calculateTotalCost(cost, gasToUse, effectiveGasPrice, isCrossChain)
+      // Balance check only applies to paid mints; sponsored mints cost the
+      // user nothing and may not have a gas price loaded at all.
+      if (!freeMint) {
+        const totalCost = calculateTotalCost(
+          cost,
+          gasToUse,
+          effectiveGasPrice ?? BigInt(0),
+          isCrossChain
+        )
 
-      if (!freeMint && +(nativeBalance ?? '0') < totalCost) {
-        const shortfall = totalCost - +(nativeBalance ?? '0')
-        const requiredAmount = shortfall * 1.15
+        if (+(nativeBalance ?? '0') < totalCost) {
+          const shortfall = totalCost - +(nativeBalance ?? '0')
+          const requiredAmount = shortfall * 1.15
 
-        setRequiredEthAmount(requiredAmount)
-        setOnrampModalOpen(true)
-        setIsLoadingMint(false)
-        return
+          setRequiredEthAmount(requiredAmount)
+          setOnrampModalOpen(true)
+          setIsLoadingMint(false)
+          return
+        }
       }
 
       // Upload to IPFS
