@@ -394,7 +394,7 @@ export function CBHeadlessOnramp({
             <iframe
               title="Coinbase payment"
               src={paymentLinkUrl}
-              allow="payment"
+              allow="payment *; camera *; microphone *"
               referrerPolicy="strict-origin-when-cross-origin"
               className="w-full"
               style={{ height: 220, border: 'none' }}
