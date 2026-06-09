@@ -58,6 +58,9 @@ contract DePrizeMint is
     uint256[] private _rcvIds;
     uint256[] private _rcvValues;
 
+    /// @dev Storage gap for future upgrades (50 slots - 8 used = 42).
+    uint256[42] private __gap;
+
     event MarketSet(uint256 indexed deprizeId, address indexed market);
     event Bet(
         uint256 indexed deprizeId,
