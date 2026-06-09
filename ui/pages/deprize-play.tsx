@@ -12,6 +12,7 @@ import {
   DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -22,6 +23,7 @@ import {
   sendAndConfirmTransaction,
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -31,11 +33,39 @@ import Head from '@/components/layout/Head'
 import Modal from '@/components/layout/Modal'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
+import type { OddsSample } from '@/components/deprize/OddsHistoryChart'
+
+// Charting lib touches window; load it client-side only to avoid SSR mismatch.
+const OddsHistoryChart = dynamic(
+  () => import('@/components/deprize/OddsHistoryChart'),
+  { ssr: false }
+)
+
+// Per-outcome line colors (also used as accents elsewhere if needed).
+const OUTCOME_COLORS = [
+  '#22c55e',
+  '#3b82f6',
+  '#a855f7',
+  '#f59e0b',
+  '#ef4444',
+  '#06b6d4',
+]
+
+// Don't record odds samples more often than this (live poll + post-trade
+// refreshes would otherwise spam near-identical points).
+const ODDS_SAMPLE_MIN_MS = 8000
+const ODDS_HISTORY_MAX = 1000
+const ODDS_POLL_MS = 30000
 
 const ZERO_BYTES32 =
   '0x0000000000000000000000000000000000000000000000000000000000000000'
 const UNIT = 10n ** BigInt(COLLATERAL_DECIMALS)
 const MAX_UINT256 = (1n << 256n) - 1n
+
+// Keep a little native ETH back for gas when auto-wrapping a bet (wrap + approve
+// + trade is ~3 txs). Used both to gate the UI and guard the wrap in buy().
+const GAS_RESERVE_WEI = 10n ** 15n // 0.001 ETH
+const GAS_RESERVE_ETH = Number(GAS_RESERVE_WEI) / 1e18
 
 // Dedicated read client with RPC batching DISABLED (maxBatchSize: 1). Batching is
 // broken in this thirdweb/viem version: when several eth_call results come back
@@ -173,10 +203,12 @@ export default function DePrizePlay() {
   const [betAmount, setBetAmount] = useState('')
   const [depositAmount, setDepositAmount] = useState('0.01')
   const [outcomes, setOutcomes] = useState<Outcome[]>(emptyOutcomes)
+  const [oddsHistory, setOddsHistory] = useState<OddsSample[]>([])
   const [conditionId, setConditionId] = useState<string | undefined>()
   const [stage, setStage] = useState<number | undefined>()
   const [feePct, setFeePct] = useState<number | undefined>()
   const [wethBalance, setWethBalance] = useState<number | undefined>()
+  const [nativeBalance, setNativeBalance] = useState<number | undefined>()
   const [ctfApproved, setCtfApproved] = useState<boolean | undefined>()
   const [loadError, setLoadError] = useState<string | undefined>()
   const [loading, setLoading] = useState(false)
@@ -245,6 +277,51 @@ export default function DePrizePlay() {
   const depositAmountWei = useMemo(() => toWei(depositAmount), [depositAmount])
   const betAmountNum = Number(betAmountWei) / Number(UNIT)
 
+  // ---- Live odds history (Polymarket-style) ----
+  // Persisted per-market in localStorage so the chart survives reloads and
+  // accumulates over time even though there's no on-chain price series.
+  const oddsStorageKey = useMemo(
+    () => (lmsrAddress ? `deprize:oddsHistory:v1:${lmsrAddress}` : null),
+    [lmsrAddress]
+  )
+
+  useEffect(() => {
+    if (!oddsStorageKey || typeof window === 'undefined') return
+    try {
+      const raw = window.localStorage.getItem(oddsStorageKey)
+      setOddsHistory(raw ? (JSON.parse(raw) as OddsSample[]) : [])
+    } catch {
+      setOddsHistory([])
+    }
+  }, [oddsStorageKey])
+
+  const recordOddsSample = useCallback(
+    (probs: number[]) => {
+      if (!probs.length || probs.some((p) => !Number.isFinite(p))) return
+      setOddsHistory((prev) => {
+        const last = prev[prev.length - 1]
+        const now = Date.now()
+        if (last && now - last.t < ODDS_SAMPLE_MIN_MS) {
+          // Too soon since the last point: skip unless the odds actually moved
+          // (e.g. a fresh trade), so we capture real changes immediately
+          // without piling up near-identical points from the live poll.
+          const moved = probs.some((p, i) => Math.abs(p - last.p[i]) > 0.05)
+          if (!moved) return prev
+        }
+        const next = [...prev, { t: now, p: probs }].slice(-ODDS_HISTORY_MAX)
+        if (oddsStorageKey && typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem(oddsStorageKey, JSON.stringify(next))
+          } catch {
+            /* quota / private mode — chart just won't persist */
+          }
+        }
+        return next
+      })
+    },
+    [oddsStorageKey]
+  )
+
   const loadMarket = useCallback(async () => {
     if (!lmsr || !ctf || !weth) return
     setLoading(true)
@@ -286,7 +363,7 @@ export default function DePrizePlay() {
       const { conditionId: cond, positionIds } = staticRef.current
 
       // 2) Dynamic data, concurrency-limited under the hood (rpcRead).
-      const [stg, prices, balances, wb, approved] = await Promise.all([
+      const [stg, prices, balances, wb, nb, approved] = await Promise.all([
         rpcRead({ contract: lmsr, method: 'stage' as string, params: [] })
           .then((v) => Number(v))
           .catch(() => undefined),
@@ -324,6 +401,13 @@ export default function DePrizePlay() {
               .catch(() => undefined)
           : Promise.resolve(undefined),
         userAddress
+          ? eth_getBalance(getRpcClient({ client: readClient, chain: READ_CHAIN }), {
+              address: userAddress,
+            })
+              .then((b) => Number(b) / Number(UNIT))
+              .catch(() => undefined)
+          : Promise.resolve(undefined),
+        userAddress
           ? rpcRead({
               contract: ctf,
               method: 'isApprovedForAll' as string,
@@ -336,7 +420,9 @@ export default function DePrizePlay() {
 
       setStage(stg)
       setWethBalance(wb)
+      setNativeBalance(nb)
       setCtfApproved(approved)
+      recordOddsSample(prices as number[])
       setOutcomes(
         positionIds.map((pid, i) => ({
           index: i,
@@ -353,11 +439,43 @@ export default function DePrizePlay() {
     } finally {
       setLoading(false)
     }
-  }, [lmsr, ctf, weth, userAddress, wethAddress, lmsrAddress])
+  }, [lmsr, ctf, weth, userAddress, wethAddress, lmsrAddress, recordOddsSample])
 
   useEffect(() => {
     loadMarket()
   }, [loadMarket])
+
+  // Live poll for the odds chart: a cheap read of just the marginal prices on a
+  // timer (no spinner, no balance reads) so the chart keeps ticking while the
+  // page is open. Pauses when the tab is hidden to avoid wasting RPC.
+  useEffect(() => {
+    if (!lmsr) return
+    let stopped = false
+    const tick = async () => {
+      if (stopped || (typeof document !== 'undefined' && document.hidden)) return
+      try {
+        const prices = await Promise.all(
+          Array.from({ length: MAX_OUTCOMES }, (_, i) =>
+            rpcRead({
+              contract: lmsr,
+              method: 'calcMarginalPrice' as string,
+              params: [i],
+            })
+              .then((p) => (Number(p as bigint) / 2 ** 64) * 100)
+              .catch(() => NaN)
+          )
+        )
+        recordOddsSample(prices)
+      } catch {
+        /* transient RPC error — next tick will retry */
+      }
+    }
+    const id = setInterval(tick, ODDS_POLL_MS)
+    return () => {
+      stopped = true
+      clearInterval(id)
+    }
+  }, [lmsr, recordOddsSample])
 
   // The just-mined block can lag the RPC briefly; refresh now and once more
   // shortly after so balances/odds reflect the tx without a manual refresh.
@@ -567,23 +685,42 @@ export default function DePrizePlay() {
       const cost = net + fee
       toast.dismiss('quote')
 
-      // Require deposited WETH; prompt to add funds if short (no silent wrap).
-      const balWei = await rpcRead<bigint>({
+      // Bettors hold native ETH, not WETH. Cover the bet from any already-wrapped
+      // WETH and auto-wrap just the shortfall (plus a little headroom for fee/
+      // price drift) from native ETH as part of placing the bet.
+      const buffered = (cost * 101n) / 100n
+      let balWei = await rpcRead<bigint>({
         contract: weth,
         method: 'balanceOf' as string,
         params: [account.address],
       })
-      if (balWei < cost) {
-        toast.error('Not enough funds — add more to place this bet.', {
-          style: toastStyle,
-        })
-        setBetIndex(null)
-        setAddFundsOpen(true)
-        return
+      if (balWei < buffered) {
+        const toWrap = buffered - balWei
+        const nativeWei = await eth_getBalance(
+          getRpcClient({ client: readClient, chain: READ_CHAIN }),
+          { address: account.address }
+        )
+        if (nativeWei < toWrap + GAS_RESERVE_WEI) {
+          toast.error(
+            'Not enough ETH for this bet (including gas). Try a smaller amount.',
+            { style: toastStyle }
+          )
+          return
+        }
+        toast.loading('Wrapping ETH…', { id: 'wrap', style: toastStyle })
+        await sendTx(
+          prepareContractCall({
+            contract: wethW,
+            method: 'deposit' as string,
+            params: [],
+            value: toWrap,
+          })
+        )
+        toast.dismiss('wrap')
+        balWei += toWrap
       }
       // Cap the slippage limit at the available balance so it can't revert on
       // transfer if the bet is near the full balance.
-      const buffered = (cost * 101n) / 100n
       const limit = buffered > balWei ? balWei : buffered
 
       let allowance = 0n
@@ -785,8 +922,13 @@ export default function DePrizePlay() {
   }
 
   const isClosed = stage === MarketStage.Closed
+  // Spendable = already-wrapped WETH + native ETH (we auto-wrap at bet time),
+  // holding a little native back for gas.
+  const spendable =
+    (wethBalance ?? 0) + Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
+  const balanceKnown = wethBalance !== undefined || nativeBalance !== undefined
   const insufficient =
-    wethBalance !== undefined && betAmountNum > 0 && betAmountNum > wethBalance
+    balanceKnown && betAmountNum > 0 && betAmountNum > spendable + 1e-12
   const betOutcome = betIndex !== null ? outcomes[betIndex] : undefined
   const betMult = betQuote && betAmountNum > 0 ? betQuote.qty / betAmountNum : undefined
 
@@ -877,16 +1019,22 @@ export default function DePrizePlay() {
                     <div>
                       <p className="text-gray-400 text-xs">Your balance</p>
                       <p className="text-white text-2xl font-bold leading-tight">
-                        {wethBalance !== undefined ? fmt(wethBalance) : '—'}{' '}
+                        {balanceKnown ? fmt(spendable) : '—'}{' '}
                         <span className="text-base font-medium text-gray-400">
                           ETH
                         </span>
+                      </p>
+                      <p className="text-gray-500 text-[11px] mt-0.5">
+                        Bet with ETH directly — we wrap it automatically.
+                        {wethBalance !== undefined && wethBalance > 0
+                          ? ` (${fmt(wethBalance)} already wrapped)`
+                          : ''}
                       </p>
                       <button
                         onClick={addWethToWallet}
                         className="text-gray-500 hover:text-gray-300 text-[11px] underline mt-0.5"
                       >
-                        Track balance in MetaMask
+                        Track WETH in MetaMask
                       </button>
                     </div>
                     <StandardButton
@@ -907,6 +1055,42 @@ export default function DePrizePlay() {
                     try to trade, or hit Refresh.
                   </div>
                 )}
+
+                {/* Live odds over time */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10">
+                  <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                    <div>
+                      <p className="text-white font-semibold">Live odds</p>
+                      <p className="text-gray-500 text-xs">
+                        Implied chance over time
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {outcomes.map((o) => (
+                        <div key={o.index} className="flex items-center gap-1.5">
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-full"
+                            style={{
+                              background:
+                                OUTCOME_COLORS[o.index % OUTCOME_COLORS.length],
+                            }}
+                          />
+                          <span className="text-gray-300 text-xs">
+                            #{o.index + 1}
+                            {Number.isNaN(o.probability)
+                              ? ''
+                              : ` · ${fmt(o.probability, 0)}%`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <OddsHistoryChart
+                    history={oddsHistory}
+                    labels={outcomes.map((o) => `Outcome #${o.index + 1}`)}
+                    colors={OUTCOME_COLORS}
+                  />
+                </div>
 
                 {/* Outcomes */}
                 <div className="flex flex-col gap-3">
@@ -1121,12 +1305,14 @@ export default function DePrizePlay() {
                     {a} ETH
                   </button>
                 ))}
-                {wethBalance !== undefined && wethBalance > 0 && (
+                {spendable > 0 && (
                   <button
-                    onClick={() => setBetAmount(String(wethBalance))}
+                    onClick={() =>
+                      setBetAmount(String(Math.floor(spendable * 1e6) / 1e6))
+                    }
                     className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs"
                   >
-                    Max ({fmt(wethBalance)})
+                    Max ({fmt(spendable)})
                   </button>
                 )}
               </div>
@@ -1164,8 +1350,8 @@ export default function DePrizePlay() {
             {insufficient ? (
               <div className="flex flex-col gap-2">
                 <p className="text-amber-300 text-sm">
-                  You only have {fmt(wethBalance!)} ETH available. Add more funds
-                  to place this bet.
+                  You only have ≈ {fmt(spendable)} ETH available to bet (a little
+                  is kept back for gas). Add more ETH or lower your bet.
                 </p>
                 <StandardButton
                   onClick={() => {
