@@ -395,7 +395,6 @@ export function CBHeadlessOnramp({
               title="Coinbase payment"
               src={paymentLinkUrl}
               allow="payment"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
               referrerPolicy="strict-origin-when-cross-origin"
               className="w-full"
               style={{ height: 220, border: 'none' }}
