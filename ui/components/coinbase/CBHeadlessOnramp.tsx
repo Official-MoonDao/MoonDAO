@@ -272,6 +272,10 @@ export function CBHeadlessOnramp({
       const errorMessage: string | undefined = payload?.data?.errorMessage
       if (!eventName) return
 
+      if (eventName.startsWith('onramp_api.')) {
+        console.info('[CBHeadlessOnramp] event:', eventName, payload?.data)
+      }
+
       switch (eventName) {
         case 'onramp_api.load_error': {
           const msg = errorMessage || ''
@@ -394,7 +398,7 @@ export function CBHeadlessOnramp({
             <iframe
               title="Coinbase payment"
               src={paymentLinkUrl}
-              allow="payment *; camera *; microphone *"
+              allow="payment *; camera *; microphone *; accelerometer *; gyroscope *; magnetometer *"
               referrerPolicy="strict-origin-when-cross-origin"
               className="w-full"
               style={{ height: 220, border: 'none' }}
