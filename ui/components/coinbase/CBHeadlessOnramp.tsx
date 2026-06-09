@@ -231,6 +231,14 @@ export function CBHeadlessOnramp({
         url += (url.includes('?') ? '&' : '?') + param
       }
 
+      console.info('[CBHeadlessOnramp] order created', {
+        mockOnramp: MOCK_ONRAMP,
+        paymentMethod,
+        sandboxParamAppended: MOCK_ONRAMP,
+        orderId: data?.order?.orderId ?? data?.order?.id ?? null,
+        paymentTotal: data?.order?.paymentTotal ?? null,
+      })
+
       setPaymentLinkUrl(url)
       setFundingState('ready')
     } catch (err: any) {
