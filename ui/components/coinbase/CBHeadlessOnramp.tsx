@@ -399,7 +399,8 @@ export function CBHeadlessOnramp({
               title="Coinbase payment"
               src={paymentLinkUrl}
               allow="payment *; camera *; microphone *; accelerometer *; gyroscope *; magnetometer *"
-              referrerPolicy="strict-origin-when-cross-origin"
+              sandbox="allow-scripts allow-same-origin"
+              referrerPolicy="no-referrer"
               className="w-full"
               style={{ height: 220, border: 'none' }}
             />
