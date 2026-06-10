@@ -40,6 +40,16 @@ contract Config is Script {
     mapping(uint256 => address) public CITIZEN_TABLE_ADDRESSES;
     mapping(uint256 => address) public CITIZEN_NFT_ADDRESSES;
 
+    // DePrize / prediction-market stack (Gnosis Conditional Tokens + LMSRWithTWAP).
+    // These are externally-deployed Solidity 0.5 contracts that the 0.8 DePrizeMint
+    // router calls via interfaces. WETH is the CTF collateral. LMSR_MARKET is an
+    // already-deployed market instance reused by DePrize fork tests; LMSR_FACTORY is
+    // populated after the factory is deployed (used to provision new markets).
+    mapping(uint256 => address) public WETH_ADDRESSES;
+    mapping(uint256 => address) public CONDITIONAL_TOKENS_ADDRESSES;
+    mapping(uint256 => address) public LMSR_MARKET_ADDRESSES;
+    mapping(uint256 => address) public LMSR_FACTORY_ADDRESSES;
+
     // Juicebox contract addresses are shared across chains
     address constant JB_V5_MULTI_TERMINAL = address(0x2dB6d704058E552DeFE415753465df8dF0361846);
     address constant JB_V5_CONTROLLER = address(0x27da30646502e2f642bE5281322Ae8C394F7668a);
@@ -174,6 +184,20 @@ contract Config is Script {
         MISSION_CREATOR_ADDRESSES[SEP] = sepJson.readAddress(".MissionCreator");
         MISSION_TABLE_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MissionTable");
         MISSION_TABLE_ADDRESSES[SEP] = sepJson.readAddress(".MissionTable");
+
+        // DePrize prediction-market stack. Testnet deployments mirror
+        // ui/const/config.ts (COLLATERAL_TOKEN/CONDITIONAL_TOKEN/LMSR_WITH_TWAP).
+        WETH_ADDRESSES[SEP] = 0x8cfF28F922AeEe80d3a0663e735681469F7374c6;
+        WETH_ADDRESSES[ARB_SEP] = 0xA441f20115c868dc66bC1977E1c17D4B9A0189c7;
+
+        CONDITIONAL_TOKENS_ADDRESSES[SEP] = 0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8;
+        CONDITIONAL_TOKENS_ADDRESSES[ARB_SEP] = 0xa0B1b14515C26acb193cb45Be5508A8A46109a27;
+
+        LMSR_MARKET_ADDRESSES[SEP] = 0x11DCe86c804ca088A0d9036eeE368e4055b235dE;
+        LMSR_MARKET_ADDRESSES[ARB_SEP] = 0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe;
+
+        // LMSR_FACTORY_ADDRESSES: populate once the LMSRWithTWAPFactory is deployed
+        // on each chain (used by the per-DePrize market provisioning script).
     }
 
     function currentSalt() public view returns (bytes32) {
