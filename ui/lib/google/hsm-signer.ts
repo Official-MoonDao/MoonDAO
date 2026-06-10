@@ -560,6 +560,16 @@ export async function createHSMWallet(): Promise<any> {
 }
 
 /**
+ * Send ETH from the HSM wallet to a recipient address.
+ * Intended for small gas stipends (e.g. topping up new citizens after a free mint).
+ * Throws on failure — callers should catch and treat as non-critical.
+ */
+export async function sendEthFromHSM(to: string, amountWei: bigint): Promise<string> {
+  const config = getHSMConfig()
+  return sendTransaction(config, { to, value: amountWei, data: '0x' })
+}
+
+/**
  * Convert a secp256k1 public key to Ethereum address using proper keccak256 derivation
  * @param publicKeyHex - The public key as a hex string (with or without 0x prefix)
  * @returns The derived Ethereum address
