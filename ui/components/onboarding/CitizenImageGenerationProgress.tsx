@@ -75,8 +75,8 @@ export function CitizenImageGenerationProgress({
       </div>
       <p className="text-xs text-slate-500">
         {isBackgroundFlow
-          ? 'Generating in the background • ~30–60s'
-          : 'Usually takes 30–60 seconds'}
+          ? 'Generating in the background • ~1–2 min'
+          : 'Usually takes 1–2 minutes'}
       </p>
     </div>
   )
