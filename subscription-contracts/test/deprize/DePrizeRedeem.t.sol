@@ -282,6 +282,12 @@ contract DePrizeRedeemTest is Test {
         );
 
         redeem = new DePrizeRedeem(address(registry), address(ctf), address(weth));
+        // The helper is deployed at a deterministic CREATE2 address. On a forked
+        // chain that address can already hold native ETH (e.g. 0.17 ETH on Sepolia),
+        // which the fresh deployment inherits and would corrupt the "no residual
+        // ETH" invariants below. Zero it so those assertions test only what the
+        // redemption flow leaves behind.
+        vm.deal(address(redeem), 0);
         resolveScript = new DePrizeResolve();
 
         teamIds = new uint256[](3);
