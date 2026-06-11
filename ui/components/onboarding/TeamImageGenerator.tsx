@@ -99,23 +99,9 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
       {/* Preview of current or newly selected image */}
       {!showUploader && (inputImage || currImage) && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">
-              {inputImage ? 'New team image preview' : 'Current team image'}
-            </p>
-            <button
-              onClick={() => {
-                if (inputImage) {
-                  setInputImage(undefined)
-                } else {
-                  setIsReplacing(true)
-                }
-              }}
-              className="text-xs text-slate-500 hover:text-white transition-colors"
-            >
-              Change image
-            </button>
-          </div>
+          <p className="text-sm text-slate-400">
+            {inputImage ? 'New team image preview' : 'Current team image'}
+          </p>
 
           <div className="rounded-2xl border border-white/[0.08] bg-slate-900/40 overflow-hidden">
             {currImage && !inputImage && (
@@ -153,15 +139,29 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
 
       {/* Continue — only when not mid-replace */}
       {!isReplacing && (currImage || inputImage) && (
-        <button
-          className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
-          onClick={submitImage}
-        >
-          Continue
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+        <div className="flex flex-col gap-3">
+          <button
+            className="w-full py-3 rounded-2xl border border-slate-500 hover:border-slate-300 text-slate-300 hover:text-white font-medium transition-colors"
+            onClick={() => {
+              if (inputImage) {
+                setInputImage(undefined)
+              } else {
+                setIsReplacing(true)
+              }
+            }}
+          >
+            Change image
+          </button>
+          <button
+            className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
+            onClick={submitImage}
+          >
+            Continue
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
       )}
     </div>
   )
