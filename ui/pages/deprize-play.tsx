@@ -1159,7 +1159,7 @@ export default function DePrizePlay() {
       if (payoutDen && payoutDen > 0n) {
         throw new Error('Pre-flight: already resolved (payout vector is write-once).')
       }
-      if (stage === MarketStage.Running) {
+      if (stage !== MarketStage.Paused && stage !== MarketStage.Closed) {
         throw new Error(
           'Pre-flight: pause or close the market first — resolving a live market gives away free trades against the known outcome.'
         )
@@ -1275,7 +1275,9 @@ export default function DePrizePlay() {
   const claimable = resolved
     ? outcomes.reduce((acc, o, i) => {
         if (!Number.isFinite(o.balance) || o.balance <= 0) return acc
-        return acc + (o.balance * Number(payoutNums[i] ?? 0n)) / Number(payoutDen)
+        const balWei = BigInt(Math.floor(o.balance * Number(UNIT)))
+        const payout = (balWei * (payoutNums[i] ?? 0n)) / payoutDen
+        return acc + Number(payout) / Number(UNIT)
       }, 0)
     : 0
   // Spendable = already-wrapped WETH + native ETH (we auto-wrap at bet time),
