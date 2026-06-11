@@ -1,11 +1,15 @@
 import { PencilIcon, ShoppingBagIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { useWallets } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
-import { useEffect, useState, useRef } from 'react'
+import { useContext, useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
@@ -56,6 +60,9 @@ export default function TeamListing({
 }: TeamListingProps) {
   const account = useActiveAccount()
   const router = useRouter()
+  const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
 
   const [enabledMarketplaceListingModal, setEnabledMarketplaceListingModal] = useState(false)
   const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(
@@ -229,6 +236,32 @@ export default function TeamListing({
                       if (!account) return
                       e.stopPropagation()
                       setIsDeleting(true)
+
+                      // Ensure the wallet is on the correct chain before
+                      // sending the transaction, mirroring what PrivyWeb3Button
+                      // does with requiredChain. Without this, sendAndConfirm
+                      // fails when the wallet is on a different network.
+                      try {
+                        const walletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
+                        if (walletChainId !== selectedChain?.id) {
+                          if (selectedChain) setSelectedChain(selectedChain)
+                          const success = await addNetworkToWallet(selectedChain)
+                          if (success) {
+                            await wallets[selectedWallet]?.switchChain(selectedChain?.id)
+                          }
+                        }
+                      } catch {
+                        toast.error('Could not switch to the required network. Please switch manually and try again.')
+                        setIsDeleting(false)
+                        return
+                      }
+
+                      if (!marketplaceTableContract) {
+                        toast.error('Marketplace contract not ready. Please try again.')
+                        setIsDeleting(false)
+                        return
+                      }
+
                       try {
                         const transaction = prepareContractCall({
                           contract: marketplaceTableContract,
@@ -237,9 +270,19 @@ export default function TeamListing({
                         })
                         const receipt = await sendAndConfirmTransaction({ transaction, account })
                         setTimeout(() => { refreshListings(); setIsDeleting(false) }, 25000)
-                      } catch (err) {
-                        console.log(err)
-                        toast.error('Failed to delete listing. Please try again.')
+                      } catch (err: any) {
+                        console.error('Delete listing error:', err)
+                        const reason =
+                          err?.message?.match(/reason: (.+)/)?.[1] ||
+                          err?.data?.message ||
+                          err?.shortMessage ||
+                          err?.message ||
+                          null
+                        toast.error(
+                          reason
+                            ? `Failed to delete listing: ${reason}`
+                            : 'Failed to delete listing. Please try again.'
+                        )
                         setIsDeleting(false)
                       }
                     }}
