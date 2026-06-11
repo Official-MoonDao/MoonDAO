@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "std/Script.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
 import {IConditionalTokens} from "../../src/deprize/interfaces/IConditionalTokens.sol";
+import {ILMSRWithTWAP} from "../../src/deprize/interfaces/ILMSRWithTWAP.sol";
 import "base/Config.sol";
 
 /// @title DePrizeResolve
@@ -21,14 +22,16 @@ import "base/Config.sol";
 ///   2. the winner is one of the DePrize's outcome slots;
 ///   3. keccak256(oracle, questionId, N) matches the registry's conditionId
 ///      (catches a wrong questionId, wrong oracle, or wrong slot count);
-///   4. the condition has not already been reported.
-///
-/// ⚠️ Submit only after the LMSR market is paused/closed — reporting against a
-/// live market lets anyone trade the known outcome against treasury inventory.
+///   4. the condition has not already been reported;
+///   5. (when DEPRIZE_MARKET is set — strongly recommended) the LMSR market is
+///      paused or closed and settles this exact condition. Reporting against a
+///      LIVE market lets anyone trade the known outcome against treasury
+///      inventory, so the script hard-aborts on a Running market.
 ///
 /// Usage:
 ///   DEPRIZE_REGISTRY=0x<registryProxy> DEPRIZE_ID=1 \
 ///   DEPRIZE_QUESTION_ID=0x... DEPRIZE_ORACLE=0x<safe> \
+///   DEPRIZE_MARKET=0x<lmsrWithTWAP> \
 ///   forge script script/deprize/DePrizeResolve.s.sol --rpc-url $RPC
 contract DePrizeResolve is Script, Config {
     error WrongState(uint256 deprizeId, IDePrizeRegistry.DePrizeState state);
@@ -36,6 +39,17 @@ contract DePrizeResolve is Script, Config {
     error WinnerNotFound(uint256 deprizeId, uint256 winningTeamId);
     error ConditionMismatch(bytes32 computed, bytes32 registered);
     error AlreadyReported(bytes32 conditionId, uint256 payoutDenominator);
+    error MarketStillRunning(address market);
+    error MarketConditionMismatch(bytes32 marketCondition, bytes32 expected);
+
+    /// @notice Abort if `market` is still tradable or settles a different
+    ///         condition than the one about to be resolved.
+    /// @dev LMSR stages: 0 = Running, 1 = Paused, 2 = Closed.
+    function assertMarketHalted(ILMSRWithTWAP market, bytes32 conditionId) public view {
+        bytes32 marketCondition = market.conditionIds(0);
+        if (marketCondition != conditionId) revert MarketConditionMismatch(marketCondition, conditionId);
+        if (market.stage() == 0) revert MarketStillRunning(address(market));
+    }
 
     /// @notice Pure pre-flight: validates registry/CTF consistency and returns the
     ///         payout vector + `reportPayouts` calldata the oracle Safe must submit.
@@ -105,6 +119,14 @@ contract DePrizeResolve is Script, Config {
 
         (bytes32 conditionId, uint256[] memory payouts, bytes memory callData) =
             buildReport(registry, ctf, deprizeId, questionId, oracle);
+
+        address market = vm.envOr("DEPRIZE_MARKET", address(0));
+        if (market != address(0)) {
+            assertMarketHalted(ILMSRWithTWAP(market), conditionId);
+            console.log("Market halted check: OK (stage != Running)", market);
+        } else {
+            console.log("WARNING: DEPRIZE_MARKET not set - could not verify the LMSR is paused/closed.");
+        }
 
         console.log("=== DePrize resolution (submit from the oracle Safe) ===");
         console.log("DePrize id:   ", deprizeId);

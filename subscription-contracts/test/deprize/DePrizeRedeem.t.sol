@@ -158,6 +158,14 @@ contract MockResolvingCTF {
         _acceptSingle(to, from, id, value);
     }
 
+    /// @dev Test knob: deliver batch transfers through the SINGLE acceptance hook
+    ///      per id (exercises the receiver's onERC1155Received path).
+    bool public useSingleHooks;
+
+    function setUseSingleHooks(bool v) external {
+        useSingleHooks = v;
+    }
+
     function safeBatchTransferFrom(
         address from,
         address to,
@@ -171,8 +179,14 @@ contract MockResolvingCTF {
             balances[ids[i]][to] += values[i];
         }
         if (to.code.length > 0) {
-            bytes4 ret = IERC1155Receiver(to).onERC1155BatchReceived(msg.sender, from, ids, values, "");
-            require(ret == IERC1155Receiver.onERC1155BatchReceived.selector, "1155 rejected");
+            if (useSingleHooks) {
+                for (uint256 i = 0; i < ids.length; i++) {
+                    _acceptSingle(to, from, ids[i], values[i]);
+                }
+            } else {
+                bytes4 ret = IERC1155Receiver(to).onERC1155BatchReceived(msg.sender, from, ids, values, "");
+                require(ret == IERC1155Receiver.onERC1155BatchReceived.selector, "1155 rejected");
+            }
         }
     }
 
@@ -186,6 +200,24 @@ contract MockResolvingCTF {
     /// @dev Test helper: mint outcome tokens directly (stands in for splitPosition).
     function mint(address to, uint256 id, uint256 value) external {
         balances[id][to] += value;
+    }
+}
+
+/// @dev Minimal LMSR stub for the resolve script's market-halted check.
+contract StubMarket {
+    uint8 public stage; // 0 = Running, 1 = Paused, 2 = Closed
+    bytes32 internal _conditionId;
+
+    constructor(bytes32 conditionId_) {
+        _conditionId = conditionId_;
+    }
+
+    function setStage(uint8 s) external {
+        stage = s;
+    }
+
+    function conditionIds(uint256) external view returns (bytes32) {
+        return _conditionId;
     }
 }
 
@@ -423,6 +455,11 @@ contract DePrizeRedeemTest is Test {
         assertEq(redeem.previewRedeem(deprizeId, alice), 0, "unresolved -> 0");
     }
 
+    function testPreviewRevertsUnknownDePrize() public {
+        vm.expectRevert(abi.encodeWithSelector(DePrizeRedeem.UnknownDePrize.selector, 999));
+        redeem.previewRedeem(999, alice);
+    }
+
     // -- guards ------------------------------------------------------------------
 
     function testRedeemRevertsNotResolved() public {
@@ -484,6 +521,55 @@ contract DePrizeRedeemTest is Test {
         // The re-entrant inner call reverts on the guard, failing the ETH payout.
         vm.expectRevert(DePrizeRedeem.RedeemFailed.selector);
         rr.approveAndRedeem(ctf, redeem, deprizeId);
+    }
+
+    function testRedeemViaSingleAcceptanceHook() public {
+        // A CTF delivering the mid-redeem pull through onERC1155Received (single)
+        // instead of the batch hook must work identically.
+        ctf.setUseSingleHooks(true);
+        ctf.mint(alice, _positionId(1), 1 ether);
+        _settleWinner(102);
+        _reportWinner(1);
+
+        vm.startPrank(alice);
+        ctf.setApprovalForAll(address(redeem), true);
+        uint256 balBefore = alice.balance;
+        redeem.redeem(deprizeId);
+        vm.stopPrank();
+        assertEq(alice.balance - balBefore, 1 ether, "paid via single-hook delivery");
+    }
+
+    function testApprovalNotAbusableByThirdParty() public {
+        // A victim's standing setApprovalForAll on the helper cannot be leveraged
+        // by anyone else: the helper only ever moves msg.sender's own tokens.
+        ctf.mint(alice, _positionId(1), 5 ether);
+        _settleWinner(102);
+        _reportWinner(1);
+
+        vm.prank(alice);
+        ctf.setApprovalForAll(address(redeem), true); // standing approval
+
+        vm.prank(bob); // attacker holds nothing
+        vm.expectRevert(abi.encodeWithSelector(DePrizeRedeem.NothingToRedeem.selector, deprizeId, bob));
+        redeem.redeem(deprizeId);
+        assertEq(ctf.balanceOf(alice, _positionId(1)), 5 ether, "victim untouched");
+    }
+
+    function testCrossConditionIsolation() public {
+        // Outcome tokens of an unrelated condition (same collateral, same holder)
+        // are never touched by a redeem for this DePrize.
+        bytes32 otherCid = ctf.getConditionId(oracle, keccak256("unrelated"), 3);
+        uint256 otherPid = ctf.getPositionId(address(weth), ctf.getCollectionId(bytes32(0), otherCid, 1 << 1));
+        ctf.mint(alice, otherPid, 4 ether);
+        ctf.mint(alice, _positionId(1), 1 ether);
+        _settleWinner(102);
+        _reportWinner(1);
+
+        vm.startPrank(alice);
+        ctf.setApprovalForAll(address(redeem), true);
+        redeem.redeem(deprizeId);
+        vm.stopPrank();
+        assertEq(ctf.balanceOf(alice, otherPid), 4 ether, "unrelated condition untouched");
     }
 
     function testStrayWethNotSweptIntoPayout() public {
@@ -673,6 +759,28 @@ contract DePrizeRedeemTest is Test {
         resolveScript.buildReport(
             IDePrizeRegistry(address(registry)), IConditionalTokens(address(ctf)), deprizeId, QUESTION_ID, oracle
         );
+    }
+
+    function testAssertMarketHaltedRevertsWhileRunning() public {
+        StubMarket market = new StubMarket(conditionId); // stage 0 = Running
+        vm.expectRevert(abi.encodeWithSelector(DePrizeResolve.MarketStillRunning.selector, address(market)));
+        resolveScript.assertMarketHalted(ILMSRWithTWAP(address(market)), conditionId);
+    }
+
+    function testAssertMarketHaltedAcceptsPausedAndClosed() public {
+        StubMarket market = new StubMarket(conditionId);
+        market.setStage(1); // Paused
+        resolveScript.assertMarketHalted(ILMSRWithTWAP(address(market)), conditionId);
+        market.setStage(2); // Closed
+        resolveScript.assertMarketHalted(ILMSRWithTWAP(address(market)), conditionId);
+    }
+
+    function testAssertMarketHaltedRevertsOnConditionMismatch() public {
+        bytes32 wrong = keccak256("wrong-market-condition");
+        StubMarket market = new StubMarket(wrong);
+        market.setStage(1);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeResolve.MarketConditionMismatch.selector, wrong, conditionId));
+        resolveScript.assertMarketHalted(ILMSRWithTWAP(address(market)), conditionId);
     }
 }
 

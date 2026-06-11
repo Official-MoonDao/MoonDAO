@@ -61,7 +61,7 @@ bettors redeem (permissionless, forever — no claim deadline on the CTF)
 Notes:
 
 - The registry stores `ctfConditionId` but **not** `questionId`; the script takes `questionId` as input (from `prediction/deprize.config.js` provisioning records) and step 3 makes a wrong value impossible to submit.
-- **Ordering invariant:** the LMSR market must be **paused or closed before reporting** (see M4b §Market unwind). A live market with a publicly-known outcome is free money against the treasury's inventory.
+- **Ordering invariant:** the LMSR market must be **paused or closed before reporting** (see M4b §Market unwind). A live market with a publicly-known outcome is free money against the treasury's inventory. The script **enforces** this when `DEPRIZE_MARKET` is set (`assertMarketHalted`: hard-abort on a Running market or a market settling a different condition) and prints a loud warning when it is not.
 - Outcome-slot convention is unchanged from M3: slot `i` = `registry.teamIds(id)[i]`.
 
 ### `DePrizeRedeem` shape
@@ -199,7 +199,11 @@ A refunded bettor is made whole from **two separate pools they already own claim
 
 ## Tests
 
-`forge test --match-path 'test/deprize/DePrizeRedeem.t.sol'` — **30 unit tests passing** (+3 guarded fork tests; the whole deprize suite is 121 passing).
+`forge test --match-path 'test/deprize/DePrizeRedeem.t.sol'` — **37 unit tests passing** (+3 guarded fork tests; the whole deprize suite is 137 passing).
+
+Coverage of `DePrizeRedeem.sol` (via the CI patch + `--ir-minimum` flow): **100% lines / 99% statements / 100% functions / 11-of-12 branches** — the one unhit branch arm is the `UnknownDePrize` check, whose both directions *are* directly tested (`testRedeemRevertsUnknownDePrize`, `testPreviewRevertsUnknownDePrize`); it is the known via-ir coverage misattribution also noted in M3.
+
+**Audit note:** in addition to the committed suite, the contract was audited with a throwaway harness that deployed the **real compiled Gnosis `ConditionalTokens` + `WETH9` bytecode** (from the gitignored `prediction/build` artifacts, injected via env vars) and ran 9 adversarial scenarios: end-to-end winner redemption, equal-payout rounding/solvency, third-party abuse of a standing `setApprovalForAll`, payout-callback reentrancy + hook-poking with full rollback, stray-fund isolation, unsolicited 1155 deposits through the real acceptance-hook path, cross-condition isolation, one-shot resolution, and a 2,000-run fuzz asserting paid == previewed == CTF-entitlement with the helper empty after every call. **No issue found.** The harness was removed (CI can't read `prediction/build`); its high-value scenarios were ported into the committed mock-based suite (`testApprovalNotAbusableByThirdParty`, `testCrossConditionIsolation`, `testRedeemViaSingleAcceptanceHook`).
 
 **`DePrizeRedeemTest` (30, deterministic, no RPC)** — real `DePrizeRegistry` + `MockResolvingCTF`, a resolution-capable CTF mock faithful to the deployed 0.5 source (conditionId derived from `msg.sender` in `reportPayouts`, write-once denominator, per-position floor division, burn-on-redeem, ERC-1155 approval checks + acceptance hooks):
 
@@ -210,7 +214,8 @@ A refunded bettor is made whole from **two separate pools they already own claim
 - stray-WETH regression: WETH parked in the helper is never swept into a payout (delta scoping);
 - ERC-1155 receiver guard: unsolicited single/batch and non-CTF senders revert; `supportsInterface`;
 - mock-CTF fidelity: `reportPayouts` write-once, all-zero vector reverts, a non-oracle sender resolves a *different* conditionId (the DePrize condition stays unresolved);
-- `DePrizeResolve.buildReport` pre-flight: winner vector (and the emitted calldata actually resolves the condition when submitted by the oracle), equal vector on `NO_WINNER` and `CANCELLED`, `WrongState` on `OPEN`, `M2FailedCtfAlreadyFinal` refusal, `ConditionMismatch` on wrong questionId and wrong oracle, `AlreadyReported`.
+- `DePrizeResolve.buildReport` pre-flight: winner vector (and the emitted calldata actually resolves the condition when submitted by the oracle), equal vector on `NO_WINNER` and `CANCELLED`, `WrongState` on `OPEN`, `M2FailedCtfAlreadyFinal` refusal, `ConditionMismatch` on wrong questionId and wrong oracle, `AlreadyReported`;
+- `DePrizeResolve.assertMarketHalted` (the on-chain enforcement of the pause-before-report ordering invariant, run when `DEPRIZE_MARKET` is set): aborts on a Running market and on a market settling a different condition; accepts Paused and Closed.
 
 **`DePrizeM4ForkTest` (3, guarded)** — runs against the **real Arbitrum-Sepolia CTF** (the contract whose payout math decides mainnet payouts), preparing a fresh condition with a test oracle so resolution can be exercised without touching the shared live market. Skips unless `DEPRIZE_FORK_RPC` is set:
 
