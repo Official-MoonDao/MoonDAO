@@ -430,6 +430,23 @@ export const COLLATERAL_TOKEN_ADDRESSES: Index = {
 export const COLLATERAL_DECIMALS = 18
 export const MAX_OUTCOMES = 3
 
+// M4 close-out stack (DePrizeRedeem helper + DePrizeRegistry). Populate per
+// chain once `script/deprize/DePrizeRedeem.s.sol` / the registry deploy run;
+// the deprize-play harness also accepts manual overrides for testing.
+export const DEPRIZE_REDEEM_ADDRESSES: Index = {
+  sepolia: '',
+  'arbitrum-sepolia': '',
+}
+export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
+  sepolia: '',
+  'arbitrum-sepolia': '',
+}
+// questionId used when the play market's condition was prepared
+// (prediction/deprize.config.js DEPRIZE_QUESTION_ID). Needed by reportPayouts;
+// the conditionId is keccak256(oracle, questionId, outcomeSlotCount).
+export const DEPRIZE_QUESTION_ID =
+  '0x0000000000000000000000000000000000000000000000000000000000000001'
+
 export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
 export const OPERATOR_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'

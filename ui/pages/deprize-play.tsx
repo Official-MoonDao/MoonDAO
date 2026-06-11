@@ -1,4 +1,5 @@
 import ConditionalTokensABI from 'const/abis/ConditionalTokens.json'
+import DePrizeRedeemABI from 'const/abis/DePrizeRedeem.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import WETHABI from 'const/abis/WETH.json'
 import {
@@ -10,6 +11,8 @@ import {
   ORACLE_ADDRESS,
   OPERATOR_ADDRESS,
   DEFAULT_CHAIN_V5,
+  DEPRIZE_REDEEM_ADDRESSES,
+  DEPRIZE_QUESTION_ID,
 } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
 import dynamic from 'next/dynamic'
@@ -209,6 +212,21 @@ export default function DePrizePlay() {
   const [conditionId, setConditionId] = useState<string | undefined>()
   const [stage, setStage] = useState<number | undefined>()
   const [feePct, setFeePct] = useState<number | undefined>()
+  // CTF resolution state (M4): 0 denominator = unresolved; afterwards the
+  // payout vector determines what each held outcome token redeems for.
+  const [payoutDen, setPayoutDen] = useState<bigint | undefined>()
+  const [payoutNums, setPayoutNums] = useState<bigint[]>([])
+  // Oracle resolution inputs (mirrors DePrizeResolve.s.sol pre-flight).
+  const [questionId, setQuestionId] = useState(DEPRIZE_QUESTION_ID)
+  // DePrizeRedeem helper testing (M4): the helper needs a deployed registry
+  // with a DePrize bound to this market's condition; both are inputs so the
+  // harness works the moment they're deployed (persisted per market).
+  const [helperAddress, setHelperAddress] = useState(
+    DEPRIZE_REDEEM_ADDRESSES[chainSlug] ?? ''
+  )
+  const [helperDeprizeId, setHelperDeprizeId] = useState('1')
+  const [helperPreview, setHelperPreview] = useState<number | undefined>()
+  const [helperApproved, setHelperApproved] = useState<boolean | undefined>()
   const [wethBalance, setWethBalance] = useState<number | undefined>()
   const [nativeBalance, setNativeBalance] = useState<number | undefined>()
   const [ctfApproved, setCtfApproved] = useState<boolean | undefined>()
@@ -266,6 +284,19 @@ export default function DePrizePlay() {
     address: wethAddress,
     chain,
     abi: WETHABI as any,
+  })
+  // M4 redemption helper (address comes from config or the harness input).
+  const validHelper = /^0x[0-9a-fA-F]{40}$/.test(helperAddress)
+  const helper = useContract({
+    address: validHelper ? helperAddress : '',
+    chain: READ_CHAIN,
+    abi: DePrizeRedeemABI as any,
+    forwardClient: readClient,
+  })
+  const helperW = useContract({
+    address: validHelper ? helperAddress : '',
+    chain,
+    abi: DePrizeRedeemABI as any,
   })
 
   const isOracle =
@@ -365,7 +396,7 @@ export default function DePrizePlay() {
       const { conditionId: cond, positionIds } = staticRef.current
 
       // 2) Dynamic data, concurrency-limited under the hood (rpcRead).
-      const [stg, prices, balances, wb, nb, approved] = await Promise.all([
+      const [stg, prices, balances, wb, nb, approved, den, nums] = await Promise.all([
         rpcRead({ contract: lmsr, method: 'stage' as string, params: [] })
           .then((v) => Number(v))
           .catch(() => undefined),
@@ -418,12 +449,32 @@ export default function DePrizePlay() {
               .then((a) => a as boolean)
               .catch(() => undefined)
           : Promise.resolve(undefined),
+        rpcRead({
+          contract: ctf,
+          method: 'payoutDenominator' as string,
+          params: [cond],
+        })
+          .then((v) => v as bigint)
+          .catch(() => undefined),
+        Promise.all(
+          Array.from({ length: MAX_OUTCOMES }, (_, i) =>
+            rpcRead({
+              contract: ctf,
+              method: 'payoutNumerators' as string,
+              params: [cond, BigInt(i)],
+            })
+              .then((v) => v as bigint)
+              .catch(() => 0n)
+          )
+        ),
       ])
 
       setStage(stg)
       setWethBalance(wb)
       setNativeBalance(nb)
       setCtfApproved(approved)
+      setPayoutDen(den)
+      setPayoutNums(nums)
       recordOddsSample(prices as number[])
       setOutcomes(
         positionIds.map((pid, i) => ({
@@ -557,6 +608,73 @@ export default function DePrizePlay() {
       }
     }
   }, [costStorageKey])
+
+  // ---- DePrizeRedeem helper (M4) ----
+  // Persist the harness inputs per market so they survive reloads.
+  const helperStorageKey = useMemo(
+    () => (lmsrAddress ? `deprize:redeemHelper:v1:${lmsrAddress}` : null),
+    [lmsrAddress]
+  )
+
+  useEffect(() => {
+    if (!helperStorageKey || typeof window === 'undefined') return
+    try {
+      const raw = window.localStorage.getItem(helperStorageKey)
+      if (raw) {
+        const saved = JSON.parse(raw) as { address?: string; deprizeId?: string }
+        if (saved.address) setHelperAddress(saved.address)
+        if (saved.deprizeId) setHelperDeprizeId(saved.deprizeId)
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [helperStorageKey])
+
+  useEffect(() => {
+    if (!helperStorageKey || typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(
+        helperStorageKey,
+        JSON.stringify({ address: helperAddress, deprizeId: helperDeprizeId })
+      )
+    } catch {
+      /* ignore */
+    }
+  }, [helperStorageKey, helperAddress, helperDeprizeId])
+
+  // Live preview of what the helper would pay the connected wallet, plus
+  // whether the wallet has already granted it the CTF operator approval.
+  useEffect(() => {
+    setHelperPreview(undefined)
+    setHelperApproved(undefined)
+    if (!validHelper || !helper || !ctf || !userAddress) return
+    const deprizeId = helperDeprizeId.trim()
+    if (!/^\d+$/.test(deprizeId)) return
+    let cancelled = false
+    ;(async () => {
+      const [preview, approved] = await Promise.all([
+        rpcRead<bigint>({
+          contract: helper,
+          method: 'previewRedeem' as string,
+          params: [BigInt(deprizeId), userAddress],
+        }).catch(() => undefined),
+        rpcRead<boolean>({
+          contract: ctf,
+          method: 'isApprovedForAll' as string,
+          params: [userAddress, helperAddress],
+        }).catch(() => undefined),
+      ])
+      if (cancelled) return
+      setHelperPreview(
+        preview === undefined ? undefined : Number(preview) / Number(UNIT)
+      )
+      setHelperApproved(approved)
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validHelper, helper, ctf, userAddress, helperAddress, helperDeprizeId, payoutDen])
 
   // Sell-out quote: for each outcome the user holds, compute the ETH they'd
   // receive by selling their full position right now (calcNetCost with negative
@@ -989,37 +1107,63 @@ export default function DePrizePlay() {
     }
   }
 
-  const closeMarket = async () => {
+  // Generic owner call on the LMSR (pause / resume / close / withdrawFees) —
+  // the M4 unwind surface.
+  const marketAdmin = async (method: string, doneMsg: string) => {
     if (!account || !lmsr) return
     setBusy(true)
     try {
       await sendTx(
         prepareContractCall({
           contract: lmsrW,
-          method: 'close' as string,
+          method: method as string,
           params: [],
         })
       )
-      toast.success('Market closed.', { style: toastStyle })
+      toast.success(doneMsg, { style: toastStyle })
       refreshSoon()
     } catch (err: any) {
-      toast.error(err?.shortMessage || err?.message || 'Close failed.', {
+      toast.error(err?.shortMessage || err?.message || `${method} failed.`, {
         style: toastStyle,
+        duration: 8000,
       })
     } finally {
       setBusy(false)
     }
   }
 
-  const resolve = async (winningIndex: number) => {
+  // Oracle resolution with the same pre-flight as DePrizeResolve.s.sol:
+  //   1. conditionId recomputed from (oracle=sender, questionId, slots) must
+  //      match the market's condition — a mismatch means the calldata would
+  //      resolve a DIFFERENT (or no) condition;
+  //   2. not already reported (the CTF payout vector is write-once);
+  //   3. the market must be paused/closed first — reporting against a live
+  //      market lets anyone trade the known outcome against the inventory.
+  const resolve = async (payouts: bigint[], label: string) => {
     if (!account || !ctf) return
     setBusy(true)
     try {
-      const payouts = Array.from({ length: MAX_OUTCOMES }, (_, i) =>
-        i === winningIndex ? 1n : 0n
-      )
-      const questionId =
-        '0x0000000000000000000000000000000000000000000000000000000000000001'
+      const computed = await rpcRead<string>({
+        contract: ctf,
+        method: 'getConditionId' as string,
+        params: [account.address, questionId, BigInt(MAX_OUTCOMES)],
+      })
+      if (
+        conditionId &&
+        computed.toLowerCase() !== conditionId.toLowerCase()
+      ) {
+        throw new Error(
+          `Pre-flight: conditionId mismatch — keccak(yourAddress, questionId, ${MAX_OUTCOMES}) != the market's condition. Check the question id and that you are the oracle.`
+        )
+      }
+      if (payoutDen && payoutDen > 0n) {
+        throw new Error('Pre-flight: already resolved (payout vector is write-once).')
+      }
+      if (stage === MarketStage.Running) {
+        throw new Error(
+          'Pre-flight: pause or close the market first — resolving a live market gives away free trades against the known outcome.'
+        )
+      }
       await sendTx(
         prepareContractCall({
           contract: ctfW,
@@ -1027,13 +1171,91 @@ export default function DePrizePlay() {
           params: [questionId, payouts],
         })
       )
-      toast.success(`Reported outcome #${winningIndex + 1} as winner.`, {
-        style: toastStyle,
-      })
+      toast.success(`Resolved: ${label}.`, { style: toastStyle })
       refreshSoon()
     } catch (err: any) {
       toast.error(err?.shortMessage || err?.message || 'Resolve failed.', {
         style: toastStyle,
+        duration: 10000,
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const resolveWinner = (winningIndex: number) =>
+    resolve(
+      Array.from({ length: MAX_OUTCOMES }, (_, i) =>
+        i === winningIndex ? 1n : 0n
+      ),
+      `outcome #${winningIndex + 1} wins`
+    )
+
+  // M4b: terminal no-winner/cancelled — every outcome token refunds 1/N.
+  const resolveNoWinner = () =>
+    resolve(
+      Array.from({ length: MAX_OUTCOMES }, () => 1n),
+      `no winner — every position refunds 1/${MAX_OUTCOMES}`
+    )
+
+  // ---- DePrizeRedeem helper actions (M4a) ----
+  const approveHelper = async () => {
+    if (!account || !validHelper) return
+    setBusy(true)
+    try {
+      await sendTx(
+        prepareContractCall({
+          contract: ctfW,
+          method: 'setApprovalForAll' as string,
+          params: [helperAddress, true],
+        })
+      )
+      setHelperApproved(true)
+      toast.success('Helper approved to pull your outcome tokens.', {
+        style: toastStyle,
+      })
+    } catch (err: any) {
+      toast.error(err?.shortMessage || err?.message || 'Approve failed.', {
+        style: toastStyle,
+        duration: 8000,
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const redeemViaHelper = async () => {
+    if (!account || !validHelper || !helperW) return
+    const deprizeId = helperDeprizeId.trim()
+    if (!/^\d+$/.test(deprizeId)) {
+      toast.error('Enter a numeric DePrize id.', { style: toastStyle })
+      return
+    }
+    setBusy(true)
+    toast.loading('Redeeming via helper…', { id: 'helper', style: toastStyle })
+    try {
+      await sendTx(
+        prepareContractCall({
+          contract: helperW,
+          method: 'redeem' as string,
+          params: [BigInt(deprizeId)],
+        })
+      )
+      toast.dismiss('helper')
+      clearCostBasis()
+      toast.success(
+        helperPreview !== undefined
+          ? `Redeemed ≈ ${fmt(helperPreview)} ETH via DePrizeRedeem.`
+          : 'Redeemed via DePrizeRedeem.',
+        { style: toastStyle, duration: 8000 }
+      )
+      refreshSoon()
+    } catch (err: any) {
+      toast.dismiss('helper')
+      console.error('[deprize-play] helper redeem failed', err)
+      toast.error(err?.shortMessage || err?.message || 'Helper redeem failed.', {
+        style: toastStyle,
+        duration: 10000,
       })
     } finally {
       setBusy(false)
@@ -1041,6 +1263,21 @@ export default function DePrizePlay() {
   }
 
   const isClosed = stage === MarketStage.Closed
+  // CTF-level resolution is what actually gates redemption (market stage is
+  // only the trading state). claimable = what the connected wallet's positions
+  // redeem for under the reported payout vector (mirrors previewRedeem).
+  const resolved = payoutDen !== undefined && payoutDen > 0n
+  const winningIndex = resolved
+    ? payoutNums.findIndex((n, _, arr) => n > 0n && arr.filter((x) => x > 0n).length === 1)
+    : -1
+  const isRefundVector =
+    resolved && payoutNums.length > 0 && payoutNums.every((n) => n > 0n)
+  const claimable = resolved
+    ? outcomes.reduce((acc, o, i) => {
+        if (!Number.isFinite(o.balance) || o.balance <= 0) return acc
+        return acc + (o.balance * Number(payoutNums[i] ?? 0n)) / Number(payoutDen)
+      }, 0)
+    : 0
   // Spendable = already-wrapped WETH + native ETH (we auto-wrap at bet time),
   // holding a little native back for gas.
   const spendable =
@@ -1097,6 +1334,24 @@ export default function DePrizePlay() {
                       <p className="text-gray-400 text-xs">Market fee</p>
                       <p className="text-white text-sm">
                         {feePct !== undefined ? `${fmt(feePct, 2)}%` : '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs">Resolution</p>
+                      <p
+                        className={`text-sm ${
+                          resolved ? 'text-moon-green' : 'text-white'
+                        }`}
+                      >
+                        {payoutDen === undefined
+                          ? '—'
+                          : !resolved
+                          ? 'Unresolved'
+                          : isRefundVector
+                          ? `Refund 1/${MAX_OUTCOMES}`
+                          : winningIndex >= 0
+                          ? `#${winningIndex + 1} won`
+                          : `[${payoutNums.map((n) => n.toString()).join(',')}]`}
                       </p>
                     </div>
                     <StandardButton
@@ -1333,20 +1588,128 @@ export default function DePrizePlay() {
                   })}
                 </div>
 
-                {/* Redeem */}
-                {isClosed && (
+                {/* Redeem (direct CTF path — always available once resolved) */}
+                {resolved && (
                   <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3 flex-wrap">
-                    <p className="text-emerald-200 text-sm">
-                      This market is resolved. Claim your winnings.
-                    </p>
+                    <div>
+                      <p className="text-emerald-200 text-sm">
+                        {isRefundVector
+                          ? `Resolved with no winner — every position refunds 1/${MAX_OUTCOMES} of its size.`
+                          : winningIndex >= 0
+                          ? `Resolved — outcome #${winningIndex + 1} won.`
+                          : 'This market is resolved.'}
+                      </p>
+                      {userAddress && (
+                        <p className="text-emerald-300/80 text-xs mt-1">
+                          Your positions redeem for ≈ {fmt(claimable)} WETH
+                          (direct CTF claim pays WETH; the helper below pays
+                          ETH).
+                        </p>
+                      )}
+                    </div>
                     <StandardButton
                       onClick={redeem}
-                      disabled={busy}
+                      disabled={busy || !userAddress}
                       className="rounded-full"
                       backgroundColor="bg-moon-green"
                     >
-                      Claim winnings
+                      Claim (WETH)
                     </StandardButton>
+                  </div>
+                )}
+
+                {/* M4: DePrizeRedeem helper (one-tx, pays native ETH) */}
+                {userAddress && (
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-emerald-900/20 border border-white/10">
+                    <p className="text-white font-semibold">
+                      DePrizeRedeem helper{' '}
+                      <span className="text-gray-500 text-xs font-normal">
+                        (M4 — redeem outcome tokens for native ETH)
+                      </span>
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">
+                      Needs the deployed helper + a DePrizeRegistry entry whose
+                      condition matches this market. Approve once, then redeem —
+                      the helper pulls your tokens, redeems on the CTF, unwraps
+                      and pays you ETH in one transaction.
+                    </p>
+                    <div className="mt-3 grid sm:grid-cols-[1fr_120px] gap-2">
+                      <div>
+                        <label className="text-xs text-gray-400">
+                          Helper address
+                        </label>
+                        <input
+                          type="text"
+                          value={helperAddress}
+                          onChange={(e) => setHelperAddress(e.target.value.trim())}
+                          placeholder="0x… (DePrizeRedeem)"
+                          className="mt-1 w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white text-xs font-mono placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-400">DePrize id</label>
+                        <input
+                          type="text"
+                          value={helperDeprizeId}
+                          onChange={(e) => setHelperDeprizeId(e.target.value)}
+                          placeholder="1"
+                          className="mt-1 w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white text-xs font-mono placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+                    {helperAddress && !validHelper && (
+                      <p className="text-amber-300 text-xs mt-2">
+                        Not a valid address.
+                      </p>
+                    )}
+                    {validHelper && (
+                      <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                        <div className="text-xs">
+                          <p className="text-gray-400">
+                            previewRedeem:{' '}
+                            <span className="text-white font-semibold">
+                              {helperPreview === undefined
+                                ? '—'
+                                : `${fmt(helperPreview)} ETH`}
+                            </span>
+                            {helperPreview === 0 && !resolved && (
+                              <span className="text-gray-500">
+                                {' '}
+                                (0 until the condition is resolved)
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-gray-500 mt-0.5">
+                            Approval:{' '}
+                            {helperApproved === undefined
+                              ? '—'
+                              : helperApproved
+                              ? 'granted'
+                              : 'not granted'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {!helperApproved && (
+                            <StandardButton
+                              onClick={approveHelper}
+                              disabled={busy}
+                              className="rounded-full"
+                              backgroundColor="bg-white/10"
+                            >
+                              Approve helper
+                            </StandardButton>
+                          )}
+                          <StandardButton
+                            onClick={redeemViaHelper}
+                            disabled={busy || !helperApproved}
+                            className="rounded-full"
+                            backgroundColor="bg-moon-green"
+                          >
+                            Redeem (ETH)
+                          </StandardButton>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1358,30 +1721,103 @@ export default function DePrizePlay() {
                       {isOracle && isOperator ? ' + ' : ''}
                       {isOperator ? 'operator' : ''})
                     </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {isOperator && (
-                        <StandardButton
-                          onClick={closeMarket}
-                          disabled={busy || isClosed}
-                          className="rounded-full"
-                          backgroundColor="bg-white/10"
-                        >
-                          Close market
-                        </StandardButton>
-                      )}
-                      {isOracle &&
-                        outcomes.map((o) => (
+
+                    {/* M4b unwind: pause -> (resolve) -> close -> withdrawFees */}
+                    {isOperator && (
+                      <div className="mb-4">
+                        <p className="text-gray-400 text-[11px] mb-2">
+                          Market unwind (owner): pause before resolving, close +
+                          withdraw fees after.
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
                           <StandardButton
-                            key={o.index}
-                            onClick={() => resolve(o.index)}
+                            onClick={() => marketAdmin('pause', 'Market paused.')}
+                            disabled={busy || stage !== MarketStage.Running}
+                            className="rounded-full"
+                            backgroundColor="bg-white/10"
+                          >
+                            Pause
+                          </StandardButton>
+                          <StandardButton
+                            onClick={() => marketAdmin('resume', 'Market resumed.')}
+                            disabled={busy || stage !== MarketStage.Paused}
+                            className="rounded-full"
+                            backgroundColor="bg-white/10"
+                          >
+                            Resume
+                          </StandardButton>
+                          <StandardButton
+                            onClick={() =>
+                              marketAdmin(
+                                'close',
+                                'Market closed — inventory returned to owner.'
+                              )
+                            }
+                            disabled={busy || isClosed}
+                            className="rounded-full"
+                            backgroundColor="bg-white/10"
+                          >
+                            Close market
+                          </StandardButton>
+                          <StandardButton
+                            onClick={() =>
+                              marketAdmin('withdrawFees', 'Fees withdrawn to owner.')
+                            }
                             disabled={busy}
                             className="rounded-full"
                             backgroundColor="bg-white/10"
                           >
-                            Resolve #{o.index + 1} wins
+                            Withdraw fees
                           </StandardButton>
-                        ))}
-                    </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* M4a resolution: same pre-flight as DePrizeResolve.s.sol */}
+                    {isOracle && (
+                      <div>
+                        <p className="text-gray-400 text-[11px] mb-2">
+                          Resolution (oracle, one-shot): the market must be
+                          paused/closed first; conditionId is recomputed from
+                          (you, questionId, {MAX_OUTCOMES}) and must match the
+                          market before anything is sent.
+                        </p>
+                        <label className="text-xs text-gray-400">questionId</label>
+                        <input
+                          type="text"
+                          value={questionId}
+                          onChange={(e) => setQuestionId(e.target.value.trim())}
+                          className="mt-1 mb-2 w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white text-xs font-mono placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        />
+                        {resolved ? (
+                          <p className="text-gray-500 text-xs">
+                            Already resolved — the payout vector is write-once.
+                          </p>
+                        ) : (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {outcomes.map((o) => (
+                              <StandardButton
+                                key={o.index}
+                                onClick={() => resolveWinner(o.index)}
+                                disabled={busy}
+                                className="rounded-full"
+                                backgroundColor="bg-white/10"
+                              >
+                                Resolve #{o.index + 1} wins
+                              </StandardButton>
+                            ))}
+                            <StandardButton
+                              onClick={resolveNoWinner}
+                              disabled={busy}
+                              className="rounded-full"
+                              backgroundColor="bg-moon-orange"
+                            >
+                              No winner (refund 1/{MAX_OUTCOMES})
+                            </StandardButton>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </>
