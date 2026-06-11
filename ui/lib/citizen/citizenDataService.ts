@@ -80,24 +80,83 @@ export async function batchCheckSubscriptions(
   return resultMap
 }
 
-// Golden angle (degrees) — successive multiples spread evenly around a circle,
-// giving an even "sunflower" distribution with no clumping.
-const GOLDEN_ANGLE = 137.50776405
+// Golden angle in radians — used to fill the moon disc with an even
+// "sunflower" distribution of points.
+const GOLDEN_ANGLE_RAD = 2.39996322972865
 
 /**
- * Scatter Antarctica-bound citizens evenly across the continental interior so
- * they don't stack or clump. Seeded by citizen ID so coordinates are stable
- * across renders. Latitude is kept between -79° and -86° — far enough from the
- * coast that points stay on the landmass/ice shelves rather than open ocean,
- * but spread enough to avoid a single pole cluster.
+ * Generate `count` points tracing the MoonDAO logo (moon disc, four-point
+ * star, dune curve) in a unit square (x right, y up).
  */
-function scatterAntarctica(id: string | number): { lat: number; lng: number } {
-  const n = Math.abs(Number(id) || 0)
-  const lng = ((n * GOLDEN_ANGLE) % 360) - 180
-  // Second irrational multiplier spreads latitude across the band independently
-  const t = (n * 0.61803398875) % 1
-  const lat = -79 - t * 7
-  return { lat, lng }
+function moondaoLogoUnitPoints(count: number): Array<{ x: number; y: number }> {
+  const points: Array<{ x: number; y: number }> = []
+  if (count <= 0) return points
+
+  const moonCount = Math.min(count, Math.max(6, Math.round(count * 0.22)))
+  const starCount = Math.min(8, Math.max(0, count - moonCount))
+  const duneCount = count - moonCount - starCount
+
+  // Moon: filled disc, upper left
+  const moonCx = 0.3
+  const moonCy = 0.72
+  const moonR = 0.14
+  for (let j = 0; j < moonCount; j++) {
+    const r = moonR * Math.sqrt((j + 0.5) / moonCount)
+    const a = j * GOLDEN_ANGLE_RAD
+    points.push({ x: moonCx + r * Math.cos(a), y: moonCy + r * Math.sin(a) })
+  }
+
+  // Star: four-point sparkle outline, upper right (alternating tip/waist)
+  const starCx = 0.74
+  const starCy = 0.74
+  for (let j = 0; j < starCount; j++) {
+    const a = (j * 2 * Math.PI) / starCount + Math.PI / 2
+    const r = j % 2 === 0 ? 0.115 : 0.04
+    points.push({ x: starCx + r * Math.cos(a), y: starCy + r * Math.sin(a) })
+  }
+
+  // Dune: sweeping ridge curve with a lower base curve for body
+  const ridgeCount = Math.ceil(duneCount * 0.62)
+  const baseCount = duneCount - ridgeCount
+  for (let j = 0; j < ridgeCount; j++) {
+    const t = ridgeCount === 1 ? 0.5 : j / (ridgeCount - 1)
+    points.push({
+      x: 0.04 + 0.92 * t,
+      // Exponent 1.5 skews the crest right of center, like the logo's dune
+      y: 0.18 + 0.36 * Math.sin(Math.PI * Math.pow(t, 1.5)),
+    })
+  }
+  for (let j = 0; j < baseCount; j++) {
+    const t = baseCount === 1 ? 0.5 : j / (baseCount - 1)
+    points.push({
+      x: 0.08 + 0.84 * t,
+      y: 0.08 + 0.16 * Math.sin(Math.PI * Math.pow(t, 1.4)),
+    })
+  }
+
+  return points
+}
+
+/**
+ * Place no-location citizens so their map pins draw the MoonDAO logo over
+ * Antarctica. The unit-square logo is mapped onto the tangent plane at the
+ * south pole (lat = -90 + distance, lng = bearing), which renders without
+ * distortion in the polar view users actually see. The mirror-corrected
+ * bearing (atan2(-X, Y)) keeps the logo un-flipped when viewed from outside
+ * the globe. Scale keeps every point poleward of -78° latitude, safely on
+ * the landmass at any longitude.
+ */
+function antarcticaLogoPositions(count: number): Array<{ lat: number; lng: number }> {
+  const SCALE = 20
+  return moondaoLogoUnitPoints(count).map(({ x, y }) => {
+    const X = (x - 0.5) * SCALE
+    const Y = (y - 0.5) * SCALE
+    const r = Math.hypot(X, Y)
+    return {
+      lat: -90 + r,
+      lng: (Math.atan2(-X, Y) * 180) / Math.PI,
+    }
+  })
 }
 
 // One-time coordinate table for the legacy citizens whose location was stored
@@ -436,6 +495,9 @@ export async function fetchCitizensWithLocation(
 
     // Filter valid citizens and build location data
     const citizensLocationData: CitizenLocationData[] = []
+    // Citizens with no resolvable location — positioned afterwards so their
+    // pins collectively draw the MoonDAO logo over Antarctica
+    const unlocatedCitizens: Omit<CitizenLocationData, 'lat' | 'lng'>[] = []
 
     for (const citizen of citizens) {
       const citizenId = (citizen as any).metadata.id
@@ -470,25 +532,32 @@ export async function fetchCitizensWithLocation(
         }
       }
 
-      // Still no usable coordinates — scatter across Antarctica so citizens
-      // with no real location don't stack into a single tall column
-      if (lat === null || lng === null) {
-        const scattered = scatterAntarctica(citizenId)
-        lat = scattered.lat
-        lng = scattered.lng
-        formattedAddress = parsed.name || 'Antarctica'
-      }
-
-      citizensLocationData.push({
+      const baseData = {
         id: citizenId,
         name: (citizen as any).metadata.name,
         location: citizenLocation || '',
         formattedAddress,
         image: (citizen as any).metadata.image,
-        lat,
-        lng,
-      })
+      }
+
+      if (lat === null || lng === null) {
+        unlocatedCitizens.push(baseData)
+      } else {
+        citizensLocationData.push({ ...baseData, lat, lng })
+      }
     }
+
+    // Assign logo positions by sorted ID so each citizen keeps a stable spot
+    // as long as the set of unlocated citizens doesn't change
+    unlocatedCitizens.sort((a, b) => Number(a.id) - Number(b.id))
+    const logoPositions = antarcticaLogoPositions(unlocatedCitizens.length)
+    unlocatedCitizens.forEach((c, i) => {
+      citizensLocationData.push({
+        ...c,
+        lat: logoPositions[i].lat,
+        lng: logoPositions[i].lng,
+      })
+    })
 
     onProgress?.('Grouping by location', 5, 5)
 
