@@ -80,31 +80,24 @@ export async function batchCheckSubscriptions(
   return resultMap
 }
 
-// Deep-interior Antarctic anchor points (research-station areas). Scattering
-// around these guarantees pins land on the continent, never in the ocean.
-const ANTARCTICA_LAND_ANCHORS: Array<[number, number]> = [
-  [-80.0, 20.0], // Queen Maud Land interior
-  [-82.5, 55.0], // American Highland interior
-  [-78.5, 106.8], // Vostok
-  [-75.3, 123.3], // Dome C / Concordia
-  [-80.5, 160.0], // Ross Ice Shelf interior
-  [-84.0, -80.0], // Ellsworth Land interior
-  [-80.0, -120.0], // Marie Byrd Land
-  [-86.0, -45.0], // Pole-ward interior
-]
+// Golden angle (degrees) — successive multiples spread evenly around a circle,
+// giving an even "sunflower" distribution with no clumping.
+const GOLDEN_ANGLE = 137.50776405
 
 /**
- * Scatter Antarctica-bound citizens across the continent so they don't
- * stack into a single tall column. Picks a land anchor + small jitter,
- * seeded by citizen ID so coordinates are stable across renders.
+ * Scatter Antarctica-bound citizens evenly across the continental interior so
+ * they don't stack or clump. Seeded by citizen ID so coordinates are stable
+ * across renders. Latitude is kept between -79° and -86° — far enough from the
+ * coast that points stay on the landmass/ice shelves rather than open ocean,
+ * but spread enough to avoid a single pole cluster.
  */
 function scatterAntarctica(id: string | number): { lat: number; lng: number } {
   const n = Math.abs(Number(id) || 0)
-  const [baseLat, baseLng] = ANTARCTICA_LAND_ANCHORS[n % ANTARCTICA_LAND_ANCHORS.length]
-  // Jitter within ±1.5° lat / ±4° lng — small enough to stay on the landmass
-  const latJitter = (((n * 7919) % 300) - 150) / 100
-  const lngJitter = (((n * 6271) % 800) - 400) / 100
-  return { lat: baseLat + latJitter, lng: baseLng + lngJitter }
+  const lng = ((n * GOLDEN_ANGLE) % 360) - 180
+  // Second irrational multiplier spreads latitude across the band independently
+  const t = (n * 0.61803398875) % 1
+  const lat = -79 - t * 7
+  return { lat, lng }
 }
 
 // One-time coordinate table for the legacy citizens whose location was stored
