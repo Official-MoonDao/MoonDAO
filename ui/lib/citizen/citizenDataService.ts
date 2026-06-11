@@ -81,6 +81,20 @@ export async function batchCheckSubscriptions(
 }
 
 /**
+ * Scatter Antarctica-bound citizens across the continent so they don't
+ * stack into a single tall column. Uses the citizen ID as a deterministic
+ * seed so coordinates are stable across renders.
+ *  - Latitude: -65° to -89° (stays within the Antarctic circle)
+ *  - Longitude: full -180° to +180°
+ */
+function scatterAntarctica(id: string | number): { lat: number; lng: number } {
+  const n = Math.abs(Number(id) || 0)
+  const lat = -65 - ((n * 7919) % 2400) / 100
+  const lng = (((n * 6271) % 36000) / 100) - 180
+  return { lat, lng }
+}
+
+/**
  * Parse location data from citizen attributes
  */
 function parseLocationData(citizenLocation: string | undefined): {
@@ -325,14 +339,21 @@ export async function fetchCitizensWithLocation(
 
       const locationData = parseLocationData(citizenLocation)
 
+      // Spread Antarctica citizens across the continent instead of stacking
+      // them all at the -90,0 pole point
+      const { lat, lng } =
+        locationData.lat === -90 && locationData.lng === 0
+          ? scatterAntarctica(citizenId)
+          : locationData
+
       citizensLocationData.push({
         id: citizenId,
         name: (citizen as any).metadata.name,
         location: citizenLocation || '',
         formattedAddress: locationData.formattedAddress,
         image: (citizen as any).metadata.image,
-        lat: locationData.lat,
-        lng: locationData.lng,
+        lat,
+        lng,
       })
     }
 
