@@ -62,7 +62,7 @@ export default function TeamListing({
   const router = useRouter()
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const { setSelectedChain } = useContext(ChainContextV5)
 
   const [enabledMarketplaceListingModal, setEnabledMarketplaceListingModal] = useState(false)
   const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(
