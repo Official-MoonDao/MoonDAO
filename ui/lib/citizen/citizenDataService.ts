@@ -270,9 +270,9 @@ export async function fetchCitizensWithLocation(
 
     onProgress?.('Querying citizen table', 1, 5)
 
-    // Fetch all citizens from tableland, excluding deleted profiles (view='')
-    // and entries without a profile image so they don't appear as pins on the map
-    const citizenStatement = `SELECT * FROM ${citizenTableName} WHERE view != '' AND image != ''`
+    // Fetch all citizens from tableland, excluding deleted/blank profiles:
+    // view='' means profile was deleted; name='' or image='' means incomplete/broken profile
+    const citizenStatement = `SELECT * FROM ${citizenTableName} WHERE view != '' AND name != '' AND image != ''`
     const citizenRows: any = await queryTable(chain, citizenStatement)
 
     if (!citizenRows || citizenRows.length === 0) {
