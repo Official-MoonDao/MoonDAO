@@ -80,23 +80,23 @@ export async function batchCheckSubscriptions(
   return resultMap
 }
 
-// Golden angle (degrees) — successive multiples spread evenly around a circle,
-// giving an even "sunflower" distribution with no clumping.
-const GOLDEN_ANGLE = 137.50776405
+// Deterministic pseudo-random value in [0,1) from a numeric seed. Seeding by
+// citizen ID keeps each pin in the same spot across rebuilds (no jumping)
+// while producing a genuinely random-looking scatter with no visible pattern.
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 43758.5453
+  return x - Math.floor(x)
+}
 
 /**
- * Scatter Antarctica-bound citizens evenly across the continental interior so
- * they don't stack or clump. Seeded by citizen ID so coordinates are stable
- * across renders. Latitude is kept between -79° and -86° — far enough from the
- * coast that points stay on the landmass/ice shelves rather than open ocean,
- * but spread enough to avoid a single pole cluster.
+ * Randomly place Antarctica-bound citizens across the continental interior.
+ * Latitude is kept between -79° and -86° so points stay on the landmass/ice
+ * shelves rather than the surrounding ocean.
  */
 function scatterAntarctica(id: string | number): { lat: number; lng: number } {
-  const n = Math.abs(Number(id) || 0)
-  const lng = ((n * GOLDEN_ANGLE) % 360) - 180
-  // Second irrational multiplier spreads latitude across the band independently
-  const t = (n * 0.61803398875) % 1
-  const lat = -79 - t * 7
+  const n = Math.abs(Number(id) || 0) + 1
+  const lat = -79 - seededRandom(n * 12.9898) * 7
+  const lng = seededRandom(n * 78.233) * 360 - 180
   return { lat, lng }
 }
 
