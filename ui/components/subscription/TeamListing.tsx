@@ -75,6 +75,7 @@ export default function TeamListing({
   const [isExpired, setIsExpired] = useState(false)
   const [isUpcoming, setIsUpcoming] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDeletedLocally, setIsDeletedLocally] = useState(false)
 
   const daysUntilExpiry = daysUntilTimestamp(listing?.endTime || 0)
 
@@ -147,6 +148,7 @@ export default function TeamListing({
 
   if (!listing) return null
   if (!isActive) return null
+  if (isDeletedLocally) return null
 
   const isPurchasable = !isUpcoming && !isExpired
 
@@ -268,8 +270,12 @@ export default function TeamListing({
                           method: 'deleteFromTable' as string,
                           params: [listing?.id, listing?.teamId],
                         })
-                        const receipt = await sendAndConfirmTransaction({ transaction, account })
-                        setTimeout(() => { refreshListings(); setIsDeleting(false) }, 25000)
+                        await sendAndConfirmTransaction({ transaction, account })
+                        toast.success('Listing deleted.')
+                        setIsDeleting(false)
+                        setIsDeletedLocally(true)
+                        // Tableland takes ~20-30s to index; sync after the delay
+                        setTimeout(() => refreshListings(), 25000)
                       } catch (err: any) {
                         console.error('Delete listing error:', err)
                         const reason =
