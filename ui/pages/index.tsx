@@ -11,15 +11,10 @@ import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
-import Callout1 from '../components/home/Callout1'
-import Callout2 from '../components/home/Callout2'
-import Callout3 from '../components/home/Callout3'
-import Feature from '../components/home/Feature'
-import Hero from '../components/home/Hero'
+import LandingHero from '../components/home/landing/LandingHero'
 import Container from '../components/layout/Container'
 import { ExpandedFooter } from '../components/layout/ExpandedFooter'
 import WebsiteHead from '../components/layout/Head'
-import PageEnder from '../components/layout/PreFooter'
 import { MissionSkeleton, SectionSkeleton } from '../components/layout/SkeletonLoader'
 
 const FeaturedMissionSection = dynamic(() => import('@/components/home/FeaturedMissionSection'), {
@@ -27,20 +22,36 @@ const FeaturedMissionSection = dynamic(() => import('@/components/home/FeaturedM
   ssr: false,
 })
 
-const LaunchpadSection = dynamic(() => import('../components/home/LaunchpadSection'), {
+const MissionStory = dynamic(() => import('../components/home/landing/MissionStory'), {
   loading: () => <SectionSkeleton />,
 })
 
-const Timeline = dynamic(() => import('../components/home/Timeline'), {
+const PillarsSection = dynamic(() => import('../components/home/landing/PillarsSection'), {
   loading: () => <SectionSkeleton />,
 })
 
-const SpeakerSection = dynamic(() => import('../components/home/SpeakerSection'), {
+const GovernanceSection = dynamic(() => import('../components/home/landing/GovernanceSection'), {
   loading: () => <SectionSkeleton />,
 })
 
-const PartnerSection = dynamic(() => import('../components/home/PartnerSection'), {
+const LaunchpadShowcase = dynamic(() => import('../components/home/landing/LaunchpadShowcase'), {
+  loading: () => <SectionSkeleton />,
+})
+
+const JourneyTimeline = dynamic(() => import('../components/home/landing/JourneyTimeline'), {
+  loading: () => <SectionSkeleton />,
+})
+
+const VoicesSection = dynamic(() => import('../components/home/landing/VoicesSection'), {
+  loading: () => <SectionSkeleton />,
+})
+
+const PartnersMarquee = dynamic(() => import('../components/home/landing/PartnersMarquee'), {
   loading: () => <SectionSkeleton minHeight="min-h-[300px]" />,
+})
+
+const FinalCTA = dynamic(() => import('../components/home/landing/FinalCTA'), {
+  loading: () => <SectionSkeleton />,
 })
 
 export default function Home({ missions, featuredMissionData }: any) {
@@ -64,26 +75,24 @@ export default function Home({ missions, featuredMissionData }: any) {
       <Head>
         {/* Preload critical background images */}
         <link rel="preload" as="image" href="/assets/Lunar-Colony-Dark.webp" />
-        <link rel="preload" as="image" href="/assets/mission-hero-bg.webp" />
       </Head>
       <WebsiteHead
         title="Welcome"
         description="MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement."
       />
-      <div>
-        <Hero />
+      <div className="bg-[#010208]">
+        <LandingHero />
         {FEATURED_MISSION && (
           <FeaturedMissionSection missions={missions} featuredMissionData={featuredMissionData} />
         )}
-        <Callout1 />
-        <Callout2 />
-        <Feature />
-        <LaunchpadSection />
-        <Timeline />
-        <SpeakerSection />
-        <Callout3 />
-        <PartnerSection />
-        <PageEnder />
+        <MissionStory />
+        <PillarsSection />
+        <GovernanceSection />
+        <LaunchpadShowcase />
+        <JourneyTimeline />
+        <VoicesSection />
+        <PartnersMarquee />
+        <FinalCTA />
         <ExpandedFooter hasCallToAction={false} darkBackground={true} isFullwidth={true} />
       </div>
     </Container>
