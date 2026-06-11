@@ -228,12 +228,12 @@ Milestones 1–3 are implemented and tested in `subscription-contracts/src/depri
 | Bet entry point | `DePrizeMint` → split CTF + route via Uniswap pools | `DePrizeMint` → split 5% to JB, 95% → WETH → `LMSRWithTWAP.trade()` | **M3 ✅** |
 | Market maker / liquidity | Per-team Uniswap v4 pools, treasury-as-LP | One Gnosis CTF condition + one `LMSRWithTWAP` market per DePrize (external Solidity `0.5` deployments, treasury-seeded) | **Reused (external)** |
 | Swap/protocol fee | `DePrizeFeeHook` (1% LP + 1% protocol) | LMSR built-in `fee = 1e16` (1%), retained by the market | **Superseded** |
-| Winner reporting | `DePrizeReporter` → `CTF.reportPayouts` | not yet built | **M4 (planned)** |
-| Winner redemption | `CTF.redeemPositions` wrapper | not yet built | **M4 (planned)** |
+| Winner reporting | `DePrizeReporter` → `CTF.reportPayouts` | Oracle = the MoonDAO multisig (fixed at `prepareCondition`; the CTF derives the conditionId from `msg.sender`, so a reporter contract cannot resolve it). Replaced by `DePrizeResolve.s.sol` pre-flight + Safe-submitted `reportPayouts` | **M4 ✅ (superseded)** |
+| Winner redemption | `CTF.redeemPositions` wrapper | `DePrizeRedeem` — stateless non-custodial helper: pulls outcome tokens, redeems on the CTF, pays ETH | **M4 ✅** |
 | Milestone prize escrow | `DePrizeMilestoneEscrow` (30/70) | not yet built | **M5 (planned)** |
-| Unified refund (`refundAll`) | `DePrizeRefund` | not yet built | **M4 (planned)** |
+| Unified refund (`refundAll`) | `DePrizeRefund` | Same `DePrizeRedeem` path — a no-winner/cancellation is an equal-payout report (`[1,1,…,1]`), so refund = redemption at 1/N. The combined CTF+JB one-click `refundAll` was dropped (JB cashOut stays a separate, existing flow) | **M4 ✅ (simplified)** |
 
-The milestone-based prize escrow, Senate-reporting bridge, CTF redemption, and unified refund described later in this Part are **design intent, not yet implemented**. See [`DEPRIZE_M1.md`](./DEPRIZE_M1.md)/[`M2`](./DEPRIZE_M2.md)/[`M3`](./DEPRIZE_M3.md) for what exists today.
+The milestone-based prize escrow (M5) described later in this Part is **design intent, not yet implemented**. See [`DEPRIZE_M1.md`](./DEPRIZE_M1.md)/[`M2`](./DEPRIZE_M2.md)/[`M3`](./DEPRIZE_M3.md)/[`M4`](./DEPRIZE_M4.md) for what exists today.
 
 ## State machine
 
@@ -274,8 +274,8 @@ As-built status shown. The CTF + `LMSRWithTWAP` decision (see §Implementation s
 | `DePrizeRegistry` | Per-DePrize config: mission, competitors, deadlines, state machine | **Built (M1)** |
 | `LaunchPadPayHook` (registry-aware) | Gate JB cashOut/contributions by DePrize state | **Built (M2)** |
 | `DePrizeMint` | Entry point: takes ETH, routes 5% to JB, wraps 95% to WETH, buys outcome tokens on the `LMSRWithTWAP` market, forwards tokens + refunds leftover | **Built (M3)** |
-| `DePrizeReporter` | Reads Senate result, calls `CTF.reportPayouts` | Planned (M4) |
-| `DePrizeRedeem` / `DePrizeRefund` | Winner `redeemPositions`; unified cancellation refund (CTF collateral + `$OVERVIEW` floor) | Planned (M4) |
+| ~~`DePrizeReporter`~~ | ~~Reads Senate result, calls `CTF.reportPayouts`~~ | **Superseded (M4)** — oracle is the multisig, baked into the conditionId; resolution = `DePrizeResolve.s.sol` pre-flight + Safe tx |
+| `DePrizeRedeem` | Winner `redeemPositions` AND the cancellation/no-winner refund (same code path — refund is an equal-payout report); pays ETH | **Built (M4)** |
 | `DePrizeMilestoneEscrow` | Holds prize pool post-settlement; releases 30% at M1 (capability), 70% at M2 (Frank flew) | Planned (M5) |
 | ~~`DePrizePrizeEscrow`~~ | ~~Holds 1% swap fees during campaign~~ | **Deleted** — LMSR built-in fee |
 | ~~`DePrizeFeeHook`~~ | ~~Uniswap v4 hook for LP + protocol fee~~ | **Deleted** — no Uniswap layer |

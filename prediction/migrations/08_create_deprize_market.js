@@ -26,6 +26,7 @@ const deprizeConfig = require("../deprize.config");
 const ConditionalTokens = artifacts.require("ConditionalTokens");
 const WETH9 = artifacts.require("WETH9");
 const LMSRWithTWAPFactory = artifacts.require("LMSRWithTWAPFactory");
+const LMSRWithTWAP = artifacts.require("LMSRWithTWAP");
 
 module.exports = function (deployer) {
   deployer.then(async () => {
@@ -101,9 +102,19 @@ module.exports = function (deployer) {
     }
 
     const lmsrAddress = creationLog.args.lmsrWithTWAP;
+
+    // 3. Hand the market to the oracle multisig. The factory makes the deployer
+    // the owner, but close()/withdrawFees() (the M4 unwind) are onlyOwner and
+    // must be executable by the Safe, not a deployer EOA.
+    const lmsr = await LMSRWithTWAP.at(lmsrAddress);
+    await lmsr.transferOwnership(oracle);
+    console.log("  LMSR ownership transferred to oracle:", oracle);
+
     console.log("\n=== DePrize market ready ===");
     console.log("conditionId:        ", conditionId);
     console.log("LMSRWithTWAP market:", lmsrAddress);
+    console.log("RECORD the questionId with the conditionId — resolution");
+    console.log("(DePrizeResolve.s.sol) needs it and it is not stored on-chain.");
     console.log("Next (0.8 side):");
     console.log("  registry.setCondition(deprizeId, conditionId)");
     console.log("  registry.open(deprizeId)");
