@@ -80,19 +80,60 @@ export async function batchCheckSubscriptions(
   return resultMap
 }
 
+// Deep-interior Antarctic anchor points (research-station areas). Scattering
+// around these guarantees pins land on the continent, never in the ocean.
+const ANTARCTICA_LAND_ANCHORS: Array<[number, number]> = [
+  [-80.0, 20.0], // Queen Maud Land interior
+  [-82.5, 55.0], // American Highland interior
+  [-78.5, 106.8], // Vostok
+  [-75.3, 123.3], // Dome C / Concordia
+  [-80.5, 160.0], // Ross Ice Shelf interior
+  [-84.0, -80.0], // Ellsworth Land interior
+  [-80.0, -120.0], // Marie Byrd Land
+  [-86.0, -45.0], // Pole-ward interior
+]
+
 /**
  * Scatter Antarctica-bound citizens across the continent so they don't
- * stack into a single tall column. Uses the citizen ID as a deterministic
- * seed so coordinates are stable across renders.
- *  - Latitude: -72° to -87° (kept close to the pole so points land on the
- *    continental landmass rather than the surrounding ocean)
- *  - Longitude: full -180° to +180°
+ * stack into a single tall column. Picks a land anchor + small jitter,
+ * seeded by citizen ID so coordinates are stable across renders.
  */
 function scatterAntarctica(id: string | number): { lat: number; lng: number } {
   const n = Math.abs(Number(id) || 0)
-  const lat = -72 - ((n * 7919) % 1500) / 100
-  const lng = (((n * 6271) % 36000) / 100) - 180
-  return { lat, lng }
+  const [baseLat, baseLng] = ANTARCTICA_LAND_ANCHORS[n % ANTARCTICA_LAND_ANCHORS.length]
+  // Jitter within ±1.5° lat / ±4° lng — small enough to stay on the landmass
+  const latJitter = (((n * 7919) % 300) - 150) / 100
+  const lngJitter = (((n * 6271) % 800) - 400) / 100
+  return { lat: baseLat + latJitter, lng: baseLng + lngJitter }
+}
+
+// One-time coordinate table for the legacy citizens whose location was stored
+// as plain text before geocoding existed at mint/edit time. This is a closed,
+// historical set — every new save goes through the geocoder and stores
+// coordinates — so a static lookup keeps the map correct even if the runtime
+// geocoder is unavailable (e.g. restricted API key at build time).
+const LEGACY_LOCATION_COORDS: { [key: string]: { lat: number; lng: number } } = {
+  'santa cruz, ca': { lat: 36.9741, lng: -122.0308 },
+  'brownsville, texas, usa': { lat: 25.9018, lng: -97.4975 },
+  'winter park, fl usa': { lat: 28.6, lng: -81.3392 },
+  'charleston, sc': { lat: 32.7765, lng: -79.9311 },
+  'austin, texas': { lat: 30.2672, lng: -97.7431 },
+  'san francisco, ca': { lat: 37.7749, lng: -122.4194 },
+  'houston, texas': { lat: 29.7604, lng: -95.3698 },
+  'raleigh, north carolina': { lat: 35.7796, lng: -78.6382 },
+  'phoenix, usa': { lat: 33.4484, lng: -112.074 },
+  'washington, d.c.': { lat: 38.9072, lng: -77.0369 },
+  'washington, dc': { lat: 38.9072, lng: -77.0369 },
+  'i live/ work between la serena, chile and taos, new mexico': {
+    lat: -29.9027,
+    lng: -71.2519,
+  },
+  'colorado springs, colorado, united states': { lat: 38.8339, lng: -104.8214 },
+  'roatán, honduras': { lat: 16.3217, lng: -86.5366 },
+  'prospera, roatan honduras': { lat: 16.4093, lng: -86.418 },
+  'new jersey, usa': { lat: 40.0583, lng: -74.4057 },
+  'baltimore county, maryland': { lat: 39.4432, lng: -76.6068 },
+  'paris, france': { lat: 48.8566, lng: 2.3522 },
 }
 
 type ParsedLocation = {
@@ -418,14 +459,21 @@ export async function fetchCitizensWithLocation(
       let formattedAddress = parsed.name || 'Antarctica'
 
       // Legacy citizens stored their location as plain text with no
-      // coordinates. Geocode the name so they show up in the right place
-      // instead of being dumped at the South Pole.
+      // coordinates. Resolve the name so they show up in the right place
+      // instead of being dumped at the South Pole — first via the static
+      // legacy table, then the runtime geocoder for anything unknown.
       if ((lat === null || lng === null) && parsed.name) {
-        const geo = await geocodeLocationText(parsed.name)
-        if (geo) {
-          lat = geo.lat
-          lng = geo.lng
-          formattedAddress = geo.name
+        const legacy = LEGACY_LOCATION_COORDS[parsed.name.trim().toLowerCase()]
+        if (legacy) {
+          lat = legacy.lat
+          lng = legacy.lng
+        } else {
+          const geo = await geocodeLocationText(parsed.name)
+          if (geo) {
+            lat = geo.lat
+            lng = geo.lng
+            formattedAddress = geo.name
+          }
         }
       }
 
