@@ -325,12 +325,6 @@ export async function fetchCitizensWithLocation(
 
       const locationData = parseLocationData(citizenLocation)
 
-      // Skip citizens with no real location — lat:-90/lng:0 is the sentinel
-      // for "no location set" and maps to Antarctica
-      if (locationData.lat === -90 && locationData.lng === 0) {
-        continue
-      }
-
       citizensLocationData.push({
         id: citizenId,
         name: (citizen as any).metadata.name,
