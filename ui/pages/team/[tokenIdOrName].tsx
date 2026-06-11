@@ -2,6 +2,7 @@
 import {
   BanknotesIcon,
   BuildingStorefrontIcon,
+  CameraIcon,
   ChatBubbleLeftIcon,
   ClipboardDocumentListIcon,
   GlobeAltIcon,
@@ -232,7 +233,12 @@ function TeamDetailPageContent({
             >
               {nft?.metadata?.image ? (
                 <div id="team-image-container" className="relative flex-shrink-0">
-                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+                  <div
+                    className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] relative${subIsValid && isManager ? ' group cursor-pointer' : ''}`}
+                    onClick={() => {
+                      if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
+                    }}
+                  >
                     <IPFSRenderer
                       src={nft?.metadata?.image}
                       className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
@@ -240,6 +246,12 @@ function TeamDetailPageContent({
                       width={250}
                       alt="Team Image"
                     />
+                    {subIsValid && isManager && (
+                      <div className="absolute inset-0 rounded-2xl bg-black/50 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <CameraIcon width={36} height={36} className="text-white" />
+                        <span className="text-white text-xs font-medium">Edit Photo</span>
+                      </div>
+                    )}
                   </div>
                   <div id="star-asset-container" className="absolute -bottom-2 -right-2">
                     <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
@@ -248,8 +260,18 @@ function TeamDetailPageContent({
                   </div>
                 </div>
               ) : (
-                <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center flex-shrink-0">
+                <div
+                  className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex flex-col items-center justify-center flex-shrink-0 gap-2${subIsValid && isManager ? ' group cursor-pointer hover:border-slate-400/70 transition-colors' : ''}`}
+                  onClick={() => {
+                    if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
+                  }}
+                >
                   <div className="text-slate-400 text-6xl">🏢</div>
+                  {subIsValid && isManager && (
+                    <span className="text-slate-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      Add Photo
+                    </span>
+                  )}
                 </div>
               )}
               <div
