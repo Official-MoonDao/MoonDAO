@@ -12,7 +12,7 @@ import { arbitrum } from '@/lib/rpc/chains'
 
 export async function getCitizensLocationData() {
   try {
-    if (process.env.NEXT_PUBLIC_ENV === 'prod' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+    if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
       return await fetchCitizensWithLocation(arbitrum)
     } else {
       return getDummyCitizenLocationData()

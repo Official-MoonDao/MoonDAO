@@ -31,7 +31,7 @@ export function useMapData(enabled: boolean = true, options: UseMapDataOptions =
     }
 
     // Fall back to dummy data in development
-    if (process.env.NEXT_PUBLIC_ENV !== 'prod' && process.env.NEXT_PUBLIC_TEST_ENV !== 'true') {
+    if (process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && process.env.NEXT_PUBLIC_TEST_ENV !== 'true') {
       return getDummyCitizenLocationData()
     }
 
