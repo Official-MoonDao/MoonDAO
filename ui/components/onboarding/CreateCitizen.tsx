@@ -2343,12 +2343,160 @@ export default function CreateCitizen({
                   )}
                 </div>
 
-                {/* Data overview */}
+                {/* Data overview — confirmed required fields only */}
                 <DataOverview
                   data={citizenData}
-                  title="Citizen Overview"
-                  excludeKeys={['newsletterSub', 'formResponseId']}
+                  title="Confirmed Details"
+                  excludeKeys={[
+                    'newsletterSub',
+                    'formResponseId',
+                    'description',
+                    'location',
+                    'discord',
+                    'twitter',
+                    'website',
+                    'view',
+                  ]}
                 />
+
+                {/* Optional profile details — editable while image generates */}
+                <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
+                  <div className="mb-4">
+                    <h3 className="font-GoodTimes text-base text-white">Additional Details</h3>
+                    <p className="text-slate-500 text-xs mt-1">
+                      {isAwaitingAiPortrait && !hasAiPortrait
+                        ? 'Fill this in while your portrait generates — all fields are optional.'
+                        : 'Optional — can be updated anytime from your profile.'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    {/* Bio */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Bio
+                      </label>
+                      <textarea
+                        value={citizenData.description ?? ''}
+                        onChange={(e) =>
+                          setCitizenData((prev) => ({ ...prev, description: e.target.value }))
+                        }
+                        placeholder="Tell the MoonDAO community a bit about yourself…"
+                        maxLength={200}
+                        rows={3}
+                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors resize-none"
+                      />
+                      <p className="text-xs text-slate-600 text-right">
+                        {(citizenData.description ?? '').length}/200
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Location */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          value={citizenData.location ?? ''}
+                          onChange={(e) =>
+                            setCitizenData((prev) => ({ ...prev, location: e.target.value }))
+                          }
+                          placeholder="City, Country"
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors"
+                        />
+                      </div>
+
+                      {/* Discord */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Discord
+                        </label>
+                        <input
+                          type="text"
+                          value={citizenData.discord ?? ''}
+                          onChange={(e) =>
+                            setCitizenData((prev) => ({ ...prev, discord: e.target.value }))
+                          }
+                          placeholder="username"
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors"
+                        />
+                      </div>
+
+                      {/* X / Twitter */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          X / Twitter
+                        </label>
+                        <input
+                          type="text"
+                          value={citizenData.twitter ?? ''}
+                          onChange={(e) =>
+                            setCitizenData((prev) => ({ ...prev, twitter: e.target.value }))
+                          }
+                          placeholder="@handle"
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors"
+                        />
+                      </div>
+
+                      {/* Website */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Website
+                        </label>
+                        <input
+                          type="url"
+                          value={citizenData.website ?? ''}
+                          onChange={(e) =>
+                            setCitizenData((prev) => ({ ...prev, website: e.target.value }))
+                          }
+                          placeholder="https://…"
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Profile visibility */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Profile Visibility
+                      </span>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCitizenData((prev) => ({ ...prev, view: 'public' }))
+                          }
+                          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
+                            !citizenData.view || citizenData.view === 'public'
+                              ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
+                              : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          Public
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCitizenData((prev) => ({ ...prev, view: 'private' }))
+                          }
+                          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
+                            citizenData.view === 'private'
+                              ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
+                              : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          Private
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        Public profiles are visible to other MoonDAO members. Private hides your
+                        details.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Cost breakdown */}
                 <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">

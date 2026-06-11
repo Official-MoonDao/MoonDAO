@@ -70,10 +70,15 @@ export function ImageGenerator({
 
   useEffect(() => {
     if (!generating) {
-      setElapsedMs(0)
+      // Don't reset elapsedMs here — resetting to 0 while isGenerating is still
+      // true would cause a brief 0:00 flash in the parent's onGenerationProgress
+      // callback before isGenerating also turns false. Reset happens below at the
+      // START of the next generation instead.
       setTipIndex(0)
       return
     }
+    // Reset the counter at the beginning of each new generation, not the end.
+    setElapsedMs(0)
     const start = Date.now()
     const elapsedTimer = setInterval(() => setElapsedMs(Date.now() - start), 250)
     const tipTimer = setInterval(() => setTipIndex((i) => (i + 1) % GENERATION_TIPS.length), 4000)
