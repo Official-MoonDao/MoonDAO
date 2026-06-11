@@ -270,8 +270,9 @@ export async function fetchCitizensWithLocation(
 
     onProgress?.('Querying citizen table', 1, 5)
 
-    // Fetch all citizens from tableland
-    const citizenStatement = `SELECT * FROM ${citizenTableName}`
+    // Fetch all citizens from tableland, excluding deleted profiles (view='')
+    // and entries without a profile image so they don't appear as pins on the map
+    const citizenStatement = `SELECT * FROM ${citizenTableName} WHERE view != '' AND image != ''`
     const citizenRows: any = await queryTable(chain, citizenStatement)
 
     if (!citizenRows || citizenRows.length === 0) {
@@ -323,6 +324,12 @@ export async function fetchCitizensWithLocation(
       )?.value
 
       const locationData = parseLocationData(citizenLocation)
+
+      // Skip citizens with no real location — lat:-90/lng:0 is the sentinel
+      // for "no location set" and maps to Antarctica
+      if (locationData.lat === -90 && locationData.lng === 0) {
+        continue
+      }
 
       citizensLocationData.push({
         id: citizenId,
