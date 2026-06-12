@@ -39,79 +39,83 @@ export default function LandingHero() {
   const contentY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : -60])
 
   return (
-    <section
-      ref={sectionRef}
-      id="landing-hero"
-      className="relative flex min-h-[100svh] w-full flex-col overflow-hidden bg-[#010208]"
-    >
-      {/* Parallax lunar colony backdrop */}
-      <motion.div style={{ y: bgY }} className="absolute inset-0 scale-[1.12]">
-        <Image
-          src="/assets/Lunar-Colony-Dark.webp"
-          alt=""
-          fill
-          priority
-          className="object-cover"
-          style={{ objectPosition: 'center 75%' }}
-          sizes="100vw"
-        />
-      </motion.div>
-
-      {/* Atmosphere: vignette + color wash + stars */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#010208]/85 via-[#010208]/30 to-[#010208]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(66,94,235,0.28),transparent_60%)]" />
-      <Starfield className="opacity-80" />
-
-      {/* Content */}
-      <motion.div
-        style={{ opacity: contentOpacity, y: contentY }}
-        className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center justify-center px-5 pb-10 pt-24 text-center md:px-10"
+    <>
+      {/* Hero — exactly one viewport tall, no overflow */}
+      <section
+        ref={sectionRef}
+        id="landing-hero"
+        className="relative flex h-[100svh] w-full flex-col overflow-hidden bg-[#010208]"
       >
-        <motion.div variants={container} initial="hidden" animate="visible">
-          <motion.h1 variants={item} className="font-GoodTimes leading-none text-white">
-            <span className="block text-[clamp(1rem,2.4vw,1.6rem)] tracking-[0.45em] text-white/70">
-              The Internet&apos;s
-            </span>
-            <span className="mt-4 block text-[clamp(2.8rem,9.5vw,8.5rem)]">
-              <span className="bg-gradient-to-r from-[#7c8cff] via-[#b07ce8] to-[#22d3ee] bg-clip-text text-transparent drop-shadow-[0_0_45px_rgba(124,140,255,0.35)]">
-                Space
-              </span>{' '}
-              Program
-            </span>
-          </motion.h1>
+        {/* Parallax lunar colony backdrop */}
+        <motion.div style={{ y: bgY }} className="absolute inset-0 scale-[1.12]">
+          <Image
+            src="/assets/Lunar-Colony-Dark.webp"
+            alt=""
+            fill
+            priority
+            className="object-cover"
+            style={{ objectPosition: 'center 75%' }}
+            sizes="100vw"
+          />
+        </motion.div>
 
-          <motion.p
-            variants={item}
-            className="mx-auto mt-8 max-w-2xl text-base leading-relaxed text-white/75 md:text-xl"
-          >
-            MoonDAO is an open platform to fund, collaborate, and compete on
-            challenges that get humanity closer to a permanent lunar
-            settlement — governed by its members, transparent by design.
-          </motion.p>
+        {/* Atmosphere: vignette + color wash + stars */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#010208]/85 via-[#010208]/30 to-[#010208]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(66,94,235,0.28),transparent_60%)]" />
+        <Starfield className="opacity-80" />
 
-          <motion.div
-            variants={item}
-            className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
-          >
-            <CtaButton href="/join" variant="primary">
-              Join the Network
-            </CtaButton>
-            <CtaButton href="/launch" variant="secondary">
-              Explore Missions
-            </CtaButton>
+        {/* Content */}
+        <motion.div
+          style={{ opacity: contentOpacity, y: contentY }}
+          className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center justify-center px-5 pb-10 pt-24 text-center md:px-10"
+        >
+          <motion.div variants={container} initial="hidden" animate="visible">
+            <motion.h1 variants={item} className="font-GoodTimes leading-none text-white">
+              <span className="block text-[clamp(1rem,2.4vw,1.6rem)] tracking-[0.45em] text-white/70">
+                The Internet&apos;s
+              </span>
+              <span className="mt-4 block text-[clamp(2.8rem,9.5vw,8.5rem)]">
+                <span className="bg-gradient-to-r from-[#7c8cff] via-[#b07ce8] to-[#22d3ee] bg-clip-text text-transparent drop-shadow-[0_0_45px_rgba(124,140,255,0.35)]">
+                  Space
+                </span>{' '}
+                Program
+              </span>
+            </motion.h1>
+
+            <motion.p
+              variants={item}
+              className="mx-auto mt-8 max-w-2xl text-base leading-relaxed text-white/75 md:text-xl"
+            >
+              MoonDAO is an open platform to fund, collaborate, and compete on
+              challenges that get humanity closer to a permanent lunar
+              settlement — governed by its members, transparent by design.
+            </motion.p>
+
+            <motion.div
+              variants={item}
+              className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+            >
+              <CtaButton href="/join" variant="primary">
+                Join the Network
+              </CtaButton>
+              <CtaButton href="/launch" variant="secondary">
+                Explore Missions
+              </CtaButton>
+            </motion.div>
           </motion.div>
         </motion.div>
-      </motion.div>
+      </section>
 
-      {/* Stats bar */}
-      <div className="relative z-10 border-t border-white/10 bg-[#010208]/55 backdrop-blur-xl">
+      {/* Stats bar — lives outside the hero so it only appears on scroll */}
+      <div className="relative z-10 border-t border-white/10 bg-[#010208] backdrop-blur-xl">
         <div className="mx-auto grid w-full max-w-[1400px] grid-cols-2 divide-x divide-white/10 lg:grid-cols-4">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.9 + i * 0.12, ease: EASE }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.7, delay: i * 0.1, ease: EASE }}
               className={`flex flex-col items-center gap-1 px-4 py-5 md:py-7 ${
                 i >= 2 ? 'border-t border-white/10 lg:border-t-0' : ''
               }`}
@@ -129,6 +133,6 @@ export default function LandingHero() {
           ))}
         </div>
       </div>
-    </section>
+    </>
   )
 }
