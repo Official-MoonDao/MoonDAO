@@ -151,6 +151,7 @@ type Outcome = {
   index: number
   probability: number // %
   balance: number // outcome tokens (== ETH payout if this outcome wins, 1:1)
+  balanceWei?: bigint // exact wei balance (float `balance` is display-only)
   positionId: bigint
 }
 
@@ -441,11 +442,11 @@ export default function DePrizePlay() {
                   method: 'balanceOf' as string,
                   params: [userAddress, pid],
                 })
-                  .then((b) => Number(b as bigint) / Number(UNIT))
-                  .catch(() => NaN)
+                  .then((b) => b as bigint)
+                  .catch(() => undefined)
               )
             )
-          : Promise.resolve(positionIds.map(() => NaN)),
+          : Promise.resolve(positionIds.map(() => undefined)),
         userAddress
           ? rpcRead({
               contract: weth,
@@ -499,12 +500,16 @@ export default function DePrizePlay() {
       setPayoutNums(nums)
       recordOddsSample(prices as number[])
       setOutcomes(
-        positionIds.map((pid, i) => ({
-          index: i,
-          probability: prices[i],
-          balance: balances[i],
-          positionId: pid,
-        }))
+        positionIds.map((pid, i) => {
+          const balWei = balances[i] as bigint | undefined
+          return {
+            index: i,
+            probability: prices[i],
+            balance: balWei !== undefined ? Number(balWei) / Number(UNIT) : NaN,
+            balanceWei: balWei,
+            positionId: pid,
+          }
+        })
       )
     } catch (err: any) {
       console.error('[deprize-play] loadMarket failed', err)
@@ -1166,7 +1171,7 @@ export default function DePrizePlay() {
   //   3. the market must be paused/closed first — reporting against a live
   //      market lets anyone trade the known outcome against the inventory.
   const resolve = async (payouts: bigint[], label: string) => {
-    if (!account || !ctf) return
+    if (!account || !ctf || !lmsr) return
     setBusy(true)
     try {
       const computed = await rpcRead<string>({
@@ -1182,10 +1187,29 @@ export default function DePrizePlay() {
           `Pre-flight: conditionId mismatch — keccak(yourAddress, questionId, ${MAX_OUTCOMES}) != the market's condition. Check the question id and that you are the oracle.`
         )
       }
-      if (payoutDen && payoutDen > 0n) {
+      // Re-read the gating state fresh on-chain rather than trusting the
+      // periodically-refreshed component state: a stale snapshot could let a
+      // race report against a still-live market (the "free trades against the
+      // known outcome" hazard) or against an already-resolved condition.
+      const freshDen = await rpcRead<bigint>({
+        contract: ctf,
+        method: 'payoutDenominator' as string,
+        params: [computed],
+      })
+      if (freshDen && freshDen > 0n) {
         throw new Error('Pre-flight: already resolved (payout vector is write-once).')
       }
-      if (stage !== MarketStage.Paused && stage !== MarketStage.Closed) {
+      const freshStage = Number(
+        await rpcRead<bigint | number>({
+          contract: lmsr,
+          method: 'stage' as string,
+          params: [],
+        })
+      )
+      if (
+        freshStage !== MarketStage.Paused &&
+        freshStage !== MarketStage.Closed
+      ) {
         throw new Error(
           'Pre-flight: pause or close the market first — resolving a live market gives away free trades against the known outcome.'
         )
@@ -1300,8 +1324,10 @@ export default function DePrizePlay() {
     resolved && payoutNums.length > 0 && payoutNums.every((n) => n > 0n)
   const claimable = resolved
     ? outcomes.reduce((acc, o, i) => {
-        if (!Number.isFinite(o.balance) || o.balance <= 0) return acc
-        const balWei = BigInt(Math.floor(o.balance * Number(UNIT)))
+        // Use the exact wei balance and mirror previewRedeem's per-position
+        // floor division so the headline can't disagree with what redeem pays.
+        const balWei = o.balanceWei
+        if (balWei === undefined || balWei <= 0n) return acc
         const payout = (balWei * (payoutNums[i] ?? 0n)) / payoutDen
         return acc + Number(payout) / Number(UNIT)
       }, 0)
