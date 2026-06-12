@@ -317,25 +317,34 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
 
               const cleanedCitizenData = cleanData(citizenData)
 
-              const locationDataRes = await fetch('/api/google/geocoder', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  location: cleanedCitizenData.location,
-                }),
-              })
-              const { data: locationData } = await locationDataRes.json()
-              const locationLat = locationData?.results?.[0]?.geometry?.location?.lat || -90
-              const locationLng = locationData?.results?.[0]?.geometry?.location?.lng || 0
-              const locationName = locationData?.results?.[0]?.formatted_address || 'Antarctica'
-              const citizenLocationData = {
-                lat: locationLat,
-                lng: locationLng,
-                name: locationName,
+              let cleanedLocationData: { lat: number; lng: number; name: string } | string = ''
+              if (cleanedCitizenData.location && cleanedCitizenData.location.trim() !== '') {
+                const locationDataRes = await fetch('/api/google/geocoder', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    location: cleanedCitizenData.location,
+                  }),
+                })
+                const { data: locationData } = await locationDataRes.json()
+                const geocodedResult = locationData?.results?.[0]
+                if (geocodedResult) {
+                  const citizenLocationData = {
+                    lat: geocodedResult.geometry.location.lat,
+                    lng: geocodedResult.geometry.location.lng,
+                    name: geocodedResult.formatted_address,
+                  }
+                  cleanedLocationData = cleanData(citizenLocationData)
+                } else {
+                  cleanedLocationData = cleanData({
+                    lat: 0,
+                    lng: 0,
+                    name: cleanedCitizenData.location.trim(),
+                  })
+                }
               }
-              const cleanedLocationData = cleanData(citizenLocationData)
 
               const formattedCitizenTwitter = cleanedCitizenData.twitter
                 ? addHttpsIfMissing(cleanedCitizenData.twitter)
@@ -377,7 +386,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                     cleanedCitizenData.name,
                     cleanedCitizenData.description,
                     imageIpfsLink,
-                    JSON.stringify(cleanedLocationData),
+                    cleanedLocationData ? JSON.stringify(cleanedLocationData) : '',
                     formattedCitizenDiscord,
                     formattedCitizenTwitter,
                     formattedCitizenWebsite,
