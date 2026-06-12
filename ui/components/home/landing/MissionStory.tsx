@@ -15,7 +15,7 @@ export default function MissionStory() {
   const imageY = useTransform(
     scrollYProgress,
     [0, 1],
-    [reduceMotion ? 0 : 60, reduceMotion ? 0 : -60]
+    [reduceMotion ? 0 : 40, reduceMotion ? 0 : -40]
   )
 
   return (
@@ -77,14 +77,17 @@ export default function MissionStory() {
         <Reveal delay={0.15} y={40}>
           <div className="group relative">
             <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-br from-[#425EEB]/40 via-[#6C407D]/30 to-[#22d3ee]/30 opacity-60 blur-2xl transition-opacity duration-500 group-hover:opacity-90" />
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/10">
-              <motion.div style={{ y: imageY }} className="scale-[1.15]">
+            <div className="relative h-[420px] overflow-hidden rounded-[2rem] border border-white/10 md:h-[540px]">
+              <motion.div
+                style={{ y: imageY }}
+                className="absolute -inset-y-16 inset-x-0"
+              >
                 <Image
                   src="/assets/Moon-Launch.webp"
                   alt="Rocket launching toward the Moon"
                   width={1200}
                   height={900}
-                  className="h-[420px] w-full object-cover md:h-[540px]"
+                  className="h-full w-full object-cover"
                 />
               </motion.div>
               <div className="absolute inset-0 bg-gradient-to-t from-[#010208]/80 via-transparent to-transparent" />
