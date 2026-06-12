@@ -66,11 +66,14 @@ export default function Video() {
     useEffect(() => {
         if (!sdkReady || !videoRef.current || !(window as any).Vimeo) return
 
+        let cancelled = false
         let vimeoPlayer: any
         try {
             vimeoPlayer = new (window as any).Vimeo.Player(videoRef.current)
 
             vimeoPlayer.ready().then(() => {
+                if (cancelled) return
+
                 setPlayer(vimeoPlayer)
                 setIsPlayerReady(true)
 
@@ -92,6 +95,7 @@ export default function Video() {
         }
 
         return () => {
+            cancelled = true
             if (vimeoPlayer) {
                 try {
                     vimeoPlayer.off('play')
