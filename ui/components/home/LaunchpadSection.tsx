@@ -100,7 +100,7 @@ export default function LaunchpadSection() {
                   <div>
                     <h4 className="text-white font-semibold text-lg mb-1">100% Transparent</h4>
                     <p className="text-white/70 text-sm md:text-base">
-                      All transactions are onchain, ensuring everyone can see how funds are spent.
+                      Transactions are onchain, so everyone can see how funds are spent.
                     </p>
                   </div>
                 </div>
