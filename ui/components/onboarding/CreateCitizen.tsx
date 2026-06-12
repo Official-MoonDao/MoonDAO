@@ -870,7 +870,12 @@ export default function CreateCitizen({
         console.error('Error recording referral:', error)
       }
 
-      // Normalize the thirdweb NFT to match the Tableland format before seeding
+      // Normalize the thirdweb NFT to match the Tableland format before seeding.
+      // Use the same field builder as the mint call so the locally seeded citizen
+      // matches what was actually written on-chain — otherwise the seed could show
+      // un-normalized socials, or worse, view='' (which the directory treats as
+      // hidden/deleted) for a citizen that was actually minted as 'public'.
+      const seededProfile = buildCitizenProfileMintFields(citizenData)
       const normalizedCitizen = {
         id: typeof citizenNFT.id === 'bigint' ? Number(citizenNFT.id) : citizenNFT.id,
         metadata: {
@@ -882,13 +887,13 @@ export default function CreateCitizen({
           animation_url: '',
           external_url: '',
           attributes: [
-            { trait_type: 'location', value: JSON.stringify(citizenData.location || '') },
-            { trait_type: 'website', value: citizenData.website || '' },
-            { trait_type: 'discord', value: citizenData.discord || '' },
-            { trait_type: 'twitter', value: citizenData.twitter || '' },
+            { trait_type: 'location', value: JSON.stringify(seededProfile.location) },
+            { trait_type: 'website', value: seededProfile.website },
+            { trait_type: 'discord', value: seededProfile.discord },
+            { trait_type: 'twitter', value: seededProfile.twitter },
             { trait_type: 'instagram', value: '' },
             { trait_type: 'linkedin', value: '' },
-            { trait_type: 'view', value: citizenData.view || '' },
+            { trait_type: 'view', value: seededProfile.view },
             { trait_type: 'formId', value: citizenData.formResponseId || '' },
           ],
         },
@@ -923,6 +928,13 @@ export default function CreateCitizen({
       tagToNetworkSignup,
       citizenData.email,
       citizenData.name,
+      citizenData.description,
+      citizenData.location,
+      citizenData.discord,
+      citizenData.twitter,
+      citizenData.website,
+      citizenData.view,
+      citizenData.formResponseId,
       citizenContract,
       address,
       clearCache,
