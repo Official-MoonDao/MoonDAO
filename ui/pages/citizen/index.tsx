@@ -1,13 +1,19 @@
 import { useRouter } from 'next/router'
 import { useCallback, useContext } from 'react'
+import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Head from '@/components/layout/Head'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
+import RegionRestrictedNotice from '@/components/onboarding/RegionRestrictedNotice'
 
 export default function Join() {
   const { selectedChain } = useContext(ChainContextV5)
   const router = useRouter()
+
+  // EU/EEA visitors may browse the site but cannot permanently store personal
+  // data on chain (GDPR), so they don't get the citizen creation flow.
+  const { isRestricted, isLoading: isResolvingRegion } = useRegionRestriction()
 
   useChainDefault()
 
@@ -39,12 +45,18 @@ export default function Join() {
         }
         image="https://ipfs.io/ipfs/QmUG1fcYnnzkhTFwSvMAy1gcFcq99VCk3Eps1L9g6qkt49"
       />
-      <CreateCitizen
-        selectedChain={selectedChain}
-        setSelectedTier={handleExitFlow}
-        freeMintProp={freeMint}
-        inviteToken={inviteToken}
-      />
+      {/* Wait until geo resolves so we never flash the creation flow to a
+          restricted visitor. */}
+      {isResolvingRegion ? null : isRestricted ? (
+        <RegionRestrictedNotice type="citizen" />
+      ) : (
+        <CreateCitizen
+          selectedChain={selectedChain}
+          setSelectedTier={handleExitFlow}
+          freeMintProp={freeMint}
+          inviteToken={inviteToken}
+        />
+      )}
     </>
   )
 }

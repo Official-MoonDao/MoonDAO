@@ -1,4 +1,5 @@
 import { useContext, useState } from 'react'
+import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
@@ -7,6 +8,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import ApplyModal from '@/components/onboarding/ApplyModal'
 import CreateTeam from '@/components/onboarding/CreateTeam'
+import RegionRestrictedNotice from '@/components/onboarding/RegionRestrictedNotice'
 import TeamTier from '@/components/onboarding/TeamTier'
 
 export default function TeamJoin() {
@@ -15,8 +17,22 @@ export default function TeamJoin() {
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
+  // EU/EEA visitors may browse the site but cannot permanently store personal
+  // data on chain (GDPR), so they don't get the team creation flow.
+  const { isRestricted, isLoading: isResolvingRegion } = useRegionRestriction()
+
   // Ensure default chain settings
   useChainDefault()
+
+  // Wait until geo resolves so we never flash the creation flow to a
+  // restricted visitor.
+  if (isResolvingRegion) {
+    return null
+  }
+
+  if (isRestricted) {
+    return <RegionRestrictedNotice type="team" />
+  }
 
   // If "team" is selected, render CreateTeam component
   if (selectedTier === 'team') {

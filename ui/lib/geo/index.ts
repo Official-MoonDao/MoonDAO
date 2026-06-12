@@ -41,6 +41,52 @@ export function getCountryFromHeaders(req: NextApiRequest): string | null {
   return null
 }
 
+// GDPR-restricted regions (ISO 3166-1 alpha-2). Covers the EU, the wider EEA
+// (Iceland, Liechtenstein, Norway), and the UK (which retains UK-GDPR
+// post-Brexit). These regions cannot permanently store personal data on chain,
+// so we let them browse the site but block on-chain profile creation.
+export const EU_EEA_COUNTRIES: ReadonlySet<string> = new Set([
+  'AT', // Austria
+  'BE', // Belgium
+  'BG', // Bulgaria
+  'HR', // Croatia
+  'CY', // Cyprus
+  'CZ', // Czechia
+  'DK', // Denmark
+  'EE', // Estonia
+  'FI', // Finland
+  'FR', // France
+  'DE', // Germany
+  'GR', // Greece
+  'HU', // Hungary
+  'IE', // Ireland
+  'IT', // Italy
+  'LV', // Latvia
+  'LT', // Lithuania
+  'LU', // Luxembourg
+  'MT', // Malta
+  'NL', // Netherlands
+  'PL', // Poland
+  'PT', // Portugal
+  'RO', // Romania
+  'SK', // Slovakia
+  'SI', // Slovenia
+  'ES', // Spain
+  'SE', // Sweden
+  'IS', // Iceland (EEA)
+  'LI', // Liechtenstein (EEA)
+  'NO', // Norway (EEA)
+  'GB', // United Kingdom (UK-GDPR)
+])
+
+// Returns true when the country code belongs to a GDPR-restricted region
+// (EU / EEA / UK). Unknown/null countries return false so we never block on
+// missing geo data.
+export function isEUCountry(countryCode: string | null | undefined): boolean {
+  if (!countryCode) return false
+  return EU_EEA_COUNTRIES.has(countryCode.toUpperCase())
+}
+
 // Extract US state from request headers (Vercel/Cloudflare geolocation)
 export function getStateFromHeaders(req: NextApiRequest): string | null {
   const h = req.headers
