@@ -179,8 +179,8 @@ async function isCitizenFreeMintListed(address: string): Promise<boolean | null>
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { address, name, image, privacy, formId, inviteToken } = req.body
-    if (!address || !name || !image || !privacy || !formId) {
+    const { address, name, image, formId, inviteToken } = req.body
+    if (!address || !name || !image || !formId) {
       return res.status(400).json({ error: 'Mint params not found!' })
     }
     // Optional profile metadata collected at checkout. Coerce to strings so a
@@ -192,6 +192,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const discord = asString(req.body.discord)
     const twitter = asString(req.body.twitter)
     const website = asString(req.body.website)
+    // Constrain visibility to the allowed enum; never trust the raw client value.
+    const privacy = req.body.privacy === 'private' ? 'private' : 'public'
     if (!isValidEvmAddress(address)) {
       return res.status(400).json({ error: 'Invalid wallet address format.' })
     }

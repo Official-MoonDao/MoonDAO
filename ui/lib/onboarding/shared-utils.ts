@@ -2,7 +2,69 @@ import { getAccessToken } from '@privy-io/react-auth'
 import { ethers } from 'ethers'
 import cleanData from '@/lib/tableland/cleanData'
 import { CitizenData } from '@/lib/typeform/citizenFormData'
-import { addHttpsIfMissing } from '@/lib/utils/strings'
+import { addHttpsIfMissing, bytesOfString } from '@/lib/utils/strings'
+
+// The citizen table stores each profile field on-chain; mirror the 1024-byte
+// guard the edit modal enforces so an oversized free-text answer can't inflate
+// gas or revert the mint with an opaque error.
+const MAX_PROFILE_FIELD_BYTES = 1024
+
+/**
+ * Truncate a string so its UTF-8 byte length never exceeds `maxBytes`, without
+ * splitting a multi-byte character.
+ */
+export function capToBytes(value: string, maxBytes = MAX_PROFILE_FIELD_BYTES): string {
+  if (bytesOfString(value) <= maxBytes) return value
+  let truncated = value
+  while (truncated.length > 0 && bytesOfString(truncated) > maxBytes) {
+    truncated = truncated.slice(0, -1)
+  }
+  return truncated
+}
+
+export type CitizenProfileMintFields = {
+  bio: string
+  location: string
+  discord: string
+  twitter: string
+  website: string
+  view: string
+}
+
+/**
+ * Geocode a free-text location into the same `{lat,lng,name}` JSON the citizen
+ * edit modal stores, so checkout-minted citizens land at their real coordinates
+ * on the network globe instead of the "no coordinates" Antarctica scatter zone.
+ *
+ * On geocode failure (or empty input) we fall back to `{lat:0,lng:0,name}` — the
+ * (0,0) sentinel is recognized downstream as "no coordinates yet, geocode later"
+ * while still preserving a clean, unquoted display name. Mirrors the edit modal.
+ */
+async function resolveLocationField(rawLocation: string): Promise<string> {
+  const trimmed = capToBytes((rawLocation || '').trim())
+  if (trimmed === '') return ''
+  try {
+    const res = await fetch('/api/google/geocoder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location: trimmed }),
+    })
+    const { data } = await res.json()
+    const geocoded = data?.results?.[0]
+    if (geocoded?.geometry?.location) {
+      return JSON.stringify(
+        cleanData({
+          lat: geocoded.geometry.location.lat,
+          lng: geocoded.geometry.location.lng,
+          name: geocoded.formatted_address || trimmed,
+        })
+      )
+    }
+  } catch (err) {
+    console.error('Failed to geocode citizen location at mint:', err)
+  }
+  return JSON.stringify(cleanData({ lat: 0, lng: 0, name: trimmed }))
+}
 
 /**
  * Builds the optional profile metadata for a citizen mint from the values the
@@ -11,24 +73,33 @@ import { addHttpsIfMissing } from '@/lib/utils/strings'
  *
  * Without this, everything the user types — including their Public/Private
  * visibility choice — is silently dropped and every citizen is minted as a blank
- * PUBLIC profile (a privacy regression for anyone who selected Private). Socials
- * are normalized the same way the citizen edit modal does; the raw location
- * string is stored as-is (it is parsed defensively downstream and can be
- * geocoded later from the profile editor).
+ * PUBLIC profile (a privacy regression for anyone who selected Private).
+ *
+ * Socials are normalized and length-capped exactly like the citizen edit modal,
+ * and the location is geocoded to `{lat,lng,name}` JSON so the globe renders it
+ * correctly. Performs a network call (geocoder), so resolve it once per mint and
+ * thread the result through both the mint and the local cache seed.
  */
-export function buildCitizenProfileMintFields(citizenData: CitizenData) {
-  const rawDiscord = citizenData.discord || ''
+export async function buildCitizenProfileMintFields(
+  citizenData: CitizenData
+): Promise<CitizenProfileMintFields> {
+  const rawDiscord = (citizenData.discord || '').trim()
   const discord = rawDiscord.startsWith('@')
-    ? rawDiscord.replace('@', '')
+    ? rawDiscord.replace(/^@+/, '')
     : rawDiscord
   return {
-    bio: citizenData.description || '',
-    location: citizenData.location || '',
-    discord,
-    twitter: citizenData.twitter ? addHttpsIfMissing(citizenData.twitter) : '',
-    website: citizenData.website ? addHttpsIfMissing(citizenData.website) : '',
-    // Honor the user's visibility selection; default to public when untouched.
-    view: citizenData.view || 'public',
+    bio: capToBytes(citizenData.description || ''),
+    location: await resolveLocationField(citizenData.location || ''),
+    discord: capToBytes(discord),
+    twitter: citizenData.twitter
+      ? capToBytes(addHttpsIfMissing(citizenData.twitter.trim()))
+      : '',
+    website: citizenData.website
+      ? capToBytes(addHttpsIfMissing(citizenData.website.trim()))
+      : '',
+    // Honor the user's visibility selection; default to public when untouched,
+    // and constrain to the allowed enum as defense-in-depth.
+    view: citizenData.view === 'private' ? 'private' : 'public',
   }
 }
 
