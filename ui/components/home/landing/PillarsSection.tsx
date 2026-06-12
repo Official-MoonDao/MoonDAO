@@ -18,8 +18,8 @@ const pillars: Pillar[] = [
     icon: '/assets/icon-astronaut.svg',
     iconAlt: 'Astronaut',
     header: 'Human Spaceflight',
-    link: '/marketplace',
-    hovertext: 'Explore Experiences',
+    link: '/about',
+    hovertext: 'Our Story',
     paragraph:
       'Sent the first crowdraised astronaut to space, selected via onchain voting — and a second everyday person via onchain sweepstakes.',
   },
@@ -27,8 +27,8 @@ const pillars: Pillar[] = [
     icon: '/assets/icon-ethereum.svg',
     iconAlt: 'Ethereum',
     header: 'Fund Space R&D',
-    link: '/propose',
-    hovertext: 'Submit An Idea',
+    link: '/proposals',
+    hovertext: 'Browse Proposals',
     paragraph:
       'Allocated $600,000+ to over 75 projects via open community governance.',
   },
@@ -37,7 +37,7 @@ const pillars: Pillar[] = [
     iconAlt: 'Plane',
     header: 'Space Training',
     link: '/marketplace',
-    hovertext: 'Train for Space',
+    hovertext: 'Explore Experiences',
     paragraph:
       'Training future space travelers with zero gravity flights and other innovative missions.',
   },
@@ -45,7 +45,7 @@ const pillars: Pillar[] = [
     icon: '/assets/icon-dao.svg',
     iconAlt: 'DAO',
     header: 'Industry Onchain',
-    link: '/join',
+    link: '/network',
     hovertext: 'Join the Network',
     paragraph:
       'The Space Acceleration Network connects individuals and organizations with funding, tools, and support to turn bold ideas into reality.',

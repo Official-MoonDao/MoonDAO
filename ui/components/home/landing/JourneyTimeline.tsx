@@ -152,12 +152,14 @@ export default function JourneyTimeline() {
         />
 
         <div className="mt-20">
+          {/* lineRef wraps the events + moon image so the line grows into the moon */}
           <div ref={lineRef} className="relative">
-            {/* Track + animated progress line (events only — stops before the moon) */}
-            <div className="absolute bottom-0 left-[22px] top-0 w-px bg-gradient-to-b from-white/10 via-white/10 to-transparent md:left-1/2" />
+            {/* Static track — ends at the moon's center (half the moon's height) */}
+            <div className="absolute bottom-20 left-[22px] top-0 w-px bg-gradient-to-b from-white/10 via-white/10 to-transparent md:bottom-28 md:left-1/2" />
+            {/* Scroll-driven animated line */}
             <motion.div
               style={{ scaleY: progress }}
-              className="absolute bottom-0 left-[22px] top-0 w-px origin-top bg-gradient-to-b from-[#425EEB] via-[#8B5CF6] to-[#22d3ee] shadow-[0_0_12px_rgba(124,140,255,0.8)] md:left-1/2"
+              className="absolute bottom-20 left-[22px] top-0 w-px origin-top bg-gradient-to-b from-[#425EEB] via-[#8B5CF6] to-[#22d3ee] shadow-[0_0_12px_rgba(124,140,255,0.8)] md:bottom-28 md:left-1/2"
             />
 
             <div className="flex flex-col gap-12 md:gap-16">
@@ -230,10 +232,9 @@ export default function JourneyTimeline() {
               )
             })}
             </div>
-          </div>
 
-          {/* Destination: the Moon */}
-          <div className="relative flex flex-col items-center pt-16">
+            {/* Destination: the Moon — image lives inside lineRef so the line reaches its center */}
+            <div className="relative flex flex-col items-center pt-16">
               <Reveal y={36}>
                 <div className="relative">
                   <div className="absolute -inset-6 rounded-full bg-[#7c8cff]/25 blur-3xl" />
@@ -246,21 +247,24 @@ export default function JourneyTimeline() {
                   />
                 </div>
               </Reveal>
-              <Reveal delay={0.15}>
-                <div className="mt-8 text-center">
-                  <span className="font-RobotoMono text-xs uppercase tracking-[0.3em] text-[#7c8cff]">
-                    Jan 2030
-                  </span>
-                  <h3 className="mt-2 font-GoodTimes text-2xl text-white md:text-3xl" style={{ textWrap: 'balance' } as any}>
-                    Lunar Settlement Complete
-                  </h3>
-                  <p className="mx-auto mt-3 max-w-md text-sm text-white/65 md:text-base" style={{ textWrap: 'pretty' } as any}>
-                    The first minimum viable lunar settlement is complete — and
-                    we throw a New Year&apos;s Eve party on the Moon.
-                  </p>
-                </div>
-              </Reveal>
+            </div>
           </div>
+
+          {/* Caption sits below the moon, outside lineRef */}
+          <Reveal delay={0.15}>
+            <div className="mt-8 text-center">
+              <span className="font-RobotoMono text-xs uppercase tracking-[0.3em] text-[#7c8cff]">
+                Jan 2030
+              </span>
+              <h3 className="mt-2 font-GoodTimes text-2xl text-white md:text-3xl" style={{ textWrap: 'balance' } as any}>
+                Lunar Settlement Complete
+              </h3>
+              <p className="mx-auto mt-3 max-w-md text-sm text-white/65 md:text-base" style={{ textWrap: 'pretty' } as any}>
+                The first minimum viable lunar settlement is complete — and
+                we throw a New Year&apos;s Eve party on the Moon.
+              </p>
+            </div>
+          </Reveal>
         </div>
       </div>
     </section>

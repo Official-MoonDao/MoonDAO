@@ -14,7 +14,7 @@ const features = [
     icon: '/assets/icon-signature.svg',
     title: '100% Transparent',
     description:
-      'All transactions are onchain, so everyone can see exactly how funds are spent.',
+      'Every transaction is onchain and fully visible to all.',
   },
   {
     icon: '/assets/icon-fasttrack.svg',
