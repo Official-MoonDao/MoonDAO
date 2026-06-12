@@ -1,5 +1,8 @@
 import { ethers } from 'ethers'
-import { extractTokenIdFromReceipt } from '@/lib/onboarding/shared-utils'
+import {
+  buildCitizenProfileMintFields,
+  extractTokenIdFromReceipt,
+} from '@/lib/onboarding/shared-utils'
 import { buildQuestEligibilityRequest } from '@/lib/xp/questEligibilityRequest'
 
 // ============================================================================
@@ -564,5 +567,143 @@ describe('Bug #7: claimable-quests eligibility check is read-only (GET)', () => 
     const { url } = buildQuestEligibilityRequest(ROUTE, USER, trickyToken)
     expect(url).to.contain(`accessToken=${encodeURIComponent(trickyToken)}`)
     expect(url).to.not.contain('accessToken=a&b=c')
+  })
+})
+
+// ============================================================================
+// Bug #8: Citizen checkout profile fields & visibility dropped on mint
+// The "Additional Details" step collects bio, location, socials, and a
+// Public/Private visibility choice into citizenData, but every mint path
+// hardcoded empty strings and 'public'. buildCitizenProfileMintFields maps
+// those values onto the Citizen.mintTo params so the user's input — and
+// crucially their privacy selection — actually persists. The builder also
+// geocodes location to {lat,lng,name} JSON, caps fields at 1024 bytes, and
+// normalizes socials exactly like the citizen edit modal.
+// ============================================================================
+describe('Bug #8: citizen profile mint fields', () => {
+  const base = {
+    name: 'Astro',
+    email: 'astro@moondao.com',
+    formResponseId: 'abc123',
+  }
+
+  // Geocoding hits /api/google/geocoder; stub fetch so the unit test is
+  // deterministic and never depends on a running server / API key.
+  let originalFetch: typeof globalThis.fetch
+  const stubGeocoder = (result: any) => {
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ data: { results: result ? [result] : [] } }),
+      })) as unknown as typeof globalThis.fetch
+  }
+
+  beforeEach(() => {
+    originalFetch = globalThis.fetch
+  })
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  it('honors a Private visibility selection (privacy regression)', async () => {
+    stubGeocoder(null)
+    const fields = await buildCitizenProfileMintFields({ ...base, view: 'private' })
+    expect(fields.view).to.equal('private')
+  })
+
+  it('defaults visibility to public when the user never toggles it', async () => {
+    stubGeocoder(null)
+    expect((await buildCitizenProfileMintFields({ ...base })).view).to.equal('public')
+    expect(
+      (await buildCitizenProfileMintFields({ ...base, view: '' })).view
+    ).to.equal('public')
+    // Anything other than the exact 'private' enum collapses to 'public'.
+    expect(
+      (await buildCitizenProfileMintFields({ ...base, view: 'hacker' as any })).view
+    ).to.equal('public')
+  })
+
+  it('geocodes the typed location into {lat,lng,name} JSON', async () => {
+    stubGeocoder({
+      geometry: { location: { lat: 40.7128, lng: -74.006 } },
+      formatted_address: 'New York, NY, USA',
+    })
+    const fields = await buildCitizenProfileMintFields({
+      ...base,
+      description: 'I love space',
+      location: 'New York',
+    })
+    expect(fields.bio).to.equal('I love space')
+    const parsed = JSON.parse(fields.location)
+    expect(parsed.lat).to.equal(40.7128)
+    expect(parsed.lng).to.equal(-74.006)
+    expect(parsed.name).to.equal('New York, NY, USA')
+  })
+
+  it('falls back to the (0,0) sentinel with the typed name when geocoding fails', async () => {
+    stubGeocoder(null)
+    const fields = await buildCitizenProfileMintFields({
+      ...base,
+      location: 'Atlantis',
+    })
+    const parsed = JSON.parse(fields.location)
+    expect(parsed.lat).to.equal(0)
+    expect(parsed.lng).to.equal(0)
+    expect(parsed.name).to.equal('Atlantis')
+  })
+
+  it('strips a leading @ from the discord handle (matches the edit modal)', async () => {
+    stubGeocoder(null)
+    expect(
+      (await buildCitizenProfileMintFields({ ...base, discord: '@spacefan' })).discord
+    ).to.equal('spacefan')
+    expect(
+      (await buildCitizenProfileMintFields({ ...base, discord: 'spacefan' })).discord
+    ).to.equal('spacefan')
+  })
+
+  it('normalizes twitter/website with https and leaves blanks empty', async () => {
+    stubGeocoder(null)
+    const fields = await buildCitizenProfileMintFields({
+      ...base,
+      twitter: 'x.com/spacefan',
+      website: 'moondao.com',
+    })
+    expect(fields.twitter).to.equal('https://x.com/spacefan')
+    expect(fields.website).to.equal('https://moondao.com')
+
+    const blank = await buildCitizenProfileMintFields({ ...base })
+    expect(blank.twitter).to.equal('')
+    expect(blank.website).to.equal('')
+    expect(blank.bio).to.equal('')
+    expect(blank.location).to.equal('')
+    expect(blank.discord).to.equal('')
+  })
+
+  it('does not double-prefix an already-https url', async () => {
+    stubGeocoder(null)
+    const fields = await buildCitizenProfileMintFields({
+      ...base,
+      website: 'https://moondao.com',
+    })
+    expect(fields.website).to.equal('https://moondao.com')
+  })
+
+  it('does not double-prefix an http:// url (only checked https before)', async () => {
+    stubGeocoder(null)
+    const fields = await buildCitizenProfileMintFields({
+      ...base,
+      website: 'http://moondao.com',
+    })
+    expect(fields.website).to.equal('http://moondao.com')
+  })
+
+  it('caps an oversized bio at 1024 bytes so the mint cannot revert/inflate gas', async () => {
+    stubGeocoder(null)
+    const fields = await buildCitizenProfileMintFields({
+      ...base,
+      description: 'a'.repeat(5000),
+    })
+    expect(new TextEncoder().encode(fields.bio).length).to.be.at.most(1024)
   })
 })

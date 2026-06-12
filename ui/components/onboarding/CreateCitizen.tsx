@@ -46,6 +46,8 @@ import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import {
   estimateGasWithAPI,
   applyGasBuffer,
+  buildCitizenProfileMintFields,
+  type CitizenProfileMintFields,
   extractTokenIdFromReceipt,
   handleTypeformSubmission,
 } from '@/lib/onboarding/shared-utils'
@@ -676,7 +678,7 @@ export default function CreateCitizen({
   )
 
   const executeFreeMint = useCallback(
-    async (imageIpfsHash: string) => {
+    async (imageIpfsHash: string, profile: CitizenProfileMintFields) => {
       // Invite-sponsored mints must prove the signed-in Privy user owns this
       // wallet, so the one-time token can only be redeemed by its recipient.
       const accessToken = inviteToken ? await getAccessToken() : null
@@ -690,7 +692,12 @@ export default function CreateCitizen({
           address: address,
           name: citizenData.name,
           image: `ipfs://${imageIpfsHash}`,
-          privacy: 'public',
+          bio: profile.bio,
+          location: profile.location,
+          discord: profile.discord,
+          twitter: profile.twitter,
+          website: profile.website,
+          privacy: profile.view,
           formId: citizenData.formResponseId,
           ...(inviteToken ? { inviteToken, accessToken } : {}),
         }),
@@ -706,7 +713,7 @@ export default function CreateCitizen({
   )
 
   const executeCrossChainMint = useCallback(
-    async (imageIpfsHash: string, cost: bigint) => {
+    async (imageIpfsHash: string, cost: bigint, profile: CitizenProfileMintFields) => {
       if (!account) {
         throw new Error('Please connect your wallet to continue.')
       }
@@ -724,13 +731,13 @@ export default function CreateCitizen({
           _options.toHex(),
           address,
           citizenData.name,
-          '',
+          profile.bio,
           `ipfs://${imageIpfsHash}`,
-          '',
-          '',
-          '',
-          '',
-          'public',
+          profile.location,
+          profile.discord,
+          profile.twitter,
+          profile.website,
+          profile.view,
           citizenData.formResponseId,
         ],
         value: MSG_VALUE + LAYER_ZERO_TRANSFER_COST,
@@ -763,7 +770,7 @@ export default function CreateCitizen({
   )
 
   const executeDirectMint = useCallback(
-    async (imageIpfsHash: string, cost: bigint) => {
+    async (imageIpfsHash: string, cost: bigint, profile: CitizenProfileMintFields) => {
       if (!account) {
         throw new Error('Please connect your wallet to continue.')
       }
@@ -774,13 +781,13 @@ export default function CreateCitizen({
         params: [
           address,
           citizenData.name,
-          '',
+          profile.bio,
           `ipfs://${imageIpfsHash}`,
-          '',
-          '',
-          '',
-          '',
-          'public',
+          profile.location,
+          profile.discord,
+          profile.twitter,
+          profile.website,
+          profile.view,
           citizenData.formResponseId,
         ],
         value: cost,
@@ -795,7 +802,7 @@ export default function CreateCitizen({
   )
 
   const handlePostMint = useCallback(
-    async (mintedTokenId: string) => {
+    async (mintedTokenId: string, profile: CitizenProfileMintFields) => {
       await tagToNetworkSignup(citizenData.email)
 
       const citizenNFT = await waitForERC721(citizenContract, +mintedTokenId)
@@ -832,7 +839,12 @@ export default function CreateCitizen({
         console.error('Error recording referral:', error)
       }
 
-      // Normalize the thirdweb NFT to match the Tableland format before seeding
+      // Normalize the thirdweb NFT to match the Tableland format before seeding.
+      // Reuse the exact profile fields that were written on-chain so the locally
+      // seeded citizen matches the mint — otherwise the seed could show
+      // un-normalized socials, an un-geocoded location, or worse, view='' (which
+      // the directory treats as hidden/deleted) for a citizen minted as 'public'.
+      // `profile.location` is already the geocoded `{lat,lng,name}` JSON string.
       const normalizedCitizen = {
         id: typeof citizenNFT.id === 'bigint' ? Number(citizenNFT.id) : citizenNFT.id,
         metadata: {
@@ -844,13 +856,13 @@ export default function CreateCitizen({
           animation_url: '',
           external_url: '',
           attributes: [
-            { trait_type: 'location', value: JSON.stringify(citizenData.location || '') },
-            { trait_type: 'website', value: citizenData.website || '' },
-            { trait_type: 'discord', value: citizenData.discord || '' },
-            { trait_type: 'twitter', value: citizenData.twitter || '' },
+            { trait_type: 'location', value: profile.location },
+            { trait_type: 'website', value: profile.website },
+            { trait_type: 'discord', value: profile.discord },
+            { trait_type: 'twitter', value: profile.twitter },
             { trait_type: 'instagram', value: '' },
             { trait_type: 'linkedin', value: '' },
-            { trait_type: 'view', value: citizenData.view || '' },
+            { trait_type: 'view', value: profile.view },
             { trait_type: 'formId', value: citizenData.formResponseId || '' },
           ],
         },
@@ -885,6 +897,7 @@ export default function CreateCitizen({
       tagToNetworkSignup,
       citizenData.email,
       citizenData.name,
+      citizenData.formResponseId,
       citizenContract,
       address,
       clearCache,
@@ -1334,14 +1347,19 @@ export default function CreateCitizen({
         return toast.error('Image upload to IPFS failed. Please try again.')
       }
 
+      // Resolve the optional profile fields once (this geocodes the location via
+      // a network call) and reuse the result for both the mint and the local
+      // cache seed so they can never drift apart.
+      const profile = await buildCitizenProfileMintFields(citizenData)
+
       // Execute mint based on type
       let receipt: any
       if (freeMint) {
-        receipt = await executeFreeMint(newImageIpfsHash)
+        receipt = await executeFreeMint(newImageIpfsHash, profile)
       } else if (isCrossChain) {
-        receipt = await executeCrossChainMint(newImageIpfsHash, cost)
+        receipt = await executeCrossChainMint(newImageIpfsHash, cost, profile)
       } else {
-        receipt = await executeDirectMint(newImageIpfsHash, cost)
+        receipt = await executeDirectMint(newImageIpfsHash, cost, profile)
       }
 
       // Verify receipt and extract token ID
@@ -1353,7 +1371,7 @@ export default function CreateCitizen({
       }
 
       if (mintedTokenId) {
-        await handlePostMint(mintedTokenId)
+        await handlePostMint(mintedTokenId, profile)
         setIsLoadingMint(false)
       }
     } catch (err: any) {
@@ -1375,7 +1393,7 @@ export default function CreateCitizen({
     isCrossChain,
     freeMint,
     nativeBalance,
-    citizenData.name,
+    citizenData,
     executeFreeMint,
     executeCrossChainMint,
     executeDirectMint,
