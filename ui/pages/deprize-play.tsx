@@ -1179,10 +1179,12 @@ export default function DePrizePlay() {
         method: 'getConditionId' as string,
         params: [account.address, questionId, BigInt(MAX_OUTCOMES)],
       })
-      if (
-        conditionId &&
-        computed.toLowerCase() !== conditionId.toLowerCase()
-      ) {
+      const marketConditionId = await rpcRead<string>({
+        contract: lmsr,
+        method: 'conditionIds' as string,
+        params: [0n],
+      })
+      if (computed.toLowerCase() !== marketConditionId.toLowerCase()) {
         throw new Error(
           `Pre-flight: conditionId mismatch — keccak(yourAddress, questionId, ${MAX_OUTCOMES}) != the market's condition. Check the question id and that you are the oracle.`
         )
