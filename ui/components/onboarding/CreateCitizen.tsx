@@ -62,6 +62,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import { CitizenData, formatCitizenShortFormData } from '@/lib/typeform/citizenFormData'
+import { addHttpsIfMissing } from '@/lib/utils/strings'
 import {
   renameFile,
   fileToBase64,
@@ -121,6 +122,29 @@ import { TermsCheckbox } from './TermsCheckbox'
  * 8. Side Effects (grouped by purpose)
  * 9. JSX Render
  */
+
+// Builds the optional profile metadata for a citizen mint from the values the
+// user entered in the "Additional Details" step at checkout. These map 1:1 onto
+// the Citizen.mintTo params (bio, location, discord, twitter, website, _view).
+// Without this, everything the user types — including their Public/Private
+// visibility choice — is silently dropped and every citizen is minted as a blank
+// PUBLIC profile (a privacy regression for anyone who selected Private). Socials
+// are normalized the same way the citizen edit modal does; the raw location
+// string is stored as-is (it is parsed defensively downstream and can be
+// geocoded later from the profile editor).
+function buildCitizenProfileMintFields(citizenData: CitizenData) {
+  const rawDiscord = citizenData.discord || ''
+  const discord = rawDiscord.startsWith('@') ? rawDiscord.replace('@', '') : rawDiscord
+  return {
+    bio: citizenData.description || '',
+    location: citizenData.location || '',
+    discord,
+    twitter: citizenData.twitter ? addHttpsIfMissing(citizenData.twitter) : '',
+    website: citizenData.website ? addHttpsIfMissing(citizenData.website) : '',
+    // Honor the user's visibility selection; default to public when untouched.
+    view: citizenData.view || 'public',
+  }
+}
 
 // Celebratory confetti burst for the citizen welcome screen (space palette).
 function fireCelebrationConfetti() {
@@ -680,6 +704,7 @@ export default function CreateCitizen({
       // Invite-sponsored mints must prove the signed-in Privy user owns this
       // wallet, so the one-time token can only be redeemed by its recipient.
       const accessToken = inviteToken ? await getAccessToken() : null
+      const profile = buildCitizenProfileMintFields(citizenData)
       const res = await fetch(`/api/mission/freeMint`, {
         method: 'POST',
         headers: {
@@ -690,7 +715,12 @@ export default function CreateCitizen({
           address: address,
           name: citizenData.name,
           image: `ipfs://${imageIpfsHash}`,
-          privacy: 'public',
+          bio: profile.bio,
+          location: profile.location,
+          discord: profile.discord,
+          twitter: profile.twitter,
+          website: profile.website,
+          privacy: profile.view,
           formId: citizenData.formResponseId,
           ...(inviteToken ? { inviteToken, accessToken } : {}),
         }),
@@ -702,7 +732,18 @@ export default function CreateCitizen({
       }
       return await res.json()
     },
-    [address, citizenData.name, citizenData.formResponseId, inviteToken],
+    [
+      address,
+      citizenData.name,
+      citizenData.formResponseId,
+      citizenData.description,
+      citizenData.location,
+      citizenData.discord,
+      citizenData.twitter,
+      citizenData.website,
+      citizenData.view,
+      inviteToken,
+    ],
   )
 
   const executeCrossChainMint = useCallback(
@@ -716,6 +757,7 @@ export default function CreateCitizen({
 
       const _options = Options.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, MSG_VALUE)
 
+      const crossChainProfile = buildCitizenProfileMintFields(citizenData)
       const transaction = await prepareContractCall({
         contract: crossChainMintContract,
         method: 'crossChainMint' as string,
@@ -724,13 +766,13 @@ export default function CreateCitizen({
           _options.toHex(),
           address,
           citizenData.name,
-          '',
+          crossChainProfile.bio,
           `ipfs://${imageIpfsHash}`,
-          '',
-          '',
-          '',
-          '',
-          'public',
+          crossChainProfile.location,
+          crossChainProfile.discord,
+          crossChainProfile.twitter,
+          crossChainProfile.website,
+          crossChainProfile.view,
           citizenData.formResponseId,
         ],
         value: MSG_VALUE + LAYER_ZERO_TRANSFER_COST,
@@ -756,6 +798,12 @@ export default function CreateCitizen({
       address,
       citizenData.name,
       citizenData.formResponseId,
+      citizenData.description,
+      citizenData.location,
+      citizenData.discord,
+      citizenData.twitter,
+      citizenData.website,
+      citizenData.view,
       LAYER_ZERO_TRANSFER_COST,
       isTestnet,
       destinationChain,
@@ -768,19 +816,20 @@ export default function CreateCitizen({
         throw new Error('Please connect your wallet to continue.')
       }
 
+      const profile = buildCitizenProfileMintFields(citizenData)
       const transaction = await prepareContractCall({
         contract: citizenContract,
         method: 'mintTo' as string,
         params: [
           address,
           citizenData.name,
-          '',
+          profile.bio,
           `ipfs://${imageIpfsHash}`,
-          '',
-          '',
-          '',
-          '',
-          'public',
+          profile.location,
+          profile.discord,
+          profile.twitter,
+          profile.website,
+          profile.view,
           citizenData.formResponseId,
         ],
         value: cost,
@@ -791,7 +840,19 @@ export default function CreateCitizen({
         account,
       })
     },
-    [account, citizenContract, address, citizenData.name, citizenData.formResponseId],
+    [
+      account,
+      citizenContract,
+      address,
+      citizenData.name,
+      citizenData.formResponseId,
+      citizenData.description,
+      citizenData.location,
+      citizenData.discord,
+      citizenData.twitter,
+      citizenData.website,
+      citizenData.view,
+    ],
   )
 
   const handlePostMint = useCallback(

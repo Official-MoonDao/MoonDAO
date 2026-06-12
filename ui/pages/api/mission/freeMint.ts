@@ -183,6 +183,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!address || !name || !image || !privacy || !formId) {
       return res.status(400).json({ error: 'Mint params not found!' })
     }
+    // Optional profile metadata collected at checkout. Coerce to strings so a
+    // malformed body can never inject a non-string into the contract call, and
+    // default to '' when absent (preserves the legacy blank-profile behavior).
+    const asString = (v: unknown) => (typeof v === 'string' ? v : '')
+    const bio = asString(req.body.bio)
+    const location = asString(req.body.location)
+    const discord = asString(req.body.discord)
+    const twitter = asString(req.body.twitter)
+    const website = asString(req.body.website)
     if (!isValidEvmAddress(address)) {
       return res.status(400).json({ error: 'Invalid wallet address format.' })
     }
@@ -278,7 +287,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const transaction = prepareContractCall({
         contract: citizenContract,
         method: 'mintTo' as string,
-        params: [address, name, '', image, '', '', '', '', privacy, formId],
+        params: [
+          address,
+          name,
+          bio,
+          image,
+          location,
+          discord,
+          twitter,
+          website,
+          privacy,
+          formId,
+        ],
         value: cost,
       })
       const receipt = await sendAndConfirmTransaction({
