@@ -31,9 +31,9 @@ describe('<TeamImageGenerator />', () => {
   })
 
   it('Displays the uploaded image if provided', () => {
-    // Click "Change image" to show the file input
-    cy.contains('Change image').should('not.exist')
-    // Mount without currImage so upload zone is shown
+    // Mount without currImage so the upload zone (file input) is shown.
+    // "Change image" only appears after an image has been selected, so it
+    // must not exist in this initial empty state.
     cy.mount(
       <TestnetProviders>
         <ImageGenerator
@@ -43,9 +43,13 @@ describe('<TeamImageGenerator />', () => {
         />
       </TestnetProviders>
     )
+    cy.contains('Change image').should('not.exist')
     cy.get('input[type="file"]').attachFile('images/Original.png')
+    // After uploading, the preview renders the uploaded image as a blob
     cy.get('#user-image')
       .should('have.css', 'background-image')
       .and('include', 'blob:')
+    // ...and the "Change image" control now appears
+    cy.contains('Change image').should('exist')
   })
 })

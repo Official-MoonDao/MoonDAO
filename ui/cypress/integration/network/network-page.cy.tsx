@@ -193,6 +193,13 @@ describe('<Network />', () => {
 
   describe('Map Tab', () => {
     it('should switch to map tab', () => {
+      // The map tab renders the <Earth /> globe, which is dynamically
+      // imported and initializes a WebGL context. In headless CI there is no
+      // GPU ("dri3 extension not supported"), so that async render can throw.
+      // This test only verifies the tab switch, so a globe render error must
+      // not fail it.
+      cy.on('uncaught:exception', () => false)
+
       cy.mount(
         <TestnetProviders>
           <Network />
