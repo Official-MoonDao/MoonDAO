@@ -68,6 +68,7 @@ contract DePrizeResolve is Script, Config {
             dp.state == IDePrizeRegistry.DePrizeState.SETTLED
                 || dp.state == IDePrizeRegistry.DePrizeState.M1_RELEASED
                 || dp.state == IDePrizeRegistry.DePrizeState.M2_COMPLETE
+                || dp.state == IDePrizeRegistry.DePrizeState.M2_FAILED
         ) {
             // Winner declared: [0,…,1,…,0] at the winner's outcome slot.
             bool found;
@@ -88,12 +89,6 @@ contract DePrizeResolve is Script, Config {
             for (uint256 i = 0; i < n; i++) {
                 payouts[i] = 1;
             }
-        } else if (dp.state == IDePrizeRegistry.DePrizeState.M2_FAILED) {
-            // The winner vector was (or should have been) reported at SETTLED and
-            // the CTF payout is write-once. Reaching M2_FAILED with an unreported
-            // condition is a process failure that needs human judgment, not a
-            // script-generated transaction.
-            revert M2FailedCtfAlreadyFinal(deprizeId);
         } else {
             revert WrongState(deprizeId, dp.state);
         }

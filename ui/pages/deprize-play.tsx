@@ -1725,7 +1725,7 @@ export default function DePrizePlay() {
                     </p>
 
                     {/* M4b unwind: pause -> (resolve) -> close -> withdrawFees */}
-                    {isOperator && (
+                    {isOracle && (
                       <div className="mb-4">
                         <p className="text-gray-400 text-[11px] mb-2">
                           Market unwind (owner): pause before resolving, close +
