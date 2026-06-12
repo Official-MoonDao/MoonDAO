@@ -11,6 +11,7 @@ import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { EIP1193 } from 'thirdweb/wallets'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { arbitrum, ethereum } from '@/lib/rpc/chains'
+import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -35,6 +36,7 @@ export default function ArbitrumBridge() {
   const [arbMooneyBalance, setArbMooneyBalance] = useState<any>()
   const [balance, setBalance] = useState(0)
   const [skipNetworkCheck, setSkipNetworkCheck] = useState(false)
+  const { effectiveGasPrice } = useGasPrice(ethereum)
 
   async function approveMooney(signer: any, erc20Bridger: any) {
     const mooneyContract = getContract({
@@ -196,7 +198,7 @@ export default function ArbitrumBridge() {
           method: 'balanceOf',
           params: [address],
         })
-        setEthMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+        setEthMooneyBalance(ethers.utils.formatEther(balance.toString()))
       } catch (err) {
         console.error(err)
       }
@@ -214,7 +216,7 @@ export default function ArbitrumBridge() {
           method: 'balanceOf',
           params: [address],
         })
-        setArbMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+        setArbMooneyBalance(ethers.utils.formatEther(balance.toString()))
       } catch (err) {
         console.error(err)
       }
@@ -265,8 +267,18 @@ export default function ArbitrumBridge() {
   }, [setSelectedChain])
 
   const numAmount = parseFloat(String(amount)) || 0
+  // For ETH, reserve L1 gas so a (near-)full-balance entry doesn't revert the
+  // deposit on fees. MOONEY gas is paid separately in ETH, so it needs no reserve.
+  const gasReserveEth =
+    effectiveGasPrice > BigInt(0)
+      ? Number(effectiveGasPrice * BigInt(200000)) / 1e18
+      : 0.002
+  const spendableBalance =
+    inputToken === 'eth'
+      ? Math.max(0, Number(balance) - gasReserveEth)
+      : Number(balance)
   const isOverBalance =
-    balance !== undefined && numAmount > 0 && numAmount > Number(balance)
+    balance !== undefined && numAmount > 0 && numAmount > spendableBalance
   const tokenLabel = inputToken === 'eth' ? 'ETH' : 'MOONEY'
 
   return (
@@ -335,7 +347,16 @@ export default function ArbitrumBridge() {
                       </p>
                       <button
                         className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-lg border border-blue-400/20 flex-shrink-0"
-                        onClick={() => setAmount(balance)}
+                        onClick={() => {
+                          if (inputToken === 'eth') {
+                            const maxEth = Math.max(0, Number(balance) - gasReserveEth)
+                            setAmount(
+                              maxEth > 0 ? String(parseFloat(maxEth.toFixed(7))) : '0'
+                            )
+                          } else {
+                            setAmount(balance)
+                          }
+                        }}
                       >
                         MAX
                       </button>

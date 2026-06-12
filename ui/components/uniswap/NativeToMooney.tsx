@@ -56,8 +56,21 @@ export default function NativeToMooney({ selectedChain }: any) {
   const { effectiveGasPrice } = useGasPrice(selectedChain)
   const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
+  // Reserve gas so a full-balance entry doesn't fail on fees (mirrors MAX).
+  const gasReserveEth =
+    effectiveGasPrice > BigInt(0)
+      ? Number(effectiveGasPrice * BigInt(350000)) / 1e18
+      : 0.002
+
+  const spendableBalance =
+    nativeBalance !== undefined
+      ? Math.max(0, (nativeBalance || 0) - gasReserveEth)
+      : undefined
+
   const isOverBalance =
-    nativeBalance !== undefined && !!amount && parseFloat(amount) > nativeBalance
+    spendableBalance !== undefined &&
+    !!amount &&
+    parseFloat(amount) > spendableBalance
 
   useEffect(() => {
     const numAmount = parseFloat(amount) || 0
@@ -216,11 +229,7 @@ export default function NativeToMooney({ selectedChain }: any) {
                         className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-lg border border-blue-400/20 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-400/10"
                         onClick={() => {
                           // Reserve gas so the swap doesn't fail due to no ETH left for fees
-                          const gasReserveEth =
-                            effectiveGasPrice > BigInt(0)
-                              ? Number(effectiveGasPrice * BigInt(350000)) / 1e18
-                              : 0.002
-                          const maxAmount = Math.max(0, (nativeBalance || 0) - gasReserveEth)
+                          const maxAmount = spendableBalance ?? 0
                           setAmount(maxAmount > 0 ? String(parseFloat(maxAmount.toFixed(7))) : '0')
                         }}
                         disabled={!nativeBalance || nativeBalance === 0}

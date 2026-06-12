@@ -233,20 +233,20 @@ export default function Lock() {
       : null
 
   // Max amount the user can lock in total (already-locked + wallet balance).
-  const maxAmountValue = MOONEYBalance
+  // Compared in wei via BigNumber so the gate is exact — parseFloat would drop
+  // low-order wei for large balances and under-report a marginally-over amount.
+  const maxAmountBN = MOONEYBalance
     ? hasLock && VMOONEYLock
-      ? parseFloat(
-          ethers.utils.formatEther(
-            BigNumber.from(VMOONEYLock[0]).add(MOONEYBalance)
-          )
-        )
-      : parseFloat(ethers.utils.formatEther(MOONEYBalance.toString()))
+      ? BigNumber.from(VMOONEYLock[0]).add(MOONEYBalance)
+      : BigNumber.from(MOONEYBalance.toString())
     : undefined
 
+  const lockAmountBN = safeParseEther(lockAmount)
+
   const isOverBalance =
-    maxAmountValue !== undefined &&
-    !!lockAmount &&
-    (parseFloat(lockAmount) || 0) > maxAmountValue
+    maxAmountBN !== undefined &&
+    lockAmountBN !== null &&
+    lockAmountBN.gt(maxAmountBN)
 
   function selectAddMode() {
     if (lockMode === 'add') return
