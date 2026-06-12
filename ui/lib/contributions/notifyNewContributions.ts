@@ -28,6 +28,15 @@ import {
 const NOTIFIED_SET_KEY = 'contributions:notified'
 const SEEDED_FLAG_KEY = 'contributions:notified:seeded'
 
+// Per-run lock so overlapping cron invocations can't both read the seen-set and
+// double-post the same row (the gap between SMEMBERS and SADD). The release is a
+// compare-and-delete keyed on a unique token, so a slow run can never delete a
+// lock that a later run has already acquired.
+const LOCK_KEY = 'contributions:notify:lock'
+const LOCK_TTL_SECONDS = 120
+const RELEASE_LOCK_SCRIPT =
+  'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end'
+
 // Cap posts per run so a sudden burst (or a misconfiguration) can't spam the
 // channel or trip Discord's rate limiter. Anything beyond this is picked up on
 // the next poll, since rows are only marked seen after a successful post.
@@ -49,6 +58,8 @@ export type NotifyResult = {
   total?: number
   /** New rows that remain unposted (deferred to the next run / failed). */
   pending?: number
+  /** Set when another run held the lock and this invocation was skipped. */
+  locked?: boolean
   /** Populated when ok is false. */
   reason?: string
 }
@@ -140,45 +151,63 @@ export async function notifyNewContributions(): Promise<NotifyResult> {
     return { ok: false, reason: 'redis-unconfigured' }
   }
 
-  const contributions = await getSheetContributions()
-  // `getSheetContributions` returns newest-first; post oldest-first so the
-  // Discord feed reads chronologically.
-  const ordered = [...contributions].reverse()
-  const keys = ordered.map(contributionKey)
+  const lockToken = crypto.randomBytes(16).toString('hex')
+  const acquired = await redis.set(LOCK_KEY, lockToken, {
+    nx: true,
+    ex: LOCK_TTL_SECONDS,
+  })
+  if (acquired !== 'OK') {
+    // Another run is in flight; skip rather than risk a double-post.
+    return { ok: true, locked: true, posted: 0 }
+  }
 
-  const seeded = await redis.get(SEEDED_FLAG_KEY)
-  if (!seeded) {
-    if (keys.length > 0) {
-      await redis.sadd(NOTIFIED_SET_KEY, keys[0], ...keys.slice(1))
+  try {
+    const contributions = await getSheetContributions()
+    // `getSheetContributions` returns newest-first; post oldest-first so the
+    // Discord feed reads chronologically.
+    const ordered = [...contributions].reverse()
+    const keys = ordered.map(contributionKey)
+
+    const seeded = await redis.get(SEEDED_FLAG_KEY)
+    if (!seeded) {
+      if (keys.length > 0) {
+        await redis.sadd(NOTIFIED_SET_KEY, keys[0], ...keys.slice(1))
+      }
+      await redis.set(SEEDED_FLAG_KEY, '1')
+      return { ok: true, seeded: true, posted: 0, total: keys.length }
     }
-    await redis.set(SEEDED_FLAG_KEY, '1')
-    return { ok: true, seeded: true, posted: 0, total: keys.length }
-  }
 
-  if (ordered.length === 0) {
-    return { ok: true, seeded: false, posted: 0, total: 0 }
-  }
+    if (ordered.length === 0) {
+      return { ok: true, seeded: false, posted: 0, total: 0 }
+    }
 
-  const seen = new Set(await redis.smembers(NOTIFIED_SET_KEY))
-  const newOnes: { c: Contribution; key: string }[] = []
-  for (let i = 0; i < ordered.length; i++) {
-    if (!seen.has(keys[i])) newOnes.push({ c: ordered[i], key: keys[i] })
-  }
+    const seen = new Set(await redis.smembers(NOTIFIED_SET_KEY))
+    const newOnes: { c: Contribution; key: string }[] = []
+    for (let i = 0; i < ordered.length; i++) {
+      if (!seen.has(keys[i])) newOnes.push({ c: ordered[i], key: keys[i] })
+    }
 
-  let posted = 0
-  for (const { c, key } of newOnes.slice(0, MAX_PER_RUN)) {
-    const ok = await postToDiscord(buildContent(c))
-    if (!ok) break // leave unseen so the next run retries
-    await redis.sadd(NOTIFIED_SET_KEY, key)
-    posted++
-    await sleep(400) // be gentle with Discord's rate limiter
-  }
+    let posted = 0
+    for (const { c, key } of newOnes.slice(0, MAX_PER_RUN)) {
+      const ok = await postToDiscord(buildContent(c))
+      if (!ok) break // leave unseen so the next run retries
+      await redis.sadd(NOTIFIED_SET_KEY, key)
+      posted++
+      await sleep(400) // be gentle with Discord's rate limiter
+    }
 
-  return {
-    ok: true,
-    seeded: false,
-    posted,
-    total: keys.length,
-    pending: Math.max(0, newOnes.length - posted),
+    return {
+      ok: true,
+      seeded: false,
+      posted,
+      total: keys.length,
+      pending: Math.max(0, newOnes.length - posted),
+    }
+  } finally {
+    try {
+      await redis.eval(RELEASE_LOCK_SCRIPT, [LOCK_KEY], [lockToken])
+    } catch (err) {
+      console.warn('[contribution-notify] lock release failed:', err)
+    }
   }
 }
