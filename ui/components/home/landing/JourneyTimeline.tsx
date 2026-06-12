@@ -197,7 +197,7 @@ export default function JourneyTimeline() {
                   {/* Card */}
                   <div
                     className={`ml-14 w-full md:ml-0 md:w-[calc(50%-44px)] ${
-                      isLeft ? 'md:mr-auto md:text-right' : 'md:ml-auto'
+                      isLeft ? 'md:mr-auto' : 'md:ml-auto'
                     }`}
                   >
                     <Reveal x={isLeft ? -24 : 24} y={0}>

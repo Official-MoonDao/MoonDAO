@@ -67,7 +67,7 @@ export default function LandingHero() {
         {/* Content */}
         <motion.div
           style={{ opacity: contentOpacity, y: contentY }}
-          className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center justify-center px-5 pb-10 pt-24 text-center md:px-10"
+          className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center justify-center px-5 py-24 text-center md:px-10"
         >
           <motion.div variants={container} initial="hidden" animate="visible">
             <motion.h1 variants={item} className="font-GoodTimes leading-none text-white">
