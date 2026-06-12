@@ -1,5 +1,8 @@
 import { ethers } from 'ethers'
-import { extractTokenIdFromReceipt } from '@/lib/onboarding/shared-utils'
+import {
+  buildCitizenProfileMintFields,
+  extractTokenIdFromReceipt,
+} from '@/lib/onboarding/shared-utils'
 import { buildQuestEligibilityRequest } from '@/lib/xp/questEligibilityRequest'
 
 // ============================================================================
@@ -564,5 +567,77 @@ describe('Bug #7: claimable-quests eligibility check is read-only (GET)', () => 
     const { url } = buildQuestEligibilityRequest(ROUTE, USER, trickyToken)
     expect(url).to.contain(`accessToken=${encodeURIComponent(trickyToken)}`)
     expect(url).to.not.contain('accessToken=a&b=c')
+  })
+})
+
+// ============================================================================
+// Bug #8: Citizen checkout profile fields & visibility dropped on mint
+// The "Additional Details" step collects bio, location, socials, and a
+// Public/Private visibility choice into citizenData, but every mint path
+// hardcoded empty strings and 'public'. buildCitizenProfileMintFields maps
+// those values onto the Citizen.mintTo params so the user's input — and
+// crucially their privacy selection — actually persists.
+// ============================================================================
+describe('Bug #8: citizen profile mint fields', () => {
+  const base = {
+    name: 'Astro',
+    email: 'astro@moondao.com',
+    formResponseId: 'abc123',
+  }
+
+  it('honors a Private visibility selection (privacy regression)', () => {
+    const fields = buildCitizenProfileMintFields({ ...base, view: 'private' })
+    expect(fields.view).to.equal('private')
+  })
+
+  it('defaults visibility to public when the user never toggles it', () => {
+    expect(buildCitizenProfileMintFields({ ...base }).view).to.equal('public')
+    expect(buildCitizenProfileMintFields({ ...base, view: '' }).view).to.equal(
+      'public'
+    )
+  })
+
+  it('persists the bio and raw location the user typed', () => {
+    const fields = buildCitizenProfileMintFields({
+      ...base,
+      description: 'I love space',
+      location: 'New York, USA',
+    })
+    expect(fields.bio).to.equal('I love space')
+    expect(fields.location).to.equal('New York, USA')
+  })
+
+  it('strips a leading @ from the discord handle (matches the edit modal)', () => {
+    expect(
+      buildCitizenProfileMintFields({ ...base, discord: '@spacefan' }).discord
+    ).to.equal('spacefan')
+    expect(
+      buildCitizenProfileMintFields({ ...base, discord: 'spacefan' }).discord
+    ).to.equal('spacefan')
+  })
+
+  it('normalizes twitter/website with https and leaves blanks empty', () => {
+    const fields = buildCitizenProfileMintFields({
+      ...base,
+      twitter: 'x.com/spacefan',
+      website: 'moondao.com',
+    })
+    expect(fields.twitter).to.equal('https://x.com/spacefan')
+    expect(fields.website).to.equal('https://moondao.com')
+
+    const blank = buildCitizenProfileMintFields({ ...base })
+    expect(blank.twitter).to.equal('')
+    expect(blank.website).to.equal('')
+    expect(blank.bio).to.equal('')
+    expect(blank.location).to.equal('')
+    expect(blank.discord).to.equal('')
+  })
+
+  it('does not double-prefix an already-https url', () => {
+    const fields = buildCitizenProfileMintFields({
+      ...base,
+      website: 'https://moondao.com',
+    })
+    expect(fields.website).to.equal('https://moondao.com')
   })
 })

@@ -46,6 +46,7 @@ import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import {
   estimateGasWithAPI,
   applyGasBuffer,
+  buildCitizenProfileMintFields,
   extractTokenIdFromReceipt,
   handleTypeformSubmission,
 } from '@/lib/onboarding/shared-utils'
@@ -62,7 +63,6 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import { CitizenData, formatCitizenShortFormData } from '@/lib/typeform/citizenFormData'
-import { addHttpsIfMissing } from '@/lib/utils/strings'
 import {
   renameFile,
   fileToBase64,
@@ -122,29 +122,6 @@ import { TermsCheckbox } from './TermsCheckbox'
  * 8. Side Effects (grouped by purpose)
  * 9. JSX Render
  */
-
-// Builds the optional profile metadata for a citizen mint from the values the
-// user entered in the "Additional Details" step at checkout. These map 1:1 onto
-// the Citizen.mintTo params (bio, location, discord, twitter, website, _view).
-// Without this, everything the user types — including their Public/Private
-// visibility choice — is silently dropped and every citizen is minted as a blank
-// PUBLIC profile (a privacy regression for anyone who selected Private). Socials
-// are normalized the same way the citizen edit modal does; the raw location
-// string is stored as-is (it is parsed defensively downstream and can be
-// geocoded later from the profile editor).
-function buildCitizenProfileMintFields(citizenData: CitizenData) {
-  const rawDiscord = citizenData.discord || ''
-  const discord = rawDiscord.startsWith('@') ? rawDiscord.replace('@', '') : rawDiscord
-  return {
-    bio: citizenData.description || '',
-    location: citizenData.location || '',
-    discord,
-    twitter: citizenData.twitter ? addHttpsIfMissing(citizenData.twitter) : '',
-    website: citizenData.website ? addHttpsIfMissing(citizenData.website) : '',
-    // Honor the user's visibility selection; default to public when untouched.
-    view: citizenData.view || 'public',
-  }
-}
 
 // Celebratory confetti burst for the citizen welcome screen (space palette).
 function fireCelebrationConfetti() {

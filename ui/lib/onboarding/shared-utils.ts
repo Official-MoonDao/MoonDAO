@@ -1,6 +1,36 @@
 import { getAccessToken } from '@privy-io/react-auth'
 import { ethers } from 'ethers'
 import cleanData from '@/lib/tableland/cleanData'
+import { CitizenData } from '@/lib/typeform/citizenFormData'
+import { addHttpsIfMissing } from '@/lib/utils/strings'
+
+/**
+ * Builds the optional profile metadata for a citizen mint from the values the
+ * user entered in the "Additional Details" step at checkout. These map 1:1 onto
+ * the `Citizen.mintTo` params (bio, location, discord, twitter, website, _view).
+ *
+ * Without this, everything the user types — including their Public/Private
+ * visibility choice — is silently dropped and every citizen is minted as a blank
+ * PUBLIC profile (a privacy regression for anyone who selected Private). Socials
+ * are normalized the same way the citizen edit modal does; the raw location
+ * string is stored as-is (it is parsed defensively downstream and can be
+ * geocoded later from the profile editor).
+ */
+export function buildCitizenProfileMintFields(citizenData: CitizenData) {
+  const rawDiscord = citizenData.discord || ''
+  const discord = rawDiscord.startsWith('@')
+    ? rawDiscord.replace('@', '')
+    : rawDiscord
+  return {
+    bio: citizenData.description || '',
+    location: citizenData.location || '',
+    discord,
+    twitter: citizenData.twitter ? addHttpsIfMissing(citizenData.twitter) : '',
+    website: citizenData.website ? addHttpsIfMissing(citizenData.website) : '',
+    // Honor the user's visibility selection; default to public when untouched.
+    view: citizenData.view || 'public',
+  }
+}
 
 /**
  * Estimates gas for a transaction using the gas estimation API
