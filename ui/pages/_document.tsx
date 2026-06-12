@@ -22,18 +22,9 @@ class WebsiteDocument extends Document {
             crossOrigin="anonymous"
           />
 
+          {/* Montserrat is loaded from Google Fonts via globals.css */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" />
-
-          <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
-          />
-
-          <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500&display=swap"
-          />
 
           <meta name="theme-color" content="#54c3ff" />
           <link rel="icon" href="/favicon.ico" />
@@ -43,9 +34,6 @@ class WebsiteDocument extends Document {
               __html: `globalThis.Browser = { T: () => {} };`,
             }}
           />
-
-          {/* Vimeo Player SDK */}
-          <script async src="https://player.vimeo.com/api/player.js"></script>
         </Head>
         <body className="overflow-hidden relative">
           <Main />

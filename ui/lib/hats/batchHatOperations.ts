@@ -9,7 +9,7 @@ import TeamABI from 'const/abis/Team.json'
 import { TEAM_ADDRESSES } from 'const/config'
 import { Chain, getContract } from 'thirdweb'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 
 export type HatTeamData = {
   hatId: string

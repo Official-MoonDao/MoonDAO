@@ -18,10 +18,23 @@ export default function useWatchTokenBalance(
   })
 
   useEffect(() => {
+    if (!address) return
+    // Relaxed cadence; skip while the tab is hidden and refresh on return.
     const interval = setInterval(() => {
+      if (document.hidden) return
       refetch()
-    }, 10000)
-    return () => clearInterval(interval)
+    }, 30000)
+
+    const handleVisibility = () => {
+      if (!document.hidden) refetch()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address])
 
   // Return `null` (rather than `NaN`) when the balance hasn't loaded yet or

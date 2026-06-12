@@ -9,7 +9,7 @@ import { getContract, readContract } from 'thirdweb'
 import { sepolia } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { DePrize, DePrizeProps } from '../components/nance/DePrize'
 

@@ -150,17 +150,17 @@ export default function SpaceBackground() {
   const starMultiplier = isMobile ? 0.5 : 1
 
   const farStars = useMemo(
-    () => generateStars(Math.floor(100 * starMultiplier), [0.5, 1.5], 1, [200, 220, 255]),
+    () => generateStars(Math.floor(60 * starMultiplier), [0.5, 1.5], 1, [200, 220, 255]),
     [starMultiplier]
   )
   const midStars = useMemo(
-    () => generateStars(Math.floor(80 * starMultiplier), [1, 3], 2, [240, 245, 255], farStars),
+    () => generateStars(Math.floor(48 * starMultiplier), [1, 3], 2, [240, 245, 255], farStars),
     [farStars, starMultiplier]
   )
   const nearStars = useMemo(
     () =>
       generateStars(
-        Math.floor(60 * starMultiplier),
+        Math.floor(36 * starMultiplier),
         [2, 5],
         3,
         [255, 250, 240],
@@ -308,56 +308,61 @@ export default function SpaceBackground() {
     )
   }
 
-  // Optimized scroll handler with throttling
+  // Parallax driven by a passive scroll listener. A single animation frame is
+  // scheduled per scroll event; no work happens while the page is idle.
+  // (The previous implementation re-queued requestAnimationFrame continuously,
+  // burning CPU on every page even with no scrolling.)
   useEffect(() => {
     if (!isPageVisible) return
 
-    const handleScroll = () => {
-      if (!containerRef.current || !isPageVisible) return
+    let ticking = false
+
+    const updateParallax = () => {
+      ticking = false
+      if (!containerRef.current) return
 
       const scrolled = window.scrollY
 
-      // Skip update if scroll hasn't changed significantly (throttle)
-      if (Math.abs(scrolled - lastScrollY.current) < 2) {
-        rafRef.current = requestAnimationFrame(handleScroll)
-        return
-      }
+      // Skip update if scroll hasn't changed significantly
+      if (Math.abs(scrolled - lastScrollY.current) < 2) return
 
       lastScrollY.current = scrolled
 
       // Natural space parallax - forward movement through space
       // Use transform3d for hardware acceleration
       if (farStarsRef.current) {
-        const yPos = scrolled * 0.01
-        farStarsRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
+        farStarsRef.current.style.transform = `translate3d(0, ${scrolled * 0.01}px, 0)`
       }
 
       if (midStarsRef.current) {
-        const yPos = scrolled * 0.02
-        midStarsRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
+        midStarsRef.current.style.transform = `translate3d(0, ${scrolled * 0.02}px, 0)`
       }
 
       if (nearStarsRef.current) {
-        const yPos = scrolled * 0.03
-        nearStarsRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
+        nearStarsRef.current.style.transform = `translate3d(0, ${scrolled * 0.03}px, 0)`
       }
 
       if (nebulaRef.current) {
-        const yPos = scrolled * 0.015
-        nebulaRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
+        nebulaRef.current.style.transform = `translate3d(0, ${scrolled * 0.015}px, 0)`
       }
 
       if (baseGradientRef.current) {
-        const yPos = scrolled * 0.015
-        baseGradientRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
+        baseGradientRef.current.style.transform = `translate3d(0, ${scrolled * 0.015}px, 0)`
       }
-
-      rafRef.current = requestAnimationFrame(handleScroll)
     }
 
-    rafRef.current = requestAnimationFrame(handleScroll)
+    const handleScroll = () => {
+      if (!ticking) {
+        ticking = true
+        rafRef.current = requestAnimationFrame(updateParallax)
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
 
     return () => {
+      window.removeEventListener('scroll', handleScroll)
       cancelRAF()
     }
   }, [isPageVisible, cancelRAF, rafRef])

@@ -3,7 +3,7 @@ import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES, ZERO_ADDRESS } from 'const/config'
 import * as thirdweb from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import GuestActions from '@/components/subscription/GuestActions'
 
 describe('<GuestActions />', () => {

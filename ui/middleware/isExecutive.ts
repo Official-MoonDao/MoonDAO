@@ -5,7 +5,7 @@ import { DEFAULT_CHAIN_V5, EB_TEAM_ID, MOONDAO_HAT_TREE_IDS, TEAM_ADDRESSES } fr
 import { getPrivyUserData } from '@/lib/privy'
 import { getContract, readContract } from 'thirdweb'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import TeamABI from 'const/abis/Team.json'
 

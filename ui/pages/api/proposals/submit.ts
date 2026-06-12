@@ -18,7 +18,7 @@ import { prepareContractCall, sendAndConfirmTransaction, getContract } from 'thi
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { authOptions } from '@/pages/api/auth/[...nextauth]'
 
 const chain = DEFAULT_CHAIN_V5

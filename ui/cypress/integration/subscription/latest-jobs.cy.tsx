@@ -5,7 +5,7 @@ import TeamABI from 'const/abis/Team.json'
 import { JOBS_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { getContract } from 'thirdweb'
 import * as thirdweb from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { Job } from '@/components/jobs/Job'
 import LatestJobs from '@/components/subscription/LatestJobs'
 

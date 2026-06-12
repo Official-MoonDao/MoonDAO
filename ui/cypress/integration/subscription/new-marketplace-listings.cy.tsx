@@ -7,7 +7,7 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { getContract } from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
 import { TeamListing } from '@/components/subscription/TeamListing'
 

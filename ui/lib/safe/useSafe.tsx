@@ -597,15 +597,22 @@ export default function useSafe(
     setupSafe()
   }, [wallets, selectedWallet, safeAddress, account])
 
+  // Background refresh of the Safe state. Only poll once a Safe is actually
+  // initialized, at a relaxed cadence, and never while the tab is hidden —
+  // this hook is mounted on team/project pages where users mostly read.
   useEffect(() => {
+    if (!safe) return
     const interval = setInterval(async () => {
+      if (document.hidden) return
       await refreshSafeState()
-    }, 10000)
+    }, 30000)
     return () => clearInterval(interval)
   }, [safeApiKit, safe, wallets, selectedWallet, safeAddress])
 
+  // Tight 5s polling is only justified while a queued transaction is being
+  // monitored; stop as soon as it executes.
   useEffect(() => {
-    if (!lastSafeTxHash) return
+    if (!lastSafeTxHash || lastSafeTxExecuted) return
 
     const checkExecution = async () => {
       const isExecuted = await monitorTransactionExecution(lastSafeTxHash)
@@ -617,12 +624,14 @@ export default function useSafe(
 
     const interval = setInterval(checkExecution, 5000)
     return () => clearInterval(interval)
-  }, [lastSafeTxHash])
+  }, [lastSafeTxHash, lastSafeTxExecuted])
 
   useEffect(() => {
+    if (!safe) return
     const interval = setInterval(async () => {
+      if (document.hidden) return
       await getCurrentNonce()
-    }, 5000)
+    }, 30000)
     return () => clearInterval(interval)
   }, [safe])
 
