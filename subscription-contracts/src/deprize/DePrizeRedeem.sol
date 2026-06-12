@@ -45,6 +45,7 @@ contract DePrizeRedeem is ReentrancyGuard, IERC1155Receiver {
     error NothingToRedeem(uint256 deprizeId, address account);
     error RedeemFailed();
     error UnexpectedERC1155();
+    error SlotCountMismatch(uint256 deprizeId, uint256 teamIds, uint256 outcomeSlots);
 
     constructor(address registry_, address ctf_, address weth_) {
         if (registry_ == address(0) || ctf_ == address(0) || weth_ == address(0)) revert ZeroAddress();
@@ -136,7 +137,15 @@ contract DePrizeRedeem is ReentrancyGuard, IERC1155Receiver {
         if (dp.state == IDePrizeRegistry.DePrizeState.NONE) revert UnknownDePrize(deprizeId);
         conditionId = dp.ctfConditionId;
 
+        // The payout vector lives on the CTF and is indexed by the condition's
+        // outcome slots. Trusting `teamIds.length` alone would silently under-pay
+        // (skip real positions) or revert deep in `payoutNumerators` if the
+        // registry ever diverges from the on-chain condition, so assert they
+        // agree up front and fail loudly on inconsistent provisioning.
         uint256 n = dp.teamIds.length;
+        uint256 slots = ctf.getOutcomeSlotCount(conditionId);
+        if (n != slots) revert SlotCountMismatch(deprizeId, n, slots);
+
         positionIds = new uint256[](n);
         for (uint256 i = 0; i < n; i++) {
             positionIds[i] = ctf.getPositionId(address(weth), ctf.getCollectionId(bytes32(0), conditionId, 1 << i));
