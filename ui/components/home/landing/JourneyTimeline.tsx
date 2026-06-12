@@ -217,10 +217,10 @@ export default function JourneyTimeline() {
                         >
                           {event.date}
                         </span>
-                        <h3 className="mt-2 font-GoodTimes text-lg text-white md:text-xl">
+                        <h3 className="mt-2 font-GoodTimes text-lg text-white md:text-xl" style={{ textWrap: 'balance' } as any}>
                           {event.title}
                         </h3>
-                        <p className="mt-2 text-sm leading-relaxed text-white/65 md:text-base">
+                        <p className="mt-2 text-sm leading-relaxed text-white/65 md:text-base" style={{ textWrap: 'pretty' } as any}>
                           {event.description}
                         </p>
                       </div>
@@ -251,10 +251,10 @@ export default function JourneyTimeline() {
                   <span className="font-RobotoMono text-xs uppercase tracking-[0.3em] text-[#7c8cff]">
                     Jan 2030
                   </span>
-                  <h3 className="mt-2 font-GoodTimes text-2xl text-white md:text-3xl">
+                  <h3 className="mt-2 font-GoodTimes text-2xl text-white md:text-3xl" style={{ textWrap: 'balance' } as any}>
                     Lunar Settlement Complete
                   </h3>
-                  <p className="mx-auto mt-3 max-w-md text-sm text-white/65 md:text-base">
+                  <p className="mx-auto mt-3 max-w-md text-sm text-white/65 md:text-base" style={{ textWrap: 'pretty' } as any}>
                     The first minimum viable lunar settlement is complete — and
                     we throw a New Year&apos;s Eve party on the Moon.
                   </p>
