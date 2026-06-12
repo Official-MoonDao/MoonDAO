@@ -64,11 +64,14 @@ contract DePrizeResolve is Script, Config {
         uint256 n = dp.teamIds.length;
         payouts = new uint256[](n);
 
+        if (dp.state == IDePrizeRegistry.DePrizeState.M2_FAILED) {
+            revert M2FailedCtfAlreadyFinal(deprizeId);
+        }
+
         if (
             dp.state == IDePrizeRegistry.DePrizeState.SETTLED
                 || dp.state == IDePrizeRegistry.DePrizeState.M1_RELEASED
                 || dp.state == IDePrizeRegistry.DePrizeState.M2_COMPLETE
-                || dp.state == IDePrizeRegistry.DePrizeState.M2_FAILED
         ) {
             // Winner declared: [0,…,1,…,0] at the winner's outcome slot.
             bool found;
