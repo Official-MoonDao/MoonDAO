@@ -35,7 +35,7 @@ import { getPrivyUserData } from '@/lib/privy'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { getBlocksInTimeframe } from '@/lib/utils/blocks'
 
 const chain = DEFAULT_CHAIN_V5

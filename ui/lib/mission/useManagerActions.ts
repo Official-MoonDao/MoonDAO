@@ -13,7 +13,7 @@ import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import type { Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
-import { serverClient } from '../thirdweb/client'
+import { serverClient } from '../thirdweb/serverClient'
 
 type Mission = {
   projectId: number

@@ -13,7 +13,7 @@ import { CitizenLocationData, GroupedLocationData } from '@/lib/network/types'
 import { CitizenRow, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { getAttribute } from '@/lib/utils/nft'
 
 export type SubscriptionValidationResult = {

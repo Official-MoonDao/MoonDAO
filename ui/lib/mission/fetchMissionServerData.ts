@@ -16,7 +16,7 @@ import { getContract, readContract } from 'thirdweb'
 import type { Chain } from 'thirdweb/chains'
 import queryTable from '../tableland/queryTable'
 import { getChainSlug } from '../thirdweb/chain'
-import { serverClient } from '../thirdweb/client'
+import { serverClient } from '../thirdweb/serverClient'
 
 export type MissionRow = {
   id: number

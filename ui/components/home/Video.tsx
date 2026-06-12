@@ -1,3 +1,4 @@
+import Script from 'next/script'
 import { useState, useRef, useEffect, useCallback } from 'react'
 
 export default function Video() {
@@ -6,6 +7,11 @@ export default function Video() {
     const [player, setPlayer] = useState<any>(null)
     const [isPlayerReady, setIsPlayerReady] = useState(false)
     const [isInView, setIsInView] = useState(false)
+    // The SDK may already be on the page from a previous mount of this
+    // component (next/script only fires onLoad for the initial load).
+    const [sdkReady, setSdkReady] = useState(
+        () => typeof window !== 'undefined' && !!(window as any).Vimeo
+    )
     const videoRef = useRef<HTMLIFrameElement>(null)
     const sectionRef = useRef<HTMLDivElement>(null)
 
@@ -56,53 +62,47 @@ export default function Video() {
         handleVideoPlayback()
     }, [handleVideoPlayback])
 
+    // Initialize the Vimeo player once the SDK has loaded
     useEffect(() => {
-        // Initialize Vimeo player when component mounts
-        const initPlayer = async () => {
-            if (videoRef.current && (window as any).Vimeo) {
+        if (!sdkReady || !videoRef.current || !(window as any).Vimeo) return
+
+        let vimeoPlayer: any
+        try {
+            vimeoPlayer = new (window as any).Vimeo.Player(videoRef.current)
+
+            vimeoPlayer.ready().then(() => {
+                setPlayer(vimeoPlayer)
+                setIsPlayerReady(true)
+
+                vimeoPlayer.on('play', () => setIsPlaying(true))
+                vimeoPlayer.on('pause', () => setIsPlaying(false))
+                vimeoPlayer.on('volumechange', async () => {
+                    const muted = await vimeoPlayer.getMuted()
+                    setIsMuted(muted)
+                })
+
+                // Set initial state after player is ready
+                vimeoPlayer.setMuted(true)
+                vimeoPlayer.setLoop(true)
+                // Don't autoplay - let intersection observer handle it
+                vimeoPlayer.pause()
+            })
+        } catch (error) {
+            console.error('Error initializing Vimeo player:', error)
+        }
+
+        return () => {
+            if (vimeoPlayer) {
                 try {
-                    const vimeoPlayer = new (window as any).Vimeo.Player(videoRef.current)
-                    
-                    // Wait for player to be ready
-                    vimeoPlayer.ready().then(() => {
-                        setPlayer(vimeoPlayer)
-                        setIsPlayerReady(true)
-                        
-                        // Set up event listeners
-                        vimeoPlayer.on('play', () => setIsPlaying(true))
-                        vimeoPlayer.on('pause', () => setIsPlaying(false))
-                        vimeoPlayer.on('volumechange', async () => {
-                            const muted = await vimeoPlayer.getMuted()
-                            setIsMuted(muted)
-                        })
-                        
-                        // Set initial state after player is ready
-                        vimeoPlayer.setMuted(true)
-                        vimeoPlayer.setLoop(true)
-                        // Don't autoplay - let intersection observer handle it
-                        vimeoPlayer.pause()
-                    })
+                    vimeoPlayer.off('play')
+                    vimeoPlayer.off('pause')
+                    vimeoPlayer.off('volumechange')
                 } catch (error) {
-                    console.error('Error initializing Vimeo player:', error)
+                    // Player may already be gone with the iframe
                 }
             }
         }
-
-        // Wait for Vimeo SDK to load
-        if ((window as any).Vimeo) {
-            initPlayer()
-        } else {
-            const checkVimeo = setInterval(() => {
-                if ((window as any).Vimeo) {
-                    clearInterval(checkVimeo)
-                    initPlayer()
-                }
-            }, 100)
-            
-            // Cleanup interval on unmount
-            return () => clearInterval(checkVimeo)
-        }
-    }, [])
+    }, [sdkReady])
 
     const toggleMute = async () => {
         if (player && isPlayerReady) {
@@ -139,6 +139,12 @@ export default function Video() {
             id="video-section" 
             className="relative bg-dark-cool"
             >
+            {/* Vimeo Player SDK - loaded only where the video is rendered */}
+            <Script
+                src="https://player.vimeo.com/api/player.js"
+                strategy="lazyOnload"
+                onLoad={() => setSdkReady(true)}
+            />
             <div id="video-container" 
                 className="w-full h-full max-w-[1920px] 2xl:max-w-[2560px] mx-auto"
                 >
