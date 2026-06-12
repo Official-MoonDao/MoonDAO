@@ -16,7 +16,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 import { CitizenInvite, consumeInvite, peekInvite, restoreInvite } from '@/lib/citizen/inviteTokens'
-import { createHSMWallet } from '@/lib/google/hsm-signer'
+import { createHSMWallet, sendEthFromHSM } from '@/lib/google/hsm-signer'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -286,6 +286,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         account,
       })
       mintSucceeded = true
+
+      // Send a small gas stipend (~$0.05 worth of ETH) so new citizens can
+      // interact on-chain right away without needing to fund their wallet first.
+      // 0.00002 ETH ≈ $0.06 at $3 000/ETH on Arbitrum.
+      const GAS_STIPEND_WEI = BigInt('20000000000000') // 0.00002 ETH
+      sendEthFromHSM(address, GAS_STIPEND_WEI).catch((err) =>
+        console.error('Gas stipend transfer failed (non-critical):', err)
+      )
+
       const jsonReceipt = JSON.stringify(receipt, (key, value) => {
         if (typeof value === 'bigint') {
           return value.toString()
