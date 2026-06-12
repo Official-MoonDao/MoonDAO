@@ -5891,7 +5891,7 @@
     "@walletconnect/utils" "2.20.1"
     events "3.3.0"
 
-"@walletconnect/ethereum-provider@2.22.4", "@walletconnect/ethereum-provider@^2.15.1":
+"@walletconnect/ethereum-provider@2.22.4":
   version "2.22.4"
   resolved "https://registry.yarnpkg.com/@walletconnect/ethereum-provider/-/ethereum-provider-2.22.4.tgz#e9cd6c0804c85495ebe1a126c5dddb7ae7cf7bff"
   integrity sha512-qhBxU95nlndiKGz8lO8z9JlsA4Ai8i1via4VWut2fXsW1fkl6qXG9mYhDRFsbavuynUe3dQ+QLjBVDaaNkcKCA==
@@ -5907,6 +5907,22 @@
     "@walletconnect/types" "2.22.4"
     "@walletconnect/universal-provider" "2.22.4"
     "@walletconnect/utils" "2.22.4"
+    events "3.3.0"
+
+"@walletconnect/ethereum-provider@^2.15.1":
+  version "2.16.2"
+  resolved "https://registry.npmjs.org/@walletconnect/ethereum-provider/-/ethereum-provider-2.16.2.tgz"
+  integrity sha512-ubIevPEhW27dkmnU//E8qBOc7s8A4CyFJWc2bgwPEEDGQxw/LJPuEJQ+H5MPuhsui7+utVULNMoM693LLVHi7g==
+  dependencies:
+    "@walletconnect/jsonrpc-http-connection" "1.0.8"
+    "@walletconnect/jsonrpc-provider" "1.0.14"
+    "@walletconnect/jsonrpc-types" "1.0.4"
+    "@walletconnect/jsonrpc-utils" "1.0.8"
+    "@walletconnect/modal" "2.6.2"
+    "@walletconnect/sign-client" "2.16.2"
+    "@walletconnect/types" "2.16.2"
+    "@walletconnect/universal-provider" "2.16.2"
+    "@walletconnect/utils" "2.16.2"
     events "3.3.0"
 
 "@walletconnect/events@1.0.1", "@walletconnect/events@^1.0.1":
