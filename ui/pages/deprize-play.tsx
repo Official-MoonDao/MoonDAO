@@ -14,9 +14,9 @@ import {
   DEPRIZE_REDEEM_ADDRESSES,
   DEPRIZE_QUESTION_ID,
 } from 'const/config'
-import { useLogin } from '@privy-io/react-auth'
+import { useLogin, useWallets } from '@privy-io/react-auth'
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
   createThirdwebClient,
@@ -28,7 +28,7 @@ import {
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -193,11 +193,24 @@ const toWei = (v: string): bigint => {
  * underlying market only.
  */
 export default function DePrizePlay() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
   const userAddress = account?.address
   const { login } = useLogin()
+  const { wallets } = useWallets()
+
+  // Derive the active chain from the connected wallet. Fall back to
+  // DEFAULT_CHAIN_V5 when no wallet is connected so reads still work.
+  const chain = useMemo(() => {
+    const walletChainId = wallets?.[0]?.chainId
+    if (walletChainId) {
+      const id = Number(walletChainId.split(':')[1])
+      const found = getChainById(id)
+      if (found) return found
+    }
+    return DEFAULT_CHAIN_V5
+  }, [wallets])
+
+  const chainSlug = getChainSlug(chain)
 
   const lmsrAddress = LMSR_WITH_TWAP_ADDRESSES[chainSlug]
   const ctfAddress = CONDITIONAL_TOKEN_ADDRESSES[chainSlug]
@@ -243,11 +256,17 @@ export default function DePrizePlay() {
 
   // Static-per-market values (conditionId, position ids, fee) never change, so
   // resolve them once and reuse — keeps every refresh to the dynamic reads.
+  // Reset when the chain changes (different market, different condition).
   const staticRef = useRef<{
     conditionId: string
     positionIds: bigint[]
     feePct?: number
   } | null>(null)
+  const prevChainIdRef = useRef<number>(chain.id)
+  if (prevChainIdRef.current !== chain.id) {
+    prevChainIdRef.current = chain.id
+    staticRef.current = null
+  }
 
   // Read contracts: no-batching client (avoids the viem batch-decode bug) on
   // thirdweb's RPC edge (avoids the shared Infura key's 429 rate limit).
