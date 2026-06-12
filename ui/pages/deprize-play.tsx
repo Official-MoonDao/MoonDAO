@@ -1761,16 +1761,16 @@ export default function DePrizePlay() {
                           >
                             Close market
                           </StandardButton>
-                          <StandardButton
-                            onClick={() =>
-                              marketAdmin('withdrawFees', 'Fees withdrawn to owner.')
-                            }
-                            disabled={busy}
-                            className="rounded-full"
-                            backgroundColor="bg-white/10"
-                          >
-                            Withdraw fees
-                          </StandardButton>
+                        <StandardButton
+                          onClick={() =>
+                            marketAdmin('withdrawFees', 'Fees withdrawn to owner.')
+                          }
+                          disabled={busy || !isClosed}
+                          className="rounded-full"
+                          backgroundColor="bg-white/10"
+                        >
+                          Withdraw fees
+                        </StandardButton>
                         </div>
                       </div>
                     )}
