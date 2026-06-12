@@ -216,6 +216,9 @@ export default function DePrizePlay() {
   const ctfAddress = CONDITIONAL_TOKEN_ADDRESSES[chainSlug]
   const wethAddress = COLLATERAL_TOKEN_ADDRESSES[chainSlug]
 
+  // Dynamic read chain derived from the wallet chain (uses thirdweb RPC edge).
+  const readChain = useMemo(() => defineChain(chain.id), [chain])
+
   const [betAmount, setBetAmount] = useState('')
   const [depositAmount, setDepositAmount] = useState('0.01')
   const [outcomes, setOutcomes] = useState<Outcome[]>(emptyOutcomes)
@@ -272,19 +275,19 @@ export default function DePrizePlay() {
   // thirdweb's RPC edge (avoids the shared Infura key's 429 rate limit).
   const lmsr = useContract({
     address: lmsrAddress,
-    chain: READ_CHAIN,
+    chain: readChain,
     abi: LMSRWithTWAP.abi as any,
     forwardClient: readClient,
   })
   const ctf = useContract({
     address: ctfAddress,
-    chain: READ_CHAIN,
+    chain: readChain,
     abi: ConditionalTokensABI as any,
     forwardClient: readClient,
   })
   const weth = useContract({
     address: wethAddress,
-    chain: READ_CHAIN,
+    chain: readChain,
     abi: WETHABI as any,
     forwardClient: readClient,
   })
@@ -308,7 +311,7 @@ export default function DePrizePlay() {
   const validHelper = /^0x[0-9a-fA-F]{40}$/.test(helperAddress)
   const helper = useContract({
     address: validHelper ? helperAddress : '',
-    chain: READ_CHAIN,
+    chain: readChain,
     abi: DePrizeRedeemABI as any,
     forwardClient: readClient,
   })
@@ -453,7 +456,7 @@ export default function DePrizePlay() {
               .catch(() => undefined)
           : Promise.resolve(undefined),
         userAddress
-          ? eth_getBalance(getRpcClient({ client: readClient, chain: READ_CHAIN }), {
+          ? eth_getBalance(getRpcClient({ client: readClient, chain: readChain }), {
               address: userAddress,
             })
               .then((b) => Number(b) / Number(UNIT))
@@ -643,11 +646,15 @@ export default function DePrizePlay() {
         const saved = JSON.parse(raw) as { address?: string; deprizeId?: string }
         if (saved.address) setHelperAddress(saved.address)
         if (saved.deprizeId) setHelperDeprizeId(saved.deprizeId)
+      } else {
+        const slug = getChainSlug(chain)
+        setHelperAddress(DEPRIZE_REDEEM_ADDRESSES[slug] ?? '')
+        setHelperDeprizeId('1')
       }
     } catch {
       /* ignore */
     }
-  }, [helperStorageKey])
+  }, [helperStorageKey, chain])
 
   useEffect(() => {
     if (!helperStorageKey || typeof window === 'undefined') return
@@ -950,7 +957,7 @@ export default function DePrizePlay() {
       if (balWei < buffered) {
         const toWrap = buffered - balWei
         const nativeWei = await eth_getBalance(
-          getRpcClient({ client: readClient, chain: READ_CHAIN }),
+          getRpcClient({ client: readClient, chain: readChain }),
           { address: account.address }
         )
         if (nativeWei < toWrap + GAS_RESERVE_WEI) {
