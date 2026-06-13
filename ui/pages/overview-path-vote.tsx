@@ -82,6 +82,8 @@ export default function OverviewPathVote({
 
   const [selectedOption, setSelectedOption] =
     useState<PathVoteOptionId | null>(null)
+  const [expandedOption, setExpandedOption] =
+    useState<PathVoteOptionId | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasExistingVote, setHasExistingVote] = useState(false)
   const [previousVote, setPreviousVote] = useState<{
@@ -655,24 +657,36 @@ export default function OverviewPathVote({
                 </div>
               )}
 
-              {/* Option cards */}
+              {/* Option cards. The per-option detail grid (funds / candidate
+                  seat / risk / best case) is collapsed by default to keep the
+                  vote panel compact so the submit button stays reachable
+                  without a long scroll. */}
               <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 {PATH_VOTE_OPTIONS.map((option) => {
                   const accents = OPTION_ACCENTS[option.id]
                   const isSelected = selectedOption === option.id
+                  const isExpanded = expandedOption === option.id
                   return (
-                    <button
+                    <div
                       key={option.id}
-                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      tabIndex={votingClosed ? -1 : 0}
                       onClick={() =>
                         !votingClosed && setSelectedOption(option.id)
                       }
-                      disabled={votingClosed}
-                      className={`w-full text-left p-3 sm:p-5 rounded-xl border transition-all duration-200 ${
+                      onKeyDown={(e) => {
+                        if (votingClosed) return
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedOption(option.id)
+                        }
+                      }}
+                      className={`w-full text-left p-3 sm:p-5 rounded-xl border transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                         isSelected
                           ? `${accents.border} ${accents.bg} shadow-lg`
                           : 'border-white/10 bg-black/20 hover:border-white/30'
-                      } ${votingClosed ? 'cursor-default opacity-80' : ''}`}
+                      } ${votingClosed ? 'cursor-default opacity-80' : 'cursor-pointer'}`}
                     >
                       <div className="flex items-start gap-3">
                         <span
@@ -692,32 +706,50 @@ export default function OverviewPathVote({
                           <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mt-1.5">
                             {option.summary}
                           </p>
-                          <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                            <p className="text-xs sm:text-sm text-gray-400">
-                              <span className="text-gray-300 font-medium">
-                                Funds:{' '}
-                              </span>
-                              {option.fundsImpact}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-400">
-                              <span className="text-gray-300 font-medium">
-                                Candidate seat:{' '}
-                              </span>
-                              {option.candidateImpact}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-400">
-                              <span className="text-red-300/80 font-medium">
-                                Real risk:{' '}
-                              </span>
-                              {option.realRisk}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-400">
-                              <span className="text-emerald-300/80 font-medium">
-                                Best case:{' '}
-                              </span>
-                              {option.bestCase}
-                            </p>
-                          </div>
+                          <button
+                            type="button"
+                            aria-expanded={isExpanded}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setExpandedOption(isExpanded ? null : option.id)
+                            }}
+                            className="mt-2 inline-flex items-center gap-1 text-xs sm:text-sm text-indigo-300 hover:text-indigo-200 transition-colors"
+                          >
+                            {isExpanded ? 'Hide details' : 'Show details'}
+                            <span
+                              className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            >
+                              ▾
+                            </span>
+                          </button>
+                          {isExpanded && (
+                            <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                              <p className="text-xs sm:text-sm text-gray-400">
+                                <span className="text-gray-300 font-medium">
+                                  Funds:{' '}
+                                </span>
+                                {option.fundsImpact}
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-400">
+                                <span className="text-gray-300 font-medium">
+                                  Candidate seat:{' '}
+                                </span>
+                                {option.candidateImpact}
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-400">
+                                <span className="text-red-300/80 font-medium">
+                                  Real risk:{' '}
+                                </span>
+                                {option.realRisk}
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-400">
+                                <span className="text-emerald-300/80 font-medium">
+                                  Best case:{' '}
+                                </span>
+                                {option.bestCase}
+                              </p>
+                            </div>
+                          )}
                         </div>
                         <span
                           className={`flex-shrink-0 w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${
@@ -731,7 +763,7 @@ export default function OverviewPathVote({
                           )}
                         </span>
                       </div>
-                    </button>
+                    </div>
                   )
                 })}
               </div>
