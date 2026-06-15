@@ -8,7 +8,6 @@ import {
   VOTES_TABLE_ADDRESSES,
   VOTES_TABLE_NAMES,
 } from 'const/config'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -426,12 +425,12 @@ export default function OverviewPathVote({
           popOverEffect={false}
           isProfile
           description={
-            <span style={{ fontSize: 'max(22px, min(3vw, 56px))' }}>
+            <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-3xl">
               A formal $OVERVIEW-weighted vote on the next step for the
               Overview Effect Flight (&quot;Send Frank to Space&quot;). ~$172k
               has been raised or pledged and none of it has been spent. Token
               holders now decide between three paths.
-            </span>
+            </p>
           }
           preFooter={<NoticeFooter />}
         >
@@ -617,27 +616,19 @@ export default function OverviewPathVote({
               )}
 
               {/* Balance */}
-              <div className="mb-4 sm:mb-6 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-gray-400 text-xs sm:text-sm">
-                    Your $OVERVIEW Balance
-                  </p>
-                  <p className="text-white text-xl sm:text-2xl font-semibold">
-                    {userAddress
-                      ? userBalance != null && Number.isFinite(userBalance)
-                        ? userBalance.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                          })
-                        : '...'
-                      : 'Connect wallet'}
-                  </p>
-                </div>
-                <Link
-                  href="/mission/4"
-                  className="flex-shrink-0 px-3 sm:px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 hover:text-indigo-200 text-xs sm:text-sm font-medium rounded-lg transition-colors"
-                >
-                  Get $OVERVIEW
-                </Link>
+              <div className="mb-4 sm:mb-6 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4">
+                <p className="text-gray-400 text-xs sm:text-sm">
+                  Your $OVERVIEW Balance
+                </p>
+                <p className="text-white text-xl sm:text-2xl font-semibold">
+                  {userAddress
+                    ? userBalance != null && Number.isFinite(userBalance)
+                      ? userBalance.toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                        })
+                      : '...'
+                    : 'Connect wallet'}
+                </p>
               </div>
 
               {/* Current vote */}
