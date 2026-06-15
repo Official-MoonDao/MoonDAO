@@ -167,6 +167,7 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
     const liveAmount = Math.floor(userBalance)
     const entry = displayResults.results.find((r) => r.optionId === previousVote.optionId)
     if (!entry || previousVote.amount === liveAmount) return displayResults
+    if (entry.totalVoted >= liveAmount) return displayResults
 
     const userServerContribution = Math.min(entry.totalVoted, previousVote.amount)
     const adjustedResults = displayResults.results.map((r) =>
@@ -325,6 +326,14 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
         for (let i = 0; i < retries; i++) {
           await new Promise((r) => setTimeout(r, 4000 + i * 2000))
           try {
+            await fetch('/api/revalidate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                secret: process.env.NEXT_PUBLIC_REVALIDATE_SECRET,
+                path: '/overview-path-vote',
+              }),
+            })
             const res = await fetch('/overview-path-vote', {
               headers: { Accept: 'text/html' },
             })
