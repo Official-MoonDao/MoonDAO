@@ -412,18 +412,13 @@ export default function OverviewPathVote({
       />
       <Container>
         <ContentLayout
-          header={
-            <span
-              style={{ fontSize: 'max(22px, min(3vw, 56px))' }}
-              className="sm:whitespace-nowrap"
-            >
-              Choose the Path Forward
-            </span>
-          }
+          header="Choose the Path Forward"
           mainPadding
           mode="compact"
           popOverEffect={false}
           isProfile
+          branded={false}
+          maxWidth="900px"
           description={
             <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-3xl">
               A formal $OVERVIEW-weighted vote on the next step for the
