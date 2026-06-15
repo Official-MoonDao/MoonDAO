@@ -223,7 +223,7 @@ export default function OverviewPathVote({
 
   const handleSubmit = async () => {
     if (!account) return
-    if (votingClosed) {
+    if (deadline != null && Date.now() > deadline.getTime()) {
       toast.error('Voting has closed.', { style: toastStyle })
       return
     }
