@@ -18,19 +18,41 @@ export default function TeamJoin() {
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   // EU/EEA visitors may browse the site but cannot permanently store personal
-  // data on chain (GDPR), so they don't get the team creation flow.
-  const { isRestricted, isLoading: isResolvingRegion } = useRegionRestriction()
+  // data on chain (GDPR), so they don't get the team creation flow. If geo
+  // can't be resolved we fail closed (treat it as restricted) rather than risk
+  // showing the flow to a restricted visitor.
+  const {
+    isRestricted,
+    isLoading: isResolvingRegion,
+    isError: regionError,
+  } = useRegionRestriction()
 
   // Ensure default chain settings
   useChainDefault()
 
-  // Wait until geo resolves so we never flash the creation flow to a
-  // restricted visitor.
+  const head = (
+    <Head
+      title={'Create a Team'}
+      description={
+        'Create a Team within the Space Acceleration Network to bring your organization onchain.'
+      }
+      image="https://ipfs.io/ipfs/QmX7FHDoRhsQ4Ube179qjCnvcVQqwJhVRRASUGLEeqwdh2"
+    />
+  )
+
+  // Wait until geo resolves so we never flash the creation flow to a restricted
+  // visitor. Keep <Head> mounted (SEO/metadata) and render a light placeholder
+  // instead of returning null and flashing a blank page.
   if (isResolvingRegion) {
-    return null
+    return (
+      <>
+        {head}
+        <div className="min-h-screen" />
+      </>
+    )
   }
 
-  if (isRestricted) {
+  if (isRestricted || regionError) {
     return <RegionRestrictedNotice type="team" />
   }
 
@@ -46,13 +68,7 @@ export default function TeamJoin() {
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head
-        title={'Create a Team'}
-        description={
-          'Create a Team within the Space Acceleration Network to bring your organization onchain.'
-        }
-        image="https://ipfs.io/ipfs/QmX7FHDoRhsQ4Ube179qjCnvcVQqwJhVRRASUGLEeqwdh2"
-      />
+      {head}
       <Container>
         <ContentLayout
           header="Join the Network"

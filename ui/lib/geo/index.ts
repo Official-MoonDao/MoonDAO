@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis'
-import type { NextApiRequest } from 'next'
+import type { NextApiRequest, NextApiResponse } from 'next'
 
 // Extract client IP from trusted headers
 export function getClientIp(req: NextApiRequest): string {
@@ -77,6 +77,10 @@ export const EU_EEA_COUNTRIES: ReadonlySet<string> = new Set([
   'LI', // Liechtenstein (EEA)
   'NO', // Norway (EEA)
   'GB', // United Kingdom (UK-GDPR)
+  'GI', // Gibraltar (UK-GDPR)
+  'JE', // Jersey (UK-GDPR adequacy)
+  'GG', // Guernsey (UK-GDPR adequacy)
+  'IM', // Isle of Man (UK-GDPR adequacy)
 ])
 
 // Returns true when the country code belongs to a GDPR-restricted region
@@ -85,6 +89,33 @@ export const EU_EEA_COUNTRIES: ReadonlySet<string> = new Set([
 export function isEUCountry(countryCode: string | null | undefined): boolean {
   if (!countryCode) return false
   return EU_EEA_COUNTRIES.has(countryCode.toUpperCase())
+}
+
+// True when the request originates from a GDPR-restricted region, derived from
+// trusted edge geo headers. Used by data-persistence API routes as a
+// server-side companion to the client `useRegionRestriction` gate.
+export function isRegionRestrictedRequest(req: NextApiRequest): boolean {
+  return isEUCountry(getCountryFromHeaders(req))
+}
+
+// Defense-in-depth guard for routes that permanently store personal data
+// (on-chain profile creation, profile image generation). The client UI already
+// hides these flows from restricted regions, but that check is bypassable and
+// can fail open, so the server independently rejects restricted regions with
+// HTTP 451 (Unavailable For Legal Reasons). Returns true when the request may
+// proceed; when it returns false it has already sent the 451 response.
+export function enforceRegionNotRestricted(
+  req: NextApiRequest,
+  res: NextApiResponse
+): boolean {
+  if (isRegionRestrictedRequest(req)) {
+    res.status(451).json({
+      error:
+        'On-chain profile creation is not available in your region for data-protection (GDPR) reasons. You can still browse the rest of the site.',
+    })
+    return false
+  }
+  return true
 }
 
 // Extract US state from request headers (Vercel/Cloudflare geolocation)

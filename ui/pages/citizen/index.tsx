@@ -12,8 +12,15 @@ export default function Join() {
   const router = useRouter()
 
   // EU/EEA visitors may browse the site but cannot permanently store personal
-  // data on chain (GDPR), so they don't get the citizen creation flow.
-  const { isRestricted, isLoading: isResolvingRegion } = useRegionRestriction()
+  // data on chain (GDPR), so they don't get the citizen creation flow. If geo
+  // can't be resolved we fail closed (treat it as restricted) rather than risk
+  // showing the flow to a restricted visitor; the mint is also blocked
+  // server-side regardless.
+  const {
+    isRestricted,
+    isLoading: isResolvingRegion,
+    isError: regionError,
+  } = useRegionRestriction()
 
   useChainDefault()
 
@@ -47,7 +54,7 @@ export default function Join() {
       />
       {/* Wait until geo resolves so we never flash the creation flow to a
           restricted visitor. */}
-      {isResolvingRegion ? null : isRestricted ? (
+      {isResolvingRegion ? null : isRestricted || regionError ? (
         <RegionRestrictedNotice type="citizen" />
       ) : (
         <CreateCitizen

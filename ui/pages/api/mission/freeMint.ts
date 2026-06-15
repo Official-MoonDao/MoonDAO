@@ -16,6 +16,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 import { CitizenInvite, consumeInvite, peekInvite, restoreInvite } from '@/lib/citizen/inviteTokens'
+import { enforceRegionNotRestricted } from '@/lib/geo'
 import { createHSMWallet, sendEthFromHSM } from '@/lib/google/hsm-signer'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
@@ -179,6 +180,11 @@ async function isCitizenFreeMintListed(address: string): Promise<boolean | null>
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
+    // GDPR: a sponsored citizen mint permanently writes the submitter's name
+    // and profile image on chain, so block restricted regions server-side even
+    // if the client gate was bypassed.
+    if (!enforceRegionNotRestricted(req, res)) return
+
     const { address, name, image, privacy, formId, inviteToken } = req.body
     if (!address || !name || !image || !privacy || !formId) {
       return res.status(400).json({ error: 'Mint params not found!' })

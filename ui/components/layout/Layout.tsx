@@ -93,12 +93,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
   const isHomepage = router.pathname === '/'
 
-  const noLayout = router.pathname === '/451'
-
-  if (noLayout) {
-    return <div>{children}</div>
-  }
-
   // Use top nav for all pages now
   const layout = (
     <div
