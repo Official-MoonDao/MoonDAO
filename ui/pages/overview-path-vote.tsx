@@ -37,6 +37,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import YouTubeEmbed from '@/components/townhall/YouTubeEmbed'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
 type OverviewPathVoteProps = {
@@ -435,6 +436,9 @@ export default function OverviewPathVote({
           preFooter={<NoticeFooter />}
         >
           <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[900px] mx-auto">
+            {/* Community update video */}
+            <YouTubeEmbed videoId="YzecKAp9V8U" />
+
             {/* Proposal */}
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
               <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
