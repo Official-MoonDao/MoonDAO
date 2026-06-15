@@ -23,5 +23,9 @@ namespace NodeJS {
     S3_UPLOAD_KEY: string
     S3_UPLOAD_SECRET: string
     S3_UPLOAD_BUCKET: string
+    UPSTASH_REDIS_URL: string
+    UPSTASH_REDIS_TOKEN: string
+    CONTRIBUTIONS_SHEET_CSV_URL: string
+    CRON_SECRET: string
   }
 }

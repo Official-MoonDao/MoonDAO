@@ -1,0 +1,24 @@
+name: Contribution Discord Notifications
+
+# Contributions are submitted through an external Google Form, so there's no
+# server-side hook on submit. This cron polls the deployed site, which diffs the
+# contributions sheet against rows already announced and posts new ones to
+# Discord. Dedup state lives in Upstash Redis, so polling is idempotent.
+on:
+  schedule:
+    - cron: '*/10 * * * *' # every 10 minutes
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger contribution notification poller
+        env:
+          SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          BASE="${SITE_URL:-https://moondao.com}"
+          curl -fsS -X POST "$BASE/api/cron/contribution-notifications" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json"
