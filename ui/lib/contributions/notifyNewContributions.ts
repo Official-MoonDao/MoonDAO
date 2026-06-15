@@ -42,6 +42,15 @@ const RELEASE_LOCK_SCRIPT =
 // the next poll, since rows are only marked seen after a successful post.
 const MAX_PER_RUN = 8
 
+// Discord rejects messages whose `content` exceeds 2000 chars. Keep a margin so
+// a single oversized submission can never become permanently un-postable and
+// stall the queue.
+const MAX_CONTENT_LENGTH = 1900
+
+// Abort a hung Discord request so a single slow call can't run the whole cron
+// past its function time limit.
+const DISCORD_FETCH_TIMEOUT_MS = 10_000
+
 // Same channel selection the rest of the network notifications use.
 const NOTIFICATION_CHANNEL_ID =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
@@ -105,7 +114,13 @@ function buildContent(c: Contribution): string {
     lines.push(`🔗 ${url}`)
   }
   lines.push(`\nView all contributions → ${DEPLOYED_ORIGIN}/contributions`)
-  return lines.join('\n')
+  const content = lines.join('\n')
+  // Final guard: even with a capped description, `area`/`name`/`links` can push
+  // the total past Discord's 2000-char limit, which would make this row fail
+  // forever and block the queue. Hard-cap the whole message instead.
+  return content.length > MAX_CONTENT_LENGTH
+    ? `${content.slice(0, MAX_CONTENT_LENGTH - 1).trimEnd()}…`
+    : content
 }
 
 async function postToDiscord(content: string): Promise<boolean> {
@@ -114,6 +129,8 @@ async function postToDiscord(content: string): Promise<boolean> {
     console.error('[contribution-notify] DISCORD_BOT_TOKEN not set')
     return false
   }
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), DISCORD_FETCH_TIMEOUT_MS)
   try {
     const resp = await fetch(
       `https://discord.com/api/v10/channels/${NOTIFICATION_CHANNEL_ID}/messages`,
@@ -123,7 +140,11 @@ async function postToDiscord(content: string): Promise<boolean> {
           'Content-Type': 'application/json',
           Authorization: `Bot ${token}`,
         },
-        body: JSON.stringify({ content }),
+        // `allowed_mentions: { parse: [] }` disables ALL mention parsing so an
+        // attacker-controlled form field (name/area/description/links) can't
+        // make the bot ping @everyone/@here or arbitrary roles/users.
+        body: JSON.stringify({ content, allowed_mentions: { parse: [] } }),
+        signal: controller.signal,
       }
     )
     if (!resp.ok) {
@@ -137,6 +158,8 @@ async function postToDiscord(content: string): Promise<boolean> {
   } catch (err) {
     console.error('[contribution-notify] Discord post error:', err)
     return false
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
@@ -170,9 +193,14 @@ export async function notifyNewContributions(): Promise<NotifyResult> {
 
     const seeded = await redis.get(SEEDED_FLAG_KEY)
     if (!seeded) {
-      if (keys.length > 0) {
-        await redis.sadd(NOTIFIED_SET_KEY, keys[0], ...keys.slice(1))
+      // Only seed once we've actually read rows. `getSheetContributions()`
+      // returns `[]` both for a genuinely empty sheet AND for a transient fetch
+      // failure / momentarily-unset CSV URL; flipping the flag in that case
+      // would make the next successful run dump the entire historical backlog.
+      if (keys.length === 0) {
+        return { ok: true, seeded: false, posted: 0, total: 0 }
       }
+      await redis.sadd(NOTIFIED_SET_KEY, keys[0], ...keys.slice(1))
       await redis.set(SEEDED_FLAG_KEY, '1')
       return { ok: true, seeded: true, posted: 0, total: keys.length }
     }

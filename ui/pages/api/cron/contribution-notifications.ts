@@ -1,6 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { notifyNewContributions } from '@/lib/contributions/notifyNewContributions'
 
+// With MAX_PER_RUN=8 posts, ~400ms inter-post sleeps, and per-request fetch
+// timeouts, a slow run can outlast the default serverless limit and be killed
+// mid-loop. Give it explicit headroom so behavior is predictable.
+export const config = {
+  maxDuration: 60,
+}
+
 // Polled by the "Contribution Discord Notifications" GitHub Actions cron (and
 // triggerable manually). Diffs the Community Circle contributions sheet against
 // the rows we've already announced and posts the new ones to Discord.
