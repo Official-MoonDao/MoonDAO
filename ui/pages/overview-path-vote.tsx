@@ -15,14 +15,8 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import {
-  emptyPathVoteResults,
-  fetchPathVoteResults,
-} from '@/lib/overview-path-vote/fetchResults'
-import type {
-  PathVoteResults,
-  PathVoteVoter,
-} from '@/lib/overview-path-vote/fetchResults'
+import { emptyPathVoteResults, fetchPathVoteResults } from '@/lib/overview-path-vote/fetchResults'
+import type { PathVoteResults, PathVoteVoter } from '@/lib/overview-path-vote/fetchResults'
 import {
   getPathVoteOption,
   isPathVoteOptionId,
@@ -81,10 +75,7 @@ const OPTION_ACCENTS: Record<
   },
 }
 
-export default function OverviewPathVote({
-  voteResults,
-  tokenAddress,
-}: OverviewPathVoteProps) {
+export default function OverviewPathVote({ voteResults, tokenAddress }: OverviewPathVoteProps) {
   const router = useRouter()
   const overviewChain = arbitrum
   const overviewChainSlug = getChainSlug(overviewChain)
@@ -93,10 +84,8 @@ export default function OverviewPathVote({
 
   const userBalance = useWatchTokenBalance(overviewChain, tokenAddress)
 
-  const [selectedOption, setSelectedOption] =
-    useState<PathVoteOptionId | null>(null)
-  const [expandedOption, setExpandedOption] =
-    useState<PathVoteOptionId | null>(null)
+  const [selectedOption, setSelectedOption] = useState<PathVoteOptionId | null>(null)
+  const [expandedOption, setExpandedOption] = useState<PathVoteOptionId | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasExistingVote, setHasExistingVote] = useState(false)
   const [previousVote, setPreviousVote] = useState<{
@@ -110,9 +99,7 @@ export default function OverviewPathVote({
     setDisplayResults(voteResults)
   }, [voteResults])
 
-  const deadline = OVERVIEW_PATH_VOTE_DEADLINE
-    ? new Date(OVERVIEW_PATH_VOTE_DEADLINE)
-    : null
+  const deadline = OVERVIEW_PATH_VOTE_DEADLINE ? new Date(OVERVIEW_PATH_VOTE_DEADLINE) : null
   const votingClosed = deadline != null && Date.now() > deadline.getTime()
   // Per-option tallies stay sealed until voting closes, mirroring the
   // governance proposal pages. Until then we only show who has voted and with
@@ -138,18 +125,14 @@ export default function OverviewPathVote({
     const checkExisting = async () => {
       try {
         const stmt = `SELECT * FROM ${votesTableName} WHERE voteId = ${OVERVIEW_PATH_VOTE_ID} AND address = '${userAddress.toLowerCase()}'`
-        const res = await fetch(
-          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
-        )
+        const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`)
         if (res.ok) {
           const data = await res.json()
           if (Array.isArray(data) && data.length > 0) {
             setHasExistingVote(true)
             try {
               const vote =
-                typeof data[0].vote === 'string'
-                  ? JSON.parse(data[0].vote)
-                  : data[0].vote
+                typeof data[0].vote === 'string' ? JSON.parse(data[0].vote) : data[0].vote
               const entries = Object.entries(vote)
               if (entries.length > 0) {
                 const [optionId, amount] = entries[0]
@@ -178,44 +161,28 @@ export default function OverviewPathVote({
   // the totals don't look stale relative to the balance shown right above
   // them (ISR revalidates every 60s; the balance hook is live).
   const visibleResults = useMemo(() => {
-    if (
-      !previousVote ||
-      userBalance == null ||
-      !Number.isFinite(userBalance) ||
-      userBalance <= 0
-    ) {
+    if (!previousVote || userBalance == null || !Number.isFinite(userBalance) || userBalance <= 0) {
       return displayResults
     }
     const liveAmount = Math.floor(userBalance)
-    const entry = displayResults.results.find(
-      (r) => r.optionId === previousVote.optionId
-    )
-    if (!entry || entry.totalVoted >= liveAmount) return displayResults
+    const entry = displayResults.results.find((r) => r.optionId === previousVote.optionId)
+    if (!entry || previousVote.amount === liveAmount) return displayResults
 
-    const userServerContribution = Math.min(
-      entry.totalVoted,
-      previousVote.amount
-    )
+    const userServerContribution = Math.min(entry.totalVoted, previousVote.amount)
     const adjustedResults = displayResults.results.map((r) =>
       r.optionId === previousVote.optionId
         ? {
             ...r,
-            totalVoted: Math.max(
-              0,
-              r.totalVoted - userServerContribution + liveAmount
-            ),
+            totalVoted: Math.max(0, r.totalVoted - userServerContribution + liveAmount),
           }
-        : r
+        : r,
     )
     const totalVoted = adjustedResults.reduce((s, r) => s + r.totalVoted, 0)
     return {
       ...displayResults,
       results: adjustedResults.map((r) => ({
         ...r,
-        percentage:
-          totalVoted > 0
-            ? Math.round((r.totalVoted / totalVoted) * 1000) / 10
-            : 0,
+        percentage: totalVoted > 0 ? Math.round((r.totalVoted / totalVoted) * 1000) / 10 : 0,
       })),
       totalVoted: Math.round(totalVoted * 100) / 100,
     }
@@ -231,24 +198,19 @@ export default function OverviewPathVote({
       toast.error('Please select an option.', { style: toastStyle })
       return
     }
-    if (
-      userBalance == null ||
-      !Number.isFinite(userBalance) ||
-      userBalance <= 0
-    ) {
+    if (userBalance == null || !Number.isFinite(userBalance) || userBalance <= 0) {
       toast.error(
         userBalance == null || !Number.isFinite(userBalance)
           ? 'Your $OVERVIEW balance is still loading. Please wait a moment and try again.'
           : 'You need $OVERVIEW tokens to vote.',
-        { style: toastStyle }
+        { style: toastStyle },
       )
       return
     }
     if (!votesContract) {
-      toast.error(
-        'Voting contract is not ready yet. Please wait a moment and try again.',
-        { style: toastStyle }
-      )
+      toast.error('Voting contract is not ready yet. Please wait a moment and try again.', {
+        style: toastStyle,
+      })
       return
     }
 
@@ -271,9 +233,7 @@ export default function OverviewPathVote({
       let existsNow = hasExistingVote
       try {
         const stmt = `SELECT id FROM ${votesTableName} WHERE voteId = ${OVERVIEW_PATH_VOTE_ID} AND address = '${userAddress!.toLowerCase()}'`
-        const res = await fetch(
-          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
-        )
+        const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`)
         if (res.ok) {
           const data = await res.json()
           existsNow = Array.isArray(data) && data.length > 0
@@ -281,7 +241,7 @@ export default function OverviewPathVote({
       } catch (lookupErr) {
         console.warn(
           '[overview-path-vote] pre-submit existence check failed; falling back to cached value',
-          lookupErr
+          lookupErr,
         )
       }
 
@@ -304,7 +264,7 @@ export default function OverviewPathVote({
       const optionTitle = getPathVoteOption(selectedOption)?.title
       toast.success(
         `Vote submitted for Option ${getPathVoteOption(selectedOption)?.letter}${optionTitle ? ` — ${optionTitle}` : ''}.`,
-        { style: toastStyle }
+        { style: toastStyle },
       )
 
       // Optimistic tally update: move the user's weight from their previous
@@ -343,18 +303,13 @@ export default function OverviewPathVote({
                 citizenName: existing?.citizenName,
                 citizenId: existing?.citizenId,
               },
-              ...current.voters.filter(
-                (v) => v.address.toLowerCase() !== lowerAddr
-              ),
+              ...current.voters.filter((v) => v.address.toLowerCase() !== lowerAddr),
             ].sort((a, b) => b.votingPower - a.votingPower)
           : current.voters
         return {
           results: adjusted.map((r) => ({
             ...r,
-            percentage:
-              totalVoted > 0
-                ? Math.round((r.totalVoted / totalVoted) * 1000) / 10
-                : 0,
+            percentage: totalVoted > 0 ? Math.round((r.totalVoted / totalVoted) * 1000) / 10 : 0,
           })),
           totalVoted: Math.round(totalVoted * 100) / 100,
           totalVoters: lowerAddr && !existing ? nextVoters.length : totalVoters,
@@ -370,14 +325,6 @@ export default function OverviewPathVote({
         for (let i = 0; i < retries; i++) {
           await new Promise((r) => setTimeout(r, 4000 + i * 2000))
           try {
-            await fetch('/api/revalidate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                secret: process.env.NEXT_PUBLIC_REVALIDATE_SECRET,
-                path: '/overview-path-vote',
-              }),
-            })
             const res = await fetch('/overview-path-vote', {
               headers: { Accept: 'text/html' },
             })
@@ -408,18 +355,14 @@ export default function OverviewPathVote({
         lower.includes('action_rejected')
       ) {
         toastMessage = 'Transaction cancelled in your wallet.'
-      } else if (
-        lower.includes('insufficient funds') ||
-        lower.includes('insufficient balance')
-      ) {
+      } else if (lower.includes('insufficient funds') || lower.includes('insufficient balance')) {
         toastMessage =
           'Not enough ETH on Arbitrum to cover gas. Add a small amount of ETH to your wallet on Arbitrum and try again.'
       } else if (
         lower.includes('chain') &&
         (lower.includes('mismatch') || lower.includes('switch'))
       ) {
-        toastMessage =
-          'Wallet is on the wrong network. Please switch to Arbitrum and try again.'
+        toastMessage = 'Wallet is on the wrong network. Please switch to Arbitrum and try again.'
       } else if (
         lower.includes('invalid bignumber') ||
         lower.includes('value="nan"') ||
@@ -437,9 +380,7 @@ export default function OverviewPathVote({
     }
   }
 
-  const previousOption = previousVote
-    ? getPathVoteOption(previousVote.optionId)
-    : null
+  const previousOption = previousVote ? getPathVoteOption(previousVote.optionId) : null
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
@@ -467,10 +408,9 @@ export default function OverviewPathVote({
           }
           description={
             <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-3xl">
-              A formal $OVERVIEW-weighted vote on the next step for the
-              Overview Effect Flight (&quot;Send Frank to Space&quot;). ~$172k
-              has been raised or pledged and none of it has been spent. Token
-              holders now decide between three paths.
+              A formal $OVERVIEW-weighted vote on the next step for the Overview Effect Flight
+              (&quot;Send Frank to Space&quot;). ~$172k has been raised or pledged and none of it
+              has been spent. Token holders now decide between three paths.
             </p>
           }
           preFooter={<NoticeFooter />}
@@ -486,24 +426,22 @@ export default function OverviewPathVote({
               </h2>
               <div className="text-gray-300 text-xs sm:text-sm leading-relaxed space-y-3">
                 <p>
-                  After 30 days of post-fundraising carrier negotiation, we
-                  engaged 12 companies across the commercial space tourism
-                  industry and collected real quotes, draft contracts, flight
-                  profiles, and timelines. The findings below frame the
-                  decision. The community now chooses one of three paths:
-                  commit to a stratospheric balloon seat for Frank today, keep
-                  options open and continue fundraising toward two seats, or
-                  activate refunds.
+                  After 30 days of post-fundraising carrier negotiation, we engaged 12 companies
+                  across the commercial space tourism industry and collected real quotes, draft
+                  contracts, flight profiles, and timelines. The findings below frame the decision.
+                  The community now chooses one of three paths: commit to a stratospheric balloon
+                  seat for Frank today, keep options open and continue fundraising toward two seats,
+                  or activate refunds.
                 </p>
                 <p>
-                  Voting weight is your live $OVERVIEW balance. Your tokens
-                  never leave your wallet — only your voting power is
-                  recorded. You can change your vote at any time
+                  Voting weight is your live $OVERVIEW balance. Your tokens never leave your wallet
+                  — only your voting power is recorded. You can change your vote at any time
                   {deadline
-                    ? ` until voting closes on ${deadline.toLocaleDateString(
-                        undefined,
-                        { year: 'numeric', month: 'long', day: 'numeric' }
-                      )}`
+                    ? ` until voting closes on ${deadline.toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}`
                     : ' until the vote is closed'}
                   .
                 </p>
@@ -516,16 +454,11 @@ export default function OverviewPathVote({
                 </p>
                 <dl className="space-y-2">
                   {PATH_VOTE_AT_A_GLANCE.map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex flex-col sm:flex-row sm:gap-4"
-                    >
+                    <div key={item.label} className="flex flex-col sm:flex-row sm:gap-4">
                       <dt className="text-gray-400 text-xs sm:text-sm sm:w-56 flex-shrink-0">
                         {item.label}
                       </dt>
-                      <dd className="text-white text-xs sm:text-sm">
-                        {item.value}
-                      </dd>
+                      <dd className="text-white text-xs sm:text-sm">{item.value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -551,10 +484,9 @@ export default function OverviewPathVote({
                     </div>
                   ))}
                   <p className="text-gray-500 text-xs leading-relaxed pt-1">
-                    A portion of what we received is under NDA — specific
-                    quoted prices, draft contract language, and some technical
-                    details are not shared publicly. Provider-by-provider
-                    scoring (within NDA limits) will be published as NDAs
+                    A portion of what we received is under NDA — specific quoted prices, draft
+                    contract language, and some technical details are not shared publicly.
+                    Provider-by-provider scoring (within NDA limits) will be published as NDAs
                     allow.
                   </p>
                 </div>
@@ -571,23 +503,17 @@ export default function OverviewPathVote({
                 <div className="px-3 sm:px-4 pb-3 sm:pb-4">
                   <div className="space-y-2">
                     {PATH_VOTE_DILIGENCE_AXES.map((row) => (
-                      <div
-                        key={row.axis}
-                        className="flex flex-col sm:flex-row sm:gap-4"
-                      >
+                      <div key={row.axis} className="flex flex-col sm:flex-row sm:gap-4">
                         <p className="text-white text-xs sm:text-sm font-medium sm:w-56 flex-shrink-0">
                           {row.axis}
                         </p>
-                        <p className="text-gray-400 text-xs sm:text-sm">
-                          {row.criteria}
-                        </p>
+                        <p className="text-gray-400 text-xs sm:text-sm">{row.criteria}</p>
                       </div>
                     ))}
                   </div>
                   <p className="text-gray-500 text-xs leading-relaxed mt-3">
-                    No provider scores top-of-class on every axis today. The
-                    job of the diligence is to surface the trade-offs
-                    honestly, not to declare a winner.
+                    No provider scores top-of-class on every axis today. The job of the diligence is
+                    to surface the trade-offs honestly, not to declare a winner.
                   </p>
                 </div>
               </details>
@@ -602,25 +528,23 @@ export default function OverviewPathVote({
                 </summary>
                 <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-2">
                   <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-                    The original campaign promised a community-selected
-                    Candidate flying alongside Frank, chosen through a
-                    four-round merit-based process culminating in a $vMOONEY
-                    quadratic vote. That process is not cancelled — its status
-                    depends on the path chosen:
+                    The original campaign promised a community-selected Candidate flying alongside
+                    Frank, chosen through a four-round merit-based process culminating in a $vMOONEY
+                    quadratic vote. That process is not cancelled — its status depends on the path
+                    chosen:
                   </p>
                   <ul className="text-gray-400 text-xs sm:text-sm leading-relaxed list-disc pl-5 space-y-1">
                     <li>
-                      <span className="text-white">Option A:</span> the
-                      Candidate seat is deferred — either dropped or contingent
-                      on a second fundraise.
+                      <span className="text-white">Option A:</span> the Candidate seat is deferred —
+                      either dropped or contingent on a second fundraise.
                     </li>
                     <li>
-                      <span className="text-white">Option B:</span> the
-                      Candidate seat remains an active goal.
+                      <span className="text-white">Option B:</span> the Candidate seat remains an
+                      active goal.
                     </li>
                     <li>
-                      <span className="text-white">Option C:</span> the
-                      Candidate process is paused indefinitely.
+                      <span className="text-white">Option C:</span> the Candidate process is paused
+                      indefinitely.
                     </li>
                   </ul>
                 </div>
@@ -633,13 +557,9 @@ export default function OverviewPathVote({
                 Cast Your Vote
               </h2>
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                Select one of the three paths below and submit. Your full
-                $OVERVIEW balance is pledged as voting weight — tokens stay in
-                your wallet. You can change your vote{' '}
-                {deadline
-                  ? 'until voting closes'
-                  : 'at any time while the vote is open'}
-                .
+                Select one of the three paths below and submit. Your full $OVERVIEW balance is
+                pledged as voting weight — tokens stay in your wallet. You can change your vote{' '}
+                {deadline ? 'until voting closes' : 'at any time while the vote is open'}.
               </p>
 
               {votingClosed && (
@@ -658,9 +578,7 @@ export default function OverviewPathVote({
 
               {/* Balance */}
               <div className="mb-4 sm:mb-6 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4">
-                <p className="text-gray-400 text-xs sm:text-sm">
-                  Your $OVERVIEW Balance
-                </p>
+                <p className="text-gray-400 text-xs sm:text-sm">Your $OVERVIEW Balance</p>
                 <p className="text-white text-xl sm:text-2xl font-semibold">
                   {userAddress
                     ? userBalance != null && Number.isFinite(userBalance)
@@ -701,9 +619,9 @@ export default function OverviewPathVote({
                   const isExpanded = expandedOption === option.id
                   const hasDetails = Boolean(
                     option.fundsImpact ||
-                      option.candidateImpact ||
-                      option.realRisk ||
-                      option.bestCase
+                    option.candidateImpact ||
+                    option.realRisk ||
+                    option.bestCase,
                   )
                   return (
                     <div
@@ -717,9 +635,7 @@ export default function OverviewPathVote({
                       {/* Selectable row */}
                       <button
                         type="button"
-                        onClick={() =>
-                          !votingClosed && setSelectedOption(option.id)
-                        }
+                        onClick={() => !votingClosed && setSelectedOption(option.id)}
                         disabled={votingClosed}
                         className="w-full text-left p-3 sm:p-5"
                       >
@@ -744,9 +660,7 @@ export default function OverviewPathVote({
                           </div>
                           <span
                             className={`flex-shrink-0 w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${
-                              isSelected
-                                ? 'border-white bg-white/90'
-                                : 'border-white/30'
+                              isSelected ? 'border-white bg-white/90' : 'border-white/30'
                             }`}
                           >
                             {isSelected && (
@@ -758,50 +672,40 @@ export default function OverviewPathVote({
 
                       {/* Details accordion */}
                       {hasDetails && (
-                      <div className="px-3 sm:px-5 pb-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExpandedOption(isExpanded ? null : option.id)
-                          }
-                          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors pb-2"
-                        >
-                          <span
-                            className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                        <div className="px-3 sm:px-5 pb-2">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedOption(isExpanded ? null : option.id)}
+                            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors pb-2"
                           >
-                            ▶
-                          </span>
-                          {isExpanded ? 'Hide details' : 'Show details'}
-                        </button>
-                        {isExpanded && (
-                          <div className="pb-3 sm:pb-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                            <p className="text-xs sm:text-sm text-gray-400">
-                              <span className="text-gray-300 font-medium">
-                                Funds:{' '}
-                              </span>
-                              {option.fundsImpact}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-400">
-                              <span className="text-gray-300 font-medium">
-                                Candidate seat:{' '}
-                              </span>
-                              {option.candidateImpact}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-400">
-                              <span className="text-red-300/80 font-medium">
-                                Real risk:{' '}
-                              </span>
-                              {option.realRisk}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-400">
-                              <span className="text-emerald-300/80 font-medium">
-                                Best case:{' '}
-                              </span>
-                              {option.bestCase}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                            <span
+                              className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                            >
+                              ▶
+                            </span>
+                            {isExpanded ? 'Hide details' : 'Show details'}
+                          </button>
+                          {isExpanded && (
+                            <div className="pb-3 sm:pb-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                              <p className="text-xs sm:text-sm text-gray-400">
+                                <span className="text-gray-300 font-medium">Funds: </span>
+                                {option.fundsImpact}
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-400">
+                                <span className="text-gray-300 font-medium">Candidate seat: </span>
+                                {option.candidateImpact}
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-400">
+                                <span className="text-red-300/80 font-medium">Real risk: </span>
+                                {option.realRisk}
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-400">
+                                <span className="text-emerald-300/80 font-medium">Best case: </span>
+                                {option.bestCase}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   )
@@ -821,10 +725,7 @@ export default function OverviewPathVote({
                   action={handleSubmit}
                   requiredChain={overviewChain}
                   isDisabled={
-                    isSubmitting ||
-                    !selectedOption ||
-                    !userBalance ||
-                    userBalance <= 0
+                    isSubmitting || !selectedOption || !userBalance || Math.floor(userBalance) <= 0
                   }
                   className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border-0 disabled:opacity-50"
                 />
@@ -842,8 +743,8 @@ export default function OverviewPathVote({
                     maximumFractionDigits: 0,
                   })}{' '}
                   $OVERVIEW across {visibleResults.totalVoters} voter
-                  {visibleResults.totalVoters !== 1 ? 's' : ''}. Tallies
-                  re-weight to voters&apos; live balances.
+                  {visibleResults.totalVoters !== 1 ? 's' : ''}. Tallies re-weight to voters&apos;
+                  live balances.
                 </p>
 
                 <div className="space-y-4 sm:space-y-5">
@@ -886,9 +787,7 @@ export default function OverviewPathVote({
             {/* Voters (who voted + voting power; choices stay sealed) */}
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">
-                  Votes
-                </h2>
+                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">Votes</h2>
                 {isRefreshing && (
                   <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
                     <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
@@ -899,17 +798,16 @@ export default function OverviewPathVote({
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
                 {!resultsRevealed && (
                   <span className="inline-flex items-center gap-1.5 mr-1 text-indigo-300">
-                    <span aria-hidden>🔒</span> Individual choices and the tally
-                    stay hidden until voting closes.
+                    <span aria-hidden>🔒</span> Individual choices and the tally stay hidden until
+                    voting closes.
                   </span>
                 )}
                 {visibleResults.totalVoters > 0
                   ? `${visibleResults.totalVoters} voter${
                       visibleResults.totalVoters !== 1 ? 's' : ''
-                    } so far, ${visibleResults.totalVoted.toLocaleString(
-                      undefined,
-                      { maximumFractionDigits: 0 }
-                    )} $OVERVIEW of voting power committed.`
+                    } so far, ${visibleResults.totalVoted.toLocaleString(undefined, {
+                      maximumFractionDigits: 0,
+                    })} $OVERVIEW of voting power committed.`
                   : 'No votes yet. Be the first to choose a path.'}
               </p>
 
@@ -923,7 +821,7 @@ export default function OverviewPathVote({
                           <Link
                             href={`/citizen/${generatePrettyLinkWithId(
                               voter.citizenName,
-                              String(voter.citizenId)
+                              String(voter.citizenId),
                             )}`}
                             className="text-white hover:underline break-all"
                           >
