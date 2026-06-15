@@ -223,14 +223,22 @@ export default function TeamListing({
             <div className="flex items-center gap-2">
               <button
                 id="share-listing-button"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation()
                   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.moondao.com'
                   const teamSlug = teamNFT?.metadata?.name
                     ? generatePrettyLink(teamNFT.metadata.name)
                     : String(listing.teamId)
-                  navigator.clipboard.writeText(`${origin}/team/${teamSlug}?listing=${listing.id}`)
-                  toast.success('Link copied to clipboard.')
+                  const shareLink = `${origin}/team/${teamSlug}?listing=${listing.id}`
+                  try {
+                    if (!navigator.clipboard?.writeText) {
+                      throw new Error('Clipboard API unavailable')
+                    }
+                    await navigator.clipboard.writeText(shareLink)
+                    toast.success('Link copied to clipboard.')
+                  } catch (err) {
+                    toast.error('Could not copy link. Please copy it manually.')
+                  }
                 }}
                 className="text-white/40 hover:text-white/80 transition-colors"
                 title="Copy link"
