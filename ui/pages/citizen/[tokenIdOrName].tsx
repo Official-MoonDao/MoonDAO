@@ -547,7 +547,11 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                       </Tooltip>
                     </div>
                     <p className="text-3xl font-bold text-white">
-                      {votesCount ?? 0}
+                      {votesCount === undefined ? (
+                        <span className="text-white/40">—</span>
+                      ) : (
+                        votesCount
+                      )}
                     </p>
                   </div>
                 </div>
