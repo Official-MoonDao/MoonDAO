@@ -417,8 +417,8 @@ export default function OverviewPathVote({
           mode="compact"
           popOverEffect={false}
           isProfile
-          branded={false}
           maxWidth="900px"
+          logo={<div aria-hidden />}
           description={
             <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-3xl">
               A formal $OVERVIEW-weighted vote on the next step for the
