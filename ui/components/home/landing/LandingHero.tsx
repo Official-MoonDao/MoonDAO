@@ -14,9 +14,12 @@ const container = {
   },
 }
 
+// Animate position only (no opacity) so the SSR'd HTML — including the <h1>
+// LCP/SEO heading — is visible before hydration instead of rendering at
+// opacity:0 until JS runs.
 const item = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease: EASE } },
+  hidden: { y: 30 },
+  visible: { y: 0, transition: { duration: 0.9, ease: EASE } },
 }
 
 const stats = [
@@ -34,7 +37,10 @@ export default function LandingHero() {
     target: sectionRef,
     offset: ['start start', 'end start'],
   })
-  const bgY = useTransform(scrollYProgress, [0, 1], ['0%', reduceMotion ? '0%' : '22%'])
+  // Keep the parallax travel within the background's scale headroom: scale-[1.2]
+  // overflows ~10% per edge, so an 8% downward translate never drags the top
+  // edge into view and exposes a gap.
+  const bgY = useTransform(scrollYProgress, [0, 1], ['0%', reduceMotion ? '0%' : '8%'])
   const contentOpacity = useTransform(scrollYProgress, [0, 0.65], [1, 0])
   const contentY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : -60])
 
@@ -47,7 +53,7 @@ export default function LandingHero() {
         className="relative flex h-[100svh] w-full flex-col overflow-hidden bg-[#010208]"
       >
         {/* Parallax lunar colony backdrop */}
-        <motion.div style={{ y: bgY }} className="absolute inset-0 scale-[1.12]">
+        <motion.div style={{ y: bgY }} className="absolute inset-0 scale-[1.2]">
           <Image
             src="/assets/Lunar-Colony-Dark.webp"
             alt=""

@@ -57,9 +57,16 @@ export default function GovernanceSection() {
 
           <Reveal delay={0.25}>
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(MOONEY_ADDRESS)
-                toast.success('Address copied to clipboard.')
+              onClick={async () => {
+                try {
+                  if (!navigator.clipboard) {
+                    throw new Error('Clipboard API unavailable')
+                  }
+                  await navigator.clipboard.writeText(MOONEY_ADDRESS)
+                  toast.success('Address copied to clipboard.')
+                } catch (err) {
+                  toast.error('Could not copy address. Please copy it manually.')
+                }
               }}
               className="group flex w-full max-w-xl items-center gap-3 rounded-2xl border border-white/15 bg-white/5 p-4 text-left backdrop-blur-md transition-colors duration-300 hover:border-white/35 hover:bg-white/10"
             >

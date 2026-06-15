@@ -1,5 +1,5 @@
 import { animate, useInView } from 'framer-motion'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type CountUpProps = {
   to: number
@@ -8,6 +8,8 @@ type CountUpProps = {
   duration?: number
   className?: string
 }
+
+const formatter = new Intl.NumberFormat('en-US')
 
 /** Animates a number from 0 to `to` once it scrolls into view. */
 export default function CountUp({
@@ -19,26 +21,24 @@ export default function CountUp({
 }: CountUpProps) {
   const ref = useRef<HTMLSpanElement>(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
+  // Drive the displayed value through React state so it stays declarative — a
+  // parent re-render can't wipe a value we'd otherwise have poked into
+  // `textContent` (which React doesn't know about).
+  const [value, setValue] = useState(0)
 
   useEffect(() => {
-    if (!inView || !ref.current) return
+    if (!inView) return
     const controls = animate(0, to, {
       duration,
       ease: [0.16, 1, 0.3, 1],
-      onUpdate: (value) => {
-        if (ref.current) {
-          ref.current.textContent = `${prefix}${new Intl.NumberFormat(
-            'en-US'
-          ).format(Math.round(value))}${suffix}`
-        }
-      },
+      onUpdate: (v) => setValue(Math.round(v)),
     })
     return () => controls.stop()
-  }, [inView, to, prefix, suffix, duration])
+  }, [inView, to, duration])
 
   return (
     <span ref={ref} className={className}>
-      {`${prefix}0${suffix}`}
+      {`${prefix}${formatter.format(value)}${suffix}`}
     </span>
   )
 }

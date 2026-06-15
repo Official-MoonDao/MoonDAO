@@ -1,6 +1,7 @@
+import { useReducedMotion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MouseEvent, ReactNode, useRef, useState } from 'react'
+import { MouseEvent, ReactNode, useRef } from 'react'
 import Reveal from './Reveal'
 import SectionHeading from './SectionHeading'
 
@@ -72,28 +73,35 @@ const pillars: Pillar[] = [
 
 function TiltCard({ pillar }: { pillar: Pillar }) {
   const ref = useRef<HTMLAnchorElement>(null)
-  const [transform, setTransform] = useState('')
-  const [glow, setGlow] = useState({ x: '50%', y: '50%', visible: false })
+  const glowRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
 
+  // Write the tilt/glow straight to the DOM on each pointer move instead of
+  // going through React state — a 60Hz `setState` would re-render the whole
+  // card (and its <Image>/SVG children) on every event, across up to 6 cards.
   const handleMouseMove = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (reduceMotion) return
     const el = ref.current
     if (!el) return
     const rect = el.getBoundingClientRect()
     const px = (e.clientX - rect.left) / rect.width - 0.5
     const py = (e.clientY - rect.top) / rect.height - 0.5
-    setTransform(
-      `perspective(900px) rotateX(${py * -7}deg) rotateY(${px * 9}deg) translateY(-4px)`
-    )
-    setGlow({
-      x: `${((px + 0.5) * 100).toFixed(1)}%`,
-      y: `${((py + 0.5) * 100).toFixed(1)}%`,
-      visible: true,
-    })
+    el.style.transform = `perspective(900px) rotateX(${py * -7}deg) rotateY(${
+      px * 9
+    }deg) translateY(-4px)`
+    const glow = glowRef.current
+    if (glow) {
+      glow.style.opacity = '1'
+      glow.style.setProperty('--glow-x', `${((px + 0.5) * 100).toFixed(1)}%`)
+      glow.style.setProperty('--glow-y', `${((py + 0.5) * 100).toFixed(1)}%`)
+    }
   }
 
   const reset = () => {
-    setTransform('')
-    setGlow((g) => ({ ...g, visible: false }))
+    const el = ref.current
+    if (el) el.style.transform = ''
+    const glow = glowRef.current
+    if (glow) glow.style.opacity = '0'
   }
 
   return (
@@ -102,16 +110,16 @@ function TiltCard({ pillar }: { pillar: Pillar }) {
       href={pillar.link}
       onMouseMove={handleMouseMove}
       onMouseLeave={reset}
-      style={{ transform }}
-      className="group relative flex h-full flex-col gap-5 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-7 backdrop-blur-md transition-[border-color,box-shadow] duration-300 hover:border-white/30 hover:shadow-[0_20px_60px_-20px_rgba(66,94,235,0.5)] md:p-8"
+      className="group relative flex h-full flex-col gap-5 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-7 backdrop-blur-md transition-[border-color,box-shadow,transform] duration-300 hover:border-white/30 hover:shadow-[0_20px_60px_-20px_rgba(66,94,235,0.5)] md:p-8"
     >
       {/* Cursor-tracking glow */}
       <div
+        ref={glowRef}
         aria-hidden
-        className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300"
         style={{
-          opacity: glow.visible ? 1 : 0,
-          background: `radial-gradient(420px circle at ${glow.x} ${glow.y}, rgba(124,140,255,0.16), transparent 45%)`,
+          background:
+            'radial-gradient(420px circle at var(--glow-x, 50%) var(--glow-y, 50%), rgba(124,140,255,0.16), transparent 45%)',
         }}
       />
 

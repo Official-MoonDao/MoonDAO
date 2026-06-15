@@ -86,7 +86,7 @@ function MarqueeRow({
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-[#010208] to-transparent md:w-40" />
       <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[#010208] to-transparent md:w-40" />
       <div
-        className={`flex w-max items-center gap-16 py-6 md:gap-24 ${
+        className={`flex w-max items-center gap-16 py-6 md:gap-24 motion-reduce:animate-none ${
           reverse ? 'animate-marquee-reverse' : 'animate-marquee'
         } group-hover:[animation-play-state:paused]`}
       >

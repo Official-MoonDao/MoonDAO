@@ -31,7 +31,7 @@ export default function LaunchpadShowcase() {
 
       <div className="relative z-10 mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-14 px-5 md:px-10 lg:grid-cols-2 lg:gap-20">
         <Reveal y={40} className="order-2 lg:order-1">
-          <div className="group relative animate-float">
+          <div className="group relative animate-float motion-reduce:animate-none">
             <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-br from-[#6C407D]/50 via-[#5F4BA2]/40 to-[#4660E7]/40 opacity-60 blur-2xl transition-opacity duration-500 group-hover:opacity-90" />
             <div className="relative overflow-hidden rounded-[2rem] border border-white/10">
               <Image

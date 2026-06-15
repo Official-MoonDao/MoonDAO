@@ -30,14 +30,14 @@ export default function Starfield({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const prefersReducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)'
-    ).matches
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let prefersReducedMotion = motionQuery.matches
 
     let stars: Star[] = []
     let raf = 0
     let width = 0
     let height = 0
+    let isVisible = true
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -86,22 +86,53 @@ export default function Starfield({
       raf = requestAnimationFrame(loop)
     }
 
-    resize()
-    if (prefersReducedMotion) {
-      drawFrame(0)
-    } else {
-      raf = requestAnimationFrame(loop)
+    const stop = () => {
+      cancelAnimationFrame(raf)
+      raf = 0
     }
 
-    const observer = new ResizeObserver(() => {
+    // Only run the animation loop while on-screen and motion is allowed;
+    // otherwise render a single static frame. Two Starfields mount at once
+    // (hero + final CTA), so leaving both loops running off-screen wastes a
+    // frame budget for the whole session.
+    const start = () => {
+      if (prefersReducedMotion || !isVisible) {
+        stop()
+        drawFrame(0)
+        return
+      }
+      if (!raf) raf = requestAnimationFrame(loop)
+    }
+
+    resize()
+    start()
+
+    const resizeObserver = new ResizeObserver(() => {
       resize()
-      if (prefersReducedMotion) drawFrame(0)
+      if (prefersReducedMotion || !isVisible) drawFrame(0)
     })
-    observer.observe(canvas)
+    resizeObserver.observe(canvas)
+
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting
+        start()
+      },
+      { threshold: 0 }
+    )
+    intersectionObserver.observe(canvas)
+
+    const onMotionChange = () => {
+      prefersReducedMotion = motionQuery.matches
+      start()
+    }
+    motionQuery.addEventListener('change', onMotionChange)
 
     return () => {
-      cancelAnimationFrame(raf)
-      observer.disconnect()
+      stop()
+      resizeObserver.disconnect()
+      intersectionObserver.disconnect()
+      motionQuery.removeEventListener('change', onMotionChange)
     }
   }, [density])
 
