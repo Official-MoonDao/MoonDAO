@@ -82,6 +82,8 @@ export default function OverviewPathVote({
 
   const [selectedOption, setSelectedOption] =
     useState<PathVoteOptionId | null>(null)
+  const [expandedOption, setExpandedOption] =
+    useState<PathVoteOptionId | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasExistingVote, setHasExistingVote] = useState(false)
   const [previousVote, setPreviousVote] = useState<{
@@ -423,12 +425,12 @@ export default function OverviewPathVote({
           popOverEffect={false}
           isProfile
           description={
-            <>
+            <span style={{ fontSize: 'max(22px, min(3vw, 56px))' }}>
               A formal $OVERVIEW-weighted vote on the next step for the
               Overview Effect Flight (&quot;Send Frank to Space&quot;). ~$172k
               has been raised or pledged and none of it has been spent. Token
               holders now decide between three paths.
-            </>
+            </span>
           }
           preFooter={<NoticeFooter />}
         >
@@ -660,39 +662,76 @@ export default function OverviewPathVote({
                 {PATH_VOTE_OPTIONS.map((option) => {
                   const accents = OPTION_ACCENTS[option.id]
                   const isSelected = selectedOption === option.id
+                  const isExpanded = expandedOption === option.id
                   return (
-                    <button
+                    <div
                       key={option.id}
-                      type="button"
-                      onClick={() =>
-                        !votingClosed && setSelectedOption(option.id)
-                      }
-                      disabled={votingClosed}
-                      className={`w-full text-left p-3 sm:p-5 rounded-xl border transition-all duration-200 ${
+                      className={`rounded-xl border transition-all duration-200 ${
                         isSelected
                           ? `${accents.border} ${accents.bg} shadow-lg`
-                          : 'border-white/10 bg-black/20 hover:border-white/30'
-                      } ${votingClosed ? 'cursor-default opacity-80' : ''}`}
+                          : 'border-white/10 bg-black/20'
+                      } ${votingClosed ? 'opacity-80' : ''}`}
                     >
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${accents.badge}`}
-                        >
-                          {option.letter}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-baseline gap-x-2">
-                            <h3 className="text-white text-sm sm:text-base font-semibold">
-                              {option.title}
-                            </h3>
-                            <span className="text-gray-400 text-xs sm:text-sm">
-                              {option.subtitle}
-                            </span>
+                      {/* Selectable row */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          !votingClosed && setSelectedOption(option.id)
+                        }
+                        disabled={votingClosed}
+                        className="w-full text-left p-3 sm:p-5"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-sm sm:text-base ${accents.badge}`}
+                          >
+                            {option.letter}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-baseline gap-x-2">
+                              <h3 className="text-white text-sm sm:text-base font-semibold">
+                                {option.title}
+                              </h3>
+                              <span className="text-gray-400 text-xs sm:text-sm">
+                                {option.subtitle}
+                              </span>
+                            </div>
+                            <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mt-1.5">
+                              {option.summary}
+                            </p>
                           </div>
-                          <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mt-1.5">
-                            {option.summary}
-                          </p>
-                          <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                          <span
+                            className={`flex-shrink-0 w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${
+                              isSelected
+                                ? 'border-white bg-white/90'
+                                : 'border-white/30'
+                            }`}
+                          >
+                            {isSelected && (
+                              <span className="w-2.5 h-2.5 rounded-full bg-gray-900" />
+                            )}
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Details accordion */}
+                      <div className="px-3 sm:px-5 pb-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedOption(isExpanded ? null : option.id)
+                          }
+                          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors pb-2"
+                        >
+                          <span
+                            className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                          >
+                            ▶
+                          </span>
+                          {isExpanded ? 'Hide details' : 'Show details'}
+                        </button>
+                        {isExpanded && (
+                          <div className="pb-3 sm:pb-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                             <p className="text-xs sm:text-sm text-gray-400">
                               <span className="text-gray-300 font-medium">
                                 Funds:{' '}
@@ -718,20 +757,9 @@ export default function OverviewPathVote({
                               {option.bestCase}
                             </p>
                           </div>
-                        </div>
-                        <span
-                          className={`flex-shrink-0 w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${
-                            isSelected
-                              ? 'border-white bg-white/90'
-                              : 'border-white/30'
-                          }`}
-                        >
-                          {isSelected && (
-                            <span className="w-2.5 h-2.5 rounded-full bg-gray-900" />
-                          )}
-                        </span>
+                        )}
                       </div>
-                    </button>
+                    </div>
                   )
                 })}
               </div>
