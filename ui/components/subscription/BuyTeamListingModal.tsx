@@ -4,6 +4,7 @@ import ERC20ABI from 'const/abis/ERC20.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
+  CITIZENSHIP_GIFT_TAG,
   DAI_ADDRESSES,
   TEAM_ADDRESSES,
   MOONEY_ADDRESSES,
@@ -45,6 +46,10 @@ export default function BuyTeamListingModal({
   const { citizen } = useContext(CitizenContext)
   const account = useActiveAccount()
 
+  // Gift-a-citizenship listing: a flat-priced ETH listing on the EB team that
+  // issues a one-time free-citizen invite link to the buyer on purchase.
+  const isGift = listing.tag === CITIZENSHIP_GIFT_TAG
+
   const citizenContract = useContract({
     address: CITIZEN_ADDRESSES[chainSlug],
     abi: CitizenABI as any,
@@ -69,6 +74,7 @@ export default function BuyTeamListingModal({
     country: '',
   })
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [giftLink, setGiftLink] = useState<string>()
 
   const citizenEmail = useCitizenEmail(citizen)
 
@@ -125,7 +131,8 @@ export default function BuyTeamListingModal({
 
     const numericPrice = parseFloat(listing.price.replace(/,/g, ''))
     let price
-    if (citizen) {
+    if (isGift || citizen) {
+      // Gifted citizenship is always the flat citizen price (no markup).
       price = numericPrice
     } else {
       price = numericPrice * 1.1 // 10% upcharge for non-citizens
@@ -190,13 +197,29 @@ export default function BuyTeamListingModal({
             isCitizen: citizen ? true : false,
             shipping,
             teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(teamNFT.metadata.name)}`,
+            isGift,
+            listingId: listing.id,
+            teamId: listing.teamId,
             accessToken,
           }),
         })
 
-        const { success, message: responseMessage } = await res.json()
+        const {
+          success,
+          message: responseMessage,
+          giftLink: returnedGiftLink,
+        } = await res.json()
 
         if (success) {
+          if (isGift && returnedGiftLink) {
+            // Keep the modal open so the buyer can copy/share the gift link.
+            setGiftLink(returnedGiftLink)
+            toast.success('Purchase complete! Your gift link is ready below.', {
+              duration: 10000,
+            })
+            setIsLoading(false)
+            return
+          }
           toast.success('Purchase complete! Confirmation email on the way.', {
             duration: 10000,
           })
@@ -225,6 +248,42 @@ export default function BuyTeamListingModal({
       title="Buy a Listing"
       size="lg"
     >
+      {giftLink ? (
+        <div className="w-full flex flex-col gap-4 items-start justify-start">
+          <p className="font-GoodTimes">Your gift is ready!</p>
+          <p className="opacity-80 text-[90%]">
+            Share this one-time link with the person you want to gift a
+            citizenship to. They can use it to mint their free citizenship. A
+            copy has also been sent to your email.
+          </p>
+          <div className="w-full flex gap-2 items-center bg-darkest-cool rounded-[10px] p-3">
+            <p className="break-all text-[85%]">{giftLink}</p>
+          </div>
+          <div className="w-full flex gap-2">
+            <button
+              type="button"
+              className="gradient-2 rounded-[5vmax] px-4 py-2"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(giftLink)
+                  toast.success('Gift link copied to clipboard.')
+                } catch {
+                  toast.error('Could not copy. Please copy the link manually.')
+                }
+              }}
+            >
+              Copy link
+            </button>
+            <button
+              type="button"
+              className="rounded-[5vmax] px-4 py-2 border border-white/20"
+              onClick={() => setEnabled(false)}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      ) : (
       <form
         className="w-full flex flex-col gap-2 items-start justify-start"
         onSubmit={(e) => {
@@ -246,15 +305,16 @@ export default function BuyTeamListingModal({
             <p className="font-GoodTimes">{listing.title}</p>
             <p className="text-[75%]">{listing.description}</p>
             <p id="listing-price" className="font-bold">{`${
-              citizen
+              isGift || citizen
                 ? truncateTokenValue(listing.price, listing.currency)
                 : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
             } ${listing.currency}`}</p>
           </div>
         </div>
         <p className="opacity-60">
-          Enter your information, confirm the transaction and wait to receive an email from the
-          vendor.
+          {isGift
+            ? 'Enter your email and confirm the transaction. You will receive a one-time link to gift a free citizenship to whoever you choose.'
+            : 'Enter your information, confirm the transaction and wait to receive an email from the vendor.'}
         </p>
         <Input
           type="text"
@@ -352,6 +412,7 @@ export default function BuyTeamListingModal({
         />
         {isLoading && <p>Do not leave the page until the transaction is complete.</p>}
       </form>
+      )}
     </Modal>
   )
 }
