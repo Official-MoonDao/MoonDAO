@@ -11,6 +11,7 @@ import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { EIP1193 } from 'thirdweb/wallets'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { arbitrum, ethereum } from '@/lib/rpc/chains'
+import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -35,6 +36,7 @@ export default function ArbitrumBridge() {
   const [arbMooneyBalance, setArbMooneyBalance] = useState<any>()
   const [balance, setBalance] = useState(0)
   const [skipNetworkCheck, setSkipNetworkCheck] = useState(false)
+  const { effectiveGasPrice } = useGasPrice(ethereum)
 
   async function approveMooney(signer: any, erc20Bridger: any) {
     const mooneyContract = getContract({
@@ -196,7 +198,7 @@ export default function ArbitrumBridge() {
           method: 'balanceOf',
           params: [address],
         })
-        setEthMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+        setEthMooneyBalance(ethers.utils.formatEther(balance.toString()))
       } catch (err) {
         console.error(err)
       }
@@ -214,7 +216,7 @@ export default function ArbitrumBridge() {
           method: 'balanceOf',
           params: [address],
         })
-        setArbMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+        setArbMooneyBalance(ethers.utils.formatEther(balance.toString()))
       } catch (err) {
         console.error(err)
       }
@@ -264,6 +266,21 @@ export default function ArbitrumBridge() {
     setSelectedChain(ethereum)
   }, [setSelectedChain])
 
+  const numAmount = parseFloat(String(amount)) || 0
+  // For ETH, reserve L1 gas so a (near-)full-balance entry doesn't revert the
+  // deposit on fees. MOONEY gas is paid separately in ETH, so it needs no reserve.
+  const gasReserveEth =
+    effectiveGasPrice > BigInt(0)
+      ? Number(effectiveGasPrice * BigInt(200000)) / 1e18
+      : 0.002
+  const spendableBalance =
+    inputToken === 'eth'
+      ? Math.max(0, Number(balance) - gasReserveEth)
+      : Number(balance)
+  const isOverBalance =
+    balance !== undefined && numAmount > 0 && numAmount > spendableBalance
+  const tokenLabel = inputToken === 'eth' ? 'ETH' : 'MOONEY'
+
   return (
     <div className="w-full mt-3 sm:mt-4">
       <div className="text-sm font-RobotoMono rounded-xl sm:rounded-2xl animate-fadeIn p-3 sm:p-4 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white">
@@ -305,7 +322,6 @@ export default function ArbitrumBridge() {
                     className="text-white bg-transparent text-xl sm:text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none w-full min-w-0 border-0 !p-0 min-h-[28px] tabular-nums"
                     bare
                     value={amount}
-                    max={balance ? Number(balance) : undefined}
                     onChange={(e) => {
                       let value = e.target.value
                       value = value.replace(/[^0-9.]/g, '')
@@ -314,9 +330,6 @@ export default function ArbitrumBridge() {
                         value = parts[0] + '.' + parts.slice(1).join('')
                       }
                       if (parseFloat(value) < 0) value = '0'
-                      if (balance && parseFloat(value) > balance) {
-                        value = String(balance)
-                      }
                       if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
                         value = value.substring(1)
                       }
@@ -334,7 +347,16 @@ export default function ArbitrumBridge() {
                       </p>
                       <button
                         className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-lg border border-blue-400/20 flex-shrink-0"
-                        onClick={() => setAmount(balance)}
+                        onClick={() => {
+                          if (inputToken === 'eth') {
+                            const maxEth = Math.max(0, Number(balance) - gasReserveEth)
+                            setAmount(
+                              maxEth > 0 ? String(parseFloat(maxEth.toFixed(7))) : '0'
+                            )
+                          } else {
+                            setAmount(balance)
+                          }
+                        }}
                       >
                         MAX
                       </button>
@@ -393,14 +415,21 @@ export default function ArbitrumBridge() {
 
         {/* Action Button */}
         <div className="w-full">
-          {isEOA ? (
+          {!address || isEOA ? (
             <PrivyWeb3Button
               v5
+              signInLabel="Sign In to Bridge to Arbitrum"
               skipNetworkCheck={skipNetworkCheck}
               requiredChain={ethereum}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 sm:py-4 px-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
-              label="Bridge to Arbitrum"
-              isDisabled={!isEOA}
+              label={
+                numAmount === 0
+                  ? 'Enter Amount'
+                  : isOverBalance
+                  ? `Not Enough ${tokenLabel}`
+                  : 'Bridge to Arbitrum'
+              }
+              isDisabled={!isEOA || numAmount === 0 || isOverBalance}
               action={async () => {
                 try {
                   if (inputToken === 'eth') {

@@ -5,10 +5,14 @@ export const removeMarkdownFormatting = (text: string) => {
 }
 
 export const addHttpsIfMissing = (url: string) => {
-  if (!url?.startsWith('https://')) {
-    return `https://${url}`
+  if (!url) return url
+  // Leave any URL that already declares a scheme (https://, http://, ipfs://,
+  // etc.) untouched — only checking for `https://` previously turned
+  // `http://x.com` into `https://http://x.com`.
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) {
+    return url
   }
-  return url
+  return `https://${url}`
 }
 
 export const bytesOfString = (str: string) => {

@@ -23,6 +23,9 @@ module.exports = {
         fadeInSlowTo75: 'fadeInTo75 1s ease-in',
         notification: 'notification 5s',
         highlight: 'highlight 3s ease-out',
+        marquee: 'marquee 45s linear infinite',
+        'marquee-reverse': 'marquee-reverse 55s linear infinite',
+        float: 'float 8s ease-in-out infinite',
       },
       colors: {
         'title-light': '#172554',
@@ -101,6 +104,18 @@ module.exports = {
           '0%': { color: 'white' },
           '50%': { color: '#ffae42 ' },
           '100%': { color: 'white' },
+        },
+        marquee: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        'marquee-reverse': {
+          '0%': { transform: 'translateX(-50%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-14px)' },
         },
       },
     },
