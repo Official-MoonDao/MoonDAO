@@ -66,6 +66,12 @@ const OPTION_ACCENTS: Record<
     badge: 'bg-amber-500/20 text-amber-300',
     bar: 'bg-gradient-to-r from-amber-500 to-amber-400',
   },
+  abstain: {
+    border: 'border-gray-400/60',
+    bg: 'bg-gray-500/10',
+    badge: 'bg-gray-500/20 text-gray-300',
+    bar: 'bg-gradient-to-r from-gray-500 to-gray-400',
+  },
 }
 
 export default function OverviewPathVote({
@@ -653,6 +659,12 @@ export default function OverviewPathVote({
                   const accents = OPTION_ACCENTS[option.id]
                   const isSelected = selectedOption === option.id
                   const isExpanded = expandedOption === option.id
+                  const hasDetails = Boolean(
+                    option.fundsImpact ||
+                      option.candidateImpact ||
+                      option.realRisk ||
+                      option.bestCase
+                  )
                   return (
                     <div
                       key={option.id}
@@ -705,6 +717,7 @@ export default function OverviewPathVote({
                       </button>
 
                       {/* Details accordion */}
+                      {hasDetails && (
                       <div className="px-3 sm:px-5 pb-2">
                         <button
                           type="button"
@@ -749,6 +762,7 @@ export default function OverviewPathVote({
                           </div>
                         )}
                       </div>
+                      )}
                     </div>
                   )
                 })}

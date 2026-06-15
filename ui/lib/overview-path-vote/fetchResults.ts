@@ -140,6 +140,7 @@ export async function fetchPathVoteResults(): Promise<PathVoteResults> {
       'option-a': { totalVoted: 0, voterCount: 0 },
       'option-b': { totalVoted: 0, voterCount: 0 },
       'option-c': { totalVoted: 0, voterCount: 0 },
+      abstain: { totalVoted: 0, voterCount: 0 },
     }
 
     for (const v of votes) {

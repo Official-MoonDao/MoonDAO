@@ -7,7 +7,7 @@
  * lifetime of the vote. Display copy can change freely.
  */
 
-export type PathVoteOptionId = 'option-a' | 'option-b' | 'option-c'
+export type PathVoteOptionId = 'option-a' | 'option-b' | 'option-c' | 'abstain'
 
 export type PathVoteOption = {
   id: PathVoteOptionId
@@ -15,10 +15,12 @@ export type PathVoteOption = {
   title: string
   subtitle: string
   summary: string
-  fundsImpact: string
-  candidateImpact: string
-  realRisk: string
-  bestCase: string
+  // The impact breakdown only applies to the substantive paths (A/B/C).
+  // Abstain omits these, so the card renders without a "Show details" row.
+  fundsImpact?: string
+  candidateImpact?: string
+  realRisk?: string
+  bestCase?: string
 }
 
 export const PATH_VOTE_OPTIONS: PathVoteOption[] = [
@@ -66,6 +68,14 @@ export const PATH_VOTE_OPTIONS: PathVoteOption[] = [
       'Campaign concludes without Frank flying. Closes the door on partnerships in flight.',
     bestCase:
       "Honest acknowledgement if the conditions for a safe, deliverable flight aren't there. Contributors get their funds back.",
+  },
+  {
+    id: 'abstain',
+    letter: '–',
+    title: 'Abstain',
+    subtitle: 'No preference on the path',
+    summary:
+      'Record your presence without endorsing any of the three paths. Your $OVERVIEW weight is counted toward participation but does not back Option A, B, or C.',
   },
 ]
 
