@@ -486,7 +486,7 @@ function TeamDetailPageContent({
           )}
 
           {/* Team Statistics Overview */}
-          {!isDeleted && subIsValid && canViewContent && (
+          {!isDeleted && subIsValid && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title="Team Members"
@@ -566,69 +566,71 @@ function TeamDetailPageContent({
             </div>
           )}
           {subIsValid && !isDeleted && canViewContent && (
-            <>
-              {/* Team Members */}
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
-                  <div className="flex gap-5 items-center">
-                    <Image
-                      src={teamIcon}
-                      alt="Team icon"
-                      width={30}
-                      height={30}
-                      className="opacity-70"
-                    />
-                    <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
-                  </div>
-                  {isManager && hats?.[0]?.id && (
-                    <TeamManageMembers
-                      account={account}
-                      hats={hats}
-                      hatsContract={hatsContract}
-                      teamContract={teamContract}
-                      teamId={tokenId}
-                      selectedChain={selectedChain}
-                      multisigAddress={nft.owner}
-                      adminHatId={adminHatId}
-                      managerHatId={managerHatId}
-                    />
-                  )}
+            <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
+                <div className="flex gap-5 items-center">
+                  <Image
+                    src={teamIcon}
+                    alt="Team icon"
+                    width={30}
+                    height={30}
+                    className="opacity-70"
+                  />
+                  <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
                 </div>
-                {hats?.[0].id && (
-                  <TeamMembers
+                {isManager && hats?.[0]?.id && (
+                  <TeamManageMembers
+                    account={account}
                     hats={hats}
                     hatsContract={hatsContract}
-                    citizenContract={citizenContract}
+                    teamContract={teamContract}
+                    teamId={tokenId}
+                    selectedChain={selectedChain}
+                    multisigAddress={nft.owner}
+                    adminHatId={adminHatId}
+                    managerHatId={managerHatId}
                   />
                 )}
               </div>
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                <TeamJobs
-                  teamId={tokenId}
-                  jobTableContract={jobTableContract}
-                  isManager={isManager || isTableOperator}
-                  isCitizen={citizen}
-                  hasFullAccess={hasFullAccess}
-                  jobs={jobs}
+              {hats?.[0].id && (
+                <TeamMembers
+                  hats={hats}
+                  hatsContract={hatsContract}
+                  citizenContract={citizenContract}
                 />
-              </div>
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                <TeamMarketplace
-                  selectedChain={selectedChain}
-                  marketplaceTableContract={marketplaceTableContract}
-                  teamContract={teamContract}
-                  isManager={isManager || isTableOperator}
-                  teamId={tokenId}
-                  isCitizen={citizen}
-                  listings={listings}
-                />
-              </div>
-              {isManager &&
-                EB_TEAM_ID &&
-                String(tokenId) === String(EB_TEAM_ID) && (
-                  <EBRewards isManager={isManager} teamId={tokenId} />
-                )}
-            </>
+              )}
+            </div>
+          )}
+
+          {subIsValid && !isDeleted && (
+            <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+              <TeamJobs
+                teamId={tokenId}
+                jobTableContract={jobTableContract}
+                isManager={isManager || isTableOperator}
+                isCitizen={citizen}
+                hasFullAccess={hasFullAccess}
+                jobs={jobs}
+              />
+            </div>
+          )}
+
+          {subIsValid && !isDeleted && (
+            <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+              <TeamMarketplace
+                selectedChain={selectedChain}
+                marketplaceTableContract={marketplaceTableContract}
+                teamContract={teamContract}
+                isManager={isManager || isTableOperator}
+                teamId={tokenId}
+                isCitizen={citizen}
+                listings={listings}
+              />
+            </div>
+          )}
+
+          {subIsValid && !isDeleted && isManager && EB_TEAM_ID && String(tokenId) === String(EB_TEAM_ID) && (
+            <EBRewards isManager={isManager} teamId={tokenId} />
           )}
 
           {/* Subscription expired — only shown to managers/owners who can act on it */}
