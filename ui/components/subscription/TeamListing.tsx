@@ -1,4 +1,4 @@
-import { PencilIcon, ShoppingBagIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { LinkIcon, PencilIcon, ShoppingBagIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState, useRef } from 'react'
@@ -220,8 +220,26 @@ export default function TeamListing({
               <span className="text-white/30 text-xs">—</span>
             )}
 
+            <div className="flex items-center gap-2">
+              <button
+                id="share-listing-button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.moondao.com'
+                  const teamSlug = teamNFT?.metadata?.name
+                    ? generatePrettyLink(teamNFT.metadata.name)
+                    : String(listing.teamId)
+                  navigator.clipboard.writeText(`${origin}/team/${teamSlug}?listing=${listing.id}`)
+                  toast.success('Link copied to clipboard.')
+                }}
+                className="text-white/40 hover:text-white/80 transition-colors"
+                title="Copy link"
+              >
+                <LinkIcon className="w-4 h-4" />
+              </button>
+
             {editable && (
-              <div className="flex items-center gap-2">
+              <>
                 <button
                   id="edit-listing-button"
                   onClick={(e) => { e.stopPropagation(); setEnabledMarketplaceListingModal(true) }}
@@ -297,8 +315,9 @@ export default function TeamListing({
                     <TrashIcon className="w-4 h-4" />
                   </button>
                 )}
-              </div>
+              </>
             )}
+            </div>
           </div>
 
           {isUpcoming && editable && (
