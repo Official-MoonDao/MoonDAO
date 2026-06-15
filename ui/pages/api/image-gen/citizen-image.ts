@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { v4 } from 'uuid'
+import { enforceRegionNotRestricted } from '@/lib/geo'
 
 const COMFY_WORKFLOW_URL =
   'https://comfy.icu/api/v1/workflows/8BYQ3mpiFVlTjWOatIUAc/runs'
@@ -51,6 +52,11 @@ export default async function handler(
   }
 
   if (req.method === 'POST') {
+    // GDPR: generating a citizen portrait is part of on-chain profile creation,
+    // which we don't offer in restricted regions. Block server-side as well as
+    // in the client UI.
+    if (!enforceRegionNotRestricted(req, res)) return
+
     const { url } = req.body || {}
     if (typeof url !== 'string' || !url) {
       return res.status(400).json({ error: 'Missing url' })

@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis'
-import type { NextApiRequest } from 'next'
+import type { NextApiRequest, NextApiResponse } from 'next'
 
 // Extract client IP from trusted headers
 export function getClientIp(req: NextApiRequest): string {
@@ -39,6 +39,83 @@ export function getCountryFromHeaders(req: NextApiRequest): string | null {
   }
 
   return null
+}
+
+// GDPR-restricted regions (ISO 3166-1 alpha-2). Covers the EU, the wider EEA
+// (Iceland, Liechtenstein, Norway), and the UK (which retains UK-GDPR
+// post-Brexit). These regions cannot permanently store personal data on chain,
+// so we let them browse the site but block on-chain profile creation.
+export const EU_EEA_COUNTRIES: ReadonlySet<string> = new Set([
+  'AT', // Austria
+  'BE', // Belgium
+  'BG', // Bulgaria
+  'HR', // Croatia
+  'CY', // Cyprus
+  'CZ', // Czechia
+  'DK', // Denmark
+  'EE', // Estonia
+  'FI', // Finland
+  'FR', // France
+  'DE', // Germany
+  'GR', // Greece
+  'HU', // Hungary
+  'IE', // Ireland
+  'IT', // Italy
+  'LV', // Latvia
+  'LT', // Lithuania
+  'LU', // Luxembourg
+  'MT', // Malta
+  'NL', // Netherlands
+  'PL', // Poland
+  'PT', // Portugal
+  'RO', // Romania
+  'SK', // Slovakia
+  'SI', // Slovenia
+  'ES', // Spain
+  'SE', // Sweden
+  'IS', // Iceland (EEA)
+  'LI', // Liechtenstein (EEA)
+  'NO', // Norway (EEA)
+  'GB', // United Kingdom (UK-GDPR)
+  'GI', // Gibraltar (UK-GDPR)
+  'JE', // Jersey (UK-GDPR adequacy)
+  'GG', // Guernsey (UK-GDPR adequacy)
+  'IM', // Isle of Man (UK-GDPR adequacy)
+])
+
+// Returns true when the country code belongs to a GDPR-restricted region
+// (EU / EEA / UK). Unknown/null countries return false so we never block on
+// missing geo data.
+export function isEUCountry(countryCode: string | null | undefined): boolean {
+  if (!countryCode) return false
+  return EU_EEA_COUNTRIES.has(countryCode.toUpperCase())
+}
+
+// True when the request originates from a GDPR-restricted region, derived from
+// trusted edge geo headers. Used by data-persistence API routes as a
+// server-side companion to the client `useRegionRestriction` gate.
+export function isRegionRestrictedRequest(req: NextApiRequest): boolean {
+  return isEUCountry(getCountryFromHeaders(req))
+}
+
+// Defense-in-depth guard for routes that permanently store personal data
+// (on-chain profile creation, profile image generation). The client UI already
+// hides these flows from restricted regions, but that check is bypassable and
+// can fail open, so the server independently rejects restricted regions with
+// HTTP 451 (Unavailable For Legal Reasons). Returns true when the request may
+// proceed; when it returns false it has already sent the 451 response.
+export function enforceRegionNotRestricted(
+  req: NextApiRequest,
+  res: NextApiResponse
+): boolean {
+  if (isRegionRestrictedRequest(req)) {
+    res.status(451).json({
+      error:
+        'On-chain profile creation is not available in your region for data-protection (GDPR) reasons. You can still browse the rest of the site.',
+    })
+    return false
+  }
+  return true
 }
 
 // Extract US state from request headers (Vercel/Cloudflare geolocation)

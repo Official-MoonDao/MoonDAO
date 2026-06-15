@@ -1,13 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
-import { getCountryFromHeaders } from '../../../lib/geo'
+import { getCountryFromHeaders, isEUCountry } from '../../../lib/geo'
 
 /**
  * GET /api/geo/country
  * Returns the requesting user's country code (from Vercel/Cloudflare geo headers).
- * Used client-side to decide whether to show the cookie consent banner.
- * Returns `country: null` when the country cannot be determined.
+ * Used client-side to decide whether to show the cookie consent banner and
+ * whether to allow on-chain profile creation.
+ * - `country` is null when the country cannot be determined.
+ * - `restricted` is true for EU/EEA visitors, who can browse the site but may
+ *   not permanently store personal data on chain (GDPR compliance).
  */
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -18,7 +21,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   // Geo derives only from request headers, so this is safe to cache briefly.
   res.setHeader('Cache-Control', 'private, max-age=3600')
-  return res.status(200).json({ country })
+  return res.status(200).json({ country, restricted: isEUCountry(country) })
 }
 
 export default withMiddleware(handler, rateLimit)
