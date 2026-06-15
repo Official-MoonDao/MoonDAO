@@ -1,4 +1,5 @@
 import {
+  CITIZEN_TABLE_NAMES,
   OVERVIEW_PATH_VOTE_ID,
   OVERVIEW_TOKEN_ADDRESS,
   OVERVIEW_TOKEN_DECIMALS,
@@ -8,6 +9,7 @@ import {
 // runtime under Next's Webpack barrel optimizer in ethers v5 (see the same
 // note in lib/overview-delegate/fetchLeaderboard.ts).
 import { formatUnits } from 'ethers/lib/utils'
+import { isValidEthAddress } from '@/lib/overview-delegate/leaderboard'
 import { arbitrum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -32,10 +34,24 @@ export type PathVoteResult = {
   percentage: number
 }
 
+/**
+ * A single participant in the vote. Intentionally carries no `optionId`: the
+ * page mirrors the governance proposal pattern of showing *who* voted and with
+ * how much weight, without revealing each voter's choice until results are
+ * unsealed.
+ */
+export type PathVoteVoter = {
+  address: string
+  votingPower: number
+  citizenName?: string
+  citizenId?: number | string
+}
+
 export type PathVoteResults = {
   results: PathVoteResult[]
   totalVoted: number
   totalVoters: number
+  voters: PathVoteVoter[]
 }
 
 export function emptyPathVoteResults(): PathVoteResults {
@@ -48,6 +64,7 @@ export function emptyPathVoteResults(): PathVoteResults {
     })),
     totalVoted: 0,
     totalVoters: 0,
+    voters: [],
   }
 }
 
@@ -162,6 +179,55 @@ export async function fetchPathVoteResults(): Promise<PathVoteResults> {
       0
     )
 
+    // Per-voter list (no choice attached) — powers the "who voted" panel that
+    // stays visible while the per-option tally is sealed.
+    const voters: PathVoteVoter[] = votes
+      .map((v) => {
+        const bal = balanceMap[v.voterAddress] ?? 0
+        const power = Number.isFinite(bal) ? bal : v.storedAmount
+        return {
+          address: v.voterAddress,
+          votingPower: Math.round(power * 100) / 100,
+        }
+      })
+      .filter((v) => v.votingPower > 0)
+      .sort((a, b) => b.votingPower - a.votingPower)
+
+    // Resolve citizen names for voter addresses (best-effort), mirroring the
+    // leaderboard's owner -> citizen lookup so the list shows names not raw
+    // addresses where possible.
+    if (voters.length > 0) {
+      try {
+        const citizenTableName = CITIZEN_TABLE_NAMES[chainSlug]
+        const safeAddresses = voters
+          .map((v) => v.address)
+          .filter(isValidEthAddress)
+        if (citizenTableName && safeAddresses.length > 0) {
+          const inClause = safeAddresses.map((a) => `'${a}'`).join(',')
+          const citizenStatement = `SELECT id, name, owner FROM ${citizenTableName} WHERE LOWER(owner) IN (${inClause})`
+          const citizenRows = await queryTable(chain, citizenStatement)
+          if (citizenRows) {
+            const citizenByOwner: Record<
+              string,
+              { id: number | string; name: string }
+            > = {}
+            for (const c of citizenRows) {
+              citizenByOwner[c.owner.toLowerCase()] = { id: c.id, name: c.name }
+            }
+            for (const voter of voters) {
+              const match = citizenByOwner[voter.address.toLowerCase()]
+              if (match) {
+                voter.citizenName = match.name
+                voter.citizenId = match.id
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[fetchPathVoteResults] citizen lookup failed:', error)
+      }
+    }
+
     return {
       results: PATH_VOTE_OPTIONS.map((o) => ({
         optionId: o.id,
@@ -174,6 +240,7 @@ export async function fetchPathVoteResults(): Promise<PathVoteResults> {
       })),
       totalVoted: Math.round(totalVoted * 100) / 100,
       totalVoters,
+      voters,
     }
   } catch (error) {
     console.error('[fetchPathVoteResults] fatal error:', error)

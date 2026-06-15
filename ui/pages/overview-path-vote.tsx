@@ -8,6 +8,7 @@ import {
   VOTES_TABLE_ADDRESSES,
   VOTES_TABLE_NAMES,
 } from 'const/config'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -18,7 +19,10 @@ import {
   emptyPathVoteResults,
   fetchPathVoteResults,
 } from '@/lib/overview-path-vote/fetchResults'
-import type { PathVoteResults } from '@/lib/overview-path-vote/fetchResults'
+import type {
+  PathVoteResults,
+  PathVoteVoter,
+} from '@/lib/overview-path-vote/fetchResults'
 import {
   getPathVoteOption,
   isPathVoteOptionId,
@@ -29,6 +33,7 @@ import {
 } from '@/lib/overview-path-vote/options'
 import type { PathVoteOptionId } from '@/lib/overview-path-vote/options'
 import { arbitrum } from '@/lib/rpc/chains'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
@@ -36,6 +41,8 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import Votes, { VoteItem, VoteItemHeader } from '@/components/layout/Votes'
+import { ShortAddressLink } from '@/components/nance/AddressLink'
 import YouTubeEmbed from '@/components/townhall/YouTubeEmbed'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
@@ -107,6 +114,10 @@ export default function OverviewPathVote({
     ? new Date(OVERVIEW_PATH_VOTE_DEADLINE)
     : null
   const votingClosed = deadline != null && Date.now() > deadline.getTime()
+  // Per-option tallies stay sealed until voting closes, mirroring the
+  // governance proposal pages. Until then we only show who has voted and with
+  // how much voting power.
+  const resultsRevealed = votingClosed
 
   const votesContract = useContract({
     address: VOTES_TABLE_ADDRESSES[overviewChainSlug],
@@ -318,6 +329,25 @@ export default function OverviewPathVote({
         })
         const totalVoted = adjusted.reduce((s, r) => s + r.totalVoted, 0)
         const totalVoters = adjusted.reduce((s, r) => s + r.voterCount, 0)
+        // Optimistically reflect the connected wallet in the voter list with
+        // its live weight (no choice attached, matching the sealed display).
+        const lowerAddr = userAddress?.toLowerCase()
+        const existing = lowerAddr
+          ? current.voters.find((v) => v.address.toLowerCase() === lowerAddr)
+          : undefined
+        const nextVoters: PathVoteVoter[] = lowerAddr
+          ? [
+              {
+                address: lowerAddr,
+                votingPower: voteAmount,
+                citizenName: existing?.citizenName,
+                citizenId: existing?.citizenId,
+              },
+              ...current.voters.filter(
+                (v) => v.address.toLowerCase() !== lowerAddr
+              ),
+            ].sort((a, b) => b.votingPower - a.votingPower)
+          : current.voters
         return {
           results: adjusted.map((r) => ({
             ...r,
@@ -327,7 +357,8 @@ export default function OverviewPathVote({
                 : 0,
           })),
           totalVoted: Math.round(totalVoted * 100) / 100,
-          totalVoters,
+          totalVoters: lowerAddr && !existing ? nextVoters.length : totalVoters,
+          voters: nextVoters,
         }
       })
 
@@ -791,11 +822,63 @@ export default function OverviewPathVote({
               )}
             </div>
 
-            {/* Live results */}
+            {/* Results (sealed until voting closes) */}
+            {resultsRevealed && (
+              <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+                <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
+                  Final Results
+                </h2>
+                <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                  {visibleResults.totalVoted.toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}{' '}
+                  $OVERVIEW across {visibleResults.totalVoters} voter
+                  {visibleResults.totalVoters !== 1 ? 's' : ''}. Tallies
+                  re-weight to voters&apos; live balances.
+                </p>
+
+                <div className="space-y-4 sm:space-y-5">
+                  {visibleResults.results.map((result) => {
+                    const option = getPathVoteOption(result.optionId)
+                    if (!option) return null
+                    const accents = OPTION_ACCENTS[result.optionId]
+                    return (
+                      <div key={result.optionId}>
+                        <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                          <p className="text-white text-xs sm:text-sm font-medium truncate">
+                            Option {option.letter} — {option.title}
+                          </p>
+                          <p className="text-gray-400 text-xs sm:text-sm flex-shrink-0">
+                            {result.totalVoted.toLocaleString(undefined, {
+                              maximumFractionDigits: 0,
+                            })}{' '}
+                            $OVERVIEW ({result.percentage}%)
+                          </p>
+                        </div>
+                        <div className="h-2.5 sm:h-3 bg-white/5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${accents.bar}`}
+                            style={{
+                              width: `${Math.min(100, result.percentage)}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-gray-500 text-xs mt-1">
+                          {result.voterCount} voter
+                          {result.voterCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Voters (who voted + voting power; choices stay sealed) */}
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <h2 className="text-lg sm:text-xl font-GoodTimes text-white">
-                  Live Results
+                  Votes
                 </h2>
                 {isRefreshing && (
                   <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
@@ -805,55 +888,56 @@ export default function OverviewPathVote({
                 )}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                {visibleResults.totalVoters > 0 ? (
-                  <>
-                    {visibleResults.totalVoted.toLocaleString(undefined, {
-                      maximumFractionDigits: 0,
-                    })}{' '}
-                    $OVERVIEW pledged across {visibleResults.totalVoters}{' '}
-                    voter
-                    {visibleResults.totalVoters !== 1 ? 's' : ''}. Tallies
-                    re-weight to voters&apos; live balances.
-                  </>
-                ) : (
-                  'No votes yet. Be the first to choose a path.'
+                {!resultsRevealed && (
+                  <span className="inline-flex items-center gap-1.5 mr-1 text-indigo-300">
+                    <span aria-hidden>🔒</span> Individual choices and the tally
+                    stay hidden until voting closes.
+                  </span>
                 )}
+                {visibleResults.totalVoters > 0
+                  ? `${visibleResults.totalVoters} voter${
+                      visibleResults.totalVoters !== 1 ? 's' : ''
+                    } so far, ${visibleResults.totalVoted.toLocaleString(
+                      undefined,
+                      { maximumFractionDigits: 0 }
+                    )} $OVERVIEW of voting power committed.`
+                  : 'No votes yet. Be the first to choose a path.'}
               </p>
 
-              <div className="space-y-4 sm:space-y-5">
-                {visibleResults.results.map((result) => {
-                  const option = getPathVoteOption(result.optionId)
-                  if (!option) return null
-                  const accents = OPTION_ACCENTS[result.optionId]
-                  return (
-                    <div key={result.optionId}>
-                      <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                        <p className="text-white text-xs sm:text-sm font-medium truncate">
-                          Option {option.letter} — {option.title}
-                        </p>
-                        <p className="text-gray-400 text-xs sm:text-sm flex-shrink-0">
-                          {result.totalVoted.toLocaleString(undefined, {
+              <Votes
+                emptyStateMessage="No votes yet. Be the first to choose a path."
+                voteItems={visibleResults.voters.map((voter) => (
+                  <VoteItem key={voter.address}>
+                    <VoteItemHeader
+                      leftContent={
+                        voter.citizenName && voter.citizenId != null ? (
+                          <Link
+                            href={`/citizen/${generatePrettyLinkWithId(
+                              voter.citizenName,
+                              String(voter.citizenId)
+                            )}`}
+                            className="text-white hover:underline break-all"
+                          >
+                            {voter.citizenName}
+                          </Link>
+                        ) : (
+                          <span className="text-gray-300">
+                            <ShortAddressLink address={voter.address} />
+                          </span>
+                        )
+                      }
+                      rightContent={
+                        <span className="text-gray-400">
+                          {voter.votingPower.toLocaleString(undefined, {
                             maximumFractionDigits: 0,
                           })}{' '}
-                          $OVERVIEW ({result.percentage}%)
-                        </p>
-                      </div>
-                      <div className="h-2.5 sm:h-3 bg-white/5 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${accents.bar}`}
-                          style={{
-                            width: `${Math.min(100, result.percentage)}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="text-gray-500 text-xs mt-1">
-                        {result.voterCount} voter
-                        {result.voterCount !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
+                          $OVERVIEW
+                        </span>
+                      }
+                    />
+                  </VoteItem>
+                ))}
+              />
             </div>
           </div>
         </ContentLayout>
