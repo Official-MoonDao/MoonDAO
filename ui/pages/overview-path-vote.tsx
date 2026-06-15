@@ -455,7 +455,16 @@ export default function OverviewPathVote({
           popOverEffect={false}
           isProfile
           maxWidth="900px"
-          logo={<div aria-hidden />}
+          logo={
+            <div className="w-full h-full flex items-center justify-center md:justify-start pt-6 md:pt-0">
+              <img
+                src="/assets/feature-4.svg"
+                alt=""
+                aria-hidden
+                className="w-auto max-h-[160px] md:max-h-[220px] object-contain"
+              />
+            </div>
+          }
           description={
             <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-3xl">
               A formal $OVERVIEW-weighted vote on the next step for the
