@@ -420,7 +420,9 @@ export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 export const MARKETPLACE_FEE_SPLIT: string = polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
-  sepolia: '0x11DCe86c804ca088A0d9036eeE368e4055b235dE',
+  // sepolia: fresh self-serve market (oracle + owner = pmoncada.eth), DePrize id 2.
+  // Old market 0x11DCe8... had oracle jaderiverstokes.eth and is kept for reference.
+  sepolia: '0x48de289455f08b523ca5a4ae09f740e7ba7b72de',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
 }
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
@@ -438,22 +440,32 @@ export const MAX_OUTCOMES = 3
 // chain once `script/deprize/DePrizeRedeem.s.sol` / the registry deploy run;
 // the deprize-play harness also accepts manual overrides for testing.
 export const DEPRIZE_REDEEM_ADDRESSES: Index = {
-  sepolia: '',
+  sepolia: '0x2fec56899a1121a46b6bcba0bb924796b6ddf4f7',
   'arbitrum-sepolia': '',
 }
 export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
-  sepolia: '',
+  sepolia: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
   'arbitrum-sepolia': '',
 }
 // questionId used when the play market's condition was prepared
 // (prediction/deprize.config.js DEPRIZE_QUESTION_ID). Needed by reportPayouts;
 // the conditionId is keccak256(oracle, questionId, outcomeSlotCount).
+// Verified for the fresh Sepolia market: keccak256(ORACLE_ADDRESS, 0x..03, 3)
+// == the market's conditionId (0xed5ff0...7312).
 export const DEPRIZE_QUESTION_ID =
-  '0x0000000000000000000000000000000000000000000000000000000000000001'
+  '0x0000000000000000000000000000000000000000000000000000000000000003'
 
-export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
+// DePrize id in the registry that the play market resolves to (the helper's
+// previewRedeem/redeem take this id).
+export const DEPRIZE_PLAY_ID = 2
 
-export const OPERATOR_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
+// Oracle that prepared the CTF condition; the only address that can resolve
+// (reportPayouts). On the fresh Sepolia market this is pmoncada.eth.
+export const ORACLE_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
+
+// Market owner (pause/close/withdrawFees on the LMSR). Ownership of the fresh
+// Sepolia market was transferred to pmoncada.eth so one wallet runs everything.
+export const OPERATOR_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
 
 export const MOONDAO_TREASURY: string = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
 export const MOONDAO_L2_TREASURY: string = '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'

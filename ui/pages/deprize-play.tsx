@@ -13,6 +13,7 @@ import {
   DEFAULT_CHAIN_V5,
   DEPRIZE_REDEEM_ADDRESSES,
   DEPRIZE_QUESTION_ID,
+  DEPRIZE_PLAY_ID,
 } from 'const/config'
 import { useLogin, useWallets } from '@privy-io/react-auth'
 import dynamic from 'next/dynamic'
@@ -241,7 +242,7 @@ export default function DePrizePlay() {
   const [helperAddress, setHelperAddress] = useState(
     DEPRIZE_REDEEM_ADDRESSES[chainSlug] ?? ''
   )
-  const [helperDeprizeId, setHelperDeprizeId] = useState('1')
+  const [helperDeprizeId, setHelperDeprizeId] = useState(String(DEPRIZE_PLAY_ID))
   const [helperPreview, setHelperPreview] = useState<number | undefined>()
   const [helperApproved, setHelperApproved] = useState<boolean | undefined>()
   const [wethBalance, setWethBalance] = useState<number | undefined>()
