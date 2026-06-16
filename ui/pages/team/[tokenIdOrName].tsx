@@ -195,7 +195,16 @@ function TeamDetailPageContent({
 
   const safeData = useSafe(nft?.owner)
 
-  const isSigner = safeOwners.includes(address || '')
+  // The SSR-prerendered `safeOwners` is best-effort and comes back empty
+  // whenever the Safe/RPC lookup blips at build time. Fall back to the
+  // client-side owners from `useSafe` so the signer list and the
+  // signer-gated pending-transactions UI keep working.
+  const resolvedSafeOwners =
+    safeOwners && safeOwners.length > 0 ? safeOwners : safeData?.owners || []
+
+  const isSigner = resolvedSafeOwners.some(
+    (owner: string) => owner.toLowerCase() === (address || '').toLowerCase()
+  )
 
   // Only citizens (or team managers / owners / signers) can see team content
   const canViewContent = !!(citizen || isManager || isTableOperator || isSigner || address === nft.owner)
@@ -549,7 +558,7 @@ function TeamDetailPageContent({
                 isSigner={isSigner}
                 safeData={safeData}
                 multisigAddress={nft.owner}
-                safeOwners={safeOwners}
+                safeOwners={resolvedSafeOwners}
               />
             </div>
           )}
@@ -652,7 +661,7 @@ function TeamDetailPageContent({
                   isSigner={isSigner}
                   safeData={safeData}
                   multisigAddress={nft.owner}
-                  safeOwners={safeOwners}
+                  safeOwners={resolvedSafeOwners}
                 />
               </div>
             </div>
