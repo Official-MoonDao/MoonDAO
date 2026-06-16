@@ -36,7 +36,6 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { useVotesOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { citizenRowToNFT } from '@/lib/tableland/convertRow'
@@ -61,6 +60,7 @@ import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
+import Tooltip from '@/components/layout/Tooltip'
 import Action from '@/components/subscription/Action'
 import Card from '@/components/subscription/Card'
 import CitizenActions from '@/components/subscription/CitizenActions'
@@ -132,7 +132,32 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
     }
   }, [router.query.edit, isOwner])
 
-  const { data: votes } = useVotesOfAddress(nft?.owner)
+  // Canonical vote count (on-chain governance + legacy Snapshot), matching the
+  // "Votes" XP quest. Fetched via a public endpoint so it stays in sync with
+  // the quest's count instead of only reflecting legacy Snapshot votes.
+  const [votesCount, setVotesCount] = useState<number | undefined>(undefined)
+  useEffect(() => {
+    const owner = nft?.owner
+    if (!owner) {
+      setVotesCount(undefined)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/xp/votes-count?address=${owner}`)
+        const data = await res.json()
+        if (!cancelled && typeof data?.votesCount === 'number') {
+          setVotesCount(data.votesCount)
+        }
+      } catch (err) {
+        console.error('Failed to fetch votes count:', err)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [nft?.owner])
 
   // Balances
   const { nativeBalance } = useNativeBalance()
@@ -481,20 +506,53 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                 <h2 className="font-GoodTimes text-2xl text-white mb-6">Governance</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-slate-600/20 rounded-xl p-4">
-                    <p className="text-lg text-slate-300 mb-2">$MOONEY</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-lg text-slate-300">$MOONEY</p>
+                      <Tooltip
+                        buttonClassName="scale-75 flex-shrink-0"
+                        text="$MOONEY is MoonDAO's governance token. Stake it to receive vMOONEY and gain voting power over the network's decisions."
+                        compact
+                      >
+                        ?
+                      </Tooltip>
+                    </div>
                     <p className="text-3xl font-bold text-white">
                       {MOONEYBalance ? Math.round(MOONEYBalance).toLocaleString() : 0}
                     </p>
                   </div>
                   <div className="bg-slate-600/20 rounded-xl p-4">
-                    <p className="text-lg text-slate-300 mb-2">Voting Power</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-lg text-slate-300">Voting Power</p>
+                      <Tooltip
+                        buttonClassName="scale-75 flex-shrink-0"
+                        text="Voting power determines how much weight your vote carries in governance. It comes from staking $MOONEY into vMOONEY, where longer lock times grant more voting power."
+                        compact
+                      >
+                        ?
+                      </Tooltip>
+                    </div>
                     <p className="text-3xl font-bold text-white">
                       {VMOONEYBalance ? Math.round(VMOONEYBalance).toLocaleString() : 0}
                     </p>
                   </div>
                   <div className="bg-slate-600/20 rounded-xl p-4">
-                    <p className="text-lg text-slate-300 mb-2">Votes</p>
-                    <p className="text-3xl font-bold text-white">{votes?.length}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-lg text-slate-300">Votes</p>
+                      <Tooltip
+                        buttonClassName="scale-75 flex-shrink-0"
+                        text="The total number of governance proposals you've voted on, including both on-chain proposals and legacy Snapshot votes."
+                        compact
+                      >
+                        ?
+                      </Tooltip>
+                    </div>
+                    <p className="text-3xl font-bold text-white">
+                      {votesCount === undefined ? (
+                        <span className="text-white/40">—</span>
+                      ) : (
+                        votesCount
+                      )}
+                    </p>
                   </div>
                 </div>
                 {isOwner && (
@@ -564,14 +622,14 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                         Array.from({ length: 4 }).map((_, i) => (
                           <div
                             key={`skeleton-${i}`}
-                            className="w-[300px] flex-shrink-0 h-[420px] rounded-xl bg-slate-700/40 animate-pulse"
+                            className="w-56 flex-shrink-0 h-[420px] rounded-xl bg-slate-700/40 animate-pulse"
                           />
                         ))
                       ) : newListings.length === 0 ? (
                         <p className="text-slate-400 text-sm py-4">No active listings at the moment.</p>
                       ) : (
                         newListings.map((listing, i) => (
-                          <div key={`team-listing-${i}`} className="w-[300px] flex-shrink-0">
+                          <div key={`team-listing-${i}`} className="flex-shrink-0">
                             <TeamListing
                               listing={listing}
                               selectedChain={selectedChain}
