@@ -6,7 +6,6 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { arbitrum } from '@/lib/rpc/chains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import { CBHeadlessOnramp } from './CBHeadlessOnramp'
 import { CoinbaseQuoteUnavailableGuide } from './CoinbaseQuoteUnavailableGuide'
 import {
   LARGE_ONRAMP_FIAT_THRESHOLD_USD,
@@ -30,13 +29,6 @@ interface CBOnrampProps {
   ) => void
   /** When true, stretches to parent width (e.g. embedded in contribute modal). */
   fullWidth?: boolean
-  /** When true, drops the outer card chrome so it can be nested inside another card */
-  embedded?: boolean
-  /** Optional content rendered just beneath the "Fund" header */
-  headerSlot?: React.ReactNode
-  /** Called when the device doesn't support Apple/Google Pay so the parent
-   *  can fall back to MoonPay automatically. */
-  onUnsupported?: () => void
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
@@ -53,44 +45,8 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   allowAmountInput = false,
   onQuoteCalculated,
   fullWidth = false,
-  embedded = false,
-  headerSlot,
-  onUnsupported,
 }) => {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
-
-  // US users get the Headless (Apple Pay / Google Pay) onramp; everyone else
-  // keeps the hosted Coinbase redirect. `null` = still detecting region.
-  const [isUS, setIsUS] = useState<boolean | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/coinbase/region')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!cancelled) setIsUS(data ? !!data.isUS : false)
-      })
-      .catch(() => {
-        if (!cancelled) setIsUS(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  // Bridge a successful Headless purchase into the existing post-onramp flow
-  // (cache state via onBeforeNavigate, then reload with the onrampSuccess flag
-  // that callers already handle on return).
-  const handleHeadlessSuccess = useCallback(async () => {
-    try {
-      await onBeforeNavigate?.()
-    } catch (error) {
-      console.error('[CBOnramp] onBeforeNavigate (headless) failed:', error)
-    }
-    const url = new URL(window.location.href)
-    url.searchParams.set('onrampSuccess', 'true')
-    window.history.replaceState({}, '', url.toString())
-    window.location.reload()
-  }, [onBeforeNavigate])
 
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
@@ -154,10 +110,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   // Fetch quote on component load and calculate fees
   useEffect(() => {
     const fetchQuote = async () => {
-      // Skip while detecting region or when US (Headless handles its own quote).
-      if (isUS !== false) {
-        return
-      }
       if (!address || !debouncedEthAmount || debouncedEthAmount <= 0) {
         setIsLoadingQuote(false)
         return
@@ -334,7 +286,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     isArbitrum,
     isWaitingForGasEstimate,
     onQuoteCalculated,
-    isUS,
   ])
 
   // Map chain to network name for Coinbase QUOTE API
@@ -523,60 +474,17 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     }
   }
 
-  // While detecting region, show a light loading shell to avoid flashing the
-  // hosted flow before we know whether to use the Headless onramp.
-  if (isUS === null) {
-    return (
-      <div
-        data-testid="cbonramp-modal-content"
-        className={
-          embedded
-            ? 'w-full text-white'
-            : `${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`
-        }
-      >
-        {headerSlot}
-        <div className="flex items-center justify-center p-10">
-          <LoadingSpinner />
-        </div>
-      </div>
-    )
-  }
-
-  // US users: Headless (Apple Pay / Google Pay) in-app checkout.
-  if (isUS) {
-    return (
-      <CBHeadlessOnramp
-        embedded={embedded}
-        fullWidth={fullWidth}
-        headerSlot={headerSlot}
-        address={address}
-        selectedChain={selectedChain}
-        ethAmount={ethAmount}
-        onExit={onExit}
-        isWaitingForGasEstimate={isWaitingForGasEstimate}
-        onQuoteCalculated={onQuoteCalculated}
-        onSuccess={handleHeadlessSuccess}
-        onUnsupported={onUnsupported}
-      />
-    )
-  }
-
   // Error state (or Coinbase quote unavailable → exchange funding guide)
   if (error || showExchangeFundingGuide) {
     const isGuide = showExchangeFundingGuide
     return (
       <div
         data-testid="cbonramp-modal-content"
-        className={
-          embedded
-            ? 'w-full text-white'
-            : `${shellWidthClass} bg-gradient-to-br from-gray-900 ${
-                isGuide ? 'via-amber-950/40' : 'via-red-900/30'
-              } to-purple-900/20 backdrop-blur-xl border ${
-                isGuide ? 'border-amber-500/25' : 'border-red-500/20'
-              } rounded-2xl shadow-2xl text-white overflow-hidden`
-        }
+        className={`${shellWidthClass} bg-gradient-to-br from-gray-900 ${
+          isGuide ? 'via-amber-950/40' : 'via-red-900/30'
+        } to-purple-900/20 backdrop-blur-xl border ${
+          isGuide ? 'border-amber-500/25' : 'border-red-500/20'
+        } rounded-2xl shadow-2xl text-white overflow-hidden`}
       >
         {/* Header with close button */}
         <div
@@ -671,11 +579,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   return (
     <div
       data-testid="cbonramp-modal-content"
-      className={
-        embedded
-          ? 'w-full text-white'
-          : `${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`
-      }
+      className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -695,8 +599,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
         </button>
       </div>
-
-      {headerSlot}
 
       <div className="p-6 space-y-6">
         {/* Amount Input (when allowAmountInput is true) */}
