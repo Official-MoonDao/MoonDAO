@@ -1,4 +1,4 @@
-import { PencilIcon, ShoppingBagIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { LinkIcon, PencilIcon, ShoppingBagIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState, useRef } from 'react'
@@ -220,8 +220,34 @@ export default function TeamListing({
               <span className="text-white/30 text-xs">—</span>
             )}
 
+            <div className="flex items-center gap-2">
+              <button
+                id="share-listing-button"
+                onClick={async (e) => {
+                  e.stopPropagation()
+                  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.moondao.com'
+                  const teamSlug = teamNFT?.metadata?.name
+                    ? generatePrettyLink(teamNFT.metadata.name)
+                    : String(listing.teamId)
+                  const shareLink = `${origin}/team/${teamSlug}?listing=${listing.id}`
+                  try {
+                    if (!navigator.clipboard?.writeText) {
+                      throw new Error('Clipboard API unavailable')
+                    }
+                    await navigator.clipboard.writeText(shareLink)
+                    toast.success('Link copied to clipboard.')
+                  } catch (err) {
+                    toast.error('Could not copy link. Please copy it manually.')
+                  }
+                }}
+                className="text-white/40 hover:text-white/80 transition-colors"
+                title="Copy link"
+              >
+                <LinkIcon className="w-4 h-4" />
+              </button>
+
             {editable && (
-              <div className="flex items-center gap-2">
+              <>
                 <button
                   id="edit-listing-button"
                   onClick={(e) => { e.stopPropagation(); setEnabledMarketplaceListingModal(true) }}
@@ -297,8 +323,9 @@ export default function TeamListing({
                     <TrashIcon className="w-4 h-4" />
                   </button>
                 )}
-              </div>
+              </>
             )}
+            </div>
           </div>
 
           {isUpcoming && editable && (
