@@ -48,7 +48,7 @@ export const FundOnrampModal: React.FC<FundOnrampModalProps> = ({
   ethAmount,
   onExit,
   isWaitingForGasEstimate = false,
-  defaultProvider = 'moonpay',
+  defaultProvider,
   context,
   agreed,
   selectedWallet,
