@@ -5,6 +5,9 @@
   "engines": {
     "node": ">=18"
   },
+  "resolutions": {
+    "@noble/hashes": "1.8.0"
+  },
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev",
     "build": "NODE_OPTIONS='--max-old-space-size=8192' next build",
