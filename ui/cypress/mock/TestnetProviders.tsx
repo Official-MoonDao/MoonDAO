@@ -40,6 +40,14 @@ export default function TestnetProviders({ citizen = false, children }: any) {
               appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
               config={{
                 loginMethods: ['email', 'wallet'],
+                // Privy v3 reads config.embeddedWallets.ethereum internally;
+                // omitting embeddedWallets makes that read throw
+                // ("Cannot read properties of undefined (reading 'ethereum')").
+                // Mirror the app's _app.tsx config so wallet-dependent
+                // components render in component tests.
+                embeddedWallets: {
+                  createOnLogin: 'users-without-wallets',
+                },
                 appearance: {
                   theme: 'light',
                   accentColor: '#000000',
