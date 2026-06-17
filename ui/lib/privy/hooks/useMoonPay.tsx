@@ -31,10 +31,17 @@ export function useMoonPay() {
    *
    * @param fiatAmount - USD amount to pre-fill in the widget; omit or pass 0 to let the user choose
    * @param chainId - destination chain ID for the purchased funds
+   * @param address - destination wallet address. When provided, it's used directly
+   *   (the caller already knows the active wallet); otherwise we fall back to the
+   *   Privy `useWallets()` list, which can be empty/lagging right after load.
    */
-  async function fundWallet(fiatAmount?: number, chainId?: number) {
-    const wallet = wallets[selectedWallet]
-    if (!wallet?.address) {
+  async function fundWallet(
+    fiatAmount?: number,
+    chainId?: number,
+    address?: string
+  ) {
+    const destinationAddress = address || wallets[selectedWallet]?.address
+    if (!destinationAddress) {
       throw new Error('No wallet selected to fund')
     }
     if (!chainId) {
@@ -47,7 +54,7 @@ export function useMoonPay() {
       destination: {
         asset: 'eth',
         chain: `eip155:${chainId}`,
-        address: wallet.address,
+        address: destinationAddress,
       },
       environment: 'production',
       ...(fiatAmount && fiatAmount > 0

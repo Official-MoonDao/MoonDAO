@@ -200,7 +200,9 @@ export function MoonPayOnramp({
 
       // fund() opens Privy's in-app modal and resolves once the user finishes (or
       // exits) the flow. It rejects if the user closes the modal before submitting.
-      const result = await fund(fiatAmount, selectedChain?.id)
+      // Pass the known address directly — Privy's useWallets() list can be empty
+      // right after load, which would otherwise throw "No wallet selected to fund".
+      const result = await fund(fiatAmount, selectedChain?.id, address)
 
       // Resolved in-context (no redirect happened) — the breadcrumb isn't needed.
       clearOnrampReturn()
