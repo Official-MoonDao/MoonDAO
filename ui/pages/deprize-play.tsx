@@ -230,6 +230,10 @@ export default function DePrizePlay() {
   const [conditionId, setConditionId] = useState<string | undefined>()
   const [stage, setStage] = useState<number | undefined>()
   const [feePct, setFeePct] = useState<number | undefined>()
+  // Collateral (WETH) the market currently holds — this is exactly what
+  // withdrawFees() pays out to the owner (MarketMaker.withdrawFees transfers
+  // collateralToken.balanceOf(market)).
+  const [marketFeesWei, setMarketFeesWei] = useState<bigint | undefined>()
   // CTF resolution state (M4): 0 denominator = unresolved; afterwards the
   // payout vector determines what each held outcome token redeems for.
   const [payoutDen, setPayoutDen] = useState<bigint | undefined>()
@@ -420,7 +424,8 @@ export default function DePrizePlay() {
       const { conditionId: cond, positionIds } = staticRef.current
 
       // 2) Dynamic data, concurrency-limited under the hood (rpcRead).
-      const [stg, prices, balances, wb, nb, approved, den, nums] = await Promise.all([
+      const [stg, prices, balances, wb, nb, approved, den, nums, mktFees] =
+        await Promise.all([
         rpcRead({ contract: lmsr, method: 'stage' as string, params: [] })
           .then((v) => Number(v))
           .catch(() => undefined),
@@ -491,6 +496,13 @@ export default function DePrizePlay() {
               .catch(() => 0n)
           )
         ),
+        rpcRead({
+          contract: weth,
+          method: 'balanceOf' as string,
+          params: [lmsrAddress],
+        })
+          .then((v) => v as bigint)
+          .catch(() => undefined),
       ])
 
       setStage(stg)
@@ -499,13 +511,20 @@ export default function DePrizePlay() {
       setCtfApproved(approved)
       setPayoutDen(den)
       setPayoutNums(nums)
-      recordOddsSample(prices as number[])
+      setMarketFeesWei(mktFees)
+      // close() sweeps the AMM's outcome inventory to the owner, after which
+      // calcMarginalPrice returns a meaningless uniform 1/N. Prices stay valid
+      // while Paused (inventory is untouched), so only blank them once Closed;
+      // on a Closed market the real "odds" are the reported payout vector shown
+      // in the resolution UI. Only append chart samples while actively trading.
+      const pricesValid = stg !== MarketStage.Closed
+      if (stg === MarketStage.Running) recordOddsSample(prices as number[])
       setOutcomes(
         positionIds.map((pid, i) => {
           const balWei = balances[i] as bigint | undefined
           return {
             index: i,
-            probability: prices[i],
+            probability: pricesValid ? (prices[i] as number) : NaN,
             balance: balWei !== undefined ? Number(balWei) / Number(UNIT) : NaN,
             balanceWei: balWei,
             positionId: pid,
@@ -530,7 +549,10 @@ export default function DePrizePlay() {
   // timer (no spinner, no balance reads) so the chart keeps ticking while the
   // page is open. Pauses when the tab is hidden to avoid wasting RPC.
   useEffect(() => {
-    if (!lmsr) return
+    // Marginal prices are only meaningful odds while the market is Running;
+    // once Paused/Closed they don't move (or reset to a uniform 1/N on close),
+    // so stop polling rather than flat-lining or corrupting the chart.
+    if (!lmsr || stage !== MarketStage.Running) return
     let stopped = false
     const tick = async () => {
       if (stopped || (typeof document !== 'undefined' && document.hidden)) return
@@ -556,7 +578,27 @@ export default function DePrizePlay() {
       stopped = true
       clearInterval(id)
     }
-  }, [lmsr, recordOddsSample])
+  }, [lmsr, stage, recordOddsSample])
+
+  // When the oracle resolves (reportPayouts), the "real" odds collapse to the
+  // payout vector: the winner -> 100%, losers -> 0% (or an equal split on a
+  // no-winner refund). Append that as a final chart point so the graph snaps to
+  // the outcome. Closing alone does NOT do this — only resolution declares a
+  // winner. Fires once per resolution.
+  const resolvedSnapRef = useRef(false)
+  useEffect(() => {
+    const den = payoutDen
+    if (den === undefined || den <= 0n) {
+      resolvedSnapRef.current = false
+      return
+    }
+    if (resolvedSnapRef.current) return
+    const finalOdds = Array.from({ length: MAX_OUTCOMES }, (_, i) =>
+      i < payoutNums.length ? (Number(payoutNums[i]) / Number(den)) * 100 : NaN
+    )
+    recordOddsSample(finalOdds)
+    resolvedSnapRef.current = true
+  }, [payoutNums, payoutDen, recordOddsSample])
 
   // The just-mined block can lag the RPC briefly; refresh now and once more
   // shortly after so balances/odds reflect the tx without a manual refresh.
@@ -649,14 +691,16 @@ export default function DePrizePlay() {
     try {
       const raw = window.localStorage.getItem(helperStorageKey)
       if (raw) {
-        const saved = JSON.parse(raw) as { address?: string; deprizeId?: string }
+        const saved = JSON.parse(raw) as { address?: string }
         if (saved.address) setHelperAddress(saved.address)
-        if (saved.deprizeId) setHelperDeprizeId(saved.deprizeId)
       } else {
         const slug = getChainSlug(chain)
         setHelperAddress(DEPRIZE_REDEEM_ADDRESSES[slug] ?? '')
-        setHelperDeprizeId('1')
       }
+      // The play market is bound to a fixed registry DePrize, so always drive the
+      // helper from config rather than a (possibly stale) saved id — otherwise
+      // previewRedeem reads the wrong DePrize and shows 0.
+      setHelperDeprizeId(String(DEPRIZE_PLAY_ID))
     } catch {
       /* ignore */
     }
@@ -667,7 +711,7 @@ export default function DePrizePlay() {
     try {
       window.localStorage.setItem(
         helperStorageKey,
-        JSON.stringify({ address: helperAddress, deprizeId: helperDeprizeId })
+        JSON.stringify({ address: helperAddress })
       )
     } catch {
       /* ignore */
@@ -712,7 +756,13 @@ export default function DePrizePlay() {
   // receive by selling their full position right now (calcNetCost with negative
   // amounts returns negative collateral, i.e. what the LMSR pays back).
   useEffect(() => {
-    if (!lmsr) return
+    // Selling back to the AMM only works while Running (trade() is
+    // atStage(Running)); on a Paused/Closed market calcNetCost is undefined
+    // behaviour (and can go negative once inventory is swept), so don't quote.
+    if (!lmsr || stage !== MarketStage.Running) {
+      setSellQuotes(new Map())
+      return
+    }
     const held = outcomes.filter(
       (o) => Number.isFinite(o.balance) && o.balance > 0
     )
@@ -748,7 +798,7 @@ export default function DePrizePlay() {
     return () => {
       cancelled = true
     }
-  }, [lmsr, outcomes])
+  }, [lmsr, outcomes, stage])
 
   // Inverse of the LMSR cost curve: how many outcome tokens does `targetWei`
   // of collateral buy? calcNetCost is monotonic in quantity, so binary search.
@@ -1316,6 +1366,17 @@ export default function DePrizePlay() {
   }
 
   const isClosed = stage === MarketStage.Closed
+  // The LMSR only accepts trades in the Running stage, so buying and selling
+  // (cash out) must be blocked whenever the market is Paused or Closed —
+  // otherwise the on-chain trade just reverts.
+  const isTradingHalted =
+    stage !== undefined && stage !== MarketStage.Running
+  const tradingHaltLabel =
+    stage === MarketStage.Paused
+      ? 'Market paused'
+      : stage === MarketStage.Closed
+      ? 'Market closed'
+      : ''
   // CTF-level resolution is what actually gates redemption (market stage is
   // only the trading state). claimable = what the connected wallet's positions
   // redeem for under the reported payout vector (mirrors previewRedeem).
@@ -1432,10 +1493,6 @@ export default function DePrizePlay() {
                       <p className="text-indigo-100 text-sm font-medium">
                         Connect a wallet on Sepolia to bet
                       </p>
-                      <p className="text-indigo-300/80 text-xs mt-1">
-                        You can read live odds without connecting, but betting
-                        needs a connected Sepolia wallet with a little test ETH.
-                      </p>
                     </div>
                     <button
                       onClick={() => login()}
@@ -1530,9 +1587,25 @@ export default function DePrizePlay() {
                     const color = OUTCOME_COLORS[o.index % OUTCOME_COLORS.length]
                     const valueNow = sellQuotes.get(o.index)
                     const invested = costBasis[o.index] ?? 0
+                    // Once resolved, this slot's tokens redeem for
+                    // balance * payoutNumerator / payoutDenominator (mirrors the
+                    // CTF + previewRedeem). This is the real "value" post-close.
+                    const redeemValue =
+                      resolved &&
+                      o.balanceWei !== undefined &&
+                      payoutDen !== undefined &&
+                      payoutDen > 0n
+                        ? Number(
+                            (o.balanceWei * (payoutNums[o.index] ?? 0n)) /
+                              payoutDen
+                          ) / Number(UNIT)
+                        : undefined
+                    const isWinningSlot = resolved && o.index === winningIndex
+                    // Final value if resolved, otherwise the live sell quote.
+                    const realizedValue = resolved ? redeemValue : valueNow
                     const pnl =
-                      valueNow !== undefined && invested > 0
-                        ? valueNow - invested
+                      realizedValue !== undefined && invested > 0
+                        ? realizedValue - invested
                         : undefined
                     return (
                       <div
@@ -1547,16 +1620,34 @@ export default function DePrizePlay() {
                               style={{ background: color }}
                             />
                             <div>
-                              <p className="text-2xl font-bold text-white leading-none">
-                                {Number.isNaN(o.probability)
+                              <p
+                                className={`text-2xl font-bold leading-none ${
+                                  resolved
+                                    ? isWinningSlot
+                                      ? 'text-moon-green'
+                                      : isRefundVector
+                                      ? 'text-white'
+                                      : 'text-gray-500'
+                                    : 'text-white'
+                                }`}
+                              >
+                                {resolved
+                                  ? isWinningSlot
+                                    ? 'WON'
+                                    : isRefundVector
+                                    ? 'Refund'
+                                    : 'Lost'
+                                  : Number.isNaN(o.probability)
                                   ? loading
                                     ? '…'
                                     : '—'
                                   : `${fmt(o.probability, 0)}%`}
                               </p>
-                              <p className="text-gray-500 text-[10px] mt-1">
-                                chance
-                              </p>
+                              {!resolved && (
+                                <p className="text-gray-500 text-[10px] mt-1">
+                                  chance
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -1564,30 +1655,27 @@ export default function DePrizePlay() {
                             <p className="text-white font-semibold">
                               Outcome #{o.index + 1}
                             </p>
-                            <p className="text-gray-400 text-xs mt-0.5">
-                              {holding
-                                ? 'You have a position'
-                                : 'Tap Bet to see your payout'}
-                            </p>
                           </div>
 
                           <div className="flex items-center gap-2 flex-wrap">
-                            <StandardButton
-                              onClick={() => {
-                                setBetAmount('')
-                                setBetQuote(null)
-                                setBetIndex(o.index)
-                              }}
-                              disabled={busy || isClosed || !userAddress}
-                              className="rounded-full"
-                              backgroundColor="bg-moon-green"
-                            >
-                              Bet
-                            </StandardButton>
-                            {holding && (
+                            {!isTradingHalted && (
+                              <StandardButton
+                                onClick={() => {
+                                  setBetAmount('')
+                                  setBetQuote(null)
+                                  setBetIndex(o.index)
+                                }}
+                                disabled={busy || !userAddress}
+                                className="rounded-full"
+                                backgroundColor="bg-moon-green"
+                              >
+                                Bet
+                              </StandardButton>
+                            )}
+                            {holding && !isTradingHalted && (
                               <StandardButton
                                 onClick={() => sellAll(o.index)}
-                                disabled={busy || isClosed || !userAddress}
+                                disabled={busy || !userAddress}
                                 className="rounded-full"
                                 backgroundColor="bg-moon-orange"
                               >
@@ -1601,29 +1689,39 @@ export default function DePrizePlay() {
 
                         {/* Position summary */}
                         {holding && (
-                          <div className="mt-3 grid grid-cols-3 gap-2">
+                          <div
+                            className={`mt-3 grid gap-2 ${
+                              resolved ? 'grid-cols-2' : 'grid-cols-3'
+                            }`}
+                          >
                             <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
                               <p className="text-[10px] text-gray-500">
-                                Cash out now
+                                {resolved ? 'Claimable' : 'Cash out'}
                               </p>
                               <p className="text-sm font-semibold text-white">
-                                {valueNow !== undefined
+                                {resolved
+                                  ? redeemValue !== undefined
+                                    ? `${fmt(redeemValue)} ETH`
+                                    : '—'
+                                  : isTradingHalted
+                                  ? '—'
+                                  : valueNow !== undefined
                                   ? `${fmt(valueNow)} ETH`
                                   : '…'}
                               </p>
                             </div>
+                            {!resolved && (
+                              <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
+                                <p className="text-[10px] text-gray-500">
+                                  If this wins
+                                </p>
+                                <p className="text-sm font-semibold text-moon-green">
+                                  {fmt(o.balance)} ETH
+                                </p>
+                              </div>
+                            )}
                             <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
-                              <p className="text-[10px] text-gray-500">
-                                If this wins
-                              </p>
-                              <p className="text-sm font-semibold text-moon-green">
-                                {fmt(o.balance)} ETH
-                              </p>
-                            </div>
-                            <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
-                              <p className="text-[10px] text-gray-500">
-                                Profit so far
-                              </p>
+                              <p className="text-[10px] text-gray-500">Profit</p>
                               <p
                                 className={`text-sm font-semibold ${
                                   pnl === undefined
@@ -1645,46 +1743,69 @@ export default function DePrizePlay() {
                   })}
                 </div>
 
-                {/* Redeem (direct CTF path — always available once resolved) */}
-                {resolved && (
-                  <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3 flex-wrap">
-                    <div>
-                      <p className="text-emerald-200 text-sm">
-                        {isRefundVector
-                          ? `Resolved with no winner — every position refunds 1/${MAX_OUTCOMES} of its size.`
-                          : winningIndex >= 0
-                          ? `Resolved — outcome #${winningIndex + 1} won.`
-                          : 'This market is resolved.'}
-                      </p>
-                      {userAddress && (
-                        <p className="text-emerald-300/80 text-xs mt-1">
-                          Your positions redeem for ≈ {fmt(claimable)} WETH
-                          (direct CTF claim pays WETH; the helper below pays
-                          ETH).
-                        </p>
+                {/* Claim winnings — the single user-facing action once the
+                    market is resolved. Pays native ETH via the DePrizeRedeem
+                    helper (one tap after a one-time approval); the raw CTF/WETH
+                    path lives in Advanced below. */}
+                {resolved && userAddress && (
+                  <div className="p-4 sm:p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+                    <p className="text-emerald-200 text-sm">
+                      {isRefundVector
+                        ? 'No winner — everyone refunded'
+                        : winningIndex >= 0
+                        ? `Outcome #${winningIndex + 1} won`
+                        : 'Resolved'}
+                    </p>
+                    <p className="text-white text-2xl font-bold mt-1">
+                      {validHelper && helperPreview !== undefined
+                        ? `${fmt(helperPreview)} ETH`
+                        : `${fmt(claimable)} WETH`}
+                    </p>
+                    <div className="mt-3 flex items-center gap-3 flex-wrap">
+                      {validHelper ? (
+                        <StandardButton
+                          onClick={helperApproved ? redeemViaHelper : approveHelper}
+                          disabled={busy || (helperPreview ?? 0) <= 0}
+                          className="rounded-full"
+                          backgroundColor="bg-moon-green"
+                        >
+                          {helperApproved ? 'Claim' : 'Approve'}
+                        </StandardButton>
+                      ) : (
+                        <StandardButton
+                          onClick={redeem}
+                          disabled={busy}
+                          className="rounded-full"
+                          backgroundColor="bg-moon-green"
+                        >
+                          Claim
+                        </StandardButton>
+                      )}
+                      {validHelper && (
+                        <button
+                          onClick={redeem}
+                          disabled={busy}
+                          className="text-gray-400 hover:text-gray-200 text-xs underline disabled:opacity-50"
+                        >
+                          WETH instead
+                        </button>
                       )}
                     </div>
-                    <StandardButton
-                      onClick={redeem}
-                      disabled={busy || !userAddress}
-                      className="rounded-full"
-                      backgroundColor="bg-moon-green"
-                    >
-                      Claim (WETH)
-                    </StandardButton>
                   </div>
                 )}
 
-                {/* M4: DePrizeRedeem helper (one-tx, pays native ETH) */}
+                {/* M4: DePrizeRedeem helper plumbing — dev/testnet only. The
+                    user-facing claim above already drives this; these raw
+                    inputs are for overriding the helper/DePrize during testing. */}
                 {userAddress && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-emerald-900/20 border border-white/10">
-                    <p className="text-white font-semibold">
-                      DePrizeRedeem helper{' '}
+                  <details className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-emerald-900/20 border border-white/10">
+                    <summary className="text-white font-semibold cursor-pointer select-none">
+                      Advanced (testnet tools){' '}
                       <span className="text-gray-500 text-xs font-normal">
-                        (M4 — redeem outcome tokens for native ETH)
+                        — DePrizeRedeem helper internals
                       </span>
-                    </p>
-                    <p className="text-gray-500 text-xs mt-1">
+                    </summary>
+                    <p className="text-gray-500 text-xs mt-3">
                       Needs the deployed helper + a DePrizeRegistry entry whose
                       condition matches this market. Approve once, then redeem —
                       the helper pulls your tokens, redeems on the CTF, unwraps
@@ -1767,7 +1888,7 @@ export default function DePrizePlay() {
                         </div>
                       </div>
                     )}
-                  </div>
+                  </details>
                 )}
 
                 {/* Privileged actions */}
@@ -1824,9 +1945,25 @@ export default function DePrizePlay() {
                           className="rounded-full"
                           backgroundColor="bg-white/10"
                         >
-                          Withdraw fees
+                          {marketFeesWei !== undefined
+                            ? `Withdraw fees (${fmt(
+                                Number(marketFeesWei) / Number(UNIT),
+                                4
+                              )} WETH)`
+                            : 'Withdraw fees'}
                         </StandardButton>
                         </div>
+                        <p className="text-gray-500 text-[11px] mt-2">
+                          Withdrawable now:{' '}
+                          {marketFeesWei !== undefined
+                            ? `${fmt(
+                                Number(marketFeesWei) / Number(UNIT),
+                                6
+                              )} WETH`
+                            : '—'}{' '}
+                          (the market's full collateral balance; close the market
+                          first to also reclaim seed liquidity).
+                        </p>
                       </div>
                     )}
 
@@ -2038,12 +2175,14 @@ export default function DePrizePlay() {
             ) : (
               <StandardButton
                 onClick={buy}
-                disabled={busy || betAmountWei <= 0n || isClosed}
+                disabled={busy || betAmountWei <= 0n || isTradingHalted}
                 className="rounded-full w-full"
                 backgroundColor="bg-moon-green"
               >
                 {busy
                   ? 'Placing bet…'
+                  : isTradingHalted
+                  ? tradingHaltLabel
                   : betAmountNum > 0
                   ? `Bet ${fmt(betAmountNum)} ETH`
                   : 'Enter an amount'}
