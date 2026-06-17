@@ -14,6 +14,10 @@ interface CBHeadlessOnrampProps {
   isWaitingForGasEstimate?: boolean
   fullWidth?: boolean
   embedded?: boolean
+  /** When true, shows a USD amount input the user fills in (e.g. generic
+   *  wallet top-ups with no predetermined amount). The entered USD is
+   *  converted to ETH for the order. */
+  allowAmountInput?: boolean
   /** Optional content rendered just beneath the "Fund" header. */
   headerSlot?: React.ReactNode
   onQuoteCalculated?: (
@@ -80,6 +84,7 @@ export function CBHeadlessOnramp({
   fullWidth = false,
   embedded = false,
   headerSlot,
+  allowAmountInput = false,
   onQuoteCalculated,
   checkBalanceSufficient,
   onBalanceSufficient,
@@ -102,6 +107,45 @@ export function CBHeadlessOnramp({
   const [paymentTotal, setPaymentTotal] = useState<number | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
 
+  // USD amount-input mode (e.g. generic wallet top-ups). The user types USD,
+  // which we convert to ETH using the spot price for the order.
+  const [usdInputString, setUsdInputString] = useState('')
+  const [ethPrice, setEthPrice] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!allowAmountInput) return
+    let cancelled = false
+    fetch('/api/coinbase/eth-price')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.price > 0) setEthPrice(d.price)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [allowAmountInput])
+
+  // ETH the order will purchase: typed-USD ÷ spot when in input mode,
+  // otherwise the predetermined prop amount.
+  const effectiveEthAmount = useMemo(() => {
+    if (!allowAmountInput) return ethAmount
+    const usd = parseFloat(usdInputString) || 0
+    if (!ethPrice || ethPrice <= 0 || usd <= 0) return 0
+    return usd / ethPrice
+  }, [allowAmountInput, ethAmount, usdInputString, ethPrice])
+
+  // Debounce the effective amount so we don't quote on every keystroke.
+  const [debouncedEthAmount, setDebouncedEthAmount] = useState(ethAmount)
+  useEffect(() => {
+    if (!allowAmountInput) {
+      setDebouncedEthAmount(ethAmount)
+      return
+    }
+    const t = setTimeout(() => setDebouncedEthAmount(effectiveEthAmount), 500)
+    return () => clearTimeout(t)
+  }, [allowAmountInput, ethAmount, effectiveEthAmount])
+
   const paymentMethod = WEB_PAYMENT_METHOD
   const nativeApplePay = useMemo(() => hasNativeApplePay(), [])
   const payLabel = 'Apple Pay'
@@ -123,7 +167,12 @@ export function CBHeadlessOnramp({
   useEffect(() => {
     let cancelled = false
     const fetchEstimate = async () => {
-      if (!address || !ethAmount || ethAmount <= 0 || isWaitingForGasEstimate) {
+      if (
+        !address ||
+        !debouncedEthAmount ||
+        debouncedEthAmount <= 0 ||
+        isWaitingForGasEstimate
+      ) {
         return
       }
       setQuoteLoading(true)
@@ -133,7 +182,7 @@ export function CBHeadlessOnramp({
         const { price } = await priceRes.json()
         if (!price || price <= 0) throw new Error('price')
 
-        const estimateUSD = ethAmount * price * 1.05
+        const estimateUSD = debouncedEthAmount * price * 1.05
         const quoteRes = await fetch('/api/coinbase/buy-quote', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -151,7 +200,12 @@ export function CBHeadlessOnramp({
         const total = parseFloat(quote?.payment_total?.value || '0')
         if (!cancelled && total > 0) {
           setPaymentTotal(total)
-          onQuoteCalculated?.(ethAmount, subtotal, total, total - subtotal)
+          onQuoteCalculated?.(
+            debouncedEthAmount,
+            subtotal,
+            total,
+            total - subtotal
+          )
         }
       } catch {
         // Estimate is best-effort; the real total comes from the created order.
@@ -164,7 +218,7 @@ export function CBHeadlessOnramp({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, ethAmount, isWaitingForGasEstimate])
+  }, [address, debouncedEthAmount, isWaitingForGasEstimate])
 
   const handleExit = useCallback(() => {
     setFundingState('idle')
@@ -189,6 +243,10 @@ export function CBHeadlessOnramp({
       setError('Please accept the Coinbase guest checkout terms to continue.')
       return
     }
+    if (!effectiveEthAmount || effectiveEthAmount <= 0) {
+      setError('Please enter an amount to continue.')
+      return
+    }
 
     try {
       setError(null)
@@ -205,7 +263,7 @@ export function CBHeadlessOnramp({
             id: selectedChain?.id,
             name: selectedChain?.name,
           },
-          ethAmount,
+          ethAmount: effectiveEthAmount,
           paymentMethod,
           email: verification.email,
           phoneNumber: verification.phoneNumber,
@@ -260,7 +318,7 @@ export function CBHeadlessOnramp({
   }, [
     address,
     agreed,
-    ethAmount,
+    effectiveEthAmount,
     paymentMethod,
     selectedChain,
     user?.id,
@@ -476,6 +534,33 @@ export function CBHeadlessOnramp({
       {headerSlot}
 
       <div className="p-6 space-y-6">
+        {/* USD amount input (generic top-ups) */}
+        {allowAmountInput && (
+          <div className="space-y-2">
+            <label className="text-gray-300 text-sm font-medium">Amount (USD)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                $
+              </span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="1"
+                value={usdInputString}
+                onChange={(e) => setUsdInputString(e.target.value)}
+                placeholder="50"
+                className="w-full bg-black/30 border border-white/15 rounded-lg py-3 pl-7 pr-3 text-white placeholder-gray-500 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/50 outline-none"
+              />
+            </div>
+            {effectiveEthAmount > 0 && (
+              <p className="text-gray-400 text-xs">
+                ≈ {effectiveEthAmount.toFixed(4)} ETH
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Amount summary */}
         <div className="bg-black/20 rounded-lg p-4 border border-white/5 space-y-3">
           {isWaitingForGasEstimate || quoteLoading ? (
@@ -489,7 +574,7 @@ export function CBHeadlessOnramp({
                 <span className="text-gray-400 text-sm">Network:</span>
                 <span className="text-white font-medium">{selectedChain?.name || 'Arbitrum'}</span>
               </div>
-              {ethAmount > 0 && (
+              {!allowAmountInput && ethAmount > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Amount:</span>
                   <span className="text-white font-medium">{ethAmount.toFixed(4)} ETH</span>
@@ -593,7 +678,8 @@ export function CBHeadlessOnramp({
             fundingState === 'creating' ||
             isWaitingForGasEstimate ||
             !verification.isReady ||
-            !agreed
+            !agreed ||
+            effectiveEthAmount <= 0
           }
         />
 

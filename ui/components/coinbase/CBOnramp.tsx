@@ -562,6 +562,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         address={address}
         selectedChain={selectedChain}
         ethAmount={ethAmount}
+        allowAmountInput={allowAmountInput}
         onExit={onExit}
         isWaitingForGasEstimate={isWaitingForGasEstimate}
         onQuoteCalculated={onQuoteCalculated}
