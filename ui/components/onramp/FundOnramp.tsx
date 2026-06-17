@@ -136,7 +136,7 @@ export function FundOnramp({
         >
           <span className="text-sm font-semibold text-white">Coinbase</span>
           <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-            {isUS ? 'Recommended' : 'Apple Pay'}
+            {isUS ? 'Recommended' : 'Have an account?'}
           </span>
         </button>
       </div>
@@ -148,7 +148,8 @@ export function FundOnramp({
           </p>
         ) : (
           <p className="text-gray-300/80 text-xs leading-relaxed">
-            Pay with Apple Pay — no account needed. Outside the US,{' '}
+            Outside the US, you&apos;ll be redirected to Coinbase to pay — best if you
+            already have a Coinbase account. No account?{' '}
             <button
               type="button"
               onClick={() => handleSetProvider('moonpay')}
@@ -156,7 +157,7 @@ export function FundOnramp({
             >
               MoonPay
             </button>{' '}
-            usually has better coverage — switch if Coinbase doesn&apos;t work for you.
+            needs none and is recommended for your region.
           </p>
         )
       ) : (
