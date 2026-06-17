@@ -1,5 +1,4 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useFundWallet } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
   DEPLOYED_ORIGIN,
@@ -10,11 +9,14 @@ import {
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
+import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
+import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
+import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import {
@@ -23,6 +25,7 @@ import {
   extractTokenIdFromReceipt,
   handleTypeformSubmission,
 } from '@/lib/onboarding/shared-utils'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -30,14 +33,23 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
-import { renameFile } from '@/lib/utils/files'
-import viemChains from '@/lib/viem/viemChains'
+import {
+  base64ToFile,
+  fileToBase64,
+  isSerializedFile,
+  renameFile,
+  SerializedFile,
+} from '@/lib/utils/files'
+import { useClientHydrated } from '@/lib/utils/hooks/useClientHydrated'
+import { useFormCache } from '@/lib/utils/hooks/useFormCache'
+import { compressImageForStorage } from '@/lib/utils/images'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import TeamABI from '../../const/abis/Team.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import { ExpandedFooter } from '../layout/ExpandedFooter'
 import { Steps } from '../layout/Steps'
+import { FundOnrampModal } from '../onramp/FundOnrampModal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { DataOverview } from './DataOverview'
 import { ImageGenerator } from './TeamImageGenerator'
@@ -62,6 +74,31 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const address = account?.address
+  const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
+  const isClientHydrated = useClientHydrated()
+
+  // Form state caching - needs to be defined before useOnrampInitialStage so the
+  // onramp redirect/reload (US Apple Pay) can restore progress and auto-resume the mint.
+  const { setCache, restoreCache, clearCache } = useFormCache<{
+    stage: number
+    teamData: TeamData
+    teamImage: SerializedFile | null
+    agreedToCondition: boolean
+    selectedChainSlug: string
+  }>('CreateTeamCacheV1', address)
+
+  const { getAddressFromJWT } = useOnrampJWT()
+
+  const restoreCacheRef = useRef(restoreCache)
+  useEffect(() => {
+    restoreCacheRef.current = restoreCache
+  }, [restoreCache])
+
+  const getCachedForm = useCallback((addressOverride?: string) => {
+    return restoreCacheRef.current(addressOverride)
+  }, [])
+
+  const restoredStage = useOnrampInitialStage(address, getCachedForm, 0, 2, getAddressFromJWT)
 
   // ===== State: Form State =====
   const [stage, setStage] = useState<number>(0)
@@ -85,6 +122,15 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
 
+  // ===== State: Onramp State =====
+  const [onrampModalOpen, setOnrampModalOpen] = useState(false)
+  const [requiredEthAmount, setRequiredEthAmount] = useState(0)
+
+  // ===== Refs =====
+  const hasRestoredFormDataRef = useRef(false)
+  const imageRestoredRef = useRef(false)
+  const stageRef = useRef(stage)
+
   // ===== Custom Hooks =====
   const { effectiveGasPrice } = useGasPrice(selectedChain)
   const { isMobile } = useWindowSize()
@@ -101,8 +147,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     chain: selectedChain,
   })
 
-  const { nativeBalance } = useNativeBalance()
-  const { fundWallet } = useFundWallet()
+  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
 
   // ===== Internal Helper Functions =====
 
@@ -126,6 +171,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const handlePostMint = useCallback(
     async (mintedTokenId: string, teamName: string) => {
       const teamPrettyLink = generatePrettyLink(teamName)
+      clearCache()
       setTimeout(async () => {
         await sendDiscordMessage(
           'networkNotifications',
@@ -136,8 +182,26 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
         setIsLoadingMint(false)
       }, 10000)
     },
-    [router]
+    [router, clearCache]
   )
+
+  const serializeForStorage = useCallback(async (file: File | undefined | null) => {
+    if (!file) return null
+    try {
+      const compressed = (await compressImageForStorage(file)) as File
+      return await fileToBase64(compressed)
+    } catch {
+      return null
+    }
+  }, [])
+
+  const restoreImageFromCache = useCallback((imageData: SerializedFile | null | undefined) => {
+    if (imageData && isSerializedFile(imageData)) {
+      setTeamImage(base64ToFile(imageData))
+      return true
+    }
+    return false
+  }, [])
 
   // ===== Event Handlers & Callbacks =====
 
@@ -149,6 +213,61 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       return totalCost
     },
     [estimatedGas, effectiveGasPrice]
+  )
+
+  const serializeCacheData = useCallback(async () => {
+    const serializedTeamImage = await serializeForStorage(teamImage)
+    return {
+      stage,
+      teamData,
+      teamImage: serializedTeamImage,
+      agreedToCondition,
+      selectedChainSlug: chainSlug,
+    }
+  }, [stage, teamData, teamImage, agreedToCondition, chainSlug, serializeForStorage])
+
+  const checkBalanceSufficient = useCallback(async () => {
+    try {
+      const cost: any = await readContract({
+        contract: teamContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
+      })
+      const totalCost = calculateCost(cost)
+      return +(nativeBalance ?? '0') >= totalCost
+    } catch (error) {
+      console.error('Error checking balance:', error)
+      return false
+    }
+  }, [address, teamContract, nativeBalance, calculateCost])
+
+  const handleFormRestore = useCallback(
+    (restored: any) => {
+      if (hasRestoredFormDataRef.current) return
+
+      // Handle both old and new cache formats
+      const formData = restored.formData || restored
+      const hasProfile = !!formData?.teamData?.name
+      const hasImage = !!formData?.teamImage
+
+      if (!formData || (!hasProfile && !hasImage)) return
+
+      hasRestoredFormDataRef.current = true
+
+      if (typeof restored.stage === 'number') {
+        setStage((current) => Math.max(current, restored.stage))
+      } else if (hasProfile) {
+        setStage((current) => (current < 2 ? 2 : current))
+      }
+
+      if (hasProfile) {
+        setTeamData(formData.teamData)
+      }
+
+      imageRestoredRef.current = restoreImageFromCache(formData.teamImage)
+      setAgreedToCondition(formData.agreedToCondition ?? false)
+    },
+    [restoreImageFromCache]
   )
 
   const callMint = useCallback(async () => {
@@ -172,15 +291,12 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       const totalCost = calculateCost(cost)
 
       if (+(nativeBalance ?? '0') < totalCost) {
-        const roundedCost = Math.ceil(totalCost * 1000000) / 1000000
+        const shortfall = totalCost - +(nativeBalance ?? '0')
+        const requiredAmount = shortfall * 1.15
+        setRequiredEthAmount(requiredAmount)
+        setOnrampModalOpen(true)
         setIsLoadingMint(false)
-        return await fundWallet({
-          address,
-          options: {
-            amount: String(roundedCost),
-            chain: viemChains[chainSlug],
-          },
-        })
+        return
       }
 
       const adminHatCid = await pinHatMetadata(teamData.name, teamData.description, 'Admin')
@@ -246,8 +362,6 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     teamContract,
     calculateCost,
     nativeBalance,
-    fundWallet,
-    chainSlug,
     pinHatMetadata,
     teamData,
     teamCreatorContract,
@@ -365,12 +479,67 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     }
   }, [stage, lastStage])
 
+  // Apply the stage restored from the onramp redirect/reload once hydrated.
+  useEffect(() => {
+    if (!isClientHydrated || restoredStage === 0) return
+    setStage((current) => Math.max(current, restoredStage))
+  }, [isClientHydrated, restoredStage])
+
+  // Keep refs in sync for callbacks that run after an onramp redirect.
+  useEffect(() => {
+    stageRef.current = stage
+    imageRestoredRef.current = imageRestoredRef.current || !!teamImage
+  }, [teamImage, stage])
+
   // ===== Effect Group: Gas Estimation =====
   useEffect(() => {
     if (stage === 2 && address && teamData.name) {
       estimateMintGas()
     }
   }, [stage, address, teamData.name, estimateMintGas])
+
+  // ===== Effect Group: Caching =====
+  // Persist progress at checkout so the onramp redirect (non-US Coinbase / MoonPay)
+  // or in-page reload (US Apple Pay) can restore the form and auto-resume the mint.
+  useEffect(() => {
+    if (stage === 2 && agreedToCondition && address) {
+      const performCache = async () => {
+        const cacheData = await serializeCacheData()
+        setCache(cacheData, stage)
+      }
+      performCache()
+    }
+  }, [agreedToCondition, stage, address, serializeCacheData, setCache])
+
+  // ===== Effect Group: Onramp Auto-Transaction =====
+  useOnrampAutoTransaction({
+    address,
+    context: 'team',
+    expectedChainSlug: chainSlug,
+    refetchNativeBalance: async () => {
+      await refetchNativeBalance()
+    },
+    onTransaction: callMint,
+    onFormRestore: handleFormRestore,
+    checkBalanceSufficient,
+    shouldProceed: (restored) => {
+      const formData = restored.formData || restored
+      const hasImage =
+        formData.teamImage &&
+        (isSerializedFile(formData.teamImage) || formData.teamImage !== 'PENDING_SERIALIZATION')
+      return !!formData.agreedToCondition && !!hasImage
+    },
+    restoreCache: getCachedForm,
+    getChainSlugFromCache: (restored) => restored?.formData?.selectedChainSlug,
+    setStage,
+    setSelectedWallet,
+    waitForReady: () => {
+      const gasEstimateReady = !isLoadingGasEstimate && estimatedGas > BigInt(0)
+      const gasPriceReady = effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
+      const imageReady = imageRestoredRef.current || !!teamImage
+      return gasEstimateReady && gasPriceReady && imageReady
+    },
+  })
 
   // ===== JSX Render =====
 
@@ -555,6 +724,40 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           </div>
         </ContentLayout>
       </div>
+      {address && (
+        <FundOnrampModal
+          enabled={onrampModalOpen}
+          setEnabled={setOnrampModalOpen}
+          address={address}
+          selectedChain={selectedChain}
+          ethAmount={requiredEthAmount}
+          isWaitingForGasEstimate={isLoadingGasEstimate}
+          context="team"
+          agreed={agreedToCondition}
+          selectedWallet={selectedWallet}
+          onExit={() => {
+            setIsLoadingMint(false)
+          }}
+          onBeforeNavigate={async () => {
+            const currentStage = stageRef.current
+            const cacheData = await serializeCacheData()
+            setCache(cacheData, currentStage)
+          }}
+          onMoonPayBeforeOpen={async () => {
+            const currentStage = stageRef.current
+            const cacheData = await serializeCacheData()
+            setCache(cacheData, currentStage)
+          }}
+          checkBalanceSufficient={checkBalanceSufficient}
+          refetchBalance={async () => {
+            await refetchNativeBalance()
+          }}
+          onBalanceSufficient={() => {
+            setOnrampModalOpen(false)
+            callMint()
+          }}
+        />
+      )}
     </Container>
   )
 }
