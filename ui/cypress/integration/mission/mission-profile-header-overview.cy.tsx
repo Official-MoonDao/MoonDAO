@@ -91,6 +91,13 @@ const setupMocks = () => {
   // `**/api/**` one to actually win over it.
   cy.intercept('GET', '**/api/**', { fixture: 'empty.json' }).as('apiCalls')
   cy.intercept('POST', '**/api/**', { fixture: 'empty.json' }).as('apiPosts')
+  // Privy v3 reads its remote app config (embedded_wallet_config.ethereum)
+  // without guarding. The catch-all above returns {} for auth.privy.io, which
+  // makes Privy overwrite its safe built-in default with an empty object and
+  // crash. Force that request to error instead so Privy keeps its default.
+  cy.intercept({ hostname: 'auth.privy.io' }, { forceNetworkError: true }).as(
+    'privyConfig'
+  )
   cy.intercept('GET', '**/api/etherscan/eth-price**', {
     statusCode: 200,
     body: { result: { ethusd: '3000' } },
