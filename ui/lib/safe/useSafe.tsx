@@ -17,6 +17,7 @@ import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
+import { getWalletEthersProvider } from '../privy/getWalletEthersProvider'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 import client from '../thirdweb/client'
@@ -270,7 +271,7 @@ export default function useSafe(
     }
 
     // Get current gas price
-    const provider = await wallets?.[selectedWallet]?.getEthersProvider()
+    const provider = await getWalletEthersProvider(wallets?.[selectedWallet])
     if (!provider) throw new Error('No provider available')
     const gasPrice = await provider.getGasPrice()
 
@@ -498,7 +499,7 @@ export default function useSafe(
     if (!safe) throw new Error('Safe not initialized')
 
     // Get the provider from the wallet
-    const provider: any = await wallets?.[selectedWallet]?.getEthersProvider()
+    const provider: any = await getWalletEthersProvider(wallets?.[selectedWallet])
     if (!provider) throw new Error('No provider available')
 
     let safeTransactionData: SafeTransactionDataPartial

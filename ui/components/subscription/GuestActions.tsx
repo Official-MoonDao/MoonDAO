@@ -85,9 +85,9 @@ export default function GuestActions({
               }
               onClick={() => {
                 if (address)
-                  fundWallet(address, {
-                    chain: viemChains['arbitrum'],
-                    asset: 'native-currency',
+                  fundWallet({
+                    address,
+                    options: { chain: viemChains['arbitrum'] },
                   })
               }}
             />

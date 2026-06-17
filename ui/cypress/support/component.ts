@@ -110,6 +110,21 @@ if (typeof globalAny.navigator === 'undefined') {
   }
 }
 
+// Privy v3 reads its remote app config (embedded_wallet_config.ethereum /
+// .solana) without defensive checks. In component tests the config request is
+// stubbed (cy.intercept '**/api/**'), so that object is missing and Privy
+// throws "Cannot read properties of undefined (reading 'ethereum')" from a
+// background memo. The components under test still render fine, so this is
+// third-party noise we suppress (like the chunk errors below).
+const isPrivyConfigError = (message: string, stack: string) => {
+  const looksLikePrivy = stack.includes('privy') || message.includes('privy')
+  const readsMissingWalletField =
+    message.includes('embedded_wallet_config') ||
+    message.includes("reading 'ethereum'") ||
+    message.includes("reading 'solana'")
+  return looksLikePrivy && readsMissingWalletField
+}
+
 // Handle webpack chunk loading errors - must be set up early
 if (typeof window !== 'undefined') {
   const handleChunkError = (error: any) => {
@@ -126,7 +141,8 @@ if (typeof window !== 'undefined') {
       name === 'ChunkLoadError' ||
       stack.includes('spec-') ||
       stack.includes('__webpack_require__') ||
-      stack.includes('webpack.js')
+      stack.includes('webpack.js') ||
+      isPrivyConfigError(message, stack)
     ) {
       console.warn('Suppressing chunk loading error:', message || name)
       return true
@@ -168,7 +184,8 @@ Cypress.on('uncaught:exception', (err, runnable) => {
     name === 'ChunkLoadError' ||
     stack.includes('spec-') ||
     stack.includes('__webpack_require__') ||
-    stack.includes('webpack.js')
+    stack.includes('webpack.js') ||
+    isPrivyConfigError(message, stack)
   ) {
     console.warn('Suppressing chunk loading error in Cypress:', message || name)
     return false

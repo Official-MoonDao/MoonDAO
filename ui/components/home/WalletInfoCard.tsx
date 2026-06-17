@@ -5,9 +5,9 @@ import {
   ClipboardDocumentIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline'
-import { useFundWallet } from '@privy-io/react-auth'
 import Image from 'next/image'
 import { NavLink } from '@/components/layout/NavLink'
+import { FundOnrampModal } from '@/components/onramp/FundOnrampModal'
 import { useState, useContext } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
@@ -86,8 +86,8 @@ export default function WalletInfoCard({
   const address = account?.address
   const { data: ensData } = useENS(address)
   const ens = ensData?.name
-  const { fundWallet } = useFundWallet()
   const [copied, setCopied] = useState(false)
+  const [fundModalOpen, setFundModalOpen] = useState(false)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false)
@@ -345,7 +345,7 @@ export default function WalletInfoCard({
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={() => fundWallet && fundWallet(address as `0x${string}`)}
+          onClick={() => setFundModalOpen(true)}
           className="flex items-center justify-center gap-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-300 py-2 px-3 rounded-lg text-xs font-medium transition-all"
         >
           <ArrowDownIcon className="w-3.5 h-3.5" />
@@ -359,6 +359,18 @@ export default function WalletInfoCard({
           Send
         </button>
       </div>
+
+      {address && (
+        <FundOnrampModal
+          enabled={fundModalOpen}
+          setEnabled={setFundModalOpen}
+          address={address}
+          selectedChain={selectedChain}
+          ethAmount={0}
+          context="wallet-fund"
+          allowAmountInput
+        />
+      )}
     </div>
   )
 }

@@ -71,7 +71,7 @@ jobs:
       - name: Generate cache keys
         id: cache-keys
         run: |
-          echo "cache-key=ui-${{ runner.os }}-${{ hashFiles('ui/yarn.lock', 'ui/package.json') }}" >> $GITHUB_OUTPUT
+          echo "cache-key=ui-${{ runner.os }}-v2-${{ hashFiles('ui/yarn.lock', 'ui/package.json') }}" >> $GITHUB_OUTPUT
 
       - name: Cache node modules
         uses: actions/cache@v4
@@ -101,7 +101,14 @@ jobs:
 
       - name: Install dependencies
         working-directory: ui
-        run: yarn install
+        # Start from a clean node_modules. The cache restore-keys fallback can
+        # restore a node_modules built against a different lockfile, and yarn
+        # classic does not prune mismatched nested deps on a frozen install,
+        # which produces inconsistent transitive versions (e.g. @noble/hashes,
+        # @walletconnect/*) that break `next build`.
+        run: |
+          rm -rf node_modules
+          yarn install --frozen-lockfile
 
       - name: Install Cypress binary
         working-directory: ui

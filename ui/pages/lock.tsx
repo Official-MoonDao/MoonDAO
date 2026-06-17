@@ -1,5 +1,4 @@
 import { InformationCircleIcon, LockClosedIcon, ScaleIcon, UsersIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
-import { useFundWallet } from '@privy-io/react-auth'
 import { BigNumber, ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -16,7 +15,6 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
-import viemChains from '@/lib/viem/viemChains'
 import Container from '../components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '../components/layout/Head'
@@ -52,8 +50,6 @@ export default function Lock() {
   const address = account?.address
 
   const [refresh, setRefresh] = useState(false)
-
-  const { fundWallet } = useFundWallet()
 
   const mooneyContract = useContract({
     address: MOONEY_ADDRESSES[chainSlug],

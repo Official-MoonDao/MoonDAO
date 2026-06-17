@@ -15,6 +15,7 @@ import CitizenProvider from '@/lib/citizen/CitizenProvider'
 import { reportWebVitals as reportVitals, monitorLongTasks, monitorPageVisibility, NextWebVitalsMetric } from '@/lib/performance/webVitals'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
+import { OnrampReturnHandler } from '@/components/onramp/OnrampReturnHandler'
 import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
@@ -73,6 +74,15 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
                 termsAndConditionsUrl: 'https://docs.moondao.com/Legal/Website-Terms-and-Conditions',
                 privacyPolicyUrl: 'https://docs.moondao.com/Legal/Website-Privacy-Policy',
               },
+              fundingMethodConfig: {
+                moonpay: {
+                  paymentMethod: 'credit_debit_card',
+                  uiConfig: {
+                    accentColor: '#696FFD',
+                    theme: 'dark',
+                  },
+                },
+              },
             }}
           >
             <ThirdwebProvider>
@@ -80,6 +90,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
               <PrivyThirdwebV5Provider selectedChain={selectedChainV5}>
                 <CitizenProvider selectedChain={selectedChainV5}>
                   <NextQueryParamProvider>
+                    <OnrampReturnHandler />
                     <Layout lightMode={lightMode} setLightMode={setLightMode}>
                       <FlagProvider>
                         <Component {...pageProps} />

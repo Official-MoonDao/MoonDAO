@@ -93,7 +93,7 @@ import {
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
-import { CBOnrampModal } from '../coinbase/CBOnrampModal'
+import { FundOnrampModal } from '../onramp/FundOnrampModal'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import { ExpandedFooter } from '../layout/ExpandedFooter'
@@ -2665,12 +2665,13 @@ export default function CreateCitizen({
         </div>
       </ContentLayout>
       {address && (
-        <CBOnrampModal
+        <FundOnrampModal
           enabled={onrampModalOpen}
           setEnabled={setOnrampModalOpen}
           address={address}
           selectedChain={selectedChain}
           ethAmount={requiredEthAmount}
+          isWaitingForGasEstimate={isLoadingGasEstimate}
           context="citizen"
           agreed={agreedToCondition}
           selectedWallet={selectedWallet}
@@ -2681,6 +2682,19 @@ export default function CreateCitizen({
             const currentStage = stageRef.current
             const cacheData = await serializeCacheData()
             setCache(cacheData, currentStage)
+          }}
+          onMoonPayBeforeOpen={async () => {
+            const currentStage = stageRef.current
+            const cacheData = await serializeCacheData()
+            setCache(cacheData, currentStage)
+          }}
+          checkBalanceSufficient={checkBalanceSufficient}
+          refetchBalance={async () => {
+            await refetchNativeBalance()
+          }}
+          onBalanceSufficient={() => {
+            setOnrampModalOpen(false)
+            callMint()
           }}
         />
       )}

@@ -1,5 +1,6 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useContext, useEffect, useState, useCallback } from 'react'
+import { getWalletEthersProvider } from '@/lib/privy/getWalletEthersProvider'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { getChainById } from '@/lib/thirdweb/chain'
 import { Chain } from '@/lib/rpc/chains'
@@ -39,7 +40,7 @@ export function useNativeBalance() {
       const chain = walletChainId ? getChainById(walletChainId) : undefined
 
       // Fetch balance - do all async operations before updating state
-      const provider = await wallet.getEthersProvider()
+      const provider = await getWalletEthersProvider(wallet)
       const balance = await provider.getBalance(wallet.address)
       const wei = BigInt(balance.toString())
       const balanceEth = Number(wei) / 10 ** 18

@@ -99,7 +99,7 @@ export function PrivyWeb3Button({
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { user, authenticated } = usePrivy()
   const { login } = useLogin({
-    onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
+    onComplete: ({ user, wasAlreadyAuthenticated }) => {
       const isLoggingInViaWeb3Button = router.query.loggingInViaWeb3Button === 'true'
       if (user && !wasAlreadyAuthenticated && isLoggingInViaWeb3Button) {
         const { loggingInViaWeb3Button, ...restQuery } = router.query

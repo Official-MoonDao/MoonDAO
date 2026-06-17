@@ -66,7 +66,7 @@ import StandardButton from '@/components/layout/StandardButton'
 import Modal from '@/components/layout/Modal'
 import Tooltip from '@/components/layout/Tooltip'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
-import { CBOnramp } from '../coinbase/CBOnramp'
+import { FundOnramp } from '../onramp/FundOnramp'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import ProgressBar from '../layout/ProgressBar'
@@ -2413,14 +2413,14 @@ export default function MissionContributeModal({
                     ethDeficit > 0 &&
                     agreedToCondition &&
                     isValidContributorEmail(contributorEmail.trim()) && (
-                    <CBOnramp
+                    <FundOnramp
                       fullWidth
                       address={address || ''}
                       selectedChain={payChain}
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
-                      onQuoteCalculated={handleCoinbaseQuote}
-                      onBeforeNavigate={async () => {
+                      onCoinbaseQuoteCalculated={handleCoinbaseQuote}
+                      onCoinbaseBeforeNavigate={async () => {
                         await generateOnrampJWT({
                           address: address || '',
                           chainSlug: chainSlug,
@@ -2434,7 +2434,14 @@ export default function MissionContributeModal({
                           newsletterOptIn,
                         })
                       }}
-                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
+                      coinbaseRedirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
+                      checkBalanceSufficient={async () => !!hasEnoughBalance}
+                      refetchBalance={async () => {
+                        await refetchNativeBalance()
+                      }}
+                      onBalanceSufficient={() => {
+                        buyMissionToken()
+                      }}
                     />
                   )}
 
