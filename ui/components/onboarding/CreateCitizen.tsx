@@ -46,6 +46,8 @@ import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import {
   estimateGasWithAPI,
   applyGasBuffer,
+  buildCitizenProfileMintFields,
+  type CitizenProfileMintFields,
   extractTokenIdFromReceipt,
   handleTypeformSubmission,
 } from '@/lib/onboarding/shared-utils'
@@ -278,7 +280,12 @@ function restoreWizardStageFromSession(): number {
   return 1
 }
 
-export default function CreateCitizen({ selectedChain, setSelectedTier, freeMintProp }: any) {
+export default function CreateCitizen({
+  selectedChain,
+  setSelectedTier,
+  freeMintProp,
+  inviteToken,
+}: any) {
   // ===== Context & Constants =====
   const router = useRouter()
   const { setSelectedChain } = useContext(ChainContextV5)
@@ -383,10 +390,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     startTransition(() => setStage(restoredStage))
   }, [isClientHydrated, restoredStage])
 
+  // Sync freeMint state when freeMintProp becomes available
+  useEffect(() => {
+    if (freeMintProp) {
+      setFreeMint(true)
+    }
+  }, [freeMintProp])
+
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
   const [requiredEthAmount, setRequiredEthAmount] = useState(0)
-  const [freeMint, setFreeMint] = useState(freeMintProp || false)
+  const [freeMint, setFreeMint] = useState(false)
 
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
@@ -527,15 +541,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   const nativeSymbol = selectedChain?.nativeCurrency?.symbol ?? 'ETH'
 
   const mintCostBreakdown = useMemo(() => {
+    if (freeMint) {
+      // Sponsored mint: the server relayer signs and submits the mint, so the
+      // user pays nothing (no citizenship fee, no network gas, no bridge fee).
+      return { renewalEth: 0, gasEth: 0, bridgeEth: 0, totalEth: 0 }
+    }
     const gasEth =
       estimatedGas > BigInt(0) && effectiveGasPrice && effectiveGasPrice > BigInt(0)
         ? Number(estimatedGas * effectiveGasPrice) / 1e18
         : 0
     const bridgeEth = isCrossChain ? Number(LAYER_ZERO_TRANSFER_COST) / 1e18 : 0
-    if (freeMint) {
-      // Citizenship fee is waived; network gas is still paid by the user.
-      return { renewalEth: 0, gasEth, bridgeEth, totalEth: gasEth + bridgeEth }
-    }
     const renewalEth = renewalPriceWei ? Number(ethers.utils.formatEther(renewalPriceWei)) : 0
     return {
       renewalEth,
@@ -562,7 +577,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   )
 
   const isLoadingMintCosts = freeMint
-    ? isLoadingGasEstimate || isLoadingTotalMintUsd
+    ? false
     : isLoadingRenewalPrice ||
       isLoadingGasEstimate ||
       isLoadingRenewalUsd ||
@@ -663,16 +678,28 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   )
 
   const executeFreeMint = useCallback(
-    async (imageIpfsHash: string) => {
+    async (imageIpfsHash: string, profile: CitizenProfileMintFields) => {
+      // Invite-sponsored mints must prove the signed-in Privy user owns this
+      // wallet, so the one-time token can only be redeemed by its recipient.
+      const accessToken = inviteToken ? await getAccessToken() : null
       const res = await fetch(`/api/mission/freeMint`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           address: address,
           name: citizenData.name,
           image: `ipfs://${imageIpfsHash}`,
-          privacy: 'public',
+          bio: profile.bio,
+          location: profile.location,
+          discord: profile.discord,
+          twitter: profile.twitter,
+          website: profile.website,
+          privacy: profile.view,
           formId: citizenData.formResponseId,
+          ...(inviteToken ? { inviteToken, accessToken } : {}),
         }),
       })
       if (!res.ok) {
@@ -682,11 +709,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
       }
       return await res.json()
     },
-    [address, citizenData.name, citizenData.formResponseId],
+    [address, citizenData.name, citizenData.formResponseId, inviteToken],
   )
 
   const executeCrossChainMint = useCallback(
-    async (imageIpfsHash: string, cost: bigint) => {
+    async (imageIpfsHash: string, cost: bigint, profile: CitizenProfileMintFields) => {
       if (!account) {
         throw new Error('Please connect your wallet to continue.')
       }
@@ -704,13 +731,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
           _options.toHex(),
           address,
           citizenData.name,
-          '',
+          profile.bio,
           `ipfs://${imageIpfsHash}`,
-          '',
-          '',
-          '',
-          '',
-          'public',
+          profile.location,
+          profile.discord,
+          profile.twitter,
+          profile.website,
+          profile.view,
           citizenData.formResponseId,
         ],
         value: MSG_VALUE + LAYER_ZERO_TRANSFER_COST,
@@ -743,7 +770,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   )
 
   const executeDirectMint = useCallback(
-    async (imageIpfsHash: string, cost: bigint) => {
+    async (imageIpfsHash: string, cost: bigint, profile: CitizenProfileMintFields) => {
       if (!account) {
         throw new Error('Please connect your wallet to continue.')
       }
@@ -754,13 +781,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
         params: [
           address,
           citizenData.name,
-          '',
+          profile.bio,
           `ipfs://${imageIpfsHash}`,
-          '',
-          '',
-          '',
-          '',
-          'public',
+          profile.location,
+          profile.discord,
+          profile.twitter,
+          profile.website,
+          profile.view,
           citizenData.formResponseId,
         ],
         value: cost,
@@ -775,7 +802,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
   )
 
   const handlePostMint = useCallback(
-    async (mintedTokenId: string) => {
+    async (mintedTokenId: string, profile: CitizenProfileMintFields) => {
       await tagToNetworkSignup(citizenData.email)
 
       const citizenNFT = await waitForERC721(citizenContract, +mintedTokenId)
@@ -812,7 +839,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
         console.error('Error recording referral:', error)
       }
 
-      // Normalize the thirdweb NFT to match the Tableland format before seeding
+      // Normalize the thirdweb NFT to match the Tableland format before seeding.
+      // Reuse the exact profile fields that were written on-chain so the locally
+      // seeded citizen matches the mint — otherwise the seed could show
+      // un-normalized socials, an un-geocoded location, or worse, view='' (which
+      // the directory treats as hidden/deleted) for a citizen minted as 'public'.
+      // `profile.location` is already the geocoded `{lat,lng,name}` JSON string.
       const normalizedCitizen = {
         id: typeof citizenNFT.id === 'bigint' ? Number(citizenNFT.id) : citizenNFT.id,
         metadata: {
@@ -824,13 +856,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
           animation_url: '',
           external_url: '',
           attributes: [
-            { trait_type: 'location', value: JSON.stringify(citizenData.location || '') },
-            { trait_type: 'website', value: citizenData.website || '' },
-            { trait_type: 'discord', value: citizenData.discord || '' },
-            { trait_type: 'twitter', value: citizenData.twitter || '' },
+            { trait_type: 'location', value: profile.location },
+            { trait_type: 'website', value: profile.website },
+            { trait_type: 'discord', value: profile.discord },
+            { trait_type: 'twitter', value: profile.twitter },
             { trait_type: 'instagram', value: '' },
             { trait_type: 'linkedin', value: '' },
-            { trait_type: 'view', value: citizenData.view || '' },
+            { trait_type: 'view', value: profile.view },
             { trait_type: 'formId', value: citizenData.formResponseId || '' },
           ],
         },
@@ -865,6 +897,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
       tagToNetworkSignup,
       citizenData.email,
       citizenData.name,
+      citizenData.formResponseId,
       citizenContract,
       address,
       clearCache,
@@ -1167,11 +1200,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
         'citizen image',
       )
       // If citizenImage was restored and differs from croppedInputImage, it's an AI portrait
-      if (citizenImageRestored && formData.citizenImage && isSerializedFile(formData.citizenImage)) {
+      if (
+        citizenImageRestored &&
+        formData.citizenImage &&
+        isSerializedFile(formData.citizenImage)
+      ) {
         // Compare serialized data to determine if it's an AI portrait
-        if (!formData.croppedInputImage || 
-            !isSerializedFile(formData.croppedInputImage) ||
-            formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL) {
+        if (
+          !formData.croppedInputImage ||
+          !isSerializedFile(formData.croppedInputImage) ||
+          formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL
+        ) {
           markAiPortraitReady()
         }
       }
@@ -1248,23 +1287,26 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
 
     setIsLoadingMint(true)
 
-    // The user may have just signed in at this step (sign-in is deferred until
-    // mint to keep the click count low), so the gas-estimation effect may not
-    // have run yet. Estimate inline and use the returned value rather than
-    // erroring out and forcing a retry.
-    let gasToUse = estimatedGas
-    if (!gasToUse || gasToUse === BigInt(0)) {
-      gasToUse = (await estimateMintGas()) ?? BigInt(0)
-    }
+    // Sponsored mints skip gas checks (the relayer pays everything).
+    // For paid mints, the user may have just signed in at this step, so the
+    // gas-estimation effect may not have run yet. Estimate inline and use the
+    // returned value rather than erroring out and forcing a retry.
+    let gasToUse = BigInt(0)
+    if (!freeMint) {
+      gasToUse = estimatedGas ?? BigInt(0)
+      if (!gasToUse || gasToUse === BigInt(0)) {
+        gasToUse = (await estimateMintGas()) ?? BigInt(0)
+      }
 
-    if (
-      !gasToUse ||
-      gasToUse === BigInt(0) ||
-      !effectiveGasPrice ||
-      effectiveGasPrice === BigInt(0)
-    ) {
-      setIsLoadingMint(false)
-      return toast.error('Gas estimation is still loading. Please wait a moment and try again.')
+      if (
+        !gasToUse ||
+        gasToUse === BigInt(0) ||
+        !effectiveGasPrice ||
+        effectiveGasPrice === BigInt(0)
+      ) {
+        setIsLoadingMint(false)
+        return toast.error('Gas estimation is still loading. Please wait a moment and try again.')
+      }
     }
 
     try {
@@ -1275,16 +1317,25 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
         params: [address, 365 * 24 * 60 * 60],
       })
 
-      const totalCost = calculateTotalCost(cost, gasToUse, effectiveGasPrice, isCrossChain)
+      // Balance check only applies to paid mints; sponsored mints cost the
+      // user nothing and may not have a gas price loaded at all.
+      if (!freeMint) {
+        const totalCost = calculateTotalCost(
+          cost,
+          gasToUse,
+          effectiveGasPrice ?? BigInt(0),
+          isCrossChain
+        )
 
-      if (!freeMint && +(nativeBalance ?? '0') < totalCost) {
-        const shortfall = totalCost - +(nativeBalance ?? '0')
-        const requiredAmount = shortfall * 1.15
+        if (+(nativeBalance ?? '0') < totalCost) {
+          const shortfall = totalCost - +(nativeBalance ?? '0')
+          const requiredAmount = shortfall * 1.15
 
-        setRequiredEthAmount(requiredAmount)
-        setOnrampModalOpen(true)
-        setIsLoadingMint(false)
-        return
+          setRequiredEthAmount(requiredAmount)
+          setOnrampModalOpen(true)
+          setIsLoadingMint(false)
+          return
+        }
       }
 
       // Upload to IPFS
@@ -1296,14 +1347,19 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
         return toast.error('Image upload to IPFS failed. Please try again.')
       }
 
+      // Resolve the optional profile fields once (this geocodes the location via
+      // a network call) and reuse the result for both the mint and the local
+      // cache seed so they can never drift apart.
+      const profile = await buildCitizenProfileMintFields(citizenData)
+
       // Execute mint based on type
       let receipt: any
       if (freeMint) {
-        receipt = await executeFreeMint(newImageIpfsHash)
+        receipt = await executeFreeMint(newImageIpfsHash, profile)
       } else if (isCrossChain) {
-        receipt = await executeCrossChainMint(newImageIpfsHash, cost)
+        receipt = await executeCrossChainMint(newImageIpfsHash, cost, profile)
       } else {
-        receipt = await executeDirectMint(newImageIpfsHash, cost)
+        receipt = await executeDirectMint(newImageIpfsHash, cost, profile)
       }
 
       // Verify receipt and extract token ID
@@ -1315,7 +1371,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
       }
 
       if (mintedTokenId) {
-        await handlePostMint(mintedTokenId)
+        await handlePostMint(mintedTokenId, profile)
         setIsLoadingMint(false)
       }
     } catch (err: any) {
@@ -1337,7 +1393,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     isCrossChain,
     freeMint,
     nativeBalance,
-    citizenData.name,
+    citizenData,
     executeFreeMint,
     executeCrossChainMint,
     executeDirectMint,
@@ -1947,21 +2003,46 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
     if (!address) return
 
     const getTotalPaid = async () => {
+      // A magic-link invite token makes this wallet eligible for a sponsored
+      // mint even without a contribution history or on-chain allowlist entry.
+      // Send the invite token via header instead of query string to prevent
+      // leakage via browser history, analytics, and Referer headers.
+      const headers: Record<string, string> = {}
+      if (inviteToken) {
+        headers['x-invite-token'] = inviteToken
+      }
       const res = await fetch(`/api/mission/freeMint?address=${address}`, {
         method: 'GET',
+        headers,
       })
       if (!res.ok) {
-        const errorText = await res.text() // Or response.json()
+        const errorText = await res.text()
         console.error(errorText)
+        // For invite tokens: distinguish between transient errors (5xx) and
+        // validation failures (4xx). Invalid/expired tokens return 400.
+        if (inviteToken && res.status >= 500) {
+          // Transient server error (e.g. Redis down) with invite - keep
+          // sponsored state so a valid invite isn't wrongly shown as paid.
+          console.warn('Eligibility check temporarily unavailable (5xx), keeping current state')
+        } else if (inviteToken && res.status === 400) {
+          // Invite validation failed (invalid/expired/used) - clear sponsored state
+          setFreeMint(false)
+        } else if (!inviteToken) {
+          setFreeMint(false)
+        }
       } else {
         const { data } = await res.json()
         if (data.eligible) {
           setFreeMint(true)
+        } else {
+          // Clear sponsored state when definitively ineligible (200 OK means the
+          // service is up and the invite/eligibility was checked successfully).
+          setFreeMint(false)
         }
       }
     }
     getTotalPaid()
-  }, [address])
+  }, [address, inviteToken])
 
   // ===== JSX Render =====
   return (
@@ -2280,12 +2361,160 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                   )}
                 </div>
 
-                {/* Data overview */}
+                {/* Data overview — confirmed required fields only */}
                 <DataOverview
                   data={citizenData}
-                  title="Citizen Overview"
-                  excludeKeys={['newsletterSub', 'formResponseId']}
+                  title="Confirmed Details"
+                  excludeKeys={[
+                    'newsletterSub',
+                    'formResponseId',
+                    'description',
+                    'location',
+                    'discord',
+                    'twitter',
+                    'website',
+                    'view',
+                  ]}
                 />
+
+                {/* Optional profile details — editable while image generates */}
+                <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
+                  <div className="mb-4">
+                    <h3 className="font-GoodTimes text-base text-white">Additional Details</h3>
+                    <p className="text-slate-500 text-xs mt-1">
+                      {isAwaitingAiPortrait && !hasAiPortrait
+                        ? 'Fill this in while your portrait generates — all fields are optional.'
+                        : 'Optional — can be updated anytime from your profile.'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    {/* Bio */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Bio
+                      </label>
+                      <textarea
+                        value={citizenData.description ?? ''}
+                        onChange={(e) =>
+                          setCitizenData((prev) => ({ ...prev, description: e.target.value }))
+                        }
+                        placeholder="Tell the MoonDAO community a bit about yourself…"
+                        maxLength={200}
+                        rows={3}
+                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors resize-none"
+                      />
+                      <p className="text-xs text-slate-600 text-right">
+                        {(citizenData.description ?? '').length}/200
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Location */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          value={citizenData.location ?? ''}
+                          onChange={(e) =>
+                            setCitizenData((prev) => ({ ...prev, location: e.target.value }))
+                          }
+                          placeholder="City, Country"
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors"
+                        />
+                      </div>
+
+                      {/* Discord */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Discord
+                        </label>
+                        <input
+                          type="text"
+                          value={citizenData.discord ?? ''}
+                          onChange={(e) =>
+                            setCitizenData((prev) => ({ ...prev, discord: e.target.value }))
+                          }
+                          placeholder="username"
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors"
+                        />
+                      </div>
+
+                      {/* X / Twitter */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          X / Twitter
+                        </label>
+                        <input
+                          type="text"
+                          value={citizenData.twitter ?? ''}
+                          onChange={(e) =>
+                            setCitizenData((prev) => ({ ...prev, twitter: e.target.value }))
+                          }
+                          placeholder="@handle"
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors"
+                        />
+                      </div>
+
+                      {/* Website */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                          Website
+                        </label>
+                        <input
+                          type="url"
+                          value={citizenData.website ?? ''}
+                          onChange={(e) =>
+                            setCitizenData((prev) => ({ ...prev, website: e.target.value }))
+                          }
+                          placeholder="https://…"
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Profile visibility */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Profile Visibility
+                      </span>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCitizenData((prev) => ({ ...prev, view: 'public' }))
+                          }
+                          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
+                            !citizenData.view || citizenData.view === 'public'
+                              ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
+                              : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          Public
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCitizenData((prev) => ({ ...prev, view: 'private' }))
+                          }
+                          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
+                            citizenData.view === 'private'
+                              ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
+                              : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          Private
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        Public profiles are visible to other MoonDAO members. Private hides your
+                        details.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Cost breakdown */}
                 <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
@@ -2315,11 +2544,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                       </div>
                       <div className="flex justify-between gap-4">
                         <dt className="text-slate-400">Network fee (est.)</dt>
-                        <dd className="text-white text-right tabular-nums">
-                          {formatEthAmount(mintCostBreakdown.gasEth)} {nativeSymbol}
+                        <dd className="text-right tabular-nums">
+                          {freeMint ? (
+                            <span className="text-emerald-400 font-medium">Sponsored</span>
+                          ) : (
+                            <span className="text-white">
+                              {formatEthAmount(mintCostBreakdown.gasEth)} {nativeSymbol}
+                            </span>
+                          )}
                         </dd>
                       </div>
-                      {isCrossChain && mintCostBreakdown.bridgeEth > 0 && (
+                      {!freeMint && isCrossChain && mintCostBreakdown.bridgeEth > 0 && (
                         <div className="flex justify-between gap-4">
                           <dt className="text-slate-400">Cross-chain bridge (est.)</dt>
                           <dd className="text-white text-right tabular-nums">
@@ -2330,11 +2565,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                       <div className="flex justify-between gap-4 pt-3 border-t border-white/[0.08]">
                         <dt className="text-slate-300 font-medium">Total due at mint</dt>
                         <dd className="text-white font-medium text-right tabular-nums">
-                          {formatEthAmount(mintCostBreakdown.totalEth)} {nativeSymbol}
-                          {totalMintUsd > 0 && (
-                            <span className="block text-slate-400 text-xs font-normal mt-0.5">
-                              ~${Math.round(totalMintUsd)} today
-                            </span>
+                          {freeMint ? (
+                            <span className="text-emerald-400">Free</span>
+                          ) : (
+                            <>
+                              {formatEthAmount(mintCostBreakdown.totalEth)} {nativeSymbol}
+                              {totalMintUsd > 0 && (
+                                <span className="block text-slate-400 text-xs font-normal mt-0.5">
+                                  ~${Math.round(totalMintUsd)} today
+                                </span>
+                              )}
+                            </>
                           )}
                         </dd>
                       </div>
@@ -2342,9 +2583,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier, freeMint
                   )}
                   <p className="mt-4 text-slate-500 text-xs leading-relaxed">
                     {freeMint
-                      ? `Your citizenship fee is sponsored. You only pay the network gas fee in ${nativeSymbol} on ${selectedChain?.name ?? 'your network'}.`
-                      : `Citizenship is paid in ${nativeSymbol} on ${selectedChain?.name ?? 'your network'}.`}{' '}
-                    Gas varies with network conditions. Renewal is ~1 year from mint.
+                      ? `Your citizenship and network fees are fully sponsored — you pay nothing to mint. Renewal is ~1 year from mint.`
+                      : `Citizenship is paid in ${nativeSymbol} on ${selectedChain?.name ?? 'your network'}. Gas varies with network conditions. Renewal is ~1 year from mint.`}
                   </p>
                 </div>
 

@@ -58,6 +58,12 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
             appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
             config={{
               loginMethods: ['wallet', 'sms', 'google', 'twitter', 'discord', 'github'],
+              // Auto-provision an embedded wallet for users who sign up without
+              // one (e.g. via SMS/social on a magic-link invite) so they have an
+              // address to receive their sponsored citizen mint.
+              embeddedWallets: {
+                createOnLogin: 'users-without-wallets',
+              },
               appearance: {
                 theme: '#252c4d',
                 showWalletLoginFirst: false,

@@ -267,16 +267,19 @@ export async function getStaticProps() {
       const jobTableNameWithFallback =
         jobTableName || JOBS_TABLE_NAMES[chainSlug] || ''
 
-      const blockedIds = BLOCKED_CITIZENS.size > 0
-        ? ` WHERE id NOT IN (${Array.from(BLOCKED_CITIZENS).join(',')})`
+      const blockedIdsCondition = BLOCKED_CITIZENS.size > 0
+        ? `id NOT IN (${Array.from(BLOCKED_CITIZENS).join(',')})`
         : ''
+      const deletedCondition = "view != ''"
+      const citizenWhereConditions = [blockedIdsCondition, deletedCondition].filter(Boolean).join(' AND ')
+      const citizenWhereClause = citizenWhereConditions ? ` WHERE ${citizenWhereConditions}` : ''
       const [citizens, citizensCountResult, listings, jobs, teams, projects, missionRows] =
         await Promise.all([
-          citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 8`).catch((error) => {
+          citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName}${citizenWhereClause} ORDER BY id DESC LIMIT 8`).catch((error) => {
             console.error('Error querying citizen table:', error)
             return []
           }) : Promise.resolve([]),
-          citizenTableName ? queryTable(chain, `SELECT COUNT(*) as count FROM ${citizenTableName}${blockedIds}`).catch((error) => {
+          citizenTableName ? queryTable(chain, `SELECT COUNT(*) as count FROM ${citizenTableName}${citizenWhereClause}`).catch((error) => {
             console.error('Error querying citizen count:', error)
             return [{ count: 0 }]
           }) : Promise.resolve([{ count: 0 }]),
@@ -408,7 +411,7 @@ export async function getStaticProps() {
       }
     }
     newestCitizens = citizens
-      .filter((c: any) => !BLOCKED_CITIZENS.has(c.id))
+      .filter((c: any) => !BLOCKED_CITIZENS.has(c.id) && c.view !== '')
       .map((c: any) => ({ ...c, mintTimestamp: mintTsMap[String(c.id)] ?? null }))
     newestListings = listings
     newestJobs = jobs

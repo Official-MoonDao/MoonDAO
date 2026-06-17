@@ -1,0 +1,44 @@
+---
+description: MoonDAO monorepo layout, stack, and file location reference
+alwaysApply: true
+---
+# Repo & Stack
+
+## Monorepo packages
+- `ui/` — Next.js web app (primary). Default here unless another package is named.
+- `contracts/`, `fee-hook/`, `prediction/`, `subscription-contracts/`, `xp/` — Solidity packages.
+- `dispatcher/`, `townhall-summarizer/`, `tui/` — supporting services.
+- Do not edit across packages in one task unless explicitly asked.
+
+## ui/ tech stack
+- **Framework**: Next.js 13 Pages Router (`pages/` only — no `app/`, no RSC).
+- **Language**: TypeScript 5, `strict: true`. React 18.
+- **Package manager**: Yarn, Node ≥18. Never suggest npm or pnpm.
+- **Web3**: thirdweb v5 (primary for all on-chain reads/writes), wagmi v2 + viem v2, ethers 5.7 (legacy — v5 API). Auth via Privy (`@privy-io/react-auth`). Also: Safe, Hats Protocol, Juicebox, Uniswap v4, Tableland, LayerZero.
+- **Data fetching**: `@tanstack/react-query` and SWR for client side; urql / graphql-request for subgraphs; axios for REST.
+- **Forms**: `react-hook-form`. **Toasts**: `react-hot-toast`. **i18n**: `next-translate`.
+- **Styling**: Tailwind 3 + daisyUI + `@tailwindcss/typography`. `darkMode: 'class'`. Custom theme in `tailwind.config.js`.
+
+## Quick file location reference
+Use this before searching — go directly to the right place.
+
+| What you need | Where it lives |
+|---|---|
+| Chain IDs, contract addresses, env-gated flags | `const/config.ts` |
+| Contract ABIs | `const/abis/<ContractName>.json` |
+| Feature flags | `const/flags.ts` |
+| On-chain read/write hooks | `lib/thirdweb/hooks/` |
+| Chain utilities, default chain | `lib/thirdweb/chain.ts` |
+| thirdweb client | `lib/thirdweb/client.ts` |
+| IPFS pin / unpin helpers | `lib/ipfs/` |
+| Tableland helpers | `lib/tableland/` |
+| Snapshot / governance helpers | `lib/snapshot/` |
+| Safe multisig helpers | `lib/safe/` |
+| Auth / session helpers | `lib/privy/` |
+| Shared UI components (modals, inputs, buttons) | `components/layout/` |
+| Feature components | `components/<feature>/` |
+| Feature logic & data helpers | `lib/<feature>/` |
+| API route for a domain | `pages/api/<domain>/` |
+| Composable API middleware | `middleware/` |
+| Global styles | `styles/globals.css` |
+| One-off scripts | `scripts/` |

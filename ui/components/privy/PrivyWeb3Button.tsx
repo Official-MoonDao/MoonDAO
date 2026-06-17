@@ -40,6 +40,9 @@ type PrivyWeb3BtnProps = {
   noPadding?: boolean
   noGradient?: boolean
   showSignInLabel?: boolean
+  /** Custom label shown when the user is signed out (state 0). Takes
+   *  precedence over `showSignInLabel`. e.g. "Sign In to Buy MOONEY". */
+  signInLabel?: string
   /** When set, shown next to the spinner while the action is running (e.g. transaction steps). */
   loadingLabel?: string
 }
@@ -88,6 +91,7 @@ export function PrivyWeb3Button({
   noPadding = false,
   noGradient = false,
   showSignInLabel = false,
+  signInLabel,
   loadingLabel,
 }: PrivyWeb3BtnProps) {
   const router = useRouter()
@@ -183,7 +187,7 @@ export function PrivyWeb3Button({
           noPadding={noPadding}
           noGradient={noGradient}
         >
-          {showSignInLabel ? 'Sign In' : label}
+          {signInLabel ? signInLabel : showSignInLabel ? 'Sign In' : label}
         </Button>
       )}
       {btnState === 1 && (

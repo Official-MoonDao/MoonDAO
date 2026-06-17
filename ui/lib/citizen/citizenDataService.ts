@@ -80,50 +80,172 @@ export async function batchCheckSubscriptions(
   return resultMap
 }
 
+// Deterministic pseudo-random value in [0,1) from a numeric seed. Seeding by
+// citizen ID keeps each pin in the same spot across rebuilds (no jumping)
+// while producing a genuinely random-looking scatter with no visible pattern.
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 43758.5453
+  return x - Math.floor(x)
+}
+
 /**
- * Parse location data from citizen attributes
+ * Randomly place Antarctica-bound citizens across the continental interior.
+ * Latitude is kept between -79° and -86° so points stay on the landmass/ice
+ * shelves rather than the surrounding ocean.
  */
-function parseLocationData(citizenLocation: string | undefined): {
-  formattedAddress: string
-  lat: number
-  lng: number
-} {
+function scatterAntarctica(id: string | number): { lat: number; lng: number } {
+  const n = Math.abs(Number(id) || 0) + 1
+  const lat = -79 - seededRandom(n * 12.9898) * 7
+  const lng = seededRandom(n * 78.233) * 360 - 180
+  return { lat, lng }
+}
+
+// One-time coordinate table for the legacy citizens whose location was stored
+// as plain text before geocoding existed at mint/edit time. This is a closed,
+// historical set — every new save goes through the geocoder and stores
+// coordinates — so a static lookup keeps the map correct even if the runtime
+// geocoder is unavailable (e.g. restricted API key at build time).
+const LEGACY_LOCATION_COORDS: { [key: string]: { lat: number; lng: number } } = {
+  'santa cruz, ca': { lat: 36.9741, lng: -122.0308 },
+  'brownsville, texas, usa': { lat: 25.9018, lng: -97.4975 },
+  'winter park, fl usa': { lat: 28.6, lng: -81.3392 },
+  'charleston, sc': { lat: 32.7765, lng: -79.9311 },
+  'austin, texas': { lat: 30.2672, lng: -97.7431 },
+  'san francisco, ca': { lat: 37.7749, lng: -122.4194 },
+  'houston, texas': { lat: 29.7604, lng: -95.3698 },
+  'raleigh, north carolina': { lat: 35.7796, lng: -78.6382 },
+  'phoenix, usa': { lat: 33.4484, lng: -112.074 },
+  'washington, d.c.': { lat: 38.9072, lng: -77.0369 },
+  'washington, dc': { lat: 38.9072, lng: -77.0369 },
+  'i live/ work between la serena, chile and taos, new mexico': {
+    lat: -29.9027,
+    lng: -71.2519,
+  },
+  'colorado springs, colorado, united states': { lat: 38.8339, lng: -104.8214 },
+  'roatán, honduras': { lat: 16.3217, lng: -86.5366 },
+  'prospera, roatan honduras': { lat: 16.4093, lng: -86.418 },
+  'new jersey, usa': { lat: 40.0583, lng: -74.4057 },
+  'baltimore county, maryland': { lat: 39.4432, lng: -76.6068 },
+  'paris, france': { lat: 48.8566, lng: 2.3522 },
+}
+
+type ParsedLocation = {
+  // Human-readable place name ('' when there is no real location)
+  name: string
+  // Real coordinates, or null when none are stored
+  lat: number | null
+  lng: number | null
+}
+
+function isAntarcticaName(name: string): boolean {
+  const lower = name.trim().toLowerCase()
+  return lower === 'antarctica' || lower === 'antartica'
+}
+
+// (0,0) is the geocode-failure fallback and sits in the ocean; (-90,0) is the
+// legacy "no location" sentinel. Neither represents a real location.
+function isSentinelCoord(lat: number, lng: number): boolean {
+  return (lat === -90 && lng === 0) || (lat === 0 && lng === 0)
+}
+
+/**
+ * Parse a citizen's stored location attribute into a place name and, when
+ * available, real coordinates. Handles all three historical storage formats:
+ *  - JSON object string: {"lat":..,"lng":..,"name":".."} (geocoded)
+ *  - JSON-encoded plain string: "Austin, Texas" (legacy, name only)
+ *  - raw plain text: Austin, Texas (legacy, name only)
+ */
+function parseLocationData(citizenLocation: string | undefined): ParsedLocation {
   if (!citizenLocation || citizenLocation.trim() === '') {
-    return {
-      formattedAddress: 'Antarctica',
-      lat: -90,
-      lng: 0,
-    }
+    return { name: '', lat: null, lng: null }
   }
 
-  // Handle JSON format location
-  if (citizenLocation.startsWith('{')) {
-    try {
-      const parsedLocationData = JSON.parse(citizenLocation)
-      const locationName = parsedLocationData.name?.trim() || ''
+  const trimmed = citizenLocation.trim()
 
-      return {
-        formattedAddress: locationName === '' ? 'Antarctica' : locationName,
-        lat: parsedLocationData.lat || -90,
-        lng: parsedLocationData.lng || 0,
+  // Geocoded JSON object with coordinates
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      const name = typeof parsed.name === 'string' ? parsed.name.trim() : ''
+      const lat = typeof parsed.lat === 'number' ? parsed.lat : null
+      const lng = typeof parsed.lng === 'number' ? parsed.lng : null
+
+      if (lat === null || lng === null || isSentinelCoord(lat, lng)) {
+        // No usable coordinates — keep the name so we can geocode it later,
+        // unless it's just the Antarctica placeholder
+        return { name: isAntarcticaName(name) ? '' : name, lat: null, lng: null }
       }
+
+      return { name, lat, lng }
     } catch (error) {
       console.error('Failed to parse location JSON:', error)
-      return {
-        formattedAddress: 'Antarctica',
-        lat: -90,
-        lng: 0,
-      }
+      return { name: '', lat: null, lng: null }
     }
   }
 
-  // Handle plain text location (no geocoding, just use the text)
-  const trimmedLocation = citizenLocation.trim()
-  return {
-    formattedAddress: trimmedLocation === '' ? 'Antarctica' : trimmedLocation,
-    lat: -90, // Default to Antarctica if no coordinates
-    lng: 0,
+  // Legacy JSON-encoded plain string, e.g. '"Austin, Texas"'
+  if (trimmed.startsWith('"')) {
+    try {
+      const unquoted = JSON.parse(trimmed)
+      const name = typeof unquoted === 'string' ? unquoted.trim() : ''
+      return { name: isAntarcticaName(name) ? '' : name, lat: null, lng: null }
+    } catch {
+      // Fall through to raw-text handling
+    }
   }
+
+  // Legacy raw plain text
+  return { name: isAntarcticaName(trimmed) ? '' : trimmed, lat: null, lng: null }
+}
+
+// Cache geocode lookups across the request (and across ISR revalidations on a
+// warm serverless instance) so we don't re-hit the Google API for the same
+// place name on every map rebuild.
+const geocodeCache = new Map<
+  string,
+  { lat: number; lng: number; name: string } | null
+>()
+
+/**
+ * Geocode a plain-text place name server-side via the Google Maps API.
+ * Returns null when the location can't be resolved or no API key is set.
+ */
+async function geocodeLocationText(
+  text: string
+): Promise<{ lat: number; lng: number; name: string } | null> {
+  const key = text.trim().toLowerCase()
+  if (key === '') return null
+  if (geocodeCache.has(key)) return geocodeCache.get(key) ?? null
+
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY
+  if (!apiKey) {
+    geocodeCache.set(key, null)
+    return null
+  }
+
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        text
+      )}&key=${apiKey}`
+    )
+    const data = await res.json()
+    const result = data?.results?.[0]
+    if (result?.geometry?.location) {
+      const geo = {
+        lat: result.geometry.location.lat,
+        lng: result.geometry.location.lng,
+        name: result.formatted_address || text,
+      }
+      geocodeCache.set(key, geo)
+      return geo
+    }
+  } catch (error) {
+    console.error(`Failed to geocode "${text}":`, error)
+  }
+
+  geocodeCache.set(key, null)
+  return null
 }
 
 /**
@@ -270,8 +392,9 @@ export async function fetchCitizensWithLocation(
 
     onProgress?.('Querying citizen table', 1, 5)
 
-    // Fetch all citizens from tableland
-    const citizenStatement = `SELECT * FROM ${citizenTableName}`
+    // Fetch all citizens from tableland, excluding deleted/blank profiles:
+    // view='' means profile was deleted; name='' or image='' means incomplete/broken profile
+    const citizenStatement = `SELECT * FROM ${citizenTableName} WHERE view != '' AND name != '' AND image != ''`
     const citizenRows: any = await queryTable(chain, citizenStatement)
 
     if (!citizenRows || citizenRows.length === 0) {
@@ -322,16 +445,48 @@ export async function fetchCitizensWithLocation(
         'location'
       )?.value
 
-      const locationData = parseLocationData(citizenLocation)
+      const parsed = parseLocationData(citizenLocation)
+
+      let lat = parsed.lat
+      let lng = parsed.lng
+      let formattedAddress = parsed.name || 'Antarctica'
+
+      // Legacy citizens stored their location as plain text with no
+      // coordinates. Resolve the name so they show up in the right place
+      // instead of being dumped at the South Pole — first via the static
+      // legacy table, then the runtime geocoder for anything unknown.
+      if ((lat === null || lng === null) && parsed.name) {
+        const legacy = LEGACY_LOCATION_COORDS[parsed.name.trim().toLowerCase()]
+        if (legacy) {
+          lat = legacy.lat
+          lng = legacy.lng
+        } else {
+          const geo = await geocodeLocationText(parsed.name)
+          if (geo) {
+            lat = geo.lat
+            lng = geo.lng
+            formattedAddress = geo.name
+          }
+        }
+      }
+
+      // Still no usable coordinates — scatter across the Antarctic interior so
+      // citizens with no real location are spread out and stay on the landmass
+      if (lat === null || lng === null) {
+        const scattered = scatterAntarctica(citizenId)
+        lat = scattered.lat
+        lng = scattered.lng
+        formattedAddress = parsed.name || 'Antarctica'
+      }
 
       citizensLocationData.push({
         id: citizenId,
         name: (citizen as any).metadata.name,
         location: citizenLocation || '',
-        formattedAddress: locationData.formattedAddress,
+        formattedAddress,
         image: (citizen as any).metadata.image,
-        lat: locationData.lat,
-        lng: locationData.lng,
+        lat,
+        lng,
       })
     }
 

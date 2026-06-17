@@ -225,6 +225,10 @@ export const VOTES_TABLE_NAMES: Index = {
 export const WBA_VOTE_ID = 0
 export const BAIKONUR_VOTE_ID = 1
 export const OVERVIEW_DELEGATION_VOTE_ID = 2
+export const OVERVIEW_PATH_VOTE_ID = 3
+// Optional ISO-8601 deadline for the path vote. When set, the page shows a
+// countdown and disables submissions after it passes. Null = open-ended.
+export const OVERVIEW_PATH_VOTE_DEADLINE: string | null = null
 // TODO: Replace with actual $OVERVIEW token address from team
 export const OVERVIEW_TOKEN_ADDRESS = '0xc868dFc4Ad388F5d7A8A5c3ECa0cff226d77152a'
 export const OVERVIEW_TOKEN_DECIMALS = 18
@@ -416,7 +420,7 @@ export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 export const MARKETPLACE_FEE_SPLIT: string = polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
-  sepolia: '0x0087fCc0aF33B00a9AF2f98Eb6788Ffb72bC1C51',
+  sepolia: '0x11DCe86c804ca088A0d9036eeE368e4055b235dE',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
 }
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {

@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { v4 } from 'uuid'
+import { enforceRegionNotRestricted } from '@/lib/geo'
 
 const COMFY_WORKFLOW_URL =
   'https://comfy.icu/api/v1/workflows/8BYQ3mpiFVlTjWOatIUAc/runs'
@@ -51,6 +52,11 @@ export default async function handler(
   }
 
   if (req.method === 'POST') {
+    // GDPR: generating a citizen portrait is part of on-chain profile creation,
+    // which we don't offer in restricted regions. Block server-side as well as
+    // in the client UI.
+    if (!enforceRegionNotRestricted(req, res)) return
+
     const { url } = req.body || {}
     if (typeof url !== 'string' || !url) {
       return res.status(400).json({ error: 'Missing url' })
@@ -116,14 +122,14 @@ export default async function handler(
             '39': {
               inputs: {
                 clip: ['4', 1],
-                text: "Head-and-shoulders portrait, tightly cropped at the upper chest, face and shoulders completely filling the frame, only head and shoulders visible, no lower torso, of a youthful person with smooth healthy clear skin, bright clear eyes, full hair clearly visible, ears fully visible and uncovered, smooth chin, clear forehead, confident determined heroic powerful gaze, wearing thick opaque futuristic sweater with high collar and long sleeves, heavy fabric completely covering the chest and body, detailed textured futuristic clothing, fully dressed in layered non-revealing clothes, no skin exposed below neck, painterly style of Jodorowsky's Dune, surreal watercolor psychedelic cosmic background dominating the composition, vibrant colorful nebulae swirling with intense purples blues pinks greens, glowing stars scattered densely across deep space, multiple planets with rings and atmospheric details, distant spaceships flying through the void, epic cosmic scene, rich psychedelic watercolor textures blending into the portrait edges, dramatic celestial lighting interacting with the subject, clean cinematic lighting, flattering soft key light on the face, vivid saturated colors, sharp focus, high quality, best most flattering youthful version of the person, correct eye color, only one person",
+                text: "Head-and-shoulders portrait, tightly cropped at the upper chest, face and shoulders completely filling the frame, only head and shoulders visible, no lower torso, of a youthful person with smooth healthy clear skin, bright clear eyes, hair clearly visible with the exact same hairstyle length and texture as the reference photo, accurate true-to-reference hair, ears fully visible and uncovered, smooth chin, clear forehead, friendly warm natural relaxed expression, wearing a sleek white astronaut spacesuit with a high collar and long sleeves, no helmet, bare head with no headgear, detailed spacesuit fabric completely covering the chest and body, fully dressed in non-revealing clothes, no skin exposed below neck, painterly style of Jodorowsky's Dune, surreal watercolor psychedelic cosmic background dominating the composition, vibrant colorful nebulae swirling with intense purples blues pinks greens, glowing stars scattered densely across deep space, multiple planets with rings and atmospheric details, epic cosmic scene, rich psychedelic watercolor textures blending into the portrait edges, bright luminous celestial lighting interacting with the subject, clean bright cinematic lighting, evenly well-lit face, flattering soft bright key light on the face, vivid saturated colors, sharp focus, high quality, best most flattering youthful version of the person, correct eye color, only one person",
               },
               class_type: 'CLIPTextEncode',
             },
             '40': {
               inputs: {
                 clip: ['4', 1],
-                text: '(watermark:1.9), (signature:1.5), text, logo, stamp, copyright, (wrinkles:1.6), (eye bags:1.5), (aged skin:1.5), old, elderly, saggy skin, gaunt, tired, (beard:1.3), facial hair, stubble, (ear muffs:1.8), (over-ear headphones:1.7), (headphones:1.6), helmet, space helmet, bubble helmet, visor, face shield, glasses, sunglasses, goggles, mask, hat, hood, (full body:1.6), (wide shot:1.5), zoomed out, legs, torso, standing pose, (nipples:2.5), (erect nipples:2.6), (boobs:2.6), (breasts:2.6), (cleavage:2.5), (underboob:2.5), (exposed breasts:2.7), (naked:2.7), (nude:2.7), (topless:2.7), (bare chest:2.6), (exposed chest:2.6), (exposed skin on torso:2.5), (see-through clothing:2.4), (sheer fabric:2.4), (transparent clothing:2.4), (wet clothing:2.3), (revealing outfit:2.5), (low cut top:2.4), (deep neckline:2.4), (plunging neckline:2.4), (off-shoulder:2.3), (cropped top:2.3), pornography, explicit, erotic, sensual, suggestive pose, (knitted sweater:1.8), (knit texture:1.9), (cable knit:1.8), (bulky sweater:1.8), (wool sweater:1.7), overly detailed clothing texture, (blouse:2.0)',
+                text: '(watermark:2.5), (watermarked:2.5), (watermark text:2.5), (stock photo watermark:2.5), (Getty Images:2.5), (Shutterstock:2.5), (Adobe Stock:2.5), (iStock:2.5), (dreamstime:2.5), (123rf:2.5), (overlay text:2.2), (text overlay:2.2), (signature:2.0), (copyright notice:2.2), text, logo, stamp, copyright, (wrinkles:1.6), (eye bags:1.5), (aged skin:1.5), old, elderly, saggy skin, gaunt, tired, (beard:1.3), facial hair, stubble, (ear muffs:1.8), (over-ear headphones:1.7), (headphones:1.6), helmet, space helmet, bubble helmet, visor, face shield, glasses, sunglasses, goggles, mask, hat, hood, (full body:1.6), (wide shot:1.5), zoomed out, legs, torso, standing pose, (nipples:2.5), (erect nipples:2.6), (boobs:2.6), (breasts:2.6), (cleavage:2.5), (underboob:2.5), (exposed breasts:2.7), (naked:2.7), (nude:2.7), (topless:2.7), (bare chest:2.6), (exposed chest:2.6), (exposed skin on torso:2.5), (see-through clothing:2.4), (sheer fabric:2.4), (transparent clothing:2.4), (wet clothing:2.3), (revealing outfit:2.5), (low cut top:2.4), (deep neckline:2.4), (plunging neckline:2.4), (off-shoulder:2.3), (cropped top:2.3), pornography, explicit, erotic, sensual, suggestive pose, (knitted sweater:1.8), (knit texture:1.9), (cable knit:1.8), (bulky sweater:1.8), (wool sweater:1.7), (turtleneck:1.8), overly detailed clothing texture, (blouse:2.0), (long flowing hair:1.6), (long hair:1.4), (extra hair:1.5), (added hair:1.5), (windblown hair:1.4), (dark lighting:1.6), (dim lighting:1.6), (underexposed:1.6), (low light:1.5), (shadowy:1.4), (gloomy:1.4), (dark shadows on face:1.5), (spaceship:1.8), (spacecraft:1.8), (rocket:1.6), (intense stare:1.5), (fierce expression:1.5), (stern look:1.5), (aggressive expression:1.5)',
               },
               class_type: 'CLIPTextEncode',
             },

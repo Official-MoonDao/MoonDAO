@@ -161,7 +161,10 @@ export default function TeamMarketplaceListingModal({
 
           setIsLoading(true)
 
-          const cleanedData = cleanData(listingData)
+          const cleanedData = cleanData({
+            ...listingData,
+            price: listingData.price.replace(/,/g, ''),
+          })
 
           let imageIpfsLink
 

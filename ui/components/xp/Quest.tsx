@@ -212,10 +212,19 @@ export default function Quest({
     [xpManagerContract, userAddress, quest.verifier.verifierId]
   )
 
-  // Function to fetch user metric from the quest's API endpoint with retry logic
-  const fetchUserMetric = useCallback(async (): Promise<number> => {
+  // Function to fetch user metric from the quest's API endpoint with retry logic.
+  // Returns both the raw metric (for progress display) and the server's
+  // authoritative `eligible` flag. The proof routes apply the per-verifier
+  // threshold server-side, so `eligible` — not a client-side `metric >= 1`
+  // heuristic — must decide whether a Claim button is shown. This is also the
+  // exact field `useClaimableQuestsCount` uses for the dashboard badge, so the
+  // badge and the quest cards can never disagree.
+  const fetchUserMetric = useCallback(async (): Promise<{
+    metric: number
+    eligible: boolean | null
+  }> => {
     if (!quest.verifier.route || !userAddress || !quest.verifier.metricKey) {
-      return 0
+      return { metric: 0, eligible: false }
     }
 
     try {
@@ -258,29 +267,34 @@ export default function Quest({
               setError(data.error) // Set other errors as well
             }
 
-            return 0
+            return { metric: 0, eligible: false }
           }
 
           // Extract the metric using the configured metricKey
           const metricValue = data[quest.verifier.metricKey]
 
-          // Handle different data types
+          let metric = 0
           if (typeof metricValue === 'string') {
-            return parseInt(metricValue) || 0
+            metric = parseInt(metricValue) || 0
           } else if (typeof metricValue === 'number') {
-            return metricValue
+            metric = metricValue
           } else if (typeof metricValue === 'boolean') {
-            return metricValue ? 1 : 0
+            metric = metricValue ? 1 : 0
           }
 
-          return 0
+          // `null` when the route doesn't report eligibility (callers fall
+          // back to the metric threshold in that case).
+          const eligible =
+            typeof data.eligible === 'boolean' ? data.eligible : null
+
+          return { metric, eligible }
         },
         3,
         1000
       ) // 3 retries with 1 second base delay
     } catch (error) {
       console.error('Error fetching user metric after retries:', error)
-      return 0
+      return { metric: 0, eligible: false }
     }
   }, [
     quest.verifier.route,
@@ -290,6 +304,15 @@ export default function Quest({
     fetchWithTimeout,
   ])
 
+  // Refreshes a single (non-staged) quest's progress + claim eligibility from
+  // the server. Used on mount and after error-recovery actions (e.g. linking
+  // GitHub) so the Claim button always reflects the server's answer.
+  const refreshSingleQuestEligibility = useCallback(async () => {
+    const { metric, eligible } = await fetchUserMetric()
+    setUserMetric(metric)
+    setSingleQuestEligible(eligible ?? metric >= 1)
+  }, [fetchUserMetric])
+
   // Simplified staged progress fetching with retry logic
   const fetchStagedProgress = useCallback(async () => {
     if (quest.verifier.type !== 'staged' || !verifierContract || !userAddress)
@@ -298,7 +321,7 @@ export default function Quest({
     setIsLoadingStagedProgress(true)
     try {
       // Get user metric from quest's backend/oracle with retry
-      const metric = await fetchUserMetric()
+      const { metric } = await fetchUserMetric()
       setUserMetric(metric)
 
       // Get progress with real user metric, also with retry
@@ -614,25 +637,34 @@ export default function Quest({
   ])
 
   useEffect(() => {
+    let cancelled = false
+
     fetchHasClaimed()
     // Only clear errors on quest change, not on every mount
     if (quest.verifier.verifierId !== undefined) {
       setError(null)
     }
 
-    // For single (non-staged) quests, fetch the user metric to determine real
-    // eligibility. This both surfaces GitHub-linking errors AND lets us hide
-    // the Claim button until the user has actually completed the requirement.
+    // For single (non-staged) quests, fetch the server's eligibility verdict.
+    // This both surfaces GitHub-linking errors AND hides the Claim button
+    // until the verifier confirms the user actually meets the requirement.
     if (quest.verifier.type !== 'staged') {
       // Reset to null immediately so any stale Claim button disappears while
       // the new fetch is in flight (e.g. when userAddress or quest changes).
       setSingleQuestEligible(null)
       fetchUserMetric()
-        .then((metric) => {
+        .then(({ metric, eligible }) => {
+          // A response for a previous address/quest must never set state for
+          // the current one (out-of-order resolution after a wallet switch).
+          if (cancelled) return
           setUserMetric(metric)
-          setSingleQuestEligible(metric >= 1)
+          setSingleQuestEligible(eligible ?? metric >= 1)
         })
         .catch(console.error)
+    }
+
+    return () => {
+      cancelled = true
     }
   }, [
     fetchHasClaimed,
@@ -778,7 +810,7 @@ export default function Quest({
                   if (quest.verifier.type === 'staged') {
                     await fetchStagedProgress()
                   } else {
-                    await fetchUserMetric()
+                    await refreshSingleQuestEligibility()
                   }
                   setNeedsGitHubLink(false)
                   setError(null) // Clear any errors after successful GitHub linking
@@ -816,7 +848,7 @@ export default function Quest({
                 if (quest.verifier.type === 'staged') {
                   fetchStagedProgress()
                 } else {
-                  fetchUserMetric()
+                  refreshSingleQuestEligibility()
                 }
                 fetchHasClaimed()
               }}
@@ -872,7 +904,7 @@ export default function Quest({
       linkGithub,
       quest.verifier.type,
       fetchStagedProgress,
-      fetchUserMetric,
+      refreshSingleQuestEligibility,
       claimQuest,
       fetchHasClaimed,
     ]

@@ -65,12 +65,12 @@ export default function StandardDetailCard({
                     {`${
                       isCitizen
                         ? truncateTokenValue(price, currency)
-                        : truncateTokenValue(+price * 1.1, currency)
+                        : truncateTokenValue(parseFloat(price.replace(/,/g, '')) * 1.1, currency)
                     } ${currency}`}
                   </p>
                   {isCitizen && (
                     <p className="line-through text-xs opacity-70 text-slate-400">
-                      {`${truncateTokenValue(+price * 1.1, currency)} ${currency}`}
+                      {`${truncateTokenValue(parseFloat(price.replace(/,/g, '')) * 1.1, currency)} ${currency}`}
                     </p>
                   )}
                 </div>

@@ -1,0 +1,71 @@
+---
+description: Architecture, folders, and recurring patterns in ui
+globs: ui/**/*.{ts,tsx}
+---
+# Architecture & Patterns
+
+## Folder roles (ui/)
+- `pages/` — file-system routes. `pages/api/<domain>/` — API routes grouped by domain.
+- `components/<feature>/` — React components scoped to a feature. Shared primitives in `components/layout/`.
+- `lib/<feature>/` — data fetching, business logic, utilities scoped to a feature.
+- `lib/<feature>/hooks/` — React hooks for that feature.
+- `const/` — addresses, ABIs, flags, static config. Read-only at runtime.
+- `middleware/` — composable Express-style middleware for API routes.
+
+## API route pattern
+Every API route applies middleware via `withMiddleware`. Always follow this shape:
+
+```ts
+import withMiddleware from 'middleware/withMiddleware'
+import rateLimit from 'middleware/rateLimit'
+import secureHeaders from 'middleware/secureHeaders'
+
+async function handler(req, res) { ... }
+
+export default withMiddleware(handler, rateLimit, secureHeaders)
+```
+
+Reuse existing middleware from `middleware/` — do not inline equivalent logic in the handler.
+
+## On-chain read pattern (thirdweb v5)
+```ts
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useRead } from '@/lib/thirdweb/hooks/useRead'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
+import FooABI from 'const/abis/Foo.json'
+
+const contract = useContract({ address: FOO_ADDRESS, abi: FooABI, chain: DEFAULT_CHAIN_V5 })
+const { data } = useRead({ contract, method: 'someMethod', params: [...] })
+```
+
+Never hardcode RPC URLs or chain IDs. Always pull from `const/config` or `lib/thirdweb/chain.ts`.
+
+## On-chain write pattern (thirdweb v5)
+```ts
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+// prepare → send → await confirmation → toast result
+```
+
+## Data fetching pattern (react-query)
+Use `useQuery` / `useMutation` from `@tanstack/react-query` for client-side async state.
+SWR is also present — prefer whichever the surrounding code already uses in the same feature.
+
+## IPFS media
+Pin via `@/lib/ipfs/pinBlobOrFile`. Unpin via `@/lib/ipfs/unpin`. Never call a pinning service
+directly from a component.
+
+## User feedback
+Always use `react-hot-toast` (`import toast from 'react-hot-toast'`).
+Show loading → success/error. Never use `alert()` or custom notification state.
+
+## Tableland writes
+After a write, call `waitForRow` from `@/lib/tableland/waitForRow` before treating the
+mutation as complete.
+
+## Don'ts
+- No App Router, RSC, or `use client` / `use server` directives.
+- No new global state libraries — use react-query, SWR, or React context.
+- No narrating code comments ("// increment counter"). Comments explain intent only.
+- No new top-level folders in `ui/` without discussion.
+- Never commit `.env.local`, `.pem`, or any secrets.
+- Never hardcode contract addresses, chain IDs, or RPC URLs outside of `const/config`.

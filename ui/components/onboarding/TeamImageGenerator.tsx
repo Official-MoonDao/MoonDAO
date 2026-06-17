@@ -7,6 +7,7 @@ import IPFSRenderer from '../layout/IPFSRenderer'
 
 export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
   const [inputImage, setInputImage] = useState<File>()
+  const [isReplacing, setIsReplacing] = useState(false)
 
   const inputImageUrl = useMemo(
     () => (inputImage ? URL.createObjectURL(inputImage) : undefined),
@@ -18,6 +19,11 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
       if (inputImageUrl) URL.revokeObjectURL(inputImageUrl)
     }
   }, [inputImageUrl])
+
+  function handleNewFile(file: File | undefined) {
+    setInputImage(file)
+    if (file) setIsReplacing(false)
+  }
 
   async function submitImage() {
     if (!document.getElementById('teamPic'))
@@ -48,51 +54,54 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
     nextStage()
   }
 
+  // Uploading a replacement for an existing image
+  const showUploader = !inputImage && (!currImage || isReplacing)
+
   return (
     <div className="animate-fadeIn flex flex-col gap-6">
-      {/* Upload zone + placeholder when no image selected */}
-      {!inputImage && !currImage && (
+      {/* Upload zone */}
+      {showUploader && (
         <div className="flex flex-col gap-4">
+          {currImage && isReplacing && (
+            <button
+              onClick={() => setIsReplacing(false)}
+              className="self-start text-xs text-slate-500 hover:text-white transition-colors"
+            >
+              ← Keep current image
+            </button>
+          )}
           <FileInput
             file={inputImage}
-            setFile={setInputImage}
+            setFile={handleNewFile}
             noBlankImages
             accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
             acceptText="PNG, JPEG, WEBP, GIF, SVG"
           />
-          <div className="rounded-2xl border border-white/[0.08] bg-slate-900/40 overflow-hidden">
-            <div
-              id="teamPic"
-              className="w-full aspect-square max-w-[400px] mx-auto bg-[url('/moondao-team-flag.png')] bg-cover relative flex overflow-hidden"
-            >
+          {!currImage && (
+            <div className="rounded-2xl border border-white/[0.08] bg-slate-900/40 overflow-hidden">
               <div
-                id="user-image"
-                style={{
-                  backgroundImage: `url('/assets/image-placeholder.svg')`,
-                }}
-                className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
-              />
+                id="teamPic"
+                className="w-full aspect-square max-w-[400px] mx-auto bg-[url('/moondao-team-flag.png')] bg-cover relative flex overflow-hidden"
+              >
+                <div
+                  id="user-image"
+                  style={{
+                    backgroundImage: `url('/assets/image-placeholder.svg')`,
+                  }}
+                  className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Preview when image is selected */}
-      {(inputImage || currImage) && (
+      {/* Preview of current or newly selected image */}
+      {!showUploader && (inputImage || currImage) && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">
-              {inputImage ? 'Your team image preview' : 'Current team image'}
-            </p>
-            {inputImage && (
-              <button
-                onClick={() => setInputImage(undefined)}
-                className="text-xs text-slate-500 hover:text-white transition-colors"
-              >
-                Change image
-              </button>
-            )}
-          </div>
+          <p className="text-sm text-slate-400">
+            {inputImage ? 'New team image preview' : 'Current team image'}
+          </p>
 
           <div className="rounded-2xl border border-white/[0.08] bg-slate-900/40 overflow-hidden">
             {currImage && !inputImage && (
@@ -128,17 +137,31 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
         </div>
       )}
 
-      {/* Continue */}
-      {(currImage || inputImage) && (
-        <button
-          className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
-          onClick={submitImage}
-        >
-          Continue
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+      {/* Continue — only when not mid-replace */}
+      {!isReplacing && (currImage || inputImage) && (
+        <div className="flex flex-col gap-3">
+          <button
+            className="w-full py-3 rounded-2xl border border-slate-500 hover:border-slate-300 text-slate-300 hover:text-white font-medium transition-colors"
+            onClick={() => {
+              if (inputImage) {
+                setInputImage(undefined)
+              } else {
+                setIsReplacing(true)
+              }
+            }}
+          >
+            Change image
+          </button>
+          <button
+            className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
+            onClick={submitImage}
+          >
+            Continue
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
       )}
     </div>
   )

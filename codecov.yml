@@ -1,0 +1,24 @@
+# Codecov configuration.
+#
+# Coverage should measure production source, not the tests/scripts that exercise
+# it. `forge coverage` emits an lcov report that also includes Foundry test files
+# (`*.t.sol`) and deploy scripts (`*.s.sol`); those are excluded here so patch and
+# project coverage reflect the contracts themselves. The standalone `prediction/`
+# (Truffle, Solidity 0.5) project is likewise excluded.
+ignore:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/script/**"
+  - "**/scripts/**"
+  - "**/*.t.sol"
+  - "**/*.s.sol"
+  - "prediction/**"
+
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true

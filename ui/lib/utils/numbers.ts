@@ -6,19 +6,20 @@ export function stringToNumber(string: any, decimals: any) {
 }
 
 export function truncateTokenValue(value: number | string, token: string) {
+  const normalized = typeof value === 'string' ? value.replace(/,/g, '') : value
   let truncatedValue
-  const decimalPlaces = value.toString().split('.')[1]?.length || 0
+  const decimalPlaces = normalized.toString().split('.')[1]?.length || 0
   if (token === 'ETH') {
-    truncatedValue = Number(value).toFixed(Math.min(decimalPlaces, 5))
+    truncatedValue = Number(normalized).toFixed(Math.min(decimalPlaces, 5))
   } else if (
     token === 'USDC' ||
     token === 'USDT' ||
     token === 'DAI' ||
     token === 'MOONEY'
   ) {
-    truncatedValue = Number(value).toFixed(Math.min(decimalPlaces, 2))
+    truncatedValue = Number(normalized).toFixed(Math.min(decimalPlaces, 2))
   } else {
-    truncatedValue = Number(value)
+    truncatedValue = Number(normalized)
   }
   const numericValue = parseFloat(String(truncatedValue))
   return formatNumberWithCommas(numericValue.toString())

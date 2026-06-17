@@ -1,4 +1,5 @@
 import { useContext, useState } from 'react'
+import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
@@ -7,6 +8,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import ApplyModal from '@/components/onboarding/ApplyModal'
 import CreateTeam from '@/components/onboarding/CreateTeam'
+import RegionRestrictedNotice from '@/components/onboarding/RegionRestrictedNotice'
 import TeamTier from '@/components/onboarding/TeamTier'
 
 export default function TeamJoin() {
@@ -15,8 +17,44 @@ export default function TeamJoin() {
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
+  // EU/EEA visitors may browse the site but cannot permanently store personal
+  // data on chain (GDPR), so they don't get the team creation flow. If geo
+  // can't be resolved we fail closed (treat it as restricted) rather than risk
+  // showing the flow to a restricted visitor.
+  const {
+    isRestricted,
+    isLoading: isResolvingRegion,
+    isError: regionError,
+  } = useRegionRestriction()
+
   // Ensure default chain settings
   useChainDefault()
+
+  const head = (
+    <Head
+      title={'Create a Team'}
+      description={
+        'Create a Team within the Space Acceleration Network to bring your organization onchain.'
+      }
+      image="https://ipfs.io/ipfs/QmX7FHDoRhsQ4Ube179qjCnvcVQqwJhVRRASUGLEeqwdh2"
+    />
+  )
+
+  // Wait until geo resolves so we never flash the creation flow to a restricted
+  // visitor. Keep <Head> mounted (SEO/metadata) and render a light placeholder
+  // instead of returning null and flashing a blank page.
+  if (isResolvingRegion) {
+    return (
+      <>
+        {head}
+        <div className="min-h-screen" />
+      </>
+    )
+  }
+
+  if (isRestricted || regionError) {
+    return <RegionRestrictedNotice type="team" />
+  }
 
   // If "team" is selected, render CreateTeam component
   if (selectedTier === 'team') {
@@ -30,13 +68,7 @@ export default function TeamJoin() {
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head
-        title={'Create a Team'}
-        description={
-          'Create a Team within the Space Acceleration Network to bring your organization onchain.'
-        }
-        image="https://ipfs.io/ipfs/QmX7FHDoRhsQ4Ube179qjCnvcVQqwJhVRRASUGLEeqwdh2"
-      />
+      {head}
       <Container>
         <ContentLayout
           header="Join the Network"

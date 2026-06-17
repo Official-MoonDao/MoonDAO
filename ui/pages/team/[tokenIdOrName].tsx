@@ -2,6 +2,7 @@
 import {
   BanknotesIcon,
   BuildingStorefrontIcon,
+  CameraIcon,
   ChatBubbleLeftIcon,
   ClipboardDocumentListIcon,
   GlobeAltIcon,
@@ -194,7 +195,16 @@ function TeamDetailPageContent({
 
   const safeData = useSafe(nft?.owner)
 
-  const isSigner = safeOwners.includes(address || '')
+  // The SSR-prerendered `safeOwners` is best-effort and comes back empty
+  // whenever the Safe/RPC lookup blips at build time. Fall back to the
+  // client-side owners from `useSafe` so the signer list and the
+  // signer-gated pending-transactions UI keep working.
+  const resolvedSafeOwners =
+    safeOwners && safeOwners.length > 0 ? safeOwners : safeData?.owners || []
+
+  const isSigner = resolvedSafeOwners.some(
+    (owner: string) => owner.toLowerCase() === (address || '').toLowerCase()
+  )
 
   // Only citizens (or team managers / owners / signers) can see team content
   const canViewContent = !!(citizen || isManager || isTableOperator || isSigner || address === nft.owner)
@@ -232,7 +242,12 @@ function TeamDetailPageContent({
             >
               {nft?.metadata?.image ? (
                 <div id="team-image-container" className="relative flex-shrink-0">
-                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+                  <div
+                    className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] relative${subIsValid && isManager ? ' group cursor-pointer' : ''}`}
+                    onClick={() => {
+                      if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
+                    }}
+                  >
                     <IPFSRenderer
                       src={nft?.metadata?.image}
                       className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
@@ -240,6 +255,12 @@ function TeamDetailPageContent({
                       width={250}
                       alt="Team Image"
                     />
+                    {subIsValid && isManager && (
+                      <div className="absolute inset-0 rounded-2xl bg-black/50 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <CameraIcon width={36} height={36} className="text-white" />
+                        <span className="text-white text-xs font-medium">Edit Photo</span>
+                      </div>
+                    )}
                   </div>
                   <div id="star-asset-container" className="absolute -bottom-2 -right-2">
                     <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
@@ -248,8 +269,18 @@ function TeamDetailPageContent({
                   </div>
                 </div>
               ) : (
-                <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center flex-shrink-0">
+                <div
+                  className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex flex-col items-center justify-center flex-shrink-0 gap-2${subIsValid && isManager ? ' group cursor-pointer hover:border-slate-400/70 transition-colors' : ''}`}
+                  onClick={() => {
+                    if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
+                  }}
+                >
                   <div className="text-slate-400 text-6xl">🏢</div>
+                  {subIsValid && isManager && (
+                    <span className="text-slate-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      Add Photo
+                    </span>
+                  )}
                 </div>
               )}
               <div
@@ -464,7 +495,7 @@ function TeamDetailPageContent({
           )}
 
           {/* Team Statistics Overview */}
-          {!isDeleted && subIsValid && canViewContent && (
+          {!isDeleted && subIsValid && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title="Team Members"
@@ -527,7 +558,7 @@ function TeamDetailPageContent({
                 isSigner={isSigner}
                 safeData={safeData}
                 multisigAddress={nft.owner}
-                safeOwners={safeOwners}
+                safeOwners={resolvedSafeOwners}
               />
             </div>
           )}
@@ -544,69 +575,71 @@ function TeamDetailPageContent({
             </div>
           )}
           {subIsValid && !isDeleted && canViewContent && (
-            <>
-              {/* Team Members */}
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
-                  <div className="flex gap-5 items-center">
-                    <Image
-                      src={teamIcon}
-                      alt="Team icon"
-                      width={30}
-                      height={30}
-                      className="opacity-70"
-                    />
-                    <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
-                  </div>
-                  {isManager && hats?.[0]?.id && (
-                    <TeamManageMembers
-                      account={account}
-                      hats={hats}
-                      hatsContract={hatsContract}
-                      teamContract={teamContract}
-                      teamId={tokenId}
-                      selectedChain={selectedChain}
-                      multisigAddress={nft.owner}
-                      adminHatId={adminHatId}
-                      managerHatId={managerHatId}
-                    />
-                  )}
+            <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
+                <div className="flex gap-5 items-center">
+                  <Image
+                    src={teamIcon}
+                    alt="Team icon"
+                    width={30}
+                    height={30}
+                    className="opacity-70"
+                  />
+                  <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
                 </div>
-                {hats?.[0].id && (
-                  <TeamMembers
+                {isManager && hats?.[0]?.id && (
+                  <TeamManageMembers
+                    account={account}
                     hats={hats}
                     hatsContract={hatsContract}
-                    citizenContract={citizenContract}
+                    teamContract={teamContract}
+                    teamId={tokenId}
+                    selectedChain={selectedChain}
+                    multisigAddress={nft.owner}
+                    adminHatId={adminHatId}
+                    managerHatId={managerHatId}
                   />
                 )}
               </div>
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                <TeamJobs
-                  teamId={tokenId}
-                  jobTableContract={jobTableContract}
-                  isManager={isManager || isTableOperator}
-                  isCitizen={citizen}
-                  hasFullAccess={hasFullAccess}
-                  jobs={jobs}
+              {hats?.[0].id && (
+                <TeamMembers
+                  hats={hats}
+                  hatsContract={hatsContract}
+                  citizenContract={citizenContract}
                 />
-              </div>
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                <TeamMarketplace
-                  selectedChain={selectedChain}
-                  marketplaceTableContract={marketplaceTableContract}
-                  teamContract={teamContract}
-                  isManager={isManager || isTableOperator}
-                  teamId={tokenId}
-                  isCitizen={citizen}
-                  listings={listings}
-                />
-              </div>
-              {isManager &&
-                EB_TEAM_ID &&
-                String(tokenId) === String(EB_TEAM_ID) && (
-                  <EBRewards isManager={isManager} teamId={tokenId} />
-                )}
-            </>
+              )}
+            </div>
+          )}
+
+          {subIsValid && !isDeleted && (
+            <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+              <TeamJobs
+                teamId={tokenId}
+                jobTableContract={jobTableContract}
+                isManager={isManager || isTableOperator}
+                isCitizen={citizen}
+                hasFullAccess={hasFullAccess}
+                jobs={jobs}
+              />
+            </div>
+          )}
+
+          {subIsValid && !isDeleted && (
+            <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+              <TeamMarketplace
+                selectedChain={selectedChain}
+                marketplaceTableContract={marketplaceTableContract}
+                teamContract={teamContract}
+                isManager={isManager || isTableOperator}
+                teamId={tokenId}
+                isCitizen={citizen}
+                listings={listings}
+              />
+            </div>
+          )}
+
+          {subIsValid && !isDeleted && isManager && EB_TEAM_ID && String(tokenId) === String(EB_TEAM_ID) && (
+            <EBRewards isManager={isManager} teamId={tokenId} />
           )}
 
           {/* Subscription expired — only shown to managers/owners who can act on it */}
@@ -628,7 +661,7 @@ function TeamDetailPageContent({
                   isSigner={isSigner}
                   safeData={safeData}
                   multisigAddress={nft.owner}
-                  safeOwners={safeOwners}
+                  safeOwners={resolvedSafeOwners}
                 />
               </div>
             </div>
