@@ -62,17 +62,22 @@ function isCoinbaseOrigin(origin: string): boolean {
   }
 }
 
-// Coinbase Headless Onramp only supports Apple Pay on the web. Safari renders
-// the native Apple Pay sheet; other browsers (Chrome/Edge/Firefox) get an Apple
-// Pay QR code the user scans with their phone. Google Pay is Android-native-app
-// only and is NOT available in a web iframe (confirmed by Coinbase), so web
-// always requests Apple Pay.
-const WEB_PAYMENT_METHOD = 'GUEST_CHECKOUT_APPLE_PAY' as const
+type OnrampPaymentMethod = 'GUEST_CHECKOUT_APPLE_PAY' | 'GUEST_CHECKOUT_GOOGLE_PAY'
+
+// Coinbase guest checkout supports both Apple Pay and Google Pay on the web. We
+// pick the method per device: Apple devices use Apple Pay (the native sheet in
+// Safari, a scannable QR code elsewhere) and Android uses Google Pay's
+// in-iframe button.
 
 // True only in Safari/WebKit, where the native Apple Pay sheet is available.
 // Other browsers fall back to Coinbase's Apple Pay QR-code experience.
 function hasNativeApplePay(): boolean {
   return typeof window !== 'undefined' && !!(window as any).ApplePaySession
+}
+
+// Android phones/tablets, where Coinbase renders an in-iframe Google Pay button.
+function isAndroidDevice(): boolean {
+  return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '')
 }
 
 export function CBHeadlessOnramp({
@@ -146,9 +151,13 @@ export function CBHeadlessOnramp({
     return () => clearTimeout(t)
   }, [allowAmountInput, ethAmount, effectiveEthAmount])
 
-  const paymentMethod = WEB_PAYMENT_METHOD
   const nativeApplePay = useMemo(() => hasNativeApplePay(), [])
-  const payLabel = 'Apple Pay'
+  // Android (without Apple Pay) → Google Pay; everyone else → Apple Pay.
+  const useGooglePay = useMemo(() => isAndroidDevice() && !nativeApplePay, [nativeApplePay])
+  const paymentMethod: OnrampPaymentMethod = useGooglePay
+    ? 'GUEST_CHECKOUT_GOOGLE_PAY'
+    : 'GUEST_CHECKOUT_APPLE_PAY'
+  const payLabel = useGooglePay ? 'Google Pay' : 'Apple Pay'
 
   const onBalanceSufficientRef = useRef(onBalanceSufficient)
   const refetchBalanceRef = useRef(refetchBalance)
@@ -292,9 +301,8 @@ export function CBHeadlessOnramp({
       const total = parseFloat(data?.order?.paymentTotal || '0')
       if (total > 0) setPaymentTotal(total)
 
-      // Sandbox mode swaps the real Apple Pay sheet for a fake popup. Web is
-      // always Apple Pay (Google Pay is Android-app-only).
-      if (MOCK_ONRAMP) {
+      // Sandbox mode swaps the real Apple Pay sheet for a fake popup (Apple Pay only).
+      if (MOCK_ONRAMP && !useGooglePay) {
         url += (url.includes('?') ? '&' : '?') + 'useApplePaySandbox=true'
       }
 
@@ -320,6 +328,7 @@ export function CBHeadlessOnramp({
     agreed,
     effectiveEthAmount,
     paymentMethod,
+    useGooglePay,
     selectedChain,
     user?.id,
     verification.email,
@@ -354,17 +363,23 @@ export function CBHeadlessOnramp({
 
       switch (eventName) {
         case 'onramp_api.load_error': {
-          // On non-Safari browsers Apple Pay isn't natively available, so
-          // Coinbase renders an Apple Pay QR code instead. Per Coinbase docs
-          // this error is expected on web and must be ignored — keep the
-          // iframe mounted so the QR code shows.
-          if (errorCode === 'ERROR_CODE_GUEST_APPLE_PAY_NOT_SUPPORTED') {
+          // On non-Safari Apple Pay browsers, Coinbase renders an Apple Pay QR
+          // code instead of the native sheet. Per Coinbase docs this "not
+          // supported" error is expected there and must be ignored so the QR
+          // code stays visible. This QR fallback doesn't apply to Google Pay.
+          if (
+            !useGooglePay &&
+            errorCode === 'ERROR_CODE_GUEST_APPLE_PAY_NOT_SUPPORTED'
+          ) {
             break
           }
-          // User has no Apple Pay set up at all (Safari, no Wallet card):
-          // they genuinely can't use this method, so fall back to MoonPay.
+          // The chosen method genuinely isn't available/set up on this device
+          // (no Apple Pay card, or Google Pay unavailable): fall back to MoonPay.
           if (
-            errorCode === 'ERROR_CODE_GUEST_APPLE_PAY_NOT_SETUP' &&
+            (errorCode === 'ERROR_CODE_GUEST_APPLE_PAY_NOT_SETUP' ||
+              errorCode === 'ERROR_CODE_GUEST_APPLE_PAY_NOT_SUPPORTED' ||
+              errorCode === 'ERROR_CODE_GUEST_GOOGLE_PAY_NOT_SETUP' ||
+              errorCode === 'ERROR_CODE_GUEST_GOOGLE_PAY_NOT_SUPPORTED') &&
             onUnsupportedRef.current
           ) {
             onUnsupportedRef.current()
@@ -420,7 +435,7 @@ export function CBHeadlessOnramp({
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [fundingState])
+  }, [fundingState, useGooglePay])
 
   // --- Success state ---
   if (fundingState === 'success') {
@@ -488,8 +503,8 @@ export function CBHeadlessOnramp({
             </div>
           )}
           <div className="bg-black/20 rounded-lg border border-white/10 overflow-hidden">
-            {/* Safari renders just the Apple Pay button (short); other browsers
-                render a full QR-code screen that needs much more height. */}
+            {/* Apple Pay (Safari) and Google Pay render just a button (short);
+                non-Safari Apple Pay renders a full QR-code screen needing more height. */}
             <iframe
               title="Coinbase payment"
               src={paymentLinkUrl}
@@ -498,7 +513,7 @@ export function CBHeadlessOnramp({
               referrerPolicy="no-referrer"
               className="w-full"
               style={{
-                height: nativeApplePay ? 220 : 520,
+                height: nativeApplePay ? 220 : useGooglePay ? 360 : 520,
                 maxHeight: '60vh',
                 border: 'none',
               }}
@@ -507,7 +522,9 @@ export function CBHeadlessOnramp({
           <p className="text-gray-400 text-xs text-center leading-relaxed">
             {nativeApplePay
               ? 'Press the Apple Pay button above to complete your purchase securely with Coinbase.'
-              : 'Scan the QR code above with your phone to complete your purchase securely with Apple Pay.'}
+              : useGooglePay
+                ? 'Press the Google Pay button above to complete your purchase securely with Coinbase.'
+                : 'Scan the QR code above with your phone to complete your purchase securely with Apple Pay.'}
           </p>
         </div>
       </div>
@@ -594,7 +611,7 @@ export function CBHeadlessOnramp({
         <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
           <p className="text-gray-200 font-semibold text-sm">Verify your details</p>
           <p className="text-gray-400 text-xs leading-relaxed">
-            Coinbase Apple Pay checkout requires a verified US phone number and email.
+            Coinbase {payLabel} checkout requires a verified US phone number and email.
           </p>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">

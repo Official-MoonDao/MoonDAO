@@ -154,7 +154,7 @@ export function FundOnramp({
       {provider === 'coinbase' ? (
         isUS ? (
           <p className="text-gray-300/80 text-xs leading-relaxed">
-            Recommended. Pay with Apple Pay — no account needed.
+            Recommended. Pay with Apple Pay or Google Pay — no account needed.
           </p>
         ) : (
           <p className="text-gray-300/80 text-xs leading-relaxed">
