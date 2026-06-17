@@ -37,6 +37,9 @@ interface CBOnrampProps {
   /** Called when the device doesn't support Apple/Google Pay so the parent
    *  can fall back to MoonPay automatically. */
   onUnsupported?: () => void
+  /** Region already resolved by a parent (e.g. FundOnramp). When provided,
+   *  skips the duplicate /api/coinbase/region request. */
+  initialIsUS?: boolean | null
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
@@ -56,13 +59,19 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   embedded = false,
   headerSlot,
   onUnsupported,
+  initialIsUS,
 }) => {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
 
-  // US users get the Headless (Apple Pay / Google Pay) onramp; everyone else
-  // keeps the hosted Coinbase redirect. `null` = still detecting region.
-  const [isUS, setIsUS] = useState<boolean | null>(null)
+  // US users get the Headless (Apple Pay) onramp; everyone else keeps the
+  // hosted Coinbase redirect. `null` = still detecting region. When a parent
+  // already resolved the region, use it and skip the duplicate request.
+  const [isUS, setIsUS] = useState<boolean | null>(initialIsUS ?? null)
   useEffect(() => {
+    if (initialIsUS !== undefined && initialIsUS !== null) {
+      setIsUS(initialIsUS)
+      return
+    }
     let cancelled = false
     fetch('/api/coinbase/region')
       .then((r) => (r.ok ? r.json() : null))
@@ -75,7 +84,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [initialIsUS])
 
   // Bridge a successful Headless purchase into the existing post-onramp flow
   // (cache state via onBeforeNavigate, then reload with the onrampSuccess flag

@@ -15,6 +15,9 @@ interface FundOnrampModalProps {
   onExit?: () => void
   isWaitingForGasEstimate?: boolean
   defaultProvider?: OnrampProvider
+  /** MoonPay-only mode (hides the provider selector). Use for amount-less
+   *  top-ups where Coinbase can't build an order. */
+  moonPayOnly?: boolean
 
   // Coinbase (redirect flow + JWT for post-redirect auto-transaction)
   context: string
@@ -49,6 +52,7 @@ export const FundOnrampModal: React.FC<FundOnrampModalProps> = ({
   onExit,
   isWaitingForGasEstimate = false,
   defaultProvider,
+  moonPayOnly = false,
   context,
   agreed,
   selectedWallet,
@@ -137,6 +141,7 @@ export const FundOnrampModal: React.FC<FundOnrampModalProps> = ({
         isWaitingForGasEstimate={isWaitingForGasEstimate}
         onExit={handleExit}
         defaultProvider={defaultProvider}
+        moonPayOnly={moonPayOnly}
         allowAmountInput={allowAmountInput}
         coinbaseRedirectUrl={finalRedirectUrl}
         onCoinbaseBeforeNavigate={handleCoinbaseBeforeNavigate}

@@ -810,6 +810,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                     selectedChain={selectedChain}
                     ethAmount={0}
                     context="wallet-fund"
+                    moonPayOnly
                   />
                 )}
 

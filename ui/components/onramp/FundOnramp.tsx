@@ -14,6 +14,10 @@ interface FundOnrampProps {
   /** Forces a provider. When omitted, auto-selects by region: Coinbase for US
    *  users, MoonPay for everyone else. */
   defaultProvider?: OnrampProvider
+  /** MoonPay-only mode (no provider selector). Use for amount-less top-ups
+   *  (e.g. the wallet "Fund" button) where Coinbase can't build an order
+   *  without a known amount. */
+  moonPayOnly?: boolean
 
   // MoonPay-specific
   onMoonPayBeforeOpen?: () => Promise<void>
@@ -48,6 +52,7 @@ export function FundOnramp({
   isWaitingForGasEstimate = false,
   onExit,
   defaultProvider,
+  moonPayOnly = false,
   onMoonPayBeforeOpen,
   onMoonPayPurchaseSubmitted,
   checkBalanceSufficient,
@@ -63,15 +68,15 @@ export function FundOnramp({
   // Start with the caller's override (if any), otherwise 'moonpay' until
   // region detection resolves.
   const [provider, setProvider] = useState<OnrampProvider>(
-    defaultProvider ?? 'moonpay'
+    moonPayOnly ? 'moonpay' : defaultProvider ?? 'moonpay'
   )
   // Track whether the user has manually switched so we don't override them.
   const userSwitchedRef = useRef(false)
   const [isUS, setIsUS] = useState<boolean | null>(null)
 
   useEffect(() => {
-    // Only auto-select when the caller hasn't forced a defaultProvider.
-    if (defaultProvider) return
+    // Only auto-select when the caller hasn't forced a provider / MoonPay-only.
+    if (defaultProvider || moonPayOnly) return
     let cancelled = false
     fetch('/api/coinbase/region')
       .then((r) => (r.ok ? r.json() : null))
@@ -87,7 +92,7 @@ export function FundOnramp({
     return () => {
       cancelled = true
     }
-  }, [defaultProvider])
+  }, [defaultProvider, moonPayOnly])
 
   const handleSetProvider = (p: OnrampProvider) => {
     userSwitchedRef.current = true
@@ -190,7 +195,7 @@ export function FundOnramp({
         <MoonPayOnramp
           embedded
           fullWidth
-          headerSlot={providerSelector}
+          headerSlot={moonPayOnly ? undefined : providerSelector}
           address={address}
           selectedChain={selectedChain}
           ethAmount={ethAmount}
@@ -209,6 +214,7 @@ export function FundOnramp({
           embedded
           fullWidth
           headerSlot={providerSelector}
+          initialIsUS={isUS}
           address={address}
           selectedChain={selectedChain}
           ethAmount={ethAmount}
