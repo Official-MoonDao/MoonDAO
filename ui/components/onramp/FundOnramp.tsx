@@ -96,6 +96,49 @@ export function FundOnramp({
 
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
 
+  const moonPayButton = (
+    <button
+      key="moonpay"
+      type="button"
+      data-testid="onramp-select-moonpay"
+      onClick={() => handleSetProvider('moonpay')}
+      aria-pressed={provider === 'moonpay'}
+      className={`relative flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all duration-200 ${
+        provider === 'moonpay'
+          ? 'border-indigo-400/60 bg-indigo-500/15 ring-2 ring-indigo-500/40'
+          : 'border-white/10 bg-white/5 hover:bg-white/10'
+      }`}
+    >
+      <span className="text-sm font-semibold text-white">MoonPay</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+        {isUS ? 'Card or bank' : 'Recommended'}
+      </span>
+    </button>
+  )
+  const coinbaseButton = (
+    <button
+      key="coinbase"
+      type="button"
+      data-testid="onramp-select-coinbase"
+      onClick={() => handleSetProvider('coinbase')}
+      aria-pressed={provider === 'coinbase'}
+      className={`relative flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all duration-200 ${
+        provider === 'coinbase'
+          ? 'border-blue-400/60 bg-blue-500/15 ring-2 ring-blue-500/40'
+          : 'border-white/10 bg-white/5 hover:bg-white/10'
+      }`}
+    >
+      <span className="text-sm font-semibold text-white">Coinbase</span>
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+        {isUS ? 'Recommended' : 'Have an account?'}
+      </span>
+    </button>
+  )
+  // The recommended provider (the region default) is shown first / on the left.
+  const orderedProviderButtons = isUS
+    ? [coinbaseButton, moonPayButton]
+    : [moonPayButton, coinbaseButton]
+
   // Rendered just beneath the embedded provider's "Fund Wallet" header so the
   // user picks how to pay after they see what they're funding.
   const providerSelector = (
@@ -106,40 +149,7 @@ export function FundOnramp({
       <p className="text-gray-400 font-semibold text-xs uppercase tracking-wider">
         Choose how to pay
       </p>
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          data-testid="onramp-select-moonpay"
-          onClick={() => handleSetProvider('moonpay')}
-          aria-pressed={provider === 'moonpay'}
-          className={`relative flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all duration-200 ${
-            provider === 'moonpay'
-              ? 'border-indigo-400/60 bg-indigo-500/15 ring-2 ring-indigo-500/40'
-              : 'border-white/10 bg-white/5 hover:bg-white/10'
-          }`}
-        >
-          <span className="text-sm font-semibold text-white">MoonPay</span>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-            {isUS ? 'Card or bank' : 'Recommended'}
-          </span>
-        </button>
-        <button
-          type="button"
-          data-testid="onramp-select-coinbase"
-          onClick={() => handleSetProvider('coinbase')}
-          aria-pressed={provider === 'coinbase'}
-          className={`relative flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all duration-200 ${
-            provider === 'coinbase'
-              ? 'border-blue-400/60 bg-blue-500/15 ring-2 ring-blue-500/40'
-              : 'border-white/10 bg-white/5 hover:bg-white/10'
-          }`}
-        >
-          <span className="text-sm font-semibold text-white">Coinbase</span>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-            {isUS ? 'Recommended' : 'Have an account?'}
-          </span>
-        </button>
-      </div>
+      <div className="grid grid-cols-2 gap-2">{orderedProviderButtons}</div>
 
       {provider === 'coinbase' ? (
         isUS ? (
