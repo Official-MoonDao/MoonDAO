@@ -786,7 +786,7 @@ export default function DePrizePlay() {
       const entries = await Promise.all(
         held.map(async (o) => {
           try {
-            const balWei = BigInt(Math.floor(o.balance * 1e18))
+            const balWei = o.balanceWei ?? BigInt(Math.floor(o.balance * 1e18))
             const amounts = Array.from({ length: MAX_OUTCOMES }, (_, j) =>
               j === o.index ? -balWei : 0n,
             )
@@ -1726,7 +1726,7 @@ export default function DePrizePlay() {
                         ? helperPreview
                         : undefined
                     const claimAmount = claimEth !== undefined ? claimEth : claimable
-                    const claimUnit = validHelper ? 'ETH' : 'WETH'
+                    const claimUnit = claimEth !== undefined ? 'ETH' : 'WETH'
                     const nothingToClaim = claimAmount <= 0
                     return (
                       <div className="p-4 sm:p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
@@ -1747,7 +1747,7 @@ export default function DePrizePlay() {
                               {`${fmt(claimAmount)} ${claimUnit}`}
                             </p>
                             <div className="mt-3 flex items-center gap-3 flex-wrap">
-                              {validHelper ? (
+                              {claimEth !== undefined ? (
                                 <StandardButton
                                   onClick={helperApproved ? redeemViaHelper : approveHelper}
                                   disabled={busy}
@@ -1766,7 +1766,7 @@ export default function DePrizePlay() {
                                   Claim
                                 </StandardButton>
                               )}
-                              {validHelper && (
+                              {claimEth !== undefined && (
                                 <button
                                   onClick={redeem}
                                   disabled={busy}
