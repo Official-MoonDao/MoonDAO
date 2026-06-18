@@ -280,9 +280,9 @@ export default function BuyTeamListingModal({
         </p>
         <Input
           type="text"
-          variant="modern"
+          variant="dark"
           label="Email"
-          className="text-white px-4 py-3"
+          className="text-white"
           maxWidth="max-w-full"
           placeholder="you@example.com"
           value={email}
@@ -294,8 +294,8 @@ export default function BuyTeamListingModal({
             <p className="font-GoodTimes text-sm text-white">Shipping Address</p>
             <Input
               type="text"
-              variant="modern"
-              className="text-white px-4 py-3"
+              variant="dark"
+              className="text-white"
               maxWidth="max-w-full"
               placeholder="Street Address"
               value={shippingInfo.streetAddress}
@@ -310,8 +310,8 @@ export default function BuyTeamListingModal({
             <div className="w-full flex flex-col sm:flex-row gap-2">
               <Input
                 type="text"
-                variant="modern"
-                className="text-white px-4 py-3"
+                variant="dark"
+                className="text-white"
                 maxWidth="max-w-full"
                 placeholder="City"
                 value={shippingInfo.city}
@@ -320,8 +320,8 @@ export default function BuyTeamListingModal({
               />
               <Input
                 type="text"
-                variant="modern"
-                className="text-white px-4 py-3"
+                variant="dark"
+                className="text-white"
                 maxWidth="max-w-full"
                 placeholder="State"
                 value={shippingInfo.state}
@@ -332,8 +332,8 @@ export default function BuyTeamListingModal({
             <div className="w-full flex flex-col sm:flex-row gap-2">
               <Input
                 type="text"
-                variant="modern"
-                className="text-white px-4 py-3"
+                variant="dark"
+                className="text-white"
                 maxWidth="max-w-full"
                 placeholder="Postal Code"
                 value={shippingInfo.postalCode}
@@ -347,8 +347,8 @@ export default function BuyTeamListingModal({
               />
               <Input
                 type="text"
-                variant="modern"
-                className="text-white px-4 py-3"
+                variant="dark"
+                className="text-white"
                 maxWidth="max-w-full"
                 placeholder="Country"
                 value={shippingInfo.country}
