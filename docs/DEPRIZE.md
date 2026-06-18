@@ -230,10 +230,10 @@ Milestones 1–3 are implemented and tested in `subscription-contracts/src/depri
 | Swap/protocol fee | `DePrizeFeeHook` (1% LP + 1% protocol) | LMSR built-in `fee = 1e16` (1%), retained by the market | **Superseded** |
 | Winner reporting | `DePrizeReporter` → `CTF.reportPayouts` | not yet built | **M4 (planned)** |
 | Winner redemption | `CTF.redeemPositions` wrapper | not yet built | **M4 (planned)** |
-| Milestone prize escrow | `DePrizeMilestoneEscrow` (30/70) | not yet built | **M5 (planned)** |
+| Milestone prize escrow | `DePrizeMilestoneEscrow` (30/70) | **No escrow contract** — the mission's JB payout splits are permanently locked, so an escrow can't be a beneficiary. The prize lands in the admin Safe (the locked ~90% payout) and is disbursed 30/70 via Safe tx; `DePrizeDisburse.s.sol` builds the calldata and the registry records the provider payout address | **M5 ✅ (Safe runbook)** |
 | Unified refund (`refundAll`) | `DePrizeRefund` | not yet built | **M4 (planned)** |
 
-The milestone-based prize escrow, Senate-reporting bridge, CTF redemption, and unified refund described later in this Part are **design intent, not yet implemented**. See [`DEPRIZE_M1.md`](./DEPRIZE_M1.md)/[`M2`](./DEPRIZE_M2.md)/[`M3`](./DEPRIZE_M3.md) for what exists today.
+The Senate-reporting bridge, CTF redemption, and unified refund (M4) are **design intent, in review separately**. The milestone-based prize disbursement (M5) shipped as a **Safe-operated runbook + tooling, not an escrow contract** — the mission's locked JB payout splits make an escrow-as-beneficiary impossible, and the prize already lands in the admin Safe (the trust anchor); the 30/70 release and the `M2_FAILED → addToBalanceOf` refund are Safe transactions built by `DePrizeDisburse.s.sol`, with the provider payout address recorded on-chain in the registry. See [`DEPRIZE_M1.md`](./DEPRIZE_M1.md)/[`M2`](./DEPRIZE_M2.md)/[`M3`](./DEPRIZE_M3.md)/[`M5`](./DEPRIZE_M5.md) for what exists today.
 
 ## State machine
 
@@ -276,7 +276,7 @@ As-built status shown. The CTF + `LMSRWithTWAP` decision (see §Implementation s
 | `DePrizeMint` | Entry point: takes ETH, routes 5% to JB, wraps 95% to WETH, buys outcome tokens on the `LMSRWithTWAP` market, forwards tokens + refunds leftover | **Built (M3)** |
 | `DePrizeReporter` | Reads Senate result, calls `CTF.reportPayouts` | Planned (M4) |
 | `DePrizeRedeem` / `DePrizeRefund` | Winner `redeemPositions`; unified cancellation refund (CTF collateral + `$OVERVIEW` floor) | Planned (M4) |
-| `DePrizeMilestoneEscrow` | Holds prize pool post-settlement; releases 30% at M1 (capability), 70% at M2 (Frank flew) | Planned (M5) |
+| ~~`DePrizeMilestoneEscrow`~~ | ~~Holds prize pool post-settlement; releases 30% at M1, 70% at M2~~ | **M5 — built without a contract.** JB payout splits are permanently locked (escrow can't be a beneficiary); prize lands in the admin Safe and is disbursed 30/70 by Safe tx (`DePrizeDisburse.s.sol`); `M2_FAILED` returns 70% to JB via `addToBalanceOf`; registry records `providerPayoutAddress` |
 | ~~`DePrizePrizeEscrow`~~ | ~~Holds 1% swap fees during campaign~~ | **Deleted** — LMSR built-in fee |
 | ~~`DePrizeFeeHook`~~ | ~~Uniswap v4 hook for LP + protocol fee~~ | **Deleted** — no Uniswap layer |
 
