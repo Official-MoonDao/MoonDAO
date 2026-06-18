@@ -4,6 +4,7 @@ import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   MARKETPLACE_TABLE_ADDRESSES,
+  MARKETPLACE_TABLE_NAMES,
   TEAM_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
@@ -250,10 +251,17 @@ export async function getStaticProps() {
       abi: TeamABI as any,
     })
 
-    const marketplaceTableName = await readContract({
-      contract: marketplaceTableContract,
-      method: 'getTableName',
-    })
+    // The table name is a known constant, so prefer it and avoid an RPC call on
+    // the critical path. Only fall back to the on-chain lookup if the constant
+    // is somehow missing. A rate-limited getTableName() previously took down the
+    // entire page (every render fell into the catch block below).
+    let marketplaceTableName: any = MARKETPLACE_TABLE_NAMES[chainSlug]
+    if (!marketplaceTableName) {
+      marketplaceTableName = await readContract({
+        contract: marketplaceTableContract,
+        method: 'getTableName',
+      })
+    }
 
     const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
@@ -324,10 +332,17 @@ export async function getStaticProps() {
       return expiration === null || expiration === undefined || expiration > now
     })
 
-    const allTeamNames = await queryTable(
-      chain,
-      `SELECT id, name FROM ${TEAM_TABLE_NAMES[chainSlug]}`
-    )
+    // Team names are a nice-to-have label. A failure here must not discard the
+    // listings we already fetched, so resolve it best-effort.
+    let allTeamNames: any[] = []
+    try {
+      allTeamNames = await queryTable(
+        chain,
+        `SELECT id, name FROM ${TEAM_TABLE_NAMES[chainSlug]}`
+      )
+    } catch (error) {
+      console.error('Failed to fetch team names for marketplace listings:', error)
+    }
 
     const listingsWithTeamNames = validListings.map((listing: any) => {
       return {
@@ -344,9 +359,11 @@ export async function getStaticProps() {
     }
   } catch (error) {
     console.error(error)
+    // Don't let a transient failure cache an empty marketplace for a full
+    // minute. Revalidate quickly so the next request can repopulate listings.
     return {
       props: { listings: [] },
-      revalidate: 60,
+      revalidate: 10,
     }
   }
 }
