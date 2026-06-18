@@ -120,7 +120,7 @@ contract DePrizeDisburse is Script, Config {
                 (dp.jbProjectId, NATIVE_TOKEN, remainder, false, "DePrize M2_FAILED refund", "")
             );
             d.payoutTo = address(registry);
-            d.payoutValue = 0;
+            d.payoutValue = remainder;
             d.payoutData = abi.encodeCall(IDePrizeRegistry.failM2, (deprizeId));
         } else {
             revert UnknownMilestone(milestone);
