@@ -235,48 +235,52 @@ export default function BuyTeamListingModal({
       size="lg"
     >
       <form
-        className="w-full flex flex-col gap-5 items-start justify-start"
+        className="w-full flex flex-col gap-3 items-start justify-start"
         onSubmit={(e) => {
           e.preventDefault()
         }}
       >
-        <div className="w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+        <div className="w-full flex gap-3 rounded-2xl border border-white/10 bg-black/30 p-3">
           {listing.image && (
-            <div id="image-container" className="relative w-full h-56 sm:h-64">
+            <div
+              id="image-container"
+              className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl"
+            >
               <IPFSRenderer
                 src={listing.image}
-                width={600}
-                height={600}
+                width={160}
+                height={160}
                 alt="Listing Image"
                 className="object-cover"
                 fillContainer
               />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-              <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur-sm">
+              <span className="absolute left-1 top-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
                 {`#${listing.id}`}
               </span>
             </div>
           )}
-          <div className="flex flex-col gap-2 p-4">
-            <h3 className="font-GoodTimes text-lg leading-tight text-white">{listing.title}</h3>
-            <p className="text-sm leading-relaxed text-white/60">{listing.description}</p>
-            <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
-              <p id="listing-price" className="font-GoodTimes text-xl text-white">{`${
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <h3 className="font-GoodTimes text-base leading-tight text-white">{listing.title}</h3>
+            <p className="text-xs leading-snug text-white/60 line-clamp-2">
+              {listing.description}
+            </p>
+            <div className="mt-auto flex flex-wrap items-center gap-2">
+              <p id="listing-price" className="font-GoodTimes text-lg text-white">{`${
                 citizen
                   ? truncateTokenValue(listing.price, listing.currency)
                   : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
               } ${listing.currency}`}</p>
               {!citizen && (
-                <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] text-white/50">
-                  Includes 10% non-citizen fee
+                <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/50">
+                  +10% non-citizen fee
                 </span>
               )}
             </div>
           </div>
         </div>
-        <p className="text-sm opacity-60">
-          Enter your information, confirm the transaction and wait to receive an email from the
-          vendor.
+        <p className="text-xs opacity-60">
+          Enter your details and confirm the transaction. You&apos;ll receive a confirmation email
+          from the vendor.
         </p>
         <Input
           type="text"
@@ -290,8 +294,8 @@ export default function BuyTeamListingModal({
           formatNumbers={false}
         />
         {listing.shipping === 'true' && (
-          <div className="w-full flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/20 p-4">
-            <p className="font-GoodTimes text-sm text-white">Shipping Address</p>
+          <div className="w-full flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/20 p-3">
+            <p className="font-GoodTimes text-xs text-white">Shipping Address</p>
             <Input
               type="text"
               variant="dark"
