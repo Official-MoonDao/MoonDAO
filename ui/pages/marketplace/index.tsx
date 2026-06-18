@@ -212,36 +212,70 @@ export async function getStaticProps() {
 
     const allListings = await queryTable(chain, statement)
 
-    // Process listings in batches to check expiration and avoid rate limiting
+    // Resolve each team's expiration only once. Multiple listings frequently
+    // share a teamId, so de-duping drastically cuts the number of RPC calls and
+    // therefore the chance of getting rate limited under heavy traffic.
+    const uniqueTeamIds = Array.from(
+      new Set(allListings.map((listing: any) => listing.teamId))
+    )
+
+    async function getTeamExpiration(
+      teamId: any,
+      retries = 3,
+      delay = 500
+    ): Promise<number | null> {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const teamExpiration = await readContract({
+            contract: teamContract,
+            method: 'expiresAt',
+            params: [teamId],
+          })
+          return +teamExpiration.toString()
+        } catch (error) {
+          if (attempt < retries - 1) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, delay * Math.pow(2, attempt))
+            )
+            continue
+          }
+          // Persistent failure (likely rate limiting). Return null so the
+          // caller can decide to "fail open" rather than dropping listings.
+          return null
+        }
+      }
+      return null
+    }
+
+    // Process unique teams in batches to check expiration and avoid rate limiting
     const BATCH_SIZE = 10
     const DELAY_BETWEEN_BATCHES = 100 // ms
-    const validListings: any[] = []
+    const teamExpirations = new Map<any, number | null>()
 
-    for (let i = 0; i < allListings.length; i += BATCH_SIZE) {
-      const batch = allListings.slice(i, i + BATCH_SIZE)
-      
-      const batchResults = await Promise.all(
-        batch.map(async (listing: any) => {
-          try {
-            const teamExpiration = await readContract({
-              contract: teamContract,
-              method: 'expiresAt',
-              params: [listing.teamId],
-            })
-            return +teamExpiration.toString() > now ? listing : null
-          } catch {
-            return null
-          }
+    for (let i = 0; i < uniqueTeamIds.length; i += BATCH_SIZE) {
+      const batch = uniqueTeamIds.slice(i, i + BATCH_SIZE)
+
+      await Promise.all(
+        batch.map(async (teamId: any) => {
+          teamExpirations.set(teamId, await getTeamExpiration(teamId))
         })
       )
 
-      validListings.push(...batchResults.filter((listing: any) => listing !== null))
-
       // Add delay between batches to avoid rate limiting
-      if (i + BATCH_SIZE < allListings.length) {
-        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES))
+      if (i + BATCH_SIZE < uniqueTeamIds.length) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, DELAY_BETWEEN_BATCHES)
+        )
       }
     }
+
+    // Keep a listing when its team is unexpired. If the expiration could not be
+    // resolved (null, e.g. rate limited), fail open and keep the listing so a
+    // transient RPC issue never wipes out the entire marketplace.
+    const validListings = allListings.filter((listing: any) => {
+      const expiration = teamExpirations.get(listing.teamId)
+      return expiration === null || expiration === undefined || expiration > now
+    })
 
     const allTeamNames = await queryTable(
       chain,
