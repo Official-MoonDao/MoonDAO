@@ -1,3 +1,4 @@
+import confetti from 'canvas-confetti'
 import ConditionalTokensABI from 'const/abis/ConditionalTokens.json'
 import DePrizeRedeemABI from 'const/abis/DePrizeRedeem.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
@@ -249,6 +250,12 @@ export default function DePrizePlay() {
   const [helperDeprizeId, setHelperDeprizeId] = useState(String(DEPRIZE_PLAY_ID))
   const [helperPreview, setHelperPreview] = useState<number | undefined>()
   const [helperApproved, setHelperApproved] = useState<boolean | undefined>()
+  // Bumped after a tx so reads that don't otherwise depend on changing state
+  // (e.g. the helper previewRedeem) refetch. `claimed` flips once the wallet
+  // has redeemed so the claim card can show a settled state instead of a stale
+  // amount.
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const [claimed, setClaimed] = useState(false)
   const [wethBalance, setWethBalance] = useState<number | undefined>()
   const [nativeBalance, setNativeBalance] = useState<number | undefined>()
   const [ctfApproved, setCtfApproved] = useState<boolean | undefined>()
@@ -585,6 +592,11 @@ export default function DePrizePlay() {
   // no-winner refund). Append that as a final chart point so the graph snaps to
   // the outcome. Closing alone does NOT do this — only resolution declares a
   // winner. Fires once per resolution.
+  // A new market/condition means a fresh claim state.
+  useEffect(() => {
+    setClaimed(false)
+  }, [conditionId])
+
   const resolvedSnapRef = useRef(false)
   useEffect(() => {
     const den = payoutDen
@@ -600,11 +612,28 @@ export default function DePrizePlay() {
     resolvedSnapRef.current = true
   }, [payoutNums, payoutDen, recordOddsSample])
 
+  // Celebratory burst on a successful bet/claim so the action clearly "worked".
+  const fireConfetti = useCallback(() => {
+    confetti({
+      particleCount: 150,
+      spread: 100,
+      origin: { y: 0.6 },
+      shapes: ['circle', 'star'],
+      colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+    })
+  }, [])
+
   // The just-mined block can lag the RPC briefly; refresh now and once more
   // shortly after so balances/odds reflect the tx without a manual refresh.
+  // Bumping refreshNonce also re-runs the helper preview/approval read, which
+  // otherwise has no reason to refetch after a redeem.
   const refreshSoon = useCallback(() => {
     loadMarket()
-    setTimeout(() => loadMarket(), 2500)
+    setRefreshNonce((n) => n + 1)
+    setTimeout(() => {
+      loadMarket()
+      setRefreshNonce((n) => n + 1)
+    }, 2500)
   }, [loadMarket])
 
   // Cost basis (what the user has bet per outcome) — there's no on-chain record
@@ -750,7 +779,7 @@ export default function DePrizePlay() {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validHelper, helper, ctf, userAddress, helperAddress, helperDeprizeId, payoutDen])
+  }, [validHelper, helper, ctf, userAddress, helperAddress, helperDeprizeId, payoutDen, refreshNonce])
 
   // Sell-out quote: for each outcome the user holds, compute the ETH they'd
   // receive by selling their full position right now (calcNetCost with negative
@@ -1070,6 +1099,7 @@ export default function DePrizePlay() {
       toast.dismiss('trade')
       const qtyNum = Number(qty) / Number(UNIT)
       addCostBasis(index, Number(cost) / Number(UNIT))
+      fireConfetti()
       toast.success(
         `Bet ${fmt(Number(cost) / Number(UNIT))} ETH on outcome #${
           index + 1
@@ -1176,6 +1206,8 @@ export default function DePrizePlay() {
         })
       )
       clearCostBasis()
+      setClaimed(true)
+      fireConfetti()
       toast.success('Winnings claimed.', { style: toastStyle })
       refreshSoon()
     } catch (err: any) {
@@ -1346,6 +1378,8 @@ export default function DePrizePlay() {
       )
       toast.dismiss('helper')
       clearCostBasis()
+      setClaimed(true)
+      fireConfetti()
       toast.success(
         helperPreview !== undefined
           ? `Redeemed ≈ ${fmt(helperPreview)} ETH via DePrizeRedeem.`
@@ -1747,52 +1781,74 @@ export default function DePrizePlay() {
                     market is resolved. Pays native ETH via the DePrizeRedeem
                     helper (one tap after a one-time approval); the raw CTF/WETH
                     path lives in Advanced below. */}
-                {resolved && userAddress && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
-                    <p className="text-emerald-200 text-sm">
-                      {isRefundVector
-                        ? 'No winner — everyone refunded'
-                        : winningIndex >= 0
-                        ? `Outcome #${winningIndex + 1} won`
-                        : 'Resolved'}
-                    </p>
-                    <p className="text-white text-2xl font-bold mt-1">
-                      {validHelper && helperPreview !== undefined
-                        ? `${fmt(helperPreview)} ETH`
-                        : `${fmt(claimable)} WETH`}
-                    </p>
-                    <div className="mt-3 flex items-center gap-3 flex-wrap">
-                      {validHelper ? (
-                        <StandardButton
-                          onClick={helperApproved ? redeemViaHelper : approveHelper}
-                          disabled={busy || (helperPreview ?? 0) <= 0}
-                          className="rounded-full"
-                          backgroundColor="bg-moon-green"
-                        >
-                          {helperApproved ? 'Claim' : 'Approve'}
-                        </StandardButton>
-                      ) : (
-                        <StandardButton
-                          onClick={redeem}
-                          disabled={busy}
-                          className="rounded-full"
-                          backgroundColor="bg-moon-green"
-                        >
-                          Claim
-                        </StandardButton>
-                      )}
-                      {validHelper && (
-                        <button
-                          onClick={redeem}
-                          disabled={busy}
-                          className="text-gray-400 hover:text-gray-200 text-xs underline disabled:opacity-50"
-                        >
-                          WETH instead
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {resolved &&
+                  userAddress &&
+                  (() => {
+                    const claimEth =
+                      validHelper && helperPreview !== undefined
+                        ? helperPreview
+                        : undefined
+                    const claimAmount =
+                      claimEth !== undefined ? claimEth : claimable
+                    const claimUnit = claimEth !== undefined ? 'ETH' : 'WETH'
+                    const nothingToClaim = claimAmount <= 0
+                    return (
+                      <div className="p-4 sm:p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+                        <p className="text-emerald-200 text-sm">
+                          {isRefundVector
+                            ? 'No winner — everyone refunded'
+                            : winningIndex >= 0
+                            ? `Outcome #${winningIndex + 1} won`
+                            : 'Resolved'}
+                        </p>
+                        {nothingToClaim ? (
+                          <p className="text-white text-2xl font-bold mt-1">
+                            {claimed ? 'Claimed' : 'Nothing to claim'}
+                          </p>
+                        ) : (
+                          <>
+                            <p className="text-white text-2xl font-bold mt-1">
+                              {`${fmt(claimAmount)} ${claimUnit}`}
+                            </p>
+                            <div className="mt-3 flex items-center gap-3 flex-wrap">
+                              {validHelper ? (
+                                <StandardButton
+                                  onClick={
+                                    helperApproved
+                                      ? redeemViaHelper
+                                      : approveHelper
+                                  }
+                                  disabled={busy}
+                                  className="rounded-full"
+                                  backgroundColor="bg-moon-green"
+                                >
+                                  {helperApproved ? 'Claim' : 'Approve'}
+                                </StandardButton>
+                              ) : (
+                                <StandardButton
+                                  onClick={redeem}
+                                  disabled={busy}
+                                  className="rounded-full"
+                                  backgroundColor="bg-moon-green"
+                                >
+                                  Claim
+                                </StandardButton>
+                              )}
+                              {validHelper && (
+                                <button
+                                  onClick={redeem}
+                                  disabled={busy}
+                                  className="text-gray-400 hover:text-gray-200 text-xs underline disabled:opacity-50"
+                                >
+                                  WETH instead
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )
+                  })()}
 
                 {/* M4: DePrizeRedeem helper plumbing — dev/testnet only. The
                     user-facing claim above already drives this; these raw
@@ -2023,7 +2079,7 @@ export default function DePrizePlay() {
       {/* Add funds modal */}
       {addFundsOpen && (
         <Modal id="deprize-add-funds" setEnabled={setAddFundsOpen} title="Add funds">
-          <div className="flex flex-col gap-4 w-full sm:w-[420px]">
+          <div className="flex flex-col gap-4 w-full">
             <p className="text-gray-300 text-sm">
               Add ETH to your betting balance. Your ETH is held on the market and
               you can cash out anytime.
@@ -2080,7 +2136,7 @@ export default function DePrizePlay() {
           setEnabled={(v) => !v && setBetIndex(null)}
           title={`Bet on Outcome #${betIndex + 1}`}
         >
-          <div className="flex flex-col gap-4 w-full sm:w-[420px]">
+          <div className="flex flex-col gap-4 w-full">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-400">Chance to win</span>
               <span className="text-white font-semibold">

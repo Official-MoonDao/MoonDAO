@@ -420,9 +420,10 @@ export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 export const MARKETPLACE_FEE_SPLIT: string = polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
-  // sepolia: fresh self-serve market (oracle + owner = pmoncada.eth), DePrize id 2.
-  // Old market 0x11DCe8... had oracle jaderiverstokes.eth and is kept for reference.
-  sepolia: '0x48de289455f08b523ca5a4ae09f740e7ba7b72de',
+  // sepolia: fresh self-serve market (oracle + owner = pmoncada.eth), DePrize id 3.
+  // Prior test markets: 0x48de28... (id 2, resolved), 0x11DCe8... (oracle
+  // jaderiverstokes.eth). Kept for reference only.
+  sepolia: '0x36da9d41b673b4115df0e06cefb4c665e2289dd0',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
 }
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
@@ -450,14 +451,14 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
 // questionId used when the play market's condition was prepared
 // (prediction/deprize.config.js DEPRIZE_QUESTION_ID). Needed by reportPayouts;
 // the conditionId is keccak256(oracle, questionId, outcomeSlotCount).
-// Verified for the fresh Sepolia market: keccak256(ORACLE_ADDRESS, 0x..03, 3)
-// == the market's conditionId (0xed5ff0...7312).
+// Verified for the fresh Sepolia market: keccak256(ORACLE_ADDRESS, 0x..04, 3)
+// == the market's conditionId (0xe4f0ce...e720).
 export const DEPRIZE_QUESTION_ID =
-  '0x0000000000000000000000000000000000000000000000000000000000000003'
+  '0x0000000000000000000000000000000000000000000000000000000000000004'
 
 // DePrize id in the registry that the play market resolves to (the helper's
 // previewRedeem/redeem take this id).
-export const DEPRIZE_PLAY_ID = 2
+export const DEPRIZE_PLAY_ID = 3
 
 // Oracle that prepared the CTF condition; the only address that can resolve
 // (reportPayouts). On the fresh Sepolia market this is pmoncada.eth.
