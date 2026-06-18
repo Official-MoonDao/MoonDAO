@@ -57,7 +57,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
           <PrivyProvider
             appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
             config={{
-              loginMethods: ['wallet', 'sms', 'google', 'twitter', 'discord', 'github'],
+              loginMethods: ['wallet', 'sms', 'email', 'google', 'twitter', 'discord', 'github'],
               // Auto-provision an embedded wallet for users who sign up without
               // one (e.g. via SMS/social on a magic-link invite) so they have an
               // address to receive their sponsored citizen mint.
