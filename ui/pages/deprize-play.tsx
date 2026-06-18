@@ -1785,7 +1785,7 @@ export default function DePrizePlay() {
                   userAddress &&
                   (() => {
                     const claimEth =
-                      validHelper && helperPreview !== undefined
+                      validHelper && helperPreview !== undefined && helperPreview > 0
                         ? helperPreview
                         : undefined
                     const claimAmount =
@@ -1801,7 +1801,7 @@ export default function DePrizePlay() {
                             ? `Outcome #${winningIndex + 1} won`
                             : 'Resolved'}
                         </p>
-                        {nothingToClaim ? (
+                        {nothingToClaim || claimed ? (
                           <p className="text-white text-2xl font-bold mt-1">
                             {claimed ? 'Claimed' : 'Nothing to claim'}
                           </p>
