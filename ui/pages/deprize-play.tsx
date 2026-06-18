@@ -571,7 +571,7 @@ export default function DePrizePlay() {
   // A new market/condition means a fresh claim state.
   useEffect(() => {
     setClaimed(false)
-  }, [conditionId])
+  }, [conditionId, userAddress])
 
   const resolvedSnapRef = useRef(false)
   useEffect(() => {
