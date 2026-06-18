@@ -7,7 +7,7 @@ import {
   TEAM_TABLE_NAMES,
 } from 'const/config'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import queryTable from '@/lib/tableland/queryTable'
@@ -23,6 +23,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
+import Selector from '@/components/layout/Selector'
 import MarketplaceListing from '@/components/marketplace/MarketplaceListing'
 
 type MarketplaceListing = {
@@ -55,8 +56,22 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
   const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>(listings || [])
   const [input, setInput] = useState('')
-  const [searchMode, setSearchMode] = useState<'item' | 'team'>('item')
+  const [selectedTeam, setSelectedTeam] = useState<string>('all')
   const [pageIdx, setPageIdx] = useState(1)
+
+  // Build the team filter options from the listings themselves so the dropdown
+  // only ever shows teams that actually have items for sale.
+  const teamOptions = useMemo(() => {
+    const teams = new Map<string, string>()
+    ;(listings || []).forEach((listing: MarketplaceListing) => {
+      const id = String(listing.teamId)
+      if (!teams.has(id)) teams.set(id, listing.teamName || `Team ${listing.teamId}`)
+    })
+    const sorted = Array.from(teams.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+    return [{ value: 'all', label: 'All Teams' }, ...sorted]
+  }, [listings])
 
   const ITEMS_PER_PAGE = 8 // 4 items per row x 2 rows
 
@@ -82,18 +97,30 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   }
 
   useEffect(() => {
-    if (listings && input.trim() !== '') {
-      const query = input.toLowerCase()
-      const filtered = listings.filter((listing: MarketplaceListing) => {
-        const field = searchMode === 'team' ? listing.teamName : listing.title
-        return (field || '').toLowerCase().includes(query)
-      })
-      setFilteredListings(filtered)
-      setPageIdx(1) // Reset to first page when filtering
-    } else {
-      setFilteredListings(listings)
+    let result = listings || []
+
+    if (selectedTeam !== 'all') {
+      result = result.filter(
+        (listing: MarketplaceListing) => String(listing.teamId) === selectedTeam
+      )
     }
-  }, [listings, input, searchMode])
+
+    if (input.trim() !== '') {
+      const query = input.toLowerCase()
+      result = result.filter((listing: MarketplaceListing) =>
+        listing.title.toLowerCase().includes(query)
+      )
+    }
+
+    setFilteredListings(result)
+
+    // Reset to the first page whenever a filter is active so users don't land
+    // on an out-of-range page; leave pagination alone on the default view so
+    // deep links to a specific page keep working.
+    if (selectedTeam !== 'all' || input.trim() !== '') {
+      setPageIdx(1)
+    }
+  }, [listings, input, selectedTeam])
 
   const descriptionSection = (
     <div className="pt-2">
@@ -111,27 +138,18 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
-                placeholder={
-                  searchMode === 'team' ? 'Search by team...' : 'Search items...'
-                }
+                placeholder="Search items..."
               />
             </div>
-            {/* Search mode toggle */}
-            <div className="flex items-center gap-1 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl p-1">
-              {(['item', 'team'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setSearchMode(mode)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    searchMode === mode
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/50 hover:text-white/80'
-                  }`}
-                >
-                  {mode === 'item' ? 'Items' : 'Teams'}
-                </button>
-              ))}
-            </div>
+            {/* Team filter dropdown */}
+            <Selector
+              value={selectedTeam}
+              onChange={setSelectedTeam}
+              options={teamOptions}
+              placeholder="All Teams"
+              className="relative w-[10rem] sm:w-[12rem] text-sm"
+              buttonClassName="relative w-full cursor-pointer rounded-xl bg-black/20 backdrop-blur-sm border border-white/10 py-2 px-3 text-left text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+            />
           </div>
         </div>
       </div>
@@ -178,7 +196,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                 ) : (
                   <div className="col-span-full text-center py-8">
                     <p className="text-gray-400">
-                      {input
+                      {input || selectedTeam !== 'all'
                         ? 'No listings match your search criteria.'
                         : 'No marketplace listings available at this time.'}
                     </p>
