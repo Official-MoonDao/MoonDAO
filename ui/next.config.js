@@ -1,3 +1,4 @@
+const path = require('path')
 const nextTranslate = require('next-translate')
 const withTM = require('next-transpile-modules')(['thirdweb', 'ox'])
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
@@ -416,6 +417,16 @@ module.exports = withBundleAnalyzer(
         // the cascade into their deeper optional deps.
         config.resolve.alias = {
           ...config.resolve.alias,
+          // Force every `@noble/hashes` import (including ones nested deep in
+          // transitive deps like @base-org/account's bundled @noble/curves) to
+          // resolve to the single hoisted 1.8.0 copy, which exports `anumber`
+          // from `@noble/hashes/utils`. Yarn's hoisting differs across
+          // platforms (Vercel/Linux vs local/macOS), so the `resolutions`
+          // override in package.json isn't reliably applied to base-org's
+          // nested copy — base-org pins @noble/hashes@1.4.0 (no `anumber` in
+          // utils), which @noble/curves@1.9.1 then imports and fails to find.
+          // Pinning at the bundler level makes resolution deterministic.
+          '@noble/hashes': path.resolve(__dirname, 'node_modules/@noble/hashes'),
           '@stripe/crypto': false,
           '@stripe/stripe-js': false,
           '@farcaster/mini-app-solana': false,
