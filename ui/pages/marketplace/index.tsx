@@ -39,6 +39,7 @@ type MarketplaceListing = {
   metadata: string
   shipping: string
   tag: string
+  teamName?: string
 }
 
 type MarketplaceProps = {
@@ -54,6 +55,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
   const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>(listings || [])
   const [input, setInput] = useState('')
+  const [searchMode, setSearchMode] = useState<'item' | 'team'>('item')
   const [pageIdx, setPageIdx] = useState(1)
 
   const ITEMS_PER_PAGE = 8 // 4 items per row x 2 rows
@@ -80,16 +82,18 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   }
 
   useEffect(() => {
-    if (listings && input != '') {
+    if (listings && input.trim() !== '') {
+      const query = input.toLowerCase()
       const filtered = listings.filter((listing: MarketplaceListing) => {
-        return listing.title.toLowerCase().includes(input.toLowerCase())
+        const field = searchMode === 'team' ? listing.teamName : listing.title
+        return (field || '').toLowerCase().includes(query)
       })
       setFilteredListings(filtered)
       setPageIdx(1) // Reset to first page when filtering
     } else {
       setFilteredListings(listings)
     }
-  }, [listings, input])
+  }, [listings, input, searchMode])
 
   const descriptionSection = (
     <div className="pt-2">
@@ -100,15 +104,33 @@ export default function Marketplace({ listings }: MarketplaceProps) {
       <div className="relative w-full flex flex-col gap-3">
         {/* Search Bar */}
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
-          <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center">
+          <div className="w-full flex flex-row min-[800px]:flex-row gap-2 sm:gap-4 items-center">
             {/* Search Bar */}
             <div className="w-fit max-w-[260px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-1">
               <Search
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
-                placeholder="Search marketplace..."
+                placeholder={
+                  searchMode === 'team' ? 'Search by team...' : 'Search items...'
+                }
               />
+            </div>
+            {/* Search mode toggle */}
+            <div className="flex items-center gap-1 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl p-1">
+              {(['item', 'team'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setSearchMode(mode)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                    searchMode === mode
+                      ? 'bg-white/10 text-white'
+                      : 'text-white/50 hover:text-white/80'
+                  }`}
+                >
+                  {mode === 'item' ? 'Items' : 'Teams'}
+                </button>
+              ))}
             </div>
           </div>
         </div>
