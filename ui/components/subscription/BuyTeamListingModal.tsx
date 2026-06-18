@@ -13,7 +13,7 @@ import {
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
+import { prepareContractCall, readContract, sendAndConfirmTransaction, toUnits } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -96,6 +96,7 @@ export default function BuyTeamListingModal({
       const nft = await getNFT({
         contract: teamContract,
         tokenId: BigInt(listing.teamId),
+        includeOwner: true,
       })
       setTeamNFT(nft)
     }
@@ -120,8 +121,13 @@ export default function BuyTeamListingModal({
     setEmail(citizenEmail)
   }, [citizenEmail])
 
+  // The recipient prop comes from the parent's team-owner lookup, which can be
+  // missing when the RPC is rate-limited. Fall back to the owner fetched here so
+  // the Buy button isn't permanently disabled.
+  const resolvedRecipient = recipient || teamNFT?.owner
+
   async function buyListing() {
-    if (!account) return
+    if (!account || !resolvedRecipient) return
 
     const numericPrice = parseFloat(listing.price.replace(/,/g, ''))
     let price
@@ -141,8 +147,8 @@ export default function BuyTeamListingModal({
       } else if (listing.currency === 'ETH') {
         // buy with eth
         const tx = await account?.sendTransaction({
-          to: recipient,
-          value: BigInt(price * 10 ** 18),
+          to: resolvedRecipient,
+          value: toUnits(String(price), currencyDecimals.ETH),
           chainId: selectedChain.id,
         })
         transactionHash = tx?.transactionHash
@@ -151,7 +157,10 @@ export default function BuyTeamListingModal({
         const transaction = prepareContractCall({
           contract: currencyContract,
           method: 'transfer' as string,
-          params: [recipient, String(price * 10 ** currencyDecimals[listing.currency])],
+          params: [
+            resolvedRecipient,
+            toUnits(String(price), currencyDecimals[listing.currency]),
+          ],
         })
         const receipt = await sendAndConfirmTransaction({
           transaction,
@@ -186,7 +195,7 @@ export default function BuyTeamListingModal({
             quantity: 1,
             txLink: transactionLink,
             txHash: transactionHash,
-            recipient,
+            recipient: resolvedRecipient,
             isCitizen: citizen ? true : false,
             shipping,
             teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(teamNFT.metadata.name)}`,
@@ -331,8 +340,18 @@ export default function BuyTeamListingModal({
         <PrivyWeb3Button
           v5
           requiredChain={DEFAULT_CHAIN_V5}
-          label="Buy"
+          label={
+            isLoading
+              ? 'Processing...'
+              : resolvedRecipient
+              ? 'Buy'
+              : 'Loading vendor...'
+          }
           action={async () => {
+            if (!resolvedRecipient)
+              return toast.error(
+                'Still loading the vendor details. Please try again in a moment.'
+              )
             if (!email || email.trim() === '' || !email.includes('@'))
               return toast.error('Please enter a valid email.')
             if (listing.shipping === 'true') {
@@ -348,8 +367,11 @@ export default function BuyTeamListingModal({
             await buyListing()
           }}
           className="mt-4 w-full gradient-2 rounded-[5vmax]"
-          isDisabled={isLoading || !recipient}
+          isDisabled={isLoading || !resolvedRecipient}
         />
+        {!resolvedRecipient && !isLoading && (
+          <p className="text-sm opacity-60">Loading vendor details...</p>
+        )}
         {isLoading && <p>Do not leave the page until the transaction is complete.</p>}
       </form>
     </Modal>
