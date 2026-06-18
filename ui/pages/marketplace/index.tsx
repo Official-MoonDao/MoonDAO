@@ -1,3 +1,4 @@
+import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import MarketplaceABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -23,7 +24,6 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
-import Selector from '@/components/layout/Selector'
 import MarketplaceListing from '@/components/marketplace/MarketplaceListing'
 
 type MarketplaceListing = {
@@ -142,14 +142,21 @@ export default function Marketplace({ listings }: MarketplaceProps) {
               />
             </div>
             {/* Team filter dropdown */}
-            <Selector
-              value={selectedTeam}
-              onChange={setSelectedTeam}
-              options={teamOptions}
-              placeholder="All Teams"
-              className="relative w-[10rem] sm:w-[12rem] text-sm"
-              buttonClassName="relative w-full cursor-pointer rounded-xl bg-black/20 backdrop-blur-sm border border-white/10 py-2 px-3 text-left text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
-            />
+            <div className="relative w-[10rem] sm:w-[12rem]">
+              <select
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value)}
+                aria-label="Filter by team"
+                className="w-full cursor-pointer appearance-none rounded-xl bg-black/20 backdrop-blur-sm border border-white/10 py-2 pl-3 pr-9 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+              >
+                {teamOptions.map((option) => (
+                  <option key={option.value} value={option.value} className="bg-dark-cool text-white">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+            </div>
           </div>
         </div>
       </div>
