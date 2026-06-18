@@ -235,51 +235,68 @@ export default function BuyTeamListingModal({
       size="lg"
     >
       <form
-        className="w-full flex flex-col gap-2 items-start justify-start"
+        className="w-full flex flex-col gap-5 items-start justify-start"
         onSubmit={(e) => {
           e.preventDefault()
         }}
       >
-        <div>
+        <div className="w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
           {listing.image && (
-            <div
-              id="image-container"
-              className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
-            >
-              <IPFSRenderer src={listing.image} width={500} height={500} alt="Listing Image" />
+            <div id="image-container" className="relative w-full h-56 sm:h-64">
+              <IPFSRenderer
+                src={listing.image}
+                width={600}
+                height={600}
+                alt="Listing Image"
+                className="object-cover"
+                fillContainer
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+              <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur-sm">
+                {`#${listing.id}`}
+              </span>
             </div>
           )}
-
-          <div className="mt-4">
-            <p>{`# ${listing.id}`}</p>
-            <p className="font-GoodTimes">{listing.title}</p>
-            <p className="text-[75%]">{listing.description}</p>
-            <p id="listing-price" className="font-bold">{`${
-              citizen
-                ? truncateTokenValue(listing.price, listing.currency)
-                : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
-            } ${listing.currency}`}</p>
+          <div className="flex flex-col gap-2 p-4">
+            <h3 className="font-GoodTimes text-lg leading-tight text-white">{listing.title}</h3>
+            <p className="text-sm leading-relaxed text-white/60">{listing.description}</p>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+              <p id="listing-price" className="font-GoodTimes text-xl text-white">{`${
+                citizen
+                  ? truncateTokenValue(listing.price, listing.currency)
+                  : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
+              } ${listing.currency}`}</p>
+              {!citizen && (
+                <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] text-white/50">
+                  Includes 10% non-citizen fee
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <p className="opacity-60">
+        <p className="text-sm opacity-60">
           Enter your information, confirm the transaction and wait to receive an email from the
           vendor.
         </p>
         <Input
           type="text"
-          variant="dark"
-          className="text-white"
-          placeholder="Enter your email"
+          variant="modern"
+          label="Email"
+          className="text-white px-4 py-3"
+          maxWidth="max-w-full"
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           formatNumbers={false}
         />
         {listing.shipping === 'true' && (
-          <div className="w-full flex flex-col gap-2">
+          <div className="w-full flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/20 p-4">
+            <p className="font-GoodTimes text-sm text-white">Shipping Address</p>
             <Input
               type="text"
-              variant="dark"
-              className="text-white"
+              variant="modern"
+              className="text-white px-4 py-3"
+              maxWidth="max-w-full"
               placeholder="Street Address"
               value={shippingInfo.streetAddress}
               onChange={(e) =>
@@ -290,11 +307,12 @@ export default function BuyTeamListingModal({
               }
               formatNumbers={false}
             />
-            <div className="w-full flex gap-2">
+            <div className="w-full flex flex-col sm:flex-row gap-2">
               <Input
                 type="text"
-                variant="dark"
-                className="text-white"
+                variant="modern"
+                className="text-white px-4 py-3"
+                maxWidth="max-w-full"
                 placeholder="City"
                 value={shippingInfo.city}
                 onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
@@ -302,19 +320,21 @@ export default function BuyTeamListingModal({
               />
               <Input
                 type="text"
-                variant="dark"
-                className="text-white"
+                variant="modern"
+                className="text-white px-4 py-3"
+                maxWidth="max-w-full"
                 placeholder="State"
                 value={shippingInfo.state}
                 onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
                 formatNumbers={false}
               />
             </div>
-            <div className="w-full flex gap-2">
+            <div className="w-full flex flex-col sm:flex-row gap-2">
               <Input
                 type="text"
-                variant="dark"
-                className="text-white"
+                variant="modern"
+                className="text-white px-4 py-3"
+                maxWidth="max-w-full"
                 placeholder="Postal Code"
                 value={shippingInfo.postalCode}
                 onChange={(e) =>
@@ -327,8 +347,9 @@ export default function BuyTeamListingModal({
               />
               <Input
                 type="text"
-                variant="dark"
-                className="text-white"
+                variant="modern"
+                className="text-white px-4 py-3"
+                maxWidth="max-w-full"
                 placeholder="Country"
                 value={shippingInfo.country}
                 onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
@@ -366,13 +387,17 @@ export default function BuyTeamListingModal({
             }
             await buyListing()
           }}
-          className="mt-4 w-full gradient-2 rounded-[5vmax]"
+          className="w-full gradient-2 rounded-[5vmax]"
           isDisabled={isLoading || !resolvedRecipient}
         />
         {!resolvedRecipient && !isLoading && (
-          <p className="text-sm opacity-60">Loading vendor details...</p>
+          <p className="w-full text-center text-sm opacity-60">Loading vendor details...</p>
         )}
-        {isLoading && <p>Do not leave the page until the transaction is complete.</p>}
+        {isLoading && (
+          <p className="w-full text-center text-sm opacity-60">
+            Do not leave the page until the transaction is complete.
+          </p>
+        )}
       </form>
     </Modal>
   )
