@@ -4,7 +4,7 @@ import { TEAM_ADDRESSES, CITIZEN_ADDRESSES } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import { CitizenTransfer, TeamTransfer } from '@/lib/network/networkSubgraph'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { arbitrum } from '../rpc/chains'
 
 export interface ARRDataPoint {

@@ -19,7 +19,7 @@ import CitizenABI from 'const/abis/Citizen.json'
 import TeamABI from 'const/abis/Team.json'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { arbitrum } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 

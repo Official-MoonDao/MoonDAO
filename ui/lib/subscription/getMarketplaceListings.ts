@@ -5,7 +5,7 @@ import { MARKETPLACE_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import queryTable from '../tableland/queryTable'
 import { getChainSlug } from '../thirdweb/chain'
-import { serverClient } from '../thirdweb/client'
+import { serverClient } from '../thirdweb/serverClient'
 
 export default async function getMarketplaceListings() {
   const chain = CYPRESS_CHAIN_V5

@@ -1,6 +1,7 @@
 import { Solve } from '@bygdle/javascript-lp-solver'
 import { utils } from 'ethers'
-import _ from 'lodash'
+import lodashCloneDeep from 'lodash/cloneDeep'
+import lodashSum from 'lodash/sum'
 import { Distribution } from '@/components/nance/ProjectRewards'
 
 // Function to minimize L1 distance
@@ -128,7 +129,7 @@ export function runIterativeNormalization(distributions: any, projects: any) {
       }
     }
 
-    newVotes = _.cloneDeep(votes)
+    newVotes = lodashCloneDeep(votes)
     for (let j = 0; j < numProjects; j++) {
       for (let i = 0; i < numVotes; i++) {
         if (isNaN(newVotes[i][j])) {
@@ -139,7 +140,7 @@ export function runIterativeNormalization(distributions: any, projects: any) {
 
     newDistributionSums = []
     for (let i = 0; i < numVotes; i++) {
-      newDistributionSums.push(_.sum(newVotes[i]))
+      newDistributionSums.push(lodashSum(newVotes[i]))
     }
 
     for (let j = 0; j < numProjects; j++) {
@@ -189,13 +190,13 @@ export function runQuadraticVoting(
       projectIdToVotes[key].push({ percentage: Number(value), address: address })
     }
   }
-  const votingPowerSum = _.sum(
+  const votingPowerSum = lodashSum(
     Object.values(addressToQuadraticVotingPower).filter((v: any) => !isNaN(v))
   )
   if (votingPowerSum > 0) {
     for (const [projectId, votes] of Object.entries(projectIdToVotes)) {
       projectIdToEstimatedPercentage[projectId] =
-        _.sum(
+        lodashSum(
           votes.map((v) => {
             const power = addressToQuadraticVotingPower[v.address] || 0
             return v.percentage * (isNaN(power) ? 0 : power)
@@ -203,7 +204,7 @@ export function runQuadraticVoting(
         ) / votingPowerSum
     }
     // normalize projectIdToEstimatedPercentage
-    const sum = _.sum(Object.values(projectIdToEstimatedPercentage))
+    const sum = lodashSum(Object.values(projectIdToEstimatedPercentage))
     if (sum > 0) {
       for (const [projectId, percentage] of Object.entries(projectIdToEstimatedPercentage)) {
         projectIdToEstimatedPercentage[projectId] =
@@ -270,7 +271,7 @@ function zeroOutDistributionForContributors(citizenDistributions: any, projects:
   const normalizedDistributions = []
   for (const d of newDistributions) {
     const { id, address, year, quarter, distribution: dist } = d
-    const sum = _.sum(Object.values(dist).filter((num) => !Number.isNaN(num)))
+    const sum = lodashSum(Object.values(dist).filter((num) => !Number.isNaN(num)))
     const normDist: { [key: string]: number } = {}
     for (const [key, value] of Object.entries(dist)) {
       if (Number.isNaN(value)) {

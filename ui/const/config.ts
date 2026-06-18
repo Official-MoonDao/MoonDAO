@@ -1,6 +1,3 @@
-import { arbitrum, sepolia, arbitrumSepolia } from '../lib/rpc/chains'
-import { getChainSlug } from '../lib/thirdweb/chain'
-
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 const STAGING_ORIGIN = process.env.NEXT_PUBLIC_STAGING_ORIGIN
@@ -51,11 +48,7 @@ const arbitrumSepoliaMission = arbitrumSepoliaConfig as DeploymentConfig & {
 
 const baseSepoliaConfig = require('../../contracts/deployments/base-sepolia') as DeploymentConfig
 
-export const TEST_CHAIN =
-  process.env.NEXT_PUBLIC_TEST_CHAIN === 'arbitrum-sepolia' ? arbitrumSepolia : sepolia
-export const DEFAULT_CHAIN_V5 = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
-
-export const DEFAULT_CHAIN_V5_SLUG = getChainSlug(DEFAULT_CHAIN_V5)
+export { TEST_CHAIN, DEFAULT_CHAIN_V5, DEFAULT_CHAIN_V5_SLUG } from './defaultChain'
 
 export const THIRDWEB_ENGINE_URL = 'https://engine.thirdweb.com/v1/read/contract'
 

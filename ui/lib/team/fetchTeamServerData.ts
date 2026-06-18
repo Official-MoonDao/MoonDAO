@@ -5,7 +5,7 @@ import type { Chain } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { getChainSlug } from '../thirdweb/chain'
-import { serverClient } from '../thirdweb/client'
+import { serverClient } from '../thirdweb/serverClient'
 
 export type TeamNFTData = {
   id: string

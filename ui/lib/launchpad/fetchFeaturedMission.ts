@@ -12,7 +12,7 @@ import {
 import { FEATURED_MISSION } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { ChainType, FeaturedMissionData, Mission } from './types'
 
 export async function fetchFeaturedMissionData(

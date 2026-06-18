@@ -36,13 +36,13 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
@@ -816,17 +816,16 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const statement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
-    const allCitizens = (await queryTable(chain, statement)) as any
-
-    const { prettyLinks } = generatePrettyLinks(allCitizens, {
-      allHaveTokenId: true,
-    })
-
+    // Resolve the token id without scanning the entire citizen table. Citizen
+    // pretty links are always `<name-slug>-<tokenId>` (allHaveTokenId), so the
+    // id is the final dash-separated segment of the slug.
     if (!Number.isNaN(Number(tokenIdOrName))) {
       tokenId = tokenIdOrName
     } else {
-      tokenId = prettyLinks[tokenIdOrName]
+      const lastSegment = String(tokenIdOrName).split('-').pop()
+      if (lastSegment && lastSegment !== '' && !Number.isNaN(Number(lastSegment))) {
+        tokenId = lastSegment
+      }
     }
 
     if (tokenId === undefined) {
@@ -835,7 +834,28 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const citizen = allCitizens.find((citizen: any) => +citizen.id === +tokenId)
+    const statement = `SELECT * FROM ${
+      CITIZEN_TABLE_NAMES[chainSlug]
+    } WHERE id = ${Number(tokenId)} LIMIT 1`
+    const rows = (await queryTable(chain, statement)) as any
+    const citizen = rows?.[0]
+
+    if (!citizen) {
+      return {
+        notFound: true,
+      }
+    }
+
+    // Reject stale or incorrect pretty links, matching the strictness of the
+    // previous full-table slug lookup.
+    if (Number.isNaN(Number(tokenIdOrName))) {
+      const expectedSlug = generatePrettyLinkWithId(citizen.name, citizen.id)
+      if (expectedSlug !== String(tokenIdOrName).toLowerCase()) {
+        return {
+          notFound: true,
+        }
+      }
+    }
 
     const nft = citizenRowToNFT(citizen)
 

@@ -39,9 +39,13 @@ export function LockData({
   const { t } = useTranslation('common')
   const [now, setNow] = useState(() => Date.now())
 
-  // Update every 500ms for visible decreasing vMOONEY display
+  // Update every second for the visible decreasing vMOONEY display; skip
+  // re-renders entirely while the tab is hidden.
   useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 500)
+    const interval = setInterval(() => {
+      if (document.hidden) return
+      setNow(Date.now())
+    }, 1000)
     return () => clearInterval(interval)
   }, [])
 
