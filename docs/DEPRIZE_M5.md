@@ -64,8 +64,8 @@ admin Safe (holds the prize ETH)
    └────────────────────────────────────────────────────────────────┘
         │
    ┌────┴──────────── M2 failure (M1_RELEASED → M2_FAILED) ──────────┐
-   │  registry.failM2(id)           (state; JB cashOut now enabled)  │
    │  Safe → JB: addToBalanceOf(70%) (raises $OVERVIEW floor)        │
+   │  registry.failM2(id)           (state; JB cashOut now enabled)  │
    └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -113,7 +113,7 @@ It returns the registry state-advance calldata plus either a plain-ETH provider 
 2. **Extract the prize:** the Safe extracts the prize pool from the mission JB project via the existing locked owner payout (it is the ~90% beneficiary). Record the figure as the prize-pool snapshot.
 3. **M1:** run `DePrizeDisburse.s.sol` with `DEPRIZE_MILESTONE=M1` → submit Tx 1 (`releaseM1`) then Tx 2 (30% → provider).
 4. **M2 (delivered):** run with `DEPRIZE_MILESTONE=M2` (same `DEPRIZE_PRIZE_WEI`) → submit `completeM2` then 70% → provider.
-5. **M2 (failed / 18-month deadline):** run with `DEPRIZE_MILESTONE=REFUND` → submit `failM2` then `addToBalanceOf` of the 70% back into the JB project. `$OVERVIEW` cashOut is now live via the existing JB UI.
+5. **M2 (failed / 18-month deadline):** run with `DEPRIZE_MILESTONE=REFUND` → submit `addToBalanceOf` of the 70% back into the JB project first, then `failM2` to enable refunds. `$OVERVIEW` cashOut is now live via the existing JB UI.
 
 ---
 

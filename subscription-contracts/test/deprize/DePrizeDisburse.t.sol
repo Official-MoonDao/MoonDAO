@@ -101,16 +101,17 @@ contract DePrizeDisburseTest is Test {
         DePrizeDisburse.Disbursement memory d =
             disburse.buildDisbursement(registry, JB_TERMINAL, id, REFUND_TAG, PRIZE);
 
-        assertEq(d.registryCall, abi.encodeCall(IDePrizeRegistry.failM2, (id)));
-        assertEq(d.payoutTo, JB_TERMINAL);
-        assertEq(d.payoutValue, 70 ether);
+        assertEq(d.registry, JB_TERMINAL);
         assertEq(
-            d.payoutData,
+            d.registryCall,
             abi.encodeCall(
                 IJBTerminalLike.addToBalanceOf,
                 (JB_PROJECT, NATIVE_TOKEN, 70 ether, false, "DePrize M2_FAILED refund", "")
             )
         );
+        assertEq(d.payoutTo, address(registry));
+        assertEq(d.payoutValue, 0);
+        assertEq(d.payoutData, abi.encodeCall(IDePrizeRegistry.failM2, (id)));
     }
 
     function testSplitIsExactForIndivisiblePrize() public {
@@ -194,6 +195,6 @@ contract DePrizeDisburseTest is Test {
         uint256 id = _m1Released();
         DePrizeDisburse.Disbursement memory d =
             disburse.buildDisbursement(registry, JB_TERMINAL, id, REFUND_TAG, PRIZE);
-        assertEq(d.payoutTo, JB_TERMINAL);
+        assertEq(d.registry, JB_TERMINAL);
     }
 }

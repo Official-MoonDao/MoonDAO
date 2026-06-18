@@ -114,13 +114,14 @@ contract DePrizeDisburse is Script, Config {
             d.payoutData = "";
         } else if (milestone == REFUND) {
             if (dp.state != IDePrizeRegistry.DePrizeState.M1_RELEASED) revert WrongState(deprizeId, dp.state);
-            d.registryCall = abi.encodeCall(IDePrizeRegistry.failM2, (deprizeId));
-            d.payoutTo = jbTerminal;
-            d.payoutValue = remainder;
-            d.payoutData = abi.encodeCall(
+            d.registry = jbTerminal;
+            d.registryCall = abi.encodeCall(
                 IJBTerminalLike.addToBalanceOf,
                 (dp.jbProjectId, NATIVE_TOKEN, remainder, false, "DePrize M2_FAILED refund", "")
             );
+            d.payoutTo = address(registry);
+            d.payoutValue = 0;
+            d.payoutData = abi.encodeCall(IDePrizeRegistry.failM2, (deprizeId));
         } else {
             revert UnknownMilestone(milestone);
         }
@@ -140,20 +141,26 @@ contract DePrizeDisburse is Script, Config {
         console.log("Milestone:         ", vm.envString("DEPRIZE_MILESTONE"));
         console.log("Prize snapshot wei:", prizeWei);
         console.log("");
-        console.log("Tx 1 (advance registry state):");
-        console.log("  to:   ", d.registry);
-        console.log("  value: 0");
-        console.log("  data:");
-        console.logBytes(d.registryCall);
-        console.log("");
         if (d.milestone == REFUND) {
-            console.log("Tx 2 (return 70% to Juicebox - raises $OVERVIEW cashOut floor):");
-            console.log("  to:        ", d.payoutTo);
+            console.log("Tx 1 (return 70% to Juicebox - raises $OVERVIEW cashOut floor):");
+            console.log("  to:        ", d.registry);
             console.log("  value:     ", d.payoutValue);
             console.log("  jbProject: ", d.jbProjectId);
             console.log("  data:");
+            console.logBytes(d.registryCall);
+            console.log("");
+            console.log("Tx 2 (advance registry state to M2_FAILED - enables refunds):");
+            console.log("  to:   ", d.payoutTo);
+            console.log("  value: 0");
+            console.log("  data:");
             console.logBytes(d.payoutData);
         } else {
+            console.log("Tx 1 (advance registry state):");
+            console.log("  to:   ", d.registry);
+            console.log("  value: 0");
+            console.log("  data:");
+            console.logBytes(d.registryCall);
+            console.log("");
             console.log("Tx 2 (pay the provider):");
             console.log("  to:   ", d.payoutTo);
             console.log("  value:", d.payoutValue);
