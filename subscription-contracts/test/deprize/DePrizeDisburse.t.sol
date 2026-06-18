@@ -110,7 +110,7 @@ contract DePrizeDisburseTest is Test {
             )
         );
         assertEq(d.payoutTo, address(registry));
-        assertEq(d.payoutValue, 0);
+        assertEq(d.payoutValue, 70 ether);
         assertEq(d.payoutData, abi.encodeCall(IDePrizeRegistry.failM2, (id)));
     }
 
