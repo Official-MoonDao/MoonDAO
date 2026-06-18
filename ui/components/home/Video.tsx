@@ -92,10 +92,17 @@ export default function Video() {
         setPlayer(vimeoPlayer)
         setIsPlayerReady(true)
 
-        vimeoPlayer.on('play', () => setIsPlaying(true))
-        vimeoPlayer.on('pause', () => setIsPlaying(false))
+        vimeoPlayer.on('play', () => {
+          if (!mounted) return
+          setIsPlaying(true)
+        })
+        vimeoPlayer.on('pause', () => {
+          if (!mounted) return
+          setIsPlaying(false)
+        })
         vimeoPlayer.on('volumechange', async () => {
           const muted = await vimeoPlayer.getMuted()
+          if (!mounted) return
           setIsMuted(muted)
         })
 
