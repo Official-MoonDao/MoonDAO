@@ -482,20 +482,6 @@ module.exports = withBundleAnalyzer(
           },
         }
 
-        // One-time webpack persistent-cache bust. Vercel restores the
-        // filesystem cache across deploys and treats node_modules as immutable
-        // by package version. Pinning @noble/hashes to 1.8.0 changed how
-        // @base-org/account's nested @noble/curves resolves
-        // `@noble/hashes/utils` WITHOUT changing the package version, so the
-        // restored cache kept replaying a stale module record that reported
-        // "'anumber' is not exported from '@noble/hashes/utils'" even though
-        // 1.8.0 does export it. Salting the cache version forces webpack to
-        // discard the poisoned cache and recompile; healthy cache is stored
-        // under the new key for subsequent deploys.
-        if (config.cache && typeof config.cache === 'object') {
-          config.cache.version = `${config.cache.version || '1'}-noble-hashes-1.8.0`
-        }
-
         return config
       },
     })
