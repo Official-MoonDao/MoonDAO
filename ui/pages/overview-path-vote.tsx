@@ -458,6 +458,98 @@ export default function OverviewPathVote({
             {/* Community update video */}
             <YouTubeEmbed videoId="YzecKAp9V8U" />
 
+            {/* Results (sealed until voting closes) */}
+            {resultsRevealed && (
+              <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+                <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
+                  Final Results
+                </h2>
+                <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                  {visibleResults.totalVoted.toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}{' '}
+                  $OVERVIEW across {visibleResults.totalVoters} voter
+                  {visibleResults.totalVoters !== 1 ? 's' : ''}. These results are final.
+                </p>
+
+                {/* Winning option highlight */}
+                {winningOption && (
+                  <div
+                    className={`mb-5 sm:mb-6 rounded-xl border p-4 sm:p-5 ${winningAccents?.border} ${winningAccents?.bg}`}
+                  >
+                    <p className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-white/70 mb-1.5">
+                      Winning Path
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg ${winningAccents?.badge}`}
+                      >
+                        {winningOption.letter}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-white text-sm sm:text-base font-semibold">
+                          Option {winningOption.letter} — {winningOption.title}
+                        </p>
+                        <p className="text-gray-300 text-xs sm:text-sm">
+                          {winningResult?.totalVoted.toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                          })}{' '}
+                          $OVERVIEW ({winningResult?.percentage}%) ·{' '}
+                          {winningResult?.voterCount} voter
+                          {winningResult?.voterCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4 sm:space-y-5">
+                  {visibleResults.results.map((result) => {
+                    const option = getPathVoteOption(result.optionId)
+                    if (!option) return null
+                    const accents = OPTION_ACCENTS[result.optionId]
+                    const isWinner = result.optionId === visibleResults.winningOptionId
+                    return (
+                      <div key={result.optionId}>
+                        <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                          <p className="text-white text-xs sm:text-sm font-medium truncate flex items-center gap-1.5">
+                            Option {option.letter} — {option.title}
+                            {isWinner && (
+                              <span className="flex-shrink-0 text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-emerald-300">
+                                Winner
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-gray-400 text-xs sm:text-sm flex-shrink-0">
+                            {result.totalVoted.toLocaleString(undefined, {
+                              maximumFractionDigits: 0,
+                            })}{' '}
+                            $OVERVIEW ({result.percentage}%)
+                          </p>
+                        </div>
+                        <div
+                          className={`h-2.5 sm:h-3 bg-white/5 rounded-full overflow-hidden ${
+                            isWinner ? 'ring-1 ring-emerald-400/40' : ''
+                          }`}
+                        >
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${accents.bar}`}
+                            style={{
+                              width: `${Math.min(100, result.percentage)}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-gray-500 text-xs mt-1">
+                          {result.voterCount} voter
+                          {result.voterCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Proposal */}
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
               <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
@@ -588,6 +680,85 @@ export default function OverviewPathVote({
                   </ul>
                 </div>
               </details>
+            </div>
+
+            {/* Voters (who voted + voting power; choices stay sealed) */}
+            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">Votes</h2>
+                {isRefreshing && (
+                  <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
+                    <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+                    Updating...
+                  </div>
+                )}
+              </div>
+              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                {!resultsRevealed && (
+                  <span className="inline-flex items-center gap-1.5 mr-1 text-indigo-300">
+                    <span aria-hidden>🔒</span> Individual choices and the tally stay hidden until
+                    voting closes.
+                  </span>
+                )}
+                {visibleResults.totalVoters > 0
+                  ? `${visibleResults.totalVoters} voter${
+                      visibleResults.totalVoters !== 1 ? 's' : ''
+                    } so far, ${visibleResults.totalVoted.toLocaleString(undefined, {
+                      maximumFractionDigits: 0,
+                    })} $OVERVIEW of voting power committed.`
+                  : 'No votes yet. Be the first to choose a path.'}
+              </p>
+
+              <Votes
+                emptyStateMessage="No votes yet. Be the first to choose a path."
+                voteItems={visibleResults.voters.map((voter) => (
+                  <VoteItem key={voter.address}>
+                    <VoteItemHeader
+                      leftContent={
+                        voter.citizenName && voter.citizenId != null ? (
+                          <Link
+                            href={`/citizen/${generatePrettyLinkWithId(
+                              voter.citizenName,
+                              String(voter.citizenId),
+                            )}`}
+                            className="text-white hover:underline break-all"
+                          >
+                            {voter.citizenName}
+                          </Link>
+                        ) : (
+                          <span className="text-gray-300">
+                            <ShortAddressLink address={voter.address} />
+                          </span>
+                        )
+                      }
+                      rightContent={
+                        <span className="flex items-center gap-2">
+                          {resultsRevealed &&
+                            (() => {
+                              const voterOption = getPathVoteOption(voter.optionId)
+                              if (!voterOption) return null
+                              const accents = OPTION_ACCENTS[voter.optionId]
+                              return (
+                                <span
+                                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold ${accents.badge}`}
+                                  title={voterOption.title}
+                                >
+                                  Option {voterOption.letter}
+                                </span>
+                              )
+                            })()}
+                          <span className="text-gray-400">
+                            {voter.votingPower.toLocaleString(undefined, {
+                              maximumFractionDigits: 0,
+                            })}{' '}
+                            $OVERVIEW
+                          </span>
+                        </span>
+                      }
+                    />
+                  </VoteItem>
+                ))}
+              />
             </div>
 
             {/* Vote panel */}
@@ -763,177 +934,6 @@ export default function OverviewPathVote({
                   className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border-0 disabled:opacity-50"
                 />
               )}
-            </div>
-
-            {/* Results (sealed until voting closes) */}
-            {resultsRevealed && (
-              <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-                <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
-                  Final Results
-                </h2>
-                <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                  {visibleResults.totalVoted.toLocaleString(undefined, {
-                    maximumFractionDigits: 0,
-                  })}{' '}
-                  $OVERVIEW across {visibleResults.totalVoters} voter
-                  {visibleResults.totalVoters !== 1 ? 's' : ''}. These results are final.
-                </p>
-
-                {/* Winning option highlight */}
-                {winningOption && (
-                  <div
-                    className={`mb-5 sm:mb-6 rounded-xl border p-4 sm:p-5 ${winningAccents?.border} ${winningAccents?.bg}`}
-                  >
-                    <p className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-white/70 mb-1.5">
-                      Winning Path
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg ${winningAccents?.badge}`}
-                      >
-                        {winningOption.letter}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-white text-sm sm:text-base font-semibold">
-                          Option {winningOption.letter} — {winningOption.title}
-                        </p>
-                        <p className="text-gray-300 text-xs sm:text-sm">
-                          {winningResult?.totalVoted.toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                          })}{' '}
-                          $OVERVIEW ({winningResult?.percentage}%) ·{' '}
-                          {winningResult?.voterCount} voter
-                          {winningResult?.voterCount !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-4 sm:space-y-5">
-                  {visibleResults.results.map((result) => {
-                    const option = getPathVoteOption(result.optionId)
-                    if (!option) return null
-                    const accents = OPTION_ACCENTS[result.optionId]
-                    const isWinner = result.optionId === visibleResults.winningOptionId
-                    return (
-                      <div key={result.optionId}>
-                        <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                          <p className="text-white text-xs sm:text-sm font-medium truncate flex items-center gap-1.5">
-                            Option {option.letter} — {option.title}
-                            {isWinner && (
-                              <span className="flex-shrink-0 text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-emerald-300">
-                                Winner
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-gray-400 text-xs sm:text-sm flex-shrink-0">
-                            {result.totalVoted.toLocaleString(undefined, {
-                              maximumFractionDigits: 0,
-                            })}{' '}
-                            $OVERVIEW ({result.percentage}%)
-                          </p>
-                        </div>
-                        <div
-                          className={`h-2.5 sm:h-3 bg-white/5 rounded-full overflow-hidden ${
-                            isWinner ? 'ring-1 ring-emerald-400/40' : ''
-                          }`}
-                        >
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${accents.bar}`}
-                            style={{
-                              width: `${Math.min(100, result.percentage)}%`,
-                            }}
-                          />
-                        </div>
-                        <p className="text-gray-500 text-xs mt-1">
-                          {result.voterCount} voter
-                          {result.voterCount !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Voters (who voted + voting power; choices stay sealed) */}
-            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">Votes</h2>
-                {isRefreshing && (
-                  <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
-                    <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
-                    Updating...
-                  </div>
-                )}
-              </div>
-              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                {!resultsRevealed && (
-                  <span className="inline-flex items-center gap-1.5 mr-1 text-indigo-300">
-                    <span aria-hidden>🔒</span> Individual choices and the tally stay hidden until
-                    voting closes.
-                  </span>
-                )}
-                {visibleResults.totalVoters > 0
-                  ? `${visibleResults.totalVoters} voter${
-                      visibleResults.totalVoters !== 1 ? 's' : ''
-                    } so far, ${visibleResults.totalVoted.toLocaleString(undefined, {
-                      maximumFractionDigits: 0,
-                    })} $OVERVIEW of voting power committed.`
-                  : 'No votes yet. Be the first to choose a path.'}
-              </p>
-
-              <Votes
-                emptyStateMessage="No votes yet. Be the first to choose a path."
-                voteItems={visibleResults.voters.map((voter) => (
-                  <VoteItem key={voter.address}>
-                    <VoteItemHeader
-                      leftContent={
-                        voter.citizenName && voter.citizenId != null ? (
-                          <Link
-                            href={`/citizen/${generatePrettyLinkWithId(
-                              voter.citizenName,
-                              String(voter.citizenId),
-                            )}`}
-                            className="text-white hover:underline break-all"
-                          >
-                            {voter.citizenName}
-                          </Link>
-                        ) : (
-                          <span className="text-gray-300">
-                            <ShortAddressLink address={voter.address} />
-                          </span>
-                        )
-                      }
-                      rightContent={
-                        <span className="flex items-center gap-2">
-                          {resultsRevealed &&
-                            (() => {
-                              const voterOption = getPathVoteOption(voter.optionId)
-                              if (!voterOption) return null
-                              const accents = OPTION_ACCENTS[voter.optionId]
-                              return (
-                                <span
-                                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold ${accents.badge}`}
-                                  title={voterOption.title}
-                                >
-                                  Option {voterOption.letter}
-                                </span>
-                              )
-                            })()}
-                          <span className="text-gray-400">
-                            {voter.votingPower.toLocaleString(undefined, {
-                              maximumFractionDigits: 0,
-                            })}{' '}
-                            $OVERVIEW
-                          </span>
-                        </span>
-                      }
-                    />
-                  </VoteItem>
-                ))}
-              />
             </div>
           </div>
         </ContentLayout>
