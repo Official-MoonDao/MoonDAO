@@ -1,11 +1,11 @@
 import type { PathVoteResults } from './fetchResults'
-import rawSnapshot from './snapshot.json'
+import rawSnapshot from './closed-snapshot.json'
 
 /**
  * Frozen final tally for the "Send Frank to Space — Path Forward" vote.
  *
  * Generated once at close with `yarn snapshot:path-vote` and committed as
- * `snapshot.json` so the published outcome is permanent: it does not re-tally
+ * `closed-snapshot.json` so the published outcome is permanent: it does not re-tally
  * live $OVERVIEW balances on every ISR revalidation (which would let the
  * "final" numbers drift as token holders move funds after the vote closed).
  */

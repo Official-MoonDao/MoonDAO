@@ -1,6 +1,6 @@
 /**
  * Generates the frozen final tally for the Overview "Path Forward" vote and
- * writes it to lib/overview-path-vote/snapshot.json.
+ * writes it to lib/overview-path-vote/closed-snapshot.json.
  *
  * Run once at close (with server env present), then commit the JSON:
  *   yarn snapshot:path-vote
@@ -37,7 +37,7 @@ async function main() {
 
   const outPath = path.resolve(
     __dirname,
-    '../lib/overview-path-vote/snapshot.json'
+    '../lib/overview-path-vote/closed-snapshot.json'
   )
   fs.writeFileSync(outPath, JSON.stringify(snapshot, null, 2) + '\n')
 

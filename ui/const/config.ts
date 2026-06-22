@@ -224,7 +224,7 @@ export const OVERVIEW_PATH_VOTE_ID = 3
 export const OVERVIEW_PATH_VOTE_DEADLINE: string | null = null
 // Hard close for the path vote, decoupled from the (optional) deadline. When
 // true the page stops accepting submissions and reveals the final results from
-// the committed snapshot (lib/overview-path-vote/snapshot.json) instead of
+// the committed snapshot (lib/overview-path-vote/closed-snapshot.json) instead of
 // re-tallying live balances, so the published outcome never drifts afterward.
 // Regenerate the snapshot with `yarn snapshot:path-vote` before flipping this.
 export const OVERVIEW_PATH_VOTE_CLOSED = true

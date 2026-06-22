@@ -18,6 +18,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { emptyPathVoteResults, fetchPathVoteResults } from '@/lib/overview-path-vote/fetchResults'
 import type { PathVoteResults, PathVoteVoter } from '@/lib/overview-path-vote/fetchResults'
+import { formatVoteClosedMessage } from '@/lib/overview-path-vote/tally'
 import { getPathVoteSnapshot, hasPathVoteSnapshot } from '@/lib/overview-path-vote/snapshot'
 import {
   getPathVoteOption,
@@ -45,6 +46,8 @@ import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 type OverviewPathVoteProps = {
   voteResults: PathVoteResults
   tokenAddress: string
+  /** ISO timestamp when results were frozen (from snapshot), if applicable. */
+  voteClosedAt?: string | null
 }
 
 const OPTION_ACCENTS: Record<
@@ -77,7 +80,11 @@ const OPTION_ACCENTS: Record<
   },
 }
 
-export default function OverviewPathVote({ voteResults, tokenAddress }: OverviewPathVoteProps) {
+export default function OverviewPathVote({
+  voteResults,
+  tokenAddress,
+  voteClosedAt = null,
+}: OverviewPathVoteProps) {
   const router = useRouter()
   const overviewChain = arbitrum
   const overviewChainSlug = getChainSlug(overviewChain)
@@ -402,6 +409,8 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
 
   const previousOption = previousVote ? getPathVoteOption(previousVote.optionId) : null
 
+  const voteClosedMessage = formatVoteClosedMessage(deadline, voteClosedAt)
+
   const winningOption = visibleResults.winningOptionId
     ? getPathVoteOption(visibleResults.winningOptionId)
     : null
@@ -595,13 +604,7 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
               {votingClosed && (
                 <div className="mb-4 sm:mb-6 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 sm:p-4">
                   <p className="text-amber-300 text-xs sm:text-sm font-medium">
-                    Voting closed on{' '}
-                    {deadline!.toLocaleDateString(undefined, {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                    . Results below are final.
+                    {voteClosedMessage}
                   </p>
                 </div>
               )}
@@ -945,10 +948,12 @@ export async function getStaticProps() {
   // on but no snapshot has been generated yet (avoids shipping an all-zero
   // result by mistake — run `yarn snapshot:path-vote` to fix).
   if (OVERVIEW_PATH_VOTE_CLOSED && hasPathVoteSnapshot()) {
+    const snapshot = getPathVoteSnapshot()
     return {
       props: {
-        voteResults: getPathVoteSnapshot() as PathVoteResults,
+        voteResults: snapshot,
         tokenAddress: OVERVIEW_TOKEN_ADDRESS,
+        voteClosedAt: snapshot.generatedAt,
       },
       revalidate: false,
     }
@@ -961,7 +966,7 @@ export async function getStaticProps() {
     voteResults = emptyPathVoteResults()
   }
   return {
-    props: { voteResults, tokenAddress: OVERVIEW_TOKEN_ADDRESS },
+    props: { voteResults, tokenAddress: OVERVIEW_TOKEN_ADDRESS, voteClosedAt: null },
     revalidate: 60,
   }
 }
