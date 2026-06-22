@@ -222,6 +222,12 @@ export const OVERVIEW_PATH_VOTE_ID = 3
 // Optional ISO-8601 deadline for the path vote. When set, the page shows a
 // countdown and disables submissions after it passes. Null = open-ended.
 export const OVERVIEW_PATH_VOTE_DEADLINE: string | null = null
+// Hard close for the path vote, decoupled from the (optional) deadline. When
+// true the page stops accepting submissions and reveals the final results from
+// the committed snapshot (lib/overview-path-vote/snapshot.json) instead of
+// re-tallying live balances, so the published outcome never drifts afterward.
+// Regenerate the snapshot with `yarn snapshot:path-vote` before flipping this.
+export const OVERVIEW_PATH_VOTE_CLOSED = true
 // TODO: Replace with actual $OVERVIEW token address from team
 export const OVERVIEW_TOKEN_ADDRESS = '0xc868dFc4Ad388F5d7A8A5c3ECa0cff226d77152a'
 export const OVERVIEW_TOKEN_DECIMALS = 18

@@ -35,14 +35,15 @@ export type PathVoteResult = {
 }
 
 /**
- * A single participant in the vote. Intentionally carries no `optionId`: the
- * page mirrors the governance proposal pattern of showing *who* voted and with
- * how much weight, without revealing each voter's choice until results are
- * unsealed.
+ * A single participant in the vote. The `optionId` carries each voter's choice;
+ * while the vote is open the page keeps it sealed (showing only *who* voted and
+ * with how much weight, mirroring the governance proposal pattern), and reveals
+ * it once the vote is closed.
  */
 export type PathVoteVoter = {
   address: string
   votingPower: number
+  optionId: PathVoteOptionId
   citizenName?: string
   citizenId?: number | string
 }
@@ -52,6 +53,33 @@ export type PathVoteResults = {
   totalVoted: number
   totalVoters: number
   voters: PathVoteVoter[]
+  // The option (excluding abstain) with the most voting power. Null when there
+  // are no votes or the leading substantive options are exactly tied.
+  winningOptionId: PathVoteOptionId | null
+}
+
+/**
+ * Picks the winning option as the non-abstain path with the most voting power.
+ * Returns null when nothing leads (no votes) or there is an exact tie for first.
+ */
+function computeWinner(
+  results: { optionId: PathVoteOptionId; totalVoted: number }[]
+): PathVoteOptionId | null {
+  const substantive = results.filter((r) => r.optionId !== 'abstain')
+  let leader: PathVoteOptionId | null = null
+  let leaderTotal = 0
+  let tied = false
+  for (const r of substantive) {
+    if (r.totalVoted > leaderTotal) {
+      leader = r.optionId
+      leaderTotal = r.totalVoted
+      tied = false
+    } else if (r.totalVoted === leaderTotal && leaderTotal > 0) {
+      tied = true
+    }
+  }
+  if (leaderTotal <= 0 || tied) return null
+  return leader
 }
 
 export function emptyPathVoteResults(): PathVoteResults {
@@ -65,6 +93,7 @@ export function emptyPathVoteResults(): PathVoteResults {
     totalVoted: 0,
     totalVoters: 0,
     voters: [],
+    winningOptionId: null,
   }
 }
 
@@ -188,6 +217,7 @@ export async function fetchPathVoteResults(): Promise<PathVoteResults> {
         return {
           address: v.voterAddress,
           votingPower: Math.round(power * 100) / 100,
+          optionId: v.optionId,
         }
       })
       .filter((v) => v.votingPower > 0)
@@ -228,19 +258,22 @@ export async function fetchPathVoteResults(): Promise<PathVoteResults> {
       }
     }
 
+    const results = PATH_VOTE_OPTIONS.map((o) => ({
+      optionId: o.id,
+      totalVoted: Math.round(totals[o.id].totalVoted * 100) / 100,
+      voterCount: totals[o.id].voterCount,
+      percentage:
+        totalVoted > 0
+          ? Math.round((totals[o.id].totalVoted / totalVoted) * 1000) / 10
+          : 0,
+    }))
+
     return {
-      results: PATH_VOTE_OPTIONS.map((o) => ({
-        optionId: o.id,
-        totalVoted: Math.round(totals[o.id].totalVoted * 100) / 100,
-        voterCount: totals[o.id].voterCount,
-        percentage:
-          totalVoted > 0
-            ? Math.round((totals[o.id].totalVoted / totalVoted) * 1000) / 10
-            : 0,
-      })),
+      results,
       totalVoted: Math.round(totalVoted * 100) / 100,
       totalVoters,
       voters,
+      winningOptionId: computeWinner(results),
     }
   } catch (error) {
     console.error('[fetchPathVoteResults] fatal error:', error)

@@ -1,0 +1,247 @@
+{
+  "generatedAt": "2026-06-22T22:21:15.420Z",
+  "results": [
+    {
+      "optionId": "option-a",
+      "totalVoted": 18.17,
+      "voterCount": 3,
+      "percentage": 0.2
+    },
+    {
+      "optionId": "option-b",
+      "totalVoted": 9702.04,
+      "voterCount": 22,
+      "percentage": 92.9
+    },
+    {
+      "optionId": "option-c",
+      "totalVoted": 76.31,
+      "voterCount": 2,
+      "percentage": 0.7
+    },
+    {
+      "optionId": "abstain",
+      "totalVoted": 647.6,
+      "voterCount": 4,
+      "percentage": 6.2
+    }
+  ],
+  "totalVoted": 10444.11,
+  "totalVoters": 31,
+  "voters": [
+    {
+      "address": "0x6102d6ec523261abf19ef1e5086d21b9a5e3b965",
+      "votingPower": 4312.45,
+      "optionId": "option-b",
+      "citizenName": "AstroRR",
+      "citizenId": 175
+    },
+    {
+      "address": "0x86c779b3741e83a36a2a236780d436e4ec673af4",
+      "votingPower": 1073.13,
+      "optionId": "option-b",
+      "citizenName": "Andrew \"Titan\" Parris",
+      "citizenId": 7
+    },
+    {
+      "address": "0xdae44f2b119f1b975d001c51e928b375383a6728",
+      "votingPower": 866.91,
+      "optionId": "option-b",
+      "citizenName": "MaryLiz Bender",
+      "citizenId": 166
+    },
+    {
+      "address": "0x69778f497c0d3f301118fa0e8768d38c2621b370",
+      "votingPower": 679.91,
+      "optionId": "option-b",
+      "citizenName": "",
+      "citizenId": 180
+    },
+    {
+      "address": "0x679d87d8640e66778c3419d164998e720d7495f6",
+      "votingPower": 565.75,
+      "optionId": "abstain",
+      "citizenName": "Pablo Moncada-Larrotiz",
+      "citizenId": 3
+    },
+    {
+      "address": "0x4ec31ae72b61165840b05dd83caa5f7b79cd8842",
+      "votingPower": 545.95,
+      "optionId": "option-b",
+      "citizenName": "Rocketman",
+      "citizenId": 186
+    },
+    {
+      "address": "0xa9011c4cfd1207eb2735f8fa67a65baf4f24fcad",
+      "votingPower": 502.05,
+      "optionId": "option-b",
+      "citizenName": "Doctor Proctor",
+      "citizenId": 22
+    },
+    {
+      "address": "0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801",
+      "votingPower": 483.83,
+      "optionId": "option-b",
+      "citizenName": "Dr Eiman Jahangir",
+      "citizenId": 4
+    },
+    {
+      "address": "0xe79fa4e6bc1295f23064e0eec89b00fe7a8a253e",
+      "votingPower": 399.9,
+      "optionId": "option-b"
+    },
+    {
+      "address": "0x79d0b453dd5d694da4685fbb94798335d5f77760",
+      "votingPower": 198.02,
+      "optionId": "option-b",
+      "citizenName": "Astro.gio",
+      "citizenId": 24
+    },
+    {
+      "address": "0x1a1e25bca28dca769cb29df860d18e093cc894ae",
+      "votingPower": 107.19,
+      "optionId": "option-b",
+      "citizenName": "Julio Rezende",
+      "citizenId": 73
+    },
+    {
+      "address": "0x03bcf035c9c5d8b0324131d75082fb5c9167cbd1",
+      "votingPower": 84.69,
+      "optionId": "option-b",
+      "citizenName": "Jas",
+      "citizenId": 184
+    },
+    {
+      "address": "0x04877685e94e0694944d08a43d021e5768b595f0",
+      "votingPower": 63.44,
+      "optionId": "option-b",
+      "citizenName": "Elliot Briant",
+      "citizenId": 28
+    },
+    {
+      "address": "0x1c0dea8255ba9b4a038f0f169ef5df4fbf0230b6",
+      "votingPower": 48.68,
+      "optionId": "option-b",
+      "citizenName": "Greg Barr",
+      "citizenId": 108
+    },
+    {
+      "address": "0x31cdb419e4a7998367627faa24cee15941795827",
+      "votingPower": 48.46,
+      "optionId": "abstain",
+      "citizenName": "test",
+      "citizenId": 177
+    },
+    {
+      "address": "0x977e3f778d1afce209fa0d2299374b1875f5238a",
+      "votingPower": 48.29,
+      "optionId": "option-b",
+      "citizenName": "austin3wilson",
+      "citizenId": 55
+    },
+    {
+      "address": "0x042a85c1569fc003b4bf9ed5bb1178d63390c8b9",
+      "votingPower": 47.14,
+      "optionId": "option-b",
+      "citizenName": "VNCCII",
+      "citizenId": 181
+    },
+    {
+      "address": "0xd7f4a1597c05283a610901b0f21f843ed516e092",
+      "votingPower": 47.12,
+      "optionId": "option-b"
+    },
+    {
+      "address": "0x768fb08a72eb4d53e7e5b7ad421598328b0e2b7c",
+      "votingPower": 46.18,
+      "optionId": "option-c",
+      "citizenName": "Mrs_Yoke",
+      "citizenId": 182
+    },
+    {
+      "address": "0xb2353c1fb920107e900984ee636d2773cee741c2",
+      "votingPower": 45.35,
+      "optionId": "option-b",
+      "citizenName": "Sahba",
+      "citizenId": 196
+    },
+    {
+      "address": "0x6c77014fd3ca20cb9945eeb325d13e96eed8680c",
+      "votingPower": 44.24,
+      "optionId": "option-b",
+      "citizenName": "Isabel  Fernandes",
+      "citizenId": 176
+    },
+    {
+      "address": "0xb60fe7a63915ac97bb6488da6618a89517ad36d7",
+      "votingPower": 35.77,
+      "optionId": "option-b",
+      "citizenName": "Stan",
+      "citizenId": 205
+    },
+    {
+      "address": "0x665e17970455ea7137162274be840c7807d54ef2",
+      "votingPower": 33.15,
+      "optionId": "option-b",
+      "citizenName": "Lucia  Ferreira ",
+      "citizenId": 146
+    },
+    {
+      "address": "0x1d059dd5a9199b301ea3bffd54d88695b4a5bfeb",
+      "votingPower": 30.13,
+      "optionId": "option-c",
+      "citizenName": "Bera S. Badareva",
+      "citizenId": 151
+    },
+    {
+      "address": "0xb2d3900807094d4fe47405871b0c8adb58e10d42",
+      "votingPower": 29.01,
+      "optionId": "abstain",
+      "citizenName": "Ryan",
+      "citizenId": 1
+    },
+    {
+      "address": "0x2ed72288ae76b3a8e9930c2b39e2b59a303291c1",
+      "votingPower": 22.91,
+      "optionId": "option-b",
+      "citizenName": "Emily Pietrzyk",
+      "citizenId": 189
+    },
+    {
+      "address": "0x95593cbbcc29239e02178d7b3272a83eab26a046",
+      "votingPower": 11.93,
+      "optionId": "option-b",
+      "citizenName": "Maria Alejandra Botero Botero",
+      "citizenId": 79
+    },
+    {
+      "address": "0x78b9faab8fb5de5c7902f0b0cf1d1c17340ce207",
+      "votingPower": 10.86,
+      "optionId": "option-a",
+      "citizenName": "ChrisSembroski",
+      "citizenId": 158
+    },
+    {
+      "address": "0x7f79a7aaf569f350806813d41aeba544cbd017f4",
+      "votingPower": 5.37,
+      "optionId": "option-a",
+      "citizenName": "Moonshot",
+      "citizenId": 147
+    },
+    {
+      "address": "0xf2befa4b9489c1ef75e069d16a6f829f71b4b988",
+      "votingPower": 4.36,
+      "optionId": "abstain",
+      "citizenName": "Frank White",
+      "citizenId": 77
+    },
+    {
+      "address": "0x08b3e694caa2f1fcf8ef71095ced1326f3454b89",
+      "votingPower": 1.95,
+      "optionId": "option-a",
+      "citizenName": "jade",
+      "citizenId": 13
+    }
+  ],
+  "winningOptionId": "option-b"
+}

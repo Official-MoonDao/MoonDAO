@@ -1,6 +1,7 @@
 import confetti from 'canvas-confetti'
 import VotesTableABI from 'const/abis/Votes.json'
 import {
+  OVERVIEW_PATH_VOTE_CLOSED,
   OVERVIEW_PATH_VOTE_DEADLINE,
   OVERVIEW_PATH_VOTE_ID,
   OVERVIEW_TOKEN_ADDRESS,
@@ -17,6 +18,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { emptyPathVoteResults, fetchPathVoteResults } from '@/lib/overview-path-vote/fetchResults'
 import type { PathVoteResults, PathVoteVoter } from '@/lib/overview-path-vote/fetchResults'
+import { getPathVoteSnapshot, hasPathVoteSnapshot } from '@/lib/overview-path-vote/snapshot'
 import {
   getPathVoteOption,
   isPathVoteOptionId,
@@ -100,7 +102,11 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
   }, [voteResults])
 
   const deadline = OVERVIEW_PATH_VOTE_DEADLINE ? new Date(OVERVIEW_PATH_VOTE_DEADLINE) : null
-  const votingClosed = deadline != null && Date.now() > deadline.getTime()
+  // Closed either by the explicit flag (a hard close, independent of the clock)
+  // or by the optional deadline elapsing. The flag path serves a frozen
+  // snapshot; the deadline path falls back to the live tally.
+  const deadlinePassed = deadline != null && Date.now() > deadline.getTime()
+  const votingClosed = OVERVIEW_PATH_VOTE_CLOSED || deadlinePassed
   // Per-option tallies stay sealed until voting closes, mirroring the
   // governance proposal pages. Until then we only show who has voted and with
   // how much voting power.
@@ -161,6 +167,9 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
   // the totals don't look stale relative to the balance shown right above
   // them (ISR revalidates every 60s; the balance hook is live).
   const visibleResults = useMemo(() => {
+    // Once the vote is closed the displayed tally is the frozen snapshot, so we
+    // never overlay the connected wallet's live balance onto it.
+    if (votingClosed) return displayResults
     if (!previousVote || userBalance == null || !Number.isFinite(userBalance) || userBalance <= 0) {
       return displayResults
     }
@@ -187,7 +196,7 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
       })),
       totalVoted: Math.round(totalVoted * 100) / 100,
     }
-  }, [displayResults, previousVote, userBalance])
+  }, [displayResults, previousVote, userBalance, votingClosed])
 
   const handleSubmit = async () => {
     if (!account) return
@@ -301,6 +310,7 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
               {
                 address: lowerAddr,
                 votingPower: voteAmount,
+                optionId: selectedOption,
                 citizenName: existing?.citizenName,
                 citizenId: existing?.citizenId,
               },
@@ -315,6 +325,7 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
           totalVoted: Math.round(totalVoted * 100) / 100,
           totalVoters: lowerAddr && !existing ? nextVoters.length : totalVoters,
           voters: nextVoters,
+          winningOptionId: current.winningOptionId,
         }
       })
 
@@ -390,6 +401,16 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
   }
 
   const previousOption = previousVote ? getPathVoteOption(previousVote.optionId) : null
+
+  const winningOption = visibleResults.winningOptionId
+    ? getPathVoteOption(visibleResults.winningOptionId)
+    : null
+  const winningAccents = visibleResults.winningOptionId
+    ? OPTION_ACCENTS[visibleResults.winningOptionId]
+    : null
+  const winningResult = visibleResults.winningOptionId
+    ? visibleResults.results.find((r) => r.optionId === visibleResults.winningOptionId)
+    : null
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
@@ -752,20 +773,56 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
                     maximumFractionDigits: 0,
                   })}{' '}
                   $OVERVIEW across {visibleResults.totalVoters} voter
-                  {visibleResults.totalVoters !== 1 ? 's' : ''}. Tallies re-weight to voters&apos;
-                  live balances.
+                  {visibleResults.totalVoters !== 1 ? 's' : ''}. These results are final.
                 </p>
+
+                {/* Winning option highlight */}
+                {winningOption && (
+                  <div
+                    className={`mb-5 sm:mb-6 rounded-xl border p-4 sm:p-5 ${winningAccents?.border} ${winningAccents?.bg}`}
+                  >
+                    <p className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-white/70 mb-1.5">
+                      Winning Path
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg ${winningAccents?.badge}`}
+                      >
+                        {winningOption.letter}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-white text-sm sm:text-base font-semibold">
+                          Option {winningOption.letter} — {winningOption.title}
+                        </p>
+                        <p className="text-gray-300 text-xs sm:text-sm">
+                          {winningResult?.totalVoted.toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                          })}{' '}
+                          $OVERVIEW ({winningResult?.percentage}%) ·{' '}
+                          {winningResult?.voterCount} voter
+                          {winningResult?.voterCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-4 sm:space-y-5">
                   {visibleResults.results.map((result) => {
                     const option = getPathVoteOption(result.optionId)
                     if (!option) return null
                     const accents = OPTION_ACCENTS[result.optionId]
+                    const isWinner = result.optionId === visibleResults.winningOptionId
                     return (
                       <div key={result.optionId}>
                         <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                          <p className="text-white text-xs sm:text-sm font-medium truncate">
+                          <p className="text-white text-xs sm:text-sm font-medium truncate flex items-center gap-1.5">
                             Option {option.letter} — {option.title}
+                            {isWinner && (
+                              <span className="flex-shrink-0 text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-emerald-300">
+                                Winner
+                              </span>
+                            )}
                           </p>
                           <p className="text-gray-400 text-xs sm:text-sm flex-shrink-0">
                             {result.totalVoted.toLocaleString(undefined, {
@@ -774,7 +831,11 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
                             $OVERVIEW ({result.percentage}%)
                           </p>
                         </div>
-                        <div className="h-2.5 sm:h-3 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className={`h-2.5 sm:h-3 bg-white/5 rounded-full overflow-hidden ${
+                            isWinner ? 'ring-1 ring-emerald-400/40' : ''
+                          }`}
+                        >
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${accents.bar}`}
                             style={{
@@ -843,11 +904,27 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
                         )
                       }
                       rightContent={
-                        <span className="text-gray-400">
-                          {voter.votingPower.toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                          })}{' '}
-                          $OVERVIEW
+                        <span className="flex items-center gap-2">
+                          {resultsRevealed &&
+                            (() => {
+                              const voterOption = getPathVoteOption(voter.optionId)
+                              if (!voterOption) return null
+                              const accents = OPTION_ACCENTS[voter.optionId]
+                              return (
+                                <span
+                                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold ${accents.badge}`}
+                                  title={voterOption.title}
+                                >
+                                  Option {voterOption.letter}
+                                </span>
+                              )
+                            })()}
+                          <span className="text-gray-400">
+                            {voter.votingPower.toLocaleString(undefined, {
+                              maximumFractionDigits: 0,
+                            })}{' '}
+                            $OVERVIEW
+                          </span>
                         </span>
                       }
                     />
@@ -863,6 +940,20 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
 }
 
 export async function getStaticProps() {
+  // Once closed, serve the committed snapshot and stop revalidating so the
+  // published outcome is permanent. Fall back to the live tally if the flag is
+  // on but no snapshot has been generated yet (avoids shipping an all-zero
+  // result by mistake — run `yarn snapshot:path-vote` to fix).
+  if (OVERVIEW_PATH_VOTE_CLOSED && hasPathVoteSnapshot()) {
+    return {
+      props: {
+        voteResults: getPathVoteSnapshot() as PathVoteResults,
+        tokenAddress: OVERVIEW_TOKEN_ADDRESS,
+      },
+      revalidate: false,
+    }
+  }
+
   let voteResults: PathVoteResults
   try {
     voteResults = await fetchPathVoteResults()
