@@ -169,7 +169,7 @@ contract DePrizeDisburse is Script, Config {
         console.log("");
         console.log("REMINDER: the Safe must already hold the prize ETH (extracted from");
         console.log("Juicebox via the locked owner-Safe payout). Submit Tx 1 then Tx 2.");
-        console.log("For M1/M2: pay provider first, then advance state — ensures partial");
+        console.log("For M1/M2: pay provider first, then advance state - ensures partial");
         console.log("failure doesn't lock funds that would later underfund a REFUND.");
     }
 }
