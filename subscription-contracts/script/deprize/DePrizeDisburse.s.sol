@@ -155,19 +155,21 @@ contract DePrizeDisburse is Script, Config {
             console.log("  data:");
             console.logBytes(d.payoutData);
         } else {
-            console.log("Tx 1 (advance registry state):");
+            console.log("Tx 1 (pay the provider):");
+            console.log("  to:   ", d.payoutTo);
+            console.log("  value:", d.payoutValue);
+            console.log("  data:  0x (plain ETH transfer)");
+            console.log("");
+            console.log("Tx 2 (advance registry state):");
             console.log("  to:   ", d.registry);
             console.log("  value: 0");
             console.log("  data:");
             console.logBytes(d.registryCall);
-            console.log("");
-            console.log("Tx 2 (pay the provider):");
-            console.log("  to:   ", d.payoutTo);
-            console.log("  value:", d.payoutValue);
-            console.log("  data:  0x (plain ETH transfer)");
         }
         console.log("");
         console.log("REMINDER: the Safe must already hold the prize ETH (extracted from");
         console.log("Juicebox via the locked owner-Safe payout). Submit Tx 1 then Tx 2.");
+        console.log("For M1/M2: pay provider first, then advance state — ensures partial");
+        console.log("failure doesn't lock funds that would later underfund a REFUND.");
     }
 }
