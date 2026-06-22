@@ -1,4 +1,4 @@
-import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { DEFAULT_CHAIN_V5 } from 'const/defaultChain'
 import { FlagProvider } from 'const/flags'
 import { SessionProvider } from 'next-auth/react'
 import { NextQueryParamProvider } from 'next-query-params'
@@ -25,9 +25,12 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
 
   const [lightMode, setLightMode] = useLightMode()
 
+  // Force dark mode once on mount (the site has no light theme); a missing
+  // dependency array here used to re-run this after every render.
   useEffect(() => {
     setLightMode(false)
-  })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Initialize performance monitoring
   useEffect(() => {
@@ -57,7 +60,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
           <PrivyProvider
             appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
             config={{
-              loginMethods: ['wallet', 'sms', 'google', 'twitter', 'discord', 'github'],
+              loginMethods: ['wallet', 'sms', 'email', 'google', 'twitter', 'discord', 'github'],
               // Auto-provision an embedded wallet for users who sign up without
               // one (e.g. via SMS/social on a magic-link invite) so they have an
               // address to receive their sponsored citizen mint.

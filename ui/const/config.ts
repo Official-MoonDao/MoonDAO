@@ -1,6 +1,3 @@
-import { arbitrum, sepolia, arbitrumSepolia } from '../lib/rpc/chains'
-import { getChainSlug } from '../lib/thirdweb/chain'
-
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 const STAGING_ORIGIN = process.env.NEXT_PUBLIC_STAGING_ORIGIN
@@ -51,11 +48,7 @@ const arbitrumSepoliaMission = arbitrumSepoliaConfig as DeploymentConfig & {
 
 const baseSepoliaConfig = require('../../contracts/deployments/base-sepolia') as DeploymentConfig
 
-export const TEST_CHAIN =
-  process.env.NEXT_PUBLIC_TEST_CHAIN === 'arbitrum-sepolia' ? arbitrumSepolia : sepolia
-export const DEFAULT_CHAIN_V5 = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
-
-export const DEFAULT_CHAIN_V5_SLUG = getChainSlug(DEFAULT_CHAIN_V5)
+export { TEST_CHAIN, DEFAULT_CHAIN_V5, DEFAULT_CHAIN_V5_SLUG } from './defaultChain'
 
 export const THIRDWEB_ENGINE_URL = 'https://engine.thirdweb.com/v1/read/contract'
 
@@ -420,7 +413,10 @@ export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 export const MARKETPLACE_FEE_SPLIT: string = polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
-  sepolia: '0x11DCe86c804ca088A0d9036eeE368e4055b235dE',
+  // sepolia: fresh self-serve market (oracle + owner = pmoncada.eth), DePrize id 3.
+  // Prior test markets: 0x48de28... (id 2, resolved), 0x11DCe8... (oracle
+  // jaderiverstokes.eth). Kept for reference only.
+  sepolia: '0x36da9d41b673b4115df0e06cefb4c665e2289dd0',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
 }
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
@@ -434,9 +430,36 @@ export const COLLATERAL_TOKEN_ADDRESSES: Index = {
 export const COLLATERAL_DECIMALS = 18
 export const MAX_OUTCOMES = 3
 
-export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
+// M4 close-out stack (DePrizeRedeem helper + DePrizeRegistry). Populate per
+// chain once `script/deprize/DePrizeRedeem.s.sol` / the registry deploy run;
+// the deprize-play harness also accepts manual overrides for testing.
+export const DEPRIZE_REDEEM_ADDRESSES: Index = {
+  sepolia: '0x2fec56899a1121a46b6bcba0bb924796b6ddf4f7',
+  'arbitrum-sepolia': '',
+}
+export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
+  sepolia: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
+  'arbitrum-sepolia': '',
+}
+// questionId used when the play market's condition was prepared
+// (prediction/deprize.config.js DEPRIZE_QUESTION_ID). Needed by reportPayouts;
+// the conditionId is keccak256(oracle, questionId, outcomeSlotCount).
+// Verified for the fresh Sepolia market: keccak256(ORACLE_ADDRESS, 0x..04, 3)
+// == the market's conditionId (0xe4f0ce...e720).
+export const DEPRIZE_QUESTION_ID =
+  '0x0000000000000000000000000000000000000000000000000000000000000004'
 
-export const OPERATOR_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
+// DePrize id in the registry that the play market resolves to (the helper's
+// previewRedeem/redeem take this id).
+export const DEPRIZE_PLAY_ID = 3
+
+// Oracle that prepared the CTF condition; the only address that can resolve
+// (reportPayouts). On the fresh Sepolia market this is pmoncada.eth.
+export const ORACLE_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
+
+// Market owner (pause/close/withdrawFees on the LMSR). Ownership of the fresh
+// Sepolia market was transferred to pmoncada.eth so one wallet runs everything.
+export const OPERATOR_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
 
 export const MOONDAO_TREASURY: string = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
 export const MOONDAO_L2_TREASURY: string = '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'

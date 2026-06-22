@@ -1,3 +1,4 @@
+import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import MarketplaceABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -7,13 +8,13 @@ import {
   TEAM_TABLE_NAMES,
 } from 'const/config'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useShallowQueryRoute } from '@/lib/utils/hooks/useShallowQueryRoute'
@@ -39,6 +40,7 @@ type MarketplaceListing = {
   metadata: string
   shipping: string
   tag: string
+  teamName?: string
 }
 
 type MarketplaceProps = {
@@ -54,7 +56,22 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
   const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>(listings || [])
   const [input, setInput] = useState('')
+  const [selectedTeam, setSelectedTeam] = useState<string>('all')
   const [pageIdx, setPageIdx] = useState(1)
+
+  // Build the team filter options from the listings themselves so the dropdown
+  // only ever shows teams that actually have items for sale.
+  const teamOptions = useMemo(() => {
+    const teams = new Map<string, string>()
+    ;(listings || []).forEach((listing: MarketplaceListing) => {
+      const id = String(listing.teamId)
+      if (!teams.has(id)) teams.set(id, listing.teamName || `Team ${listing.teamId}`)
+    })
+    const sorted = Array.from(teams.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+    return [{ value: 'all', label: 'All Teams' }, ...sorted]
+  }, [listings])
 
   const ITEMS_PER_PAGE = 8 // 4 items per row x 2 rows
 
@@ -80,16 +97,30 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   }
 
   useEffect(() => {
-    if (listings && input != '') {
-      const filtered = listings.filter((listing: MarketplaceListing) => {
-        return listing.title.toLowerCase().includes(input.toLowerCase())
-      })
-      setFilteredListings(filtered)
-      setPageIdx(1) // Reset to first page when filtering
-    } else {
-      setFilteredListings(listings)
+    let result = listings || []
+
+    if (selectedTeam !== 'all') {
+      result = result.filter(
+        (listing: MarketplaceListing) => String(listing.teamId) === selectedTeam
+      )
     }
-  }, [listings, input])
+
+    if (input.trim() !== '') {
+      const query = input.toLowerCase()
+      result = result.filter((listing: MarketplaceListing) =>
+        listing.title.toLowerCase().includes(query)
+      )
+    }
+
+    setFilteredListings(result)
+
+    // Reset to the first page whenever a filter is active so users don't land
+    // on an out-of-range page; leave pagination alone on the default view so
+    // deep links to a specific page keep working.
+    if (selectedTeam !== 'all' || input.trim() !== '') {
+      setPageIdx(1)
+    }
+  }, [listings, input, selectedTeam])
 
   const descriptionSection = (
     <div className="pt-2">
@@ -100,15 +131,31 @@ export default function Marketplace({ listings }: MarketplaceProps) {
       <div className="relative w-full flex flex-col gap-3">
         {/* Search Bar */}
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
-          <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center">
+          <div className="w-full flex flex-row min-[800px]:flex-row gap-2 sm:gap-4 items-center">
             {/* Search Bar */}
             <div className="w-fit max-w-[260px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-1">
               <Search
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
-                placeholder="Search marketplace..."
+                placeholder="Search items..."
               />
+            </div>
+            {/* Team filter dropdown */}
+            <div className="relative w-[10rem] sm:w-[12rem]">
+              <select
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value)}
+                aria-label="Filter by team"
+                className="w-full cursor-pointer appearance-none rounded-xl bg-black/20 backdrop-blur-sm border border-white/10 py-2 pl-3 pr-9 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+              >
+                {teamOptions.map((option) => (
+                  <option key={option.value} value={option.value} className="bg-dark-cool text-white">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
             </div>
           </div>
         </div>
@@ -156,7 +203,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                 ) : (
                   <div className="col-span-full text-center py-8">
                     <p className="text-gray-400">
-                      {input
+                      {input || selectedTeam !== 'all'
                         ? 'No listings match your search criteria.'
                         : 'No marketplace listings available at this time.'}
                     </p>
@@ -212,36 +259,70 @@ export async function getStaticProps() {
 
     const allListings = await queryTable(chain, statement)
 
-    // Process listings in batches to check expiration and avoid rate limiting
+    // Resolve each team's expiration only once. Multiple listings frequently
+    // share a teamId, so de-duping drastically cuts the number of RPC calls and
+    // therefore the chance of getting rate limited under heavy traffic.
+    const uniqueTeamIds = Array.from(
+      new Set(allListings.map((listing: any) => listing.teamId))
+    )
+
+    async function getTeamExpiration(
+      teamId: any,
+      retries = 3,
+      delay = 500
+    ): Promise<number | null> {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const teamExpiration = await readContract({
+            contract: teamContract,
+            method: 'expiresAt',
+            params: [teamId],
+          })
+          return +teamExpiration.toString()
+        } catch (error) {
+          if (attempt < retries - 1) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, delay * Math.pow(2, attempt))
+            )
+            continue
+          }
+          // Persistent failure (likely rate limiting). Return null so the
+          // caller can decide to "fail open" rather than dropping listings.
+          return null
+        }
+      }
+      return null
+    }
+
+    // Process unique teams in batches to check expiration and avoid rate limiting
     const BATCH_SIZE = 10
     const DELAY_BETWEEN_BATCHES = 100 // ms
-    const validListings: any[] = []
+    const teamExpirations = new Map<any, number | null>()
 
-    for (let i = 0; i < allListings.length; i += BATCH_SIZE) {
-      const batch = allListings.slice(i, i + BATCH_SIZE)
-      
-      const batchResults = await Promise.all(
-        batch.map(async (listing: any) => {
-          try {
-            const teamExpiration = await readContract({
-              contract: teamContract,
-              method: 'expiresAt',
-              params: [listing.teamId],
-            })
-            return +teamExpiration.toString() > now ? listing : null
-          } catch {
-            return null
-          }
+    for (let i = 0; i < uniqueTeamIds.length; i += BATCH_SIZE) {
+      const batch = uniqueTeamIds.slice(i, i + BATCH_SIZE)
+
+      await Promise.all(
+        batch.map(async (teamId: any) => {
+          teamExpirations.set(teamId, await getTeamExpiration(teamId))
         })
       )
 
-      validListings.push(...batchResults.filter((listing: any) => listing !== null))
-
       // Add delay between batches to avoid rate limiting
-      if (i + BATCH_SIZE < allListings.length) {
-        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES))
+      if (i + BATCH_SIZE < uniqueTeamIds.length) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, DELAY_BETWEEN_BATCHES)
+        )
       }
     }
+
+    // Keep a listing when its team is unexpired. If the expiration could not be
+    // resolved (null, e.g. rate limited), fail open and keep the listing so a
+    // transient RPC issue never wipes out the entire marketplace.
+    const validListings = allListings.filter((listing: any) => {
+      const expiration = teamExpirations.get(listing.teamId)
+      return expiration === null || expiration === undefined || expiration > now
+    })
 
     const allTeamNames = await queryTable(
       chain,

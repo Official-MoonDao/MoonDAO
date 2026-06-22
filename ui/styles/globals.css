@@ -1,5 +1,4 @@
-@import url('/fonts/stylesheet.css');
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Acme&family=Abel&family=Open+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -41,14 +40,6 @@ body {
   #main-container {
     overflow-y: visible;
   }
-}
-
-.font-acme {
-  font-family: 'Acme', sans-serif;
-}
-
-.font-abel {
-  font-family: 'Abel', sans-serif;
 }
 
 a {

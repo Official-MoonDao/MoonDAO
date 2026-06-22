@@ -54,4 +54,28 @@ interface ILMSRWithTWAP {
 
     /// @notice Condition ID at the given index (for single-condition markets, use index 0).
     function conditionIds(uint256 index) external view returns (bytes32);
+
+    // -----------------------------------------------------------------------
+    // Owner surface (M4 unwind: pause at lock, close + withdrawFees after
+    // resolution). The owner is whoever called the factory's create — transfer
+    // it to the oracle multisig at provisioning.
+    // -----------------------------------------------------------------------
+
+    function owner() external view returns (address);
+
+    function transferOwnership(address newOwner) external;
+
+    /// @notice Freeze trading (Running -> Paused). Stops DIRECT trades on the
+    ///         public LMSR; the DePrizeMint `bettingOpen` gate only stops the router.
+    function pause() external;
+
+    /// @notice Resume trading (Paused -> Running).
+    function resume() external;
+
+    /// @notice Close the market: transfers all remaining outcome-token inventory
+    ///         to the owner and sets stage to Closed. Allowed from Running or Paused.
+    function close() external;
+
+    /// @notice Withdraw the market's entire collateral balance (accrued fees) to the owner.
+    function withdrawFees() external returns (uint256 fees);
 }

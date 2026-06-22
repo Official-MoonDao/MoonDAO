@@ -5,10 +5,13 @@ import TeamTableABI from 'const/abis/TeamTable.json'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_TABLE_ADDRESSES,
+  CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
+  JOBS_TABLE_NAMES,
   TEAM_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
+  TEAM_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_CITIZENS, BLOCKED_TEAMS, FEATURED_TEAMS } from 'const/whitelist'
 import useTranslation from 'next-translate/useTranslation'
@@ -25,7 +28,7 @@ import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { networkCard } from '@/lib/layout/styles'
@@ -43,12 +46,11 @@ import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
-import CitizenABI from '../const/abis/Citizen.json'
 import JobsABI from '../const/abis/JobBoardTable.json'
-import TeamABI from '../const/abis/Team.json'
 
-// Dynamic imports for globe components
-const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
+// Dynamic imports for globe components. Only one globe is mounted at a time
+// (see the map tab) so we never hold two WebGL contexts alive at once.
+const LazyEarth = dynamic(() => import('@/components/globe/LazyEarth'), { ssr: false })
 const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 
 type JoinProps = {
@@ -513,16 +515,15 @@ export default function Join({
               </div>
               <div className="w-full flex justify-center">
                 <div className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}>
-                  <div
-                    className={`flex items-center justify-center ${
-                      mapView !== 'earth' && 'hidden'
-                    }`}
-                  >
-                    <Earth pointsData={citizensLocationData || []} />
-                  </div>
-                  <div className={`${mapView !== 'moon' && 'hidden'}`}>
-                    <Moon />
-                  </div>
+                  {mapView === 'earth' ? (
+                    <div className="flex items-center justify-center">
+                      <LazyEarth pointsData={citizensLocationData || []} />
+                    </div>
+                  ) : (
+                    <div>
+                      <Moon />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -716,6 +717,94 @@ export default function Join({
   )
 }
 
+// Validate NFT expirations server-side via Multicall3: one eth_call per ~200
+// NFTs instead of one RPC request per NFT, which the RPC provider rate-limits.
+// (The previous implementation used Array.filter(async ...) which returns
+// truthy promises — it filtered nothing while still firing one RPC per NFT.)
+const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11'
+
+async function filterUnexpiredNFTs(
+  nfts: NFT[],
+  targetAddress: string,
+  chain: any,
+  now: number
+) {
+  if (!nfts.length) return []
+
+  const { ethers } = await import('ethers')
+  const iface = new ethers.utils.Interface([
+    'function expiresAt(uint256 tokenId) view returns (uint256)',
+  ])
+  const multicall = getContract({
+    client: serverClient,
+    address: MULTICALL3_ADDRESS,
+    chain,
+  })
+
+  const valid: NFT[] = []
+  const CHUNK_SIZE = 200
+  for (let i = 0; i < nfts.length; i += CHUNK_SIZE) {
+    // Token id 0 is mapped to '' by the row converters (`id || ''`), so
+    // resolve from the raw top-level id and skip anything non-numeric.
+    const batch = nfts
+      .slice(i, i + CHUNK_SIZE)
+      .map((nft: any) => {
+        const tokenId = Number(nft?.id ?? nft?.metadata?.id)
+        if (!Number.isFinite(tokenId)) return null
+        return { nft, callData: iface.encodeFunctionData('expiresAt', [tokenId]) }
+      })
+      .filter(Boolean) as { nft: NFT; callData: string }[]
+
+    if (!batch.length) continue
+
+    try {
+      const results: any = await readContract({
+        contract: multicall,
+        method:
+          'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[] returnData)',
+        params: [
+          batch.map(({ callData }) => ({
+            target: targetAddress,
+            allowFailure: true,
+            callData,
+          })),
+        ],
+      })
+
+      results.forEach((res: any, idx: number) => {
+        if (!res.success) return
+        const [expiresAt] = iface.decodeFunctionResult('expiresAt', res.returnData)
+        if (+expiresAt.toString() > now) {
+          valid.push(batch[idx].nft)
+        }
+      })
+    } catch (error) {
+      console.error('Error validating NFT expirations:', error)
+      // Fail open for this chunk so a transient RPC error doesn't blank the
+      // directory; expired entries will be filtered on the next revalidation.
+      valid.push(...batch.map(({ nft }) => nft))
+    }
+  }
+  return valid
+}
+
+// Strip an NFT down to only the fields the join page renders (card title,
+// description, image, link and team/citizen type detection) so the page props
+// don't ship the entire Tableland row for every member of the network.
+function toDirectoryItem(nft: any, type: 'team' | 'citizen') {
+  return {
+    id: nft.id ?? nft.metadata?.id ?? '',
+    metadata: {
+      id: nft.metadata?.id ?? '',
+      name: nft.metadata?.name ?? '',
+      description: nft.metadata?.description ?? '',
+      image: nft.metadata?.image ?? '',
+      attributes:
+        type === 'team' ? [{ trait_type: 'communications', value: '' }] : [],
+    },
+  }
+}
+
 export async function getStaticProps() {
   try {
     const chain = DEFAULT_CHAIN_V5
@@ -723,48 +812,45 @@ export async function getStaticProps() {
 
     const now = Math.floor(Date.now() / 1000)
 
-    const teamContract = getContract({
-      client: serverClient,
-      address: TEAM_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: TeamABI as any,
-    })
-
-    const teamTableContract = getContract({
-      client: serverClient,
-      address: TEAM_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: TeamTableABI as any,
-    })
-
-    let teamTableName
-    try {
-      teamTableName = await readContract({
-        contract: teamTableContract,
-        method: 'getTableName',
-      })
-    } catch (error) {
-      console.error('Error reading team table name:', error)
-      teamTableName = ''
+    // Prefer the statically configured table names; only fall back to an
+    // on-chain `getTableName` read when a name isn't configured. The on-chain
+    // reads were a flaky extra RPC round-trip on every revalidation.
+    let teamTableName = TEAM_TABLE_NAMES[chainSlug]
+    if (!teamTableName && TEAM_TABLE_ADDRESSES[chainSlug]) {
+      try {
+        teamTableName = (await readContract({
+          contract: getContract({
+            client: serverClient,
+            address: TEAM_TABLE_ADDRESSES[chainSlug],
+            chain: chain,
+            abi: TeamTableABI as any,
+          }),
+          method: 'getTableName',
+        })) as string
+      } catch (error) {
+        console.error('Error reading team table name:', error)
+        teamTableName = ''
+      }
     }
 
     const teamRows = teamTableName ? await queryTable(chain, `SELECT * FROM ${teamTableName}`) : []
 
-    const citizenTableContract = getContract({
-      client: serverClient,
-      address: CITIZEN_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: CitizenTableABI as any,
-    })
-    let citizenTableName
-    try {
-      citizenTableName = await readContract({
-        contract: citizenTableContract,
-        method: 'getTableName',
-      })
-    } catch (error) {
-      console.error('Error reading citizen table name:', error)
-      citizenTableName = ''
+    let citizenTableName = CITIZEN_TABLE_NAMES[chainSlug]
+    if (!citizenTableName && CITIZEN_TABLE_ADDRESSES[chainSlug]) {
+      try {
+        citizenTableName = (await readContract({
+          contract: getContract({
+            client: serverClient,
+            address: CITIZEN_TABLE_ADDRESSES[chainSlug],
+            chain: chain,
+            abi: CitizenTableABI as any,
+          }),
+          method: 'getTableName',
+        })) as string
+      } catch (error) {
+        console.error('Error reading citizen table name:', error)
+        citizenTableName = ''
+      }
     }
     const citizenRows: any = citizenTableName ? await queryTable(chain, `SELECT * FROM ${citizenTableName}`) : []
 
@@ -773,20 +859,12 @@ export async function getStaticProps() {
       teams.push(teamRowToNFT(row))
     }
 
-    const filteredValidTeams: any = teams?.filter(async (nft: any) => {
-      try {
-        const expiresAt = await readContract({
-          contract: teamContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-
-        return +expiresAt.toString() > now
-      } catch (error) {
-        console.error('Error reading team expiration:', error)
-        return false
-      }
-    })
+    const filteredValidTeams: any = await filterUnexpiredNFTs(
+      teams,
+      TEAM_ADDRESSES[chainSlug],
+      chain,
+      now
+    )
 
     const sortedValidTeams = filteredValidTeams.reverse().sort((a: any, b: any) => {
       const aIsFeatured = FEATURED_TEAMS.includes(Number(a.metadata.id))
@@ -806,30 +884,23 @@ export async function getStaticProps() {
       }
     })
 
-    const citizenContract = getContract({
-      client: serverClient,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: CitizenABI as any,
-    })
-
     // Fetch jobs data
-    const jobTableContract = getContract({
-      client: serverClient,
-      address: JOBS_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: JobsABI as any,
-    })
-
-    let jobBoardTableName
-    try {
-      jobBoardTableName = await readContract({
-        contract: jobTableContract,
-        method: 'getTableName',
-      })
-    } catch (error) {
-      console.error('Error reading job board table name:', error)
-      jobBoardTableName = ''
+    let jobBoardTableName = JOBS_TABLE_NAMES[chainSlug]
+    if (!jobBoardTableName && JOBS_TABLE_ADDRESSES[chainSlug]) {
+      try {
+        jobBoardTableName = (await readContract({
+          contract: getContract({
+            client: serverClient,
+            address: JOBS_TABLE_ADDRESSES[chainSlug],
+            chain: chain,
+            abi: JobsABI as any,
+          }),
+          method: 'getTableName',
+        })) as string
+      } catch (error) {
+        console.error('Error reading job board table name:', error)
+        jobBoardTableName = ''
+      }
     }
 
     const jobStatement = jobBoardTableName ? `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 6` : ''
@@ -840,20 +911,12 @@ export async function getStaticProps() {
       citizens.push(citizenRowToNFT(row))
     }
 
-    const filteredValidCitizens: any = citizens?.filter(async (nft: any) => {
-      try {
-        const expiresAt = await readContract({
-          contract: citizenContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-
-        return +expiresAt.toString() > now
-      } catch (error) {
-        console.error('Error reading citizen expiration:', error)
-        return false
-      }
-    })
+    const filteredValidCitizens: any = await filterUnexpiredNFTs(
+      citizens,
+      CITIZEN_ADDRESSES[chainSlug],
+      chain,
+      now
+    )
 
     // Use the optimized centralized service for location data
     const { fetchCitizensWithLocation } = await import('@/lib/citizen/citizenDataService')
@@ -861,8 +924,10 @@ export async function getStaticProps() {
 
     return {
       props: {
-        filteredTeams: sortedValidTeams,
-        filteredCitizens: filteredValidCitizens.reverse(),
+        filteredTeams: sortedValidTeams.map((nft: any) => toDirectoryItem(nft, 'team')),
+        filteredCitizens: filteredValidCitizens
+          .reverse()
+          .map((nft: any) => toDirectoryItem(nft, 'citizen')),
         jobs: jobs || [],
         citizensLocationData: citizensLocationData,
       },

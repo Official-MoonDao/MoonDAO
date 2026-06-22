@@ -3,7 +3,7 @@ import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import { JOBS_TABLE_ADDRESSES } from 'const/config'
 import { getContract } from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { Job } from '@/components/jobs/Job'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
 

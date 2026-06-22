@@ -7,7 +7,7 @@
 // import { Address, Hex } from 'thirdweb'
 // import { arbitrum, sepolia } from '@/lib/infura/infuraChains'
 // import { addressBelongsToPrivyUser } from '@/lib/privy'
-// import { serverClient } from '@/lib/thirdweb/client'
+// import { serverClient } from '@/lib/thirdweb/serverClient'
 // import { signOwnsCitizenProof, submitOwnsCitizenClaimFor } from '@/lib/xp'
 
 // const OWNS_CITIZEN_ABI = [

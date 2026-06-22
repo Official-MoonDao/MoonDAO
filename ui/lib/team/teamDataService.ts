@@ -12,7 +12,7 @@ import { Chain, getContract, NFT, readContract } from 'thirdweb'
 import { TeamRow, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 
 export type TeamWithOwner = NFT & {
   owner: string

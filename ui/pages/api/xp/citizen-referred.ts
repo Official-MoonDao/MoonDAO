@@ -38,7 +38,7 @@ import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
 import { isHSMAvailable, createHSMWallet } from '@/lib/google/hsm-signer'
 import { getPrivyUserData } from '@/lib/privy'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 
 function normalizePk(pk?: string): `0x${string}` {
   if (!pk) throw new Error('SAN_AUTHORIZED_SIGNER_PK missing')

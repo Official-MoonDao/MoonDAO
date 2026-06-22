@@ -4,7 +4,7 @@ import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import { MARKETPLACE_TABLE_ADDRESSES } from 'const/config'
 import { Toaster } from 'react-hot-toast'
 import { getContract } from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { TeamListing as TeamListingType } from '@/components/subscription/TeamListing'
 import TeamMarketplaceListingModal from '@/components/subscription/TeamMarketplaceListingModal'
 

@@ -13,7 +13,7 @@ import {
 import { getContract } from 'thirdweb'
 import useMissionData from '@/lib/mission/useMissionData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 
 const MissionDataWrapper = ({ mission, props }: { mission: any; props: any }) => {
   const chainSlug = getChainSlug(CYPRESS_CHAIN_V5)
