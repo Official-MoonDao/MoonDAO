@@ -151,6 +151,10 @@ export default function useSafe(
         senderSignature: signature.data,
       })
 
+      // Reset execution tracking so the new transaction is monitored. Without
+      // this, a stale `true` from a previously executed tx makes the monitoring
+      // effect bail out and the new tx's execution is never detected.
+      setLastSafeTxExecuted(false)
       setLastSafeTxHash(safeTxHash)
       return safeTxHash
     } catch (err) {
@@ -392,6 +396,9 @@ export default function useSafe(
         senderSignature: signature.data,
       })
 
+      // Reset execution tracking so the new (rejection) transaction is
+      // monitored; see queueSafeTx for why a stale `true` would suppress it.
+      setLastSafeTxExecuted(false)
       setLastSafeTxHash(newSafeTxHash)
       return newSafeTxHash
     } catch (err) {
