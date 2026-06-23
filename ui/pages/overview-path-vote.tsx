@@ -1,6 +1,7 @@
 import confetti from 'canvas-confetti'
 import VotesTableABI from 'const/abis/Votes.json'
 import {
+  OVERVIEW_PATH_VOTE_CLOSED,
   OVERVIEW_PATH_VOTE_DEADLINE,
   OVERVIEW_PATH_VOTE_ID,
   OVERVIEW_TOKEN_ADDRESS,
@@ -17,6 +18,8 @@ import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { emptyPathVoteResults, fetchPathVoteResults } from '@/lib/overview-path-vote/fetchResults'
 import type { PathVoteResults, PathVoteVoter } from '@/lib/overview-path-vote/fetchResults'
+import { formatVoteClosedMessage } from '@/lib/overview-path-vote/tally'
+import { getPathVoteSnapshot, hasPathVoteSnapshot } from '@/lib/overview-path-vote/snapshot'
 import {
   getPathVoteOption,
   isPathVoteOptionId,
@@ -43,6 +46,8 @@ import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 type OverviewPathVoteProps = {
   voteResults: PathVoteResults
   tokenAddress: string
+  /** ISO timestamp when results were frozen (from snapshot), if applicable. */
+  voteClosedAt?: string | null
 }
 
 const OPTION_ACCENTS: Record<
@@ -75,7 +80,11 @@ const OPTION_ACCENTS: Record<
   },
 }
 
-export default function OverviewPathVote({ voteResults, tokenAddress }: OverviewPathVoteProps) {
+export default function OverviewPathVote({
+  voteResults,
+  tokenAddress,
+  voteClosedAt = null,
+}: OverviewPathVoteProps) {
   const router = useRouter()
   const overviewChain = arbitrum
   const overviewChainSlug = getChainSlug(overviewChain)
@@ -100,7 +109,11 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
   }, [voteResults])
 
   const deadline = OVERVIEW_PATH_VOTE_DEADLINE ? new Date(OVERVIEW_PATH_VOTE_DEADLINE) : null
-  const votingClosed = deadline != null && Date.now() > deadline.getTime()
+  // Closed either by the explicit flag (a hard close, independent of the clock)
+  // or by the optional deadline elapsing. The flag path serves a frozen
+  // snapshot; the deadline path falls back to the live tally.
+  const deadlinePassed = deadline != null && Date.now() > deadline.getTime()
+  const votingClosed = OVERVIEW_PATH_VOTE_CLOSED || deadlinePassed
   // Per-option tallies stay sealed until voting closes, mirroring the
   // governance proposal pages. Until then we only show who has voted and with
   // how much voting power.
@@ -161,6 +174,9 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
   // the totals don't look stale relative to the balance shown right above
   // them (ISR revalidates every 60s; the balance hook is live).
   const visibleResults = useMemo(() => {
+    // Once the vote is closed the displayed tally is the frozen snapshot, so we
+    // never overlay the connected wallet's live balance onto it.
+    if (votingClosed) return displayResults
     if (!previousVote || userBalance == null || !Number.isFinite(userBalance) || userBalance <= 0) {
       return displayResults
     }
@@ -187,7 +203,7 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
       })),
       totalVoted: Math.round(totalVoted * 100) / 100,
     }
-  }, [displayResults, previousVote, userBalance])
+  }, [displayResults, previousVote, userBalance, votingClosed])
 
   const handleSubmit = async () => {
     if (!account) return
@@ -301,6 +317,7 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
               {
                 address: lowerAddr,
                 votingPower: voteAmount,
+                optionId: selectedOption,
                 citizenName: existing?.citizenName,
                 citizenId: existing?.citizenId,
               },
@@ -315,6 +332,7 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
           totalVoted: Math.round(totalVoted * 100) / 100,
           totalVoters: lowerAddr && !existing ? nextVoters.length : totalVoters,
           voters: nextVoters,
+          winningOptionId: current.winningOptionId,
         }
       })
 
@@ -391,6 +409,18 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
 
   const previousOption = previousVote ? getPathVoteOption(previousVote.optionId) : null
 
+  const voteClosedMessage = formatVoteClosedMessage(deadline, voteClosedAt)
+
+  const winningOption = visibleResults.winningOptionId
+    ? getPathVoteOption(visibleResults.winningOptionId)
+    : null
+  const winningAccents = visibleResults.winningOptionId
+    ? OPTION_ACCENTS[visibleResults.winningOptionId]
+    : null
+  const winningResult = visibleResults.winningOptionId
+    ? visibleResults.results.find((r) => r.optionId === visibleResults.winningOptionId)
+    : null
+
   return (
     <div className="animate-fadeIn flex flex-col items-center">
       <Head
@@ -427,6 +457,98 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
           <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[900px] mx-auto">
             {/* Community update video */}
             <YouTubeEmbed videoId="YzecKAp9V8U" />
+
+            {/* Results (sealed until voting closes) */}
+            {resultsRevealed && (
+              <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+                <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
+                  Final Results
+                </h2>
+                <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                  {visibleResults.totalVoted.toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}{' '}
+                  $OVERVIEW across {visibleResults.totalVoters} voter
+                  {visibleResults.totalVoters !== 1 ? 's' : ''}. These results are final.
+                </p>
+
+                {/* Winning option highlight */}
+                {winningOption && (
+                  <div
+                    className={`mb-5 sm:mb-6 rounded-xl border p-4 sm:p-5 ${winningAccents?.border} ${winningAccents?.bg}`}
+                  >
+                    <p className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-white/70 mb-1.5">
+                      Winning Path
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg ${winningAccents?.badge}`}
+                      >
+                        {winningOption.letter}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-white text-sm sm:text-base font-semibold">
+                          Option {winningOption.letter} — {winningOption.title}
+                        </p>
+                        <p className="text-gray-300 text-xs sm:text-sm">
+                          {winningResult?.totalVoted.toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                          })}{' '}
+                          $OVERVIEW ({winningResult?.percentage}%) ·{' '}
+                          {winningResult?.voterCount} voter
+                          {winningResult?.voterCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4 sm:space-y-5">
+                  {visibleResults.results.map((result) => {
+                    const option = getPathVoteOption(result.optionId)
+                    if (!option) return null
+                    const accents = OPTION_ACCENTS[result.optionId]
+                    const isWinner = result.optionId === visibleResults.winningOptionId
+                    return (
+                      <div key={result.optionId}>
+                        <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                          <p className="text-white text-xs sm:text-sm font-medium truncate flex items-center gap-1.5">
+                            Option {option.letter} — {option.title}
+                            {isWinner && (
+                              <span className="flex-shrink-0 text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-emerald-300">
+                                Winner
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-gray-400 text-xs sm:text-sm flex-shrink-0">
+                            {result.totalVoted.toLocaleString(undefined, {
+                              maximumFractionDigits: 0,
+                            })}{' '}
+                            $OVERVIEW ({result.percentage}%)
+                          </p>
+                        </div>
+                        <div
+                          className={`h-2.5 sm:h-3 bg-white/5 rounded-full overflow-hidden ${
+                            isWinner ? 'ring-1 ring-emerald-400/40' : ''
+                          }`}
+                        >
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${accents.bar}`}
+                            style={{
+                              width: `${Math.min(100, result.percentage)}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-gray-500 text-xs mt-1">
+                          {result.voterCount} voter
+                          {result.voterCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Proposal */}
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
@@ -560,6 +682,85 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
               </details>
             </div>
 
+            {/* Voters (who voted + voting power; choices stay sealed) */}
+            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">Votes</h2>
+                {isRefreshing && (
+                  <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
+                    <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+                    Updating...
+                  </div>
+                )}
+              </div>
+              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                {!resultsRevealed && (
+                  <span className="inline-flex items-center gap-1.5 mr-1 text-indigo-300">
+                    <span aria-hidden>🔒</span> Individual choices and the tally stay hidden until
+                    voting closes.
+                  </span>
+                )}
+                {visibleResults.totalVoters > 0
+                  ? `${visibleResults.totalVoters} voter${
+                      visibleResults.totalVoters !== 1 ? 's' : ''
+                    } so far, ${visibleResults.totalVoted.toLocaleString(undefined, {
+                      maximumFractionDigits: 0,
+                    })} $OVERVIEW of voting power committed.`
+                  : 'No votes yet. Be the first to choose a path.'}
+              </p>
+
+              <Votes
+                emptyStateMessage="No votes yet. Be the first to choose a path."
+                voteItems={visibleResults.voters.map((voter) => (
+                  <VoteItem key={voter.address}>
+                    <VoteItemHeader
+                      leftContent={
+                        voter.citizenName && voter.citizenId != null ? (
+                          <Link
+                            href={`/citizen/${generatePrettyLinkWithId(
+                              voter.citizenName,
+                              String(voter.citizenId),
+                            )}`}
+                            className="text-white hover:underline break-all"
+                          >
+                            {voter.citizenName}
+                          </Link>
+                        ) : (
+                          <span className="text-gray-300">
+                            <ShortAddressLink address={voter.address} />
+                          </span>
+                        )
+                      }
+                      rightContent={
+                        <span className="flex items-center gap-2">
+                          {resultsRevealed &&
+                            (() => {
+                              const voterOption = getPathVoteOption(voter.optionId)
+                              if (!voterOption) return null
+                              const accents = OPTION_ACCENTS[voter.optionId]
+                              return (
+                                <span
+                                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold ${accents.badge}`}
+                                  title={voterOption.title}
+                                >
+                                  Option {voterOption.letter}
+                                </span>
+                              )
+                            })()}
+                          <span className="text-gray-400">
+                            {voter.votingPower.toLocaleString(undefined, {
+                              maximumFractionDigits: 0,
+                            })}{' '}
+                            $OVERVIEW
+                          </span>
+                        </span>
+                      }
+                    />
+                  </VoteItem>
+                ))}
+              />
+            </div>
+
             {/* Vote panel */}
             <div className="relative z-10 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
               <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
@@ -574,13 +775,7 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
               {votingClosed && (
                 <div className="mb-4 sm:mb-6 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 sm:p-4">
                   <p className="text-amber-300 text-xs sm:text-sm font-medium">
-                    Voting closed on{' '}
-                    {deadline!.toLocaleDateString(undefined, {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                    . Results below are final.
+                    {voteClosedMessage}
                   </p>
                 </div>
               )}
@@ -740,121 +935,6 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
                 />
               )}
             </div>
-
-            {/* Results (sealed until voting closes) */}
-            {resultsRevealed && (
-              <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-                <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
-                  Final Results
-                </h2>
-                <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                  {visibleResults.totalVoted.toLocaleString(undefined, {
-                    maximumFractionDigits: 0,
-                  })}{' '}
-                  $OVERVIEW across {visibleResults.totalVoters} voter
-                  {visibleResults.totalVoters !== 1 ? 's' : ''}. Tallies re-weight to voters&apos;
-                  live balances.
-                </p>
-
-                <div className="space-y-4 sm:space-y-5">
-                  {visibleResults.results.map((result) => {
-                    const option = getPathVoteOption(result.optionId)
-                    if (!option) return null
-                    const accents = OPTION_ACCENTS[result.optionId]
-                    return (
-                      <div key={result.optionId}>
-                        <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                          <p className="text-white text-xs sm:text-sm font-medium truncate">
-                            Option {option.letter} — {option.title}
-                          </p>
-                          <p className="text-gray-400 text-xs sm:text-sm flex-shrink-0">
-                            {result.totalVoted.toLocaleString(undefined, {
-                              maximumFractionDigits: 0,
-                            })}{' '}
-                            $OVERVIEW ({result.percentage}%)
-                          </p>
-                        </div>
-                        <div className="h-2.5 sm:h-3 bg-white/5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${accents.bar}`}
-                            style={{
-                              width: `${Math.min(100, result.percentage)}%`,
-                            }}
-                          />
-                        </div>
-                        <p className="text-gray-500 text-xs mt-1">
-                          {result.voterCount} voter
-                          {result.voterCount !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Voters (who voted + voting power; choices stay sealed) */}
-            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">Votes</h2>
-                {isRefreshing && (
-                  <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
-                    <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
-                    Updating...
-                  </div>
-                )}
-              </div>
-              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                {!resultsRevealed && (
-                  <span className="inline-flex items-center gap-1.5 mr-1 text-indigo-300">
-                    <span aria-hidden>🔒</span> Individual choices and the tally stay hidden until
-                    voting closes.
-                  </span>
-                )}
-                {visibleResults.totalVoters > 0
-                  ? `${visibleResults.totalVoters} voter${
-                      visibleResults.totalVoters !== 1 ? 's' : ''
-                    } so far, ${visibleResults.totalVoted.toLocaleString(undefined, {
-                      maximumFractionDigits: 0,
-                    })} $OVERVIEW of voting power committed.`
-                  : 'No votes yet. Be the first to choose a path.'}
-              </p>
-
-              <Votes
-                emptyStateMessage="No votes yet. Be the first to choose a path."
-                voteItems={visibleResults.voters.map((voter) => (
-                  <VoteItem key={voter.address}>
-                    <VoteItemHeader
-                      leftContent={
-                        voter.citizenName && voter.citizenId != null ? (
-                          <Link
-                            href={`/citizen/${generatePrettyLinkWithId(
-                              voter.citizenName,
-                              String(voter.citizenId),
-                            )}`}
-                            className="text-white hover:underline break-all"
-                          >
-                            {voter.citizenName}
-                          </Link>
-                        ) : (
-                          <span className="text-gray-300">
-                            <ShortAddressLink address={voter.address} />
-                          </span>
-                        )
-                      }
-                      rightContent={
-                        <span className="text-gray-400">
-                          {voter.votingPower.toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                          })}{' '}
-                          $OVERVIEW
-                        </span>
-                      }
-                    />
-                  </VoteItem>
-                ))}
-              />
-            </div>
           </div>
         </ContentLayout>
       </Container>
@@ -863,6 +943,22 @@ export default function OverviewPathVote({ voteResults, tokenAddress }: Overview
 }
 
 export async function getStaticProps() {
+  // Once closed, serve the committed snapshot and stop revalidating so the
+  // published outcome is permanent. Fall back to the live tally if the flag is
+  // on but no snapshot has been generated yet (avoids shipping an all-zero
+  // result by mistake — run `yarn snapshot:path-vote` to fix).
+  if (OVERVIEW_PATH_VOTE_CLOSED && hasPathVoteSnapshot()) {
+    const snapshot = getPathVoteSnapshot()
+    return {
+      props: {
+        voteResults: snapshot,
+        tokenAddress: OVERVIEW_TOKEN_ADDRESS,
+        voteClosedAt: snapshot.generatedAt,
+      },
+      revalidate: false,
+    }
+  }
+
   let voteResults: PathVoteResults
   try {
     voteResults = await fetchPathVoteResults()
@@ -870,7 +966,7 @@ export async function getStaticProps() {
     voteResults = emptyPathVoteResults()
   }
   return {
-    props: { voteResults, tokenAddress: OVERVIEW_TOKEN_ADDRESS },
+    props: { voteResults, tokenAddress: OVERVIEW_TOKEN_ADDRESS, voteClosedAt: null },
     revalidate: 60,
   }
 }
