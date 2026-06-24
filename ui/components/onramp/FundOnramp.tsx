@@ -111,7 +111,7 @@ export function FundOnramp({
     >
       <span className="text-sm font-semibold text-white">MoonPay</span>
       <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-        {isUS ? 'Card or bank' : 'Recommended'}
+        {isUS ? 'Alternative' : 'Recommended'}
       </span>
     </button>
   )
@@ -173,7 +173,7 @@ export function FundOnramp({
       ) : (
         <p className="text-gray-300/80 text-xs leading-relaxed">
           {isUS
-            ? 'Pay with a debit/credit card, Apple Pay, Google Pay, or bank transfer — no account needed.'
+            ? 'Pay with a debit/credit card or bank transfer — no account needed. Not available for Apple Pay or Google Pay.'
             : 'Recommended for your region. Pay with a debit/credit card, Apple Pay, Google Pay, or bank transfer — no account needed.'}
         </p>
       )}

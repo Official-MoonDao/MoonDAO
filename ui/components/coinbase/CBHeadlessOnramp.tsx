@@ -395,12 +395,15 @@ export function CBHeadlessOnramp({
           setPaymentLinkUrl(null)
           break
         }
-        case 'onramp_api.commit_error':
-          setError(
-            errorMessage || 'Your payment could not be completed. Please try again.'
-          )
+        case 'onramp_api.commit_error': {
+          const friendlyCommitError =
+            errorCode === 'ERROR_CODE_GUEST_CARD_PREPAID_DECLINED'
+              ? 'Prepaid cards are not supported. Please use a regular debit or credit card and try again.'
+              : errorMessage || 'Your payment could not be completed. Please try again.'
+          setError(friendlyCommitError)
           setFundingState('ready')
           break
+        }
         case 'onramp_api.commit_success':
           setError(null)
           setFundingState('processing')
