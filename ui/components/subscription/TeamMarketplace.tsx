@@ -86,7 +86,7 @@ export default function TeamMarketplace({
 
       return () => clearTimeout(timeout)
     }
-  }, [router.query.listingId])
+  }, [router.query.listing])
 
   return (
     <div id="team-marketplace" className="w-full p-6">
