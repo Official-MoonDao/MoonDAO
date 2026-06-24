@@ -527,7 +527,7 @@ export function CBHeadlessOnramp({
               ? 'Press the Apple Pay button above to complete your purchase securely with Coinbase.'
               : useGooglePay
                 ? 'Press the Google Pay button above to complete your purchase securely with Coinbase.'
-                : 'Scan the QR code above with your phone to complete your purchase securely with Apple Pay.'}
+                : 'Scan the QR code above with your iPhone to complete your purchase securely with Apple Pay.'}
           </p>
         </div>
       </div>
