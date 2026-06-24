@@ -123,6 +123,17 @@ export const CITIZEN_TABLE_NAMES: Index = {
   'arbitrum-sepolia': 'CITIZENTABLE_421614_1058',
 }
 
+// Optional discovery index for the Lunar Simulator. Scenario JSON is the
+// IPFS pin (CID is the source of truth); this table only indexes metadata for
+// listing public scenarios. Provision a table controlled by TABLELAND_PRIVATE_KEY
+// and set LUNAR_SIM_TABLE_NAME to enable indexing. When empty, save still works
+// (pin-only) and the listing simply returns the bundled demo.
+export const LUNAR_SIM_TABLE_NAMES: Index = {
+  arbitrum: process.env.LUNAR_SIM_TABLE_NAME || '',
+  sepolia: process.env.LUNAR_SIM_TABLE_NAME || '',
+  'arbitrum-sepolia': process.env.LUNAR_SIM_TABLE_NAME || '',
+}
+
 export const PROJECT_ADDRESSES: Index = {
   arbitrum: '0xCb31829B312923C7502766ef4f36948A7A64cD6A',
   sepolia: '0xAf8A64BfeD40fF4129e624650B0C48F9036C0FE4',

@@ -2,6 +2,7 @@ import {
   CircleStackIcon,
   FolderIcon,
   HomeIcon,
+  MoonIcon,
   PlusIcon,
   RocketLaunchIcon,
   UserGroupIcon,
@@ -54,6 +55,11 @@ export default function useNavigation(citizen: any) {
         icon: WrenchScrewdriverIcon,
         href: '/projects',
         dynamicChildren: 'Projects' as const,
+      },
+      {
+        name: 'Lunar Sim',
+        icon: MoonIcon,
+        href: '/lunar-simulator',
       },
       {
         name: '$MOONEY',

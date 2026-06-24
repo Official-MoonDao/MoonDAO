@@ -1,0 +1,45 @@
+{
+  "version": "0.1.0",
+  "standards": [
+    {
+      "id": "REGOLITH_TRANSFER_1_0",
+      "name": "Regolith Transfer",
+      "version": "1.0",
+      "domain": "Resource Exchange",
+      "status": "draft",
+      "applicableClasses": ["regolith_excavator", "isru_factory"],
+      "requiredStamps": ["CAN_SELL_REGOLITH", "CAN_BUY_REGOLITH"],
+      "refs": [
+        "Campfire: A Trustless Transaction and Arbitration Framework (ICON/MoonDAO, 2024)"
+      ]
+    },
+    {
+      "id": "LOCAL_HANDSHAKE_1_0",
+      "name": "Local Identity Handshake",
+      "version": "1.0",
+      "domain": "Identity",
+      "status": "adopted",
+      "applicableClasses": [
+        "regolith_excavator",
+        "isru_factory",
+        "navigation_beacon"
+      ],
+      "requiredStamps": [],
+      "refs": []
+    },
+    {
+      "id": "LOCAL_COMMS_1_0",
+      "name": "Local Communications",
+      "version": "1.0",
+      "domain": "Communication",
+      "status": "adopted",
+      "applicableClasses": [
+        "regolith_excavator",
+        "isru_factory",
+        "navigation_beacon"
+      ],
+      "requiredStamps": [],
+      "refs": []
+    }
+  ]
+}

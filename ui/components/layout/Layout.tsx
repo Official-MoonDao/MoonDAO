@@ -87,6 +87,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/dashboard',
     '/bridge',
     '/roadmap',
+    '/lunar-simulator/new',
+    '/lunar-simulator/[scenarioId]',
   ]
 
   const isFullscreen = fullscreenPaths.includes(router.pathname)
