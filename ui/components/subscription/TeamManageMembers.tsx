@@ -261,9 +261,17 @@ function TeamManageMembersModal({
     <Modal
       id="team-manage-members-modal"
       setEnabled={setEnabled}
-      className="fixed inset-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-start z-[10000] overflow-y-auto pt-24 md:pt-28 pb-8 px-4 animate-fadeIn"
+      className="fixed inset-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-start overflow-y-auto px-4 animate-fadeIn"
     >
-      <div className="flex flex-col w-full md:w-[520px] max-h-[calc(100vh-8rem)] md:max-h-[calc(100vh-9rem)] overflow-y-auto bg-[#0a0f1e] rounded-2xl border border-[#1e2a45]">
+      <div
+        style={{
+          marginTop: 140,
+          marginBottom: 40,
+          maxHeight: 'calc(100vh - 180px)',
+          zIndex: 10000,
+        }}
+        className="flex flex-col w-full md:w-[520px] overflow-y-auto bg-[#0a0f1e] rounded-2xl border border-[#1e2a45]"
+      >
 
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-[#1e2a45]">
