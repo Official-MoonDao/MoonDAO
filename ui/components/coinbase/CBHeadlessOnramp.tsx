@@ -37,6 +37,9 @@ interface CBHeadlessOnrampProps {
   /** Called when the device doesn't support Apple Pay or Google Pay so the
    *  parent can fall back to MoonPay automatically. */
   onUnsupported?: () => void
+  /** Launches the hosted Coinbase flow (account / card / bank). Surfaced on the
+   *  QR screen for desktop users who don't have an iPhone to scan with. */
+  onUseAccountFlow?: () => void | Promise<void>
 }
 
 type FundingState =
@@ -96,9 +99,11 @@ export function CBHeadlessOnramp({
   refetchBalance,
   onSuccess,
   onUnsupported,
+  onUseAccountFlow,
 }: CBHeadlessOnrampProps) {
   const { user } = usePrivy()
   const verification = useOnrampVerification()
+  const [accountFlowLoading, setAccountFlowLoading] = useState(false)
 
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
   const shellChrome = embedded
@@ -531,6 +536,30 @@ export function CBHeadlessOnramp({
                 ? 'Press the Google Pay button above to complete your purchase securely with Coinbase.'
                 : 'Scan the QR code above with your iPhone to complete your purchase securely with Apple Pay.'}
           </p>
+          {/* Desktop users without an iPhone can't scan the Apple Pay QR — offer
+              the hosted Coinbase flow (account / card / bank) as an alternative. */}
+          {!nativeApplePay && !useGooglePay && onUseAccountFlow && (
+            <div className="pt-1 text-center">
+              <p className="text-gray-500 text-xs mb-2">No iPhone to scan with?</p>
+              <button
+                type="button"
+                disabled={accountFlowLoading}
+                onClick={async () => {
+                  setAccountFlowLoading(true)
+                  try {
+                    await onUseAccountFlow()
+                  } finally {
+                    setAccountFlowLoading(false)
+                  }
+                }}
+                className="text-sm font-semibold text-blue-300 hover:text-blue-200 underline disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {accountFlowLoading
+                  ? 'Opening Coinbase…'
+                  : 'Pay with a Coinbase account or card instead'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
