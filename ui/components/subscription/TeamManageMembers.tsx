@@ -1,16 +1,20 @@
-import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
-import { TrashIcon } from '@heroicons/react/24/outline'
-import { useWallets } from '@privy-io/react-auth'
+import { TrashIcon, UserPlusIcon, ShieldCheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5, HATS_ADDRESS } from 'const/config'
 import { TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES } from 'const/teams'
 import { ethers } from 'ethers'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
 import { useCitizen } from '@/lib/citizen/useCitizen'
+import {
+  buildAddRoleTx,
+  buildRemoveRoleTx,
+  getRoleLabel,
+  isValidEthereumAddress,
+  requiresSafeTx,
+} from '@/lib/hats/teamRoles'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import HatsABI from '../../const/abis/Hats.json'
@@ -43,30 +47,69 @@ type TeamManageMembersProps = {
   managerHatId: any
 }
 
-function HatOption({ hat }: any) {
-  const [hatMetadata, setHatMetadata] = useState<any>()
+function HatOption({ hat, managerHatId }: any) {
+  const [ipfsName, setIpfsName] = useState<string>()
 
   useEffect(() => {
+    let active = true
     async function getHatMetadata() {
-      const res = await fetch(
-        `https://ipfs.io/ipfs/${hat.details.split('ipfs://')[1]}`
-      )
-      const data = await res.json()
-      setHatMetadata(data.data)
+      try {
+        const res = await fetch(
+          `https://ipfs.io/ipfs/${hat.details.split('ipfs://')[1]}`
+        )
+        const data = await res.json()
+        if (active) setIpfsName(data?.data?.name)
+      } catch {
+        // Fall back to deterministic label from getRoleLabel.
+      }
     }
-    getHatMetadata()
-  }, [hat.details])
+    if (hat?.details) getHatMetadata()
+    return () => {
+      active = false
+    }
+  }, [hat?.details])
 
   return (
-    <option key={hat.id} value={hat.id} className="bg-[#0f152f] text-white">
-      {hatMetadata?.name}
+    <option value={hat.id} className="bg-[#0e1630] text-white">
+      {getRoleLabel(hat.id, { managerHatId, ipfsName })}
     </option>
+  )
+}
+
+function RoleBadge({ name }: { name: string }) {
+  const lower = name?.toLowerCase() ?? ''
+  const isAdmin = lower.includes('admin')
+  const isManager = lower.includes('manager')
+
+  if (isAdmin) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-900/60 border border-purple-500/40 text-purple-200">
+        <ShieldCheckIcon className="w-3 h-3" />
+        {name}
+      </span>
+    )
+  }
+  if (isManager) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-900/60 border border-blue-500/40 text-blue-200">
+        {name}
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-700/60 border border-slate-500/30 text-slate-300">
+      {name}
+    </span>
   )
 }
 
 function TeamMemberName({ selectedChain, address }: any) {
   const citizenNFT = useCitizen(selectedChain, undefined, address)
-  return <p className="font-bold">{citizenNFT?.metadata?.name}</p>
+  return (
+    <p className="font-semibold text-white truncate">
+      {citizenNFT?.metadata?.name || 'Unknown Member'}
+    </p>
+  )
 }
 
 function TeamMembers({
@@ -79,92 +122,103 @@ function TeamMembers({
   queueSafeTx,
   setHasDeletedMember,
   managerHatId,
+  adminHatId,
 }: any) {
   const hatNames = useHatNames(hatsContract, wearer.hatIds)
-
   const chainSlug = getChainSlug(selectedChain)
+  const [removingHat, setRemovingHat] = useState<string | null>(null)
 
   return (
-    <>
-      <div
-        key={`modal-team-member-wearer-${wearer.address}`}
-        className="bg-dark-cool rounded-[1vmax] mb-2 p-5"
-      >
-        <TeamMemberName
-          selectedChain={selectedChain}
-          address={wearer.address}
-        />
-        <p>{`${wearer.address.slice(0, 5)}...${wearer.address.slice(-5)}`}</p>
-        <div className="mt-2 flex flex-col gap-2">
-          {hatNames?.map((hatName: any) => (
-            <div
-              key={`team-member-hat-${wearer.address}-${hatName.name}`}
-              className="flex items-start"
-            >
-              <button
-                onClick={async () => {
-                  try {
-                    const v2TeamCreatorPatchedPassthroughModuleAddress =
-                      TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES?.[
-                        chainSlug
-                      ]?.[teamId]
-
-                    let memberHatPassthroughModuleAddress: any = ''
-
-                    if (v2TeamCreatorPatchedPassthroughModuleAddress) {
-                      memberHatPassthroughModuleAddress =
-                        v2TeamCreatorPatchedPassthroughModuleAddress
-                    } else {
-                      memberHatPassthroughModuleAddress = await readContract({
-                        contract: teamContract,
-                        method: 'memberPassthroughModule' as string,
-                        params: [teamId],
-                      })
-                    }
-                    await readContract({
-                      contract: teamContract,
-                      method: 'memberPassthroughModule' as string,
-                      params: [teamId],
-                    })
-                    const iface = new ethers.utils.Interface(HatsABI)
-                    const txData = iface.encodeFunctionData(
-                      'setHatWearerStatus',
-                      [hatName.hatId, wearer.address, false, true]
-                    )
-
-                    if (
-                      hatName.hatId ===
-                      hatIdDecimalToHex(managerHatId.toString())
-                    ) {
-                      await queueSafeTx({
-                        to: HATS_ADDRESS,
-                        data: txData,
-                        value: '0',
-                        safeTxGas: '1000000',
-                      })
-                      setHasDeletedMember(true)
-                    } else {
-                      await account?.sendTransaction({
-                        to: memberHatPassthroughModuleAddress,
-                        data: txData,
-                        value: '0',
-                        gas: 1000000,
-                      })
-                    }
-                    toast.success('Member removed and role access revoked.')
-                  } catch (err) {
-                    console.log(err)
-                  }
-                }}
-              >
-                <TrashIcon className="h-6 w-6 text-white" aria-hidden="true" />
-              </button>
-              <p className="">{hatName.name}</p>
-            </div>
-          ))}
-        </div>
+    <div className="flex items-start gap-3 p-4 rounded-xl bg-[#111827] border border-[#1e2a45] hover:bg-[#162035] transition-all duration-200">
+      <div className="w-9 h-9 rounded-full bg-[#1a2545] border border-[#2a3a60] flex items-center justify-center flex-shrink-0 text-sm font-bold text-slate-300">
+        {wearer.address.slice(2, 4).toUpperCase()}
       </div>
-    </>
+      <div className="flex-1 min-w-0">
+        <TeamMemberName selectedChain={selectedChain} address={wearer.address} />
+        <p className="text-xs text-slate-400 font-mono mt-0.5">
+          {`${wearer.address.slice(0, 6)}...${wearer.address.slice(-4)}`}
+        </p>
+        {hatNames && hatNames.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {hatNames.map((hatName: any) => {
+              const label = getRoleLabel(hatName.hatId, {
+                managerHatId,
+                ipfsName: hatName.name,
+              })
+
+              return (
+                <div key={`hat-${wearer.address}-${label}`} className="flex items-center gap-1">
+                  <RoleBadge name={label} />
+                  <button
+                    disabled={removingHat === hatName.hatId}
+                    onClick={async () => {
+                      setRemovingHat(hatName.hatId)
+                      try {
+                        const v2TeamCreatorPatchedPassthroughModuleAddress =
+                          TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES?.[chainSlug]?.[teamId]
+
+                        let memberHatPassthroughModuleAddress: any = ''
+                        if (v2TeamCreatorPatchedPassthroughModuleAddress) {
+                          memberHatPassthroughModuleAddress = v2TeamCreatorPatchedPassthroughModuleAddress
+                        } else {
+                          memberHatPassthroughModuleAddress = await readContract({
+                            contract: teamContract,
+                            method: 'memberPassthroughModule' as string,
+                            params: [teamId],
+                          })
+                        }
+
+                        const tx = buildRemoveRoleTx({
+                          hatId: hatName.hatId,
+                          wearerAddress: wearer.address,
+                          managerHatId,
+                          adminHatId,
+                          hatsAddress: HATS_ADDRESS,
+                          memberPassthroughModuleAddress:
+                            memberHatPassthroughModuleAddress,
+                        })
+
+                        const iface = new ethers.utils.Interface(HatsABI)
+                        const txData = iface.encodeFunctionData(
+                          tx.functionName,
+                          tx.args
+                        )
+
+                        if (tx.routing === 'safe') {
+                          await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: '1000000' })
+                          setHasDeletedMember(true)
+                        } else {
+                          await account?.sendTransaction({
+                            to: tx.to,
+                            data: txData,
+                            value: '0',
+                            gas: 1000000,
+                          })
+                        }
+                        toast.success('Role removed.')
+                      } catch (err) {
+                        console.log(err)
+                        toast.error('Failed to remove role.')
+                      } finally {
+                        setRemovingHat(null)
+                      }
+                    }}
+                    className="p-0.5 text-slate-500 hover:text-red-400 transition-colors disabled:opacity-40"
+                    title="Remove role"
+                  >
+                    {removingHat === hatName.hatId ? (
+                      <span className="block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <TrashIcon className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -184,22 +238,9 @@ function TeamManageMembersModal({
 
   const uniqueWearers = useUniqueHatWearers(hats)
 
-  //Add member form
   const [hasAddedMember, setHasAddedMember] = useState<boolean>(false)
   const [newMemberAddress, setNewMemberAddress] = useState<string>('')
   const [selectedHatId, setSelectedHatId] = useState<any>(reversedHats?.[0]?.id)
-  const [newMemberIsIneligible, setNewMemberIsIneligible] =
-    useState<boolean>(false)
-  const [isLoadingNewMember, setIsLoadingNewMember] = useState<boolean>(false)
-
-  //Add hat form
-  const [hasAddedHat, setHasAddedHat] = useState<boolean>(false)
-  const [hatData, setHatData] = useState<any>({
-    name: '',
-    description: '',
-    maxSupply: 8,
-  })
-  const [isLoadingNewHat, setIsLoadingNewHat] = useState<boolean>(false)
 
   const [hasDeletedMember, setHasDeletedMember] = useState<boolean>(false)
 
@@ -207,20 +248,32 @@ function TeamManageMembersModal({
 
   const [isValidAddress, setIsValidAddress] = useState(false)
 
-  const validateEthereumAddress = (address: string) => {
-    return address.length === 42 && address.startsWith('0x')
-  }
+  const safeNetwork = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+  const safeUrl = `https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`
+
+  const isPrivilegedSelection = requiresSafeTx(
+    selectedHatId,
+    managerHatId,
+    adminHatId
+  )
 
   return (
     <Modal id="team-manage-members-modal" setEnabled={setEnabled}>
-      <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 py-0 bg-gradient-to-b from-dark-cool to-darkest-cool h-screen md:h-auto">
-        <div className="w-full flex mt-5 mb-2 items-end justify-between">
-          <h2 className="font-GoodTimes">{`Manage Team`}</h2>
+      <div className="flex flex-col w-full md:w-[520px] bg-[#0a0f1e] rounded-2xl overflow-hidden border border-[#1e2a45]">
+
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 border-b border-[#1e2a45]">
+          <h2 className="font-GoodTimes text-xl text-white tracking-wide">Manage Team</h2>
+          <p className="text-xs text-slate-400 mt-1">Add or remove roles for team members</p>
         </div>
 
-        <div className="border-b-[3px] border-dark-cool rounded-[2vmax] w-full">
-          <div className="px-2 pb-0 rounded-[2vmax] bg-darkest-cool w-full flex flex-col max-h-[500px] overflow-auto border-t-[10px] border-b-[10px] border-darkest-cool">
-            {uniqueWearers?.[0] &&
+        {/* Members list */}
+        <div className="px-6 py-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+            Current Members
+          </p>
+          <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-1">
+            {uniqueWearers?.[0] ? (
               uniqueWearers.map((w: any, i: number) => (
                 <TeamMembers
                   key={`modal-team-member-${i}`}
@@ -233,261 +286,148 @@ function TeamManageMembersModal({
                   queueSafeTx={queueSafeTx}
                   setHasDeletedMember={setHasDeletedMember}
                   managerHatId={managerHatId}
+                  adminHatId={adminHatId}
                 />
-              ))}
+              ))
+            ) : (
+              <p className="text-sm text-slate-500 py-4 text-center">No members yet</p>
+            )}
           </div>
+
+          {hasDeletedMember && (
+            <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-amber-900/20 border border-amber-500/30 text-amber-300 text-xs">
+              <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>
+                Removal queued.{' '}
+                <button className="underline font-semibold hover:text-amber-200" onClick={() => window.open(safeUrl)}>
+                  Sign & execute in Safe
+                </button>{' '}
+                to finalize.
+              </span>
+            </div>
+          )}
         </div>
-        {hasDeletedMember && (
-          <p>
-            {`Please sign and execute the transaction in the team's `}
-            <button
-              className="font-bold text-light-warm"
-              onClick={() => {
-                const safeNetwork =
-                  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-                window.open(
-                  `https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`
-                )
-              }}
-            >
-              Safe
-            </button>
-          </p>
-        )}
-        <hr></hr>
+
+        <div className="h-px bg-[#1e2a45] mx-6" />
+
+        {/* Add member form */}
         <form
-          className="w-full flex flex-col gap-2 items-start justify-start rounded-[2vmax]"
+          className="px-6 py-5 flex flex-col gap-3"
           onSubmit={async (e) => {
             e.preventDefault()
-            if (!validateEthereumAddress(newMemberAddress))
+            if (!isValidEthereumAddress(newMemberAddress))
               return toast.error('Please enter a valid Ethereum address (0x...).')
 
+            const tx = buildAddRoleTx({
+              hatId: selectedHatId,
+              memberAddress: newMemberAddress,
+              managerHatId,
+              adminHatId,
+              hatsAddress: HATS_ADDRESS,
+            })
+
             const iface = new ethers.utils.Interface(HatsABI)
-            const txData = iface.encodeFunctionData('mintHat', [
-              selectedHatId,
-              newMemberAddress,
-            ])
+            const txData = iface.encodeFunctionData(tx.functionName, tx.args)
 
             try {
-              if (
-                selectedHatId === hatIdDecimalToHex(managerHatId.toString())
-              ) {
-                await queueSafeTx({
-                  to: HATS_ADDRESS,
-                  data: txData,
-                  value: '0',
-                  safeTxGas: '1000000',
-                })
+              if (tx.routing === 'safe') {
+                await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: '1000000' })
                 setHasAddedMember(true)
               } else {
-                await account?.sendTransaction({
-                  to: HATS_ADDRESS,
-                  data: txData,
-                  value: '0',
-                  gas: 1000000,
-                })
+                await account?.sendTransaction({ to: tx.to, data: txData, value: '0', gas: 1000000 })
                 toast.success('Member added and role granted!')
               }
               setNewMemberAddress('')
               setIsValidAddress(false)
             } catch (err: any) {
               console.log(err.message)
-              if (
-                selectedHatId === hatIdDecimalToHex(managerHatId.toString()) &&
-                err.message
-              ) {
-                toast.error(
-                  'This wallet is not a Safe signer. Connect an authorized wallet.'
-                )
+              if (tx.routing === 'safe' && err.message) {
+                toast.error('This wallet is not a Safe signer. Connect an authorized wallet.')
               }
             }
           }}
         >
-          <div className="w-full mb-2 flex items-center justify-between">
-            <div>
-              <h2 className="font-GoodTimes">{'Add a Member'}</h2>
+          <div className="flex items-center gap-2">
+            <UserPlusIcon className="w-4 h-4 text-slate-400" />
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Add a Member</p>
+          </div>
+
+          {/* Role selector */}
+          <div className="relative w-full">
+            <label className="block text-xs text-slate-500 mb-1 pl-1">Role</label>
+            <select
+              className="w-full px-4 py-2.5 bg-[#111827] border border-[#1e2a45] rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-[#425eeb]/50 focus:border-[#425eeb]/60 transition-all"
+              onChange={({ target }) => setSelectedHatId(target.value)}
+              value={selectedHatId}
+            >
+              {reversedHats.map((hat: any) => (
+                <HatOption key={hat.id} hat={hat} managerHatId={managerHatId} />
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-3 bottom-2.5 text-slate-400">
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
             </div>
           </div>
-          <div className="w-full flex flex-col gap-1">
-            <div className="relative w-full">
-              <select
-                className="w-full p-2 px-5 bg-[#0f152f] appearance-none rounded-t-[20px] rounded-b-[5px] text-white border border-[#2a3052] focus:outline-none focus:ring-2 focus:ring-light-warm"
-                onChange={({ target }) => setSelectedHatId(target.value)}
-                value={selectedHatId}
-                style={{
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'none',
-                }}
-              >
-                {reversedHats.map((hat: any) => (
-                  <HatOption key={hat.id} hat={hat} />
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
-                <svg
-                  className="fill-current h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
+
+          {/* Safe notice for the manager role (full administrative access) */}
+          {isPrivilegedSelection ? (
+            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-blue-900/20 border border-blue-500/25 text-blue-300 text-xs">
+              <ShieldCheckIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span>
+                Managers get full administrative access. Granting this role
+                requires Safe multisig approval after submission.
+              </span>
             </div>
+          ) : (
+            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-[#0d1424] border border-[#1e2a45] text-slate-400 text-xs">
+              <UserPlusIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span>
+                Members get standard access. To give someone admin-level
+                control, assign the Manager role instead.
+              </span>
+            </div>
+          )}
+
+          {/* Address input */}
+          <div>
+            <label className="block text-xs text-slate-500 mb-1 pl-1">Wallet Address</label>
             <input
-              className="w-full p-2 px-5 bg-[#0f152f] rounded-[5px] mt-[3px] text-white border border-[#2a3052] focus:outline-none focus:ring-2 focus:ring-light-warm"
-              placeholder="Member Address"
+              className="w-full px-4 py-2.5 bg-[#111827] border border-[#1e2a45] rounded-xl text-white text-sm font-mono placeholder:text-slate-600 placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-[#425eeb]/50 focus:border-[#425eeb]/60 transition-all"
+              placeholder="0x..."
               value={newMemberAddress}
               onChange={({ target }: any) => {
                 setNewMemberAddress(target.value)
-                const newIsValidAddress = validateEthereumAddress(target.value)
-                setIsValidAddress(newIsValidAddress)
+                setIsValidAddress(isValidEthereumAddress(target.value))
               }}
             />
           </div>
+
           <PrivyWeb3Button
             requiredChain={DEFAULT_CHAIN_V5}
-            label="Add Member"
+            label={isPrivilegedSelection ? 'Queue Safe Transaction' : 'Add Member'}
             type="submit"
-            className={`w-full mt-[-1px] w-full gradient-2 rounded-[2vmax] rounded-tr-[5px] ${
-              !isValidAddress ? 'opacity-50 cursor-not-allowed' : ''
+            className={`w-full gradient-2 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
+              !isValidAddress ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-90'
             }`}
             action={() => {}}
             isDisabled={!isValidAddress}
           />
+
           {hasAddedMember && (
-            <p>
-              {`Please sign and execute the transaction in the team's `}
-              <button
-                className="font-bold text-light-warm"
-                onClick={() => {
-                  const safeNetwork =
-                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-                  window.open(
-                    `https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`
-                  )
-                }}
-              >
-                Safe
-              </button>
-            </p>
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-green-900/20 border border-green-500/30 text-green-300 text-xs">
+              <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>
+                Transaction queued.{' '}
+                <button className="underline font-semibold hover:text-green-200" onClick={() => window.open(safeUrl)}>
+                  Sign & execute in Safe
+                </button>{' '}
+                to complete.
+              </span>
+            </div>
           )}
         </form>
-        {/* Create Hat */}
-        {/* <form
-          className="w-full flex flex-col gap-2 items-start justify-start bg-[#080C20] rounded-md"
-          onSubmit={async (e) => {
-            e.preventDefault()
-            setIsLoadingNewHat(true)
-            try {
-              //pin metadata to IPFS, create blob for metadata
-              const detailsBlob = new Blob(
-                [
-                  JSON.stringify({
-                    type: '1.0',
-                    data: {
-                      name: hatData.name,
-                      description: hatData.description,
-                    },
-                  }),
-                ],
-                {
-                  type: 'application/json',
-                }
-              )
-
-              const { cid: detailsIpfsHash } = await pinBlobOrFile(detailsBlob)
-
-              // const iface = new ethers.utils.Interface(HatsABI)
-
-              // const txData = iface.encodeFunctionData('createHat', [
-              //   adminHatId,
-              //   'ipfs://' + detailsIpfsHash,
-              //   hatData.maxSupply,
-              //   address,
-              //   address,
-              //   true,
-              //   'ipfs://bafkreiflezpk3kjz6zsv23pbvowtatnd5hmqfkdro33x5mh2azlhne3ah4',
-              // ])
-
-              // await queueSafeTx({
-              //   to: HATS_ADDRESS,
-              //   data: txData,
-              //   value: '0',
-              // })
-
-              await hatsContract.call('createHat', [
-                managerHatId,
-                'ipfs://' + detailsIpfsHash,
-                hatData.maxSupply,
-                multisigAddress,
-                multisigAddress,
-                true,
-                'ipfs://bafkreiflezpk3kjz6zsv23pbvowtatnd5hmqfkdro33x5mh2azlhne3ah4',
-              ])
-              setHatData({ name: '', description: '', maxSupply: 8 })
-              setIsLoadingNewHat(false)
-              toast.success('New role added to the team!')
-            } catch (err) {
-              console.log(err)
-            }
-          }}
-        >
-          <div className="w-full flex items-center justify-between">
-            <h2 className="font-GoodTimes">{'Add a Hat'}</h2>
-          </div>
-          <input
-            type="text"
-            placeholder="Name"
-            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-            onChange={(e) => {
-              setHatData({ ...hatData, name: e.target.value })
-            }}
-            value={hatData.name}
-          />
-          <textarea
-            placeholder="Description"
-            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-            onChange={(e) => {
-              setHatData({ ...hatData, description: e.target.value })
-            }}
-          />
-          <div className="flex gap-4 items-center">
-            <label className="w-full">Max Supply</label>
-            <input
-              type="text"
-              placeholder="Name"
-              className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-              onChange={(e) => {
-                setHatData({ ...hatData, maxSupply: e.target.value })
-              }}
-              value={hatData.maxSupply}
-            />
-          </div>
-
-          <StandardButton
-            type="submit"
-            className="mt-4 min-w-[200px] gradient-2 rounded-[5vmax]"
-          >
-            {'Add Hat'}
-          </StandardButton>
-          {hasAddedHat && (
-            <p>
-              {`Please sign and execute the transaction in the team's `}
-              <button
-                className="font-bold text-light-warm"
-                onClick={() => {
-                  const safeNetwork =
-                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-                  window.open(
-                    `https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`
-                  )
-                }}
-              >
-                Safe
-              </button>
-            </p>
-          )}
-        </form> */}
       </div>
     </Modal>
   )
