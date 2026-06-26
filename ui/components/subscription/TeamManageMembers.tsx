@@ -1,4 +1,4 @@
-import { TrashIcon, UserPlusIcon, ShieldCheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { TrashIcon, UserPlusIcon, ShieldCheckIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5, HATS_ADDRESS } from 'const/config'
 import { TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES } from 'const/teams'
 import { ethers } from 'ethers'
@@ -261,6 +261,7 @@ function TeamManageMembersModal({
     <Modal
       id="team-manage-members-modal"
       setEnabled={setEnabled}
+      showCloseButton={false}
       className="fixed inset-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-start overflow-y-auto px-4 animate-fadeIn"
     >
       <div
@@ -274,9 +275,19 @@ function TeamManageMembersModal({
       >
 
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-[#1e2a45]">
-          <h2 className="font-GoodTimes text-xl text-white tracking-wide">Manage Team</h2>
-          <p className="text-xs text-slate-400 mt-1">Add or remove roles for team members</p>
+        <div className="px-6 pt-6 pb-4 border-b border-[#1e2a45] flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-GoodTimes text-xl text-white tracking-wide">Manage Team</h2>
+            <p className="text-xs text-slate-400 mt-1">Add or remove roles for team members</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEnabled(false)}
+            className="flex-shrink-0 -mr-1 -mt-1 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            aria-label="Close"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Members list */}

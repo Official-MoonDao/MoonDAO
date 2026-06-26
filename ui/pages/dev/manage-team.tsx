@@ -1,4 +1,4 @@
-import { ShieldCheckIcon, TrashIcon, UserPlusIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { ShieldCheckIcon, TrashIcon, UserPlusIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { GetServerSideProps } from 'next'
 import { useState } from 'react'
 
@@ -96,7 +96,7 @@ function MemberCard({
 
 // ─── Modal preview ───────────────────────────────────────────────────────────
 
-function ManageTeamModalPreview() {
+function ManageTeamModalPreview({ onClose }: { onClose?: () => void }) {
   const [members, setMembers] = useState(MOCK_MEMBERS)
   const [selectedRole, setSelectedRole] = useState(MOCK_ROLES[0].id)
   const [address, setAddress] = useState('')
@@ -156,9 +156,21 @@ function ManageTeamModalPreview() {
   return (
     <div className="flex flex-col w-full md:w-[520px] bg-[#0a0f1e] rounded-2xl overflow-hidden shadow-2xl border border-[#1e2a45]">
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 border-b border-[#1e2a45]">
-        <h2 className="font-GoodTimes text-xl text-white tracking-wide">Manage Team</h2>
-        <p className="text-xs text-slate-400 mt-1">Add or remove roles for team members</p>
+      <div className="px-6 pt-6 pb-4 border-b border-[#1e2a45] flex items-start justify-between gap-4">
+        <div>
+          <h2 className="font-GoodTimes text-xl text-white tracking-wide">Manage Team</h2>
+          <p className="text-xs text-slate-400 mt-1">Add or remove roles for team members</p>
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-shrink-0 -mr-1 -mt-1 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            aria-label="Close"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Members list */}
@@ -348,13 +360,7 @@ export default function DevManageTeamPage() {
             className="relative"
             style={{ marginTop: 80, marginBottom: 40 }}
           >
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute -top-3 -right-3 z-10 w-7 h-7 rounded-full bg-slate-700 border border-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-            >
-              ✕
-            </button>
-            <ManageTeamModalPreview />
+            <ManageTeamModalPreview onClose={() => setShowModal(false)} />
           </div>
         </div>
       )}
