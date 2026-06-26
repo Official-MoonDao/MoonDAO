@@ -288,7 +288,7 @@ export default function DevManageTeamPage() {
         <span>⚠ DEV PREVIEW — not visible in production</span>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 pt-16 pb-20">
+      <div className="max-w-4xl mx-auto px-6 pt-32 pb-20">
         <div className="mb-10">
           <h1 className="font-GoodTimes text-3xl text-white mb-2">Manage Team — UI Preview</h1>
           <p className="text-slate-400 text-sm">
@@ -338,12 +338,16 @@ export default function DevManageTeamPage() {
       {/* Overlay modal */}
       {showModal && (
         <div
-          className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/60 backdrop-blur-sm overflow-auto py-12 px-4"
+          className="fixed inset-0 flex items-start justify-center bg-black/60 backdrop-blur-sm overflow-y-auto px-4"
+          style={{ zIndex: 10000 }}
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowModal(false)
           }}
         >
-          <div className="relative">
+          <div
+            className="relative"
+            style={{ marginTop: 140, marginBottom: 40 }}
+          >
             <button
               onClick={() => setShowModal(false)}
               className="absolute -top-3 -right-3 z-10 w-7 h-7 rounded-full bg-slate-700 border border-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
