@@ -9,9 +9,7 @@ import {
   LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
   CK_NETWORK_SIGNUP_FORM_ID,
   CK_NETWORK_SIGNUP_TAG_ID,
-  DEPLOYED_ORIGIN,
   DEFAULT_CHAIN_V5,
-  DISCORD_CITIZEN_ROLE_ID,
 } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -41,7 +39,6 @@ import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
-import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import {
   estimateGasWithAPI,
@@ -880,11 +877,18 @@ export default function CreateCitizen({
       setMintComplete(true)
       fireCelebrationConfetti()
 
-      // Fire-and-forget side effects — don't block the celebration on them.
-      sendDiscordMessage(
-        'networkNotifications',
-        `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`,
-      ).catch((err) => console.error('Failed to send Discord message:', err))
+      // Fire-and-forget: notify Discord once Tableland has indexed the new
+      // citizen so Discord's bot can scrape the OG image from the profile page.
+      // The server-side route polls Tableland before sending the message.
+      fetch('/api/discord/notify-new-citizen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokenId: mintedTokenId,
+          citizenName,
+          prettyLink: citizenPrettyLink,
+        }),
+      }).catch((err) => console.error('Failed to send Discord notification:', err))
 
       // Clear the onboarding form cache (the citizen cache was just seeded).
       clearCache()
