@@ -403,4 +403,142 @@ describe('SafeTransactions', () => {
     )
     cy.get('[data-testid="reject-transaction-0x123"]').should('not.exist')
   })
+
+  // Regression: an owner can sign ANY pending transaction regardless of nonce
+  // ordering. Signing must NOT be gated on the current nonce (only execution
+  // is). This reproduces the reported bug where a future-nonce tx only showed
+  // a Reject button.
+  it('shows sign button for a pending transaction that is not the current nonce', () => {
+    const futureNonceData = {
+      ...mockSafeData,
+      currentNonce: 14,
+      threshold: 5,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          safeTxHash: '0xfuture',
+          nonce: 15,
+          data: '0xabc',
+          dataDecoded: { method: 'mintHat', parameters: [] },
+          confirmationsRequired: 5,
+          // Signed by someone else, but NOT the connected owner.
+          confirmations: [
+            {
+              owner: '0xabc',
+              signature: '0x456',
+              submissionDate: new Date().toISOString(),
+              transactionHash: null,
+            },
+          ],
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions address={mockAddress} safeData={futureNonceData} />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="sign-transaction-0xfuture"]').should('exist')
+    // It must not be executable yet (not the current nonce).
+    cy.get('[data-testid="execute-transaction-0xfuture"]').should('not.exist')
+  })
+
+  it('shows blocked-by-nonce indicator when fully signed but not the current nonce', () => {
+    const blockedData = {
+      ...mockSafeData,
+      currentNonce: 20,
+      threshold: 2,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          safeTxHash: '0xblocked',
+          nonce: 21,
+          data: '0xabc',
+          dataDecoded: { method: 'mintHat', parameters: [] },
+          confirmationsRequired: 2,
+          confirmations: [
+            {
+              owner: mockAddress,
+              signature: '0x123',
+              submissionDate: new Date().toISOString(),
+              transactionHash: null,
+            },
+            {
+              owner: '0xabc',
+              signature: '0x456',
+              submissionDate: new Date().toISOString(),
+              transactionHash: null,
+            },
+          ],
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions address={mockAddress} safeData={blockedData} />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="blocked-by-nonce-0xblocked"]').should('contain', '20')
+    cy.get('[data-testid="execute-transaction-0xblocked"]').should('not.exist')
+  })
+
+  it('calls signPendingTransaction when Sign is clicked', () => {
+    cy.get('[data-testid="sign-transaction-0x123"]').click()
+    cy.then(() => {
+      expect(mockSafeData.signPendingTransaction).to.have.been.calledWith(
+        '0x123'
+      )
+    })
+  })
+
+  it('calls rejectTransaction when Reject is clicked', () => {
+    cy.get('[data-testid="reject-transaction-0x123"]').click()
+    cy.then(() => {
+      expect(mockSafeData.rejectTransaction).to.have.been.calledWith('0x123')
+    })
+  })
+
+  it('opens the execution disclaimer and executes after agreeing', () => {
+    const executableSafeData = {
+      ...mockSafeData,
+      currentNonce: 1,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          nonce: 1,
+          confirmations: [
+            {
+              owner: mockAddress,
+              signature: '0x123',
+              submissionDate: new Date().toISOString(),
+              transactionHash: null,
+            },
+            {
+              owner: '0xabc',
+              signature: '0x456',
+              submissionDate: new Date().toISOString(),
+              transactionHash: null,
+            },
+          ],
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions address={mockAddress} safeData={executableSafeData} />
+      </TestnetProviders>
+    )
+
+    cy.get('[data-testid="execute-transaction-0x123"]').click()
+    // The disclaimer modal should open.
+    cy.contains('Safe Execution Disclaimer').should('exist')
+    // Agree, then execute.
+    cy.get('input[type="checkbox"]').check({ force: true })
+    cy.contains('button', 'Execute Transaction').click()
+    cy.then(() => {
+      expect(executableSafeData.executeTransaction).to.have.been.calledWith(
+        '0x123'
+      )
+    })
+  })
 })
