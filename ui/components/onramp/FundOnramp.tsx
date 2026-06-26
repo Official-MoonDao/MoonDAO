@@ -111,7 +111,7 @@ export function FundOnramp({
     >
       <span className="text-sm font-semibold text-white">MoonPay</span>
       <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-        {isUS ? 'Alternative' : 'Recommended'}
+        Recommended
       </span>
     </button>
   )
@@ -130,18 +130,27 @@ export function FundOnramp({
     >
       <span className="text-sm font-semibold text-white">Coinbase</span>
       <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-        {isUS ? 'Recommended' : 'Have an account?'}
+        Have an account?
       </span>
     </button>
   )
   // The recommended provider (the region default) is shown first / on the left.
-  const orderedProviderButtons = isUS
-    ? [coinbaseButton, moonPayButton]
-    : [moonPayButton, coinbaseButton]
+  const orderedProviderButtons = [moonPayButton, coinbaseButton]
 
   // Rendered just beneath the embedded provider's "Fund Wallet" header so the
-  // user picks how to pay after they see what they're funding.
-  const providerSelector = (
+  // user picks how to pay after they see what they're funding. US users only
+  // get Coinbase (Apple/Google Pay), so we don't surface MoonPay or a provider
+  // toggle for them — just an informational line.
+  const providerSelector = isUS ? (
+    <div
+      data-testid="onramp-provider-select"
+      className="p-4 space-y-3 border-b border-white/10"
+    >
+      <p className="text-gray-300/80 text-xs leading-relaxed">
+        Pay with Apple Pay or Google Pay — no account needed.
+      </p>
+    </div>
+  ) : (
     <div
       data-testid="onramp-provider-select"
       className="p-4 space-y-3 border-b border-white/10"
@@ -152,29 +161,22 @@ export function FundOnramp({
       <div className="grid grid-cols-2 gap-2">{orderedProviderButtons}</div>
 
       {provider === 'coinbase' ? (
-        isUS ? (
-          <p className="text-gray-300/80 text-xs leading-relaxed">
-            Recommended. Pay with Apple Pay or Google Pay — no account needed.
-          </p>
-        ) : (
-          <p className="text-gray-300/80 text-xs leading-relaxed">
-            Outside the US, you&apos;ll be redirected to Coinbase to pay — best if you
-            already have a Coinbase account. No account?{' '}
-            <button
-              type="button"
-              onClick={() => handleSetProvider('moonpay')}
-              className="underline font-semibold text-emerald-300 hover:text-emerald-200"
-            >
-              MoonPay
-            </button>{' '}
-            needs none and is recommended for your region.
-          </p>
-        )
+        <p className="text-gray-300/80 text-xs leading-relaxed">
+          Outside the US, you&apos;ll be redirected to Coinbase to pay — best if you
+          already have a Coinbase account. No account?{' '}
+          <button
+            type="button"
+            onClick={() => handleSetProvider('moonpay')}
+            className="underline font-semibold text-emerald-300 hover:text-emerald-200"
+          >
+            MoonPay
+          </button>{' '}
+          needs none and is recommended for your region.
+        </p>
       ) : (
         <p className="text-gray-300/80 text-xs leading-relaxed">
-          {isUS
-            ? 'Pay with a debit/credit card or bank transfer — no account needed. Not available for Apple Pay or Google Pay.'
-            : 'Recommended for your region. Pay with a debit/credit card, Apple Pay, Google Pay, or bank transfer — no account needed.'}
+          Recommended for your region. Pay with a debit/credit card, Apple Pay,
+          Google Pay, or bank transfer — no account needed.
         </p>
       )}
     </div>
