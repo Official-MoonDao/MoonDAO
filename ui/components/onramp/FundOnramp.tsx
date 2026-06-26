@@ -221,7 +221,6 @@ export function FundOnramp({
           onQuoteCalculated={onCoinbaseQuoteCalculated}
           onBeforeNavigate={onCoinbaseBeforeNavigate}
           redirectUrl={coinbaseRedirectUrl}
-          onUnsupported={() => handleSetProvider('moonpay')}
         />
       )}
     </div>
