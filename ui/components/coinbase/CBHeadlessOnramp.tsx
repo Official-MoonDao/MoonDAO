@@ -516,8 +516,10 @@ export function CBHeadlessOnramp({
               referrerPolicy="no-referrer"
               className="w-full"
               style={{
-                height: nativeApplePay ? 220 : useGooglePay ? 360 : 520,
-                maxHeight: '60vh',
+                height: nativeApplePay ? 220 : useGooglePay ? 360 : 560,
+                // The QR-code screen needs its full height to render without an
+                // internal scrollbar; the button-only screens stay capped.
+                maxHeight: nativeApplePay || useGooglePay ? '60vh' : '90vh',
                 border: 'none',
               }}
             />
