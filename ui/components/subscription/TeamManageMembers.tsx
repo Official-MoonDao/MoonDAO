@@ -259,7 +259,7 @@ function TeamManageMembersModal({
 
   return (
     <Modal id="team-manage-members-modal" setEnabled={setEnabled}>
-      <div className="flex flex-col w-full md:w-[520px] bg-[#0a0f1e] rounded-2xl overflow-hidden border border-[#1e2a45]">
+      <div className="flex flex-col w-full md:w-[520px] bg-[#0a0f1e] rounded-2xl overflow-hidden border border-[#1e2a45] mt-10 md:mt-16">
 
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-[#1e2a45]">
