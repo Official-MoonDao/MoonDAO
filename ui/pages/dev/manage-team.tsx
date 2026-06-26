@@ -346,7 +346,7 @@ export default function DevManageTeamPage() {
         >
           <div
             className="relative"
-            style={{ marginTop: 140, marginBottom: 40 }}
+            style={{ marginTop: 80, marginBottom: 40 }}
           >
             <button
               onClick={() => setShowModal(false)}

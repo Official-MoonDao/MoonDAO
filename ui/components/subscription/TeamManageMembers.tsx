@@ -265,9 +265,9 @@ function TeamManageMembersModal({
     >
       <div
         style={{
-          marginTop: 140,
+          marginTop: 80,
           marginBottom: 40,
-          maxHeight: 'calc(100vh - 180px)',
+          maxHeight: 'calc(100vh - 120px)',
           zIndex: 10000,
         }}
         className="flex flex-col w-full md:w-[520px] overflow-y-auto bg-[#0a0f1e] rounded-2xl border border-[#1e2a45]"
