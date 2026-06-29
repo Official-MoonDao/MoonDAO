@@ -144,7 +144,7 @@ const generateHTML = (proposalId: string, proposalTitle: string) => {
                 <p style="color: #666; font-size: 12px; margin: 0;">
                   This email was sent because you submitted a proposal on MoonDAO.<br />
                   <a href="https://moondao.com" style="color: #3b82f6; text-decoration: none;">moondao.com</a> · 
-                  <a href="https://discord.gg/moondao" style="color: #3b82f6; text-decoration: none;">Discord</a> · 
+                  <a href="https://moondao.com/discord" style="color: #3b82f6; text-decoration: none;">Discord</a> · 
                   <a href="https://twitter.com/OfficialMoonDAO" style="color: #3b82f6; text-decoration: none;">Twitter</a>
                 </p>
               </td>
