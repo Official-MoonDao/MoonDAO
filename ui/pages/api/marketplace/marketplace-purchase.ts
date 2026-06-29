@@ -1,6 +1,5 @@
 import TeamABI from 'const/abis/Team.json'
 import {
-  CITIZENSHIP_GIFT_TAG,
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
   EB_TEAM_ID,
@@ -17,6 +16,7 @@ import {
   createInvite,
   generateInviteToken,
 } from '@/lib/citizen/inviteTokens'
+import { validateGiftPurchase } from '@/lib/marketplace/giftPurchase'
 import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
 import { getPrivyUserData } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
@@ -218,8 +218,17 @@ async function handler(req: any, res: any) {
       })
     }
 
-    // Mark transaction as used to prevent replay attacks
+    // Mark transaction as used to prevent replay attacks. This must happen
+    // before any gift validation / invite creation so two concurrent requests
+    // with the same txHash can never both mint an invite. If a later step
+    // fails, we release the hash via `failAndRelease` so a legitimate buyer
+    // whose invite generation failed can retry with the same payment.
     usedTransactions.add(txHash)
+
+    const failAndRelease = (status: number, message: string) => {
+      usedTransactions.delete(txHash)
+      return res.status(status).send({ message })
+    }
 
     //Get the team email from the tx to address
     const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -237,45 +246,36 @@ async function handler(req: any, res: any) {
     // authorization — buyers don't need to be operators.
     let giftLink: string | undefined
     if (isGift) {
-      if (String(teamTokenId) !== EB_TEAM_ID) {
-        return res
-          .status(400)
-          .send({ message: 'Gift purchases are only available on the EB team' })
-      }
-
       const numericListingId = Number(listingId)
-      if (!Number.isInteger(numericListingId) || numericListingId < 0) {
-        return res.status(400).send({ message: 'Invalid listing' })
-      }
 
-      const listingRows = await queryTable(
-        DEFAULT_CHAIN_V5,
-        `SELECT * FROM ${MARKETPLACE_TABLE_NAMES[chainSlug]} WHERE id = ${numericListingId} AND teamId = ${teamTokenId}`
-      )
+      // Only query the table for a well-formed id on the EB team, so a bad
+      // listingId or non-EB payment can never produce malformed SQL. The
+      // authoritative accept/reject decision is made by validateGiftPurchase.
+      const canQueryListing =
+        Number.isInteger(numericListingId) &&
+        numericListingId >= 0 &&
+        String(teamTokenId) === EB_TEAM_ID
+      const listingRows = canQueryListing
+        ? await queryTable(
+            DEFAULT_CHAIN_V5,
+            `SELECT * FROM ${MARKETPLACE_TABLE_NAMES[chainSlug]} WHERE id = ${numericListingId} AND teamId = ${teamTokenId}`
+          )
+        : []
       const giftListing: any = listingRows?.[0]
 
-      if (!giftListing || giftListing.tag !== CITIZENSHIP_GIFT_TAG) {
-        return res
-          .status(400)
-          .send({ message: 'Listing is not a gift citizenship listing' })
-      }
-
-      if (giftListing.currency !== 'ETH') {
-        return res
-          .status(400)
-          .send({ message: 'Gift purchases must be paid in ETH' })
-      }
-
-      // Verify the buyer actually paid (at least) the listing price in ETH.
+      // Read the actual ETH value transferred so we can bind the payment to
+      // this specific gift listing (see validateGiftPurchase).
       const tx = await provider.getTransaction(txHash)
-      const valueWei = BigInt(tx?.value?.toString() || '0')
-      const priceNum = parseFloat(String(giftListing.price).replace(/,/g, ''))
-      const expectedWei = BigInt(Math.floor(priceNum * 1e18))
-      const minWei = (expectedWei * 99n) / 100n // small tolerance for rounding
-      if (priceNum <= 0 || valueWei < minWei) {
-        return res
-          .status(400)
-          .send({ message: 'Payment does not cover the listing price' })
+      const paidValueWei = BigInt(tx?.value?.toString() || '0')
+
+      const validation = validateGiftPurchase({
+        teamTokenId,
+        listingId,
+        listing: giftListing,
+        paidValueWei,
+      })
+      if (!validation.ok) {
+        return failAndRelease(validation.status, validation.message)
       }
 
       const token = generateInviteToken()
@@ -289,10 +289,10 @@ async function handler(req: any, res: any) {
         GIFT_INVITE_TTL_SECONDS
       )
       if (!created) {
-        return res.status(500).send({
-          message:
-            'Invite storage is not configured. Please contact support to claim your gift.',
-        })
+        return failAndRelease(
+          500,
+          'Invite storage is not configured. Please contact support to claim your gift.'
+        )
       }
       const origin = (DEPLOYED_ORIGIN || '').replace(/\/$/, '')
       giftLink = `${origin}/citizen?invite=${token}`
@@ -334,7 +334,7 @@ async function handler(req: any, res: any) {
     // a missing vendor email shouldn't block the purchase. For normal listings
     // the vendor email is required to fulfill the order.
     if (!teamTypeformEmail && !isGift) {
-      return res.status(400).send({ message: 'No team email found' })
+      return failAndRelease(400, 'No team email found')
     }
 
     // Inject the server-generated gift link into the buyer's email payload.

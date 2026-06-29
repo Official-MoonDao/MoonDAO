@@ -220,6 +220,17 @@ export default function BuyTeamListingModal({
             setIsLoading(false)
             return
           }
+          if (isGift && !returnedGiftLink) {
+            // Payment went through but the gift link was never issued. Don't
+            // close with a misleading generic success — surface it so the buyer
+            // (and support) know the link still needs to be recovered.
+            toast.error(
+              'Your payment went through, but we could not generate your gift link. Please contact support with your transaction to claim it.',
+              { duration: 12000 }
+            )
+            setIsLoading(false)
+            return
+          }
           toast.success('Purchase complete! Confirmation email on the way.', {
             duration: 10000,
           })
