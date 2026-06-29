@@ -459,6 +459,14 @@ export default function useSafe(
       setPendingTransactions(pendingTxs.results)
 
       const currentThreshold = await safe.getThreshold()
+      // Keep the on-chain nonce in sync here so execution gating works
+      // immediately on mount (the 30s interval alone leaves it null at first).
+      try {
+        const nonce = await safe.getNonce()
+        setCurrentNonce(nonce)
+      } catch (nonceErr) {
+        console.error('Error getting current nonce:', nonceErr)
+      }
       const currentAddress = wallets?.[selectedWallet]?.address
 
       if (currentAddress) {
