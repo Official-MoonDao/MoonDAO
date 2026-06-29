@@ -105,28 +105,72 @@ function scatterAntarctica(id: string | number): { lat: number; lng: number } {
 // historical set — every new save goes through the geocoder and stores
 // coordinates — so a static lookup keeps the map correct even if the runtime
 // geocoder is unavailable (e.g. restricted API key at build time).
-const LEGACY_LOCATION_COORDS: { [key: string]: { lat: number; lng: number } } = {
-  'santa cruz, ca': { lat: 36.9741, lng: -122.0308 },
-  'brownsville, texas, usa': { lat: 25.9018, lng: -97.4975 },
-  'winter park, fl usa': { lat: 28.6, lng: -81.3392 },
-  'charleston, sc': { lat: 32.7765, lng: -79.9311 },
-  'austin, texas': { lat: 30.2672, lng: -97.7431 },
-  'san francisco, ca': { lat: 37.7749, lng: -122.4194 },
-  'houston, texas': { lat: 29.7604, lng: -95.3698 },
-  'raleigh, north carolina': { lat: 35.7796, lng: -78.6382 },
-  'phoenix, usa': { lat: 33.4484, lng: -112.074 },
-  'washington, d.c.': { lat: 38.9072, lng: -77.0369 },
-  'washington, dc': { lat: 38.9072, lng: -77.0369 },
+//
+// `formattedAddress` must end with the country name so that
+// `countUniqueCountries` (which takes the last comma-separated segment) can
+// extract it correctly. Without this, US sub-region strings like "ca" or
+// "texas" are each counted as a separate country, inflating the stat.
+const LEGACY_LOCATION_COORDS: {
+  [key: string]: { lat: number; lng: number; formattedAddress: string }
+} = {
+  'santa cruz, ca': { lat: 36.9741, lng: -122.0308, formattedAddress: 'Santa Cruz, CA, USA' },
+  'brownsville, texas, usa': {
+    lat: 25.9018,
+    lng: -97.4975,
+    formattedAddress: 'Brownsville, TX, USA',
+  },
+  'winter park, fl usa': {
+    lat: 28.6,
+    lng: -81.3392,
+    formattedAddress: 'Winter Park, FL, USA',
+  },
+  'charleston, sc': { lat: 32.7765, lng: -79.9311, formattedAddress: 'Charleston, SC, USA' },
+  'austin, texas': { lat: 30.2672, lng: -97.7431, formattedAddress: 'Austin, TX, USA' },
+  'san francisco, ca': {
+    lat: 37.7749,
+    lng: -122.4194,
+    formattedAddress: 'San Francisco, CA, USA',
+  },
+  'houston, texas': { lat: 29.7604, lng: -95.3698, formattedAddress: 'Houston, TX, USA' },
+  'raleigh, north carolina': {
+    lat: 35.7796,
+    lng: -78.6382,
+    formattedAddress: 'Raleigh, NC, USA',
+  },
+  'phoenix, usa': { lat: 33.4484, lng: -112.074, formattedAddress: 'Phoenix, AZ, USA' },
+  'washington, d.c.': {
+    lat: 38.9072,
+    lng: -77.0369,
+    formattedAddress: 'Washington, D.C., USA',
+  },
+  'washington, dc': { lat: 38.9072, lng: -77.0369, formattedAddress: 'Washington, D.C., USA' },
   'i live/ work between la serena, chile and taos, new mexico': {
     lat: -29.9027,
     lng: -71.2519,
+    formattedAddress: 'La Serena, Coquimbo Region, Chile',
   },
-  'colorado springs, colorado, united states': { lat: 38.8339, lng: -104.8214 },
-  'roatán, honduras': { lat: 16.3217, lng: -86.5366 },
-  'prospera, roatan honduras': { lat: 16.4093, lng: -86.418 },
-  'new jersey, usa': { lat: 40.0583, lng: -74.4057 },
-  'baltimore county, maryland': { lat: 39.4432, lng: -76.6068 },
-  'paris, france': { lat: 48.8566, lng: 2.3522 },
+  'colorado springs, colorado, united states': {
+    lat: 38.8339,
+    lng: -104.8214,
+    formattedAddress: 'Colorado Springs, CO, USA',
+  },
+  'roatán, honduras': {
+    lat: 16.3217,
+    lng: -86.5366,
+    formattedAddress: 'Roatán, Islas de la Bahía, Honduras',
+  },
+  'prospera, roatan honduras': {
+    lat: 16.4093,
+    lng: -86.418,
+    formattedAddress: 'Roatán, Islas de la Bahía, Honduras',
+  },
+  'new jersey, usa': { lat: 40.0583, lng: -74.4057, formattedAddress: 'New Jersey, USA' },
+  'baltimore county, maryland': {
+    lat: 39.4432,
+    lng: -76.6068,
+    formattedAddress: 'Baltimore County, MD, USA',
+  },
+  'paris, france': { lat: 48.8566, lng: 2.3522, formattedAddress: 'Paris, France' },
 }
 
 type ParsedLocation = {
@@ -460,6 +504,7 @@ export async function fetchCitizensWithLocation(
         if (legacy) {
           lat = legacy.lat
           lng = legacy.lng
+          formattedAddress = legacy.formattedAddress
         } else {
           const geo = await geocodeLocationText(parsed.name)
           if (geo) {
