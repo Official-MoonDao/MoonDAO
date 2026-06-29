@@ -300,7 +300,7 @@ function TeamManageMembersModal({
         {/* Members list */}
         <div className="px-6 py-4">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-            Current Members
+            Current Team
           </p>
           <div className="flex flex-col gap-2 pr-1">
             {uniqueWearers?.[0] ? (
@@ -379,7 +379,7 @@ function TeamManageMembersModal({
         >
           <div className="flex items-center gap-2">
             <UserPlusIcon className="w-4 h-4 text-slate-400" />
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Add a Member</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Add a Teammate</p>
           </div>
 
           {/* Role selector */}
