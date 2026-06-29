@@ -10,11 +10,10 @@ module.exports = {
         '4xl': '2560px',
       },
       fontFamily: {
-        display: ['Poppins', 'sans-serif'],
-        body: ['UniversalSans', 'sans-serif'],
         GoodTimes: ['Good Times', 'sans-serif'],
         RobotoMono: ['Roboto Mono', 'sans-serif'],
         Montserrat: ['Montserrat', 'sans-serif'],
+        Lato: ['Lato', 'sans-serif'],
       },
       animation: {
         fadeIn: 'fadeIn 0.5s ease-in',

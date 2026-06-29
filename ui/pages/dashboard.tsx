@@ -24,10 +24,11 @@ import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { getCitizensLocationData } from '@/lib/map'
 import { getAllNetworkTransfers, getRecentCitizenTransfers, getRecentTeamTransfers } from '@/lib/network/networkSubgraph'
+import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import { LoadingSpinner } from '../components/layout/LoadingSpinner'
@@ -417,6 +418,7 @@ export async function getStaticProps() {
     newestJobs = jobs
     newestTeams = teams.map((t: any) => ({ ...t, mintTimestamp: teamMintTsMap[String(t.id)] ?? null }))
     allProjects = projects
+    await enrichProjectNames(allProjects)
 
     // Process missions data - simplified to just pass basic data to client.
     // Always populate `missions` + `featuredMissionData` from the table row so

@@ -1,15 +1,5 @@
 import { createThirdwebClient } from 'thirdweb'
 
-const rpcConfig = {
-  rpc: {
-    batchTimeoutMs: 10000,
-    maxBatchSize: 20,
-    fetch: {
-      requestTimeoutMs: 10000,
-    },
-  },
-}
-
 const client = createThirdwebClient({
   clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string,
   config: {
@@ -23,22 +13,6 @@ const client = createThirdwebClient({
       fetch: {
         requestTimeoutMs: 5000,
       },
-    },
-  },
-})
-
-// Prefer the secret key (higher limits, server-only endpoints) but fall back
-// to the public clientId so a local dev env without the secret doesn't crash
-// the whole app at import time (thirdweb throws when neither is provided, and
-// _app imports this module — the crash loops Fast Refresh's full reloads).
-const secretKey = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET
-export const serverClient = createThirdwebClient({
-  ...(secretKey
-    ? { secretKey }
-    : { clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string }),
-  config: {
-    rpc: {
-      maxBatchSize: 100,
     },
   },
 })

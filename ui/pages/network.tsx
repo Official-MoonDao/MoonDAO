@@ -339,7 +339,7 @@ export const getStaticProps: GetStaticProps = async () => {
   try {
     // Dynamic imports for large/server-only dependencies to reduce client bundle size
     const { getContract, readContract } = await import('thirdweb')
-    const { serverClient } = await import('@/lib/thirdweb/client')
+    const { serverClient } = await import('@/lib/thirdweb/serverClient')
     const TeamTableABI = (await import('const/abis/TeamTable.json')).default
     const CitizenTableABI = (await import('const/abis/CitizenTable.json')).default
     const queryTable = (await import('@/lib/tableland/queryTable')).default

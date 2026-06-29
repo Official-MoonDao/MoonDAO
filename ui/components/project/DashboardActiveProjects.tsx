@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { RocketLaunchIcon } from '@heroicons/react/24/outline'
+import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { Project } from '@/lib/project/useProjectData'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 
@@ -76,7 +77,7 @@ export default function DashboardActiveProjects({
                 <div className="bg-black/20 rounded-xl p-5 border border-white/5 cursor-pointer hover:bg-white/[0.05] hover:border-white/15 transition-all duration-300 h-[260px] flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                     <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight line-clamp-2">
-                      {project.name}
+                      {getProjectDisplayName(project)}
                     </h4>
                     <span
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${

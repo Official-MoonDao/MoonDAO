@@ -12,10 +12,15 @@ import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 import { getProposalStatus } from '@/lib/nance/useProposalStatus'
+import {
+  getProjectDisplayName,
+  isUntitledLike,
+  UNTITLED_FALLBACK,
+} from '@/lib/project/getProjectDisplayName'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
@@ -103,6 +108,11 @@ export async function getStaticProps() {
               const proposalResponse = await fetch(project.proposalIPFS)
               const proposalJSON = await proposalResponse.json()
               if (!proposalJSON?.nonProjectProposal) {
+                // Enrich name from IPFS while we have the JSON in hand
+                if (isUntitledLike(project.name)) {
+                  const resolved = getProjectDisplayName(project, proposalJSON)
+                  if (resolved !== UNTITLED_FALLBACK) project.name = resolved
+                }
                 project.tempCheckApproved = approveds[index]
                 project.tempCheckFailed = faileds[index]
                 if (!faileds[index]) {
@@ -118,6 +128,27 @@ export async function getStaticProps() {
         }
       })
     )
+    // For active/past projects whose stored name is empty or "Untitled",
+    // fetch the IPFS proposal JSON server-side so the pre-rendered HTML
+    // already carries the real title instead of "Untitled Project".
+    const untitledNonPending = [...currentProjects, ...pastProjects].filter(
+      (p) => isUntitledLike(p.name) && !!p.proposalIPFS
+    )
+    if (untitledNonPending.length > 0) {
+      await Promise.allSettled(
+        untitledNonPending.map(async (project) => {
+          try {
+            const res = await fetch(project.proposalIPFS)
+            const json = await res.json()
+            const resolved = getProjectDisplayName(project, json)
+            if (resolved !== UNTITLED_FALLBACK) project.name = resolved
+          } catch {
+            // Leave the name as-is; the client-side hook will still resolve it
+          }
+        })
+      )
+    }
+
     currentProjects.sort((a, b) => {
       if (a.eligible === b.eligible) {
         return 0

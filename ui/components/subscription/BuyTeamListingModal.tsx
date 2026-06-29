@@ -14,7 +14,7 @@ import {
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
+import { prepareContractCall, readContract, sendAndConfirmTransaction, toUnits } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -102,6 +102,7 @@ export default function BuyTeamListingModal({
       const nft = await getNFT({
         contract: teamContract,
         tokenId: BigInt(listing.teamId),
+        includeOwner: true,
       })
       setTeamNFT(nft)
     }
@@ -126,8 +127,13 @@ export default function BuyTeamListingModal({
     setEmail(citizenEmail)
   }, [citizenEmail])
 
+  // The recipient prop comes from the parent's team-owner lookup, which can be
+  // missing when the RPC is rate-limited. Fall back to the owner fetched here so
+  // the Buy button isn't permanently disabled.
+  const resolvedRecipient = recipient || teamNFT?.owner
+
   async function buyListing() {
-    if (!account) return
+    if (!account || !resolvedRecipient) return
 
     const numericPrice = parseFloat(listing.price.replace(/,/g, ''))
     let price
@@ -148,8 +154,8 @@ export default function BuyTeamListingModal({
       } else if (listing.currency === 'ETH') {
         // buy with eth
         const tx = await account?.sendTransaction({
-          to: recipient,
-          value: BigInt(price * 10 ** 18),
+          to: resolvedRecipient,
+          value: toUnits(String(price), currencyDecimals.ETH),
           chainId: selectedChain.id,
         })
         transactionHash = tx?.transactionHash
@@ -158,7 +164,10 @@ export default function BuyTeamListingModal({
         const transaction = prepareContractCall({
           contract: currencyContract,
           method: 'transfer' as string,
-          params: [recipient, String(price * 10 ** currencyDecimals[listing.currency])],
+          params: [
+            resolvedRecipient,
+            toUnits(String(price), currencyDecimals[listing.currency]),
+          ],
         })
         const receipt = await sendAndConfirmTransaction({
           transaction,
@@ -193,7 +202,7 @@ export default function BuyTeamListingModal({
             quantity: 1,
             txLink: transactionLink,
             txHash: transactionHash,
-            recipient,
+            recipient: resolvedRecipient,
             isCitizen: citizen ? true : false,
             shipping,
             teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(teamNFT.metadata.name)}`,
@@ -296,52 +305,73 @@ export default function BuyTeamListingModal({
         </div>
       ) : (
       <form
-        className="w-full flex flex-col gap-2 items-start justify-start"
+        className="w-full flex flex-col gap-3 items-start justify-start"
         onSubmit={(e) => {
           e.preventDefault()
         }}
       >
-        <div>
+        <div className="w-full flex gap-3 rounded-2xl border border-white/10 bg-black/30 p-3">
           {listing.image && (
             <div
               id="image-container"
-              className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
+              className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl"
             >
-              <IPFSRenderer src={listing.image} width={500} height={500} alt="Listing Image" />
+              <IPFSRenderer
+                src={listing.image}
+                width={160}
+                height={160}
+                alt="Listing Image"
+                className="object-cover"
+                fillContainer
+              />
+              <span className="absolute left-1 top-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
+                {`#${listing.id}`}
+              </span>
             </div>
           )}
-
-          <div className="mt-4">
-            <p>{`# ${listing.id}`}</p>
-            <p className="font-GoodTimes">{listing.title}</p>
-            <p className="text-[75%]">{listing.description}</p>
-            <p id="listing-price" className="font-bold">{`${
-              isGift || citizen
-                ? truncateTokenValue(listing.price, listing.currency)
-                : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
-            } ${listing.currency}`}</p>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <h3 className="font-GoodTimes text-base leading-tight text-white">{listing.title}</h3>
+            <p className="text-xs leading-snug text-white/60 line-clamp-2">
+              {listing.description}
+            </p>
+            <div className="mt-auto flex flex-wrap items-center gap-2">
+              <p id="listing-price" className="font-GoodTimes text-lg text-white">{`${
+                isGift || citizen
+                  ? truncateTokenValue(listing.price, listing.currency)
+                  : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
+              } ${listing.currency}`}</p>
+              {!citizen && !isGift && (
+                <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/50">
+                  +10% non-citizen fee
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <p className="opacity-60">
+        <p className="text-xs opacity-60">
           {isGift
             ? 'Enter your email and confirm the transaction. You will receive a one-time link to gift a free citizenship to whoever you choose.'
-            : 'Enter your information, confirm the transaction and wait to receive an email from the vendor.'}
+            : "Enter your details and confirm the transaction. You'll receive a confirmation email from the vendor."}
         </p>
         <Input
           type="text"
           variant="dark"
+          label="Email"
           className="text-white"
-          placeholder="Enter your email"
+          maxWidth="max-w-full"
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           formatNumbers={false}
         />
         {listing.shipping === 'true' && (
-          <div className="w-full flex flex-col gap-2">
+          <div className="w-full flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/20 p-3">
+            <p className="font-GoodTimes text-xs text-white">Shipping Address</p>
             <Input
               type="text"
               variant="dark"
               className="text-white"
+              maxWidth="max-w-full"
               placeholder="Street Address"
               value={shippingInfo.streetAddress}
               onChange={(e) =>
@@ -352,11 +382,12 @@ export default function BuyTeamListingModal({
               }
               formatNumbers={false}
             />
-            <div className="w-full flex gap-2">
+            <div className="w-full flex flex-col sm:flex-row gap-2">
               <Input
                 type="text"
                 variant="dark"
                 className="text-white"
+                maxWidth="max-w-full"
                 placeholder="City"
                 value={shippingInfo.city}
                 onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
@@ -366,17 +397,19 @@ export default function BuyTeamListingModal({
                 type="text"
                 variant="dark"
                 className="text-white"
+                maxWidth="max-w-full"
                 placeholder="State"
                 value={shippingInfo.state}
                 onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
                 formatNumbers={false}
               />
             </div>
-            <div className="w-full flex gap-2">
+            <div className="w-full flex flex-col sm:flex-row gap-2">
               <Input
                 type="text"
                 variant="dark"
                 className="text-white"
+                maxWidth="max-w-full"
                 placeholder="Postal Code"
                 value={shippingInfo.postalCode}
                 onChange={(e) =>
@@ -391,6 +424,7 @@ export default function BuyTeamListingModal({
                 type="text"
                 variant="dark"
                 className="text-white"
+                maxWidth="max-w-full"
                 placeholder="Country"
                 value={shippingInfo.country}
                 onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
@@ -402,8 +436,18 @@ export default function BuyTeamListingModal({
         <PrivyWeb3Button
           v5
           requiredChain={DEFAULT_CHAIN_V5}
-          label="Buy"
+          label={
+            isLoading
+              ? 'Processing...'
+              : resolvedRecipient
+              ? 'Buy'
+              : 'Loading vendor...'
+          }
           action={async () => {
+            if (!resolvedRecipient)
+              return toast.error(
+                'Still loading the vendor details. Please try again in a moment.'
+              )
             if (!email || email.trim() === '' || !email.includes('@'))
               return toast.error('Please enter a valid email.')
             if (listing.shipping === 'true') {
@@ -418,10 +462,17 @@ export default function BuyTeamListingModal({
             }
             await buyListing()
           }}
-          className="mt-4 w-full gradient-2 rounded-[5vmax]"
-          isDisabled={isLoading || !recipient}
+          className="w-full gradient-2 rounded-[5vmax]"
+          isDisabled={isLoading || !resolvedRecipient}
         />
-        {isLoading && <p>Do not leave the page until the transaction is complete.</p>}
+        {!resolvedRecipient && !isLoading && (
+          <p className="w-full text-center text-sm opacity-60">Loading vendor details...</p>
+        )}
+        {isLoading && (
+          <p className="w-full text-center text-sm opacity-60">
+            Do not leave the page until the transaction is complete.
+          </p>
+        )}
       </form>
       )}
     </Modal>

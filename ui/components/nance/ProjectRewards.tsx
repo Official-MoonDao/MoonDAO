@@ -24,7 +24,8 @@ import {
   RETRO_USD_BUDGET,
 } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
-import _ from 'lodash'
+import lodashIsEqual from 'lodash/isEqual'
+import lodashSum from 'lodash/sum'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -705,7 +706,7 @@ export function ProjectRewards({
   const addressToQuadraticVotingPower = Object.fromEntries(
     addresses.map((address, index) => [address, _vps[index]])
   )
-  const votingPowerSumIsNonZero = _.sum(Object.values(addressToQuadraticVotingPower)) > 0
+  const votingPowerSumIsNonZero = lodashSum(Object.values(addressToQuadraticVotingPower)) > 0
   const { walletVP: userVotingPower } = useTotalVP(userAddress || '')
   const userHasVotingPower = useMemo(() => {
     return userAddress && (userVotingPower ?? 0) > 0
@@ -793,7 +794,7 @@ export function ProjectRewards({
       .filter((token: any) => token.usd > 1)
       .concat([{ symbol: 'stETH', balance: stakedEth }])
   }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
-  const totalAllocated = _.sum(Object.values(distribution))
+  const totalAllocated = lodashSum(Object.values(distribution))
 
   // The quarterly USD budget is the value of all non-mooney tokens in the treasury
   // calculated in USD on the first day of the quarter. This function calculates in
@@ -895,7 +896,7 @@ export function ProjectRewards({
       })
       return
     }
-    if (edit && _.isEqual(scopedDistribution, scopedOriginalDistribution)) {
+    if (edit && lodashIsEqual(scopedDistribution, scopedOriginalDistribution)) {
       toast.error('No changes detected. Please modify your distribution before resubmitting.', {
         style: toastStyle,
       })
@@ -1004,7 +1005,7 @@ export function ProjectRewards({
     }
     if (
       proposalEdit &&
-      _.isEqual(scopedProposalDistribution, scopedOriginalProposalDistribution)
+      lodashIsEqual(scopedProposalDistribution, scopedOriginalProposalDistribution)
     ) {
       toast.error('No changes detected. Please modify your distribution before resubmitting.', {
         style: toastStyle,
@@ -1033,7 +1034,7 @@ export function ProjectRewards({
       distributionToSubmit[projectId] = value
     }
     // Normalize to 100% if we removed any author projects
-    const sum = _.sum(Object.values(distributionToSubmit))
+    const sum = lodashSum(Object.values(distributionToSubmit))
     if (sum <= 0) {
       toast.error('Allocate to at least one project you did not author.', {
         style: toastStyle,
@@ -1045,7 +1046,7 @@ export function ProjectRewards({
       normalizedDistribution[projectId] = Math.round((value / sum) * 1000) / 10
     }
     // Ensure rounding doesn't leave us off 100
-    const normalizedSum = _.sum(Object.values(normalizedDistribution))
+    const normalizedSum = lodashSum(Object.values(normalizedDistribution))
     if (normalizedSum !== 100 && Object.keys(normalizedDistribution).length > 0) {
       const firstId = Object.keys(normalizedDistribution)[0]
       normalizedDistribution[firstId] =
@@ -1712,7 +1713,7 @@ export function ProjectRewards({
                     </div>
                   )}
                   {approvalVotingActive && memberVoteSubmissionsOpen && proposals && proposals.length > 0 && (() => {
-                    const proposalAllocatedPct = _.sum(
+                    const proposalAllocatedPct = lodashSum(
                       Object.entries(proposalDistribution)
                         .filter(([id]) => validProposalIds.has(id))
                         .map(([, v]) => v)
@@ -1950,7 +1951,7 @@ export function ProjectRewards({
                     )}
 
                     {rewardVotingActive && (() => {
-                      const retroAllocatedPct = _.sum(
+                      const retroAllocatedPct = lodashSum(
                         Object.entries(distribution)
                           .filter(([id]) => validEligibleIds.has(id))
                           .map(([, v]) => v)

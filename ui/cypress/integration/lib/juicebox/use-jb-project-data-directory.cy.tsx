@@ -10,7 +10,7 @@ import {
 } from 'const/config'
 import { getContract } from 'thirdweb'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 
 // Wrapper that mounts useJBProjectData with the directory contract wired up,
 // so we can exercise the `getProjectDirectoryData` effect (the one that calls

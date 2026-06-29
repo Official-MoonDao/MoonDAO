@@ -12,6 +12,7 @@ import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import React, { useMemo, useEffect, useState } from 'react'
 import { useAssets } from '@/lib/dashboard/hooks'
+import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
@@ -672,6 +673,8 @@ export const getServerSideProps: GetServerSideProps = async () => {
         }
       }
     }
+
+    await enrichProjectNames([...currentProjects, ...pastProjects])
 
     currentProjects.sort((a, b) => {
       if (a.eligible === b.eligible) {

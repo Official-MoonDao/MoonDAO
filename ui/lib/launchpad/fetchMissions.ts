@@ -5,7 +5,7 @@ import { Chain, getContract, readContract } from 'thirdweb'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { ChainType, Mission } from './types'
 
 export async function fetchMissions(

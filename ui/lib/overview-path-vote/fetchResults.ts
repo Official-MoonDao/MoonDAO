@@ -14,8 +14,13 @@ import { arbitrum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { engineBatchRead } from '@/lib/thirdweb/engine'
-import { isPathVoteOptionId, PATH_VOTE_OPTIONS } from './options'
+import { PATH_VOTE_OPTIONS } from './options'
 import type { PathVoteOptionId } from './options'
+import {
+  aggregatePathVotes,
+  buildPathVoteResults,
+  parsePathVotes,
+} from './tally'
 
 const ERC20_BALANCE_OF_ABI = [
   {
@@ -35,14 +40,15 @@ export type PathVoteResult = {
 }
 
 /**
- * A single participant in the vote. Intentionally carries no `optionId`: the
- * page mirrors the governance proposal pattern of showing *who* voted and with
- * how much weight, without revealing each voter's choice until results are
- * unsealed.
+ * A single participant in the vote. The `optionId` carries each voter's choice;
+ * while the vote is open the page keeps it sealed (showing only *who* voted and
+ * with how much weight, mirroring the governance proposal pattern), and reveals
+ * it once the vote is closed.
  */
 export type PathVoteVoter = {
   address: string
   votingPower: number
+  optionId: PathVoteOptionId
   citizenName?: string
   citizenId?: number | string
 }
@@ -52,6 +58,9 @@ export type PathVoteResults = {
   totalVoted: number
   totalVoters: number
   voters: PathVoteVoter[]
+  // The option (excluding abstain) with the most voting power. Null when there
+  // are no votes or the leading substantive options are exactly tied.
+  winningOptionId: PathVoteOptionId | null
 }
 
 export function emptyPathVoteResults(): PathVoteResults {
@@ -65,45 +74,10 @@ export function emptyPathVoteResults(): PathVoteResults {
     totalVoted: 0,
     totalVoters: 0,
     voters: [],
+    winningOptionId: null,
   }
 }
 
-type ParsedPathVote = {
-  voterAddress: string
-  optionId: PathVoteOptionId
-  storedAmount: number
-}
-
-function parsePathVotes(rows: any[]): ParsedPathVote[] {
-  const votes: ParsedPathVote[] = []
-  for (const row of rows) {
-    try {
-      const vote =
-        typeof row.vote === 'string' ? JSON.parse(row.vote) : row.vote
-      const entries = Object.entries(vote)
-      if (entries.length > 0) {
-        const [optionId, amount] = entries[0]
-        if (!isPathVoteOptionId(optionId)) continue
-        votes.push({
-          voterAddress: (row.address as string).toLowerCase(),
-          optionId,
-          storedAmount: Number(amount) || 0,
-        })
-      }
-    } catch {
-      continue
-    }
-  }
-  return votes
-}
-
-/**
- * Fetches and tallies the "Send Frank to Space — Path Forward" vote
- * server-side: reads all rows for OVERVIEW_PATH_VOTE_ID from the Votes
- * Tableland table, re-weights each vote by the voter's *live* $OVERVIEW
- * balance (same pipeline as the overview delegation leaderboard), and
- * aggregates per option.
- */
 export async function fetchPathVoteResults(): Promise<PathVoteResults> {
   try {
     const chain = arbitrum
@@ -150,48 +124,10 @@ export async function fetchPathVoteResults(): Promise<PathVoteResults> {
       }
     }
 
-    const totals: Record<
-      PathVoteOptionId,
-      { totalVoted: number; voterCount: number }
-    > = {
-      'option-a': { totalVoted: 0, voterCount: 0 },
-      'option-b': { totalVoted: 0, voterCount: 0 },
-      'option-c': { totalVoted: 0, voterCount: 0 },
-      abstain: { totalVoted: 0, voterCount: 0 },
-    }
-
-    for (const v of votes) {
-      const currentBalance = balanceMap[v.voterAddress] ?? 0
-      const effective = Number.isFinite(currentBalance)
-        ? currentBalance
-        : v.storedAmount
-      if (effective <= 0) continue
-      totals[v.optionId].totalVoted += effective
-      totals[v.optionId].voterCount += 1
-    }
-
-    const totalVoted = Object.values(totals).reduce(
-      (sum, t) => sum + t.totalVoted,
-      0
+    const { totals, voters, totalVoted, totalVoters } = aggregatePathVotes(
+      votes,
+      balanceMap
     )
-    const totalVoters = Object.values(totals).reduce(
-      (sum, t) => sum + t.voterCount,
-      0
-    )
-
-    // Per-voter list (no choice attached) — powers the "who voted" panel that
-    // stays visible while the per-option tally is sealed.
-    const voters: PathVoteVoter[] = votes
-      .map((v) => {
-        const bal = balanceMap[v.voterAddress] ?? 0
-        const power = Number.isFinite(bal) ? bal : v.storedAmount
-        return {
-          address: v.voterAddress,
-          votingPower: Math.round(power * 100) / 100,
-        }
-      })
-      .filter((v) => v.votingPower > 0)
-      .sort((a, b) => b.votingPower - a.votingPower)
 
     // Resolve citizen names for voter addresses (best-effort), mirroring the
     // leaderboard's owner -> citizen lookup so the list shows names not raw
@@ -228,20 +164,7 @@ export async function fetchPathVoteResults(): Promise<PathVoteResults> {
       }
     }
 
-    return {
-      results: PATH_VOTE_OPTIONS.map((o) => ({
-        optionId: o.id,
-        totalVoted: Math.round(totals[o.id].totalVoted * 100) / 100,
-        voterCount: totals[o.id].voterCount,
-        percentage:
-          totalVoted > 0
-            ? Math.round((totals[o.id].totalVoted / totalVoted) * 1000) / 10
-            : 0,
-      })),
-      totalVoted: Math.round(totalVoted * 100) / 100,
-      totalVoters,
-      voters,
-    }
+    return buildPathVoteResults(totals, voters, totalVoted, totalVoters)
   } catch (error) {
     console.error('[fetchPathVoteResults] fatal error:', error)
     return emptyPathVoteResults()

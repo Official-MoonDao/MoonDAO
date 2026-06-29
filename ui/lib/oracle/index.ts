@@ -10,7 +10,7 @@ import { Wallet, utils as ethersUtils, providers } from 'ethers'
 import { getContract, readContract } from 'thirdweb'
 import { getHSMSigner, isHSMAvailable } from '@/lib/google/hsm-signer'
 import { arbitrum, sepolia } from '@/lib/rpc/chains'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 
 type Address = `0x${string}`
 type Hex = `0x${string}`

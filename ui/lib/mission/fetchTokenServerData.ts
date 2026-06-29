@@ -2,7 +2,7 @@ import JBV5Token from 'const/abis/JBV5Token.json'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import type { Chain } from 'thirdweb/chains'
-import { serverClient } from '../thirdweb/client'
+import { serverClient } from '../thirdweb/serverClient'
 
 export type TokenData = {
   tokenAddress: string

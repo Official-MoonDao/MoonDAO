@@ -21,7 +21,7 @@ import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
 import { getPrivyUserData } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { fetchResponseFromFormIds } from '@/lib/typeform/hasAccessToResponse'
 import { getBlocksInTimeframe } from '@/lib/utils/blocks'
 

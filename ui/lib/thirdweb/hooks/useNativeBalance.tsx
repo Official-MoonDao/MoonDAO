@@ -59,11 +59,25 @@ export function useNativeBalance() {
   }, [wallets, selectedWallet])
 
   useEffect(() => {
+    // Poll at a relaxed cadence and skip entirely while the tab is hidden.
+    // Anything that needs an immediate value after a transaction should call
+    // the returned `refetch` instead of relying on the poll.
     const interval = setInterval(() => {
+      if (document.hidden) return
       getNativeBalance()
-    }, 5000)
+    }, 20000)
+
+    // Refresh as soon as the user returns to the tab
+    const handleVisibility = () => {
+      if (!document.hidden) getNativeBalance()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
     getNativeBalance()
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [getNativeBalance])
 
   return { nativeBalance, nativeBalanceWei, walletChain, refetch: getNativeBalance }

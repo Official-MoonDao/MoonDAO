@@ -39,7 +39,7 @@ export function useTeamData(
 
   // Activity data state (optional)
   const [jobs, setJobs] = useState<Job[]>([])
-  const [listings, setListings] = useState<TeamListing[]>([])
+  const [listings, setListings] = useState<TeamListing[] | undefined>(undefined)
   const [missions, setMissions] = useState<Mission[]>([])
   const [isLoadingActivityData, setIsLoadingActivityData] = useState(false)
   const [activityError, setActivityError] = useState<Error | null>(null)
@@ -217,36 +217,44 @@ export function useTeamData(
     async function getTableNames() {
       if (!fetchActivityData) return
 
-      try {
-        if (fetchActivityData.jobTableContract) {
+      if (fetchActivityData.jobTableContract) {
+        try {
           const jobName: any = await readContract({
             contract: fetchActivityData.jobTableContract,
             method: 'getTableName' as string,
             params: [],
           })
           setJobTableName(jobName)
+        } catch (err) {
+          console.error('Error fetching job table name:', err)
         }
+      }
 
-        if (fetchActivityData.marketplaceTableContract) {
+      if (fetchActivityData.marketplaceTableContract) {
+        try {
           const marketplaceName: any = await readContract({
             contract: fetchActivityData.marketplaceTableContract,
             method: 'getTableName' as string,
             params: [],
           })
           setMarketplaceTableName(marketplaceName)
+        } catch (err) {
+          console.error('Error fetching marketplace table name:', err)
+          setActivityError(err as Error)
         }
+      }
 
-        if (fetchActivityData.missionTableContract) {
+      if (fetchActivityData.missionTableContract) {
+        try {
           const missionName: any = await readContract({
             contract: fetchActivityData.missionTableContract,
             method: 'getTableName' as string,
             params: [],
           })
           setMissionTableName(missionName)
+        } catch (err) {
+          console.error('Error fetching mission table name:', err)
         }
-      } catch (err) {
-        console.error('Error fetching table names:', err)
-        setActivityError(err as Error)
       }
     }
     getTableNames()

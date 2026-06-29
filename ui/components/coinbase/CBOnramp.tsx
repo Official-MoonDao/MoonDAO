@@ -455,6 +455,53 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     }
   }, [address, selectedChain])
 
+  // Hosted Coinbase flow for US users who can't use Apple/Google Pay (e.g.
+  // desktop, no iPhone to scan the QR). Supports signing into an existing
+  // Coinbase account or paying by card/bank. Presets the crypto amount so we
+  // don't depend on the headless quote (which isn't fetched for US users).
+  const handleHostedFallback = useCallback(async () => {
+    if (!address) return
+
+    const projectId = process.env.NEXT_PUBLIC_CB_PROJECT_ID
+    if (!projectId) {
+      console.error('[CBOnramp] hosted fallback missing project ID')
+      return
+    }
+
+    // Mock mode: simulate onramp return instead of redirecting.
+    if (MOCK_ONRAMP) {
+      await onBeforeNavigate?.()
+      const currentUrl = new URL(window.location.href)
+      currentUrl.searchParams.set('onrampSuccess', 'true')
+      window.history.replaceState({}, '', currentUrl.toString())
+      window.location.reload()
+      return
+    }
+
+    const { token } = await generateSessionToken()
+    const network = getOnrampNetworkName(selectedChain)
+    const widgetParams: any = {
+      appId: projectId,
+      sessionToken: token,
+      addresses: { [address]: [network] },
+      defaultNetwork: network,
+      defaultAsset: 'ETH',
+      redirectUrl: redirectUrl || `${DEPLOYED_ORIGIN}/`,
+    }
+    if (ethAmount > 0) widgetParams.presetCryptoAmount = ethAmount
+
+    const url = generateOnRampURL(widgetParams)
+    try {
+      if (onBeforeNavigate) {
+        await onBeforeNavigate()
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+    } catch (error) {
+      console.error('[CBOnramp] onBeforeNavigate (hosted fallback) failed:', error)
+    }
+    window.location.href = url
+  }, [address, ethAmount, redirectUrl, onBeforeNavigate, generateSessionToken, selectedChain])
+
   const handleOpenOnramp = async () => {
     if (!address) {
       setError('Wallet address required')
@@ -568,6 +615,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         onQuoteCalculated={onQuoteCalculated}
         onSuccess={handleHeadlessSuccess}
         onUnsupported={onUnsupported}
+        onUseAccountFlow={handleHostedFallback}
       />
     )
   }

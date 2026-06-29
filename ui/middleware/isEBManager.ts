@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth/next'
 import { getContract, readContract } from 'thirdweb'
 import { getPrivyUserData } from '@/lib/privy'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { authOptions } from '../pages/api/auth/[...nextauth]'
 
 export async function isEBManager(req: NextApiRequest, res: NextApiResponse, next: () => void) {
