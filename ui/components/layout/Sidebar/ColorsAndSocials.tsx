@@ -23,7 +23,7 @@ const ColorsAndSocials = ({
       <Link
         className="opacity-[50%] hover:opacity-[100%] hover:scale-105 duration-150 ease-in-out max-[265px]:hidden"
         aria-label="Link to Discord"
-        href="https://discord.gg/moondao"
+        href="https://moondao.com/discord"
         target="_blank"
         rel="noreferrer"
         passHref

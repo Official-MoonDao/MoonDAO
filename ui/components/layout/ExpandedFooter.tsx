@@ -29,7 +29,7 @@ const socialLinks: SocialLink[] = [
     icon: <TwitterIcon />,
   },
   {
-    href: 'https://discord.gg/moondao',
+    href: 'https://moondao.com/discord',
     label: 'Discord',
     icon: <DiscordIcon />,
   },
@@ -326,7 +326,7 @@ export function ExpandedFooter({
                     has no Support group. Surface it here as a utility link
                     so users still have a one-click path to help. */}
                 <Link
-                  href="https://discord.gg/moondao"
+                  href="https://moondao.com/discord"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-white transition-colors"

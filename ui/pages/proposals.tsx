@@ -144,7 +144,7 @@ export default function ProposalsPage({ project }: { project: Project }) {
                     </div>
                   </div>
                   <Link
-                    href="https://discord.gg/moondao"
+                    href="https://moondao.com/discord"
                     target="_blank"
                     rel="noreferrer"
                     className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all duration-200 text-sm border border-white/10 w-full sm:w-auto"
