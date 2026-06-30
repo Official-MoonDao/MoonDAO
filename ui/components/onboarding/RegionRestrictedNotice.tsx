@@ -65,7 +65,7 @@ export default function RegionRestrictedNotice({
                 textColor="text-white"
                 borderRadius="rounded-xl"
                 hoverEffect={false}
-                link="/join"
+                link="/network"
               >
                 Explore the Network
               </StandardButton>
