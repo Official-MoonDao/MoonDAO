@@ -651,6 +651,13 @@ export const FREE_MINT_THRESHOLD_LABEL = `${FREE_MINT_THRESHOLD / 1e18} ETH (~$1
 
 export const EB_TEAM_ID = '0'
 
+// Marketplace listing tag that turns a listing into a "gift a citizenship"
+// item. On a verified purchase the buyer is issued a one-time, fully-sponsored
+// citizen invite link (see pages/api/marketplace/marketplace-purchase.ts) that
+// they can share with whoever they want to gift citizenship to. Only meaningful
+// on the EB team listing.
+export const CITIZENSHIP_GIFT_TAG = 'citizenship-gift'
+
 /** MoonDAO docs — Overview Flight mission (e.g. mission id 4). */
 export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
   'https://docs.moondao.com/Legal/Overview-Flight/Overview-Flight-Terms-and-Conditions'
@@ -731,7 +738,7 @@ export const SUPER_MANAGERS: string[] = [
 export const OPERATORS: string[] = [
   '0x679d87d8640e66778c3419d164998e720d7495f6', // pmoncada.eth
   '0xb2d3900807094d4fe47405871b0c8adb58e10d42', // ryand2d.eth
-  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da', // miguel.eth
+  '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da', // miguel
 ]
 
 // Retroactive rewards payout token for the *currently-voting* cycle.
