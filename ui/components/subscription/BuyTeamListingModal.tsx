@@ -181,6 +181,18 @@ export default function BuyTeamListingModal({
 
         const accessToken = await getAccessToken()
 
+        // The payment has already settled by this point, so the
+        // notification step must never throw. `teamNFT` can be missing when its
+        // lookup was rate-limited even though `resolvedRecipient` resolved from
+        // the parent-provided recipient — fall back to the listing's team data
+        // so a null dereference can't turn a successful purchase into a
+        // "Purchase failed" toast with no vendor notification.
+        const teamSlug = teamNFT?.metadata?.name
+          ? generatePrettyLink(teamNFT.metadata.name)
+          : listing.teamName
+          ? generatePrettyLink(listing.teamName)
+          : listing.teamId
+
         // Send email request with transaction verification
         const res = await fetch('/api/marketplace/marketplace-purchase', {
           method: 'POST',
@@ -198,7 +210,7 @@ export default function BuyTeamListingModal({
             recipient: resolvedRecipient,
             isCitizen: citizen ? true : false,
             shipping,
-            teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(teamNFT.metadata.name)}`,
+            teamLink: `${DEPLOYED_ORIGIN}/team/${teamSlug}`,
             accessToken,
           }),
         })
