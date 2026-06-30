@@ -52,7 +52,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    if (!privyUserData.walletAddresses.includes(user)) {
+    if (
+      !privyUserData.walletAddresses
+        .map((a) => a.toLowerCase())
+        .includes(user.toLowerCase())
+    ) {
       return res.status(200).json({
         eligible: false,
         issueCount: '0',
