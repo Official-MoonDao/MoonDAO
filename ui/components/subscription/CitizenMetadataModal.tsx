@@ -305,7 +305,13 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
 
                 const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
-                await unpinCitizenImage(nft.metadata.id)
+                // Unpin the old image best-effort — a failure here must not
+                // block the profile update. The type mismatch between the
+                // numeric token ID and the string the API checks caused every
+                // unpin to return 401 and abort the entire update.
+                unpinCitizenImage(nft.metadata.id).catch((err) =>
+                  console.warn('Failed to unpin old citizen image (non-blocking):', err)
+                )
 
                 imageIpfsLink = `ipfs://${newImageIpfsHash}`
               }
