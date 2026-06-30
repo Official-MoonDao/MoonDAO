@@ -64,9 +64,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    // Check if user has a GitHub account linked
+    // Check if user has a GitHub account linked. Privy generally returns
+    // `github_oauth`, but older/client-side objects may use `github`.
     const githubAccount = privyUserData.userData?.linked_accounts?.find(
-      (account: any) => account.type === 'github_oauth'
+      (account: any) =>
+        account.type === 'github_oauth' || account.type === 'github'
     )
 
     if (!githubAccount) {
