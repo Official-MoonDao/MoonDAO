@@ -53,13 +53,12 @@ import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/ch
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import cleanData from '@/lib/tableland/cleanData'
+import cleanData, { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
-import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import { CitizenData, formatCitizenShortFormData } from '@/lib/typeform/citizenFormData'
 import {
   renameFile,
@@ -727,15 +726,19 @@ export default function CreateCitizen({
           LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[selectedChainSlug].toString(),
           _options.toHex(),
           address,
-          citizenData.name,
-          profile.bio,
+          // Escape single quotes so an apostrophe (e.g. "Brazil's") can't produce
+          // malformed SQL the Tableland validator silently rejects. `location` is
+          // already escaped upstream (resolveLocationField -> cleanData) and
+          // `view` is a fixed enum, so neither needs re-escaping here.
+          escapeSingleQuotes(citizenData.name),
+          escapeSingleQuotes(profile.bio),
           `ipfs://${imageIpfsHash}`,
           profile.location,
-          profile.discord,
-          profile.twitter,
-          profile.website,
+          escapeSingleQuotes(profile.discord),
+          escapeSingleQuotes(profile.twitter),
+          escapeSingleQuotes(profile.website),
           profile.view,
-          citizenData.formResponseId,
+          escapeSingleQuotes(citizenData.formResponseId),
         ],
         value: MSG_VALUE + LAYER_ZERO_TRANSFER_COST,
       })
@@ -777,15 +780,19 @@ export default function CreateCitizen({
         method: 'mintTo' as string,
         params: [
           address,
-          citizenData.name,
-          profile.bio,
+          // Escape single quotes so an apostrophe (e.g. "Brazil's") can't produce
+          // malformed SQL the Tableland validator silently rejects. `location` is
+          // already escaped upstream (resolveLocationField -> cleanData) and
+          // `view` is a fixed enum, so neither needs re-escaping here.
+          escapeSingleQuotes(citizenData.name),
+          escapeSingleQuotes(profile.bio),
           `ipfs://${imageIpfsHash}`,
           profile.location,
-          profile.discord,
-          profile.twitter,
-          profile.website,
+          escapeSingleQuotes(profile.discord),
+          escapeSingleQuotes(profile.twitter),
+          escapeSingleQuotes(profile.website),
           profile.view,
-          citizenData.formResponseId,
+          escapeSingleQuotes(citizenData.formResponseId),
         ],
         value: cost,
       })
@@ -799,12 +806,28 @@ export default function CreateCitizen({
   )
 
   const handlePostMint = useCallback(
-    async (mintedTokenId: string, profile: CitizenProfileMintFields) => {
+    async (
+      mintedTokenId: string,
+      profile: CitizenProfileMintFields,
+      imageURI: string
+    ) => {
       await tagToNetworkSignup(citizenData.email)
 
-      const citizenNFT = await waitForERC721(citizenContract, +mintedTokenId)
       const citizenName = citizenData.name
       const citizenPrettyLink = generatePrettyLinkWithId(citizenName, mintedTokenId)
+
+      // The citizen's on-chain tokenURI is a Tableland gateway query, so its
+      // metadata (name/image/attributes) only resolves once Tableland has
+      // indexed the row inserted during mint — which routinely takes longer
+      // than a minute under load. Onboarding success must NOT block on that:
+      // the mint receipt already proves the NFT exists, and every field needed
+      // to seed the citizen is known locally (token id, name, profile, image).
+      // CitizenProvider's optimistic seed + Tableland polling reconciles the
+      // record (including the real tokenURI) as soon as it's indexed, so we
+      // seed immediately and never wait on the gateway here. Previously this
+      // awaited waitForERC721, which threw "Failed to fetch NFT after 60
+      // seconds" whenever indexing was slow — failing onboarding for a citizen
+      // whose NFT had already minted successfully on-chain.
 
       // Record referral
       try {
@@ -836,20 +859,23 @@ export default function CreateCitizen({
         console.error('Error recording referral:', error)
       }
 
-      // Normalize the thirdweb NFT to match the Tableland format before seeding.
-      // Reuse the exact profile fields that were written on-chain so the locally
-      // seeded citizen matches the mint — otherwise the seed could show
-      // un-normalized socials, an un-geocoded location, or worse, view='' (which
-      // the directory treats as hidden/deleted) for a citizen minted as 'public'.
-      // `profile.location` is already the geocoded `{lat,lng,name}` JSON string.
+      // Build the seed entirely from local data (matching the Tableland row
+      // shape produced by citizenRowToNFT). Reusing the exact profile fields
+      // written on-chain guarantees the seed matches the mint — otherwise it
+      // could show un-normalized socials, an un-geocoded location, or worse,
+      // view='' (which the directory treats as hidden/deleted) for a citizen
+      // minted as 'public'. `profile.location` is already the geocoded
+      // `{lat,lng,name}` JSON string and `imageURI` is the `ipfs://` URI that
+      // was written on-chain. None of this depends on Tableland indexing.
+      const numericTokenId = Number(mintedTokenId)
       const normalizedCitizen = {
-        id: typeof citizenNFT.id === 'bigint' ? Number(citizenNFT.id) : citizenNFT.id,
+        id: numericTokenId,
         metadata: {
-          id: typeof citizenNFT.id === 'bigint' ? Number(citizenNFT.id) : citizenNFT.id,
-          uri: citizenNFT.tokenURI || '',
-          name: citizenNFT.metadata?.name || '',
-          description: citizenNFT.metadata?.description || '',
-          image: citizenNFT.metadata?.image || '',
+          id: numericTokenId,
+          uri: '',
+          name: citizenName,
+          description: profile.bio,
+          image: imageURI,
           animation_url: '',
           external_url: '',
           attributes: [
@@ -863,8 +889,8 @@ export default function CreateCitizen({
             { trait_type: 'formId', value: citizenData.formResponseId || '' },
           ],
         },
-        owner: citizenNFT.owner || address || '',
-        tokenURI: citizenNFT.tokenURI || '',
+        owner: address || '',
+        tokenURI: '',
         type: 'ERC721',
       }
 
@@ -902,7 +928,6 @@ export default function CreateCitizen({
       citizenData.email,
       citizenData.name,
       citizenData.formResponseId,
-      citizenContract,
       address,
       clearCache,
       seedCitizen,
@@ -1375,7 +1400,7 @@ export default function CreateCitizen({
       }
 
       if (mintedTokenId) {
-        await handlePostMint(mintedTokenId, profile)
+        await handlePostMint(mintedTokenId, profile, `ipfs://${newImageIpfsHash}`)
         setIsLoadingMint(false)
       }
     } catch (err: any) {
