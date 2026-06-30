@@ -31,6 +31,7 @@ contract DePrizeRegistryTest is Test {
     event WinnerDeclared(uint256 indexed deprizeId, uint256 indexed winningTeamId);
     event CancellationAnnounced(uint256 indexed deprizeId, uint256 noticeAt, uint256 executableAt);
     event CancellationAborted(uint256 indexed deprizeId);
+    event ProviderPayoutAddressSet(uint256 indexed deprizeId, address indexed provider);
 
     function setUp() public {
         DePrizeRegistry impl = new DePrizeRegistry();
@@ -497,6 +498,96 @@ contract DePrizeRegistryTest is Test {
         );
         registry.announceCancellation(id);
         vm.stopPrank();
+    }
+
+    // ---------------------------------------------------------------------
+    // provider payout address (M5)
+    // ---------------------------------------------------------------------
+
+    address constant PROVIDER = address(0x1234567890123456789012345678901234567890);
+
+    function testProviderPayoutAddressDefaultsZero() public {
+        uint256 id = _registerAndOpen();
+        assertEq(registry.providerPayoutAddress(id), address(0));
+    }
+
+    function testSetProviderPayoutAddressAtSettled() public {
+        uint256 id = _registerAndOpen();
+        _toSettled(id, 2);
+        vm.expectEmit(true, true, false, false);
+        emit ProviderPayoutAddressSet(id, PROVIDER);
+        vm.prank(owner);
+        registry.setProviderPayoutAddress(id, PROVIDER);
+        assertEq(registry.providerPayoutAddress(id), PROVIDER);
+    }
+
+    function testSetProviderPayoutAddressAtM1Released() public {
+        uint256 id = _registerAndOpen();
+        _toSettled(id, 2);
+        vm.startPrank(owner);
+        registry.releaseM1(id);
+        registry.setProviderPayoutAddress(id, PROVIDER);
+        vm.stopPrank();
+        assertEq(registry.providerPayoutAddress(id), PROVIDER);
+    }
+
+    function testSetProviderPayoutAddressUpdatableBetweenMilestones() public {
+        uint256 id = _registerAndOpen();
+        _toSettled(id, 2);
+        vm.startPrank(owner);
+        registry.setProviderPayoutAddress(id, PROVIDER);
+        registry.releaseM1(id);
+        // provider rotates Safes before M2
+        address rotated = address(0xB0B);
+        registry.setProviderPayoutAddress(id, rotated);
+        vm.stopPrank();
+        assertEq(registry.providerPayoutAddress(id), rotated);
+    }
+
+    function testSetProviderPayoutAddressZeroReverts() public {
+        uint256 id = _registerAndOpen();
+        _toSettled(id, 2);
+        vm.prank(owner);
+        vm.expectRevert(IDePrizeRegistry.ZeroProviderAddress.selector);
+        registry.setProviderPayoutAddress(id, address(0));
+    }
+
+    function testSetProviderPayoutAddressBeforeSettleReverts() public {
+        uint256 id = _registerAndOpen();
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(IDePrizeRegistry.InvalidState.selector, id, IDePrizeRegistry.DePrizeState.OPEN)
+        );
+        registry.setProviderPayoutAddress(id, PROVIDER);
+    }
+
+    function testSetProviderPayoutAddressAfterM2CompleteReverts() public {
+        uint256 id = _registerAndOpen();
+        _toSettled(id, 2);
+        vm.startPrank(owner);
+        registry.releaseM1(id);
+        registry.completeM2(id);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IDePrizeRegistry.InvalidState.selector, id, IDePrizeRegistry.DePrizeState.M2_COMPLETE
+            )
+        );
+        registry.setProviderPayoutAddress(id, PROVIDER);
+        vm.stopPrank();
+    }
+
+    function testSetProviderPayoutAddressOnlyOwner() public {
+        uint256 id = _registerAndOpen();
+        _toSettled(id, 2);
+        vm.prank(stranger);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", stranger));
+        registry.setProviderPayoutAddress(id, PROVIDER);
+    }
+
+    function testSetProviderPayoutAddressUnknownDePrizeReverts() public {
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(IDePrizeRegistry.UnknownDePrize.selector, 999));
+        registry.setProviderPayoutAddress(999, PROVIDER);
     }
 
     // ---------------------------------------------------------------------
