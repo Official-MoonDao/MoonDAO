@@ -1,0 +1,450 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-01",
+  "organizations": [
+    {
+      "id": "nasa",
+      "name": "NASA",
+      "kind": "agency",
+      "country": "USA",
+      "website": "https://www.nasa.gov/humans-in-space/artemis/",
+      "brandColor": "#4A90E2",
+      "summary": "Through the Artemis program, NASA aims to return humans to the Moon and build a sustained presence at the lunar South Pole as a stepping stone to Mars.",
+      "sources": [
+        {
+          "label": "NASA — Artemis",
+          "url": "https://www.nasa.gov/humans-in-space/artemis/",
+          "retrievedAt": "2026-07-01"
+        }
+      ]
+    },
+    {
+      "id": "spacex",
+      "name": "SpaceX",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.spacex.com/human-spaceflight/moon/",
+      "brandColor": "#FF6B4A",
+      "summary": "SpaceX is developing Starship as a fully reusable launch and landing system; a Starship Human Landing System variant is contracted to land Artemis astronauts near the lunar South Pole.",
+      "sources": [
+        {
+          "label": "SpaceX — Human Spaceflight: Moon",
+          "url": "https://www.spacex.com/human-spaceflight/moon/",
+          "retrievedAt": "2026-07-01"
+        }
+      ]
+    },
+    {
+      "id": "blue-origin",
+      "name": "Blue Origin",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.blueorigin.com/blue-moon",
+      "brandColor": "#7B61FF",
+      "summary": "Blue Origin is building the Blue Moon lunar landers (MK1 cargo and MK2 crewed) and researches in-situ resource use, including making solar cells and oxygen from lunar regolith.",
+      "sources": [
+        {
+          "label": "Blue Origin — Blue Moon",
+          "url": "https://www.blueorigin.com/blue-moon",
+          "retrievedAt": "2026-07-01"
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "nasa-artemis-base-camp",
+      "orgId": "nasa",
+      "name": "Artemis Base Camp",
+      "type": "crewed_base",
+      "modelURI": "/lunar-atlas/models/habitat-demo-unit.glb",
+      "summary": "NASA's planned sustained surface habitation at the lunar South Pole, including a foundation surface habitat, mobility (LTV and habitable mobility platform), and power — the anchor of a long-term human presence.",
+      "location": { "lat": -89.5, "lon": 0 },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole",
+      "milestones": [
+        {
+          "id": "abc-concept",
+          "title": "Artemis Base Camp concept published",
+          "targetDate": "2020",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "NASA — Artemis Plan (2020)",
+              "url": "https://www.nasa.gov/wp-content/uploads/2020/12/artemis_plan-20200921.pdf",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        },
+        {
+          "id": "abc-habitat",
+          "title": "Foundation surface habitat delivery",
+          "targetDate": "2033",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Artemis",
+              "url": "https://www.nasa.gov/humans-in-space/artemis/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-south-pole-base"],
+      "sources": [
+        {
+          "label": "NASA — Artemis Base Camp",
+          "url": "https://www.nasa.gov/wp-content/uploads/2020/12/artemis_plan-20200921.pdf",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "nasa-artemis-iii",
+      "orgId": "nasa",
+      "name": "Artemis III Crewed Landing",
+      "type": "crewed_base",
+      "modelURI": "/lunar-atlas/models/apollo-lunar-module.glb",
+      "summary": "The first crewed Artemis landing, targeting a South Pole region and delivering astronauts to the surface via a commercial Human Landing System.",
+      "location": { "lat": -85.3, "lon": 0 },
+      "locationPrecision": "approximate",
+      "regionLabel": "South Pole candidate regions",
+      "milestones": [
+        {
+          "id": "a3-landing",
+          "title": "Artemis III crewed South Pole landing",
+          "targetDate": "2027",
+          "datePrecision": "year",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Artemis III",
+              "url": "https://www.nasa.gov/mission/artemis-iii/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-south-pole-base"],
+      "sources": [
+        {
+          "label": "NASA — Artemis III candidate regions",
+          "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "nasa-gateway",
+      "orgId": "nasa",
+      "name": "Gateway Station",
+      "type": "orbital",
+      "summary": "A small space station in a near-rectilinear halo orbit around the Moon, serving as a staging point and comms relay for surface missions.",
+      "locationPrecision": "region",
+      "regionLabel": "Near-rectilinear halo orbit (cislunar)",
+      "milestones": [
+        {
+          "id": "gw-hpe",
+          "title": "Launch of HALO + Power and Propulsion Element",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "in_progress",
+          "sources": [
+            {
+              "label": "NASA — Gateway",
+              "url": "https://www.nasa.gov/mission/gateway/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "NASA — Gateway",
+          "url": "https://www.nasa.gov/mission/gateway/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "nasa-ltv",
+      "orgId": "nasa",
+      "name": "Lunar Terrain Vehicle (LTV)",
+      "type": "rover",
+      "modelURI": "/lunar-atlas/models/perseverance-rover.glb",
+      "summary": "An unpressurized rover to let Artemis crews explore farther from the landing site and to operate autonomously between crewed missions near the South Pole.",
+      "location": { "lat": -88.8, "lon": 10 },
+      "locationPrecision": "approximate",
+      "regionLabel": "Lunar South Pole",
+      "milestones": [
+        {
+          "id": "ltv-demo",
+          "title": "First LTV surface demonstration",
+          "targetDate": "2030",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Lunar Terrain Vehicle Services",
+              "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "NASA — LTV Services",
+          "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "nasa-fission-surface-power",
+      "orgId": "nasa",
+      "name": "Fission Surface Power",
+      "type": "power",
+      "summary": "A demonstration nuclear fission reactor to provide continuous surface power through the lunar night, enabling sustained operations at the South Pole.",
+      "location": { "lat": -89, "lon": 45 },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole",
+      "milestones": [
+        {
+          "id": "fsp-demo",
+          "title": "Fission surface power demonstration",
+          "targetDate": "2031",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Fission Surface Power",
+              "url": "https://www.nasa.gov/tdm/fission-surface-power/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-isru-power"],
+      "sources": [
+        {
+          "label": "NASA — Fission Surface Power",
+          "url": "https://www.nasa.gov/tdm/fission-surface-power/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "spacex-starship-hls",
+      "orgId": "spacex",
+      "name": "Starship Human Landing System",
+      "type": "lander",
+      "modelURI": "/lunar-atlas/models/apollo-lunar-module.glb",
+      "summary": "A lunar-optimized Starship variant contracted by NASA to carry Artemis III and IV astronauts from lunar orbit to the South Pole surface and back.",
+      "location": { "lat": -85, "lon": 5 },
+      "locationPrecision": "approximate",
+      "regionLabel": "South Pole candidate regions",
+      "milestones": [
+        {
+          "id": "hls-uncrewed",
+          "title": "Uncrewed lunar landing demonstration",
+          "targetDate": "2026",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — SpaceX HLS",
+              "url": "https://www.nasa.gov/humans-in-space/human-landing-system/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        },
+        {
+          "id": "hls-artemis3",
+          "title": "Crewed landing for Artemis III",
+          "targetDate": "2027",
+          "datePrecision": "year",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "SpaceX — Moon",
+              "url": "https://www.spacex.com/human-spaceflight/moon/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-south-pole-base"],
+      "sources": [
+        {
+          "label": "SpaceX — Human Spaceflight: Moon",
+          "url": "https://www.spacex.com/human-spaceflight/moon/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "blue-origin-blue-moon-mk1",
+      "orgId": "blue-origin",
+      "name": "Blue Moon MK1 Cargo Lander",
+      "type": "lander",
+      "modelURI": "/lunar-atlas/models/viking-lander.glb",
+      "summary": "An uncrewed cargo lander able to deliver several tonnes to the lunar surface, serving as a precursor and logistics platform for the crewed MK2 lander.",
+      "location": { "lat": -86, "lon": -20 },
+      "locationPrecision": "approximate",
+      "regionLabel": "Lunar South Pole",
+      "milestones": [
+        {
+          "id": "mk1-first-landing",
+          "title": "First MK1 lunar landing",
+          "targetDate": "2026",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Blue Origin — Blue Moon",
+              "url": "https://www.blueorigin.com/blue-moon",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "Blue Origin — Blue Moon",
+          "url": "https://www.blueorigin.com/blue-moon",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "blue-origin-blue-moon-mk2",
+      "orgId": "blue-origin",
+      "name": "Blue Moon MK2 Crewed Lander",
+      "type": "lander",
+      "modelURI": "/lunar-atlas/models/apollo-lunar-module.glb",
+      "summary": "Blue Origin's crewed lunar lander, selected by NASA to land Artemis V astronauts at the South Pole, developed with the National Team.",
+      "location": { "lat": -85.5, "lon": -10 },
+      "locationPrecision": "approximate",
+      "regionLabel": "South Pole candidate regions",
+      "milestones": [
+        {
+          "id": "mk2-artemis5",
+          "title": "Crewed landing for Artemis V",
+          "targetDate": "2030",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Blue Origin Artemis V lander",
+              "url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-as-second-artemis-lunar-lander-provider/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-south-pole-base"],
+      "sources": [
+        {
+          "label": "NASA — Second Artemis lunar lander provider",
+          "url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-as-second-artemis-lunar-lander-provider/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "blue-origin-blue-alchemist",
+      "orgId": "blue-origin",
+      "name": "Blue Alchemist ISRU",
+      "type": "isru_plant",
+      "modelURI": "/lunar-atlas/models/rassor.glb",
+      "summary": "A process to manufacture solar cells and oxygen from lunar regolith simulant, aimed at powering and sustaining a surface presence with in-situ resources.",
+      "location": { "lat": -88, "lon": -45 },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (concept)",
+      "milestones": [
+        {
+          "id": "alchemist-demo",
+          "title": "Regolith-to-solar-cell process demonstrated (Earth)",
+          "targetDate": "2023",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "Blue Origin — Blue Alchemist",
+              "url": "https://www.blueorigin.com/news/blue-alchemist-powers-our-lunar-future",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-isru-power"],
+      "sources": [
+        {
+          "label": "Blue Origin — Blue Alchemist",
+          "url": "https://www.blueorigin.com/news/blue-alchemist-powers-our-lunar-future",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    }
+  ],
+  "sharedGoals": [
+    {
+      "id": "shared-south-pole-base",
+      "title": "First sustained crewed South Pole presence",
+      "description": "Multiple organizations are racing to land and sustain crews at the lunar South Pole. NASA's Artemis campaign anchors the goal, with SpaceX and Blue Origin providing the landers that deliver astronauts to the surface.",
+      "projectIds": [
+        "nasa-artemis-base-camp",
+        "nasa-artemis-iii",
+        "spacex-starship-hls",
+        "blue-origin-blue-moon-mk2"
+      ],
+      "targetWindow": { "from": "2027", "to": "2033" },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate"
+      },
+      "sources": [
+        {
+          "label": "NASA — Artemis",
+          "url": "https://www.nasa.gov/humans-in-space/artemis/",
+          "retrievedAt": "2026-07-01"
+        }
+      ]
+    },
+    {
+      "id": "shared-isru-power",
+      "title": "First sustained lunar power & in-situ resource use",
+      "description": "Continuous surface power and the ability to make oxygen, metals, and solar cells from regolith are prerequisites for a permanent presence. NASA's fission power and Blue Origin's Blue Alchemist target this from different angles.",
+      "projectIds": [
+        "nasa-fission-surface-power",
+        "blue-origin-blue-alchemist"
+      ],
+      "targetWindow": { "from": "2028", "to": "2035" },
+      "market": {
+        "status": "none"
+      },
+      "sources": [
+        {
+          "label": "NASA — Fission Surface Power",
+          "url": "https://www.nasa.gov/tdm/fission-surface-power/",
+          "retrievedAt": "2026-07-01"
+        }
+      ]
+    }
+  ]
+}

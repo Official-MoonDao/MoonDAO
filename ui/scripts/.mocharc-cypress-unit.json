@@ -12,7 +12,8 @@
     "cypress/integration/unit/vmooney-snapshots.cy.tsx",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
     "cypress/integration/unit/member-vote-tally.cy.tsx",
-    "cypress/integration/unit/lunar-sim-engine.cy.ts",
+    "cypress/integration/unit/lunar-atlas-geo.cy.ts",
+    "cypress/integration/unit/lunar-atlas-selectors.cy.ts",
     "cypress/integration/overview-delegate/leaderboard.cy.ts",
     "cypress/integration/overview-path-vote/tally.cy.ts"
   ]
