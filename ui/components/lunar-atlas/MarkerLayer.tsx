@@ -9,11 +9,16 @@ import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { declusterDirections, Vec3 } from '@/lib/lunar-atlas/geo'
+import {
+  declusterDirections,
+  vector3ToLatLon,
+  Vec3,
+} from '@/lib/lunar-atlas/geo'
 import { orgColor } from '@/lib/lunar-atlas/display'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { Organization, Project } from '@/lib/lunar-atlas/types'
 import ProjectModel from './ProjectModel'
+import type { RadiusAt } from './useTerrainSampler'
 
 export type MarkerStyle = { opacity: number; visible: boolean }
 
@@ -26,10 +31,13 @@ type MarkerLayerProps = {
   onHover?: (id: string | null) => void
   getProjectStyle?: (project: Project) => MarkerStyle
   dirMap?: Map<string, Vec3>
+  // Displaced terrain radius lookup so pins/models sit on the rendered ground.
+  radiusAt?: RadiusAt | null
 }
 
-const SURFACE = GLOBE_RADIUS * 1.005
-const DOT_HEIGHT = GLOBE_RADIUS * 1.05
+// Offsets above the local terrain (which the sampler provides per marker).
+const SEAT_LIFT = GLOBE_RADIUS * 0.002 // clears z-fighting with the terrain
+const PIN_HEIGHT = GLOBE_RADIUS * 0.045 // beacon dot altitude above ground
 const DOT_RADIUS = GLOBE_RADIUS * 0.009
 // As the camera closes in, dots fade so the detailed on-surface models take
 // over (findability beacons far, physical builds near).
@@ -45,6 +53,7 @@ function Marker({
   style,
   onSelect,
   onHover,
+  radiusAt,
 }: {
   project: Project
   dir: Vec3
@@ -54,6 +63,7 @@ function Marker({
   style: MarkerStyle
   onSelect?: (id: string) => void
   onHover?: (id: string | null) => void
+  radiusAt?: RadiusAt | null
 }) {
   const { camera } = useThree()
   const groupRef = useRef<THREE.Group>(null)
@@ -62,14 +72,20 @@ function Marker({
   const ringRef = useRef<THREE.Mesh>(null)
   const scaleRef = useRef(1)
 
-  const { base, tip, ndir } = useMemo(() => {
+  const { base, tip, ndir, seatRadius } = useMemo(() => {
     const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
+    // Seat on the displaced terrain at this (declustered) direction; until
+    // the DEM decodes, fall back to the analytic sphere.
+    const ll = vector3ToLatLon([d.x, d.y, d.z])
+    const ground = radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS
+    const seat = ground + SEAT_LIFT
     return {
-      base: d.clone().multiplyScalar(SURFACE),
-      tip: d.clone().multiplyScalar(DOT_HEIGHT),
+      base: d.clone().multiplyScalar(seat),
+      tip: d.clone().multiplyScalar(seat + PIN_HEIGHT),
       ndir: d,
+      seatRadius: seat,
     }
-  }, [dir])
+  }, [dir, radiusAt])
 
   useFrame((_, delta) => {
     const g = groupRef.current
@@ -143,6 +159,9 @@ function Marker({
           project={project}
           dir={[ndir.x, ndir.y, ndir.z]}
           accent={color}
+          onSelect={onSelect}
+          onHover={onHover}
+          surfaceRadius={seatRadius}
         />
       )}
 
@@ -216,6 +235,7 @@ export default function MarkerLayer({
   onHover,
   getProjectStyle,
   dirMap: providedDirMap,
+  radiusAt,
 }: MarkerLayerProps) {
   const orgMap = useMemo(() => {
     const m = new Map<string, Organization>()
@@ -258,6 +278,7 @@ export default function MarkerLayer({
             style={style}
             onSelect={onSelect}
             onHover={onHover}
+            radiusAt={radiusAt}
           />
         )
       })}

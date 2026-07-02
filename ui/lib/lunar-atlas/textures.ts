@@ -27,6 +27,13 @@ export const HIGH_DETAIL_COLOR = COLOR_TIERS[COLOR_TIERS.length - 1].color
 export const DISPLACEMENT_MAP = '/lunar-atlas/lunar_displacement_2k.jpg'
 export const DISPLACEMENT_MAP_HIGH = '/lunar-atlas/lunar_displacement_4k.jpg'
 
+// Ordered lowest -> highest fidelity, mirroring COLOR_TIERS. The 4K DEM loads
+// only when the scene is in high-detail mode (drill-in).
+export const DISPLACEMENT_TIERS: string[] = [
+  DISPLACEMENT_MAP,
+  DISPLACEMENT_MAP_HIGH,
+]
+
 // Globe render radius in scene units. Markers/models place against this.
 export const GLOBE_RADIUS = 2
 
@@ -34,3 +41,9 @@ export const GLOBE_RADIUS = 2
 // radius; this is exaggerated for legibility but kept subtle enough to read as
 // the Moon, not a golf ball.
 export const DISPLACEMENT_SCALE = 0.06
+
+// The LOLA DEM's mid-gray is the mean lunar radius, so displacement is applied
+// centered: lowlands sink below GLOBE_RADIUS and highlands rise above it.
+// Without this bias the whole surface is only ever raised, which buries
+// anything seated at the analytic sphere radius.
+export const DISPLACEMENT_BIAS = -DISPLACEMENT_SCALE / 2

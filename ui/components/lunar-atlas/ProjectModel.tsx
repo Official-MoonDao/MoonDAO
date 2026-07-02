@@ -565,26 +565,66 @@ function AstronautCompanion() {
   )
 }
 
+// Pointer travel beyond this between down and up is a globe drag, not a click.
+const CLICK_DRAG_TOLERANCE_PX = 8
+
 type ProjectModelProps = {
   project: Project
   dir: Vec3 // unit surface direction (declustered)
   accent: string
+  // Displaced terrain radius at this direction — seats the model on the
+  // rendered ground. Falls back to the analytic-sphere constant.
+  surfaceRadius?: number
+  // The model itself is a click/hover target, same as its marker pin — when
+  // zoomed in, the installation is the obvious thing to click.
+  onSelect?: (id: string) => void
+  onHover?: (id: string | null) => void
 }
 
-export default function ProjectModel({ project, dir, accent }: ProjectModelProps) {
+export default function ProjectModel({
+  project,
+  dir,
+  accent,
+  surfaceRadius,
+  onSelect,
+  onHover,
+}: ProjectModelProps) {
   const { position, quaternion } = useMemo(() => {
     const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
     const q = new THREE.Quaternion().setFromUnitVectors(
       new THREE.Vector3(0, 1, 0),
       d
     )
-    return { position: d.multiplyScalar(SURFACE), quaternion: q }
-  }, [dir])
+    return {
+      position: d.multiplyScalar(surfaceRadius ?? SURFACE),
+      quaternion: q,
+    }
+  }, [dir, surfaceRadius])
 
   const isBase = project.type === 'crewed_base' || project.type === 'habitat'
 
   return (
-    <group position={position} quaternion={quaternion} scale={MODEL_SCALE}>
+    <group
+      position={position}
+      quaternion={quaternion}
+      scale={MODEL_SCALE}
+      onClick={(e) => {
+        // Stop here so the Moon mesh behind the model doesn't also receive
+        // the click and immediately deselect.
+        e.stopPropagation()
+        if (e.delta <= CLICK_DRAG_TOLERANCE_PX) onSelect?.(project.id)
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        onHover?.(project.id)
+        document.body.style.cursor = 'pointer'
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation()
+        onHover?.(null)
+        document.body.style.cursor = 'auto'
+      }}
+    >
       {project.modelURI ? (
         <Suspense
           fallback={<ProceduralModel type={project.type} accent={accent} />}

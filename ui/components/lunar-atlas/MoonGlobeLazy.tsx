@@ -4,7 +4,7 @@
 // (avoids tearing down the GL context), mirroring the app's LazyMoon pattern.
 
 import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
+import { startTransition, useEffect, useRef, useState } from 'react'
 import type { MoonGlobeProps } from './MoonGlobe'
 
 const MoonGlobe = dynamic(() => import('./MoonGlobe'), {
@@ -36,7 +36,12 @@ export default function MoonGlobeLazy(props: MoonGlobeProps) {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          setHasMounted(true)
+          // Mounting swaps content inside next/dynamic's lazy boundary; if it
+          // lands while the page is still hydrating, React 18 throws
+          // "Suspense boundary received an update before it finished
+          // hydrating". Marking it as a transition lets React schedule it
+          // after hydration instead.
+          startTransition(() => setHasMounted(true))
           observer.disconnect()
         }
       },

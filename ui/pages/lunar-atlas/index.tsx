@@ -141,6 +141,9 @@ export default function LunarAtlasIndex() {
   }
 
   const handleSelectProject = (id: string) => {
+    // Re-clicking the already-selected project is a no-op — the camera is
+    // there (or on its way); re-triggering the transition just stutters it.
+    if (id === selectedProjectId) return
     setSelectedProjectId(id)
     const p = projectById(dataset, id)
     if (p) flyToProject(p)
@@ -149,6 +152,22 @@ export default function LunarAtlasIndex() {
   const clearSelection = () => {
     setSelectedProjectId(null)
     setFocus(null)
+    setActiveHotspot(0)
+  }
+
+  // Clicking the lunar surface or empty space backs out of the selected
+  // project. Without a selection it does nothing — it must not yank the
+  // camera away from a hotspot the user chose.
+  const handleBackgroundClick = () => {
+    if (selectedProjectId) clearSelection()
+  }
+
+  // Switching region closes the project panel: keeping a project selected
+  // while flying elsewhere leaves panel, camera, and selection disagreeing.
+  const handleHotspot = (focusValue: GlobeFocus, index: number) => {
+    setSelectedProjectId(null)
+    setFocus(focusValue)
+    setActiveHotspot(index)
   }
 
   const toggleOrg = (id: string) =>
@@ -182,7 +201,7 @@ export default function LunarAtlasIndex() {
           onHoverProject={setHoveredProjectId}
           getProjectStyle={getProjectStyle}
           markerDirs={markerDirs}
-          onBackgroundClick={clearSelection}
+          onBackgroundClick={handleBackgroundClick}
         />
 
         {/* Overlay HUD */}
@@ -234,10 +253,7 @@ export default function LunarAtlasIndex() {
               {HOTSPOTS.map((h, i) => (
                 <button
                   key={h.label}
-                  onClick={() => {
-                    setFocus(h.focus)
-                    setActiveHotspot(i)
-                  }}
+                  onClick={() => handleHotspot(h.focus, i)}
                   className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
                     activeHotspot === i
                       ? 'bg-cyan-500/30 text-cyan-100'

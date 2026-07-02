@@ -146,16 +146,28 @@ export default function ProjectPanel({
               Shared goals
             </h3>
             <div className="space-y-2">
-              {sharedGoals.map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => onSelectSharedGoal?.(g.id)}
-                  className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:border-fuchsia-400/40 hover:bg-white/10"
-                >
-                  <span className="text-sm text-white/85">{g.title}</span>
-                  <MarketPill status={g.market?.status ?? 'none'} />
-                </button>
-              ))}
+              {sharedGoals.map((g) =>
+                // Only render an interactive affordance when there is a real
+                // handler — a button that does nothing reads as broken.
+                onSelectSharedGoal ? (
+                  <button
+                    key={g.id}
+                    onClick={() => onSelectSharedGoal(g.id)}
+                    className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:border-fuchsia-400/40 hover:bg-white/10"
+                  >
+                    <span className="text-sm text-white/85">{g.title}</span>
+                    <MarketPill status={g.market?.status ?? 'none'} />
+                  </button>
+                ) : (
+                  <div
+                    key={g.id}
+                    className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left"
+                  >
+                    <span className="text-sm text-white/85">{g.title}</span>
+                    <MarketPill status={g.market?.status ?? 'none'} />
+                  </div>
+                )
+              )}
             </div>
           </div>
         )}

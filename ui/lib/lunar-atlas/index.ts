@@ -4,4 +4,5 @@
 export * from './types'
 export * from './geo'
 export * from './selectors'
+export * from './terrain'
 export { SEED_ATLAS } from './seed'

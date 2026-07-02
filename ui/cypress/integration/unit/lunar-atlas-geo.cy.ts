@@ -16,6 +16,8 @@ import {
   latLonToVector3,
   normalizeLon,
   surfaceDistanceM,
+  surfaceNormal,
+  surfaceViewFraming,
   vector3ToLatLon,
 } from '../../../lib/lunar-atlas/geo'
 
@@ -139,6 +141,92 @@ describe('lunar-atlas geo', () => {
       expect(Math.abs(targetR - 100)).to.be.lessThan(1e-6)
       // Camera sits farther out than the surface.
       expect(posR).to.be.greaterThan(targetR)
+    })
+  })
+
+  describe('surface view framing (cinematic low-angle camera)', () => {
+    const R = 100
+    const len = (v: [number, number, number]) =>
+      Math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
+    // Sites covering the equator, mid-latitudes, both tangent-reference
+    // branches (|n.y| above/below 0.9), and the exact South Pole.
+    const SITES: { lat: number; lon: number }[] = [
+      { lat: 0, lon: 0 },
+      { lat: 45, lon: 90 },
+      { lat: -85.3, lon: 5 },
+      { lat: -89.5, lon: 0 },
+      { lat: -90, lon: 0 },
+    ]
+
+    for (const s of SITES) {
+      it(`keeps the eye low and the target on-site at (${s.lat}, ${s.lon})`, () => {
+        const { position, target } = surfaceViewFraming(s.lat, s.lon, R)
+
+        // Everything is finite (the pole must not degenerate).
+        for (const c of [...position, ...target]) {
+          expect(Number.isFinite(c)).to.equal(true)
+        }
+
+        // Target hovers targetLift (default 0.028R) above the surface point,
+        // along its normal.
+        expect(Math.abs(len(target) - R * 1.028)).to.be.lessThan(1e-6)
+        const n = surfaceNormal(s.lat, s.lon)
+        const tDir = target.map((c) => c / len(target)) as [number, number, number]
+        expect(angleBetween(tDir, n)).to.be.lessThan(1e-6)
+
+        // Eye altitude: position = (R + eyeHeight)·n + standoff·t with t ⟂ n,
+        // so |position| = sqrt((1.06R)² + (0.18R)²) for the defaults. The
+        // camera stays close to the ground — nowhere near a birds-eye orbit.
+        const expectedPosR = R * Math.sqrt(1.06 ** 2 + 0.18 ** 2)
+        expect(Math.abs(len(position) - expectedPosR)).to.be.lessThan(1e-6)
+      })
+    }
+
+    it('looks across the surface, not down at it', () => {
+      const { position, target } = surfaceViewFraming(-85.3, 5, R)
+      const view: [number, number, number] = [
+        target[0] - position[0],
+        target[1] - position[1],
+        target[2] - position[2],
+      ]
+      const viewLen = len(view)
+      const n = surfaceNormal(-85.3, 5)
+      // Angle between the view direction and the local horizon plane. A
+      // straight-down camera would be ~90°; this framing stays shallow.
+      const sinAltitude =
+        (view[0] * n[0] + view[1] * n[1] + view[2] * n[2]) / viewLen
+      const altitudeDeg = Math.abs(Math.asin(sinAltitude) * (180 / Math.PI))
+      expect(altitudeDeg).to.be.lessThan(30)
+    })
+
+    it('bearingRad walks the camera around the site without changing the shot geometry', () => {
+      const dist = (a: [number, number, number], b: [number, number, number]) =>
+        Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
+
+      const a = surfaceViewFraming(-89.5, 0, R)
+      const b = surfaceViewFraming(-89.5, 0, R, { bearingRad: Math.PI / 2 })
+      const c = surfaceViewFraming(-89.5, 0, R, { bearingRad: Math.PI })
+
+      // Same target, same eye altitude, same standoff from the subject…
+      expect(dist(a.target, b.target)).to.be.lessThan(1e-9)
+      expect(Math.abs(len(a.position) - len(b.position))).to.be.lessThan(1e-9)
+      expect(
+        Math.abs(dist(a.position, a.target) - dist(b.position, b.target))
+      ).to.be.lessThan(1e-9)
+      // …but genuinely different vantage points.
+      expect(dist(a.position, b.position)).to.be.greaterThan(R * 0.1)
+      expect(dist(a.position, c.position)).to.be.greaterThan(R * 0.2)
+    })
+
+    it('honors custom eye height, standoff, and target lift', () => {
+      const { position, target } = surfaceViewFraming(10, 20, R, {
+        eyeHeight: 0.1,
+        standoff: 0.3,
+        targetLift: 0.05,
+      })
+      expect(Math.abs(len(target) - R * 1.05)).to.be.lessThan(1e-6)
+      const expectedPosR = R * Math.sqrt(1.1 ** 2 + 0.3 ** 2)
+      expect(Math.abs(len(position) - expectedPosR)).to.be.lessThan(1e-6)
     })
   })
 })
