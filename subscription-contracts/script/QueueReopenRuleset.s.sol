@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "../src/MissionCreator.sol";
-import "../src/LaunchPadPayHook.sol";
+import "../src/ReopenPayHook.sol";
 import {IJBController} from "@nana-core-v5/interfaces/IJBController.sol";
 import {IJBProjects} from "@nana-core-v5/interfaces/IJBProjects.sol";
 import {IJBRulesetApprovalHook} from "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
@@ -30,13 +30,11 @@ import "base/Config.sol";
 ///   - Original contributor balances are untouched.
 ///   - Payouts stay locked: the re-open ruleset has no payout limits. Only the
 ///     surplus allowance (same as the original funding ruleset) is available.
-///   - REFUND HAZARD: Do NOT enable refunds on this re-open ruleset if original
-///     contributors still hold tokens. The hook computes total supply assuming every
-///     token was minted at the re-open weight, causing early redeemers to overdraw
-///     the pot and leaving later redeemers with nothing. If the goal is missed and
-///     refunds are needed, queue a separate refund ruleset with a blended weight:
-///     blendedWeight = (contributor supply * 2e18 / pot). See testBlendedWeightRefundDistributesPotExactly
-///     in ReopenRulesetTest.t.sol for the safe operational path.
+///   - Refunds are exact for mixed-rate cohorts: the deployed ReopenPayHook derives
+///     the cash-out denominator from real on-chain supply (not funding * weight), so
+///     if the goal is missed at the new deadline, claims are pro-rata by token,
+///     order-independent, and sum exactly to the pot. See src/ReopenPayHook.sol and
+///     testMixedRateRefundDistributesProRata in ReopenRulesetTest.t.sol.
 ///
 /// Usage:
 ///   1. Set env vars: PRIVATE_KEY, MISSION_ID, MISSION_CREATOR_ADDRESS
@@ -54,9 +52,12 @@ import "base/Config.sol";
 ///
 /// What this does:
 ///   - Reads the mission's project id, terminal, vesting and pool addresses from MissionCreator.
-///   - Deploys a new LaunchPadPayHook owned by the project owner (team Safe) with
-///     deadline = now + CAMPAIGN_DURATION_DAYS. Refunds are NOT enabled on this hook;
-///     see the REFUND HAZARD warning above for the safe refund procedure.
+///   - Deploys a new ReopenPayHook owned by the project owner (team Safe) with
+///     deadline = now + CAMPAIGN_DURATION_DAYS. Refunds are NOT force-enabled; the
+///     standard goal/deadline logic applies. ReopenPayHook (not LaunchPadPayHook)
+///     is required because token holders from the original raise minted at a
+///     different rate: its cash-out math uses real on-chain supply, so refunds
+///     stay exact for mixed-rate cohorts (see src/ReopenPayHook.sol).
 ///   - Builds a re-open ruleset that mirrors the original funding ruleset (50% reserved,
 ///     same split beneficiaries) but with the new weight and data hook.
 ///   - Queues it via jbController.queueRulesetsOf() or prints the calldata for the Safe.
@@ -144,14 +145,24 @@ contract QueueReopenRulesetScript is Script, Config {
         console.log("New deadline:", newDeadline);
         console.log("Refund period (days):", refundPeriodDays);
 
+        // Reserved-token allocation holders are excluded from the refund denominator
+        // and blocked from cashing out (they hold the reserved side of every mint).
+        address[] memory reservedHolders = new address[](3);
+        reservedHolders[0] = teamVesting;
+        reservedHolders[1] = moonDAOVesting;
+        reservedHolders[2] = poolDeployer;
+
         vm.startBroadcast(deployerPrivateKey);
 
-        LaunchPadPayHook newPayHook = new LaunchPadPayHook(
+        ReopenPayHook newPayHook = new ReopenPayHook(
             fundingGoal,
             newDeadline,
             newRefundPeriod,
             JB_V5_TERMINAL_STORE,
             JB_V5_RULESETS,
+            JB_V5_CONTROLLER,
+            JB_V5_TOKENS,
+            reservedHolders,
             projectOwner
         );
         console.log("New PayHook deployed:", address(newPayHook));
