@@ -151,6 +151,7 @@ contract QueueReopenRulesetScript is Script, Config {
         require(tokensPerEth <= 1_000_000_000, "TOKENS_PER_ETH too large");
         require(fundingGoal > 0, "FUNDING_GOAL must be > 0");
         require(campaignDurationDays > 0 && campaignDurationDays <= 3650, "CAMPAIGN_DURATION_DAYS out of range");
+        require(refundPeriodDays > 0, "REFUND_PERIOD_DAYS must be > 0");
 
         // Project owner (team Safe) owns the new hook so it can toggle funding,
         // enable refunds, or attach the DePrize registry later.
