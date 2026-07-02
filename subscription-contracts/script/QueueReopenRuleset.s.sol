@@ -111,6 +111,11 @@ contract QueueReopenRulesetScript is Script, Config {
         require(projectId > 0, "Invalid mission: projectId is 0");
         require(terminalAddress != address(0), "Invalid mission: terminal is zero address");
         require(tokensPerEth > 0, "TOKENS_PER_ETH must be > 0");
+        // Ruleset weight is a uint112; also guard against fat-fingered env values
+        // (1e9 tokens/ETH ceiling keeps weight at 2e27 << type(uint112).max ≈ 5.2e33).
+        require(tokensPerEth <= 1_000_000_000, "TOKENS_PER_ETH too large");
+        require(fundingGoal > 0, "FUNDING_GOAL must be > 0");
+        require(campaignDurationDays > 0 && campaignDurationDays <= 3650, "CAMPAIGN_DURATION_DAYS out of range");
 
         // Project owner (team Safe) owns the new hook so it can toggle funding,
         // enable refunds, or attach the DePrize registry later.

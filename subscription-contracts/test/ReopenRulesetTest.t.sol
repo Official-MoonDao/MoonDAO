@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 
 import "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
+import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
 import {IJBMultiTerminal} from "@nana-core-v5/interfaces/IJBMultiTerminal.sol";
 import {IJBDirectory} from "@nana-core-v5/interfaces/IJBDirectory.sol";
 import {MoonDAOTeam} from "../src/ERC5643.sol";
@@ -50,6 +51,8 @@ contract ReopenRulesetTest is Test, Config {
     address teamAddress = address(0x200);
     address contributor1 = address(0x500);
     address contributor2 = address(0x600);
+    address contributor3 = address(0x700);
+    address randomCaller = address(0x900);
     address TREASURY = address(0x400);
 
     bytes32 internal constant SALT = bytes32(abi.encode(0x4a75));
@@ -77,6 +80,8 @@ contract ReopenRulesetTest is Test, Config {
         vm.deal(user1, 100 ether);
         vm.deal(contributor1, 100 ether);
         vm.deal(contributor2, 100 ether);
+        vm.deal(contributor3, 100 ether);
+        vm.deal(randomCaller, 10 ether);
 
         vm.startPrank(user1);
 
@@ -426,5 +431,245 @@ contract ReopenRulesetTest is Test, Config {
         assertEq(cashOutAmount, 1 ether, "Full refund");
         assertEq(address(contributor1).balance - balanceBefore, 1 ether);
         assertEq(jbTokens.totalBalanceOf(contributor1, projectId), 0);
+    }
+
+    /// @notice The active re-open ruleset carries exactly the configured weight and
+    ///         no decay, so the on-chain rate is what the mission page will display.
+    function testReopenRulesetWeightAndNoDecay() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+
+        JBRuleset memory active = jbRulesets.currentOf(projectId);
+        assertEq(uint256(active.weight), REOPEN_WEIGHT, "Active weight must equal configured rate");
+        assertEq(uint256(active.weightCutPercent), 0, "No automatic decay");
+        assertEq(address(active.approvalHook), address(0), "No approval hook on re-open ruleset");
+        assertEq(uint256(active.duration), 0, "Ruleset lasts until the next one is queued");
+    }
+
+    /// @notice Only the project owner (team Safe) can queue rulesets; a random caller
+    ///         cannot re-open, change the rate, or unlock payouts.
+    function testOnlyProjectOwnerCanQueueRulesets() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+
+        vm.startPrank(randomCaller);
+        LaunchPadPayHook attackerHook = new LaunchPadPayHook(
+            missionCreator.missionIdToFundingGoal(missionId),
+            block.timestamp + CAMPAIGN_DURATION,
+            REFUND_PERIOD,
+            JB_V5_TERMINAL_STORE,
+            JB_V5_RULESETS,
+            randomCaller
+        );
+        JBRulesetConfig[] memory config = _buildReopenRulesetConfig(
+            missionId, address(attackerHook), address(terminal), REOPEN_WEIGHT
+        );
+        vm.expectRevert();
+        jbController.queueRulesetsOf(projectId, config, "attacker reopen");
+        vm.stopPrank();
+    }
+
+    /// @notice Hook flags (funding kill-switch, refund enable) are owner-gated, and
+    ///         the kill-switch actually blocks payments.
+    function testHookFlagsAreOwnerGated() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        LaunchPadPayHook newPayHook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+
+        // Non-owner cannot toggle flags
+        vm.startPrank(randomCaller);
+        vm.expectRevert();
+        newPayHook.setFundingTurnedOff(true);
+        vm.expectRevert();
+        newPayHook.enableRefunds(true);
+        vm.stopPrank();
+
+        // Owner can, and the kill-switch blocks contributions
+        vm.prank(teamAddress);
+        newPayHook.setFundingTurnedOff(true);
+
+        vm.prank(contributor1);
+        vm.expectRevert("Funding has been turned off.");
+        terminal.pay{value: 1 ether}(projectId, JBConstants.NATIVE_TOKEN, 0, contributor1, 0, "", new bytes(0));
+
+        // And can turn it back on
+        vm.prank(teamAddress);
+        newPayHook.setFundingTurnedOff(false);
+        _pay(contributor1, 1 ether, terminal, projectId);
+        assertEq(jbTokens.totalBalanceOf(contributor1, projectId), 500 * 1e18);
+    }
+
+    /// @notice During the re-open, payouts are locked (zero payout limit) and the
+    ///         surplus allowance cannot be used by a non-owner.
+    function testPayoutsLockedAndSurplusAllowancePermissioned() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        _pay(contributor1, 2 ether, terminal, projectId);
+
+        // Payout distribution reverts: the re-open ruleset has no payout limit
+        vm.prank(teamAddress);
+        vm.expectRevert();
+        IJBMultiTerminal(address(terminal)).sendPayoutsOf(
+            projectId, JBConstants.NATIVE_TOKEN, 1 ether, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0
+        );
+
+        // Surplus allowance is permissioned to the project owner
+        vm.prank(randomCaller);
+        vm.expectRevert();
+        IJBMultiTerminal(address(terminal)).useAllowanceOf(
+            projectId, JBConstants.NATIVE_TOKEN, 1 ether, uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            0, payable(randomCaller), payable(randomCaller), "attacker surplus"
+        );
+
+        // Funds are still in the terminal
+        assertEq(jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN), 2 ether);
+    }
+
+    /// @notice If the re-opened raise reaches its goal, refunds are blocked (stage 2)
+    ///         — matching the original launch semantics.
+    function testGoalMetOnReopenBlocksRefunds() public {
+        _createTeam();
+        uint256 missionId = _createMission(2 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        _pay(contributor1, 1 ether, terminal, projectId); // below the 2 ETH goal
+        skip(28 days + 28 days + 1);
+
+        LaunchPadPayHook newPayHook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        _pay(contributor2, 1.5 ether, terminal, projectId); // goal now met (2.5 >= 2)
+
+        assertEq(newPayHook.stage(address(terminal), projectId), 2, "Goal met -> stage 2");
+
+        uint256 tokens = jbTokens.totalBalanceOf(contributor2, projectId);
+        vm.prank(contributor2);
+        vm.expectRevert("Project has passed funding goal requirement. Refunds are disabled.");
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor2, projectId, tokens, JBConstants.NATIVE_TOKEN, 0, payable(contributor2), bytes("")
+        );
+    }
+
+    /// @notice KNOWN HAZARD (documented, not fixed here): the pay hook reconstructs
+    ///         total supply from `currentFunding * activeWeight`, which assumes every
+    ///         token was minted at the CURRENT rate. Once 1,000/ETH (original) and
+    ///         500/ETH (re-open) holders coexist, the pot is over-committed: original
+    ///         holders reclaim ~2x their contribution and late redeemers get nothing.
+    ///         This pins down the behavior so a naive refund ruleset (re-using the
+    ///         re-open weight) is never shipped. See the blended-weight test below
+    ///         for the safe operational path.
+    function testMixedRateRefundOverdrawHazard() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        // Original raise: two backers at 1,000/ETH
+        _pay(contributor1, 1 ether, terminal, projectId);
+        _pay(contributor2, 1 ether, terminal, projectId);
+        skip(28 days + 28 days + 1);
+
+        // Re-open at 500/ETH; one backer contributes 2 ETH
+        _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        _pay(contributor3, 2 ether, terminal, projectId);
+        assertEq(jbTokens.totalBalanceOf(contributor3, projectId), 1_000 * 1e18);
+
+        // Re-opened campaign misses the goal; refund window opens on the reopen hook
+        skip(CAMPAIGN_DURATION + 1);
+
+        // Pot: 4 ETH. Hook-computed supply: 4 ETH * 500/ETH * 2 / 2 = 2,000 tokens,
+        // but the real contributor supply is 3,000 tokens -> over-committed by 50%.
+        uint256 balBefore1 = contributor1.balance;
+        vm.prank(contributor1);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor1, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+        );
+        assertEq(contributor1.balance - balBefore1, 2 ether, "Original holder reclaims 2x their 1 ETH contribution");
+
+        uint256 balBefore2 = contributor2.balance;
+        vm.prank(contributor2);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor2, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor2), bytes("")
+        );
+        assertEq(contributor2.balance - balBefore2, 2 ether, "Second original holder drains the rest");
+
+        // The re-open backer (who paid 2 ETH at the fair current rate) is left with nothing
+        assertEq(jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN), 0, "Pot is empty");
+        assertEq(jbTokens.totalBalanceOf(contributor3, projectId), 1_000 * 1e18, "Re-open backer still holds worthless claim");
+    }
+
+    /// @notice Safe wind-down path: before opening refunds, queue a refund ruleset
+    ///         whose weight matches the BLENDED average rate (actual contributor
+    ///         supply * 2e18 / pot). Claims then sum exactly to the pot and every
+    ///         token redeems at the same value — no overdraw, no stranded redeemers.
+    function testBlendedWeightRefundDistributesPotExactly() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        // Same mixed-rate state as the hazard test: 3,000 tokens against a 4 ETH pot
+        _pay(contributor1, 1 ether, terminal, projectId);
+        _pay(contributor2, 1 ether, terminal, projectId);
+        skip(28 days + 28 days + 1);
+        _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        _pay(contributor3, 2 ether, terminal, projectId);
+
+        // Team winds down: blended weight = contributorSupply * 2e18 / pot
+        uint256 contributorSupply = 3_000 * 1e18;
+        uint256 pot = 4 ether;
+        uint256 blendedWeight = contributorSupply * 2e18 / pot; // 1,500e18
+
+        vm.startPrank(teamAddress);
+        LaunchPadPayHook refundHook = new LaunchPadPayHook(
+            missionCreator.missionIdToFundingGoal(missionId),
+            block.timestamp, // deadline = now, refunds start immediately
+            REFUND_PERIOD,
+            JB_V5_TERMINAL_STORE,
+            JB_V5_RULESETS,
+            teamAddress
+        );
+        refundHook.enableRefunds(true);
+        JBRulesetConfig[] memory refundConfig = _buildReopenRulesetConfig(
+            missionId, address(refundHook), address(terminal), blendedWeight
+        );
+        refundConfig[0].metadata.pausePay = true; // no new contributions while refunding
+        jbController.queueRulesetsOf(projectId, refundConfig, "Blended-rate refund ruleset");
+        vm.stopPrank();
+
+        // All three redeem; each token reclaims the same value and the pot drains to 0
+        uint256 total;
+        address[3] memory redeemers = [contributor1, contributor2, contributor3];
+        for (uint256 i = 0; i < redeemers.length; i++) {
+            uint256 before = redeemers[i].balance;
+            vm.prank(redeemers[i]);
+            IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+                redeemers[i], projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(redeemers[i]), bytes("")
+            );
+            uint256 got = redeemers[i].balance - before;
+            assertApproxEqAbs(got, pot / 3, 10, "Each 1,000-token holder reclaims an equal share");
+            total += got;
+        }
+
+        // Integer division leaves at most a few wei of dust behind
+        assertApproxEqAbs(total, pot, 10, "Claims sum to the pot (minus rounding dust)");
+        assertLe(jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN), 10, "Only dust stranded");
     }
 }
