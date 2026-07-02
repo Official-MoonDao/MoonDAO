@@ -93,6 +93,9 @@ contract ReopenPayHook is IJBRulesetDataHook, Ownable {
         jbTokens = IJBTokens(_jbTokensAddress);
         for (uint256 i = 0; i < _reservedHolders.length; i++) {
             require(_reservedHolders[i] != address(0), "reserved holder is zero");
+            for (uint256 j = 0; j < reservedHolders.length; j++) {
+                require(reservedHolders[j] != _reservedHolders[i], "duplicate reserved holder");
+            }
             reservedHolders.push(_reservedHolders[i]);
         }
     }
