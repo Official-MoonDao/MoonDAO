@@ -10,7 +10,11 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpinCitizenImage } from '@/lib/ipfs/unpin'
-import cleanData, { unescapeQuotes } from '@/lib/tableland/cleanData'
+import {
+  formatCitizenLocationForTable,
+  sanitizeTablelandField,
+  unescapeQuotes,
+} from '@/lib/tableland/cleanData'
 import { waitForRow } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -130,7 +134,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
   const [croppedInputImage, setCroppedInputImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
-    getAttribute(nft?.metadata?.attributes, 'formId').value,
+    getAttribute(nft?.metadata?.attributes, 'formId')?.value ?? '',
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
   const [showEmailUpdate, setShowEmailUpdate] = useState(false)
@@ -301,7 +305,13 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
 
                 const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
-                await unpinCitizenImage(nft.metadata.id)
+                // Unpin the old image best-effort — a failure here must not
+                // block the profile update. The type mismatch between the
+                // numeric token ID and the string the API checks caused every
+                // unpin to return 401 and abort the entire update.
+                unpinCitizenImage(nft.metadata.id).catch((err) =>
+                  console.warn('Failed to unpin old citizen image (non-blocking):', err)
+                )
 
                 imageIpfsLink = `ipfs://${newImageIpfsHash}`
               }
@@ -315,54 +325,59 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 )
               }
 
-              const cleanedCitizenData = cleanData(citizenData)
-
-              let cleanedLocationData: { lat: number; lng: number; name: string } | string = ''
-              if (cleanedCitizenData.location && cleanedCitizenData.location.trim() !== '') {
+              // Geocode from raw user input — cleanData must run only when
+              // building the on-chain payload. Escaping before geocoding can
+              // double-escape location names and produce malformed SQL.
+              let locationForTable = ''
+              const rawLocation = citizenData.location?.trim() ?? ''
+              if (rawLocation !== '') {
                 const locationDataRes = await fetch('/api/google/geocoder', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    location: cleanedCitizenData.location,
+                    location: rawLocation,
                   }),
                 })
                 const { data: locationData } = await locationDataRes.json()
                 const geocodedResult = locationData?.results?.[0]
                 if (geocodedResult) {
-                  const citizenLocationData = {
-                    lat: geocodedResult.geometry.location.lat,
-                    lng: geocodedResult.geometry.location.lng,
-                    name: geocodedResult.formatted_address,
-                  }
-                  cleanedLocationData = cleanData(citizenLocationData)
+                  locationForTable = formatCitizenLocationForTable(
+                    geocodedResult.geometry.location.lat,
+                    geocodedResult.geometry.location.lng,
+                    geocodedResult.formatted_address,
+                  )
                 } else {
-                  cleanedLocationData = cleanData({
-                    lat: 0,
-                    lng: 0,
-                    name: cleanedCitizenData.location.trim(),
-                  })
+                  locationForTable = formatCitizenLocationForTable(0, 0, rawLocation)
                 }
               }
 
-              const formattedCitizenTwitter = cleanedCitizenData.twitter
-                ? addHttpsIfMissing(cleanedCitizenData.twitter)
+              const cleanedName = sanitizeTablelandField(citizenData.name)
+              const cleanedDescription = sanitizeTablelandField(citizenData.description ?? '')
+              const cleanedView = sanitizeTablelandField(citizenData.view ?? 'public')
+
+              const formattedCitizenTwitter = citizenData.twitter?.trim()
+                ? sanitizeTablelandField(addHttpsIfMissing(citizenData.twitter.trim()))
                 : ''
-              const formattedCitizenInstagram = cleanedCitizenData.instagram
-                ? addHttpsIfMissing(cleanedCitizenData.instagram)
+              const formattedCitizenInstagram = citizenData.instagram?.trim()
+                ? sanitizeTablelandField(addHttpsIfMissing(citizenData.instagram.trim()))
                 : ''
-              const formattedCitizenLinkedin = cleanedCitizenData.linkedin
-                ? addHttpsIfMissing(cleanedCitizenData.linkedin)
+              const formattedCitizenLinkedin = citizenData.linkedin?.trim()
+                ? sanitizeTablelandField(addHttpsIfMissing(citizenData.linkedin.trim()))
                 : ''
-              const formattedCitizenWebsite = cleanedCitizenData.website
-                ? addHttpsIfMissing(cleanedCitizenData.website)
+              const formattedCitizenWebsite = citizenData.website?.trim()
+                ? sanitizeTablelandField(addHttpsIfMissing(citizenData.website.trim()))
                 : ''
-              const formattedCitizenDiscord = cleanedCitizenData.discord
-                ? cleanedCitizenData.discord.startsWith('@')
-                  ? cleanedCitizenData.discord.replace('@', '')
-                  : cleanedCitizenData.discord
+              const rawDiscord = citizenData.discord?.trim()
+                ? citizenData.discord.startsWith('@')
+                  ? citizenData.discord.replace('@', '')
+                  : citizenData.discord
                 : ''
+              const formattedCitizenDiscord = rawDiscord
+                ? sanitizeTablelandField(rawDiscord)
+                : ''
+              const formIdForTable = sanitizeTablelandField(formResponseId)
 
               const transaction = prepareContractCall({
                 contract: citizenTableContract,
@@ -383,17 +398,17 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                     'formId',
                   ],
                   [
-                    cleanedCitizenData.name,
-                    cleanedCitizenData.description,
+                    cleanedName,
+                    cleanedDescription,
                     imageIpfsLink,
-                    cleanedLocationData ? JSON.stringify(cleanedLocationData) : '',
+                    locationForTable,
                     formattedCitizenDiscord,
                     formattedCitizenTwitter,
                     formattedCitizenWebsite,
                     formattedCitizenInstagram,
                     formattedCitizenLinkedin,
-                    cleanedCitizenData.view,
-                    formResponseId,
+                    cleanedView,
+                    formIdForTable,
                   ],
                 ],
               })
@@ -411,8 +426,8 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 // rather than the stale version.
                 const tableName = CITIZEN_TABLE_NAMES[getChainSlug(selectedChain)]
                 const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${nft.metadata.id}`
-                const expectedName = unescapeQuotes(cleanedCitizenData.name ?? '')
-                const expectedDescription = unescapeQuotes(cleanedCitizenData.description ?? '')
+                const expectedName = unescapeQuotes(cleanedName)
+                const expectedDescription = unescapeQuotes(cleanedDescription)
                 await waitForRow({
                   statement,
                   checkCondition: (rows) => {
@@ -430,9 +445,20 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 })
                 router.reload()
               }
-            } catch (err) {
-              console.log(err)
-              toast.error('Something went wrong updating your profile. Please try again.')
+            } catch (err: any) {
+              console.error('Profile update failed:', err)
+              const message = err?.message ?? ''
+              if (
+                message.includes('gas required exceeds allowance') ||
+                message.includes('execution reverted')
+              ) {
+                toast.error(
+                  'Profile update failed — this usually means a name, bio, or location value contains an apostrophe or special character that broke the on-chain update. Try removing quotes/apostrophes and submit again.',
+                  { duration: 12000 },
+                )
+              } else {
+                toast.error('Something went wrong updating your profile. Please try again.')
+              }
             }
           }}
         />
