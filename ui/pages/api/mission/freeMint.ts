@@ -19,6 +19,7 @@ import { CitizenInvite, consumeInvite, peekInvite, restoreInvite } from '@/lib/c
 import { enforceRegionNotRestricted } from '@/lib/geo'
 import { createHSMWallet, sendEthFromHSM } from '@/lib/google/hsm-signer'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
+import { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
@@ -295,17 +296,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const transaction = prepareContractCall({
         contract: citizenContract,
         method: 'mintTo' as string,
+        // Escape single quotes on every free-text field. The Citizen contract
+        // builds the Tableland INSERT with SQLHelpers.quote(), which does NOT
+        // escape embedded quotes, so an apostrophe (e.g. a bio with "Brazil's")
+        // yields malformed SQL the validator rejects — the NFT mints but the
+        // metadata row is never created. `location` already arrives escaped from
+        // the client (buildCitizenProfileMintFields) and `privacy` is a fixed
+        // enum, so neither is re-escaped here.
         params: [
           address,
-          name,
-          bio,
+          escapeSingleQuotes(name),
+          escapeSingleQuotes(bio),
           image,
           location,
-          discord,
-          twitter,
-          website,
+          escapeSingleQuotes(discord),
+          escapeSingleQuotes(twitter),
+          escapeSingleQuotes(website),
           privacy,
-          formId,
+          escapeSingleQuotes(formId),
         ],
         value: cost,
       })
