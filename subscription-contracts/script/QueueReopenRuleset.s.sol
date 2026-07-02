@@ -47,6 +47,10 @@ import "base/Config.sol";
 ///                               own the project or have QUEUE_RULESETS permission).
 ///                               Default: only deploy the hook and print the calldata
 ///                               for the team Safe's Transaction Builder.
+///        REOPEN_PAY_HOOK_ADDRESS  address of an already-deployed ReopenPayHook to reuse
+///                               instead of deploying a new one. Use this when generating
+///                               Safe calldata after a separate hook deployment to avoid
+///                               nonce-dependent address mismatches.
 ///
 ///      Override env vars (required when MissionCreator mappings return 0x0 — e.g. Frank mission):
 ///        TEAM_VESTING    address that receives reserved tokens for the team
@@ -108,6 +112,11 @@ contract QueueReopenRulesetScript is Script, Config {
         bool queueViaSender = false;
         try vm.envBool("QUEUE_VIA_SENDER") returns (bool val) {
             queueViaSender = val;
+        } catch {}
+
+        address existingPayHook = address(0);
+        try vm.envAddress("REOPEN_PAY_HOOK_ADDRESS") returns (address val) {
+            existingPayHook = val;
         } catch {}
 
         MissionCreator missionCreator = MissionCreator(missionCreatorAddress);
@@ -174,21 +183,28 @@ contract QueueReopenRulesetScript is Script, Config {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        ReopenPayHook newPayHook = new ReopenPayHook(
-            fundingGoal,
-            newDeadline,
-            newRefundPeriod,
-            JB_V5_TERMINAL_STORE,
-            JB_V5_RULESETS,
-            JB_V5_CONTROLLER,
-            JB_V5_TOKENS,
-            reservedHolders,
-            projectOwner
-        );
-        console.log("New PayHook deployed:", address(newPayHook));
+        address payHookAddress;
+        if (existingPayHook != address(0)) {
+            payHookAddress = existingPayHook;
+            console.log("Using existing PayHook:", payHookAddress);
+        } else {
+            ReopenPayHook newPayHook = new ReopenPayHook(
+                fundingGoal,
+                newDeadline,
+                newRefundPeriod,
+                JB_V5_TERMINAL_STORE,
+                JB_V5_RULESETS,
+                JB_V5_CONTROLLER,
+                JB_V5_TOKENS,
+                reservedHolders,
+                projectOwner
+            );
+            payHookAddress = address(newPayHook);
+            console.log("New PayHook deployed:", payHookAddress);
+        }
 
         JBRulesetConfig[] memory rulesetConfigurations = _buildReopenRulesetConfig(
-            address(newPayHook),
+            payHookAddress,
             terminalAddress,
             weight,
             moonDAOTreasury,
