@@ -580,7 +580,7 @@ const ProjectsOverview: React.FC<{
                     textColor="text-white"
                     borderRadius="rounded-full"
                     hoverEffect={false}
-                    link="https://discord.gg/moondao"
+                    link="https://moondao.com/discord"
                   >
                     Join Discord
                   </StandardButton>
@@ -627,7 +627,7 @@ const ProjectsOverview: React.FC<{
                 defaultTitle="Questions About Projects?"
                 defaultDescription="Join our Discord community to discuss project ideas and get support from fellow space entrepreneurs!"
                 defaultButtonText="Join Discord"
-                defaultButtonLink="https://discord.gg/moondao"
+                defaultButtonLink="https://moondao.com/discord"
                 imageWidth={200}
                 imageHeight={200}
               />
