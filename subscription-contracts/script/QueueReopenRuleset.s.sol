@@ -30,8 +30,13 @@ import "base/Config.sol";
 ///   - Original contributor balances are untouched.
 ///   - Payouts stay locked: the re-open ruleset has no payout limits. Only the
 ///     surplus allowance (same as the original funding ruleset) is available.
-///   - Refund policy matches the original launch: if the funding goal is not met by
-///     the new deadline, contributors can cash out during the refund period.
+///   - REFUND HAZARD: Do NOT enable refunds on this re-open ruleset if original
+///     contributors still hold tokens. The hook computes total supply assuming every
+///     token was minted at the re-open weight, causing early redeemers to overdraw
+///     the pot and leaving later redeemers with nothing. If the goal is missed and
+///     refunds are needed, queue a separate refund ruleset with a blended weight:
+///     blendedWeight = (contributor supply * 2e18 / pot). See testBlendedWeightRefundDistributesPotExactly
+///     in ReopenRulesetTest.t.sol for the safe operational path.
 ///
 /// Usage:
 ///   1. Set env vars: PRIVATE_KEY, MISSION_ID, MISSION_CREATOR_ADDRESS
@@ -50,8 +55,8 @@ import "base/Config.sol";
 /// What this does:
 ///   - Reads the mission's project id, terminal, vesting and pool addresses from MissionCreator.
 ///   - Deploys a new LaunchPadPayHook owned by the project owner (team Safe) with
-///     deadline = now + CAMPAIGN_DURATION_DAYS. Refunds are NOT force-enabled; the
-///     standard goal/deadline logic applies.
+///     deadline = now + CAMPAIGN_DURATION_DAYS. Refunds are NOT enabled on this hook;
+///     see the REFUND HAZARD warning above for the safe refund procedure.
 ///   - Builds a re-open ruleset that mirrors the original funding ruleset (50% reserved,
 ///     same split beneficiaries) but with the new weight and data hook.
 ///   - Queues it via jbController.queueRulesetsOf() or prints the calldata for the Safe.
