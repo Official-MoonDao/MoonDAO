@@ -1,6 +1,9 @@
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
+  DEPLOYED_ORIGIN,
+  EB_TEAM_ID,
+  MARKETPLACE_TABLE_NAMES,
   TEAM_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
@@ -9,6 +12,11 @@ import withMiddleware from 'middleware/withMiddleware'
 import { getContract, waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
+import {
+  createInvite,
+  generateInviteToken,
+} from '@/lib/citizen/inviteTokens'
+import { validateGiftPurchase } from '@/lib/marketplace/giftPurchase'
 import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
 import { getPrivyUserData } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
@@ -16,6 +24,8 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
 import { fetchResponseFromFormIds } from '@/lib/typeform/hasAccessToResponse'
 import { getBlocksInTimeframe } from '@/lib/utils/blocks'
+
+const GIFT_INVITE_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
 
 const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
 
@@ -109,7 +119,16 @@ const generateCitizenEmailContent = (data: any) => {
     ''
   )
 
-  const { item, value, currency, quantity, txLink, teamLink } = JSON.parse(data)
+  const { item, value, currency, quantity, txLink, teamLink, giftLink } =
+    JSON.parse(data)
+
+  const giftSection = giftLink
+    ? `
+    <label for="giftLink"><strong>Your Gift Citizenship Link</strong></label>
+    <p>Share this one-time link with whoever you want to gift a citizenship to. They can use it to mint their free citizenship.</p>
+    <p><a href="${giftLink}">${giftLink}</a></p>
+  `
+    : ''
 
   const htmlData = `
   <div>
@@ -123,6 +142,7 @@ const generateCitizenEmailContent = (data: any) => {
     <p>${quantity}</p>
     <label for="tx"><strong>Transaction</strong></label>
     <p>${txLink}</p>
+    ${giftSection}
   </div>
   `
 
@@ -139,7 +159,7 @@ async function handler(req: any, res: any) {
       return res.status(400).send({ message: 'Bad request' })
     }
 
-    const { email, txHash, accessToken } = JSON.parse(data)
+    const { email, txHash, accessToken, isGift, listingId } = JSON.parse(data)
 
     // Verify the Privy access token
     const privyUserData = await getPrivyUserData(accessToken)
@@ -198,8 +218,17 @@ async function handler(req: any, res: any) {
       })
     }
 
-    // Mark transaction as used to prevent replay attacks
+    // Mark transaction as used to prevent replay attacks. This must happen
+    // before any gift validation / invite creation so two concurrent requests
+    // with the same txHash can never both mint an invite. If a later step
+    // fails, we release the hash via `failAndRelease` so a legitimate buyer
+    // whose invite generation failed can retry with the same payment.
     usedTransactions.add(txHash)
+
+    const failAndRelease = (status: number, message: string) => {
+      usedTransactions.delete(txHash)
+      return res.status(status).send({ message })
+    }
 
     //Get the team email from the tx to address
     const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -209,6 +238,65 @@ async function handler(req: any, res: any) {
       owner: teamAddress || '',
     })
     const teamTokenId = ownedNFTs?.[0]?.id.toString()
+
+    // Gift-a-citizenship: when the purchased listing is a verified gift listing
+    // on the EB team and the buyer paid at least the listing price, issue a
+    // one-time free-citizen invite link. Generating the token server-side after
+    // a verified on-chain payment means the payment itself is the
+    // authorization — buyers don't need to be operators.
+    let giftLink: string | undefined
+    if (isGift) {
+      const numericListingId = Number(listingId)
+
+      // Only query the table for a well-formed id on the EB team, so a bad
+      // listingId or non-EB payment can never produce malformed SQL. The
+      // authoritative accept/reject decision is made by validateGiftPurchase.
+      const canQueryListing =
+        Number.isInteger(numericListingId) &&
+        numericListingId >= 0 &&
+        String(teamTokenId) === EB_TEAM_ID
+      const listingRows = canQueryListing
+        ? await queryTable(
+            DEFAULT_CHAIN_V5,
+            `SELECT * FROM ${MARKETPLACE_TABLE_NAMES[chainSlug]} WHERE id = ${numericListingId} AND teamId = ${teamTokenId}`
+          )
+        : []
+      const giftListing: any = listingRows?.[0]
+
+      // Read the actual ETH value transferred so we can bind the payment to
+      // this specific gift listing (see validateGiftPurchase).
+      const tx = await provider.getTransaction(txHash)
+      const paidValueWei = BigInt(tx?.value?.toString() || '0')
+
+      const validation = validateGiftPurchase({
+        teamTokenId,
+        listingId,
+        listing: giftListing,
+        paidValueWei,
+      })
+      if (!validation.ok) {
+        return failAndRelease(validation.status, validation.message)
+      }
+
+      const token = generateInviteToken()
+      const created = await createInvite(
+        token,
+        {
+          createdAt: Date.now(),
+          label: `Gift citizenship purchase (listing #${numericListingId})`,
+          createdBy: `marketplace-gift:${txReceipt.from}`,
+        },
+        GIFT_INVITE_TTL_SECONDS
+      )
+      if (!created) {
+        return failAndRelease(
+          500,
+          'Invite storage is not configured. Please contact support to claim your gift.'
+        )
+      }
+      const origin = (DEPLOYED_ORIGIN || '').replace(/\/$/, '')
+      giftLink = `${origin}/citizen?invite=${token}`
+    }
 
     const teamRows = await queryTable(
       DEFAULT_CHAIN_V5,
@@ -242,27 +330,42 @@ async function handler(req: any, res: any) {
         )?.email || teamTypeformResponse.answers?.email
     }
 
-    if (!teamTypeformEmail) {
-      return res.status(400).send({ message: 'No team email found' })
+    // For gift purchases the critical deliverable is the buyer's gift link, so
+    // a missing vendor email shouldn't block the purchase. For normal listings
+    // the vendor email is required to fulfill the order.
+    if (!teamTypeformEmail && !isGift) {
+      return failAndRelease(400, 'No team email found')
     }
 
+    // Inject the server-generated gift link into the buyer's email payload.
+    const buyerEmailData = giftLink
+      ? JSON.stringify({ ...JSON.parse(data), giftLink })
+      : data
+
     try {
-      await getMoonDaoGmailTransport().sendMail({
-        from: opEmail,
-        to: teamTypeformEmail,
-        ...generateVendorEmailContent(data),
-        subject: 'MoonDAO | Marketplace Purchase',
-      })
+      if (teamTypeformEmail) {
+        await getMoonDaoGmailTransport().sendMail({
+          from: opEmail,
+          to: teamTypeformEmail,
+          ...generateVendorEmailContent(data),
+          subject: 'MoonDAO | Marketplace Purchase',
+        })
+      }
       await getMoonDaoGmailTransport().sendMail({
         from: opEmail,
         to: email,
-        ...generateCitizenEmailContent(data),
+        ...generateCitizenEmailContent(buyerEmailData),
         subject: 'MoonDAO | Marketplace Purchase',
         bcc: [opEmail],
       })
-      return res.status(200).json({ success: true })
+      return res.status(200).json({ success: true, giftLink })
     } catch (err: any) {
       console.log(err)
+      // The gift link is already generated and returned to the buyer in the
+      // modal, so a failed confirmation email shouldn't fail the purchase.
+      if (isGift && giftLink) {
+        return res.status(200).json({ success: true, giftLink })
+      }
       // Remove transaction from used set if email failed, allowing retry
       usedTransactions.delete(txHash)
       return res.status(400).json({

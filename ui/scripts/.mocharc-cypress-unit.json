@@ -8,6 +8,7 @@
   "spec": [
     "scripts/citizen-onboarding-image.test.ts",
     "scripts/typeform-parse-body.test.ts",
+    "scripts/gift-purchase-validation.test.ts",
     "cypress/integration/unit/voting.cy.tsx",
     "cypress/integration/unit/vmooney-snapshots.cy.tsx",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
