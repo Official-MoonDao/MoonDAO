@@ -19,6 +19,25 @@ export function escapeSingleQuotes(v: string): string {
   return typeof v === 'string' ? v.replace(/'/g, "''") : v
 }
 
+/**
+ * Alias of `escapeSingleQuotes` — exported under the name used by
+ * `cleanData()` and the citizen/team edit modals.
+ */
+export const sanitizeTablelandField = escapeSingleQuotes
+
+/**
+ * Produces the `{lat, lng, name}` JSON string stored in the Tableland
+ * `location` column. The display name is sanitized so embedded single quotes
+ * don't break the on-chain SQL built by `SQLHelpers.quote()`.
+ */
+export function formatCitizenLocationForTable(
+  lat: number,
+  lng: number,
+  name: string
+): string {
+  return JSON.stringify({ lat, lng, name: sanitizeTablelandField(name) })
+}
+
 export default function cleanData(obj: any) {
   const formattedObj: any = {}
 
