@@ -6,6 +6,7 @@
   ],
   "extensions": ["ts", "tsx"],
   "spec": [
+    "scripts/clean-data.test.ts",
     "scripts/citizen-onboarding-image.test.ts",
     "scripts/typeform-parse-body.test.ts",
     "scripts/gift-purchase-validation.test.ts",
