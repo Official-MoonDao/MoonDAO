@@ -97,7 +97,7 @@ HOOK=<ReopenPayHook address from Transaction 1> \
 ```
 
 This:
-- Scans every `Pay` event for project 73, sums ETH per beneficiary, excludes the 3 reserved holders.
+- Scans `Transfer` events for the project ERC20 token to build a current-balance map, then credits each non-reserved holder `balance / ISSUANCE_RATE` ETH. This (not summing `Pay` event amounts per beneficiary) correctly handles pre-reopen token transfers: whoever holds the tokens at seeding time inherits the ETH credit, so transferees are refundable and original beneficiaries cannot over-claim.
 - Prints a per-contributor table and the **total (must equal ~26.7433 ETH — sanity check against the terminal balance)**.
 - Writes `script/backfill/frank-contributions.json`.
 - Prints `seedContributions(address[],uint256[])` calldata batches + the `lockLedger()` calldata for the Safe Transaction Builder.
@@ -288,7 +288,21 @@ cast call 0x27da30646502e2f642bE5281322Ae8C394F7668a \
 
 To step the rate down (e.g. from 500 → 250/ETH after month 1), the Safe queues another ruleset with `weight = 500e18` (250 contributor × 2). Since the re-open ruleset has `approvalHook = 0x0`, the new ruleset takes effect immediately when queued — no waiting.
 
-Re-run the script with `TOKENS_PER_ETH=250` or propose a new Transaction Builder tx with `weight=500000000000000000000`.
+**IMPORTANT:** A rate update changes only the ruleset weight. The **same `ReopenPayHook` must be reused** — do NOT deploy a new hook. A new hook starts with an empty `ethContributed` ledger, which means all prior backers lose their refund rights. Set `REOPEN_PAY_HOOK_ADDRESS` to the address of the deployed hook (from Transaction 1) before running the script.
+
+Re-run the script with `TOKENS_PER_ETH=250` **and** `REOPEN_PAY_HOOK_ADDRESS=<hook address from Transaction 1>`:
+
+```bash
+export REOPEN_PAY_HOOK_ADDRESS=<ReopenPayHook address from Transaction 1>
+export TOKENS_PER_ETH=250
+# ... all other env vars as before ...
+forge script script/QueueReopenRuleset.s.sol \
+  --rpc-url https://arb1.arbitrum.io/rpc \
+  --via-ir \
+  -vvv
+```
+
+Or propose a new Transaction Builder tx with `weight=500000000000000000000` and `dataHook=<same hook address>`.
 
 ---
 

@@ -285,34 +285,44 @@ contract ReopenRulesetTest is Test, Config {
 
     /// @dev Closes the mission (deadline + refund window expire below goal), then the
     ///      team queues the re-open ruleset. Returns the new pay hook.
+    ///
+    /// @param existingHook If nonzero, reuse this hook instead of deploying a new one.
+    ///        Rate updates MUST pass the existing hook to preserve the deposit ledger.
     function _reopen(
         uint256 missionId,
         uint256 projectId,
         IJBTerminal terminal,
-        uint256 weight
+        uint256 weight,
+        address existingHook
     ) internal returns (ReopenPayHook) {
         vm.startPrank(teamAddress);
 
-        address[] memory reservedHolders = new address[](3);
-        reservedHolders[0] = missionCreator.missionIdToTeamVesting(missionId);
-        reservedHolders[1] = missionCreator.missionIdToMoonDAOVesting(missionId);
-        reservedHolders[2] = missionCreator.missionIdToPoolDeployer(missionId);
+        address payHookAddress;
+        if (existingHook != address(0)) {
+            payHookAddress = existingHook;
+        } else {
+            address[] memory reservedHolders = new address[](3);
+            reservedHolders[0] = missionCreator.missionIdToTeamVesting(missionId);
+            reservedHolders[1] = missionCreator.missionIdToMoonDAOVesting(missionId);
+            reservedHolders[2] = missionCreator.missionIdToPoolDeployer(missionId);
 
-        ReopenPayHook newPayHook = new ReopenPayHook(
-            missionCreator.missionIdToFundingGoal(missionId),
-            block.timestamp + CAMPAIGN_DURATION,
-            REFUND_PERIOD,
-            JB_V5_TERMINAL_STORE,
-            JB_V5_RULESETS,
-            JB_V5_CONTROLLER,
-            JB_V5_TOKENS,
-            reservedHolders,
-            teamAddress
-        );
+            ReopenPayHook newPayHook = new ReopenPayHook(
+                missionCreator.missionIdToFundingGoal(missionId),
+                block.timestamp + CAMPAIGN_DURATION,
+                REFUND_PERIOD,
+                JB_V5_TERMINAL_STORE,
+                JB_V5_RULESETS,
+                JB_V5_CONTROLLER,
+                JB_V5_TOKENS,
+                reservedHolders,
+                teamAddress
+            );
+            payHookAddress = address(newPayHook);
+        }
 
         JBRulesetConfig[] memory reopenRuleset = _buildReopenRulesetConfig(
             missionId,
-            address(newPayHook),
+            payHookAddress,
             address(terminal),
             weight
         );
@@ -324,7 +334,17 @@ contract ReopenRulesetTest is Test, Config {
         );
 
         vm.stopPrank();
-        return newPayHook;
+        return ReopenPayHook(payHookAddress);
+    }
+
+    /// @dev Convenience overload that always deploys a fresh hook (initial open only).
+    function _reopen(
+        uint256 missionId,
+        uint256 projectId,
+        IJBTerminal terminal,
+        uint256 weight
+    ) internal returns (ReopenPayHook) {
+        return _reopen(missionId, projectId, terminal, weight, address(0));
     }
 
     /// @notice Re-opened mission mints at the new 500/ETH rate, leaves original
@@ -373,7 +393,9 @@ contract ReopenRulesetTest is Test, Config {
     }
 
     /// @notice The rate can be stepped down later by queuing another ruleset — no
-    ///         approval hook stands in the way ("one cycle at a time").
+    ///         approval hook stands in the way ("one cycle at a time"). The SAME hook
+    ///         must be reused so that the deposit ledger (ethContributed) is preserved
+    ///         and existing backers remain refundable.
     function testReopenRateCanBeUpdatedByQueuingNewRuleset() public {
         _createTeam();
         uint256 missionId = _createMission(1_000 ether);
@@ -384,18 +406,23 @@ contract ReopenRulesetTest is Test, Config {
         _pay(contributor1, 1 ether, terminal, projectId);
         skip(28 days + 28 days + 1);
 
-        // Re-open at 500/ETH
-        _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        // Re-open at 500/ETH; contributor2 pays under the initial hook
+        ReopenPayHook initialHook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
         _pay(contributor2, 1 ether, terminal, projectId);
         assertEq(jbTokens.totalBalanceOf(contributor2, projectId), 500 * 1e18);
+        assertEq(initialHook.ethContributed(contributor2), 1 ether, "Ledger should record contributor2's payment");
 
-        // A month later the team steps the rate down to 250/ETH by re-queuing
+        // A month later the team steps the rate down to 250/ETH by re-queuing.
+        // The existing hook is reused so the deposit ledger is preserved.
         skip(30 days);
-        ReopenPayHook stepDownHook = _reopen(missionId, projectId, terminal, 250 * 2 * 1e18);
+        ReopenPayHook stepDownHook = _reopen(missionId, projectId, terminal, 250 * 2 * 1e18, address(initialHook));
+        assertEq(address(stepDownHook), address(initialHook), "Rate update must reuse the existing hook");
         assertEq(stepDownHook.stage(address(terminal), projectId), 1);
+        assertEq(stepDownHook.ethContributed(contributor2), 1 ether, "Deposit ledger must be preserved after rate update");
 
         _pay(contributor2, 1 ether, terminal, projectId);
         assertEq(jbTokens.totalBalanceOf(contributor2, projectId), (500 + 250) * 1e18, "Second payment should mint at 250/ETH");
+        assertEq(stepDownHook.ethContributed(contributor2), 2 ether, "Ledger should accumulate across both payments");
     }
 
     /// @notice If the re-opened campaign misses its goal by the new deadline, payments

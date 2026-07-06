@@ -189,6 +189,12 @@ contract QueueReopenRulesetScript is Script, Config {
             payHookAddress = existingPayHook;
             console.log("Using existing PayHook:", payHookAddress);
         } else {
+            // WARNING: Deploying a fresh hook resets the deposit ledger (ethContributed).
+            // If this is a RATE UPDATE on an already-live reopen, set REOPEN_PAY_HOOK_ADDRESS
+            // to the existing hook address so prior backers remain refundable.
+            // Only omit REOPEN_PAY_HOOK_ADDRESS for the very first reopen deployment.
+            console.log("WARNING: No REOPEN_PAY_HOOK_ADDRESS set - deploying a new hook.");
+            console.log("If this is a rate update, set REOPEN_PAY_HOOK_ADDRESS to the existing hook to preserve the deposit ledger.");
             ReopenPayHook newPayHook = new ReopenPayHook(
                 fundingGoal,
                 newDeadline,
