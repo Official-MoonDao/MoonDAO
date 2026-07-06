@@ -186,7 +186,14 @@ async function main() {
   }
   console.log(`\n  TOTAL (balance-derived): ${(Number(grandTotal) / 1e18).toFixed(6)} ETH  (${grandTotal} wei)`);
   console.log(`  TOTAL (Pay events):      ${(Number(payTotal) / 1e18).toFixed(6)} ETH  (${payTotal} wei)`);
-  console.log("  ^ both totals should match; sanity-check against the terminal balance before seeding.\n");
+  if (grandTotal !== payTotal) {
+    process.stderr.write(
+      `\nERROR: total mismatch — balance-derived ${grandTotal} wei vs Pay-event ${payTotal} wei.\n` +
+        `Check TOKEN, FROM_BLOCK, and RPC before seeding.\n`
+    );
+    process.exit(1);
+  }
+  console.log("  ^ totals match.\n");
 
   // Write JSON for the record / forge consumption.
   const outPath = join(__dirname, "frank-contributions.json");
