@@ -2,14 +2,21 @@
 /**
  * resolve-contributions.mjs
  *
- * Reconstructs the ORIGINAL (pre-reopen) contributions for a Juicebox project by
- * summing every `Pay` event's `amount` per beneficiary. The output seeds the
+ * Reconstructs the ORIGINAL (pre-reopen) contributions for a Juicebox project
+ * from current token balances at seeding time. The output seeds the
  * ReopenPayHook deposit ledger so original backers can be refunded EXACTLY the ETH
  * they contributed if the re-open round is wound down.
  *
- * Why Pay events (not balance / 1000): the Pay amount is the true ETH each backer
- * put in, independent of issuance rate, and it is unaffected by reserved-token
- * distribution. It is credited to the `beneficiary` (the token recipient).
+ * How contributions are computed:
+ *   Contributions are derived from current token balances at seeding time
+ *   (currentBalance / ISSUANCE_RATE), NOT from historical Pay event amounts.
+ *   This correctly handles pre-reopen token transfers: if a backer transferred
+ *   their tokens to another address before the re-open ruleset activated (when
+ *   pauseCreditTransfers was still false), the new holder receives the ETH
+ *   credit for those tokens.  Seeding by original Pay beneficiary would instead
+ *   leave new holders with zero ethContributed (blocked from refunding) and
+ *   allow original beneficiaries to reclaim more ETH than their remaining token
+ *   share warrants.
  *
  * Usage:
  *   node script/backfill/resolve-contributions.mjs
@@ -17,9 +24,11 @@
  * Env overrides:
  *   RPC_URL      default https://arb1.arbitrum.io/rpc
  *   TERMINAL     default 0x2dB6d704058E552DeFE415753465df8dF0361846
+ *   TOKEN        project ERC20 token contract address (REQUIRED)
  *   PROJECT_ID   default 73
  *   FROM_BLOCK   default 440809003 (Frank mission creation block)
  *   TO_BLOCK     default latest
+ *   ISSUANCE_RATE tokens-per-ETH for the original raise (default 1000)
  *   HOOK         ReopenPayHook address (only needed to print the Safe "To" field)
  *   BATCH_SIZE   contributors per seedContributions call (default 150)
  *
@@ -39,9 +48,15 @@ const PROJECT_ID = BigInt(process.env.PROJECT_ID || "73");
 const FROM_BLOCK = BigInt(process.env.FROM_BLOCK || "440809003");
 const HOOK = (process.env.HOOK || "").toLowerCase();
 const BATCH_SIZE = Number(process.env.BATCH_SIZE || "150");
+// ERC20 token contract for the project (required to build current-balance map).
+const TOKEN = (process.env.TOKEN || "").toLowerCase();
+// Original issuance rate in tokens-per-ETH. All pre-reopen mints used 1 000/ETH.
+const ISSUANCE_RATE = BigInt(process.env.ISSUANCE_RATE || "1000");
 
 // Pay(uint256,uint256,uint256,address,address,uint256,uint256,string,bytes,address)
 const PAY_TOPIC = "0x133161f1c9161488f777ab9a26aae91d47c0d9a3fafb398960f138db02c73797";
+// Transfer(address indexed from, address indexed to, uint256 value)
+const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const SEED_SELECTOR = "0x4bbb48e4"; // seedContributions(address[],uint256[])
 const LOCK_SELECTOR = "0xff4018d1"; // lockLedger()
 
@@ -97,6 +112,8 @@ async function getLogsChunked(fromBlock, toBlock, filterBase) {
 }
 
 async function main() {
+  if (!TOKEN) throw new Error("TOKEN env var is required (project ERC20 token contract address)");
+
   const latest = process.env.TO_BLOCK ? BigInt(process.env.TO_BLOCK) : BigInt(await rpc("eth_blockNumber"));
   process.stderr.write(
     `Scanning Pay events for project ${PROJECT_ID} on terminal ${TERMINAL}\n` +
@@ -108,29 +125,64 @@ async function main() {
     topics: [PAY_TOPIC, null, null, topicForUint(PROJECT_ID)],
   });
 
-  // Decode: data = payer(32) beneficiary(32) amount(32) newlyIssued(32) ...
-  const totals = new Map();
+  // Sum Pay event amounts for the sanity-check grand total only.
+  // We do NOT key contributions to the Pay beneficiary here because original
+  // missions had pauseCreditTransfers = false, so tokens may have moved to
+  // different holders before the re-open ruleset activated.  Seeding by
+  // beneficiary would leave the new holder with zero ethContributed (blocked
+  // from refunding) while the original beneficiary could reclaim more ETH than
+  // their current token share warrants.
+  let grandTotal = 0n;
   for (const log of logs) {
     const data = log.data.slice(2);
-    const beneficiary = addrFromWord(data.slice(64, 128)).toLowerCase();
     const amount = BigInt("0x" + data.slice(128, 192));
-    if (amount === 0n) continue;
-    if (RESERVED.has(beneficiary)) continue;
-    if (beneficiary === "0x0000000000000000000000000000000000000000") continue;
-    totals.set(beneficiary, (totals.get(beneficiary) || 0n) + amount);
+    grandTotal += amount;
+  }
+
+  // Build a current-balance map by replaying all ERC20 Transfer events for the
+  // project token.  ethContributed[holder] = currentBalance / ISSUANCE_RATE so
+  // whoever holds tokens at seeding time inherits the ETH credit for those
+  // tokens, correctly handling any pre-reopen transfers.
+  process.stderr.write(`\nScanning ${TOKEN} Transfer events to build current balance map…\n`);
+  const transferLogs = await getLogsChunked(FROM_BLOCK, latest, {
+    address: TOKEN,
+    topics: [TRANSFER_TOPIC],
+  });
+
+  const balances = new Map();
+  for (const log of transferLogs) {
+    const from = addrFromWord(log.topics[1].slice(2)).toLowerCase();
+    const to = addrFromWord(log.topics[2].slice(2)).toLowerCase();
+    const value = BigInt(log.data);
+    if (from !== "0x0000000000000000000000000000000000000000") {
+      balances.set(from, (balances.get(from) || 0n) - value);
+    }
+    if (to !== "0x0000000000000000000000000000000000000000") {
+      balances.set(to, (balances.get(to) || 0n) + value);
+    }
+  }
+
+  const totals = new Map();
+  for (const [addr, balance] of balances.entries()) {
+    if (balance <= 0n) continue;
+    if (RESERVED.has(addr)) continue;
+    const contribution = balance / ISSUANCE_RATE;
+    if (contribution === 0n) continue;
+    totals.set(addr, contribution);
   }
 
   const holders = [...totals.keys()];
   const amounts = holders.map((h) => totals.get(h));
-  const grandTotal = amounts.reduce((a, b) => a + b, 0n);
+  const grandTotal2 = amounts.reduce((a, b) => a + b, 0n);
 
-  process.stderr.write(`\nFound ${logs.length} Pay events -> ${holders.length} unique contributors\n`);
-  console.log("\n=== Original contributions (excludes reserved holders) ===");
+  process.stderr.write(`\nFound ${logs.length} Pay events | ${transferLogs.length} Transfer events -> ${holders.length} unique current holders\n`);
+  console.log("\n=== Original contributions by current token holder (excludes reserved holders) ===");
   for (const h of holders) {
     console.log(`  ${h}  ${(Number(totals.get(h)) / 1e18).toFixed(6)} ETH  (${totals.get(h)} wei)`);
   }
-  console.log(`\n  TOTAL: ${(Number(grandTotal) / 1e18).toFixed(6)} ETH  (${grandTotal} wei)`);
-  console.log("  ^ sanity-check this against the terminal balance before seeding.\n");
+  console.log(`\n  TOTAL (balance-derived): ${(Number(grandTotal2) / 1e18).toFixed(6)} ETH  (${grandTotal2} wei)`);
+  console.log(`  TOTAL (Pay events):      ${(Number(grandTotal) / 1e18).toFixed(6)} ETH  (${grandTotal} wei)`);
+  console.log("  ^ both totals should match; sanity-check against the terminal balance before seeding.\n");
 
   // Write JSON for the record / forge consumption.
   const outPath = join(__dirname, "frank-contributions.json");
@@ -138,7 +190,7 @@ async function main() {
   writeFileSync(
     outPath,
     JSON.stringify(
-      { projectId: PROJECT_ID.toString(), totalWei: grandTotal.toString(), holders, amounts: amounts.map(String) },
+      { projectId: PROJECT_ID.toString(), totalWei: grandTotal2.toString(), holders, amounts: amounts.map(String) },
       null,
       2
     )
