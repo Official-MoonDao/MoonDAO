@@ -260,7 +260,7 @@ contract ReopenRulesetTest is Test, Config {
                 cashOutTaxRate: 0,
                 baseCurrency: 61166,
                 pausePay: false,
-                pauseCreditTransfers: false,
+                pauseCreditTransfers: true,
                 allowOwnerMinting: false,
                 allowSetCustomToken: false,
                 allowTerminalMigration: false,
@@ -576,61 +576,208 @@ contract ReopenRulesetTest is Test, Config {
         );
     }
 
-    /// @notice Regression test for the mixed-rate refund overdraw found in audit:
-    ///         LaunchPadPayHook reconstructed supply as `currentFunding * activeWeight`,
-    ///         which over-committed the pot once 1,000/ETH (original) and 500/ETH
-    ///         (re-open) holders coexisted — original holders reclaimed 2x their
-    ///         contribution and late redeemers got nothing. ReopenPayHook derives the
-    ///         denominator from real on-chain supply, so claims are pro-rata by token,
-    ///         order-independent, and sum exactly to the pot.
-    function testMixedRateRefundDistributesProRata() public {
+    /// @dev Seed the deposit ledger with original (pre-hook) contributions.
+    function _seed(ReopenPayHook hook, address holder, uint256 amount) internal {
+        address[] memory holders = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        holders[0] = holder;
+        amounts[0] = amount;
+        vm.prank(teamAddress);
+        hook.seedContributions(holders, amounts);
+    }
+
+    /// @notice The headline property: every backer gets back EXACTLY the ETH they
+    ///         contributed, regardless of the rate they minted at. A 1,000/ETH
+    ///         original backer and a 500/ETH re-open backer who each put in the same
+    ///         ETH get the same ETH back — even though they hold different token
+    ///         counts. No pro-rata, no one gets more or less than they paid.
+    function testExactEthRefundAcrossMixedRates() public {
         _createTeam();
         uint256 missionId = _createMission(1_000 ether);
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
 
-        // Original raise: two backers at 1,000/ETH
+        // Original raise: two backers at 1,000/ETH (tracked by the ORIGINAL hook)
         _pay(contributor1, 1 ether, terminal, projectId);
         _pay(contributor2, 1 ether, terminal, projectId);
+        assertEq(jbTokens.totalBalanceOf(contributor1, projectId), 1_000 * 1e18);
         skip(28 days + 28 days + 1);
 
-        // Re-open at 500/ETH; one backer contributes 2 ETH
-        _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        // Re-open at 500/ETH; seed the original cohort (balance / 1000 = ETH in), then
+        // a third backer contributes 2 ETH at the new rate (tracked live by the hook).
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        _seed(hook, contributor1, 1 ether); // 1,000 tokens / 1000
+        _seed(hook, contributor2, 1 ether);
         _pay(contributor3, 2 ether, terminal, projectId);
-        assertEq(jbTokens.totalBalanceOf(contributor3, projectId), 1_000 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(contributor3, projectId), 1_000 * 1e18, "2 ETH at 500/ETH = 1,000 tokens");
+        assertEq(hook.ethContributed(contributor3), 2 ether, "Live contribution tracked automatically");
 
         // Distribute reserved tokens mid-campaign (permissionless in JB v5) to prove
-        // the denominator is immune to reserved-token distribution timing.
+        // the ledger is immune to reserved-token distribution timing.
         jbController.sendReservedTokensToSplitsOf(projectId);
 
-        // Re-opened campaign misses the goal; refund window opens on the reopen hook
+        // Re-opened campaign misses the goal; refund window opens.
         skip(CAMPAIGN_DURATION + 1);
 
-        // Pot: 4 ETH. Claim-eligible supply: 3,000 tokens (1,000 + 1,000 + 1,000).
-        // Every 1,000-token holder reclaims exactly 4/3 ETH regardless of order.
+        // Pot is 4 ETH. Each backer reclaims EXACTLY what they put in.
         uint256 balBefore1 = contributor1.balance;
         vm.prank(contributor1);
         IJBMultiTerminal(address(terminal)).cashOutTokensOf(
             contributor1, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
         );
-        assertApproxEqAbs(contributor1.balance - balBefore1, uint256(4 ether) / 3, 10, "Original holder gets pro-rata share, not 2x");
+        assertEq(contributor1.balance - balBefore1, 1 ether, "Original 1,000/ETH backer gets exactly 1 ETH");
 
         uint256 balBefore2 = contributor2.balance;
         vm.prank(contributor2);
         IJBMultiTerminal(address(terminal)).cashOutTokensOf(
             contributor2, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor2), bytes("")
         );
-        assertApproxEqAbs(contributor2.balance - balBefore2, uint256(4 ether) / 3, 10, "Second holder gets the same share");
+        assertEq(contributor2.balance - balBefore2, 1 ether, "Second original backer gets exactly 1 ETH");
 
-        // The re-open backer is NOT left with nothing: they claim the final third
+        // The 500/ETH re-open backer holds the SAME 1,000 tokens as an original 1-ETH
+        // backer, but paid 2 ETH — and gets exactly 2 ETH back, not 1.
         uint256 balBefore3 = contributor3.balance;
         vm.prank(contributor3);
         IJBMultiTerminal(address(terminal)).cashOutTokensOf(
             contributor3, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor3), bytes("")
         );
-        assertApproxEqAbs(contributor3.balance - balBefore3, uint256(4 ether) / 3, 10, "Re-open backer claims their share");
+        assertEq(contributor3.balance - balBefore3, 2 ether, "Re-open 500/ETH backer gets exactly their 2 ETH");
 
         assertLe(jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN), 10, "Pot fully distributed (dust only)");
+    }
+
+    /// @notice The exact-ETH property is order-independent: reversing the redemption
+    ///         order changes nothing.
+    function testExactEthRefundIsOrderIndependent() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        _pay(contributor1, 1 ether, terminal, projectId);
+        _pay(contributor2, 1 ether, terminal, projectId);
+        skip(28 days + 28 days + 1);
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        _seed(hook, contributor1, 1 ether);
+        _seed(hook, contributor2, 1 ether);
+        _pay(contributor3, 2 ether, terminal, projectId);
+        skip(CAMPAIGN_DURATION + 1);
+
+        // Redeem in reverse order: c3, then c2, then c1.
+        uint256 b3 = contributor3.balance;
+        vm.prank(contributor3);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor3, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor3), bytes("")
+        );
+        assertEq(contributor3.balance - b3, 2 ether, "c3 exact regardless of order");
+
+        uint256 b2 = contributor2.balance;
+        vm.prank(contributor2);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor2, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor2), bytes("")
+        );
+        assertEq(contributor2.balance - b2, 1 ether, "c2 exact regardless of order");
+
+        uint256 b1 = contributor1.balance;
+        vm.prank(contributor1);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor1, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+        );
+        assertEq(contributor1.balance - b1, 1 ether, "c1 exact regardless of order");
+    }
+
+    /// @notice A partial cash-out returns a proportional slice of the contribution,
+    ///         and the remaining ledger stays exact for the rest.
+    function testPartialRefundIsProportional() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+
+        // contributor1 pays 2 ETH at 500/ETH -> 1,000 tokens, tracked live.
+        _pay(contributor1, 2 ether, terminal, projectId);
+        assertEq(hook.ethContributed(contributor1), 2 ether);
+        skip(CAMPAIGN_DURATION + 1);
+
+        // Burn half the tokens -> get half the ETH back.
+        uint256 before = contributor1.balance;
+        vm.prank(contributor1);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor1, projectId, 500 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+        );
+        assertApproxEqAbs(contributor1.balance - before, 1 ether, 5, "Half the tokens -> half the ETH");
+        assertApproxEqAbs(hook.ethContributed(contributor1), 1 ether, 5, "Ledger decremented by the refund");
+
+        // Burn the rest -> get the other half.
+        before = contributor1.balance;
+        vm.prank(contributor1);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor1, projectId, 500 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+        );
+        assertApproxEqAbs(contributor1.balance - before, 1 ether, 5, "Remaining tokens -> remaining ETH");
+    }
+
+    /// @notice An original backer who was NOT seeded cannot pull a refund from the
+    ///         re-open round (no contribution recorded for them).
+    function testUnseededOriginalHolderCannotRefund() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        _pay(contributor1, 1 ether, terminal, projectId); // original, through the old hook
+        skip(28 days + 28 days + 1);
+        _reopen(missionId, projectId, terminal, REOPEN_WEIGHT); // no seeding
+        skip(CAMPAIGN_DURATION + 1);
+
+        vm.prank(contributor1);
+        vm.expectRevert("No refundable contribution recorded for this holder.");
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor1, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+        );
+    }
+
+    /// @notice Seeding is owner-gated, rejects reserved holders, and can be frozen.
+    function testSeedIsOwnerGatedAndLockable() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+
+        address[] memory holders = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        holders[0] = contributor1;
+        amounts[0] = 1 ether;
+
+        // Non-owner cannot seed.
+        vm.prank(randomCaller);
+        vm.expectRevert();
+        hook.seedContributions(holders, amounts);
+
+        // Reserved holders cannot be seeded.
+        address[] memory reserved = new address[](1);
+        reserved[0] = missionCreator.missionIdToTeamVesting(missionId);
+        vm.prank(teamAddress);
+        vm.expectRevert("Cannot seed a reserved holder.");
+        hook.seedContributions(reserved, amounts);
+
+        // Owner seeds, then locks; further seeding is rejected.
+        vm.prank(teamAddress);
+        hook.seedContributions(holders, amounts);
+        assertEq(hook.ethContributed(contributor1), 1 ether);
+
+        vm.prank(teamAddress);
+        hook.lockLedger();
+
+        vm.prank(teamAddress);
+        vm.expectRevert("Ledger is locked.");
+        hook.seedContributions(holders, amounts);
     }
 
     /// @notice Reserved-token allocations (vesting contracts, pool deployer) cannot
@@ -662,61 +809,4 @@ contract ReopenRulesetTest is Test, Config {
         );
     }
 
-    /// @notice Safe wind-down path: before opening refunds, queue a refund ruleset
-    ///         whose weight matches the BLENDED average rate (actual contributor
-    ///         supply * 2e18 / pot). Claims then sum exactly to the pot and every
-    ///         token redeems at the same value — no overdraw, no stranded redeemers.
-    function testBlendedWeightRefundDistributesPotExactly() public {
-        _createTeam();
-        uint256 missionId = _createMission(1_000 ether);
-        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
-        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
-
-        // Same mixed-rate state as the hazard test: 3,000 tokens against a 4 ETH pot
-        _pay(contributor1, 1 ether, terminal, projectId);
-        _pay(contributor2, 1 ether, terminal, projectId);
-        skip(28 days + 28 days + 1);
-        _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
-        _pay(contributor3, 2 ether, terminal, projectId);
-
-        // Team winds down: blended weight = contributorSupply * 2e18 / pot
-        uint256 contributorSupply = 3_000 * 1e18;
-        uint256 pot = 4 ether;
-        uint256 blendedWeight = contributorSupply * 2e18 / pot; // 1,500e18
-
-        vm.startPrank(teamAddress);
-        LaunchPadPayHook refundHook = new LaunchPadPayHook(
-            missionCreator.missionIdToFundingGoal(missionId),
-            block.timestamp, // deadline = now, refunds start immediately
-            REFUND_PERIOD,
-            JB_V5_TERMINAL_STORE,
-            JB_V5_RULESETS,
-            teamAddress
-        );
-        refundHook.enableRefunds(true);
-        JBRulesetConfig[] memory refundConfig = _buildReopenRulesetConfig(
-            missionId, address(refundHook), address(terminal), blendedWeight
-        );
-        refundConfig[0].metadata.pausePay = true; // no new contributions while refunding
-        jbController.queueRulesetsOf(projectId, refundConfig, "Blended-rate refund ruleset");
-        vm.stopPrank();
-
-        // All three redeem; each token reclaims the same value and the pot drains to 0
-        uint256 total;
-        address[3] memory redeemers = [contributor1, contributor2, contributor3];
-        for (uint256 i = 0; i < redeemers.length; i++) {
-            uint256 before = redeemers[i].balance;
-            vm.prank(redeemers[i]);
-            IJBMultiTerminal(address(terminal)).cashOutTokensOf(
-                redeemers[i], projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(redeemers[i]), bytes("")
-            );
-            uint256 got = redeemers[i].balance - before;
-            assertApproxEqAbs(got, pot / 3, 10, "Each 1,000-token holder reclaims an equal share");
-            total += got;
-        }
-
-        // Integer division leaves at most a few wei of dust behind
-        assertApproxEqAbs(total, pot, 10, "Claims sum to the pot (minus rounding dust)");
-        assertLe(jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN), 10, "Only dust stranded");
-    }
 }

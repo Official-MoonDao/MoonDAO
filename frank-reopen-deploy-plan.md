@@ -30,6 +30,16 @@
 - 26,744 contributor `$OVERVIEW` (original 1,000/ETH rate)
 - 26,744 reserved `$OVERVIEW` (50% split between vesting contracts and pool deployer)
 
+### Refund model: exact ETH back (deposit ledger)
+`ReopenPayHook` refunds every backer **exactly the ETH they contributed**, regardless of the rate they minted at. It does **not** split the pot pro-rata by tokens (which would over-pay 1,000/ETH backers and under-pay 500/ETH backers for the same ETH).
+
+- **New (re-open) contributions** are recorded live: a pay hook credits `ethContributed[beneficiary] += amount` on every `pay`.
+- **Original contributions** are seeded once from the historical `Pay` events (Pre-step B). The resolver script sums each beneficiary's exact ETH in — verified to total **26.743426 ETH across 94 contributors**, matching the terminal balance to the wei.
+- On refund, the hook returns a synthetic `totalSupply` so the terminal's `surplus × cashOutCount / totalSupply` formula resolves to the caller's remaining ETH, scaled by the fraction of tokens burned. A cash-out hook decrements the ledger so partial/repeat refunds stay exact.
+- Reserved holders (vesting, pool deployer) contributed no ETH → `ethContributed = 0` and are additionally blocked from cashing out.
+
+**Caveat:** the ledger keys off ETH paid, not tokens held. Post-reopen token transfers would desync a claim from its tokens, so the ruleset sets `pauseCreditTransfers = true`. (Pre-reopen transfers are already handled because seeding credits whoever holds the tokens' contribution history via the original Pay events.)
+
 ### Key finding: MissionCreator mapping gap (resolved)
 `MissionCreator.missionIdToPayHook(4)` returns `0x0` on the current `0x87e80c0d...` MissionCreator. The Frank mission was created via an older MissionCreator (`0x7256E1d86C1A6fd9b3b91cB1bF74aC2a7562B593`). The vesting and pool deployer addresses have been resolved from the original creation event (Pre-step A below) and are hardcoded into the deploy commands.
 
@@ -76,6 +86,24 @@ reservedHolders[2] = 0x95fc39dd278b8dcd7b0219d6e109717d8e539114  // poolDeployer
 
 **Original LaunchPadPayHook** (old, replaced by `ReopenPayHook`): `0xf491c385945f0df7557c25e7eec011c925ad1a35`
 
+### Pre-step B — Resolve original contributions for the deposit-ledger seed
+
+Only needed if original backers should be refundable in a wind-down (they are, per the refund model above). Reconstruct each original contributor's exact ETH from the historical `Pay` events:
+
+```bash
+cd subscription-contracts
+HOOK=<ReopenPayHook address from Transaction 1> \
+  node script/backfill/resolve-contributions.mjs
+```
+
+This:
+- Scans every `Pay` event for project 73, sums ETH per beneficiary, excludes the 3 reserved holders.
+- Prints a per-contributor table and the **total (must equal ~26.7433 ETH — sanity check against the terminal balance)**.
+- Writes `script/backfill/frank-contributions.json`.
+- Prints `seedContributions(address[],uint256[])` calldata batches + the `lockLedger()` calldata for the Safe Transaction Builder.
+
+The current result: **94 contributors, 26.743426 ETH total** (matches the pot exactly).
+
 ---
 
 ## Transaction sequence
@@ -113,13 +141,21 @@ forge script script/QueueReopenRuleset.s.sol \
 
 ---
 
-### Transaction 2 — Queue re-open ruleset (Safe, 3-of-5)
+### Transaction 2 — Seed ledger + lock + queue ruleset (Safe, 3-of-5)
 
 **Who:** Project Safe `0xaA1Bd6d001C0000420090EDb36bEAE0D9393B5EA` — requires 3 of 5 signers.
 
-**What:** Calls `queueRulesetsOf` on the JB Controller to activate the re-open ruleset. Because the current ruleset has `duration=0` and `approvalHook=0x0`, this takes effect **immediately** on the next terminal interaction.
+**What:** A single **Transaction Builder batch** (atomic multisend) with these actions in order:
 
-#### Option A — Use the script to generate Safe calldata (recommended)
+1. `ReopenPayHook.seedContributions(holders, amounts)` — one or more batches (calldata from Pre-step B). **To:** the hook address, **Value:** 0.
+2. `ReopenPayHook.lockLedger()` — freezes the seed. **To:** the hook, **Value:** 0.
+3. `JBController.queueRulesetsOf(...)` — activates the re-open ruleset (calldata from Option A below). **To:** `0x27da30646502e2f642bE5281322Ae8C394F7668a`, **Value:** 0.
+
+Doing all three in one batch guarantees the ledger is seeded and frozen **before** the ruleset goes live, so no contribution can slip in against an unseeded ledger. Because the current ruleset has `duration=0` and `approvalHook=0x0`, the new ruleset takes effect **immediately** on the next terminal interaction.
+
+> If original backers are **not** being made refundable, skip actions 1–2 and do only the `queueRulesetsOf` call.
+
+#### Option A — Use the script to generate the queueRulesetsOf calldata (recommended)
 
 ```bash
 cd subscription-contracts
@@ -146,10 +182,11 @@ forge script script/QueueReopenRuleset.s.sol \
 Copy the printed calldata and:
 1. Go to [app.safe.global](https://app.safe.global) → `0xaA1Bd6d001C0000420090EDb36bEAE0D9393B5EA`
 2. New Transaction → **Transaction Builder**
-3. **To:** `0x27da30646502e2f642bE5281322Ae8C394F7668a` (JB Controller)
-4. **Value:** 0
-5. **Data:** paste the `queueRulesetsOf` calldata
-6. Collect 3 signatures and execute.
+3. Add the Pre-step B actions first (seedContributions batches → lockLedger, **To:** the hook address), then add this final action:
+   - **To:** `0x27da30646502e2f642bE5281322Ae8C394F7668a` (JB Controller)
+   - **Value:** 0
+   - **Data:** paste the `queueRulesetsOf` calldata
+4. Collect 3 signatures and execute the batch.
 
 #### Option B — Build the transaction manually in Safe Transaction Builder
 
@@ -177,7 +214,7 @@ metadata:
   cashOutTaxRate:         0
   baseCurrency:           61166  (ETH)
   pausePay:               false  (contributions open)
-  pauseCreditTransfers:   false
+  pauseCreditTransfers:   true   (keeps token holdings aligned with refund claims)
   allowOwnerMinting:      false
   allowSetCustomToken:    false
   allowTerminalMigration: false
@@ -260,7 +297,9 @@ Re-run the script with `TOKENS_PER_ETH=250` or propose a new Transaction Builder
 | Risk | Mitigation |
 |---|---|
 | **Split beneficiary addresses** | ✅ Resolved — all 3 reserved-token split addresses read from the original creation tx. Hardcoded into the deploy commands above. |
-| **Mixed-rate refund if campaign fails** | `ReopenPayHook` uses real on-chain supply for the refund denominator — original 1,000/ETH holders and 500/ETH re-open holders all refund pro-rata by tokens held. No overdraw. |
+| **Mixed-rate refund if campaign fails** | `ReopenPayHook` refunds each backer the **exact ETH they contributed** via a deposit ledger (new contributions tracked live; originals seeded from Pay events). Order-independent, pot clears exactly, no one gets more or less than they paid. |
+| **Ledger desync from token transfers** | Ruleset sets `pauseCreditTransfers = true`; seed is frozen with `lockLedger()` in the same Safe batch as the ruleset activation. |
+| **Seed accuracy** | Resolver totals must equal the terminal balance (26.7433 ETH) before seeding — a built-in sanity check. Seeding is owner-gated and rejects reserved holders. |
 | **Contributions rejected before tx2 executes** | The current ruleset has `useDataHookForPay=true` and the original hook; the hook's deadline may have already passed, causing the revert "deadline has passed". This is expected and fine — the re-open ruleset fixes this the moment it activates. |
 | **3-of-5 signer coordination** | Line up all five signers before launch day. The Safe tx can be proposed and signed in advance; it only executes when the threshold is reached. Propose it Tuesday July 7 so Wednesday July 8 is a buffer. |
 | **No approval hook on re-open ruleset** | By design — required for manual rate steps. Payouts remain locked (no payout limits). The Safe is the only entity that can move funds. |

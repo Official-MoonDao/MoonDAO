@@ -357,7 +357,9 @@ contract QueueReopenRulesetScript is Script, Config {
                 cashOutTaxRate: 0,
                 baseCurrency: 61166, // ETH
                 pausePay: false, // contributions are open
-                pauseCreditTransfers: false,
+                // Refund claims are tracked per contributor (deposit ledger); pausing
+                // credit transfers keeps token holdings aligned with those claims.
+                pauseCreditTransfers: true,
                 allowOwnerMinting: false,
                 allowSetCustomToken: false,
                 allowTerminalMigration: false,

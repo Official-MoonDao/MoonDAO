@@ -2,17 +2,24 @@
 pragma solidity ^0.8.0;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {JBPayHookSpecification} from "@nana-core-v5/structs/JBPayHookSpecification.sol";
-import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
-import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-import {JBBeforePayRecordedContext} from "@nana-core-v5/structs/JBBeforePayRecordedContext.sol";
-import {JBBeforeCashOutRecordedContext} from "@nana-core-v5/structs/JBBeforeCashOutRecordedContext.sol";
-import {JBCashOutHookSpecification} from "@nana-core-v5/structs/JBCashOutHookSpecification.sol";
-import {IJBTerminalStore} from "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import {IJBRulesetDataHook} from "@nana-core-v5/interfaces/IJBRulesetDataHook.sol";
+import {IJBPayHook} from "@nana-core-v5/interfaces/IJBPayHook.sol";
+import {IJBCashOutHook} from "@nana-core-v5/interfaces/IJBCashOutHook.sol";
+import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
+import {IJBTerminalStore} from "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import {IJBController} from "@nana-core-v5/interfaces/IJBController.sol";
 import {IJBTokens} from "@nana-core-v5/interfaces/IJBTokens.sol";
+import {IJBTerminal} from "@nana-core-v5/interfaces/IJBTerminal.sol";
+
+import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
+import {JBBeforePayRecordedContext} from "@nana-core-v5/structs/JBBeforePayRecordedContext.sol";
+import {JBAfterPayRecordedContext} from "@nana-core-v5/structs/JBAfterPayRecordedContext.sol";
+import {JBBeforeCashOutRecordedContext} from "@nana-core-v5/structs/JBBeforeCashOutRecordedContext.sol";
+import {JBAfterCashOutRecordedContext} from "@nana-core-v5/structs/JBAfterCashOutRecordedContext.sol";
+import {JBPayHookSpecification} from "@nana-core-v5/structs/JBPayHookSpecification.sol";
+import {JBCashOutHookSpecification} from "@nana-core-v5/structs/JBCashOutHookSpecification.sol";
 import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
 
 import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
@@ -23,30 +30,45 @@ import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
 //   minted at different issuance rates coexist (e.g. the original 1,000/ETH backers
 //   and 500/ETH re-open backers of the same project).
 //
-//   Why a new hook: LaunchPadPayHook reconstructs the cash-out denominator as
-//   `currentFunding * activeWeight / 2e18`, which is only correct when every
-//   outstanding token was minted at the CURRENT ruleset weight. Once a second rate
-//   exists that reconstruction understates the real supply, over-committing the pot:
-//   early redeemers reclaim more than their share and late redeemers get nothing.
+//   REFUND MODEL: exact ETH back ("deposit ledger").
 //
-//   Fix: derive the denominator from real on-chain supply instead of funding*weight.
+//   The problem with pro-rata refunds across mixed rates: if the pot were split by
+//   tokens held, a 1,000/ETH backer and a 500/ETH backer who each paid 1 ETH would
+//   NOT each get 1 ETH back — the higher-rate backer holds more tokens and would
+//   reclaim more than they put in, the lower-rate backer less. That is unfair and
+//   confusing.
 //
-//     claimEligibleSupply = totalTokenSupplyWithReservedTokensOf(projectId)
-//                         - pendingReservedTokenBalanceOf(projectId)
-//                         - Σ balances of `reservedHolders` (vesting contracts, pool
-//                           deployer — the reserved-token allocations, which are not
-//                           eligible for refunds)
+//   Instead this hook records how much ETH each address actually contributed and
+//   returns exactly that on refund, regardless of the rate they minted at:
 //
-//   Every claim-eligible token then reclaims the same amount, claims sum to exactly
-//   the pot (no overdraw, no stranded funds), and the result is independent of
-//   redemption order and of how many issuance rates ever existed. Reserved-side
-//   holders are blocked from cashing out; if a vesting contract releases tokens to a
-//   beneficiary, the denominator grows by exactly those tokens, preserving the
-//   invariant.
+//     - beforePayRecordedWith attaches this contract as a pay hook (0 ETH forwarded).
+//     - afterPayRecordedWith (terminal-only) credits ethContributed[beneficiary].
+//     - On refund, beforeCashOutRecordedWith returns a synthetic `totalSupply` so the
+//       terminal's reclaim formula (surplus * cashOutCount / totalSupply, tax 0)
+//       resolves to exactly the caller's remaining ETH, scaled by the fraction of
+//       their tokens being burned.
+//     - afterCashOutRecordedWith (terminal-only) decrements ethContributed by the
+//       reclaimed amount so partial refunds and re-refunds stay exact.
+//
+//   Original (pre-hook) contributions are seeded once via seedContributions(): at
+//   re-open time every non-reserved holder minted at exactly 1,000/ETH, so their
+//   contribution is balance / 1000. Seeding must complete before the re-open ruleset
+//   goes live; call lockLedger() afterwards to freeze the seed.
+//
+//   The sum of ethContributed equals the ETH in the terminal, so refunds are
+//   order-independent and the pot clears exactly (minus integer-division dust, which
+//   is rounded in the pot's favor). Reserved-token allocation holders (vesting
+//   contracts, pool deployer) never paid ETH — they hold ethContributed == 0 and are
+//   additionally blocked from cashing out.
+//
+//   CAVEAT: the ledger keys off ETH paid, not tokens currently held. If a holder
+//   transfers project tokens after re-open, their refund claim does not move with the
+//   tokens. Re-open rulesets should set pauseCreditTransfers = true to prevent this;
+//   these tokens are contribution receipts, not actively traded during a raise.
 //
 //   Everything else (funding kill-switch, goal/deadline gating, refund window,
 //   stage(), optional DePrize registry latch) matches LaunchPadPayHook.
-contract ReopenPayHook is IJBRulesetDataHook, Ownable {
+contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownable {
 
     uint256 public immutable fundingGoal;
     uint256 public immutable deadline;
@@ -60,9 +82,16 @@ contract ReopenPayHook is IJBRulesetDataHook, Ownable {
     IJBController public jbController;
     IJBTokens public jbTokens;
 
+    /// @notice ETH contributed per address, in wei. Credited on pay, decremented on
+    ///         cash out, and seeded once for the original (pre-hook) raise.
+    mapping(address => uint256) public ethContributed;
+
+    /// @notice Once locked, seedContributions can no longer be called. Set this after
+    ///         seeding the original raise and before the re-open ruleset goes live.
+    bool public ledgerLocked;
+
     /// @notice Holders of reserved-token allocations (vesting contracts, pool
-    ///         deployer). Their balances are excluded from the cash-out denominator
-    ///         and they cannot cash out themselves.
+    ///         deployer). They never contributed ETH and cannot cash out.
     address[] public reservedHolders;
 
     /// @notice Optional DePrize source of truth. When unset, the hook behaves
@@ -70,6 +99,8 @@ contract ReopenPayHook is IJBRulesetDataHook, Ownable {
     IDePrizeRegistry public deprizeRegistry;
 
     event DePrizeRegistrySet(address indexed registry);
+    event ContributionSeeded(address indexed holder, uint256 amount);
+    event LedgerLocked();
 
     error DePrizeRegistryAlreadySet();
 
@@ -100,12 +131,40 @@ contract ReopenPayHook is IJBRulesetDataHook, Ownable {
         }
     }
 
+    // ---------------------------------------------------------------------------
+    // Owner configuration
+    // ---------------------------------------------------------------------------
+
     function setFundingTurnedOff(bool _fundingTurnedOff) external onlyOwner {
         fundingTurnedOff = _fundingTurnedOff;
     }
 
     function enableRefunds(bool _refundsEnabled) external onlyOwner {
         refundsEnabled = _refundsEnabled;
+    }
+
+    /// @notice Seed the deposit ledger with the original (pre-hook) contributions.
+    ///         For a re-opened mission this is balance / 1000 for each non-reserved
+    ///         holder (they all minted at 1,000/ETH). Values are SET, not added, so
+    ///         seeding is idempotent; it must run before any new contribution to avoid
+    ///         clobbering live credits. Reserved holders must be excluded.
+    /// @param holders The contributor addresses to seed.
+    /// @param amounts The ETH each contributed, in wei.
+    function seedContributions(address[] calldata holders, uint256[] calldata amounts) external onlyOwner {
+        require(!ledgerLocked, "Ledger is locked.");
+        require(holders.length == amounts.length, "Length mismatch.");
+        for (uint256 i = 0; i < holders.length; i++) {
+            require(!isReservedHolder(holders[i]), "Cannot seed a reserved holder.");
+            ethContributed[holders[i]] = amounts[i];
+            emit ContributionSeeded(holders[i], amounts[i]);
+        }
+    }
+
+    /// @notice Freeze the seed so it can no longer be edited. Call after seeding and
+    ///         before the re-open ruleset goes live.
+    function lockLedger() external onlyOwner {
+        ledgerLocked = true;
+        emit LedgerLocked();
     }
 
     /// @notice Attach the DePrize registry. Owner-gated and write-once, same
@@ -116,6 +175,10 @@ contract ReopenPayHook is IJBRulesetDataHook, Ownable {
         deprizeRegistry = IDePrizeRegistry(_registry);
         emit DePrizeRegistrySet(_registry);
     }
+
+    // ---------------------------------------------------------------------------
+    // Views
+    // ---------------------------------------------------------------------------
 
     function isReservedHolder(address holder) public view returns (bool) {
         for (uint256 i = 0; i < reservedHolders.length; i++) {
@@ -145,25 +208,37 @@ contract ReopenPayHook is IJBRulesetDataHook, Ownable {
         return balance + withdrawn;
     }
 
-    /// @notice The number of tokens eligible to claim refunds: total supply
-    ///         (including pending reserved) minus pending reserved minus balances
-    ///         held by reserved-token allocation holders.
-    /// @param projectId The project to compute the supply for.
-    /// @param totalSupplyWithReserved `totalTokenSupplyWithReservedTokensOf`, as
-    ///        passed by the terminal store in the cash-out context.
-    function claimEligibleSupply(uint256 projectId, uint256 totalSupplyWithReserved) public view returns (uint256) {
-        uint256 supply = totalSupplyWithReserved - jbController.pendingReservedTokenBalanceOf(projectId);
-        for (uint256 i = 0; i < reservedHolders.length; i++) {
-            supply -= jbTokens.totalBalanceOf(reservedHolders[i], projectId);
-        }
-        return supply;
+    /// @dev Only the project's registered terminal may drive the ledger.
+    function _requireTerminal(uint256 projectId) internal view {
+        require(
+            jbController.DIRECTORY().isTerminalOf(projectId, IJBTerminal(msg.sender)),
+            "Caller is not the project terminal."
+        );
     }
 
-    function beforePayRecordedWith(JBBeforePayRecordedContext calldata context) external view override returns (uint256 weight, JBPayHookSpecification[] memory hookSpecifications) {
+    // ---------------------------------------------------------------------------
+    // Data hook: pay
+    // ---------------------------------------------------------------------------
+
+    function beforePayRecordedWith(JBBeforePayRecordedContext calldata context)
+        external
+        view
+        override
+        returns (uint256 weight, JBPayHookSpecification[] memory hookSpecifications)
+    {
         if (fundingTurnedOff) {
             revert("Funding has been turned off.");
         }
         require(context.amount.token == JBConstants.NATIVE_TOKEN);
+
+        // Record every contribution in the deposit ledger (0 ETH forwarded to the
+        // hook — the payment stays in the terminal and tokens mint as normal).
+        hookSpecifications = new JBPayHookSpecification[](1);
+        hookSpecifications[0] = JBPayHookSpecification({
+            hook: IJBPayHook(address(this)),
+            amount: 0,
+            metadata: bytes("")
+        });
 
         uint256 deprizeId = _deprizeIdFor(context.projectId);
         if (deprizeId != 0) {
@@ -180,6 +255,19 @@ contract ReopenPayHook is IJBRulesetDataHook, Ownable {
         weight = context.weight;
     }
 
+    function afterPayRecordedWith(JBAfterPayRecordedContext calldata context) external payable override {
+        _requireTerminal(context.projectId);
+        // No ETH should be forwarded to the hook; the contribution stays in the terminal.
+        require(msg.value == 0, "Unexpected value forwarded.");
+        if (context.amount.value > 0) {
+            ethContributed[context.beneficiary] += context.amount.value;
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Data hook: cash out (refund)
+    // ---------------------------------------------------------------------------
+
     function beforeCashOutRecordedWith(JBBeforeCashOutRecordedContext calldata context) external view override
         returns (
         uint256 cashOutTaxRate,
@@ -187,8 +275,7 @@ contract ReopenPayHook is IJBRulesetDataHook, Ownable {
         uint256 totalSupply,
         JBCashOutHookSpecification[] memory hookSpecifications
     ){
-        // Reserved-token allocations are not part of the denominator, so letting
-        // them redeem would overdraw the pot.
+        // Reserved-token allocations never contributed ETH.
         if (isReservedHolder(context.holder)) {
             revert("Reserved token allocations cannot cash out.");
         }
@@ -198,37 +285,67 @@ contract ReopenPayHook is IJBRulesetDataHook, Ownable {
             if (!deprizeRegistry.isRefundable(deprizeId)) {
                 revert("DePrize is active. Refunds are disabled.");
             }
-            cashOutCount = context.cashOutCount;
-            totalSupply = claimEligibleSupply(context.projectId, context.totalSupply);
-            return (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications);
+        } else {
+            uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
+            if (!refundsEnabled && currentFunding >= fundingGoal) {
+                revert("Project has passed funding goal requirement. Refunds are disabled.");
+            }
+            if (block.timestamp < deadline) {
+                revert("Project funding deadline has not passed. Refunds are disabled.");
+            }
+            if (block.timestamp >= deadline + refundPeriod) {
+                revert("Refund period has passed. Refunds are disabled.");
+            }
         }
 
-        uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
-        if (!refundsEnabled && currentFunding >= fundingGoal){
-            revert("Project has passed funding goal requirement. Refunds are disabled.");
-        }
-        if (block.timestamp < deadline) {
-            revert("Project funding deadline has not passed. Refunds are disabled.");
-        }
-        if (block.timestamp >= deadline + refundPeriod) {
-            revert("Refund period has passed. Refunds are disabled.");
-        }
+        // Refund the caller EXACTLY the ETH they contributed, scaled by the fraction
+        // of their tokens being burned — independent of the rate they minted at.
+        //
+        // The terminal computes reclaim = surplus * cashOutCount / totalSupply (tax 0).
+        // Return a synthetic totalSupply so that resolves to:
+        //   reclaim = cashOutCount * ethContributed[holder] / balance[holder]
+        uint256 contributed = ethContributed[context.holder];
+        require(contributed > 0, "No refundable contribution recorded for this holder.");
 
-        // Refund amount = surplus * (cashOutCount / claimEligibleSupply). Unlike the
-        // original funding*weight reconstruction, this is exact for any mix of
-        // issuance rates: claims sum to the pot and are independent of redemption
-        // order. Holders who minted at a higher rate hold proportionally more claim.
+        uint256 balance = jbTokens.totalBalanceOf(context.holder, context.projectId);
+        require(balance > 0, "Holder has no project tokens.");
+
         cashOutCount = context.cashOutCount;
-        totalSupply = claimEligibleSupply(context.projectId, context.totalSupply);
+        // Ceil-divide so any dust rounds in the pot's favor (never over-draws).
+        uint256 numerator = context.surplus.value * balance;
+        totalSupply = (numerator + contributed - 1) / contributed;
+
+        hookSpecifications = new JBCashOutHookSpecification[](1);
+        hookSpecifications[0] = JBCashOutHookSpecification({
+            hook: IJBCashOutHook(address(this)),
+            amount: 0,
+            metadata: bytes("")
+        });
     }
+
+    function afterCashOutRecordedWith(JBAfterCashOutRecordedContext calldata context) external payable override {
+        _requireTerminal(context.projectId);
+        uint256 reclaimed = context.reclaimedAmount.value;
+        uint256 contributed = ethContributed[context.holder];
+        // Decrement the ledger by the refunded amount, preserving the
+        // ethContributed / balance ratio for any remaining tokens.
+        ethContributed[context.holder] = reclaimed >= contributed ? 0 : contributed - reclaimed;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Boilerplate
+    // ---------------------------------------------------------------------------
 
     function hasMintPermissionFor(uint256 projectId, JBRuleset memory ruleset, address addr) external view override returns (bool flag){
         return false;
     }
 
-    /// @notice ERC165 support.
+    /// @notice ERC165 support for the data hook and the pay/cash-out hooks.
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IJBRulesetDataHook).interfaceId;
+        return interfaceId == type(IJBRulesetDataHook).interfaceId
+            || interfaceId == type(IJBPayHook).interfaceId
+            || interfaceId == type(IJBCashOutHook).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 
     // return a stage number based on what tier the project is in.
