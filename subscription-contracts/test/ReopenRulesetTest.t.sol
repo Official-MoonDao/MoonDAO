@@ -34,7 +34,51 @@ import {JBSplit} from "@nana-core-v5/structs/JBSplit.sol";
 import {JBFundAccessLimitGroup} from "@nana-core-v5/structs/JBFundAccessLimitGroup.sol";
 import {JBCurrencyAmount} from "@nana-core-v5/structs/JBCurrencyAmount.sol";
 import {IJBSplitHook} from "@nana-core-v5/interfaces/IJBSplitHook.sol";
+import {JBAfterPayRecordedContext} from "@nana-core-v5/structs/JBAfterPayRecordedContext.sol";
+import {JBAfterCashOutRecordedContext} from "@nana-core-v5/structs/JBAfterCashOutRecordedContext.sol";
+import {JBBeforeCashOutRecordedContext} from "@nana-core-v5/structs/JBBeforeCashOutRecordedContext.sol";
+import {JBTokenAmount} from "@nana-core-v5/structs/JBTokenAmount.sol";
 import "base/Config.sol";
+
+/// @notice Malicious contributor that re-enters cashOutTokensOf during the refund
+///         ETH callback, attempting to drain more than it contributed.
+contract ReentrantCasher {
+    IJBMultiTerminal public immutable terminal;
+    uint256 public immutable projectId;
+    uint256 public reenterAmount;
+    bool private entered;
+
+    constructor(IJBMultiTerminal _terminal, uint256 _projectId) {
+        terminal = _terminal;
+        projectId = _projectId;
+    }
+
+    function contribute(uint256 amount) external {
+        // Spend the contract's OWN balance so refund-vs-contribution accounting is honest.
+        terminal.pay{value: amount}(
+            projectId, JBConstants.NATIVE_TOKEN, 0, address(this), 0, "", new bytes(0)
+        );
+    }
+
+    function arm(uint256 _reenterAmount) external {
+        reenterAmount = _reenterAmount;
+    }
+
+    function attack(uint256 firstCashOut) external {
+        terminal.cashOutTokensOf(
+            address(this), projectId, firstCashOut, JBConstants.NATIVE_TOKEN, 0, payable(address(this)), bytes("")
+        );
+    }
+
+    receive() external payable {
+        if (!entered && reenterAmount > 0) {
+            entered = true;
+            terminal.cashOutTokensOf(
+                address(this), projectId, reenterAmount, JBConstants.NATIVE_TOKEN, 0, payable(address(this)), bytes("")
+            );
+        }
+    }
+}
 
 /// @title ReopenRulesetTest
 /// @notice Tests re-opening fundraising on a closed mission at a new token rate.
@@ -603,14 +647,21 @@ contract ReopenRulesetTest is Test, Config {
         );
     }
 
-    /// @dev Seed the deposit ledger with original (pre-hook) contributions.
-    function _seed(ReopenPayHook hook, address holder, uint256 amount) internal {
+    /// @dev Seed the deposit ledger with an original (pre-hook) contribution:
+    ///      `ethAmount` wei backed by `ethAmount * 1000` tokens (original rate).
+    function _seed(ReopenPayHook hook, address holder, uint256 ethAmount) internal {
+        _seedWithTokens(hook, holder, ethAmount, ethAmount * 1000);
+    }
+
+    function _seedWithTokens(ReopenPayHook hook, address holder, uint256 ethAmount, uint256 tokenAmount) internal {
         address[] memory holders = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
+        uint256[] memory eth = new uint256[](1);
+        uint256[] memory toks = new uint256[](1);
         holders[0] = holder;
-        amounts[0] = amount;
+        eth[0] = ethAmount;
+        toks[0] = tokenAmount;
         vm.prank(teamAddress);
-        hook.seedContributions(holders, amounts);
+        hook.seedContributions(holders, eth, toks);
     }
 
     /// @notice The headline property: every backer gets back EXACTLY the ETH they
@@ -778,33 +829,189 @@ contract ReopenRulesetTest is Test, Config {
         ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
 
         address[] memory holders = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
+        uint256[] memory eth = new uint256[](1);
+        uint256[] memory toks = new uint256[](1);
         holders[0] = contributor1;
-        amounts[0] = 1 ether;
+        eth[0] = 1 ether;
+        toks[0] = 1000 * 1e18;
 
         // Non-owner cannot seed.
         vm.prank(randomCaller);
         vm.expectRevert();
-        hook.seedContributions(holders, amounts);
+        hook.seedContributions(holders, eth, toks);
 
         // Reserved holders cannot be seeded.
         address[] memory reserved = new address[](1);
         reserved[0] = missionCreator.missionIdToTeamVesting(missionId);
         vm.prank(teamAddress);
         vm.expectRevert("Cannot seed a reserved holder.");
-        hook.seedContributions(reserved, amounts);
+        hook.seedContributions(reserved, eth, toks);
+
+        // A one-sided seed (eth but no tokens) is rejected.
+        uint256[] memory zeroToks = new uint256[](1);
+        vm.prank(teamAddress);
+        vm.expectRevert("Both eth and tokens required.");
+        hook.seedContributions(holders, eth, zeroToks);
+
+        // Mismatched array lengths are rejected.
+        uint256[] memory twoEth = new uint256[](2);
+        vm.prank(teamAddress);
+        vm.expectRevert("Length mismatch.");
+        hook.seedContributions(holders, twoEth, toks);
 
         // Owner seeds, then locks; further seeding is rejected.
         vm.prank(teamAddress);
-        hook.seedContributions(holders, amounts);
+        hook.seedContributions(holders, eth, toks);
         assertEq(hook.ethContributed(contributor1), 1 ether);
+        assertEq(hook.refundableTokens(contributor1), 1000 * 1e18);
 
         vm.prank(teamAddress);
         hook.lockLedger();
 
         vm.prank(teamAddress);
         vm.expectRevert("Ledger is locked.");
-        hook.seedContributions(holders, amounts);
+        hook.seedContributions(holders, eth, toks);
+    }
+
+    /// @notice REENTRANCY: a malicious contributor whose `receive()` re-enters
+    ///         `cashOutTokensOf` during the refund ETH transfer cannot drain more
+    ///         than they contributed. The refund price is derived only from the
+    ///         hook's own ledger, which is untouched until after the ETH send, so the
+    ///         nested claims for a holder sum to exactly their contribution.
+    function testReentrantCashOutCannotOverdraw() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        // Honest backers fill the pot so there is something to steal.
+        _pay(contributor1, 5 ether, terminal, projectId);
+        skip(28 days + 28 days + 1);
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        _seed(hook, contributor1, 5 ether); // 5,000 tokens
+
+        // Attacker contributes 2 ETH at the re-open rate -> 1,000 tokens.
+        ReentrantCasher attacker = new ReentrantCasher(IJBMultiTerminal(address(terminal)), projectId);
+        vm.deal(address(attacker), 2 ether);
+        attacker.contribute(2 ether);
+        assertEq(hook.ethContributed(address(attacker)), 2 ether);
+        assertEq(address(attacker).balance, 0, "Attacker spent its entire balance contributing");
+        assertEq(jbTokens.totalBalanceOf(address(attacker), projectId), 1_000 * 1e18);
+
+        skip(CAMPAIGN_DURATION + 1);
+
+        uint256 potBefore = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        // Attacker tries to re-enter on the refund. Arm it to cash out the remainder
+        // during the first refund's ETH callback.
+        attacker.arm(500 * 1e18);
+        attacker.attack(500 * 1e18);
+
+        // Despite re-entering, the attacker recovers at most their 2 ETH — never the
+        // honest backer's funds.
+        assertLe(address(attacker).balance, 2 ether + 5, "Attacker cannot profit from reentrancy");
+        // The honest backer's 5 ETH is still fully claimable.
+        uint256 potAfter = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        assertGe(potAfter, potBefore - 2 ether - 5, "Pot only debited by the attacker's own contribution");
+
+        uint256 b1 = contributor1.balance;
+        vm.prank(contributor1);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor1, projectId, 5_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+        );
+        assertApproxEqAbs(contributor1.balance - b1, 5 ether, 10, "Honest backer still gets their full 5 ETH");
+    }
+
+    /// @notice Defensive guard: beforeCashOutRecordedWith rejects a cash-out that
+    ///         exceeds the holder's recorded backing tokens (which would otherwise
+    ///         let a desynced ledger over-refund). Exercised by calling the view hook
+    ///         directly, since the terminal's own supply check would otherwise mask it.
+    function testCashOutCannotExceedRecordedTokens() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        _seedWithTokens(hook, contributor1, 1 ether, 500 * 1e18);
+        skip(CAMPAIGN_DURATION + 1);
+
+        JBBeforeCashOutRecordedContext memory ctx;
+        ctx.terminal = address(terminal);
+        ctx.holder = contributor1;
+        ctx.projectId = projectId;
+        ctx.cashOutCount = 501 * 1e18; // one token more than recorded
+        ctx.totalSupply = 1_000_000 * 1e18;
+        ctx.surplus = JBTokenAmount({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: 61166, value: 10 ether});
+        ctx.cashOutTaxRate = 0;
+
+        vm.expectRevert("Cash out exceeds refundable tokens.");
+        hook.beforeCashOutRecordedWith(ctx);
+
+        // Exactly the recorded amount is fine.
+        ctx.cashOutCount = 500 * 1e18;
+        hook.beforeCashOutRecordedWith(ctx);
+    }
+
+    /// @notice Donations to the terminal (addToBalance) do not inflate refunds: each
+    ///         backer still gets exactly their contribution, and the donation is inert.
+    function testDonationDoesNotInflateRefund() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+        _pay(contributor1, 1 ether, terminal, projectId); // 500 tokens, 1 ETH recorded
+
+        // Someone donates 10 ETH straight to the terminal balance.
+        vm.deal(user1, 20 ether);
+        vm.prank(user1);
+        IJBMultiTerminal(address(terminal)).addToBalanceOf{value: 10 ether}(
+            projectId, JBConstants.NATIVE_TOKEN, 10 ether, false, "", bytes("")
+        );
+
+        skip(CAMPAIGN_DURATION + 1);
+
+        uint256 before = contributor1.balance;
+        vm.prank(contributor1);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor1, projectId, 500 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+        );
+        assertApproxEqAbs(contributor1.balance - before, 1 ether, 5, "Refund is the contribution, not a share of the donation");
+    }
+
+    /// @notice Only the project terminal can drive the ledger hooks; a direct call
+    ///         from an attacker is rejected.
+    function testHooksRejectNonTerminalCaller() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+
+        JBAfterPayRecordedContext memory payCtx;
+        payCtx.projectId = projectId;
+        payCtx.beneficiary = randomCaller;
+        payCtx.amount = JBTokenAmount({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: 61166, value: 100 ether});
+        payCtx.newlyIssuedTokenCount = 100_000 * 1e18;
+
+        vm.prank(randomCaller);
+        vm.expectRevert("Caller is not the project terminal.");
+        hook.afterPayRecordedWith(payCtx);
+
+        JBAfterCashOutRecordedContext memory outCtx;
+        outCtx.projectId = projectId;
+        outCtx.holder = randomCaller;
+        outCtx.cashOutCount = 1;
+        outCtx.reclaimedAmount = JBTokenAmount({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: 61166, value: 0});
+
+        vm.prank(randomCaller);
+        vm.expectRevert("Caller is not the project terminal.");
+        hook.afterCashOutRecordedWith(outCtx);
     }
 
     /// @notice Reserved-token allocations (vesting contracts, pool deployer) cannot

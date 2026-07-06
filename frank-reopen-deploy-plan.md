@@ -33,12 +33,13 @@
 ### Refund model: exact ETH back (deposit ledger)
 `ReopenPayHook` refunds every backer **exactly the ETH they contributed**, regardless of the rate they minted at. It does **not** split the pot pro-rata by tokens (which would over-pay 1,000/ETH backers and under-pay 500/ETH backers for the same ETH).
 
-- **New (re-open) contributions** are recorded live: a pay hook credits `ethContributed[beneficiary] += amount` on every `pay`.
-- **Original contributions** are seeded once from the historical `Pay` events (Pre-step B). The resolver script sums each beneficiary's exact ETH in — verified to total **26.743426 ETH across 94 contributors**, matching the terminal balance to the wei.
-- On refund, the hook returns a synthetic `totalSupply` so the terminal's `surplus × cashOutCount / totalSupply` formula resolves to the caller's remaining ETH, scaled by the fraction of tokens burned. A cash-out hook decrements the ledger so partial/repeat refunds stay exact.
-- Reserved holders (vesting, pool deployer) contributed no ETH → `ethContributed = 0` and are additionally blocked from cashing out.
+- **New (re-open) contributions** are recorded live: a pay hook credits `ethContributed[beneficiary] += amount` **and** `refundableTokens[beneficiary] += newlyIssuedTokenCount` on every `pay`.
+- **Original contributions** are seeded once from the historical events (Pre-step B). The resolver nets each beneficiary's exact ETH in against any refunds they already took — verified to total **26.743426 ETH across 94 contributors** (0 original refunds), matching the terminal balance to the wei.
+- On refund, the hook returns a synthetic `totalSupply` so the terminal's `surplus × cashOutCount / totalSupply` formula resolves to the caller's remaining ETH, scaled by the fraction of tokens burned — **independent of the surplus**, so donations to the terminal never inflate a refund. A cash-out hook decrements both ledgers so partial/repeat refunds stay exact.
+- **Reentrancy-safe:** the refund price is derived only from the hook's own `ethContributed / refundableTokens` state (never the live token balance, which the burn mutates mid-cash-out). Both values are updated only after the terminal's ETH send, so a reentrant cash-out sees an unchanged price and can never draw more than the holder contributed. Verified by `testReentrantCashOutCannotOverdraw`.
+- Reserved holders (vesting, pool deployer) contributed no ETH → they cannot be seeded and are blocked from cashing out.
 
-**Caveat:** the ledger keys off ETH paid, not tokens held. Post-reopen token transfers would desync a claim from its tokens, so the ruleset sets `pauseCreditTransfers = true`. (Pre-reopen transfers are already handled because seeding credits whoever holds the tokens' contribution history via the original Pay events.)
+**Caveat:** the ledger keys off ETH paid, not tokens held. This can never *over-pay* (a refund is capped at the holder's recorded `refundableTokens` and priced from their own ledger), but a transferee can't claim and a transferor who moved tokens away can't burn them to claim. The ruleset sets `pauseCreditTransfers = true` to block unclaimed-credit moves. Note JB v5's `pauseCreditTransfers` does **not** block the claimed `$OVERVIEW` ERC-20, so refund availability still assumes holders keep the tokens they were minted — acceptable for a wind-down where backers refund from their own address.
 
 ### Key finding: MissionCreator mapping gap (resolved)
 `MissionCreator.missionIdToPayHook(4)` returns `0x0` on the current `0x87e80c0d...` MissionCreator. The Frank mission was created via an older MissionCreator (`0x7256E1d86C1A6fd9b3b91cB1bF74aC2a7562B593`). The vesting and pool deployer addresses have been resolved from the original creation event (Pre-step A below) and are hardcoded into the deploy commands.
@@ -100,7 +101,7 @@ This:
 - Scans `Transfer` events for the project ERC20 token to build a current-balance map, then credits each non-reserved holder `balance / ISSUANCE_RATE` ETH. This (not summing `Pay` event amounts per beneficiary) correctly handles pre-reopen token transfers: whoever holds the tokens at seeding time inherits the ETH credit, so transferees are refundable and original beneficiaries cannot over-claim.
 - Prints a per-contributor table and the **total (must equal ~26.7433 ETH — sanity check against the terminal balance)**.
 - Writes `script/backfill/frank-contributions.json`.
-- Prints `seedContributions(address[],uint256[])` calldata batches + the `lockLedger()` calldata for the Safe Transaction Builder.
+- Prints `seedContributions(address[],uint256[],uint256[])` calldata batches (holders, net ETH, net backing tokens) + the `lockLedger()` calldata for the Safe Transaction Builder.
 
 The current result: **94 contributors, 26.743426 ETH total** (matches the pot exactly).
 
@@ -147,7 +148,7 @@ forge script script/QueueReopenRuleset.s.sol \
 
 **What:** A single **Transaction Builder batch** (atomic multisend) with these actions in order:
 
-1. `ReopenPayHook.seedContributions(holders, amounts)` — one or more batches (calldata from Pre-step B). **To:** the hook address, **Value:** 0.
+1. `ReopenPayHook.seedContributions(holders, ethAmounts, tokenAmounts)` — one or more batches (calldata from Pre-step B). **To:** the hook address, **Value:** 0.
 2. `ReopenPayHook.lockLedger()` — freezes the seed. **To:** the hook, **Value:** 0.
 3. `JBController.queueRulesetsOf(...)` — activates the re-open ruleset (calldata from Option A below). **To:** `0x27da30646502e2f642bE5281322Ae8C394F7668a`, **Value:** 0.
 

@@ -35,36 +35,48 @@ import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
 //   The problem with pro-rata refunds across mixed rates: if the pot were split by
 //   tokens held, a 1,000/ETH backer and a 500/ETH backer who each paid 1 ETH would
 //   NOT each get 1 ETH back — the higher-rate backer holds more tokens and would
-//   reclaim more than they put in, the lower-rate backer less. That is unfair and
-//   confusing.
+//   reclaim more than they put in, the lower-rate backer less. That is unfair.
 //
-//   Instead this hook records how much ETH each address actually contributed and
-//   returns exactly that on refund, regardless of the rate they minted at:
+//   Instead this hook records how much ETH each address contributed AND how many
+//   tokens back that contribution, then returns exactly the contributed ETH on
+//   refund regardless of the rate:
 //
-//     - beforePayRecordedWith attaches this contract as a pay hook (0 ETH forwarded).
-//     - afterPayRecordedWith (terminal-only) credits ethContributed[beneficiary].
-//     - On refund, beforeCashOutRecordedWith returns a synthetic `totalSupply` so the
-//       terminal's reclaim formula (surplus * cashOutCount / totalSupply, tax 0)
-//       resolves to exactly the caller's remaining ETH, scaled by the fraction of
-//       their tokens being burned.
-//     - afterCashOutRecordedWith (terminal-only) decrements ethContributed by the
-//       reclaimed amount so partial refunds and re-refunds stay exact.
+//     ethContributed[holder]   : wei the holder paid (net of any prior refunds)
+//     refundableTokens[holder] : project tokens backing that wei
 //
-//   Original (pre-hook) contributions are seeded once via seedContributions(): at
-//   re-open time every non-reserved holder minted at exactly 1,000/ETH, so their
-//   contribution is balance / 1000. Seeding must complete before the re-open ruleset
-//   goes live; call lockLedger() afterwards to freeze the seed.
+//   On refund, beforeCashOutRecordedWith returns a synthetic `totalSupply` so the
+//   terminal's reclaim formula (surplus * cashOutCount / totalSupply, tax 0) resolves
+//   to:
+//       reclaim = cashOutCount * ethContributed / refundableTokens
+//   i.e. the holder's own per-token price. Note this is INDEPENDENT of the surplus,
+//   so donations to the terminal never inflate a refund.
 //
-//   The sum of ethContributed equals the ETH in the terminal, so refunds are
-//   order-independent and the pot clears exactly (minus integer-division dust, which
-//   is rounded in the pot's favor). Reserved-token allocation holders (vesting
-//   contracts, pool deployer) never paid ETH — they hold ethContributed == 0 and are
-//   additionally blocked from cashing out.
+//   REENTRANCY SAFETY. The terminal (JBMultiTerminal) has no reentrancy guard and
+//   sends native ETH to the beneficiary BEFORE calling afterCashOutRecordedWith. The
+//   refund price is therefore computed only from this contract's own state
+//   (ethContributed / refundableTokens), which is mutated exclusively in
+//   afterCashOutRecordedWith — after the ETH send. During a reentrant cash out both
+//   values are still at their pre-call amounts, so the price is unchanged and the sum
+//   of all (possibly nested) reclaims for a holder can never exceed their recorded
+//   contribution. The hook never reads the live token balance, which the burn mutates
+//   mid-transaction. `beforeCashOutRecordedWith` is `view` (invoked via STATICCALL),
+//   so a state-based lock there is impossible; the consistent-basis design is the
+//   guard.
 //
-//   CAVEAT: the ledger keys off ETH paid, not tokens currently held. If a holder
-//   transfers project tokens after re-open, their refund claim does not move with the
-//   tokens. Re-open rulesets should set pauseCreditTransfers = true to prevent this;
-//   these tokens are contribution receipts, not actively traded during a raise.
+//   Original (pre-hook) contributions are seeded once via seedContributions() with the
+//   net ETH and net tokens per holder (see script/backfill/resolve-contributions.mjs),
+//   then frozen with lockLedger() in the same Safe batch that activates the re-open
+//   ruleset. Reserved-token allocation holders (vesting contracts, pool deployer)
+//   never paid ETH — they cannot be seeded and cannot cash out.
+//
+//   TRANSFERS: the ledger keys off ETH paid, not tokens currently held. Over-refund
+//   from acquiring extra tokens is impossible regardless of transfers, because a
+//   refund is capped at cashOutCount <= refundableTokens[holder] AND priced from the
+//   holder's own ledger. A token transfer therefore cannot pay anyone more than they
+//   contributed; its only effect is that a transferee (no ledger entry) cannot claim,
+//   and a transferor who moved tokens away can no longer burn them to claim. Setting
+//   pauseCreditTransfers = true blocks unclaimed-credit moves; note it does NOT block
+//   the claimed ERC-20, so refund availability still assumes holders keep their tokens.
 //
 //   Everything else (funding kill-switch, goal/deadline gating, refund window,
 //   stage(), optional DePrize registry latch) matches LaunchPadPayHook.
@@ -86,6 +98,11 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
     ///         cash out, and seeded once for the original (pre-hook) raise.
     mapping(address => uint256) public ethContributed;
 
+    /// @notice Project tokens backing each address's contribution. Tracked in this
+    ///         contract's own state (not read from the live balance) so the refund
+    ///         price is immune to the burn that the terminal performs mid-cash-out.
+    mapping(address => uint256) public refundableTokens;
+
     /// @notice Once locked, seedContributions can no longer be called. Set this after
     ///         seeding the original raise and before the re-open ruleset goes live.
     bool public ledgerLocked;
@@ -99,7 +116,7 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
     IDePrizeRegistry public deprizeRegistry;
 
     event DePrizeRegistrySet(address indexed registry);
-    event ContributionSeeded(address indexed holder, uint256 amount);
+    event ContributionSeeded(address indexed holder, uint256 ethAmount, uint256 tokenAmount);
     event LedgerLocked();
 
     error DePrizeRegistryAlreadySet();
@@ -154,19 +171,32 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
     }
 
     /// @notice Seed the deposit ledger with the original (pre-hook) contributions.
-    ///         For a re-opened mission this is balance / 1000 for each non-reserved
-    ///         holder (they all minted at 1,000/ETH). Values are SET, not added, so
-    ///         seeding is idempotent; it must run before any new contribution to avoid
-    ///         clobbering live credits. Reserved holders must be excluded.
+    ///         Provide the NET ETH (payments minus any original refunds) and the NET
+    ///         tokens backing it per holder. Values are SET, not added, so seeding is
+    ///         idempotent; it must run before any new contribution to avoid clobbering
+    ///         live credits, and before lockLedger(). Reserved holders are rejected.
     /// @param holders The contributor addresses to seed.
-    /// @param amounts The ETH each contributed, in wei.
-    function seedContributions(address[] calldata holders, uint256[] calldata amounts) external onlyOwner {
+    /// @param ethAmounts The net ETH each contributed, in wei.
+    /// @param tokenAmounts The net project tokens backing each contribution (18 dp).
+    function seedContributions(
+        address[] calldata holders,
+        uint256[] calldata ethAmounts,
+        uint256[] calldata tokenAmounts
+    ) external onlyOwner {
         require(!ledgerLocked, "Ledger is locked.");
-        require(holders.length == amounts.length, "Length mismatch.");
+        require(holders.length == ethAmounts.length && holders.length == tokenAmounts.length, "Length mismatch.");
         for (uint256 i = 0; i < holders.length; i++) {
+            require(holders[i] != address(0), "Cannot seed zero address.");
             require(!isReservedHolder(holders[i]), "Cannot seed a reserved holder.");
-            ethContributed[holders[i]] = amounts[i];
-            emit ContributionSeeded(holders[i], amounts[i]);
+            // A contribution must have both sides or neither; a one-sided seed would
+            // make the price 0 or infinite.
+            require(
+                (ethAmounts[i] == 0) == (tokenAmounts[i] == 0),
+                "Both eth and tokens required."
+            );
+            ethContributed[holders[i]] = ethAmounts[i];
+            refundableTokens[holders[i]] = tokenAmounts[i];
+            emit ContributionSeeded(holders[i], ethAmounts[i], tokenAmounts[i]);
         }
     }
 
@@ -269,8 +299,14 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
         _requireTerminal(context.projectId);
         // No ETH should be forwarded to the hook; the contribution stays in the terminal.
         require(msg.value == 0, "Unexpected value forwarded.");
+        // Credit the beneficiary with the ETH paid and the tokens minted to them.
+        // A reserved holder can never be a pay beneficiary here (they receive tokens
+        // via reserved splits, not via pay), but guard anyway so the two ledgers can
+        // never diverge from the "reserved holders hold no claim" invariant.
+        if (isReservedHolder(context.beneficiary)) return;
         if (context.amount.value > 0) {
             ethContributed[context.beneficiary] += context.amount.value;
+            refundableTokens[context.beneficiary] += context.newlyIssuedTokenCount;
         }
     }
 
@@ -309,21 +345,36 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
         }
 
         // Refund the caller EXACTLY the ETH they contributed, scaled by the fraction
-        // of their tokens being burned — independent of the rate they minted at.
+        // of their backing tokens being burned — independent of the rate they minted
+        // at and of the current surplus.
         //
         // The terminal computes reclaim = surplus * cashOutCount / totalSupply (tax 0).
-        // Return a synthetic totalSupply so that resolves to:
-        //   reclaim = cashOutCount * ethContributed[holder] / balance[holder]
+        // Returning totalSupply = ceil(surplus * refundableTokens / ethContributed)
+        // makes reclaim = cashOutCount * ethContributed / refundableTokens.
+        //
+        // Both ledger values are this contract's own state and are only updated in
+        // afterCashOutRecordedWith (after the terminal's ETH send), so a reentrant
+        // cash out sees the same price and can never over-draw. See the contract
+        // header for the full reentrancy argument.
         uint256 contributed = ethContributed[context.holder];
-        require(contributed > 0, "No refundable contribution recorded for this holder.");
-
-        uint256 balance = jbTokens.totalBalanceOf(context.holder, context.projectId);
-        require(balance > 0, "Holder has no project tokens.");
+        uint256 tokens = refundableTokens[context.holder];
+        require(contributed > 0 && tokens > 0, "No refundable contribution recorded for this holder.");
 
         cashOutCount = context.cashOutCount;
+        // Cannot refund more backing tokens than are recorded for this holder. With
+        // pauseCreditTransfers this equals their balance; the guard prevents any
+        // over-refund if the ledger is ever under-seeded relative to balance.
+        require(cashOutCount <= tokens, "Cash out exceeds refundable tokens.");
+
         // Ceil-divide so any dust rounds in the pot's favor (never over-draws).
-        uint256 numerator = context.surplus.value * balance;
+        uint256 numerator = context.surplus.value * tokens;
         totalSupply = (numerator + contributed - 1) / contributed;
+
+        // Guard the JBCashOuts "cashOutCount >= totalSupply => return entire surplus"
+        // branch. Under normal operation contributed <= surplus so this holds; it can
+        // only fail if the surplus was drained below this holder's contribution (an
+        // owner/Safe action), in which case we revert rather than over-pay.
+        require(totalSupply >= cashOutCount, "Insufficient surplus to honor refund.");
 
         hookSpecifications = new JBCashOutHookSpecification[](1);
         hookSpecifications[0] = JBCashOutHookSpecification({
@@ -335,10 +386,17 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
 
     function afterCashOutRecordedWith(JBAfterCashOutRecordedContext calldata context) external payable override {
         _requireTerminal(context.projectId);
+        require(msg.value == 0, "Unexpected value forwarded.");
+
+        // Decrement both sides of the ledger by what was actually burned/reclaimed,
+        // preserving the ethContributed / refundableTokens ratio for any remainder.
+        uint256 burned = context.cashOutCount;
         uint256 reclaimed = context.reclaimedAmount.value;
+
+        uint256 tokens = refundableTokens[context.holder];
+        refundableTokens[context.holder] = burned >= tokens ? 0 : tokens - burned;
+
         uint256 contributed = ethContributed[context.holder];
-        // Decrement the ledger by the refunded amount, preserving the
-        // ethContributed / balance ratio for any remaining tokens.
         ethContributed[context.holder] = reclaimed >= contributed ? 0 : contributed - reclaimed;
     }
 
@@ -346,7 +404,7 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
     // Boilerplate
     // ---------------------------------------------------------------------------
 
-    function hasMintPermissionFor(uint256 projectId, JBRuleset memory ruleset, address addr) external view override returns (bool flag){
+    function hasMintPermissionFor(uint256, JBRuleset memory, address) external pure override returns (bool){
         return false;
     }
 

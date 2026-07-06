@@ -2,40 +2,47 @@
 /**
  * resolve-contributions.mjs
  *
- * Reconstructs the ORIGINAL (pre-reopen) contributions for a Juicebox project
- * from current token balances at seeding time. The output seeds the
- * ReopenPayHook deposit ledger so original backers can be refunded EXACTLY the ETH
- * they contributed if the re-open round is wound down.
+ * Reconstructs the ORIGINAL (pre-reopen) contributions for a Juicebox project from
+ * CURRENT token balances at seeding time, and emits the seed for the ReopenPayHook
+ * deposit ledger so original backers can be refunded EXACTLY the ETH they contributed
+ * if the re-open round is wound down.
  *
- * How contributions are computed:
- *   Contributions are derived from current token balances at seeding time
- *   (currentBalance / ISSUANCE_RATE), NOT from historical Pay event amounts.
- *   This correctly handles pre-reopen token transfers: if a backer transferred
- *   their tokens to another address before the re-open ruleset activated (when
- *   pauseCreditTransfers was still false), the new holder receives the ETH
- *   credit for those tokens.  Seeding by original Pay beneficiary would instead
- *   leave new holders with zero ethContributed (blocked from refunding) and
- *   allow original beneficiaries to reclaim more ETH than their remaining token
- *   share warrants.
+ * For each current token holder (excluding reserved allocations) it produces:
+ *
+ *   tokenAmount = current $OVERVIEW balance        (the tokens that back the claim)
+ *   ethAmount   = current balance / ISSUANCE_RATE  (ETH at the original uniform rate)
+ *
+ * Why current balances (not Pay-beneficiary amounts): the original mission ran with
+ * pauseCreditTransfers = false, so tokens may have moved before the re-open ruleset
+ * activated. Keying to the current holder means whoever holds the tokens inherits the
+ * ETH credit, and any original refunds are already reflected (burned tokens lowered
+ * the balance). The token side (= exact balance) also matches on-chain balance to the
+ * wei, so the ReopenPayHook's `cashOutCount <= refundableTokens` guard never blocks a
+ * legitimate full refund and can never over-credit.
+ *
+ * IMPORTANT: run this at SEEDING TIME, before any new (re-open) contribution mints
+ * tokens. New contributions are credited live by the hook at their own rate; seeding
+ * only covers the pre-reopen originals, which are all at ISSUANCE_RATE.
  *
  * Usage:
- *   node script/backfill/resolve-contributions.mjs
+ *   TOKEN=0x... node script/backfill/resolve-contributions.mjs
  *
  * Env overrides:
- *   RPC_URL      default https://arb1.arbitrum.io/rpc
- *   TERMINAL     default 0x2dB6d704058E552DeFE415753465df8dF0361846
- *   TOKEN        project ERC20 token contract address (REQUIRED)
- *   PROJECT_ID   default 73
- *   FROM_BLOCK   default 440809003 (Frank mission creation block)
- *   TO_BLOCK     default latest
+ *   RPC_URL       default https://arb1.arbitrum.io/rpc
+ *   TERMINAL      default 0x2dB6d704058E552DeFE415753465df8dF0361846
+ *   TOKEN         project ERC20 token contract address (REQUIRED)
+ *   PROJECT_ID    default 73
+ *   FROM_BLOCK    default 440809003 (Frank mission creation block)
+ *   TO_BLOCK      default latest (freeze this at deploy time for a reproducible seed)
  *   ISSUANCE_RATE tokens-per-ETH for the original raise (default 1000)
- *   HOOK         ReopenPayHook address (only needed to print the Safe "To" field)
- *   BATCH_SIZE   contributors per seedContributions call (default 150)
+ *   HOOK          ReopenPayHook address (only needed to print the Safe "To" field)
+ *   BATCH_SIZE    contributors per seedContributions call (default 150)
  *
  * Outputs:
- *   - A summary table + total (sanity-check against the terminal balance)
- *   - script/backfill/frank-contributions.json  { holders: [], amounts: [] }
- *   - seedContributions(...) calldata batches + lockLedger() calldata for the Safe
+ *   - A summary table + totals (balance-derived vs Pay-events; sanity-check both)
+ *   - script/backfill/frank-contributions.json { holders, ethAmounts, tokenAmounts }
+ *   - seedContributions(address[],uint256[],uint256[]) calldata batches + lockLedger()
+ *     calldata for the Safe Transaction Builder.
  */
 
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -50,14 +57,14 @@ const HOOK = (process.env.HOOK || "").toLowerCase();
 const BATCH_SIZE = Number(process.env.BATCH_SIZE || "150");
 // ERC20 token contract for the project (required to build current-balance map).
 const TOKEN = (process.env.TOKEN || "").toLowerCase();
-// Original issuance rate in tokens-per-ETH. All pre-reopen mints used 1 000/ETH.
+// Original issuance rate in tokens-per-ETH. All pre-reopen mints used 1,000/ETH.
 const ISSUANCE_RATE = BigInt(process.env.ISSUANCE_RATE || "1000");
 
 // Pay(uint256,uint256,uint256,address,address,uint256,uint256,string,bytes,address)
 const PAY_TOPIC = "0x133161f1c9161488f777ab9a26aae91d47c0d9a3fafb398960f138db02c73797";
 // Transfer(address indexed from, address indexed to, uint256 value)
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-const SEED_SELECTOR = "0x4bbb48e4"; // seedContributions(address[],uint256[])
+const SEED_SELECTOR = "0x6c1a6924"; // seedContributions(address[],uint256[],uint256[])
 const LOCK_SELECTOR = "0xff4018d1"; // lockLedger()
 
 // Reserved-token allocation holders — never contributed ETH, must be excluded.
@@ -116,33 +123,22 @@ async function main() {
 
   const latest = process.env.TO_BLOCK ? BigInt(process.env.TO_BLOCK) : BigInt(await rpc("eth_blockNumber"));
   process.stderr.write(
-    `Scanning Pay events for project ${PROJECT_ID} on terminal ${TERMINAL}\n` +
-      `  blocks ${FROM_BLOCK} .. ${latest}\n`
+    `Scanning project ${PROJECT_ID} on terminal ${TERMINAL}\n` + `  blocks ${FROM_BLOCK} .. ${latest}\n`
   );
 
-  const logs = await getLogsChunked(FROM_BLOCK, latest, {
+  // Pay events: used only for a grand-total sanity cross-check against balances.
+  const payLogs = await getLogsChunked(FROM_BLOCK, latest, {
     address: TERMINAL,
     topics: [PAY_TOPIC, null, null, topicForUint(PROJECT_ID)],
   });
-
-  // Sum Pay event amounts for the sanity-check grand total only.
-  // We do NOT key contributions to the Pay beneficiary here because original
-  // missions had pauseCreditTransfers = false, so tokens may have moved to
-  // different holders before the re-open ruleset activated.  Seeding by
-  // beneficiary would leave the new holder with zero ethContributed (blocked
-  // from refunding) while the original beneficiary could reclaim more ETH than
-  // their current token share warrants.
-  let grandTotal = 0n;
-  for (const log of logs) {
-    const data = log.data.slice(2);
-    const amount = BigInt("0x" + data.slice(128, 192));
-    grandTotal += amount;
-  }
+  let payTotal = 0n;
+  for (const log of payLogs) payTotal += BigInt("0x" + log.data.slice(2).slice(128, 192));
 
   // Build a current-balance map by replaying all ERC20 Transfer events for the
-  // project token.  ethContributed[holder] = currentBalance / ISSUANCE_RATE so
-  // whoever holds tokens at seeding time inherits the ETH credit for those
-  // tokens, correctly handling any pre-reopen transfers.
+  // project token. refundableTokens[holder] = current balance;
+  // ethContributed[holder] = balance / ISSUANCE_RATE. Whoever holds the tokens at
+  // seeding time inherits the ETH credit, correctly handling pre-reopen transfers
+  // and any original refunds (which burned tokens and lowered the balance).
   process.stderr.write(`\nScanning ${TOKEN} Transfer events to build current balance map…\n`);
   const transferLogs = await getLogsChunked(FROM_BLOCK, latest, {
     address: TOKEN,
@@ -162,26 +158,34 @@ async function main() {
     }
   }
 
-  const totals = new Map();
+  const holders = [];
+  const ethAmounts = [];
+  const tokenAmounts = [];
   for (const [addr, balance] of balances.entries()) {
     if (balance <= 0n) continue;
     if (RESERVED.has(addr)) continue;
+    if (addr === "0x0000000000000000000000000000000000000000") continue;
     const contribution = balance / ISSUANCE_RATE;
     if (contribution === 0n) continue;
-    totals.set(addr, contribution);
+    holders.push(addr);
+    ethAmounts.push(contribution);
+    tokenAmounts.push(balance);
   }
+  const grandTotal = ethAmounts.reduce((a, b) => a + b, 0n);
 
-  const holders = [...totals.keys()];
-  const amounts = holders.map((h) => totals.get(h));
-  const grandTotal2 = amounts.reduce((a, b) => a + b, 0n);
-
-  process.stderr.write(`\nFound ${logs.length} Pay events | ${transferLogs.length} Transfer events -> ${holders.length} unique current holders\n`);
+  process.stderr.write(
+    `\nFound ${payLogs.length} Pay events | ${transferLogs.length} Transfer events -> ` +
+      `${holders.length} unique current holders to seed\n`
+  );
   console.log("\n=== Original contributions by current token holder (excludes reserved holders) ===");
-  for (const h of holders) {
-    console.log(`  ${h}  ${(Number(totals.get(h)) / 1e18).toFixed(6)} ETH  (${totals.get(h)} wei)`);
+  for (let i = 0; i < holders.length; i++) {
+    console.log(
+      `  ${holders[i]}  ${(Number(ethAmounts[i]) / 1e18).toFixed(6)} ETH  (${ethAmounts[i]} wei)  ` +
+        `${(Number(tokenAmounts[i]) / 1e18).toFixed(4)} tokens`
+    );
   }
-  console.log(`\n  TOTAL (balance-derived): ${(Number(grandTotal2) / 1e18).toFixed(6)} ETH  (${grandTotal2} wei)`);
-  console.log(`  TOTAL (Pay events):      ${(Number(grandTotal) / 1e18).toFixed(6)} ETH  (${grandTotal} wei)`);
+  console.log(`\n  TOTAL (balance-derived): ${(Number(grandTotal) / 1e18).toFixed(6)} ETH  (${grandTotal} wei)`);
+  console.log(`  TOTAL (Pay events):      ${(Number(payTotal) / 1e18).toFixed(6)} ETH  (${payTotal} wei)`);
   console.log("  ^ both totals should match; sanity-check against the terminal balance before seeding.\n");
 
   // Write JSON for the record / forge consumption.
@@ -190,7 +194,14 @@ async function main() {
   writeFileSync(
     outPath,
     JSON.stringify(
-      { projectId: PROJECT_ID.toString(), totalWei: grandTotal2.toString(), holders, amounts: amounts.map(String) },
+      {
+        projectId: PROJECT_ID.toString(),
+        totalWei: grandTotal.toString(),
+        payEventsTotalWei: payTotal.toString(),
+        holders,
+        ethAmounts: ethAmounts.map(String),
+        tokenAmounts: tokenAmounts.map(String),
+      },
       null,
       2
     )
@@ -205,9 +216,10 @@ async function main() {
 
   for (let i = 0; i < holders.length; i += BATCH_SIZE) {
     const hb = holders.slice(i, i + BATCH_SIZE);
-    const ab = amounts.slice(i, i + BATCH_SIZE);
+    const eb = ethAmounts.slice(i, i + BATCH_SIZE);
+    const tb = tokenAmounts.slice(i, i + BATCH_SIZE);
     console.log(`--- seedContributions batch ${i / BATCH_SIZE + 1} (${hb.length} holders) ---`);
-    console.log(encodeSeed(hb, ab));
+    console.log(encodeSeed(hb, eb, tb));
     console.log("");
   }
   console.log("--- lockLedger() ---");
@@ -217,27 +229,31 @@ async function main() {
   );
 }
 
-/** ABI-encode seedContributions(address[] holders, uint256[] amounts). */
-function encodeSeed(holders, amounts) {
+/** ABI-encode seedContributions(address[] holders, uint256[] ethAmounts, uint256[] tokenAmounts). */
+function encodeSeed(holders, ethAmounts, tokenAmounts) {
   const n = holders.length;
   const word = (hex) => hex.replace(/^0x/, "").padStart(64, "0");
   const uintWord = (v) => BigInt(v).toString(16).padStart(64, "0");
 
-  // head: two dynamic params -> two offset words
-  const offHolders = 0x40; // 2 * 32
-  // holders array block: length + n words
-  const holdersBlockWords = 1 + n;
-  const offAmounts = offHolders + holdersBlockWords * 32;
+  // head: three dynamic params -> three offset words
+  const offHolders = 0x60; // 3 * 32
+  const arrayBlockWords = 1 + n; // length + n elements
+  const offEth = offHolders + arrayBlockWords * 32;
+  const offTokens = offEth + arrayBlockWords * 32;
 
   let body = "";
   body += uintWord(offHolders);
-  body += uintWord(offAmounts);
+  body += uintWord(offEth);
+  body += uintWord(offTokens);
   // holders array
   body += uintWord(n);
   for (const h of holders) body += word(h.toLowerCase());
-  // amounts array
+  // ethAmounts array
   body += uintWord(n);
-  for (const a of amounts) body += uintWord(a);
+  for (const a of ethAmounts) body += uintWord(a);
+  // tokenAmounts array
+  body += uintWord(n);
+  for (const t of tokenAmounts) body += uintWord(t);
 
   return SEED_SELECTOR + body;
 }
