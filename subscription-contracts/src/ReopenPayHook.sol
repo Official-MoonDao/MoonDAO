@@ -337,11 +337,9 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
             if (!deprizeRegistry.isRefundable(deprizeId)) {
                 revert("DePrize is active. Refunds are disabled.");
             }
-            uint256 deprizeFunding = _totalFunding(context.terminal, context.projectId);
-            uint256 deprizeWeight = jbRulesets.getRulesetOf(context.projectId, context.rulesetId).weight;
-            cashOutCount = context.cashOutCount;
-            totalSupply = (deprizeFunding * deprizeWeight) / (2 * 1e18);
-            return (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications);
+            // Fall through to the deposit-ledger path so refunds use per-holder
+            // ethContributed / refundableTokens and afterCashOutRecordedWith keeps
+            // the ledger consistent, regardless of cohort issuance rates.
         } else {
             uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
             if (!refundsEnabled && currentFunding >= fundingGoal) {
