@@ -107,6 +107,10 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
     ///         seeding the original raise and before the re-open ruleset goes live.
     bool public ledgerLocked;
 
+    /// @notice Set to true on the first real pay contribution. Once set, seeding is
+    ///         blocked to prevent overwriting live credits.
+    bool public hasLiveContributions;
+
     /// @notice Holders of reserved-token allocations (vesting contracts, pool
     ///         deployer). They never contributed ETH and cannot cash out.
     address[] public reservedHolders;
@@ -184,6 +188,7 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
         uint256[] calldata tokenAmounts
     ) external onlyOwner {
         require(!ledgerLocked, "Ledger is locked.");
+        require(!hasLiveContributions, "Live contributions recorded; seeding is no longer safe.");
         require(holders.length == ethAmounts.length && holders.length == tokenAmounts.length, "Length mismatch.");
         for (uint256 i = 0; i < holders.length; i++) {
             require(holders[i] != address(0), "Cannot seed zero address.");
@@ -305,6 +310,7 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
         // never diverge from the "reserved holders hold no claim" invariant.
         if (isReservedHolder(context.beneficiary)) return;
         if (context.amount.value > 0) {
+            if (!hasLiveContributions) hasLiveContributions = true;
             ethContributed[context.beneficiary] += context.amount.value;
             refundableTokens[context.beneficiary] += context.newlyIssuedTokenCount;
         }
@@ -331,6 +337,11 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
             if (!deprizeRegistry.isRefundable(deprizeId)) {
                 revert("DePrize is active. Refunds are disabled.");
             }
+            uint256 deprizeFunding = _totalFunding(context.terminal, context.projectId);
+            uint256 deprizeWeight = jbRulesets.getRulesetOf(context.projectId, context.rulesetId).weight;
+            cashOutCount = context.cashOutCount;
+            totalSupply = (deprizeFunding * deprizeWeight) / (2 * 1e18);
+            return (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications);
         } else {
             uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
             if (!refundsEnabled && currentFunding >= fundingGoal) {
