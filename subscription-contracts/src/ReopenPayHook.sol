@@ -71,7 +71,7 @@ import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
 contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownable {
 
     uint256 public immutable fundingGoal;
-    uint256 public immutable deadline;
+    uint256 public deadline;
     uint256 public immutable refundPeriod;
 
     bool public fundingTurnedOff;
@@ -141,6 +141,16 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
 
     function enableRefunds(bool _refundsEnabled) external onlyOwner {
         refundsEnabled = _refundsEnabled;
+    }
+
+    /// @notice Update the campaign deadline. Use this to reset the countdown from
+    ///         the actual ruleset go-live date when hook deployment and ruleset
+    ///         activation happen in separate transactions (e.g. deploy via EOA then
+    ///         queue via a Safe). Must be called before the campaign starts
+    ///         accepting contributions (i.e. before the new ruleset is active).
+    function setDeadline(uint256 _deadline) external onlyOwner {
+        require(_deadline > block.timestamp, "Deadline must be in the future.");
+        deadline = _deadline;
     }
 
     /// @notice Seed the deposit ledger with the original (pre-hook) contributions.

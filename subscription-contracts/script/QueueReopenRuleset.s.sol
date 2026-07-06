@@ -52,6 +52,15 @@ import "base/Config.sol";
 ///                               Safe calldata after a separate hook deployment to avoid
 ///                               nonce-dependent address mismatches.
 ///
+///   Note on deadline timing: the hook's deadline is set at deploy time to
+///   now + CAMPAIGN_DURATION_DAYS. When the hook is deployed in a separate
+///   transaction before the Safe queues the ruleset, that gap shortens the
+///   live campaign window. To reset the countdown to the actual go-live time,
+///   the project owner (team Safe) should call setDeadline(block.timestamp +
+///   CAMPAIGN_DURATION_DAYS) on the ReopenPayHook immediately after the ruleset
+///   becomes active — or include that call in the same Safe batch that queues
+///   the ruleset (using REOPEN_PAY_HOOK_ADDRESS to reference the pre-deployed hook).
+///
 ///      Override env vars (required when MissionCreator mappings return 0x0 — e.g. Frank mission):
 ///        TEAM_VESTING    address that receives reserved tokens for the team
 ///        MOONDAO_VESTING address that receives reserved tokens for MoonDAO
