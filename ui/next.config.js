@@ -5,6 +5,18 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
 
+// Vercel Preview/Development inject NEXT_PUBLIC_CHAIN=mainnet from the dashboard,
+// which overrides .env.preview. Force Sepolia testnet for non-production builds
+// so preview links and local dev match mission contracts on Sepolia.
+if (
+  process.env.VERCEL_ENV === 'preview' ||
+  process.env.VERCEL_ENV === 'development' ||
+  process.env.NODE_ENV === 'development'
+) {
+  process.env.NEXT_PUBLIC_CHAIN = 'testnet'
+  process.env.NEXT_PUBLIC_TEST_CHAIN = 'sepolia'
+}
+
 const cspHeaderBase = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com https://pay.google.com https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
