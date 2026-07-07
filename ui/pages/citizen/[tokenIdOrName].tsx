@@ -605,7 +605,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                 </div>
               </div>
             )}
-            {(citizen || isOwner) && nft?.owner && (
+            {nft?.owner && (
               <CitizenProjects ownerAddress={nft.owner} />
             )}
             {isOwner && (
