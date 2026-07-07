@@ -250,11 +250,46 @@ contract QueueReopenRulesetScript is Script, Config {
                 rulesetConfigurations,
                 memo
             );
+
             console.log("");
-            console.log("Propose this transaction from the team Safe (Transaction Builder):");
-            console.log("To (JB Controller):", JB_V5_CONTROLLER);
-            console.log("Value: 0");
-            console.log("Data:");
+            console.log("Propose these transactions from the team Safe (Transaction Builder), in this order:");
+            console.log("");
+
+            if (existingPayHook == address(0)) {
+                // Fresh hook: the deadline was stamped at deploy time. If Safe
+                // execution happens minutes/hours/days later, the live campaign
+                // loses that gap unless setDeadline is included in the same batch
+                // that activates the re-open ruleset. Emit it as Action 1 so the
+                // countdown is reset at Safe execution time.
+                //
+                // NOTE: the `newDeadline` below is anchored to *this script's*
+                // block.timestamp. If Safe execution is materially delayed,
+                // replace the encoded uint256 with
+                // `<safe_exec_unix_time> + campaignDurationDays * 86400` (still
+                // enforced to be in the future and before the current on-chain
+                // deadline by ReopenPayHook.setDeadline).
+                bytes memory setDeadlineCalldata = abi.encodeWithSelector(
+                    ReopenPayHook.setDeadline.selector,
+                    newDeadline
+                );
+                console.log("Action 1 - ReopenPayHook.setDeadline(newDeadline):");
+                console.log("  To (ReopenPayHook):", payHookAddress);
+                console.log("  Value: 0");
+                console.log("  newDeadline (anchor to Safe exec time if delayed):", newDeadline);
+                console.log("  Data:");
+                console.logBytes(setDeadlineCalldata);
+                console.log("");
+                console.log("Action 2 - seedContributions batches (from script/backfill/resolve-contributions.mjs)");
+                console.log("Action 3 - ReopenPayHook.lockLedger()");
+                console.log("Action 4 - JBController.queueRulesetsOf:");
+            } else {
+                // Rate update: reusing an already-configured hook, so its deadline
+                // is unchanged. Only queue the new ruleset.
+                console.log("Action 1 - JBController.queueRulesetsOf:");
+            }
+            console.log("  To (JB Controller):", JB_V5_CONTROLLER);
+            console.log("  Value: 0");
+            console.log("  Data:");
             console.logBytes(queueCalldata);
         }
 

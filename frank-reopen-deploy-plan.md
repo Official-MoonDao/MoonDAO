@@ -148,13 +148,17 @@ forge script script/QueueReopenRuleset.s.sol \
 
 **What:** A single **Transaction Builder batch** (atomic multisend) with these actions in order:
 
-1. `ReopenPayHook.seedContributions(holders, ethAmounts, tokenAmounts)` — one or more batches (calldata from Pre-step B). **To:** the hook address, **Value:** 0.
-2. `ReopenPayHook.lockLedger()` — freezes the seed. **To:** the hook, **Value:** 0.
-3. `JBController.queueRulesetsOf(...)` — activates the re-open ruleset (calldata from Option A below). **To:** `0x27da30646502e2f642bE5281322Ae8C394F7668a`, **Value:** 0.
+1. `ReopenPayHook.setDeadline(newDeadline)` — resets the campaign countdown to Safe execution time. **To:** the hook, **Value:** 0.
+   - `newDeadline = safe_execution_unix_time + CAMPAIGN_DURATION_DAYS * 86400`.
+   - Required because the hook's `deadline` was stamped at Transaction 1 deploy time; without this call the live campaign loses every second between the EOA deploy and Safe execution.
+   - The forge script (Option A below) prints ready-to-paste calldata for this action. If Safe execution is materially delayed (e.g. days after deploy), recompute the `uint256` argument in the calldata to reflect the actual execution timestamp — the on-chain guard requires the new deadline to be in the future but before the current on-chain deadline.
+2. `ReopenPayHook.seedContributions(holders, ethAmounts, tokenAmounts)` — one or more batches (calldata from Pre-step B). **To:** the hook address, **Value:** 0.
+3. `ReopenPayHook.lockLedger()` — freezes the seed. **To:** the hook, **Value:** 0.
+4. `JBController.queueRulesetsOf(...)` — activates the re-open ruleset (calldata from Option A below). **To:** `0x27da30646502e2f642bE5281322Ae8C394F7668a`, **Value:** 0.
 
-Doing all three in one batch guarantees the ledger is seeded and frozen **before** the ruleset goes live, so no contribution can slip in against an unseeded ledger. Because the current ruleset has `duration=0` and `approvalHook=0x0`, the new ruleset takes effect **immediately** on the next terminal interaction.
+Doing all four in one batch guarantees the deadline is anchored to the go-live moment and the ledger is seeded and frozen **before** the ruleset goes live, so no contribution can slip in against an unseeded ledger or a stale deadline. Because the current ruleset has `duration=0` and `approvalHook=0x0`, the new ruleset takes effect **immediately** on the next terminal interaction.
 
-> If original backers are **not** being made refundable, skip actions 1–2 and do only the `queueRulesetsOf` call.
+> If original backers are **not** being made refundable, skip actions 2–3 and do only the `setDeadline` + `queueRulesetsOf` calls.
 
 #### Option A — Use the script to generate the queueRulesetsOf calldata (recommended)
 
@@ -183,10 +187,11 @@ forge script script/QueueReopenRuleset.s.sol \
 Copy the printed calldata and:
 1. Go to [app.safe.global](https://app.safe.global) → `0xaA1Bd6d001C0000420090EDb36bEAE0D9393B5EA`
 2. New Transaction → **Transaction Builder**
-3. Add the Pre-step B actions first (seedContributions batches → lockLedger, **To:** the hook address), then add this final action:
-   - **To:** `0x27da30646502e2f642bE5281322Ae8C394F7668a` (JB Controller)
-   - **Value:** 0
-   - **Data:** paste the `queueRulesetsOf` calldata
+3. Add actions in this order:
+   1. `setDeadline` (**To:** the hook address, **Data:** printed by the forge script; anchor the `uint256` to Safe execution time if materially delayed).
+   2. Pre-step B `seedContributions` batches (**To:** the hook address, **Data:** printed by `resolve-contributions.mjs`).
+   3. `lockLedger` (**To:** the hook address, **Data:** printed by `resolve-contributions.mjs`).
+   4. `queueRulesetsOf` (**To:** `0x27da30646502e2f642bE5281322Ae8C394F7668a`, **Data:** the `queueRulesetsOf` calldata printed by the forge script).
 4. Collect 3 signatures and execute the batch.
 
 #### Option B — Build the transaction manually in Safe Transaction Builder
