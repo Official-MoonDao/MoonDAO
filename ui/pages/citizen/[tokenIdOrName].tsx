@@ -64,6 +64,7 @@ import Tooltip from '@/components/layout/Tooltip'
 import Action from '@/components/subscription/Action'
 import Card from '@/components/subscription/Card'
 import CitizenActions from '@/components/subscription/CitizenActions'
+import CitizenProjects from '@/components/subscription/CitizenProjects'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import GuestActions from '@/components/subscription/GuestActions'
 import LatestJobs from '@/components/subscription/LatestJobs'
@@ -603,6 +604,9 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                   ))}
                 </div>
               </div>
+            )}
+            {(citizen || isOwner) && nft?.owner && (
+              <CitizenProjects ownerAddress={nft.owner} />
             )}
             {isOwner && (
               <>
