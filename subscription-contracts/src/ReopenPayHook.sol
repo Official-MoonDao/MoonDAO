@@ -169,7 +169,12 @@ contract ReopenPayHook is IJBRulesetDataHook, IJBPayHook, IJBCashOutHook, Ownabl
     ///         activation happen in separate transactions (e.g. deploy via EOA then
     ///         queue via a Safe). Must be called before the campaign starts
     ///         accepting contributions (i.e. before the new ruleset is active).
+    ///
+    ///         Blocked once the current deadline has passed so the owner cannot
+    ///         retroactively reopen the campaign or abort the refund window that
+    ///         `refundPeriod` was measured against.
     function setDeadline(uint256 _deadline) external onlyOwner {
+        require(block.timestamp < deadline, "Deadline has already passed.");
         require(_deadline > block.timestamp, "Deadline must be in the future.");
         deadline = _deadline;
     }

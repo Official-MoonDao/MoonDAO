@@ -873,6 +873,85 @@ contract ReopenRulesetTest is Test, Config {
         hook.seedContributions(holders, eth, toks);
     }
 
+    /// @notice `setDeadline` lets the owner reset the countdown to Safe execution
+    ///         time (deploy-time deadline → go-live deadline), but only while the
+    ///         current deadline is still in the future. Once the deadline has
+    ///         passed the campaign is either goal-met or in the refund window, and
+    ///         resetting would let the owner block refunds and re-open payments.
+    function testSetDeadlineIsOwnerGatedAndTimeBounded() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+
+        uint256 initialDeadline = hook.deadline();
+        assertEq(initialDeadline, block.timestamp + CAMPAIGN_DURATION, "Initial deadline is deploy-time + duration");
+
+        // Non-owner cannot reset the deadline.
+        vm.prank(randomCaller);
+        vm.expectRevert();
+        hook.setDeadline(block.timestamp + CAMPAIGN_DURATION);
+
+        // Owner extends the deadline while the campaign is still live.
+        skip(1 days);
+        uint256 extended = block.timestamp + CAMPAIGN_DURATION;
+        vm.prank(teamAddress);
+        hook.setDeadline(extended);
+        assertEq(hook.deadline(), extended, "Owner can shift the deadline while campaign is live");
+
+        // A deadline in the past (or now) is still rejected on the future-check.
+        vm.prank(teamAddress);
+        vm.expectRevert("Deadline must be in the future.");
+        hook.setDeadline(block.timestamp);
+
+        // Once the current deadline passes, setDeadline is blocked so the owner
+        // cannot retroactively reopen the campaign or abort the refund window.
+        skip(CAMPAIGN_DURATION + 1);
+        vm.prank(teamAddress);
+        vm.expectRevert("Deadline has already passed.");
+        hook.setDeadline(block.timestamp + CAMPAIGN_DURATION);
+    }
+
+    /// @notice Deadline reset after the refund window opens would block refunds
+    ///         (`beforeCashOutRecordedWith` requires `block.timestamp >= deadline`)
+    ///         and re-open pays (`beforePayRecordedWith` only rejects once
+    ///         `block.timestamp >= deadline`). The `setDeadline` guard prevents
+    ///         that abuse path; a refund attempted after a reset attempt still
+    ///         succeeds against the ORIGINAL deadline.
+    function testSetDeadlineCannotAbortRefundWindow() public {
+        _createTeam();
+        uint256 missionId = _createMission(1_000 ether);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        skip(28 days + 28 days + 1);
+        ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
+
+        _pay(contributor1, 1 ether, terminal, projectId);
+        uint256 tokens = jbTokens.totalBalanceOf(contributor1, projectId);
+
+        // Refund window opens once the deadline passes with the goal unmet.
+        skip(CAMPAIGN_DURATION + 1);
+        assertEq(hook.stage(address(terminal), projectId), 3, "Refund stage should be open");
+
+        // Owner tries to reset the deadline into the future — must revert so the
+        // refund window stays open and no new pay slips in against a stale deadline.
+        vm.prank(teamAddress);
+        vm.expectRevert("Deadline has already passed.");
+        hook.setDeadline(block.timestamp + CAMPAIGN_DURATION);
+
+        // The refund still goes through under the original deadline.
+        uint256 balanceBefore = contributor1.balance;
+        vm.prank(contributor1);
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            contributor1, projectId, tokens, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+        );
+        assertApproxEqAbs(contributor1.balance - balanceBefore, 1 ether, 10, "Refund honored against original deadline");
+    }
+
     /// @notice REENTRANCY: a malicious contributor whose `receive()` re-enters
     ///         `cashOutTokensOf` during the refund ETH transfer cannot drain more
     ///         than they contributed. The refund price is derived only from the
