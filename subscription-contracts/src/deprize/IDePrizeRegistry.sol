@@ -47,6 +47,7 @@ interface IDePrizeRegistry {
     event WinnerDeclared(uint256 indexed deprizeId, uint256 indexed winningTeamId);
     event CancellationAnnounced(uint256 indexed deprizeId, uint256 noticeAt, uint256 executableAt);
     event CancellationAborted(uint256 indexed deprizeId);
+    event ProviderPayoutAddressSet(uint256 indexed deprizeId, address indexed provider);
 
     // ---------------------------------------------------------------------
     // Errors
@@ -66,6 +67,8 @@ interface IDePrizeRegistry {
     error NoCancellationPending(uint256 deprizeId);
     error CancellationAlreadyPending(uint256 deprizeId);
     error CancellationNoticeNotElapsed(uint256 deprizeId, uint256 executableAt);
+    /// @dev The provider payout address must be non-zero (M5 prize disbursement target).
+    error ZeroProviderAddress();
 
     // ---------------------------------------------------------------------
     // Admin: registration & configuration
@@ -113,8 +116,26 @@ interface IDePrizeRegistry {
     function cancel(uint256 deprizeId) external; //                      non-terminal -> CANCELLED
 
     // ---------------------------------------------------------------------
+    // Admin: prize disbursement (M5)
+    // ---------------------------------------------------------------------
+
+    /// @notice Record the winning provider's payout address (the Safe that receives
+    ///         the 30%/70% milestone prize). Settable only once a winner has been
+    ///         declared and before the prize fully resolves (`SETTLED` or
+    ///         `M1_RELEASED`), so the disbursement runbook has an on-chain,
+    ///         auditable target. Updatable while in those states (e.g. the provider
+    ///         rotates Safes between M1 and M2).
+    /// @dev The actual prize ETH lives in the admin Safe (extracted from Juicebox);
+    ///      disbursement is a Safe transaction, not an on-chain pull. This only
+    ///      records the destination. See DEPRIZE_M5.md.
+    function setProviderPayoutAddress(uint256 deprizeId, address provider) external;
+
+    // ---------------------------------------------------------------------
     // Views
     // ---------------------------------------------------------------------
+
+    /// @notice The recorded provider payout address (0 if unset).
+    function providerPayoutAddress(uint256 deprizeId) external view returns (address);
 
     /// @notice Duration of the cancellation notice window.
     function CANCELLATION_NOTICE() external view returns (uint256);
