@@ -36,7 +36,11 @@ import {
   readContract,
   waitForReceipt,
 } from 'thirdweb'
-import { useActiveAccount } from 'thirdweb/react'
+import {
+  useActiveAccount,
+  useActiveWallet,
+  useActiveWalletChain,
+} from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
@@ -257,6 +261,12 @@ export default function MissionContributeModal({
   )
 
   const account = useActiveAccount()
+  // The wallet thirdweb will actually SIGN with. We must switch/verify the
+  // chain on *this* wallet (not `wallets[selectedWallet]`, which can be a
+  // different connector) before sending, otherwise the signing wallet can stay
+  // on the wrong network and the tx fails with "underlying network changed".
+  const activeWallet = useActiveWallet()
+  const activeWalletChain = useActiveWalletChain()
   // In test mode (Cypress), use mock address from window if available
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
@@ -403,32 +413,74 @@ export default function MissionContributeModal({
     [address, fundingBalanceResolved, walletOnPayChain, chains, payChainStable.id]
   )
 
+  /** Live chain id of the wallet thirdweb signs with (falls back to the hook). */
+  const getActiveWalletChainId = useCallback((): number | undefined => {
+    try {
+      return activeWallet?.getChain?.()?.id ?? activeWalletChain?.id
+    } catch {
+      return activeWalletChain?.id
+    }
+  }, [activeWallet, activeWalletChain])
+
   const switchWalletToPayChain = useCallback(async (): Promise<boolean> => {
     const target = chains.find((c) => c.id === payChainStable.id) ?? payChainStable
-    const wallet = wallets?.[selectedWallet]
-    if (!wallet || typeof wallet.switchChain !== 'function') return false
-    try {
+
+    // Already there — nothing to do.
+    if (getActiveWalletChainId() === target.id) return true
+
+    // Switch the *active* (signing) wallet when available; otherwise fall back
+    // to the Privy-selected wallet. Switching the active wallet guarantees the
+    // network change applies to the connector that will sign the contribution.
+    const runSwitch = async (): Promise<void> => {
+      if (activeWallet && typeof activeWallet.switchChain === 'function') {
+        await activeWallet.switchChain(target)
+        return
+      }
+      const wallet = wallets?.[selectedWallet]
+      if (!wallet || typeof wallet.switchChain !== 'function') {
+        throw new Error('No switchable wallet available')
+      }
       await wallet.switchChain(target.id)
-      return true
+    }
+
+    try {
+      await runSwitch()
     } catch (err: any) {
       if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
         const ok = await addNetworkToWallet(target)
-        if (ok) {
-          try {
-            await wallet.switchChain(target.id)
-            return true
-          } catch {
-            return false
-          }
+        if (!ok) return false
+        try {
+          await runSwitch()
+        } catch {
+          return false
         }
-      } else if (err?.code !== 4001) {
+      } else if (err?.code === 4001) {
+        // User rejected the network switch.
+        return false
+      } else {
         toast.error('Failed to switch network. Please try again.', {
           style: toastStyle,
         })
+        return false
       }
-      return false
     }
-  }, [chains, payChainStable, wallets, selectedWallet])
+
+    // Injected wallets (e.g. MetaMask) report the switch asynchronously.
+    // Confirm the signing wallet actually landed on the pay chain before we
+    // build/send the tx — sending too early throws "underlying network changed".
+    for (let i = 0; i < 20; i++) {
+      if (getActiveWalletChainId() === target.id) return true
+      await new Promise((resolve) => setTimeout(resolve, 150))
+    }
+    return getActiveWalletChainId() === target.id
+  }, [
+    chains,
+    payChainStable,
+    wallets,
+    selectedWallet,
+    activeWallet,
+    getActiveWalletChainId,
+  ])
 
   const { effectiveGasPrice } = useGasPrice(payChainStable)
 
@@ -1117,11 +1169,28 @@ export default function MissionContributeModal({
     // Reset rejection state when attempting a new transaction
     setTransactionRejected(false)
 
-    // If wallet is on a different chain than the selected pay network, switch first
-    if (!walletOnPayChain) {
+    // Ensure the wallet that will SIGN is on the pay chain. We check the active
+    // wallet's live chain (not the cached balance chain) because those can
+    // diverge — e.g. MetaMask still on Ethereum while the pay tx targets
+    // Arbitrum, which fails with "underlying network changed" or an
+    // insufficient-gas prompt on the wrong network. Only act when the wallet is
+    // on a *known* different chain: when the chain is unknown (undefined) we let
+    // thirdweb's own switching handle it (embedded wallets, tests) rather than
+    // blocking. If a required switch can't be confirmed, abort with a clear
+    // error instead of signing on the wrong chain.
+    const activeChainId = getActiveWalletChainId()
+    if (activeChainId !== undefined && activeChainId !== payChainStable.id) {
       const switched = await switchWalletToPayChain()
       if (!switched) {
-        return
+        const networkLabel = (payChainStable.name ?? 'the correct network').replace(
+          ' One',
+          ''
+        )
+        toast.error(
+          `Please switch your wallet to ${networkLabel} to complete your contribution.`,
+          { style: toastStyle }
+        )
+        throw new Error(`Wallet is not on the payment network (${networkLabel})`)
       }
       await refetchNativeBalance()
     }
@@ -1456,7 +1525,7 @@ export default function MissionContributeModal({
     newsletterOptIn,
     isOverviewMission,
     toWei,
-    walletOnPayChain,
+    getActiveWalletChainId,
     switchWalletToPayChain,
     refetchNativeBalance,
   ])
