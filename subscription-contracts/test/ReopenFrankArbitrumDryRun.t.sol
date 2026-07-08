@@ -111,7 +111,15 @@ contract ReopenFrankArbitrumDryRun is Test, Config {
             if (forkBlock != 0) {
                 vm.createSelectFork(rpc, forkBlock);
             } else {
-                vm.createSelectFork(rpc);
+                // Preserve a fork already selected via CLI (e.g. --fork-url with
+                // --fork-block-number). Foundry does not surface the CLI's pinned
+                // block through env vars, so re-forking here would silently move
+                // a pinned run to chain head and break reproducibility.
+                try vm.activeFork() returns (uint256) {
+                    // Already on a fork; leave it alone.
+                } catch {
+                    vm.createSelectFork(rpc);
+                }
             }
         }
 
