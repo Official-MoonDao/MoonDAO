@@ -60,22 +60,94 @@ harness validates future rate step-downs or other re-opened missions.
 
 ---
 
-## Track B — UI preview against a fork (stakeholder gate)
+## Track B — UI testing (stakeholder gate)
 
-Let non-engineers click through the re-opened mission page end to end before go-live.
+Two Tenderly-free ways to exercise the re-open through the real UI. Option A is the
+faithful engineering check (real project 73, local/private); Option B is the public,
+shareable stakeholder demo (synthetic mission on Sepolia).
 
-1. Stand up a shareable fork of Arbitrum (Tenderly Virtual TestNet is easiest; it
-   gives a persistent hosted RPC and a block explorer).
-2. Execute the Track A sequence against that fork's RPC (point the runner at it via
-   `ARBITRUM_RPC_URL`, or run the equivalent broadcast against the Tenderly RPC) so
-   the fork carries the live re-open ruleset.
-3. Deploy a Vercel preview of `ui/` with `NEXT_PUBLIC_ARBITRUM_RPC_URL` set to the
-   fork RPC. The one-line override in `ui/lib/rpc/chains.ts` makes the whole app read
-   and write against the fork with no other changes.
-4. Share the private preview link. Stakeholders can contribute test ETH, watch the
-   funding bar move, and (after advancing the fork clock) confirm refunds — all
-   without touching mainnet. `useMissionData` is already re-open aware and reads the
-   stage from the new data hook, so the page shows the correct state.
+The UI needs no code changes beyond the one-line override already in
+`ui/lib/rpc/chains.ts`: `NEXT_PUBLIC_ARBITRUM_RPC_URL` overrides the Arbitrum RPC, and
+`useMissionData` is already re-open aware (if `MissionCreator.stage()` is 4 but the
+active ruleset's data hook differs, it reads stage from `ReopenPayHook`).
+
+### Option A — Local `anvil` fork of real Arbitrum (faithful, private)
+
+Forks live Arbitrum locally, broadcasts the exact re-open onto it (impersonating the
+real owner Safe), and points a local UI dev server at it. Uses the **real** project 73,
+pot, and 94-backer set. **Validated end-to-end** — 8 real txns broadcast, hook stage
+= 1, ledger locked, whale `ethContributed` = 11.966 ETH.
+
+**Artifacts**
+- `subscription-contracts/script/start-arbitrum-fork.sh` — starts the anvil fork.
+- `subscription-contracts/script/run-reopen-on-fork.sh` — broadcasts the re-open.
+- `subscription-contracts/script/SetupReopenOnFork.s.sol` — the broadcast script.
+
+```bash
+# Terminal A — start the fork (leave running):
+cd subscription-contracts
+export ARBITRUM_RPC_URL=https://arbitrum-mainnet.infura.io/v3/<key>
+./script/start-arbitrum-fork.sh
+
+# Terminal B — broadcast the re-open onto the fork:
+cd subscription-contracts
+./script/run-reopen-on-fork.sh
+
+# Terminal C — point the UI at the fork and open /mission/4:
+cd ui
+NEXT_PUBLIC_CHAIN=mainnet NEXT_PUBLIC_ARBITRUM_RPC_URL=http://localhost:8545 yarn dev
+```
+
+- **Contribute in the UI:** add a network to your wallet with RPC `http://localhost:8545`
+  and chain id `42161`; anvil pre-funds test accounts, or use
+  `cast rpc anvil_setBalance <addr> <hex-wei>` to fund your address. Revert the wallet
+  network afterward.
+- **Share it:** local only. To show others, screen-share or expose `localhost:3000`
+  with a temporary tunnel (`cloudflared tunnel --url http://localhost:3000`).
+
+### Option B — Public Sepolia recreation (shareable, synthetic)
+
+Creates a Frank-like mission on the public Sepolia testnet (JB v5 lives there at the
+same addresses), lets the original round lapse, then re-opens it. Anyone can connect a
+wallet, get faucet ETH, and click through a normal Vercel testnet preview link.
+Because a public chain's clock can't be fast-forwarded, the test mission uses SHORT
+durations (default 10-min deadline + 10-min refund) so it lapses in real time.
+
+**Artifacts**
+- `subscription-contracts/script/CreateTestMissionSepolia.s.sol` — creates the mission.
+- `subscription-contracts/script/QueueReopenRuleset.s.sol` — re-opens it (existing).
+
+```bash
+cd subscription-contracts
+export PRIVATE_KEY=0x...            # MissionCreator owner or team manager on Sepolia
+export SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/<key>
+
+# 1. Create a short-lived test mission (+ a small seed contribution):
+forge script script/CreateTestMissionSepolia.s.sol \
+  --rpc-url $SEPOLIA_RPC_URL --broadcast --via-ir -vvv
+#    -> note the printed MISSION_ID, TERMINAL, TEAM_VESTING, MOONDAO_VESTING, POOL_DEPLOYER
+
+# 2. Wait for the deadline + refund window to elapse (~20 min with defaults).
+
+# 3. Re-open it at 500/ETH (queue directly since the EOA owns the project):
+MISSION_ID=<printed> MISSION_CREATOR_ADDRESS=<sepolia MissionCreator> \
+  QUEUE_VIA_SENDER=true TOKENS_PER_ETH=500 \
+  CAMPAIGN_DURATION_DAYS=1 REFUND_PERIOD_DAYS=1 \
+  TEAM_VESTING=<printed> MOONDAO_VESTING=<printed> POOL_DEPLOYER=<printed> TERMINAL=<printed> \
+  forge script script/QueueReopenRuleset.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --via-ir
+```
+
+Then deploy a normal Vercel **testnet** preview of `ui/` (`NEXT_PUBLIC_CHAIN` unset /
+testnet, `NEXT_PUBLIC_TEST_CHAIN=sepolia`), enable Deployment Protection for a private
+link, and open `/mission/<MISSION_ID>`. Stakeholders use real Sepolia wallets + faucet
+ETH — no RPC override or wallet hacks needed.
+
+| | Option A (anvil fork) | Option B (Sepolia) |
+|---|---|---|
+| Real project 73 + backers | ✅ | ❌ (synthetic) |
+| Shareable public link | ❌ (local/tunnel) | ✅ |
+| Wallet setup for testers | custom localhost network | none (real Sepolia) |
+| Time control for refunds | instant (`evm_increaseTime`) | must wait real minutes |
 
 ---
 
