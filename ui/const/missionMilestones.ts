@@ -62,6 +62,47 @@ export function getMissionTagline(
 }
 
 /**
+ * Description (About tab) HTML overrides (mission id → HTML). Same precedence
+ * semantics as {@link MISSION_TAGLINE_OVERRIDES}: takes priority over the
+ * on-chain metadata description so the mission "About" section reflects the
+ * Frank re-open campaign until the on-chain metadata is refreshed. Remove a
+ * mission's entry once its on-chain description is updated. Rendered via
+ * dangerouslySetInnerHTML, so this must stay trusted, author-controlled markup.
+ */
+export const MISSION_DESCRIPTION_OVERRIDES: Partial<Record<number, string>> = {
+  4: `
+<h2>The competition is back on</h2>
+<p>The campaign to send Frank White to space is live again — and the contest to fly alongside him is back on. This isn&#39;t a reset; it&#39;s step two. Nothing from the first raise has been spent: every dollar is still held, and every original backer keeps their place in the story.</p>
+<p>After a month of calls with spaceflight providers across three continents and a community vote on where to go next, the answer came back loud and clear: finish what we started.</p>
+<h3>What&#39;s new this round</h3>
+<ul>
+<li><strong>A reachable goal.</strong> Our near-term target is <strong>$250,000</strong> — enough to lock in a guaranteed second stratospheric seat. Frank&#39;s seat is the floor we&#39;re building on; this milestone is about sending a member of our community up with him.</li>
+<li><strong>A bigger, contingent prize.</strong> Pending live negotiations, reaching <strong>$500,000</strong> could unlock a dedicated, premium two-seat mission with Virgin Galactic — Frank and a community flier, together.</li>
+<li><strong>Early backers win.</strong> $OVERVIEW opens at <strong>500 per ETH</strong> and steps down 50% every month. The earlier you contribute, the more voice you get.</li>
+<li><strong>Contributing is effortless.</strong> We rebuilt the flow end to end, including an Apple Pay on-ramp — backing a real spaceflight now takes seconds, whether or not you&#39;ve ever touched crypto.</li>
+</ul>
+<h3>A flight forty years in the making</h3>
+<p>For nearly four decades, Frank White has been the world&#39;s most patient witness to an experience he never had. He interviewed more than fifty astronauts and gave the feeling they described a name: the Overview Effect. He wrote the language the entire industry now speaks — and he has never been to space.</p>
+<p>In the first round, supporters raised over <strong>$172,000 from 157 contributions</strong> worldwide, with <strong>$0 spent</strong>. We said from the start that if we couldn&#39;t secure at least one seat for Frank, all funds would be returned. That promise still stands.</p>
+<h3>How to fly with Frank</h3>
+<p>One community member will fly alongside Frank. Any contribution of <strong>$100 or more</strong> grants free MoonDAO citizenship, which is required to enter. From there it&#39;s merit-based: community backing, an essay on what the Overview Effect means to you, review by a committee of professional and commercial astronauts, and a final community governance vote.</p>
+<p>The competition is back on. Frank could be next. Let&#39;s get him there.</p>
+`.trim(),
+}
+
+export function getMissionDescription(
+  missionId: unknown,
+  onChainDescription: string | undefined | null
+): string {
+  const id = Number(missionId)
+  if (Number.isFinite(id)) {
+    const override = MISSION_DESCRIPTION_OVERRIDES[id]
+    if (typeof override === 'string' && override.trim()) return override
+  }
+  return onChainDescription || ''
+}
+
+/**
  * Token symbol overrides for missions where the on-chain ERC20 hasn't been deployed via
  * Juicebox yet but the intended symbol is known (e.g. mission 4 / Overview Flight → OVERVIEW).
  */

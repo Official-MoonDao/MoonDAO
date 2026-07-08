@@ -1,3 +1,4 @@
+import { getMissionDescription } from 'const/missionMilestones'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
@@ -234,7 +235,10 @@ export default function MissionInfo({
               <div
                 className="prose prose-invert prose-lg max-w-none [&>p]:text-gray-300 [&>p]:leading-relaxed [&>h1]:text-white [&>h2]:text-white [&>h3]:text-white [&>ul]:text-gray-300 [&>ol]:text-gray-300 [&>a]:text-indigo-400"
                 dangerouslySetInnerHTML={{
-                  __html: mission?.metadata?.description || '',
+                  __html: getMissionDescription(
+                    mission?.id,
+                    mission?.metadata?.description
+                  ),
                 }}
               />
               {mission?.projectId != null && mission?.projectId !== '' && (
