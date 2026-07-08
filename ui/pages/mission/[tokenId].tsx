@@ -195,11 +195,18 @@ export const getServerSideProps: GetServerSideProps = async ({
     // versa).
     res.setHeader('Cache-Control', 'private, no-store')
 
-    const accessCode = process.env.MISSION_ACCESS_CODE || 'franktospace'
+    const accessCode = process.env.MISSION_ACCESS_CODE
+    if (!accessCode) {
+      // Default-deny when the deploy hasn't been configured with an access code,
+      // so a misconfigured environment can't accidentally expose the mission via
+      // a fallback string committed to source.
+      return { notFound: true }
+    }
+
     const cookies = parseCookies(req?.headers?.cookie)
-    const provided =
-      (typeof query?.access === 'string' ? query.access : undefined) ||
-      cookies['mission_access']
+    const queryAccess =
+      typeof query?.access === 'string' ? query.access : undefined
+    const provided = queryAccess || cookies['mission_access']
     if (provided !== accessCode) {
       return { notFound: true }
     }
@@ -208,6 +215,17 @@ export const getServerSideProps: GetServerSideProps = async ({
       'Set-Cookie',
       `mission_access=${accessCode}; Path=/; Max-Age=604800; SameSite=Lax`
     )
+    // If the code came in on the query string, redirect to the bare mission URL
+    // so the secret is stripped from the address bar, browser history, and any
+    // referrer headers sent by resources the mission page loads.
+    if (queryAccess) {
+      return {
+        redirect: {
+          destination: `/mission/${tokenId}`,
+          permanent: false,
+        },
+      }
+    }
   }
 
   const maxAttempts = 3
