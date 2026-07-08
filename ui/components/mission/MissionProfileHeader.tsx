@@ -3,6 +3,7 @@ import { DEFAULT_CHAIN_V5 } from 'const/config'
 import {
   getMissionMinimumUsdGoal,
   getMissionOffChainCommittedUsd,
+  getMissionTagline,
   MISSION_FUNDING_MILESTONES_USD,
   MISSION_MINIMUM_GOAL_TOOLTIP,
 } from 'const/missionMilestones'
@@ -136,6 +137,10 @@ const MissionProfileHeader = React.memo(
     const account = useActiveAccount()
     const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
+    const missionTagline = getMissionTagline(
+      mission?.id,
+      mission?.metadata?.tagline
+    )
     const minUsdGoal = getMissionMinimumUsdGoal(mission?.id)
     const offChainCommittedUsd = getMissionOffChainCommittedUsd(mission?.id)
     const terminalWei = totalFunding ?? BigInt(0)
@@ -268,7 +273,7 @@ const MissionProfileHeader = React.memo(
             </button>
           )}
         </div>
-        {mission?.metadata?.tagline && (
+        {missionTagline && (
           <p
             className={
               isOverviewMission
@@ -276,7 +281,7 @@ const MissionProfileHeader = React.memo(
                 : 'text-base sm:text-lg text-gray-400 leading-relaxed max-w-2xl'
             }
           >
-            {mission.metadata.tagline}
+            {missionTagline}
           </p>
         )}
         {/* Team Attribution sits with the title in the Overview layout so it
