@@ -111,7 +111,14 @@ function parseCookies(cookieHeader?: string): Record<string, string> {
   return Object.fromEntries(
     cookieHeader.split(';').map((c) => {
       const [k, ...v] = c.trim().split('=')
-      return [k, decodeURIComponent(v.join('='))]
+      const raw = v.join('=')
+      let decoded: string
+      try {
+        decoded = decodeURIComponent(raw)
+      } catch {
+        decoded = raw
+      }
+      return [k, decoded]
     })
   )
 }
