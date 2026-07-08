@@ -75,10 +75,15 @@ export default function useMissionData({
 
       let computedStage = +s.toString() as MissionStage
 
-      // If MissionCreator returns stage 4 (closed), check whether the active
-      // ruleset has a different dataHook (a manually-queued refund ruleset).
-      // If so, read stage() from that hook — it may return 3 (refundable).
-      if (computedStage === 4 && jbControllerContract && mission?.projectId) {
+      // Check whether the active ruleset has a different dataHook than the
+      // PayHook recorded at creation time (a manually-queued re-open or
+      // refund ruleset). If so, read stage() from that hook — it may report a
+      // different stage than the stale original PayHook (e.g. a re-opened
+      // mission where MissionCreator.stage() still returns 3 refund). This
+      // mirrors the SSR logic in fetchMissionContracts and
+      // useMissionFundingStage so client `stage` state doesn't drift back to
+      // a stale creator value after refresh.
+      if (jbControllerContract && mission?.projectId) {
         try {
           const ruleset: any = await readContract({
             contract: jbControllerContract,
@@ -118,7 +123,7 @@ export default function useMissionData({
             }
           }
         } catch (err) {
-          // ignore, keep computedStage = 4
+          // ignore, keep MissionCreator.stage() value
         }
       }
 

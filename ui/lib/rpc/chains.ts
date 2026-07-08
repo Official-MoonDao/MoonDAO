@@ -52,7 +52,9 @@ export const ethereum = defineChain({
 export const arbitrum = defineChain({
   id: 42161,
   name: 'Arbitrum One',
-  rpc: mainnetRpc.arbitrum,
+  // Allow a fork/Tenderly RPC override for end-to-end preview testing (Track B of
+  // the Frank re-open rollout). Falls back to the normal Infura/Ankr mainnet RPC.
+  rpc: process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL || mainnetRpc.arbitrum,
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',

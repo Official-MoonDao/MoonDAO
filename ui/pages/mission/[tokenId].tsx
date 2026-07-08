@@ -1,5 +1,5 @@
 import { DEFAULT_CHAIN_V5 } from 'const/config'
-import { BLOCKED_MISSIONS } from 'const/whitelist'
+import { BLOCKED_MISSIONS, GATED_MISSIONS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import dynamic from 'next/dynamic'
 import { fetchFromIPFSWithFallback, getIPFSGateway } from '@/lib/ipfs/gateway'
@@ -106,7 +106,29 @@ export default function MissionProfilePage({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ params, query, res }) => {
+function parseCookies(cookieHeader?: string): Record<string, string> {
+  if (!cookieHeader) return {}
+  return Object.fromEntries(
+    cookieHeader.split(';').map((c) => {
+      const [k, ...v] = c.trim().split('=')
+      const raw = v.join('=')
+      let decoded: string
+      try {
+        decoded = decodeURIComponent(raw)
+      } catch {
+        decoded = raw
+      }
+      return [k, decoded]
+    })
+  )
+}
+
+export const getServerSideProps: GetServerSideProps = async ({
+  params,
+  query,
+  req,
+  res,
+}) => {
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
 
   const tokenId: any = params?.tokenId
@@ -165,9 +187,52 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
     return { notFound: true }
   }
 
-  // Check if mission is blocked
-  if (BLOCKED_MISSIONS.has(Number(tokenId))) {
+  // A mission may be hidden from public listings (BLOCKED_MISSIONS) yet still reachable
+  // on this page with an access code (GATED_MISSIONS) — used for a private, shareable
+  // end-to-end test of an unannounced mission. A blocked-but-not-gated mission stays
+  // fully 404'd.
+  const missionIdNum = Number(tokenId)
+  const isGated = GATED_MISSIONS.has(missionIdNum)
+  if (BLOCKED_MISSIONS.has(missionIdNum) && !isGated) {
     return { notFound: true }
+  }
+  if (isGated) {
+    // Gated responses (both the 404 and the authorized page) must never be shared by
+    // the CDN, or a cached anonymous 404 could be served to a valid visitor (or vice
+    // versa).
+    res.setHeader('Cache-Control', 'private, no-store')
+
+    const accessCode = process.env.MISSION_ACCESS_CODE
+    if (!accessCode) {
+      // Default-deny when the deploy hasn't been configured with an access code,
+      // so a misconfigured environment can't accidentally expose the mission via
+      // a fallback string committed to source.
+      return { notFound: true }
+    }
+
+    const cookies = parseCookies(req?.headers?.cookie)
+    const queryAccess =
+      typeof query?.access === 'string' ? query.access : undefined
+    const provided = queryAccess || cookies['mission_access']
+    if (provided !== accessCode) {
+      return { notFound: true }
+    }
+    // Persist access so tab/query navigation works without re-passing ?access=.
+    res.setHeader(
+      'Set-Cookie',
+      `mission_access=${accessCode}; Path=/; Max-Age=604800; SameSite=Lax`
+    )
+    // If the code came in on the query string, redirect to the bare mission URL
+    // so the secret is stripped from the address bar, browser history, and any
+    // referrer headers sent by resources the mission page loads.
+    if (queryAccess) {
+      return {
+        redirect: {
+          destination: `/mission/${tokenId}`,
+          permanent: false,
+        },
+      }
+    }
   }
 
   const maxAttempts = 3

@@ -62,6 +62,8 @@ import "base/Config.sol";
 ///   the ruleset (using REOPEN_PAY_HOOK_ADDRESS to reference the pre-deployed hook).
 ///
 ///      Override env vars (required when MissionCreator mappings return 0x0 — e.g. Frank mission):
+///        PROJECT_ID      Juicebox project id (MissionCreator.missionIdToProjectId is 0)
+///        FUNDING_GOAL    wei (MissionCreator.missionIdToFundingGoal is 0)
 ///        TEAM_VESTING    address that receives reserved tokens for the team
 ///        MOONDAO_VESTING address that receives reserved tokens for MoonDAO
 ///        POOL_DEPLOYER   address that receives reserved tokens / ETH payout share for the pool
@@ -69,6 +71,8 @@ import "base/Config.sol";
 ///
 ///      Frank mission (ID 4, Project 73) — confirmed addresses from original creation tx
 ///      (0xb674a3df953b583b3ba6bc06f8c282e3344d560a96e6d8de7a7effc44e5824c1):
+///        PROJECT_ID=73
+///        FUNDING_GOAL=2154000000000000000000   (2154 ether)
 ///        TEAM_VESTING=0x02430cc8e6932850a08d0c8820437a3229d8d6eb
 ///        MOONDAO_VESTING=0x2f696b8102ce1214f7dfffe4f3c99684e13fc5b8
 ///        POOL_DEPLOYER=0x95fc39dd278b8dcd7b0219d6e109717d8e539114
@@ -141,7 +145,9 @@ contract QueueReopenRulesetScript is Script, Config {
         address moonDAOTreasury = missionCreator.moonDAOTreasury();
 
         // Allow env var overrides for missions whose MissionCreator mappings are 0x0
-        // (e.g. Frank mission ID 4 was created via an older MissionCreator version).
+        // (e.g. Frank mission ID 4 was created via an older MissionCreator version, so
+        // the current MissionCreator returns projectId 0 / empty vesting for it).
+        try vm.envUint("PROJECT_ID") returns (uint256 val) { projectId = val; } catch {}
         try vm.envAddress("TEAM_VESTING") returns (address val) { teamVesting = val; } catch {}
         try vm.envAddress("MOONDAO_VESTING") returns (address val) { moonDAOVesting = val; } catch {}
         try vm.envAddress("POOL_DEPLOYER") returns (address val) { poolDeployer = val; } catch {}
