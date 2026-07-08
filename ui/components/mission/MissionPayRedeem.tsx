@@ -686,6 +686,15 @@ function MissionPayRedeemComponent({
     primaryTerminalAddress
   )
 
+  // Prefer the re-open-aware live stage from `useMissionFundingStage`; only
+  // fall back to the SSR-supplied `stage` while `currentStage` is still
+  // loading. `useMissionData.refreshStage` doesn't consult the active
+  // ruleset's dataHook unless `MissionCreator.stage()` is 4, so on a
+  // re-opened mission whose original hook still reports stage 3 (refund),
+  // the raw `stage` prop would drive refund UI and hide contribute even
+  // though a fresh fundraising ruleset is live.
+  const effectiveStage = currentStage ?? stage
+
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
     chain: DEFAULT_CHAIN_V5,
@@ -897,7 +906,7 @@ function MissionPayRedeemComponent({
       return
     }
     if (!jbTokenBalance && !tokenCredit) return
-    if (Number(stage) !== 3) {
+    if (Number(effectiveStage) !== 3) {
       setRedeemAmount(0)
       setIsLoadingRedeemAmount(false)
       return
@@ -941,7 +950,7 @@ function MissionPayRedeemComponent({
     jbTokenBalance,
     tokenCredit,
     account,
-    stage,
+    effectiveStage,
   ])
 
   //Redeem (stage 3 refund) all mission tokens for the connected wallet
@@ -1098,7 +1107,7 @@ function MissionPayRedeemComponent({
 
   useEffect(() => {
     if (
-      Number(stage) === 3 &&
+      Number(effectiveStage) === 3 &&
       ((jbTokenBalance && jbTokenBalance > 0) || (tokenCredit && tokenCredit > 0))
     ) {
       getRedeemQuote()
@@ -1106,9 +1115,9 @@ function MissionPayRedeemComponent({
       setRedeemAmount(0)
       setIsLoadingRedeemAmount(false)
     }
-  }, [jbTokenBalance, tokenCredit, stage, getRedeemQuote])
+  }, [jbTokenBalance, tokenCredit, effectiveStage, getRedeemQuote])
 
-  if (Number(stage) === 4) return null
+  if (Number(effectiveStage) === 4) return null
 
   return (
     <>
@@ -1140,7 +1149,7 @@ function MissionPayRedeemComponent({
               </div>
             </Modal>
           ) : onlyButton && buttonMode === 'standard' ? (
-            Number(stage) === 3 ? null : (
+            Number(effectiveStage) === 3 ? null : (
             <div
               className={`${
                 visibleButton ? 'opacity-100' : 'opacity-0 hidden'
@@ -1171,7 +1180,7 @@ function MissionPayRedeemComponent({
                 tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
                 claimTokenCredit={claimTokenCredit}
                 currentStage={currentStage}
-                stage={stage}
+                stage={effectiveStage}
                 deadline={deadline}
                 handleUsdInputChange={handleUsdInputChange}
                 calculateEthAmount={calculateEthAmount}
