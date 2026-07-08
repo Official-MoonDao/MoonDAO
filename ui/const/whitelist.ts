@@ -8,7 +8,9 @@ export const BLOCKED_CITIZENS: any = new Set([48, 72, 140, 177])
 const REVEALED_MISSIONS: Set<number> = new Set(
   (process.env.NEXT_PUBLIC_REVEALED_MISSIONS || '')
     .split(',')
-    .map((s) => Number(s.trim()))
+    .map((s) => s.trim())
+    .filter((s) => s !== '')
+    .map((s) => Number(s))
     .filter((n) => Number.isFinite(n))
 )
 // Mission 4 (Frank) is blocked on public mainnet while its re-open is validated; reveal
