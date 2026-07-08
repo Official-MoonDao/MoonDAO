@@ -258,8 +258,8 @@ describe('MissionProfileHeader — Overview Flight (mission 4) re-opened raise',
     cy.get('.from-blue-500.via-purple-600.to-blue-500').should('exist')
     cy.contains('Goal').should('be.visible')
     // New re-open milestone labels render.
-    cy.contains('Community seat').should('exist')
-    cy.contains('Virgin Galactic seat').should('exist')
+    cy.contains('Guaranteed 2nd stratospheric seat').should('exist')
+    cy.contains('Virgin Galactic two-seat mission').should('exist')
     // Closed-state UI is gone.
     cy.get('[data-testid="overview-contributions-closed-banner"]').should(
       'not.exist'
