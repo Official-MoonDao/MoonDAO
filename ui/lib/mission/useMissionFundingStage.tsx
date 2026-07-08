@@ -95,8 +95,13 @@ export default function useMissionFundingStage(
     deps: [missionId],
   })
 
-  const stage =
-    useActiveHook && activeStage != null ? activeStage : missionCreatorStage
+  // When a re-open is live, only surface the active hook's stage. Falling
+  // back to `missionCreatorStage` here would leak the stale original stage
+  // (e.g. stage 3 refund) while `activeStage` is still loading or if its
+  // read fails, and callers using `currentStage ?? ssrStage` would never
+  // fall back to the re-open-aware SSR value. Returning `undefined` in that
+  // window preserves the fallback path.
+  const stage = useActiveHook ? activeStage : missionCreatorStage
 
   return stage ? +stage.toString() : undefined
 }
