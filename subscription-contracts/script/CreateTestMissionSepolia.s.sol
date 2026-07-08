@@ -10,6 +10,24 @@ import {MoonDAOTeamCreator} from "../src/MoonDAOTeamCreator.sol";
 import {IJBTerminal} from "@nana-core-v5/interfaces/IJBTerminal.sol";
 import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
 
+interface IGnosisSafe {
+    function execTransaction(
+        address to,
+        uint256 value,
+        bytes calldata data,
+        uint8 operation,
+        uint256 safeTxGas,
+        uint256 baseGas,
+        uint256 gasPrice,
+        address gasToken,
+        address payable refundReceiver,
+        bytes memory signatures
+    ) external payable returns (bool);
+
+    function getOwners() external view returns (address[] memory);
+    function getThreshold() external view returns (uint256);
+}
+
 /// @title CreateTestMissionSepolia
 /// @notice Track B (Option B): create a Frank-like Launchpad mission on the PUBLIC
 ///         Sepolia testnet so we can drive the whole re-open flow through the real
@@ -20,9 +38,13 @@ import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
 /// original round lapses in real time. After it lapses, re-open it by running
 /// QueueReopenRuleset.s.sol against the printed MISSION_ID.
 ///
-/// Prereq: the sender must be the MissionCreator owner OR a manager of `teamId`
-/// (see MissionCreator.createMission access control). On Sepolia the deployer EOA
-/// is the owner, so use its key.
+/// Prereq: the deployed Sepolia MissionCreator requires the sender to hold the team
+/// manager hat for `teamId`. Either pass a TEAM_ID you already manage, or set
+/// CREATE_TEAM=true to mint a fresh team. When creating a team, the sender becomes its
+/// manager and the following are added as BOTH team managers (manager hat) and Safe
+/// owners, with the Safe kept at a 1-of-3 signing threshold:
+///   - pmoncada.eth (0x679d87D8640e66778c3419D164998E720D7495f6)  [EXTRA_MANAGER_1]
+///   - 0x31CDb419E4A7998367627faa24cEe15941795827                 [EXTRA_MANAGER_2]
 ///
 /// Usage (from subscription-contracts/):
 ///   export PRIVATE_KEY=0x...            # MissionCreator owner (or team manager)
@@ -125,8 +147,17 @@ contract CreateTestMissionSepolia is Script, Config {
         console.log("View in UI (testnet): /mission/", missionId);
     }
 
-    /// @dev Mint a fresh MoonDAO team so `creator` holds its manager hat (required to
-    ///      create a mission). Sends exactly the 365-day subscription price.
+    // Canonical Hats Protocol address (same on every chain, incl. Sepolia).
+    address constant HATS = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
+
+    /// @dev Mint a fresh MoonDAO team managed by `creator`, then add two extra managers
+    ///      to both the team (manager hat) and the Gnosis Safe (owners), keeping the
+    ///      Safe at a 1-of-3 signing threshold.
+    ///
+    /// The team is first created with ONLY `creator` as the Safe owner (a 1/1 Safe), so
+    /// `creator` can unilaterally execute the follow-up Safe transactions that add the
+    /// other owners (threshold stays 1) and mint them the manager hat. Sends exactly the
+    /// 365-day subscription price.
     function _createTeam(address creator) internal returns (uint256 teamId) {
         address teamAddress = vm.envOr("MOONDAO_TEAM", MOONDAO_TEAM_ADDRESSES[SEP]);
         require(teamAddress != address(0), "No Sepolia MoonDAOTeam; set MOONDAO_TEAM");
@@ -151,6 +182,51 @@ contract CreateTestMissionSepolia is Script, Config {
             formId: ""
         });
 
+        // members=[] -> Safe owners = [creator], threshold = 1.
         (teamId,) = teamCreator.createMoonDAOTeam{value: price}(hatURIs, metadata, new address[](0));
+
+        address safe = team.ownerOf(teamId);
+        uint256 managerHat = team.teamManagerHat(teamId);
+
+        address[2] memory extraManagers = [
+            vm.envOr("EXTRA_MANAGER_1", 0x679d87D8640e66778c3419D164998E720D7495f6), // pmoncada.eth
+            vm.envOr("EXTRA_MANAGER_2", 0x31CDb419E4A7998367627faa24cEe15941795827)
+        ];
+
+        for (uint256 i = 0; i < extraManagers.length; i++) {
+            address extra = extraManagers[i];
+            // Add as a Safe owner, keeping the threshold at 1 (=> 1-of-N Safe).
+            _execSafe(
+                safe,
+                creator,
+                safe,
+                abi.encodeWithSignature("addOwnerWithThreshold(address,uint256)", extra, uint256(1))
+            );
+            // Add as a team manager: the Safe wears the admin hat, so it can mint the
+            // manager hat to the new address.
+            _execSafe(
+                safe,
+                creator,
+                HATS,
+                abi.encodeWithSignature("mintHat(uint256,address)", managerHat, extra)
+            );
+            console.log("Added manager + Safe owner:", extra);
+        }
+
+        console.log("Team Safe:", safe);
+        console.log("Manager hat id:", managerHat);
+        console.log("Safe threshold:", IGnosisSafe(safe).getThreshold());
+        console.log("Safe owner count:", IGnosisSafe(safe).getOwners().length);
+    }
+
+    /// @dev Execute a Safe transaction signed by a single owner (`owner`) using the
+    ///      pre-validated signature form (v=1). Valid because the broadcaster is that
+    ///      owner and the Safe threshold is 1, so no ECDSA signature is required.
+    function _execSafe(address safe, address owner, address to, bytes memory data) internal {
+        bytes memory sig = abi.encodePacked(bytes32(uint256(uint160(owner))), bytes32(0), uint8(1));
+        bool ok = IGnosisSafe(safe).execTransaction(
+            to, 0, data, 0, 0, 0, 0, address(0), payable(address(0)), sig
+        );
+        require(ok, "Safe execTransaction failed");
     }
 }
