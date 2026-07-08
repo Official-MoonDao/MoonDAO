@@ -171,16 +171,14 @@ contract CreateTestMissionSepolia is Script, Config {
             managerHatURI: "",
             memberHatURI: ""
         });
-        MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
-            name: "Reopen UI Test Team",
-            bio: "bio",
-            image: "image",
-            twitter: "",
-            communications: "",
-            website: "",
-            _view: "",
-            formId: ""
-        });
+        // The coverage build strips the optional profile fields (name/bio/image/...) from
+        // TeamMetadata via 0001-struct.patch to stay under the 16-arg limit. Assign only
+        // the two fields present in BOTH the full and patched struct (_view, formId) and
+        // leave the rest at their defaults, so this script compiles with or without the
+        // patch applied by apply_patch.sh.
+        MoonDAOTeamCreator.TeamMetadata memory metadata;
+        metadata._view = "";
+        metadata.formId = "";
 
         // members=[] -> Safe owners = [creator], threshold = 1.
         (teamId,) = teamCreator.createMoonDAOTeam{value: price}(hatURIs, metadata, new address[](0));
