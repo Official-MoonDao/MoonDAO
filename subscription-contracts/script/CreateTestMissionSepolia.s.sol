@@ -5,6 +5,8 @@ import "std/Script.sol";
 import "base/Config.sol";
 
 import {MissionCreator} from "../src/MissionCreator.sol";
+import {MoonDAOTeam} from "../src/ERC5643.sol";
+import {MoonDAOTeamCreator} from "../src/MoonDAOTeamCreator.sol";
 import {IJBTerminal} from "@nana-core-v5/interfaces/IJBTerminal.sol";
 import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
 
@@ -37,8 +39,6 @@ import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
 ///   forge script script/QueueReopenRuleset.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --via-ir
 contract CreateTestMissionSepolia is Script, Config {
     function run() external {
-        uint256 pk = vm.envUint("PRIVATE_KEY");
-
         address missionCreatorAddress = vm.envOr("MISSION_CREATOR_ADDRESS", MISSION_CREATOR_ADDRESSES[SEP]);
         require(missionCreatorAddress != address(0), "No Sepolia MissionCreator; set MISSION_CREATOR_ADDRESS");
 
@@ -49,7 +49,29 @@ contract CreateTestMissionSepolia is Script, Config {
         uint256 seedEth = vm.envOr("SEED_ETH", uint256(0.001 ether));
 
         MissionCreator missionCreator = MissionCreator(missionCreatorAddress);
-        address sender = vm.addr(pk);
+
+        // Broadcast with a private key (real Sepolia) OR by impersonated sender
+        // (fork validation via `--unlocked --sender <owner>` with no PRIVATE_KEY set).
+        uint256 pk = vm.envOr("PRIVATE_KEY", uint256(0));
+        address sender;
+        if (pk != 0) {
+            sender = vm.addr(pk);
+            vm.startBroadcast(pk);
+        } else {
+            sender = vm.envAddress("SENDER");
+            vm.startBroadcast(sender);
+        }
+
+        // The deployed Sepolia MissionCreator requires the caller to hold the team
+        // manager hat for `teamId`. Either pass a TEAM_ID you already manage, or set
+        // CREATE_TEAM=true to mint a fresh team (makes the sender its manager; costs
+        // a 365-day team subscription in ETH).
+        bool createTeam = vm.envOr("CREATE_TEAM", false);
+        if (createTeam) {
+            teamId = _createTeam(sender);
+            console.log("Created team; TEAM_ID:", teamId);
+        }
+        require(teamId != 0 || createTeam, "Set TEAM_ID (managed by sender) or CREATE_TEAM=true");
 
         uint256 deadline = block.timestamp + deadlineMinutes * 1 minutes;
         uint256 refundPeriod = refundMinutes * 1 minutes;
@@ -57,11 +79,10 @@ contract CreateTestMissionSepolia is Script, Config {
         console.log("=== Create test mission on Sepolia ===");
         console.log("MissionCreator:", missionCreatorAddress);
         console.log("Sender:", sender);
+        console.log("Team ID:", teamId);
         console.log("Funding goal (wei):", fundingGoal);
         console.log("Deadline (unix):", deadline);
         console.log("Refund window (sec):", refundPeriod);
-
-        vm.startBroadcast(pk);
 
         uint256 missionId = missionCreator.createMission(
             teamId,
@@ -102,5 +123,34 @@ contract CreateTestMissionSepolia is Script, Config {
         console.log("Wait until deadline + refund window elapse, then re-open with");
         console.log("QueueReopenRuleset.s.sol using the MISSION_ID above.");
         console.log("View in UI (testnet): /mission/", missionId);
+    }
+
+    /// @dev Mint a fresh MoonDAO team so `creator` holds its manager hat (required to
+    ///      create a mission). Sends exactly the 365-day subscription price.
+    function _createTeam(address creator) internal returns (uint256 teamId) {
+        address teamAddress = vm.envOr("MOONDAO_TEAM", MOONDAO_TEAM_ADDRESSES[SEP]);
+        require(teamAddress != address(0), "No Sepolia MoonDAOTeam; set MOONDAO_TEAM");
+        MoonDAOTeam team = MoonDAOTeam(teamAddress);
+        MoonDAOTeamCreator teamCreator = MoonDAOTeamCreator(team.moonDaoCreator());
+
+        uint256 price = team.getRenewalPrice(creator, 365 days);
+
+        MoonDAOTeamCreator.HatURIs memory hatURIs = MoonDAOTeamCreator.HatURIs({
+            adminHatURI: "",
+            managerHatURI: "",
+            memberHatURI: ""
+        });
+        MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+            name: "Reopen UI Test Team",
+            bio: "bio",
+            image: "image",
+            twitter: "",
+            communications: "",
+            website: "",
+            _view: "",
+            formId: ""
+        });
+
+        (teamId,) = teamCreator.createMoonDAOTeam{value: price}(hatURIs, metadata, new address[](0));
     }
 }

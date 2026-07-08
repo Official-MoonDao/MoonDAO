@@ -113,28 +113,41 @@ wallet, get faucet ETH, and click through a normal Vercel testnet preview link.
 Because a public chain's clock can't be fast-forwarded, the test mission uses SHORT
 durations (default 10-min deadline + 10-min refund) so it lapses in real time.
 
+**Manager-hat requirement:** the deployed Sepolia `MissionCreator` requires the caller
+to hold the **team manager hat** for the mission's `teamId` (no owner bypass). So the
+sender must either already manage a Sepolia team (pass `TEAM_ID`) or mint a fresh one
+(`CREATE_TEAM=true`, which makes the sender the manager but costs a 365-day team
+subscription in ETH — ~0.5 Sepolia ETH). Team creation is open (`openAccess = true`).
+
+The create + seed flow was validated end-to-end against a fork of live Sepolia
+(`createMoonDAOTeam` → `createMission` → `pay` all succeed); the re-open against a
+freshly-created current-contract mission is covered by `ReopenRulesetTest`.
+
 **Artifacts**
 - `subscription-contracts/script/CreateTestMissionSepolia.s.sol` — creates the mission.
 - `subscription-contracts/script/QueueReopenRuleset.s.sol` — re-opens it (existing).
 
 ```bash
 cd subscription-contracts
-export PRIVATE_KEY=0x...            # MissionCreator owner or team manager on Sepolia
+export PRIVATE_KEY=0x...            # a Sepolia team MANAGER (or set CREATE_TEAM=true)
 export SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/<key>
 
-# 1. Create a short-lived test mission (+ a small seed contribution):
-forge script script/CreateTestMissionSepolia.s.sol \
+# 1. Create a short-lived test mission (+ a small seed contribution).
+#    Path A (cheapest): reuse a team you already manage.
+TEAM_ID=<your team id> \
+  forge script script/CreateTestMissionSepolia.s.sol \
   --rpc-url $SEPOLIA_RPC_URL --broadcast --via-ir -vvv
+#    Path B: mint a fresh team first (needs ~0.6 Sepolia ETH): add CREATE_TEAM=true
 #    -> note the printed MISSION_ID, TERMINAL, TEAM_VESTING, MOONDAO_VESTING, POOL_DEPLOYER
 
 # 2. Wait for the deadline + refund window to elapse (~20 min with defaults).
 
-# 3. Re-open it at 500/ETH (queue directly since the EOA owns the project):
+# 3. Re-open it at 500/ETH (queue directly since your EOA owns the new project):
 MISSION_ID=<printed> MISSION_CREATOR_ADDRESS=<sepolia MissionCreator> \
   QUEUE_VIA_SENDER=true TOKENS_PER_ETH=500 \
   CAMPAIGN_DURATION_DAYS=1 REFUND_PERIOD_DAYS=1 \
-  TEAM_VESTING=<printed> MOONDAO_VESTING=<printed> POOL_DEPLOYER=<printed> TERMINAL=<printed> \
   forge script script/QueueReopenRuleset.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --via-ir
+#    (a freshly-created mission populates all mappings, so no address overrides needed)
 ```
 
 Then deploy a normal Vercel **testnet** preview of `ui/` (`NEXT_PUBLIC_CHAIN` unset /
