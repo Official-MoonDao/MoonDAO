@@ -37,6 +37,31 @@ export const MISSION_MINIMUM_GOAL_TOOLTIP =
   'Our near-term goal is $250,000 — enough to lock in a guaranteed second stratospheric seat so a community member can fly alongside Frank. Reaching $500,000 unlocks a dedicated two-seat Virgin Galactic mission. Nothing raised in the first round has been spent, and refunds are made available if a seat cannot be secured.'
 
 /**
+ * Tagline overrides (mission id → tagline). Takes precedence over the on-chain
+ * metadata tagline so the mission page can reflect campaign copy that isn't yet
+ * reflected on-chain — currently the Frank re-open for mission 4. Remove a
+ * mission's entry once its on-chain metadata is updated so the on-chain value
+ * (team-editable via the Edit Mission flow) becomes the source of truth again.
+ */
+export const MISSION_TAGLINE_OVERRIDES: Partial<Record<number, string>> = {
+  4: 'The competition is back on. Every dollar from round one is still held — now we’re raising to send a member of our community to space alongside Frank White.',
+}
+
+export function getMissionTagline(
+  missionId: unknown,
+  onChainTagline: string | undefined | null
+): string | undefined {
+  const id = Number(missionId)
+  if (Number.isFinite(id)) {
+    const override = MISSION_TAGLINE_OVERRIDES[id]
+    if (typeof override === 'string' && override.trim()) return override
+  }
+  const normalized =
+    typeof onChainTagline === 'string' ? onChainTagline.trim() : undefined
+  return normalized || undefined
+}
+
+/**
  * Token symbol overrides for missions where the on-chain ERC20 hasn't been deployed via
  * Juicebox yet but the intended symbol is known (e.g. mission 4 / Overview Flight → OVERVIEW).
  */
