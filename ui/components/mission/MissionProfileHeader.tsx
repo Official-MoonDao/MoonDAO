@@ -84,11 +84,17 @@ interface MissionProfileHeaderProps {
   setDeployTokenModalEnabled?: (enabled: boolean) => void
   contributeButton: React.ReactNode
   /** SSR-aggregated funding stats (median contribution, unique backers,
-   *  total contributions). Provided only for the wrapped-up Overview Flight
-   *  mission (id 4); when present, the header swaps the live progress
-   *  bar / milestones / goal tile for a "campaign success" stat row plus a
-   *  30-day seat procurement countdown. */
+   *  total contributions). Provided only for the Overview Flight mission
+   *  (id 4). When the raise is closed (see `overviewRaiseClosed`) the header
+   *  uses these to render the "campaign success" stat row plus a 30-day seat
+   *  procurement countdown. */
   overviewStats?: MissionFundingStats | null
+  /** True only for the Overview Flight mission (id 4) while its raise is
+   *  wrapped up. When true the header swaps the live progress bar / milestones
+   *  / Goal + Deadline tiles for the success-stats + Seat Procurement layout.
+   *  When false (raise re-opened) the header renders the standard live funding
+   *  UI while keeping the Overview-specific page layout. */
+  overviewRaiseClosed?: boolean
 }
 
 /** 30-day post-deadline window during which Frank's team works to convert
@@ -125,6 +131,7 @@ const MissionProfileHeader = React.memo(
     setDeployTokenModalEnabled,
     contributeButton,
     overviewStats,
+    overviewRaiseClosed,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
     const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
@@ -143,14 +150,19 @@ const MissionProfileHeader = React.memo(
     const isOverviewMission =
       mission?.id === 4 || String(mission?.id) === '4'
 
+    /** The Overview Flight (mission 4) raise being wrapped up. Only this drives
+     *  the "closed" funding UI (success stats + Seat Procurement panel);
+     *  `isOverviewMission` alone drives the page layout so the special layout
+     *  is preserved whether the raise is open or closed. */
+    const isOverviewRaiseClosed = isOverviewMission && !!overviewRaiseClosed
+
     const milestoneBar = useMemo(() => {
-      // The Overview Flight raise is wrapped up — the funding card now
-      // shows success stats + a seat procurement countdown instead of the
-      // milestone progress bar / list. Skip the milestone computation for
-      // mission 4 entirely so the bar/list never render even momentarily
-      // (and `MISSION_FUNDING_MILESTONES_USD` can keep its mission-4 entry
-      // for places like the home/featured sections that still want it).
-      if (isOverviewMission) return null
+      // While the Overview Flight raise is wrapped up the funding card shows
+      // success stats + a seat procurement countdown instead of the milestone
+      // progress bar / list, so skip the milestone computation entirely (the
+      // bar/list never render even momentarily). Once the raise re-opens this
+      // guard clears and mission 4 gets the standard live milestone UI.
+      if (isOverviewRaiseClosed) return null
       const steps =
         mission?.id != null ? MISSION_FUNDING_MILESTONES_USD[mission.id] : undefined
       if (!steps?.length || !ethPrice || ethPrice <= 0 || isLoadingTotalFunding) return null
@@ -163,7 +175,7 @@ const MissionProfileHeader = React.memo(
           )} to go`
       return { seg, raisedUsd, steps, caption }
     }, [
-      isOverviewMission,
+      isOverviewRaiseClosed,
       mission?.id,
       ethPrice,
       isLoadingTotalFunding,
@@ -177,14 +189,14 @@ const MissionProfileHeader = React.memo(
      *  the user's local Date. */
     const [now, setNow] = useState<number | null>(null)
     useEffect(() => {
-      if (!isOverviewMission || deadline == null || deadline <= 0) return
+      if (!isOverviewRaiseClosed || deadline == null || deadline <= 0) return
       setNow(Date.now())
       const id = window.setInterval(() => setNow(Date.now()), 60_000)
       return () => window.clearInterval(id)
-    }, [isOverviewMission, deadline])
+    }, [isOverviewRaiseClosed, deadline])
 
     const seatProcurement = useMemo(() => {
-      if (!isOverviewMission || deadline == null || deadline <= 0) return null
+      if (!isOverviewRaiseClosed || deadline == null || deadline <= 0) return null
       const procurementEndMs = deadline + SEAT_PROCUREMENT_MS
       const procurementEndDate = new Date(procurementEndMs)
       const procurementEndLabel = procurementEndDate.toLocaleDateString(
@@ -212,7 +224,7 @@ const MissionProfileHeader = React.memo(
         periodElapsed,
         countdownLabel,
       }
-    }, [isOverviewMission, deadline, now])
+    }, [isOverviewRaiseClosed, deadline, now])
 
     const overviewMedianUsd = useMemo(() => {
       if (!overviewStats || !ethPrice || ethPrice <= 0) return null
@@ -523,10 +535,10 @@ const MissionProfileHeader = React.memo(
                   </div>
                 </div>
 
-                {/* Progress Bar — hidden on the wrapped-up Overview Flight
-                    page (mission 4). Other missions still get the live bar
-                    + milestone list. */}
-                {!isOverviewMission && (
+                {/* Progress Bar — hidden while the Overview Flight raise is
+                    wrapped up (mission 4). All other missions, and mission 4
+                    once its raise re-opens, get the live bar + milestone list. */}
+                {!isOverviewRaiseClosed && (
                   <div className="mb-4">
                     <MissionFundingProgressBar
                       fundingGoal={fundingGoal}
@@ -551,7 +563,7 @@ const MissionProfileHeader = React.memo(
                     directly above the Seat Procurement panel so the reader
                     immediately understands why the live progress / pay UI
                     is gone before reading about the 30-day refund window. */}
-                {isOverviewMission && (
+                {isOverviewRaiseClosed && (
                   <div
                     data-testid="overview-contributions-closed-banner"
                     className="mb-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 flex items-start gap-3"
@@ -576,7 +588,7 @@ const MissionProfileHeader = React.memo(
                     the milestone progress UI now that the raise has wrapped
                     up. Anchored to the on-chain deadline, hydrated client
                     side so SSR doesn't bake a stale countdown into HTML. */}
-                {isOverviewMission && seatProcurement && (
+                {isOverviewRaiseClosed && seatProcurement && (
                   <div
                     data-testid="overview-seat-procurement-panel"
                     className="mb-4 rounded-2xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent p-4 sm:p-5"
@@ -641,12 +653,13 @@ const MissionProfileHeader = React.memo(
                       : 'grid-cols-3'
                   } ${isOverviewMission ? 'lg:mt-auto' : ''}`}
                   data-testid={
-                    isOverviewMission ? 'overview-stats-row' : undefined
+                    isOverviewRaiseClosed ? 'overview-stats-row' : undefined
                   }
                 >
-                  {/* Goal — hidden on mission 4 (the page has been cleaned
-                      up post-raise; goal/progress no longer relevant). */}
-                  {!isOverviewMission && (
+                  {/* Goal — hidden only while the Overview raise is wrapped up
+                      (goal/progress not relevant then); shown for every other
+                      mission and for mission 4 once the raise re-opens. */}
+                  {!isOverviewRaiseClosed && (
                     <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
                       <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
                         <Image src="/assets/launchpad/target.svg" alt="Goal" width={14} height={14} className="opacity-60 flex-shrink-0" />
@@ -686,9 +699,10 @@ const MissionProfileHeader = React.memo(
                     </div>
                   )}
 
-                  {/* Deadline — hidden on mission 4 (the Seat Procurement
-                      Period panel renders the relevant closing context). */}
-                  {!isOverviewMission && (
+                  {/* Deadline — hidden only while the Overview raise is wrapped
+                      up (the Seat Procurement Period panel renders the relevant
+                      closing context then). Shown again once it re-opens. */}
+                  {!isOverviewRaiseClosed && (
                     <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
                       <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
                         <Image src="/assets/launchpad/clock.svg" alt="Deadline" width={14} height={14} className="opacity-60 flex-shrink-0" />
@@ -744,14 +758,14 @@ const MissionProfileHeader = React.memo(
                       </span>
                     </div>
                     <p className="text-white font-GoodTimes text-[11px] sm:text-sm">
-                      {(isOverviewMission && overviewStats?.totalContributions != null
+                      {(isOverviewRaiseClosed && overviewStats?.totalContributions != null
                         ? overviewStats.totalContributions
                         : paymentsCount) || 0}
                     </p>
                   </div>
 
-                  {/* Unique Backers — Overview Flight only */}
-                  {isOverviewMission && (
+                  {/* Unique Backers — Overview Flight, wrapped-up raise only */}
+                  {isOverviewRaiseClosed && (
                     <div
                       className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0"
                       data-testid="overview-unique-backers"
@@ -779,8 +793,8 @@ const MissionProfileHeader = React.memo(
                     </div>
                   )}
 
-                  {/* Median Contribution — Overview Flight only */}
-                  {isOverviewMission && (
+                  {/* Median Contribution — Overview Flight, wrapped-up raise only */}
+                  {isOverviewRaiseClosed && (
                     <div
                       className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0"
                       data-testid="overview-median-contribution"

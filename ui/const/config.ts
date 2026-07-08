@@ -228,6 +228,13 @@ export const OVERVIEW_PATH_VOTE_DEADLINE: string | null = null
 // re-tallying live balances, so the published outcome never drifts afterward.
 // Regenerate the snapshot with `yarn snapshot:path-vote` before flipping this.
 export const OVERVIEW_PATH_VOTE_CLOSED = true
+// Hard close for the Overview Flight fundraiser (mission id 4). When true the
+// mission page swaps its live progress bar / milestones / Goal + Deadline tiles
+// for the wrapped-up "success metrics + Seat Procurement" layout. Set to false
+// to re-open the raise (restores the live funding UI). The contribute button
+// and deadline countdown are additionally gated on the on-chain deadline/stage,
+// so re-opening also requires the re-open ruleset to be live on-chain.
+export const OVERVIEW_FLIGHT_RAISE_CLOSED = false
 // TODO: Replace with actual $OVERVIEW token address from team
 export const OVERVIEW_TOKEN_ADDRESS = '0xc868dFc4Ad388F5d7A8A5c3ECa0cff226d77152a'
 export const OVERVIEW_TOKEN_DECIMALS = 18

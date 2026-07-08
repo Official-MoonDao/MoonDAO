@@ -18,6 +18,7 @@ import {
   JBV5_TOKENS_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
+  OVERVIEW_FLIGHT_RAISE_CLOSED,
   TEAM_ADDRESSES,
 } from 'const/config'
 import Image from 'next/image'
@@ -468,6 +469,10 @@ export default function MissionProfile({
           mission?.id === 4 || String(mission?.id) === '4'
             ? _overviewStats ?? null
             : undefined
+        }
+        overviewRaiseClosed={
+          (mission?.id === 4 || String(mission?.id) === '4') &&
+          OVERVIEW_FLIGHT_RAISE_CLOSED
         }
         contributeButton={
           !deadlinePassed && Number(effectiveStage) !== 3 && (
