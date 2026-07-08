@@ -476,7 +476,7 @@ export default function MissionProfile({
               mission={mission}
               teamNFT={teamNFT}
               token={token}
-              stage={stage}
+              stage={effectiveStage}
               deadline={deadline || 0}
               primaryTerminalAddress={primaryTerminalAddress}
               jbControllerContract={jbControllerContract}
