@@ -41,6 +41,7 @@ import {
 import { useMissionDefaultFundingChain } from '@/lib/mission/useMissionDefaultFundingChain'
 import { useManagerActions } from '@/lib/mission/useManagerActions'
 import useMissionData from '@/lib/mission/useMissionData'
+import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
 import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import {
@@ -320,6 +321,19 @@ export default function MissionProfile({
     _ruleset,
   })
 
+  // Re-open-aware live stage. `useMissionData` derives `stage` from
+  // `MissionCreator.stage()` (the original PayHook), which stays at 3
+  // after a re-open even while a fresh fundraising ruleset is live.
+  // Mirror the same fallback pattern used inside `MissionPayRedeem` so
+  // the outer contribute-button guard doesn't hide the entry point on
+  // re-opened missions.
+  const currentStage = useMissionFundingStage(
+    mission?.id,
+    mission?.projectId,
+    primaryTerminalAddress
+  )
+  const effectiveStage = currentStage ?? stage
+
   const missionDefaultFundingChainEnabled =
     !!primaryTerminalAddress &&
     primaryTerminalAddress !== '0x0000000000000000000000000000000000000000' &&
@@ -457,7 +471,7 @@ export default function MissionProfile({
             : undefined
         }
         contributeButton={
-          !deadlinePassed && Number(stage) !== 3 && (
+          !deadlinePassed && Number(effectiveStage) !== 3 && (
             <MissionPayRedeem
               mission={mission}
               teamNFT={teamNFT}
