@@ -123,15 +123,46 @@ function parseCookies(cookieHeader?: string): Record<string, string> {
   )
 }
 
+function setNoStoreHeaders(res: {
+  setHeader: (name: string, value: string) => void
+}) {
+  // Cover browser, Vercel CDN, and intermediary caches. Setting only
+  // Cache-Control is not enough on Vercel — CDN-Cache-Control / Vercel-CDN-
+  // Cache-Control can still keep a public HIT of a pre-gate page.
+  const value = 'private, no-store, no-cache, must-revalidate, max-age=0'
+  res.setHeader('Cache-Control', value)
+  res.setHeader('CDN-Cache-Control', value)
+  res.setHeader('Vercel-CDN-Cache-Control', value)
+  res.setHeader('Pragma', 'no-cache')
+  res.setHeader('Expires', '0')
+  // Prevent any intermediary that ignores no-store from serving a
+  // cookie-authenticated response to an anonymous visitor (or vice versa).
+  res.setHeader('Vary', 'Cookie')
+}
+
 export const getServerSideProps: GetServerSideProps = async ({
   params,
   query,
   req,
   res,
 }) => {
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
-
   const tokenId: any = params?.tokenId
+  const missionIdNumEarly =
+    tokenId !== undefined && !isNaN(Number(tokenId)) ? Number(tokenId) : NaN
+  const isGatedEarly =
+    Number.isFinite(missionIdNumEarly) && GATED_MISSIONS.has(missionIdNumEarly)
+
+  // Decide cache policy BEFORE any early return. Gated missions must never
+  // receive a public Cache-Control — a stale CDN HIT of the pre-gate page is
+  // exactly how /mission/4 stayed publicly reachable after the gate shipped.
+  if (isGatedEarly) {
+    setNoStoreHeaders(res)
+  } else {
+    res.setHeader(
+      'Cache-Control',
+      'public, s-maxage=60, stale-while-revalidate=120'
+    )
+  }
 
   // Handle dummy mission for testing
   if (tokenId === 'dummy') {
@@ -197,10 +228,9 @@ export const getServerSideProps: GetServerSideProps = async ({
     return { notFound: true }
   }
   if (isGated) {
-    // Gated responses (both the 404 and the authorized page) must never be shared by
-    // the CDN, or a cached anonymous 404 could be served to a valid visitor (or vice
-    // versa).
-    res.setHeader('Cache-Control', 'private, no-store')
+    // Headers already set above via isGatedEarly; re-assert so any later
+    // middleware/helper cannot reintroduce a public cache policy.
+    setNoStoreHeaders(res)
 
     const accessCode = process.env.MISSION_ACCESS_CODE
     if (!accessCode) {
@@ -284,14 +314,18 @@ export const getServerSideProps: GetServerSideProps = async ({
             })
           : Promise.resolve(undefined)
 
-      const metadata = await fetchFromIPFSWithFallback(ipfsHash).catch((error: any) => {
-        console.warn('All IPFS gateways failed:', error)
-        return {
-          name: 'Mission Loading...',
-          description: 'Metadata is loading...',
-          logoUri: '',
+      // Longer per-gateway timeout on SSR — 3s was too aggressive from Vercel
+      // regions and left mission pages stuck on the "Mission Loading..." fallback.
+      const metadata = await fetchFromIPFSWithFallback(ipfsHash, 8000).catch(
+        (error: any) => {
+          console.warn('All IPFS gateways failed:', error)
+          return {
+            name: 'Mission Loading...',
+            description: 'Metadata is loading...',
+            logoUri: '',
+          }
         }
-      })
+      )
 
       const tokenData = await fetchTokenMetadata(contractData.tokenAddress, chain)
 
