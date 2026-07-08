@@ -93,7 +93,7 @@ contract CreateTestMissionSepolia is Script, Config {
             teamId = _createTeam(sender);
             console.log("Created team; TEAM_ID:", teamId);
         }
-        require(teamId != 0 || createTeam, "Set TEAM_ID (managed by sender) or CREATE_TEAM=true");
+        require(teamId != 0, "Set TEAM_ID (managed by sender) or CREATE_TEAM=true");
 
         uint256 deadline = block.timestamp + deadlineMinutes * 1 minutes;
         uint256 refundPeriod = refundMinutes * 1 minutes;
