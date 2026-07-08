@@ -6,10 +6,8 @@ export type MissionFundingMilestone = {
 
 export const MISSION_FUNDING_MILESTONES_USD: Record<number, MissionFundingMilestone[]> = {
   4: [
-    { usd: 250_000, label: 'Stratospheric balloon seat #1' },
-    { usd: 500_000, label: 'Stratospheric balloon seat #2' },
-    { usd: 1_000_000, label: 'Suborbital seat #1' },
-    { usd: 2_000_000, label: 'Suborbital seat #2' },
+    { usd: 250_000, label: 'Community seat' },
+    { usd: 500_000, label: 'Virgin Galactic seat' },
   ],
 }
 

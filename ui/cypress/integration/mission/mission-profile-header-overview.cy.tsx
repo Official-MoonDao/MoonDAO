@@ -81,6 +81,11 @@ function buildOverviewProps(overrides: Partial<any> = {}) {
     setDeployTokenModalEnabled: undefined,
     contributeButton: <button id="mock-contribute-btn">Contribute</button>,
     overviewStats,
+    // These tests specifically cover the wrapped-up ("closed") Overview layout,
+    // which is now gated on the `overviewRaiseClosed` prop (config flag
+    // OVERVIEW_FLIGHT_RAISE_CLOSED). Opt into it so the closed-state coverage
+    // stays valid for when the raise is re-closed after the re-open campaign.
+    overviewRaiseClosed: true,
     ...overrides,
   }
 }
@@ -219,6 +224,50 @@ describe('MissionProfileHeader — Overview Flight (mission 4) wrapped-up layout
     )
     cy.contains('raised').should('be.visible')
     cy.get('#mock-contribute-btn').should('exist')
+  })
+})
+
+describe('MissionProfileHeader — Overview Flight (mission 4) re-opened raise', () => {
+  beforeEach(() => {
+    cy.mountNextRouter('/')
+    setupMocks()
+  })
+
+  // With the raise re-opened (overviewRaiseClosed=false) mission 4 keeps its
+  // Overview-specific layout but restores the standard live funding UI:
+  // progress bar + milestone list + Goal tile, and no closed-state panels.
+  const openProps = (overrides: Partial<any> = {}) => {
+    const deadline = Date.now() + 10 * 86400000 // 10 days out
+    return buildOverviewProps({
+      overviewRaiseClosed: false,
+      deadline,
+      deadlinePassed: false,
+      duration: '10d 0h',
+      stage: 1,
+      ...overrides,
+    })
+  }
+
+  it('restores the live funding UI and drops the closed-state panels', () => {
+    cy.mount(
+      <TestnetProviders>
+        <MissionProfileHeader {...openProps()} />
+      </TestnetProviders>
+    )
+    // Live milestone progress bar + Goal tile are back.
+    cy.get('.from-blue-500.via-purple-600.to-blue-500').should('exist')
+    cy.contains('Goal').should('be.visible')
+    // New re-open milestone labels render.
+    cy.contains('Community seat').should('exist')
+    cy.contains('Virgin Galactic seat').should('exist')
+    // Closed-state UI is gone.
+    cy.get('[data-testid="overview-contributions-closed-banner"]').should(
+      'not.exist'
+    )
+    cy.get('[data-testid="overview-seat-procurement-panel"]').should(
+      'not.exist'
+    )
+    cy.get('[data-testid="overview-stats-row"]').should('not.exist')
   })
 })
 
