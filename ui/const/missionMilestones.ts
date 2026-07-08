@@ -6,8 +6,8 @@ export type MissionFundingMilestone = {
 
 export const MISSION_FUNDING_MILESTONES_USD: Record<number, MissionFundingMilestone[]> = {
   4: [
-    { usd: 250_000, label: 'Community seat' },
-    { usd: 500_000, label: 'Virgin Galactic seat' },
+    { usd: 250_000, label: 'Guaranteed 2nd stratospheric seat' },
+    { usd: 500_000, label: 'Virgin Galactic two-seat mission' },
   ],
 }
 
@@ -34,7 +34,7 @@ export function getMissionMinimumUsdGoal(missionId: unknown): number | undefined
 }
 
 export const MISSION_MINIMUM_GOAL_TOOLTIP =
-  'This is our minimum goal, if we raise beyond this amount we will expand our ambition to other flight profiles. If we do not achieve our minimum goal refunds will be made available.'
+  'Our near-term goal is $250,000 — enough to lock in a guaranteed second stratospheric seat so a community member can fly alongside Frank. Reaching $500,000 unlocks a dedicated two-seat Virgin Galactic mission. Nothing raised in the first round has been spent, and refunds are made available if a seat cannot be secured.'
 
 /**
  * Token symbol overrides for missions where the on-chain ERC20 hasn't been deployed via
