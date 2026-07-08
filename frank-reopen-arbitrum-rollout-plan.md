@@ -66,10 +66,13 @@ Two Tenderly-free ways to exercise the re-open through the real UI. Option A is 
 faithful engineering check (real project 73, local/private); Option B is the public,
 shareable stakeholder demo (synthetic mission on Sepolia).
 
-The UI needs no code changes beyond the one-line override already in
-`ui/lib/rpc/chains.ts`: `NEXT_PUBLIC_ARBITRUM_RPC_URL` overrides the Arbitrum RPC, and
-`useMissionData` is already re-open aware (if `MissionCreator.stage()` is 4 but the
-active ruleset's data hook differs, it reads stage from `ReopenPayHook`).
+The UI is re-open aware on both the server and client render paths: if
+`MissionCreator.stage()` reports a stale "closed" stage (because the old, immutable
+`missionIdToPayHook` pointer still targets the original hook) but the active ruleset's
+data hook differs, both `fetchMissionContracts` (SSR) and `useMissionFundingStage`
+(client) read the stage from the live `ReopenPayHook` instead. The only other UI knob
+is the one-line override in `ui/lib/rpc/chains.ts`: `NEXT_PUBLIC_ARBITRUM_RPC_URL`
+overrides the Arbitrum RPC for local/fork previews.
 
 ### Option A — Local `anvil` fork of real Arbitrum (faithful, private)
 
@@ -181,12 +184,26 @@ ruleset (optional; see `QueueReopenRuleset.s.sol`).
 ## Go-live checklist (mainnet, via the team Safe)
 
 1. Re-run Track A at the intended `FORK_BLOCK` — confirm green.
-2. Deploy `ReopenPayHook` (EOA or Safe) with the production goal/deadline/refund.
-3. In one Safe batch:
-   - `seedContributions(...)` for every original backer (from the backfill JSON),
-   - `lockLedger()`,
-   - `queueRulesetsOf(...)` for the re-open ruleset (calldata from
-     `QueueReopenRuleset.s.sol`),
-   - `setDeadline(now + campaign)` on the hook to reset the countdown to go-live.
-4. Verify the active ruleset weight, that a small test contribution mints at 500/ETH,
-   and that the mission page reflects the re-open.
+2. Deploy `ReopenPayHook` (EOA) with the production goal/deadline/refund — e.g. run
+   `QueueReopenRuleset.s.sol` with `--broadcast` (it deploys the hook owned by the Safe
+   and prints the queue calldata). Record the deployed hook address.
+3. Generate the Safe batch calldata + importable JSON:
+   ```bash
+   cd subscription-contracts
+   REOPEN_PAY_HOOK_ADDRESS=0x<deployed hook> \
+   DEADLINE_TIMESTAMP=<unix: go-live + campaign> \
+   forge script script/PrintReopenSafeBatch.s.sol --via-ir -vvv
+   # writes script/safe-tx-reopen-batch.json
+   ```
+   The batch contains, in order: `seedContributions(...)` for every original backer
+   (batched from the backfill JSON), `lockLedger()`, `queueRulesetsOf(...)` for the
+   re-open ruleset, and `setDeadline(DEADLINE_TIMESTAMP)`. The deadline is a fixed
+   timestamp (Safe batches are built ahead of execution), so set it to the intended
+   go-live time plus the campaign length.
+4. In Safe {Wallet} → **Apps → Transaction Builder → Load**, import
+   `script/safe-tx-reopen-batch.json`, review the decoded actions, collect the required
+   signatures, and execute. The re-open ruleset (no approval hook) goes live in the same
+   block.
+5. Verify the active ruleset weight (`1e21` at 500/ETH), that a small test contribution
+   mints at 500/ETH, that a seeded backer's `ethContributed` is exact, and that the
+   mission page reflects the re-open (stage 1, not "refunds").

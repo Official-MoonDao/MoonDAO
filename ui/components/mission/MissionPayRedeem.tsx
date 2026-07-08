@@ -680,7 +680,11 @@ function MissionPayRedeemComponent({
   const { volumeWei: contributedEthWei, isLoading: isLoadingContributedEth } =
     useMissionParticipantVolume(mission?.projectId, address)
 
-  const currentStage = useMissionFundingStage(mission?.id)
+  const currentStage = useMissionFundingStage(
+    mission?.id,
+    mission?.projectId,
+    primaryTerminalAddress
+  )
 
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,

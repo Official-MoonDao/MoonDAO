@@ -11,7 +11,8 @@ ffi = true
 fs_permissions = [
     { access = "read", path = "../contracts/deployments/"},
     { access = "read", path = "./script/safe-tx-mission4-owner-only-payouts.json"},
-    { access = "read", path = "./script/backfill/"}
+    { access = "read", path = "./script/backfill/"},
+    { access = "read-write", path = "./script/safe-tx-reopen-batch.json"}
 ]
 # for deterministic deploys
 bytecode_hash = "none"
