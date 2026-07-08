@@ -123,8 +123,16 @@ contract ReopenFrankArbitrumDryRun is Test, Config {
             }
         }
 
-        // Only run the on-chain flow if we are actually on a fork of Juicebox v5.
-        forkReady = JB_V5_CONTROLLER.code.length > 0 && JB_V5_MULTI_TERMINAL.code.length > 0;
+        // Only run the on-chain flow on a fork of the target chain (Arbitrum One by
+        // default). Checking JB code presence alone is NOT enough: Juicebox v5 lives at
+        // the same deterministic addresses on other chains (e.g. Sepolia), where
+        // "project 73" is an unrelated project with an empty terminal — CI runs this
+        // suite against both a Sepolia and an Arbitrum fork, and the Sepolia pass must
+        // skip instead of asserting against the wrong chain's state.
+        uint256 targetChainId = vm.envOr("DRYRUN_CHAIN_ID", uint256(42161));
+        forkReady = block.chainid == targetChainId
+            && JB_V5_CONTROLLER.code.length > 0
+            && JB_V5_MULTI_TERMINAL.code.length > 0;
 
         projectId = vm.envOr("PROJECT_ID", DEFAULT_PROJECT_ID);
         terminalAddress = vm.envOr("TERMINAL", JB_V5_MULTI_TERMINAL);
