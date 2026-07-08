@@ -10,7 +10,8 @@ include_paths = ["../fee-hook/script", "../contracts/src"]
 ffi = true
 fs_permissions = [
     { access = "read", path = "../contracts/deployments/"},
-    { access = "read", path = "./script/safe-tx-mission4-owner-only-payouts.json"}
+    { access = "read", path = "./script/safe-tx-mission4-owner-only-payouts.json"},
+    { access = "read", path = "./script/backfill/"}
 ]
 # for deterministic deploys
 bytecode_hash = "none"
@@ -20,6 +21,7 @@ always_use_create_2_factory = true
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
 
 [etherscan]
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
