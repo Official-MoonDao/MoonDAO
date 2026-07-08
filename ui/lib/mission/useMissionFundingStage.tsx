@@ -10,8 +10,10 @@ import { getChainSlug } from '../thirdweb/chain'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 import useContract from '../thirdweb/hooks/useContract'
 import useRead from '../thirdweb/hooks/useRead'
-
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+import {
+  extractActiveDataHook,
+  isZeroAddress,
+} from './extractActiveDataHook'
 
 /**
  * Returns the current funding stage for a mission.
@@ -61,16 +63,19 @@ export default function useMissionFundingStage(
     deps: [projectId],
   })
 
-  const activeDataHook = (ruleset as any)?.[1]?.dataHook as string | undefined
+  const activeDataHook = extractActiveDataHook(ruleset)
 
-  // Only defer to the active dataHook when it exists, differs from the original
-  // PayHook, and we have the terminal + projectId its stage() call requires.
+  // Prefer the active ruleset dataHook whenever it differs from the creation-time
+  // PayHook — including when the creation-time mapping is missing/0x0 (Frank).
+  const originalStr =
+    typeof originalPayHook === 'string'
+      ? originalPayHook
+      : (originalPayHook as any)?.toString?.() ?? ''
   const useActiveHook =
     !!activeDataHook &&
-    activeDataHook !== ZERO_ADDRESS &&
-    !!originalPayHook &&
-    activeDataHook.toLowerCase() !==
-      (originalPayHook as string).toLowerCase() &&
+    !isZeroAddress(activeDataHook) &&
+    (isZeroAddress(originalStr) ||
+      activeDataHook.toLowerCase() !== originalStr.toLowerCase()) &&
     !!primaryTerminalAddress &&
     projectId != null
 

@@ -2,6 +2,10 @@ import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
 import { DEFAULT_CHAIN_V5, MISSION_TABLE_NAMES } from 'const/config'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { readContract, getContract } from 'thirdweb'
+import {
+  extractActiveDataHook,
+  isZeroAddress,
+} from './extractActiveDataHook'
 import client from '@/lib/thirdweb/client'
 import useJBProjectData from '../juicebox/useJBProjectData'
 import { useTablelandQuery } from '../swr/useTablelandQuery'
@@ -90,18 +94,19 @@ export default function useMissionData({
             method: 'currentRulesetOf' as string,
             params: [mission.projectId],
           })
-          const activeDataHook = ruleset?.[1]?.dataHook
+          const activeDataHook = extractActiveDataHook(ruleset)
           const originalPayHook: any = await readContract({
             contract: missionCreatorContract,
             method: 'missionIdToPayHook' as string,
             params: [mission.id],
           }).catch(() => null)
+          const originalStr = originalPayHook?.toString?.() ?? ''
 
           if (
             activeDataHook &&
-            activeDataHook !== '0x0000000000000000000000000000000000000000' &&
-            originalPayHook &&
-            activeDataHook.toLowerCase() !== originalPayHook.toString().toLowerCase()
+            !isZeroAddress(activeDataHook) &&
+            (isZeroAddress(originalStr) ||
+              activeDataHook.toLowerCase() !== originalStr.toLowerCase())
           ) {
             // Only call stage() if we have a real terminal address (not zero)
             const zeroAddr = '0x0000000000000000000000000000000000000000'
@@ -194,21 +199,38 @@ export default function useMissionData({
       }
 
       try {
-        const payHookAddressResult: any = await readContract({
-          contract: missionCreatorContract,
-          method: 'missionIdToPayHook' as string,
-          params: [mission.id],
-        }).catch(() => null)
+        // Prefer the active ruleset dataHook (re-open) over the creation-time
+        // MissionCreator mapping, which is 0x0 for Frank on the current creator.
+        let payHookAddress: string | null = null
+        if (jbControllerContract && mission?.projectId) {
+          try {
+            const ruleset: any = await readContract({
+              contract: jbControllerContract,
+              method: 'currentRulesetOf' as string,
+              params: [mission.projectId],
+            })
+            const active = extractActiveDataHook(ruleset)
+            if (active && !isZeroAddress(active)) {
+              payHookAddress = active
+            }
+          } catch {
+            // fall through to MissionCreator mapping
+          }
+        }
 
-        const payHookAddress =
-          typeof payHookAddressResult === 'string'
-            ? payHookAddressResult
-            : payHookAddressResult?.toString?.() ?? null
+        if (!payHookAddress) {
+          const payHookAddressResult: any = await readContract({
+            contract: missionCreatorContract,
+            method: 'missionIdToPayHook' as string,
+            params: [mission.id],
+          }).catch(() => null)
+          payHookAddress =
+            typeof payHookAddressResult === 'string'
+              ? payHookAddressResult
+              : payHookAddressResult?.toString?.() ?? null
+        }
 
-        if (
-          !payHookAddress ||
-          payHookAddress === '0x0000000000000000000000000000000000000000'
-        ) {
+        if (!payHookAddress || isZeroAddress(payHookAddress)) {
           return
         }
 
@@ -241,7 +263,14 @@ export default function useMissionData({
     if (missionCreatorContract && mission?.id !== undefined) {
       getDeadline()
     }
-  }, [missionCreatorContract, mission?.id, _deadline, _refundPeriod])
+  }, [
+    missionCreatorContract,
+    jbControllerContract,
+    mission?.id,
+    mission?.projectId,
+    _deadline,
+    _refundPeriod,
+  ])
 
   // Memoize return object to prevent unnecessary re-renders
   return useMemo(

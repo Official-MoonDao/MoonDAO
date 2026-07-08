@@ -17,6 +17,10 @@ import type { Chain } from 'thirdweb/chains'
 import queryTable from '../tableland/queryTable'
 import { getChainSlug } from '../thirdweb/chain'
 import { serverClient } from '../thirdweb/serverClient'
+import {
+  extractActiveDataHook,
+  ZERO_ADDRESS,
+} from './extractActiveDataHook'
 
 export type MissionRow = {
   id: number
@@ -40,6 +44,7 @@ export type MissionContractData = {
   primaryTerminalAddress: string
   ruleset: any[]
 }
+
 
 /**
  * Fetch mission row from Tableland
@@ -206,21 +211,29 @@ export async function fetchMissionContracts(
       }).catch(() => null),
     ])
 
-  // If the current ruleset's dataHook differs from the original PayHook stored
-  // in MissionCreator, a new refund ruleset may have been queued. Read stage()
-  // from the active dataHook so the UI reflects the actual on-chain state.
+  // Prefer the active ruleset dataHook whenever it differs from the creation-time
+  // PayHook (or when the creation-time mapping is missing/0x0, as with Frank's
+  // mission on the current MissionCreator). That is the live ReopenPayHook after
+  // a re-open, and it is the only source of truth for stage/deadline.
+  const activeDataHook = extractActiveDataHook(ruleset)
+  const payHookStr = (payHookAddress as any)?.toString?.() ?? String(payHookAddress)
+  const useActiveHook =
+    !!activeDataHook &&
+    activeDataHook !== ZERO_ADDRESS &&
+    activeDataHook.toLowerCase() !== payHookStr.toLowerCase()
+
   let stage = missionCreatorStage
-  if (ruleset) {
+  let activePayHookAddress = payHookAddress
+  if (useActiveHook) {
+    activePayHookAddress = activeDataHook as string
     try {
-      const activeDataHook = (ruleset as any)[1]?.dataHook
       if (
-        activeDataHook &&
-        activeDataHook !== '0x0000000000000000000000000000000000000000' &&
-        activeDataHook.toLowerCase() !== payHookAddress.toString().toLowerCase()
+        primaryTerminalAddress &&
+        primaryTerminalAddress !== ZERO_ADDRESS
       ) {
         const activePayHookContract = getContract({
           client: serverClient,
-          address: activeDataHook,
+          address: activeDataHook as string,
           chain: chain,
           abi: LaunchPadPayHookABI.abi as any,
         })
@@ -231,22 +244,18 @@ export async function fetchMissionContracts(
         })
       }
     } catch (err) {
-      console.warn('Failed to read stage from active dataHook, using MissionCreator stage:', err)
+      console.warn(
+        'Failed to read stage from active dataHook, using MissionCreator stage:',
+        err
+      )
     }
-  }
-
-  // Determine which PayHook is actually active on the current ruleset
-  let activePayHookAddress = payHookAddress
-  if (ruleset) {
-    try {
-      const activeDataHook = (ruleset as any)[1]?.dataHook
-      if (
-        activeDataHook &&
-        activeDataHook !== '0x0000000000000000000000000000000000000000'
-      ) {
-        activePayHookAddress = activeDataHook
-      }
-    } catch {}
+  } else if (
+    activeDataHook &&
+    activeDataHook !== ZERO_ADDRESS
+  ) {
+    // Same address as the recorded PayHook — still treat it as the active one
+    // for deadline/time reads.
+    activePayHookAddress = activeDataHook
   }
 
   return {
