@@ -325,8 +325,8 @@ export default function MissionProfile({
   // `MissionCreator.stage()` (the original PayHook), which stays at 3
   // after a re-open even while a fresh fundraising ruleset is live.
   // Mirror the same fallback pattern used inside `MissionPayRedeem` so
-  // the outer contribute-button guard doesn't hide the entry point on
-  // re-opened missions.
+  // the header, funding-banner gate, and contribute-button guard all
+  // reflect the active hook's stage on re-opened missions.
   const currentStage = useMissionFundingStage(
     mission?.id,
     mission?.projectId,
@@ -337,7 +337,7 @@ export default function MissionProfile({
   const missionDefaultFundingChainEnabled =
     !!primaryTerminalAddress &&
     primaryTerminalAddress !== '0x0000000000000000000000000000000000000000' &&
-    Number(stage) !== 4
+    Number(effectiveStage) !== 4
 
   const fundingBannerEnabled =
     fundingChainCompareEnabled || missionDefaultFundingChainEnabled
@@ -451,7 +451,7 @@ export default function MissionProfile({
         deadlinePassed={deadlinePassed}
         refundPeriodPassed={refundPeriodPassed}
         refundPeriod={refundPeriod}
-        stage={stage}
+        stage={effectiveStage}
         poolDeployerAddress={poolDeployerAddress}
         isManager={isManager}
         availableTokens={availableTokens}
