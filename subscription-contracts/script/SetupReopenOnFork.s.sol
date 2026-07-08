@@ -77,6 +77,7 @@ contract SetupReopenOnFork is Script, Config {
         uint256 refundPeriod = vm.envOr("REFUND_PERIOD_DAYS", DEFAULT_REFUND_PERIOD_DAYS) * 1 days;
         string memory contributionsJson = vm.envOr("CONTRIBUTIONS_JSON", DEFAULT_CONTRIBUTIONS_JSON);
         uint256 seedBatchSize = vm.envOr("SEED_BATCH_SIZE", DEFAULT_SEED_BATCH_SIZE);
+        require(seedBatchSize > 0, "SEED_BATCH_SIZE must be > 0");
 
         uint256 reopenWeight = tokensPerEth * 2 * 1e18;
 
