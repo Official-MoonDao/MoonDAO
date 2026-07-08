@@ -155,3 +155,35 @@ export function getThirdThursdayOfQuarterTimestamp(quarter: number, year: number
   date.setDate(date.getDate() + 14)
   return date
 }
+
+export function getSecondThursdayOfQuarter(quarter: number, year: number) {
+  const date = getThirdThursdayOfQuarterTimestamp(quarter, year)
+  date.setDate(date.getDate() - 7)
+  return date
+}
+
+export function formatQuarterCycleLabel(quarter: number, year: number) {
+  return `Q${quarter} ${year}`
+}
+
+export function formatLongDate(date: Date) {
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+export function getSubmissionCycleInfo() {
+  const { quarter, year } = getSubmissionQuarter()
+  const deadline = getSecondThursdayOfQuarter(quarter, year)
+  const quarterLabel = formatQuarterCycleLabel(quarter, year)
+
+  return {
+    quarter,
+    year,
+    quarterLabel,
+    deadline,
+    deadlineFormatted: formatLongDate(deadline),
+  }
+}
