@@ -40,6 +40,11 @@ interface CBOnrampProps {
   /** Region already resolved by a parent (e.g. FundOnramp). When provided,
    *  skips the duplicate /api/coinbase/region request. */
   initialIsUS?: boolean | null
+  /** In-app (headless / Apple Pay) success handler. When provided, a successful
+   *  purchase calls this instead of reloading the page — keeping the flow on a
+   *  single screen. The parent is expected to poll for the funds and reveal its
+   *  own action (e.g. a Contribute button) once they arrive. */
+  onHeadlessSuccessInApp?: () => void
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
@@ -60,6 +65,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   headerSlot,
   onUnsupported,
   initialIsUS,
+  onHeadlessSuccessInApp,
 }) => {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
 
@@ -90,6 +96,12 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   // (cache state via onBeforeNavigate, then reload with the onrampSuccess flag
   // that callers already handle on return).
   const handleHeadlessSuccess = useCallback(async () => {
+    // In-app mode: hand off to the parent (which polls for the funds and shows
+    // its own action) instead of reloading. Keeps the whole flow on one screen.
+    if (onHeadlessSuccessInApp) {
+      onHeadlessSuccessInApp()
+      return
+    }
     try {
       await onBeforeNavigate?.()
     } catch (error) {
@@ -99,7 +111,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     url.searchParams.set('onrampSuccess', 'true')
     window.history.replaceState({}, '', url.toString())
     window.location.reload()
-  }, [onBeforeNavigate])
+  }, [onBeforeNavigate, onHeadlessSuccessInApp])
 
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
@@ -616,6 +628,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         onSuccess={handleHeadlessSuccess}
         onUnsupported={onUnsupported}
         onUseAccountFlow={handleHostedFallback}
+        waitForFundsInApp={!!onHeadlessSuccessInApp}
       />
     )
   }

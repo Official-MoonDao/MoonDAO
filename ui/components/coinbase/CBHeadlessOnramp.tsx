@@ -34,6 +34,10 @@ interface CBHeadlessOnrampProps {
   refetchBalance?: () => Promise<void>
   /** Called after a successful purchase (e.g. to resume the parent flow). */
   onSuccess?: () => void
+  /** In-app mode: when funds are purchased, skip the "Continue" confirmation
+   *  screen and hand off to the parent (which polls for the balance and shows
+   *  its own action) instead of reloading. Keeps the whole flow on one screen. */
+  waitForFundsInApp?: boolean
   /** Called when the device doesn't support Apple Pay or Google Pay so the
    *  parent can fall back to MoonPay automatically. */
   onUnsupported?: () => void
@@ -100,6 +104,7 @@ export function CBHeadlessOnramp({
   onSuccess,
   onUnsupported,
   onUseAccountFlow,
+  waitForFundsInApp = false,
 }: CBHeadlessOnrampProps) {
   const { user } = usePrivy()
   const verification = useOnrampVerification()
@@ -423,8 +428,16 @@ export function CBHeadlessOnramp({
           } catch {
             // ignore
           }
-          // onBalanceSufficient / onSuccess are deferred to handleSuccessAck so
-          // the confirmation screen stays up until the user acknowledges it.
+          if (waitForFundsInApp) {
+            // In-app mode: no manual "Continue" step. Hand off to the parent
+            // immediately so it can poll for the funds and reveal its action
+            // (e.g. the Contribute button) as soon as they land — all on the
+            // same screen, no reload.
+            onSuccessRef.current?.()
+          }
+          // Otherwise onBalanceSufficient / onSuccess are deferred to
+          // handleSuccessAck so the confirmation screen stays up until the
+          // user acknowledges it.
           break
         case 'onramp_api.polling_error':
           setError(
@@ -443,10 +456,38 @@ export function CBHeadlessOnramp({
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [fundingState, useGooglePay])
+  }, [fundingState, useGooglePay, waitForFundsInApp])
 
   // --- Success state ---
   if (fundingState === 'success') {
+    // In-app mode: no manual "Continue" step. Show a passive confirmation while
+    // the parent polls for the funds and reveals its own action (e.g. the
+    // Contribute button) automatically the moment they land.
+    if (waitForFundsInApp) {
+      return (
+        <div className={shellChrome}>
+          <div className="p-6 space-y-5 text-center">
+            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <svg className="w-7 h-7 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-white">Payment complete</h2>
+            <p className="text-gray-300 text-sm">
+              Your funds are on the way — this usually takes about a minute. The
+              contribute button will appear automatically as soon as they land.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+              <svg className="animate-spin h-4 w-4 text-blue-300" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <span>Waiting for your funds…</span>
+            </div>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className={shellChrome}>
         <div className="flex items-center justify-between p-6 border-b border-white/10">
