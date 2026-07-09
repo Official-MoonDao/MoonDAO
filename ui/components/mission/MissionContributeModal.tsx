@@ -132,9 +132,11 @@ export default function MissionContributeModal({
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
-  // Base was previously offered here but caused confusion / abandonment for
-  // contributors who didn't have ETH on Base. Arbitrum + Ethereum are the
-  // supported funding chains; users on Base will be prompted to switch.
+  // Arbitrum + Ethereum are the supported funding chains. Arbitrum is the
+  // default and the same-chain path (cheap, no bridge). Ethereum is kept so
+  // the many contributors who already hold mainnet ETH can pay from there via
+  // the LayerZero cross-chain path. Base was removed earlier (users without
+  // ETH on Base were bouncing).
   const chains = useMemo(
     () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
     [isTestnet]
@@ -179,9 +181,14 @@ export default function MissionContributeModal({
     stayOnSelectedAppChainRef,
   ])
 
-  /** Stable `Chain` reference for RPC hooks (avoids refetch when context swaps object identity). */
+  /**
+   * Stable `Chain` reference for RPC hooks (avoids refetch when context swaps object identity).
+   * Clamped to the supported funding chains: if the app-wide selection is on an unsupported
+   * network (e.g. Ethereum picked in the header selector), payment still runs on the
+   * mission chain rather than silently re-enabling the cross-chain path.
+   */
   const payChainStable = useMemo(
-    () => chains.find((c) => c.id === payChain.id) ?? payChain,
+    () => chains.find((c) => c.id === payChain.id) ?? chains[0],
     [chains, payChain]
   )
 
@@ -340,8 +347,8 @@ export default function MissionContributeModal({
     refetch: refetchNativeBalance,
   } = useNativeBalance()
   const walletOnPayChain = useMemo(
-    () => nativeBalanceChain != null && nativeBalanceChain.id === payChain.id,
-    [nativeBalanceChain, payChain.id]
+    () => nativeBalanceChain != null && nativeBalanceChain.id === payChainStable.id,
+    [nativeBalanceChain, payChainStable.id]
   )
 
   /** Balance on `payChain` (funding network). RPC when wallet is elsewhere. */
@@ -1018,7 +1025,7 @@ export default function MissionContributeModal({
     if (!ethUsdPrice || fundingBalanceWei === null || !address) return
     const maxUsd = computeContributionMaxUsd({
       balanceWei: fundingBalanceWei,
-      selectedChainId: payChain.id,
+      selectedChainId: payChainStable.id,
       chainSlug,
       defaultChainSlug,
       ethUsdPrice,
@@ -1030,7 +1037,7 @@ export default function MissionContributeModal({
     fundingBalanceWei,
     address,
     chainSlug,
-    payChain.id,
+    payChainStable.id,
     defaultChainSlug,
     formatInputWithCommas,
     setUsdInput,
@@ -1195,7 +1202,22 @@ export default function MissionContributeModal({
     // thirdweb's own switching handle it (embedded wallets, tests) rather than
     // blocking. If a required switch can't be confirmed, abort with a clear
     // error instead of signing on the wrong chain.
-    const activeChainId = getActiveWalletChainId()
+    // Resolve the signing wallet's live chain. Right after the onramp page
+    // reload the injected connector (MetaMask etc.) can still be reconnecting
+    // and momentarily report `undefined`. Previously we skipped the whole
+    // guard in that case and fell through to `sendTransaction`, which signs on
+    // whatever chain the wallet happens to be on — that is exactly how an
+    // Ethereum cross-chain tx got fired at a wallet still sitting on Arbitrum
+    // ("likely to fail"). Poll briefly so a real wallet's chain resolves before
+    // we decide. A chain that stays `undefined` means an embedded/mock wallet
+    // (chain-agnostic — thirdweb signs for the tx's chain), so we let it pass.
+    let activeChainId = getActiveWalletChainId()
+    if (activeChainId === undefined) {
+      for (let i = 0; i < 20 && activeChainId === undefined; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 150))
+        activeChainId = getActiveWalletChainId()
+      }
+    }
     if (activeChainId !== undefined && activeChainId !== payChainStable.id) {
       const switched = await switchWalletToPayChain()
       if (!switched) {
@@ -1767,8 +1789,15 @@ export default function MissionContributeModal({
         return null
       }
     },
-    getChainSlugFromCache: (restored: any) =>
-      restored?.formData?.chainSlug ?? restored?.chainSlug,
+    getChainSlugFromCache: (restored: any) => {
+      const cached = restored?.formData?.chainSlug ?? restored?.chainSlug
+      // JWTs minted before a chain was removed from the supported list (e.g.
+      // the retired Ethereum cross-chain path) must not auto-fire on a chain
+      // we no longer pay on. Returning undefined makes the hook verify
+      // against the current chain instead, which mismatches the stale JWT
+      // and clears it — the user just sees the normal contribute form.
+      return chainSlugs.includes(cached) ? cached : undefined
+    },
     setSelectedWallet,
     waitForReady: () => {
       return !isLoadingGasEstimate && estimatedGas > BigInt(0) && effectiveGasPrice > BigInt(0)
@@ -2021,11 +2050,8 @@ export default function MissionContributeModal({
                     />
                   </div>
                   {/* Help text aimed at first-time contributors who aren't
-                      sure which network to pick. Sits to the RIGHT of the
-                      dropdown as a follow-up "?" affordance. Uses the
-                      default 24px Tooltip trigger (no size override) so it
-                      reads as a clearly-tappable help button, larger than
-                      the small inline `?`s elsewhere on the mission card. */}
+                      sure which network to pick. If you don't have ETH,
+                      Arbitrum is the cheapest, most reliable choice. */}
                   <Tooltip
                     text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
                     compact
@@ -2148,7 +2174,7 @@ export default function MissionContributeModal({
                           </span>
                         )}
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
-                        on {(payChain.name ?? 'network').replace(' One', '')}
+                        on {(payChainStable.name ?? 'network').replace(' One', '')}
                         {!walletOnPayChain && fundingBalanceResolved ? (
                           <span className="text-cyan-400/90"> — switch wallet to this network to pay</span>
                         ) : null}
@@ -2259,7 +2285,7 @@ export default function MissionContributeModal({
                 <div className="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
                   <LoadingSpinner width="w-8" height="h-8" />
                   <p className="text-sm text-center max-w-sm">
-                    Checking your ETH balance on {(payChain.name ?? 'this network').replace(' One', '')}…
+                    Checking your ETH balance on {(payChainStable.name ?? 'this network').replace(' One', '')}…
                   </p>
                 </div>
               ) : hasEnoughBalance ? (
@@ -2550,7 +2576,7 @@ export default function MissionContributeModal({
                     <FundOnramp
                       fullWidth
                       address={address || ''}
-                      selectedChain={payChain}
+                      selectedChain={payChainStable}
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
                       onCoinbaseQuoteCalculated={handleCoinbaseQuote}

@@ -166,10 +166,9 @@ export default function MissionProfile({
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
-  // Keep this list in sync with MissionContributeModal — Base was removed
-  // from the supported funding chains (users without ETH on Base were
-  // bouncing). Mission funding-chain detection / "switch to richest chain"
-  // banners therefore won't suggest Base anymore.
+  // Keep this list in sync with MissionContributeModal. Arbitrum (default,
+  // same-chain) + Ethereum (cross-chain, for holders of mainnet ETH). Base
+  // was removed (users without ETH on Base were bouncing).
   const chains = useMemo(
     () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
     [isTestnet]
