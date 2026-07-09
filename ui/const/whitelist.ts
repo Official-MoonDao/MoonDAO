@@ -1,19 +1,14 @@
 //https://docs.google.com/spreadsheets/d/1LsYxkI_1alFUD_NxM2a5RngeSRC5e5ElUpP6aR30DiM/edit?gid=0#gid=0
 export const BLOCKED_TEAMS: any = new Set([])
 export const BLOCKED_CITIZENS: any = new Set([48, 72, 140, 177])
-// Mission 4 (Frank) is hidden from every public listing on mainnet while its re-open is
-// validated end-to-end. It stays in BLOCKED_MISSIONS (so it never appears on the
-// launchpad/home/team pages) but is ALSO listed in GATED_MISSIONS, which lets the
-// /mission/[id] page render when the correct access code is supplied — a private,
-// shareable stealth test. See pages/mission/[tokenId].tsx.
 export const BLOCKED_MISSIONS: any = new Set(
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? [0, 1, 2, 4] : []
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? [0, 1, 2] : []
 )
 // Blocked missions that remain reachable on their page with an access code
-// (process.env.MISSION_ACCESS_CODE). Blocked-but-not-gated missions stay fully 404'd.
-export const GATED_MISSIONS: Set<number> = new Set(
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? [4] : []
-)
+// (process.env.MISSION_ACCESS_CODE) — a private, shareable stealth test for an
+// unannounced mission. Blocked-but-not-gated missions stay fully 404'd.
+// See pages/mission/[tokenId].tsx.
+export const GATED_MISSIONS: Set<number> = new Set()
 export const BLOCKED_PROJECTS: any = new Set(
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? [4, 10, 14, 90, 116, 118, 124] : [0, 3, 4, 5, 6, 7]
 )
