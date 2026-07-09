@@ -257,9 +257,13 @@ describe('MissionProfileHeader — Overview Flight (mission 4) re-opened raise',
     // Live milestone progress bar + Goal tile are back.
     cy.get('.from-blue-500.via-purple-600.to-blue-500').should('exist')
     cy.contains('Goal').should('be.visible')
-    // New re-open milestone labels render.
+    // The single re-open milestone renders (the $500k Virgin Galactic
+    // stretch milestone was dropped from the campaign).
     cy.contains('Guaranteed 2nd stratospheric seat').should('exist')
-    cy.contains('Virgin Galactic two-seat mission').should('exist')
+    cy.contains('Virgin Galactic two-seat mission').should('not.exist')
+    // The deadline tile reads "Open" instead of a day countdown — the
+    // re-open runs without a meaningful closing date.
+    cy.contains('Open').should('be.visible')
     // Closed-state UI is gone.
     cy.get('[data-testid="overview-contributions-closed-banner"]').should(
       'not.exist'
