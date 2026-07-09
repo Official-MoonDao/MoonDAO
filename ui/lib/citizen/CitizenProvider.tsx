@@ -235,6 +235,17 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       citizenRef.current = cachedData
       setCitizen(cachedData)
     } else {
+      // If the in-memory citizen belongs to a different wallet (wallet switch
+      // with no cache for the new address), drop it. Otherwise the data
+      // effect's error branch reads citizenRef and treats the new wallet as
+      // a citizen because the old wallet's NFT is still there.
+      const existing = citizenRef.current
+      const existingOwner =
+        typeof existing?.owner === 'string' ? existing.owner : ''
+      if (existingOwner && existingOwner.toLowerCase() !== address.toLowerCase()) {
+        citizenRef.current = undefined
+        setCitizen(undefined)
+      }
       if (authenticated && user && isDefaultChain) {
         setIsLoading(true)
       } else if (authenticated && user && !isDefaultChain) {
