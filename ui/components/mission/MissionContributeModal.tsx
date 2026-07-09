@@ -58,7 +58,7 @@ import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
 import type { FundingChainBalanceEntry } from '@/lib/mission/useMissionDefaultFundingChain'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import type { Chain } from '@/lib/rpc/chains'
-import { arbitrum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
+import { arbitrum, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
@@ -132,15 +132,13 @@ export default function MissionContributeModal({
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
-  // Production contributions are same-chain (Arbitrum) only. The cross-chain
-  // LayerZero path from Ethereum repeatedly stranded contributors: the LZ
-  // messaging fee could exceed small contributions, the wallet often sat on a
-  // different network than the payment, and onramp purchases sized without the
-  // fee left wallets unable to sign. Users without ETH fund via Apple Pay /
-  // Google Pay directly on Arbitrum; users with mainnet ETH can bridge.
-  // Testnet keeps two chains so the cross-chain code path stays testable.
+  // Arbitrum + Ethereum are the supported funding chains. Arbitrum is the
+  // default and the same-chain path (cheap, no bridge). Ethereum is kept so
+  // the many contributors who already hold mainnet ETH can pay from there via
+  // the LayerZero cross-chain path. Base was removed earlier (users without
+  // ETH on Base were bouncing).
   const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum]),
+    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
     [isTestnet]
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
@@ -1204,7 +1202,22 @@ export default function MissionContributeModal({
     // thirdweb's own switching handle it (embedded wallets, tests) rather than
     // blocking. If a required switch can't be confirmed, abort with a clear
     // error instead of signing on the wrong chain.
-    const activeChainId = getActiveWalletChainId()
+    // Resolve the signing wallet's live chain. Right after the onramp page
+    // reload the injected connector (MetaMask etc.) can still be reconnecting
+    // and momentarily report `undefined`. Previously we skipped the whole
+    // guard in that case and fell through to `sendTransaction`, which signs on
+    // whatever chain the wallet happens to be on — that is exactly how an
+    // Ethereum cross-chain tx got fired at a wallet still sitting on Arbitrum
+    // ("likely to fail"). Poll briefly so a real wallet's chain resolves before
+    // we decide. A chain that stays `undefined` means an embedded/mock wallet
+    // (chain-agnostic — thirdweb signs for the tx's chain), so we let it pass.
+    let activeChainId = getActiveWalletChainId()
+    if (activeChainId === undefined) {
+      for (let i = 0; i < 20 && activeChainId === undefined; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 150))
+        activeChainId = getActiveWalletChainId()
+      }
+    }
     if (activeChainId !== undefined && activeChainId !== payChainStable.id) {
       const switched = await switchWalletToPayChain()
       if (!switched) {
@@ -1982,10 +1995,7 @@ export default function MissionContributeModal({
                     <span className="font-semibold text-cyan-200">
                       {(payChainStable.name ?? 'network').replace(' One', '')}
                     </span>
-                    .{' '}
-                    {chains.length === 1
-                      ? "Use the button to switch your wallet — it's one click and costs nothing."
-                      : 'Use the button to switch your wallet, or pick another network in the selector.'}
+                    . Use the button to switch your wallet, or pick another network in the selector.
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <StandardButton
@@ -2022,56 +2032,33 @@ export default function MissionContributeModal({
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                   Network
                 </label>
-                {chains.length === 1 ? (
-                  /* Single supported funding chain — show it as a static row
-                     instead of a one-option dropdown, so contributors never
-                     have to make (or second-guess) a network choice. */
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0 flex items-center gap-3 p-3 bg-black/20 rounded-2xl border border-white/5 sm:max-w-[250px]">
-                      <Image
-                        className="h-6 w-6"
-                        src={`/icons/networks/${getChainSlug(payChainStable)}.svg`}
-                        width={24}
-                        height={24}
-                        alt={payChainStable.name || ''}
-                      />
-                      <span className="text-white text-sm font-medium">
-                        {(payChainStable.name ?? 'Arbitrum').replace(' One', '')}
-                      </span>
-                    </div>
-                    <Tooltip
-                      text="Contributions run on Arbitrum, an Ethereum network with near-zero fees. If you pay by card we'll deliver ETH straight to your wallet on Arbitrum — no network choice needed."
-                      compact
-                    >
-                      ?
-                    </Tooltip>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <NetworkSelector
+                      chains={chains}
+                      align="left"
+                      displayChain={
+                        !userChosePayChainInModal &&
+                        fundingDisplayChain != null &&
+                        selectedChain.id !== fundingDisplayChain.id
+                          ? fundingDisplayChain
+                          : undefined
+                      }
+                      onUserSelectChain={() =>
+                        setUserChosePayChainInModal(true)
+                      }
+                    />
                   </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <NetworkSelector
-                        chains={chains}
-                        align="left"
-                        displayChain={
-                          !userChosePayChainInModal &&
-                          fundingDisplayChain != null &&
-                          selectedChain.id !== fundingDisplayChain.id
-                            ? fundingDisplayChain
-                            : undefined
-                        }
-                        onUserSelectChain={() =>
-                          setUserChosePayChainInModal(true)
-                        }
-                      />
-                    </div>
-                    <Tooltip
-                      text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
-                      compact
-                    >
-                      ?
-                    </Tooltip>
-                  </div>
-                )}
+                  {/* Help text aimed at first-time contributors who aren't
+                      sure which network to pick. If you don't have ETH,
+                      Arbitrum is the cheapest, most reliable choice. */}
+                  <Tooltip
+                    text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
+                    compact
+                  >
+                    ?
+                  </Tooltip>
+                </div>
               </div>
 
               {/* Contribution amount — primary input */}
