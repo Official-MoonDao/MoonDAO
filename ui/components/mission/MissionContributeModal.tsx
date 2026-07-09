@@ -195,6 +195,20 @@ export default function MissionContributeModal({
   const chainSlug = getChainSlug(payChainStable)
 
   /**
+   * The chain card / Apple-Pay funding is delivered to. The Coinbase onramp can
+   * only reliably deliver ETH to the default chain (Arbitrum), and the mission
+   * settles there, so the entire onramp round-trip is pinned here. Pinning
+   * delivery + contribution to one chain is what stops the money and the
+   * contribution from landing on different chains (the cause of the
+   * "likely to fail" tx that then hung forever waiting for a receipt on the
+   * wrong chain).
+   */
+  const onrampFundingChain = useMemo(
+    () => chains.find((c) => c.id === DEFAULT_CHAIN_V5.id) ?? chains[0],
+    [chains]
+  )
+
+  /**
    * One-shot / recommended updates only — not on every `selectedChain` change, so explicit
    * NetworkSelector picks are not overwritten.
    */
@@ -1034,8 +1048,16 @@ export default function MissionContributeModal({
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') return
     if (!modalEnabled || !address) return
-    if (!fundingBalanceResolved) return
-    if (hasEnoughBalance) return
+    // Returning from the onramp: card funds always land on the default chain,
+    // so pin the whole flow there immediately (before the auto-contribution
+    // can fire) rather than waiting on a balance read. Otherwise pin only when
+    // the user lacks enough ETH on the selected chain to complete the
+    // contribution — users who genuinely hold ETH on Ethereum keep it.
+    const isOnrampReturn = router?.query?.onrampSuccess === 'true'
+    if (!isOnrampReturn) {
+      if (!fundingBalanceResolved) return
+      if (hasEnoughBalance) return
+    }
     if (payChainStable.id === DEFAULT_CHAIN_V5.id) return
     const target = chains.find((c) => c.id === DEFAULT_CHAIN_V5.id)
     if (!target) return
@@ -1049,6 +1071,7 @@ export default function MissionContributeModal({
     payChainStable.id,
     chains,
     setSelectedChain,
+    router?.query?.onrampSuccess,
   ])
 
   const applyMaxContribution = useCallback(() => {
@@ -1264,6 +1287,27 @@ export default function MissionContributeModal({
       await refetchNativeBalance()
     }
 
+    // Never let receipt polling spin forever. If a tx was somehow broadcast on
+    // a different chain than the one we poll (the old cross-chain/wallet
+    // mismatch), waitForReceipt would never resolve and the modal hung in
+    // "Contributing…" indefinitely. Time out so the error path runs and the
+    // user can retry instead of staring at a spinner.
+    const awaitReceipt = async (submitted: any): Promise<any> =>
+      Promise.race([
+        waitForReceipt(submitted),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Timed out waiting for the transaction to confirm. It may still complete — check your wallet activity before retrying.'
+                )
+              ),
+            120000
+          )
+        ),
+      ])
+
     try {
       flushSync(() => setContributeButtonPhase('wallet'))
 
@@ -1369,7 +1413,7 @@ export default function MissionContributeModal({
 
         // Wait for origin chain confirmation before showing success
         flushSync(() => setContributeButtonPhase('confirm'))
-        const originReceipt: any = await waitForReceipt(submittedOrigin)
+        const originReceipt: any = await awaitReceipt(submittedOrigin)
 
         // Show success UI immediately. Previously we awaited the notification
         // POST (and up to ~20s of retries) before showing confetti/closing the
@@ -1517,7 +1561,7 @@ export default function MissionContributeModal({
           account,
         })
         flushSync(() => setContributeButtonPhase('confirm'))
-        receipt = await waitForReceipt(submittedPay)
+        receipt = await awaitReceipt(submittedPay)
       }
 
       // Show success UI immediately on tx confirmation. Same-chain and
@@ -2629,14 +2673,14 @@ export default function MissionContributeModal({
                     <FundOnramp
                       fullWidth
                       address={address || ''}
-                      selectedChain={payChainStable}
+                      selectedChain={onrampFundingChain}
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
                       onCoinbaseQuoteCalculated={handleCoinbaseQuote}
                       onCoinbaseBeforeNavigate={async () => {
                         await generateOnrampJWT({
                           address: address || '',
-                          chainSlug: chainSlug,
+                          chainSlug: getChainSlug(onrampFundingChain),
                           usdAmount: usdInput.replace(/,/g, ''),
                           agreed: agreedToCondition,
                           message: message || '',
