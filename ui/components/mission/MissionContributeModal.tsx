@@ -482,7 +482,8 @@ export default function MissionContributeModal({
     getActiveWalletChainId,
   ])
 
-  const { effectiveGasPrice } = useGasPrice(payChainStable)
+  const { effectiveGasPrice, maxFeePerGas, maxPriorityFeePerGas } =
+    useGasPrice(payChainStable)
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -1197,21 +1198,63 @@ export default function MissionContributeModal({
 
     try {
       flushSync(() => setContributeButtonPhase('wallet'))
+
+      // Explicit gas fields let thirdweb skip its own RPC lookups
+      // (eth_estimateGas + eth_getBlockByNumber) when serializing the tx.
+      // Those lookups hit the primary browser RPC, which can be rate-limited
+      // (429) — previously that aborted the contribution with "Block not
+      // found" even though the wallet could broadcast fine. The values come
+      // from our server gas APIs (which have RPC fallback) and are the same
+      // buffered numbers the modal already shows and budgets for.
+      const gasOverrides: {
+        gas?: bigint
+        maxFeePerGas?: bigint
+        maxPriorityFeePerGas?: bigint
+      } = {}
+      if (estimatedGas > BigInt(0)) gasOverrides.gas = estimatedGas
+      if (
+        maxFeePerGas &&
+        maxPriorityFeePerGas &&
+        maxFeePerGas > BigInt(0) &&
+        maxPriorityFeePerGas >= BigInt(0)
+      ) {
+        gasOverrides.maxFeePerGas = maxFeePerGas
+        gasOverrides.maxPriorityFeePerGas = maxPriorityFeePerGas
+      }
+
       let receipt: any
       if (chainSlug !== defaultChainSlug) {
-        const quoteCrossChainPay: any = await readContract({
-          contract: crossChainPayContract,
-          method: 'quoteCrossChainPay' as string,
-          params: [
-            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
-            toWei(inputValue),
-            mission?.projectId,
-            address || ZERO_ADDRESS,
-            toWei(output),
-            message,
-            '0x00',
-          ],
-        })
+        // The fresh LayerZero quote read can fail when the browser RPC is
+        // rate-limited. Fall back to the cached quote already fetched for the
+        // fee display instead of aborting the whole contribution.
+        let quoteCrossChainPay: bigint
+        try {
+          quoteCrossChainPay = BigInt(
+            await readContract({
+              contract: crossChainPayContract,
+              method: 'quoteCrossChainPay' as string,
+              params: [
+                LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+                toWei(inputValue),
+                mission?.projectId,
+                address || ZERO_ADDRESS,
+                toWei(output),
+                message,
+                '0x00',
+              ],
+            })
+          )
+        } catch (quoteError) {
+          if (crossChainQuote > BigInt(0)) {
+            console.warn(
+              'quoteCrossChainPay read failed; using cached quote:',
+              quoteError
+            )
+            quoteCrossChainPay = crossChainQuote
+          } else {
+            throw quoteError
+          }
+        }
         const transaction = prepareContractCall({
           contract: crossChainPayContract,
           method: 'crossChainPay' as string,
@@ -1224,7 +1267,8 @@ export default function MissionContributeModal({
             message,
             '0x00',
           ],
-          value: BigInt(quoteCrossChainPay),
+          value: quoteCrossChainPay,
+          ...gasOverrides,
         })
 
         const submittedOrigin = await sendTransaction({
@@ -1374,6 +1418,7 @@ export default function MissionContributeModal({
             '0x00',
           ],
           value: toWei(inputValue),
+          ...gasOverrides,
         })
 
         const submittedPay = await sendTransaction({
@@ -1528,6 +1573,10 @@ export default function MissionContributeModal({
     getActiveWalletChainId,
     switchWalletToPayChain,
     refetchNativeBalance,
+    estimatedGas,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
+    crossChainQuote,
   ])
 
   // Calculate quote when payment amount or ruleset changes (aligned with USD → ETH, not rounded `input`)
