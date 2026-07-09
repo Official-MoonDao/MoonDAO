@@ -472,7 +472,11 @@ export default function ProjectCard({
   // doesn't fire N parallel eth_calls + IPFS fetches for every card on mount.
   const isVisible = useOnceVisible(cardRef, { rootMargin: '300px 0px' })
   // Once expanded (vote UI), always load — user is interacting with this card.
-  const loadHeavy = isVisible || isExpanded
+  // Also force-load in voting modes (distribute / senate vote) so author
+  // detection and the senate budget badge don't wait for the card to scroll
+  // into view — otherwise off-screen cards misclassify authors as voters
+  // (showing allocation steppers) and render `Budget: $undefined`.
+  const loadHeavy = isVisible || isExpanded || !!distribute || isSenateVote
 
   const { adminHatId } = useProjectData(projectContract, hatsContract, project, {
     enabled: loadHeavy,
