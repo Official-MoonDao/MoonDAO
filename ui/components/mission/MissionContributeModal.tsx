@@ -374,6 +374,10 @@ export default function MissionContributeModal({
   /** Balance on `payChain` (funding network). RPC when wallet is elsewhere. */
   const [rpcFundingChainWei, setRpcFundingChainWei] = useState<bigint | null>(null)
   const [isLoadingRpcFundingBalance, setIsLoadingRpcFundingBalance] = useState(false)
+  /** True while an in-app Apple/Google Pay purchase is settling. We poll the
+   *  balance in place (no reload) so the Contribute button appears the moment
+   *  the funds land. */
+  const [awaitingOnrampFunds, setAwaitingOnrampFunds] = useState(false)
 
   useEffect(() => {
     if (!modalEnabled || !address) {
@@ -1033,6 +1037,55 @@ export default function MissionContributeModal({
     if (!fundingBalanceResolved || fundingBalanceWei === null) return false
     return requiredWei > BigInt(0) && fundingBalanceWei >= requiredWei
   }, [fundingBalanceResolved, fundingBalanceWei, requiredWei])
+
+  // In-app onramp settling: poll the balance in place until the purchased funds
+  // land, then stop. No reload and no auto-contribute — once the balance is
+  // sufficient the normal Contribute button renders and the user taps it.
+  useEffect(() => {
+    if (!awaitingOnrampFunds) return
+    if (!address) return
+    if (hasEnoughBalance) {
+      setAwaitingOnrampFunds(false)
+      return
+    }
+    let cancelled = false
+    const poll = async () => {
+      try {
+        await refetchNativeBalance()
+      } catch {
+        // ignore
+      }
+      if (!cancelled && !walletOnPayChain) {
+        try {
+          const wei = await fetchNativeBalanceWei(payChainStable, address)
+          if (!cancelled) setRpcFundingChainWei(wei)
+        } catch {
+          // ignore
+        }
+      }
+    }
+    void poll()
+    const intervalId = setInterval(() => {
+      void poll()
+    }, 4000)
+    // Funds essentially always arrive within a couple of minutes; stop polling
+    // after a generous window so we don't loop forever if something stalls.
+    const stopId = setTimeout(() => {
+      if (!cancelled) setAwaitingOnrampFunds(false)
+    }, 8 * 60 * 1000)
+    return () => {
+      cancelled = true
+      clearInterval(intervalId)
+      clearTimeout(stopId)
+    }
+  }, [
+    awaitingOnrampFunds,
+    hasEnoughBalance,
+    address,
+    walletOnPayChain,
+    payChainStable,
+    refetchNativeBalance,
+  ])
 
   const showFundingBalanceWait = Boolean(
     address &&
@@ -2732,6 +2785,12 @@ export default function MissionContributeModal({
                       }}
                       onBalanceSufficient={() => {
                         buyMissionToken()
+                      }}
+                      onCoinbaseSuccessInApp={() => {
+                        // In-app Apple/Google Pay: no reload, no auto-contribute.
+                        // Poll for the funds in place; when they land the normal
+                        // Contribute button appears and the user taps it.
+                        setAwaitingOnrampFunds(true)
                       }}
                     />
                   )}

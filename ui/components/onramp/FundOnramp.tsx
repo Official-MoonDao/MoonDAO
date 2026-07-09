@@ -27,6 +27,10 @@ interface FundOnrampProps {
   // Coinbase-specific
   coinbaseRedirectUrl?: string
   onCoinbaseBeforeNavigate?: () => Promise<void>
+  /** In-app Coinbase (Apple/Google Pay) success handler. When provided, a
+   *  successful purchase stays on the same screen and calls this instead of
+   *  reloading — the caller polls for funds and reveals its own action. */
+  onCoinbaseSuccessInApp?: () => void
   onCoinbaseQuoteCalculated?: (
     ethAmount: number,
     paymentSubtotal: number,
@@ -57,6 +61,7 @@ export function FundOnramp({
   pollMaxMinutes,
   coinbaseRedirectUrl,
   onCoinbaseBeforeNavigate,
+  onCoinbaseSuccessInApp,
   onCoinbaseQuoteCalculated,
   allowAmountInput = false,
 }: FundOnrampProps) {
@@ -220,6 +225,7 @@ export function FundOnramp({
           allowAmountInput={allowAmountInput}
           onQuoteCalculated={onCoinbaseQuoteCalculated}
           onBeforeNavigate={onCoinbaseBeforeNavigate}
+          onHeadlessSuccessInApp={onCoinbaseSuccessInApp}
           redirectUrl={coinbaseRedirectUrl}
         />
       )}
