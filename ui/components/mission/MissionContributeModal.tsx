@@ -340,6 +340,12 @@ export default function MissionContributeModal({
   })
   const [jwtVerificationError, setJwtVerificationError] = useState<string | null>(null)
   const [transactionRejected, setTransactionRejected] = useState(false)
+  // True while the automatic post-onramp flow is driving buyMissionToken. That
+  // flow retries on transient failures right after the reload, so we suppress
+  // the generic failure toast in that window (the modal already shows a
+  // "Transaction Rejected" notice) to avoid a false "failed" flash immediately
+  // before the retry succeeds.
+  const autoContributionInFlightRef = useRef(false)
 
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
@@ -1670,11 +1676,36 @@ export default function MissionContributeModal({
         })
         refreshMissionData()
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error purchasing tokens:', error)
-      toast.error('Failed to purchase tokens', {
-        style: toastStyle,
-      })
+      const msg = (error?.message || '').toLowerCase()
+      const isUserRejection =
+        error?.code === 4001 ||
+        error?.code === 'ACTION_REJECTED' ||
+        msg.includes('user rejected') ||
+        msg.includes('user denied') ||
+        msg.includes('rejected the request')
+      const isReceiptTimeout = msg.includes(
+        'timed out waiting for the transaction'
+      )
+      if (isUserRejection) {
+        // User dismissed the wallet prompt — not a failure.
+        toast('Transaction cancelled.', { style: toastStyle })
+      } else if (isReceiptTimeout) {
+        // The tx was broadcast but we stopped waiting for the receipt; it may
+        // still confirm. Don't call it a failure.
+        toast(
+          'Your transaction was sent and may still confirm. Check your wallet activity before retrying.',
+          { style: toastStyle, icon: '⏳', duration: 8000 }
+        )
+      } else if (!autoContributionInFlightRef.current) {
+        // Only surface the generic failure for a user-initiated attempt. The
+        // automatic post-onramp flow retries and shows its own notice, so a
+        // toast here would flash "failed" right before a successful retry.
+        toast.error('Failed to purchase tokens', {
+          style: toastStyle,
+        })
+      }
       throw error
     } finally {
       setContributeButtonPhase('idle')
@@ -1826,12 +1857,15 @@ export default function MissionContributeModal({
       await refetchNativeBalance()
     },
     onTransaction: async () => {
+      autoContributionInFlightRef.current = true
       try {
         await buyMissionToken()
       } catch (error) {
         setTransactionRejected(true)
         setIsAutoTriggering(false)
         throw error
+      } finally {
+        autoContributionInFlightRef.current = false
       }
     },
     onFormRestore: (restored: any) => {
