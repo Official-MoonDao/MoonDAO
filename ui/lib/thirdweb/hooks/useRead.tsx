@@ -30,7 +30,13 @@ export default function useRead({
       }
       setIsLoading(false)
     }
-    if (contract && method && params) read()
+    // `params` is an array, so `[addr, undefined]` is truthy — but viem throws
+    // while ABI-encoding any undefined/null param ("Cannot convert undefined to
+    // a BigInt"). Callers pass not-yet-loaded values (e.g. projectId) on first
+    // render; skip until every param is present instead of firing a doomed read.
+    const paramsReady =
+      Array.isArray(params) && params.every((p) => p !== undefined && p !== null)
+    if (contract && method && paramsReady) read()
   }, [contract, JSON.stringify(params), method, ...(deps || [])])
   return { data, isLoading }
 }

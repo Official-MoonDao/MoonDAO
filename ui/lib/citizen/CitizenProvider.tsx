@@ -185,6 +185,13 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   const account = useActiveAccount()
   const { authenticated, user } = usePrivy()
   const hasLoadedNonDefaultCache = useRef(false)
+  // Mirror of `citizen` readable inside effects without adding it to their
+  // dependency arrays (doing so would re-run the data effect after every
+  // setCitizen and loop, since citizenRowToNFT returns a new object each time).
+  const citizenRef = useRef<any>()
+  useEffect(() => {
+    citizenRef.current = citizen
+  }, [citizen])
 
   const address = account?.address
   const chainId = selectedChain?.id
@@ -240,6 +247,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   const {
     data: citizenData,
     isLoading: isLoadingQuery,
+    error: citizenQueryError,
     mutate,
   } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
@@ -304,6 +312,19 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       return
     }
 
+    // A failed query (Tableland 429/5xx, our own API rate limit, network blip)
+    // is NOT evidence the user isn't a citizen. Treating it as such used to
+    // set citizen=undefined and poison the localStorage cache, which made
+    // /dashboard bounce the user to / and back in a loop — each bounce
+    // remounting the whole page and re-firing hundreds of RPC calls until the
+    // tab froze. On error: keep the last-known citizen (from cache or a prior
+    // successful query) and, if we have none, stay in "loading" while SWR
+    // retries in the background so route guards don't redirect on unknown.
+    if (citizenQueryError && !citizenData) {
+      setIsLoading(!citizenRef.current)
+      return
+    }
+
     setIsLoading(false)
 
     if (!citizenData || citizenData.length === 0) {
@@ -335,6 +356,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   }, [
     citizenData,
     isLoadingQuery,
+    citizenQueryError,
     authenticated,
     user,
     address,
