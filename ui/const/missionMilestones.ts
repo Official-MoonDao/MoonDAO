@@ -7,7 +7,6 @@ export type MissionFundingMilestone = {
 export const MISSION_FUNDING_MILESTONES_USD: Record<number, MissionFundingMilestone[]> = {
   4: [
     { usd: 250_000, label: 'Guaranteed 2nd stratospheric seat' },
-    { usd: 500_000, label: 'Virgin Galactic two-seat mission' },
   ],
 }
 
@@ -34,7 +33,7 @@ export function getMissionMinimumUsdGoal(missionId: unknown): number | undefined
 }
 
 export const MISSION_MINIMUM_GOAL_TOOLTIP =
-  'Our near-term goal is $250,000 — enough to lock in a guaranteed second stratospheric seat so a community member can fly alongside Frank. Reaching $500,000 unlocks a dedicated two-seat Virgin Galactic mission. Nothing raised in the first round has been spent, and refunds are made available if a seat cannot be secured.'
+  'Our near-term goal is $250,000 — enough to lock in a guaranteed second stratospheric seat so a community member can fly alongside Frank. Nothing raised in the first round has been spent, and refunds are made available if a seat cannot be secured.'
 
 /**
  * Tagline overrides (mission id → tagline). Takes precedence over the on-chain
@@ -76,9 +75,8 @@ export const MISSION_DESCRIPTION_OVERRIDES: Partial<Record<number, string>> = {
 <p>After a month of calls with spaceflight providers across three continents and a community vote on where to go next, the answer came back loud and clear: finish what we started.</p>
 <h3>What&#39;s new this round</h3>
 <ul>
-<li><strong>A reachable goal.</strong> Our near-term target is <strong>$250,000</strong> — enough to lock in a guaranteed second stratospheric seat. Frank&#39;s seat is the floor we&#39;re building on; this milestone is about sending a member of our community up with him.</li>
-<li><strong>A bigger, contingent prize.</strong> Pending live negotiations, reaching <strong>$500,000</strong> could unlock a dedicated, premium two-seat mission with Virgin Galactic — Frank and a community flier, together.</li>
-<li><strong>Early backers win.</strong> $OVERVIEW opens at <strong>500 per ETH</strong> and steps down 50% every month. The earlier you contribute, the more voice you get.</li>
+<li><strong>A reachable goal.</strong> Our near-term target is <strong>$250,000</strong> — enough to lock in a guaranteed second seat on a stratospheric flight. Frank&#39;s seat is the floor we&#39;re building on; this milestone is about making good on the original promise: sending a member of our community up with him.</li>
+<li><strong>Early backers win.</strong> $OVERVIEW now opens at <strong>500 per ETH</strong>. As we reach milestones, we will reduce the rate of $OVERVIEW contributors get. The earlier you contribute, the more voice you get.</li>
 <li><strong>Contributing is effortless.</strong> We rebuilt the flow end to end, including an Apple Pay on-ramp — backing a real spaceflight now takes seconds, whether or not you&#39;ve ever touched crypto.</li>
 </ul>
 <h3>A flight forty years in the making</h3>

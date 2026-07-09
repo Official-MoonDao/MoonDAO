@@ -718,7 +718,13 @@ const MissionProfileHeader = React.memo(
                             ? 'Closed'
                             : 'Deadline'}
                         </span>
-                        {deadline != null && deadline > 0 ? (
+                        {/* Hide the exact-closing tooltip for the Overview
+                            mission while it's open — the tile reads "Open"
+                            (no meaningful closing date), so surfacing the
+                            far-out on-chain deadline would contradict it. */}
+                        {deadline != null &&
+                        deadline > 0 &&
+                        (!isOverviewMission || deadlinePassed) ? (
                           <span className="flex-shrink-0">
                             <Tooltip
                               text={exactClosingTooltipText(deadline)}
@@ -743,6 +749,14 @@ const MissionProfileHeader = React.memo(
                       ) : Number(stage) === 3 ? (
                         <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
                           REFUND
+                        </p>
+                      ) : isOverviewMission ? (
+                        // The Overview Flight re-open runs without a meaningful
+                        // closing date (the on-chain deadline is set far out),
+                        // so a day-countdown would read as noise. Show a simple
+                        // open status instead.
+                        <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
+                          Open
                         </p>
                       ) : deadline != null && deadline > 0 ? (
                         <MissionDeadlineCountdown deadline={deadline} />
