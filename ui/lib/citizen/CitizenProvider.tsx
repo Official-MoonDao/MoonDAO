@@ -228,6 +228,11 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     const cachedData = getCachedCitizen(address, cacheChainId)
 
     if (cachedData) {
+      // Sync the ref immediately so the data effect (which runs later in this
+      // same commit) can see the cached citizen even before React re-renders.
+      // Without this, a same-tick Tableland error would set isLoading=true and
+      // never clear it, because the data effect doesn't re-run on `citizen`.
+      citizenRef.current = cachedData
       setCitizen(cachedData)
     } else {
       if (authenticated && user && isDefaultChain) {
