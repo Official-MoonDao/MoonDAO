@@ -953,7 +953,10 @@ export default function MissionContributeModal({
 
     let transactionWei: bigint
     if (isCrossChain && crossChainQuote > BigInt(0) && !layerZeroLimitExceeded) {
-      transactionWei = crossChainQuote
+      // The LayerZero quote is re-read fresh at send time and can drift up
+      // between the onramp purchase and the auto-contribution, so budget a
+      // little above the current quote. Any excess simply stays in the wallet.
+      transactionWei = (crossChainQuote * BigInt(103)) / BigInt(100)
     } else {
       const usdNum = Number(cleanUsdInput)
       if (usdInput && ethUsdPrice && Number.isFinite(usdNum) && usdNum > 0) {
@@ -964,8 +967,20 @@ export default function MissionContributeModal({
       }
     }
 
+    // Budget gas at the wallet's reserve price, not the expected price.
+    // Wallets (MetaMask etc.) refuse to sign unless
+    // balance >= value + gasLimit * maxFeePerGas, and the tx we submit uses
+    // maxFeePerGas (~2.4x base fee). Sizing the onramp purchase on
+    // effectiveGasPrice (base + priority) covered the expected cost but left
+    // the balance below the wallet's own check, producing "not enough gas"
+    // right after a successful onramp. The reserve is mostly refunded — the
+    // user only pays the actual fee.
+    const gasPriceForBudget =
+      maxFeePerGas && maxFeePerGas > effectiveGasPrice
+        ? maxFeePerGas
+        : effectiveGasPrice
     const baseGasCostWei =
-      effectiveGasPrice && estimatedGas ? estimatedGas * effectiveGasPrice : BigInt(0)
+      gasPriceForBudget && estimatedGas ? estimatedGas * gasPriceForBudget : BigInt(0)
     const safetyBuffer = BigInt(103) // 3% on gas for base-fee drift
     const gasCostWei = (baseGasCostWei * safetyBuffer) / BigInt(100)
 
@@ -975,6 +990,7 @@ export default function MissionContributeModal({
     ethUsdPrice,
     estimatedGas,
     effectiveGasPrice,
+    maxFeePerGas,
     crossChainQuote,
     chainSlug,
     defaultChainSlug,
