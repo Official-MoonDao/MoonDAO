@@ -122,6 +122,31 @@ export type JsonRpcProxyResult = {
   body: unknown
 }
 
+function hasResultOrError(entry: unknown): boolean {
+  return (
+    !!entry &&
+    typeof entry === 'object' &&
+    ('result' in (entry as object) || 'error' in (entry as object))
+  )
+}
+
+/**
+ * Validate that an upstream body is a well-formed JSON-RPC response for the
+ * given request. Public fallback RPCs sometimes answer a batch with a single
+ * error object, drop entries, or return entries with neither `result` nor
+ * `error`. Forwarding those to the browser makes thirdweb resolve individual
+ * eth_calls with `undefined`, which crashes viem's ABI decoder ("Cannot read
+ * properties of undefined (reading 'buffer')" / Safari: "undefined is not an
+ * object (evaluating 'e.buffer')") — seen in citizen onboarding reads.
+ */
+function isWellFormedJsonRpcResponse(request: unknown, body: unknown): boolean {
+  if (Array.isArray(request)) {
+    if (!Array.isArray(body) || body.length !== request.length) return false
+    return body.every(hasResultOrError)
+  }
+  return hasResultOrError(body)
+}
+
 /**
  * Forward a raw JSON-RPC payload (single call or batch array) through the
  * chain's endpoint list. Used by `/api/rpc/[chainId]` so browser thirdweb
@@ -179,6 +204,15 @@ export async function proxyJsonRpcRequest(
       if (data == null) {
         lastStatus = 502
         lastBody = { error: 'Empty RPC response' }
+        continue
+      }
+
+      // Malformed batch responses (single object for a batch request, missing
+      // entries, entries with neither result nor error) crash viem the same
+      // way — try the next endpoint instead of forwarding them.
+      if (!isWellFormedJsonRpcResponse(payload, data)) {
+        lastStatus = 502
+        lastBody = { error: 'Malformed JSON-RPC response from upstream' }
         continue
       }
 

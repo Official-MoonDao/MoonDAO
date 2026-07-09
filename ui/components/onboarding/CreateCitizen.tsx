@@ -145,6 +145,37 @@ const INPUT_IMAGE_SESSION_KEY = 'CreateCitizen_inputImage'
 
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60
 
+/**
+ * Under transient RPC hiccups thirdweb's batched eth_call can resolve with an
+ * empty/undefined body, which crashes viem's ABI decoder with a TypeError
+ * ("Cannot read properties of undefined (reading 'buffer')" / Safari:
+ * "undefined is not an object (evaluating 'e.buffer')"). A short retry clears
+ * it — same pattern as `computeMemberVoteOutcome.readContractWithRetry`.
+ */
+async function readContractWithRetry<T>(
+  options: { contract: any; method: string; params: any[] },
+  maxRetries = 3,
+  baseDelayMs = 500
+): Promise<T> {
+  let lastError: any
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return (await readContract(options as any)) as T
+    } catch (error) {
+      lastError = error
+      const isRetryableDecodeError =
+        error instanceof TypeError && String(error.message).includes('buffer')
+      if (!isRetryableDecodeError || attempt === maxRetries - 1) {
+        throw error
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, baseDelayMs * Math.pow(2, attempt))
+      )
+    }
+  }
+  throw lastError
+}
+
 /** Format small ETH amounts for display without noisy trailing zeros. */
 function formatEthAmount(eth: number): string {
   if (!Number.isFinite(eth) || eth <= 0) return '0'
@@ -957,7 +988,7 @@ export default function CreateCitizen({
     setIsLoadingGasEstimate(true)
 
     try {
-      const cost: any = await readContract({
+      const cost: any = await readContractWithRetry({
         contract: citizenContract,
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
@@ -1340,7 +1371,7 @@ export default function CreateCitizen({
 
     try {
       // Get cost and check balance
-      const cost: any = await readContract({
+      const cost: any = await readContractWithRetry({
         contract: citizenContract,
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
@@ -1405,7 +1436,15 @@ export default function CreateCitizen({
       }
     } catch (err: any) {
       console.error(err)
-      toast.error(err?.message || 'Something went wrong during minting.')
+      // A TypeError mentioning "buffer" is viem failing to decode an empty RPC
+      // response — a transient network issue, not a user-actionable error.
+      const isRpcDecodeError =
+        err instanceof TypeError && String(err?.message).includes('buffer')
+      toast.error(
+        isRpcDecodeError
+          ? 'Network hiccup while reading the mint price. Please try again.'
+          : err?.message || 'Something went wrong during minting.'
+      )
       setIsLoadingMint(false)
     }
   }, [
@@ -1432,7 +1471,7 @@ export default function CreateCitizen({
   // Balance Check Handler
   const checkBalanceSufficient = useCallback(async () => {
     try {
-      const cost: any = await readContract({
+      const cost: any = await readContractWithRetry({
         contract: citizenContract,
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
@@ -1734,7 +1773,7 @@ export default function CreateCitizen({
 
     let cancelled = false
     setIsLoadingRenewalPrice(true)
-    readContract({
+    readContractWithRetry({
       contract: citizenContract,
       method: 'getRenewalPrice' as string,
       params: [address, ONE_YEAR_SECONDS],
