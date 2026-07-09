@@ -29,8 +29,9 @@ const STABLECOIN_SYMBOLS = new Set(['usd', 'usdc', 'usdt', 'dai'])
 
 const NON_USD_TOKENS = /\b(ETH|MOONEY|BTC|MATIC|ARB|OP|SOL)\b/i
 
-const TABLE_ROW_PATTERN =
-  /\|\s*([^|]+?)\s*\|\s*([^|]*?\$?[\d,]+(?:\.\d+)?[^|]*?)\s*\|/g
+// Freeform "Item — $1,234" budget lines are short; skip anything longer so a
+// pathological single-line paragraph can't feed the regex below.
+const MAX_FREEFORM_LINE_LENGTH = 500
 
 function isUsdValue(rawCell: string): boolean {
   if (NON_USD_TOKENS.test(rawCell)) return false
@@ -44,13 +45,46 @@ function parseAmount(cell: string): number {
   return parseFloat(match[1].replace(/,/g, '')) || 0
 }
 
+type TableRowPair = { desc: string; value: string }
+
+/**
+ * Extract `| description | numeric value |` cell pairs from markdown table
+ * rows, scanning line by line and splitting on pipes.
+ *
+ * This used to be a single global regex with nested lazy quantifiers run over
+ * the whole body. On large bodies it backtracked catastrophically — a 333KB
+ * proposal (MDP 259) pinned the browser main thread for ~40s PER PASS, which
+ * is what froze /dashboard and /projects with "Page Unresponsive". Splitting
+ * into lines and cells first keeps the work linear in body size.
+ */
+function extractTableRowPairs(text: string): TableRowPair[] {
+  const pairs: TableRowPair[] = []
+  for (const line of text.split('\n')) {
+    if (line.indexOf('|') === -1) continue
+    if (/---/.test(line)) continue // markdown table separator row
+    const cells = line.split('|')
+    // cells[0] is the text before the first pipe and cells[length-1] the text
+    // after the last pipe; only interior cells are table columns.
+    const lastInterior = cells.length - 2
+    let i = 1
+    while (i < lastInterior) {
+      const desc = cells[i].trim()
+      const value = cells[i + 1].trim()
+      if (desc && /\d/.test(value)) {
+        pairs.push({ desc, value })
+        // The old regex consumed the value cell's closing pipe, so matched
+        // pairs advanced two cells at a time.
+        i += 2
+      } else {
+        i += 1
+      }
+    }
+  }
+  return pairs
+}
+
 function findGrandTotal(text: string): number {
-  TABLE_ROW_PATTERN.lastIndex = 0
-  let match
-  while ((match = TABLE_ROW_PATTERN.exec(text)) !== null) {
-    if (/---/.test(match[0])) continue
-    const desc = match[1]
-    const value = match[2]
+  for (const { desc, value } of extractTableRowPairs(text)) {
     if (/\bgrand\s+total\b/i.test(desc) && isUsdValue(value)) {
       return parseAmount(value)
     }
@@ -59,14 +93,9 @@ function findGrandTotal(text: string): number {
 }
 
 function sumUsdTotals(text: string): number {
-  TABLE_ROW_PATTERN.lastIndex = 0
   let sum = 0
   let count = 0
-  let match
-  while ((match = TABLE_ROW_PATTERN.exec(text)) !== null) {
-    if (/---/.test(match[0])) continue
-    const desc = match[1]
-    const value = match[2]
+  for (const { desc, value } of extractTableRowPairs(text)) {
     if (!/\b[Tt]otal\b/i.test(desc)) continue
     if (!isUsdValue(value)) continue
     sum += parseAmount(value)
@@ -75,13 +104,16 @@ function sumUsdTotals(text: string): number {
   return count > 0 ? sum : 0
 }
 
+const FREEFORM_LINE_PATTERN =
+  /^\s*(?:[-*•]\s*)?(?:[A-Za-z][A-Za-z &/()'-]{2,}?)\s*[:\-]?\s*\$?\s*([\d,]+(?:\.\d+)?)(?:\s*(?:-|to|–|—)\s*\$?\s*([\d,]+(?:\.\d+)?))?\s*(?:USD|USDC|USDT|DAI)?\s*$/i
+
 function sumFreeformBudgetLines(text: string): number {
-  const lineRe =
-    /^\s*(?:[-*•]\s*)?(?:[A-Za-z][A-Za-z &/()'-]{2,}?)\s*[:\-]?\s*\$?\s*([\d,]+(?:\.\d+)?)(?:\s*(?:-|to|–|—)\s*\$?\s*([\d,]+(?:\.\d+)?))?\s*(?:USD|USDC|USDT|DAI)?\s*$/gim
   let total = 0
   let matched = false
-  let m
-  while ((m = lineRe.exec(text)) !== null) {
+  for (const line of text.split('\n')) {
+    if (line.length > MAX_FREEFORM_LINE_LENGTH) continue
+    const m = line.match(FREEFORM_LINE_PATTERN)
+    if (!m) continue
     if (NON_USD_TOKENS.test(m[0])) continue
     const low = parseFloat(m[1].replace(/,/g, '')) || 0
     const high = m[2] ? parseFloat(m[2].replace(/,/g, '')) || 0 : 0
@@ -100,12 +132,8 @@ function parseBudgetFromSection(text: string): number {
   const totals = sumUsdTotals(text)
   if (totals > 0) return totals
 
-  TABLE_ROW_PATTERN.lastIndex = 0
   let sum = 0
-  let match
-  while ((match = TABLE_ROW_PATTERN.exec(text)) !== null) {
-    if (/---/.test(match[0])) continue
-    const value = match[2]
+  for (const { value } of extractTableRowPairs(text)) {
     if (!isUsdValue(value)) continue
     sum += parseAmount(value)
   }
