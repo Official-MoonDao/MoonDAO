@@ -1,6 +1,10 @@
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import {
+  isSupportedRpcChain,
+  jsonRpcWithFallback,
+} from '@/lib/rpc/serverJsonRpc'
 
 type GasPriceResponse = {
   gasPrice: string // in wei (hex string)
@@ -14,18 +18,6 @@ type GasPriceResponse = {
   baseFeePerGasGwei?: string
   chainId: number
   error?: string
-}
-
-// Construct RPC URLs directly to ensure env vars work in API routes
-const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
-
-const CHAIN_RPC_URLS: { [key: number]: string } = {
-  1: `https://mainnet.infura.io/v3/${infuraKey}`,
-  42161: `https://arbitrum-mainnet.infura.io/v3/${infuraKey}`,
-  8453: `https://base-mainnet.infura.io/v3/${infuraKey}`,
-  11155111: `https://sepolia.infura.io/v3/${infuraKey}`,
-  421614: `https://arbitrum-sepolia.infura.io/v3/${infuraKey}`,
-  11155420: `https://optimism-sepolia.infura.io/v3/${infuraKey}`,
 }
 
 export async function handler(
@@ -53,19 +45,8 @@ export async function handler(
   }
 
   const chainIdNum = parseInt(chainId)
-  const rpcUrl = CHAIN_RPC_URLS[chainIdNum]
 
-  if (!infuraKey) {
-    console.error('NEXT_PUBLIC_INFURA_KEY is not set')
-    return res.status(500).json({
-      gasPrice: '0',
-      gasPriceGwei: '0',
-      chainId: chainIdNum,
-      error: 'Infura API key not configured',
-    })
-  }
-
-  if (!rpcUrl) {
+  if (!isSupportedRpcChain(chainIdNum)) {
     return res.status(400).json({
       gasPrice: '0',
       gasPriceGwei: '0',
@@ -75,32 +56,13 @@ export async function handler(
   }
 
   try {
-    const gasPriceResponse = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'eth_gasPrice',
-        params: [],
-        id: 1,
-      }),
-    })
+    const gasPriceResult: string = await jsonRpcWithFallback(
+      chainIdNum,
+      'eth_gasPrice',
+      []
+    )
 
-    if (!gasPriceResponse.ok) {
-      throw new Error(`RPC request failed: ${gasPriceResponse.status}`)
-    }
-
-    const gasPriceData = await gasPriceResponse.json()
-
-    if (gasPriceData.error) {
-      throw new Error(gasPriceData.error.message || 'RPC error')
-    }
-
-    if (!gasPriceData.result) {
-      throw new Error('No gas price returned from RPC')
-    }
-
-    const gasPriceWei = BigInt(gasPriceData.result)
+    const gasPriceWei = BigInt(gasPriceResult)
     const gasPriceGwei = Number(gasPriceWei) / 1e9
 
     // Fetch EIP-1559 fee data for chains that support it
@@ -110,41 +72,22 @@ export async function handler(
 
     try {
       // Get latest block for base fee
-      const blockResponse = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_getBlockByNumber',
-          params: ['latest', false],
-          id: 2,
-        }),
-      })
-
-      if (blockResponse.ok) {
-        const blockData = await blockResponse.json()
-        if (blockData.result?.baseFeePerGas) {
-          baseFeePerGas = BigInt(blockData.result.baseFeePerGas)
-        }
+      const block = await jsonRpcWithFallback(chainIdNum, 'eth_getBlockByNumber', [
+        'latest',
+        false,
+      ])
+      if (block?.baseFeePerGas) {
+        baseFeePerGas = BigInt(block.baseFeePerGas)
       }
 
       // Get max priority fee per gas recommendation
-      const priorityFeeResponse = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_maxPriorityFeePerGas',
-          params: [],
-          id: 3,
-        }),
-      })
-
-      if (priorityFeeResponse.ok) {
-        const priorityFeeData = await priorityFeeResponse.json()
-        if (priorityFeeData.result) {
-          maxPriorityFeePerGas = BigInt(priorityFeeData.result)
-        }
+      const priorityFee = await jsonRpcWithFallback(
+        chainIdNum,
+        'eth_maxPriorityFeePerGas',
+        []
+      )
+      if (priorityFee) {
+        maxPriorityFeePerGas = BigInt(priorityFee)
       }
 
       // If both base fee and priority fee are available, calculate max fee
@@ -160,7 +103,7 @@ export async function handler(
     }
 
     const response: GasPriceResponse = {
-      gasPrice: gasPriceData.result,
+      gasPrice: gasPriceResult,
       gasPriceGwei: gasPriceGwei.toFixed(2),
       chainId: chainIdNum,
     }
