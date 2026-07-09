@@ -1179,11 +1179,16 @@ export default function MissionContributeModal({
     }
   }, [crossChainQuote, usdInput, ethUsdPrice, chainSlug, defaultChainSlug, layerZeroLimitExceeded])
 
-  // Calculate how much ETH the user needs to buy
+  // Calculate how much ETH the user needs to buy.
+  // Treat an unresolved balance as 0 for deficit purposes — PaymentBreakdown
+  // already displays null as $0 / "Add via Coinbase", and gating FundOnramp on
+  // a resolved balance left users stuck with only a Close button when the
+  // balance fetch was slow or failed.
   const ethDeficit = useMemo(() => {
-    if (fundingBalanceWei === null || requiredWei === BigInt(0)) return 0
-    if (fundingBalanceWei >= requiredWei) return 0
-    const deficitWei = requiredWei - fundingBalanceWei
+    if (requiredWei === BigInt(0)) return 0
+    const balanceWei = fundingBalanceWei ?? BigInt(0)
+    if (balanceWei >= requiredWei) return 0
+    const deficitWei = requiredWei - balanceWei
     return parseFloat(formatUnits(deficitWei.toString(), 18))
   }, [fundingBalanceWei, requiredWei])
 
@@ -2793,6 +2798,18 @@ export default function MissionContributeModal({
                         setAwaitingOnrampFunds(true)
                       }}
                     />
+                  )}
+
+                  {usdInput &&
+                    ethDeficit <= 0 &&
+                    agreedToCondition &&
+                    isValidContributorEmail(contributorEmail.trim()) && (
+                    <div className="bg-blue-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-4">
+                      <p className="text-blue-200 text-sm">
+                        Calculating how much ETH you need to add. This usually takes a few
+                        seconds — if nothing appears, refresh the page and try again.
+                      </p>
+                    </div>
                   )}
 
                   {/* Show warning if checkbox not agreed */}
