@@ -6,23 +6,16 @@ import {
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import {
+  isSupportedRpcChain,
+  jsonRpcWithFallback,
+} from '@/lib/rpc/serverJsonRpc'
 
 type EstimateGasResponse = {
   gasEstimate: string // in hex
   gasEstimateDecimal: string
   chainId: number
   error?: string
-}
-
-const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
-
-const CHAIN_RPC_URLS: { [key: number]: string } = {
-  1: `https://mainnet.infura.io/v3/${infuraKey}`,
-  42161: `https://arbitrum-mainnet.infura.io/v3/${infuraKey}`,
-  8453: `https://base-mainnet.infura.io/v3/${infuraKey}`,
-  11155111: `https://sepolia.infura.io/v3/${infuraKey}`,
-  421614: `https://arbitrum-sepolia.infura.io/v3/${infuraKey}`,
-  11155420: `https://optimism-sepolia.infura.io/v3/${infuraKey}`,
 }
 
 const FROM_ADDRESSES: { [key: number]: string } = {
@@ -83,19 +76,7 @@ export async function handler(
     })
   }
 
-  const rpcUrl = CHAIN_RPC_URLS[chainId]
-
-  if (!infuraKey) {
-    console.error('NEXT_PUBLIC_INFURA_KEY is not set')
-    return res.status(500).json({
-      gasEstimate: '0x0',
-      gasEstimateDecimal: '0',
-      chainId,
-      error: 'Infura API key not configured',
-    })
-  }
-
-  if (!rpcUrl) {
+  if (!isSupportedRpcChain(chainId)) {
     return res.status(400).json({
       gasEstimate: '0x0',
       gasEstimateDecimal: '0',
@@ -104,46 +85,27 @@ export async function handler(
     })
   }
 
-  const RPC_TIMEOUT_MS = 20_000
-
   try {
-    let response = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'eth_estimateGas',
-        params: [
-          {
-            from,
-            to,
-            data,
-            ...(value && { value }),
-          },
-        ],
-        id: 1,
-      }),
-      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
-    })
+    // A node-level error (execution revert) would be identical on every
+    // endpoint, so abort instead of retrying the fallbacks.
+    const result: string = await jsonRpcWithFallback(
+      chainId,
+      'eth_estimateGas',
+      [
+        {
+          from,
+          to,
+          data,
+          ...(value && { value }),
+        },
+      ],
+      { abortOnNodeError: true }
+    )
 
-    if (!response.ok) {
-      throw new Error(`RPC request failed: ${response.status}`)
-    }
-
-    let responseData = await response.json()
-
-    if (responseData.error) {
-      throw new Error(responseData.error.message || 'RPC error')
-    }
-
-    if (!responseData.result) {
-      throw new Error('No gas estimate returned from RPC')
-    }
-
-    const gasEstimateDecimal = BigInt(responseData.result).toString()
+    const gasEstimateDecimal = BigInt(result).toString()
 
     return res.status(200).json({
-      gasEstimate: responseData.result,
+      gasEstimate: result,
       gasEstimateDecimal,
       chainId,
     })

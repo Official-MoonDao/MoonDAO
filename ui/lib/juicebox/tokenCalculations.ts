@@ -1,6 +1,27 @@
 import { FixedInt } from 'fpnum'
 import { getTokenAToBQuote, ReservedPercent, RulesetWeight } from 'juice-sdk-core'
 
+/**
+ * Convert to bigint, tolerating JS numbers in scientific notation. Juicebox
+ * weights are typically 1e21, whose Number#toString() is "1e+21" — a string
+ * BigInt() rejects with "Cannot convert 1e+21 to a BigInt".
+ */
+function toBigIntSafe(value: string | number | bigint): bigint {
+  if (typeof value === 'bigint') return value
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return BigInt(0)
+    if (Number.isSafeInteger(value)) return BigInt(value)
+    // Large numbers (beyond 2^53) stringify in exponent form; toLocaleString
+    // with fullwide renders all digits instead.
+    return BigInt(
+      value.toLocaleString('fullwide', { useGrouping: false, maximumFractionDigits: 0 })
+    )
+  }
+  const str = value.trim()
+  if (/e/i.test(str)) return toBigIntSafe(Number(str))
+  return BigInt(str)
+}
+
 export function calculateTokensFromPayment(
   paymentAmount: string | bigint,
   ruleset: readonly any[]
@@ -8,14 +29,10 @@ export function calculateTokensFromPayment(
   if (!paymentAmount || !ruleset || !ruleset[0] || !ruleset[1]) return '0'
 
   try {
-    const payment = new FixedInt(BigInt(paymentAmount.toString()), 18)
-    
-    const weightValue = typeof ruleset[0].weight === 'bigint' 
-      ? ruleset[0].weight
-      : BigInt(ruleset[0].weight.toString())
-    const reservedPercentValue = typeof ruleset[1].reservedPercent === 'bigint'
-      ? ruleset[1].reservedPercent
-      : BigInt(ruleset[1].reservedPercent.toString())
+    const payment = new FixedInt(toBigIntSafe(paymentAmount), 18)
+
+    const weightValue = toBigIntSafe(ruleset[0].weight)
+    const reservedPercentValue = toBigIntSafe(ruleset[1].reservedPercent)
     
     const weight = new RulesetWeight(weightValue)
     const reservedPercent = new ReservedPercent(reservedPercentValue)
