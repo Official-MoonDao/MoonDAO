@@ -1021,6 +1021,36 @@ export default function MissionContributeModal({
       requiredWei > BigInt(0)
   )
 
+  // Card / Apple-Pay funding must stay same-chain. The Coinbase onramp delivers
+  // ETH to the *default* chain (Arbitrum), so if a contributor drops into the
+  // funding path while the modal is pointed at Ethereum, the money lands on
+  // Arbitrum while the contribution is built for the Ethereum cross-chain
+  // contract — the two diverge and the tx fails ("likely to fail" / not enough
+  // gas). Whenever the user lacks enough ETH on the selected chain to complete
+  // the contribution, snap the pay chain back to the default so funding,
+  // quoting, and the contribution all happen on Arbitrum. Users who genuinely
+  // hold enough ETH on Ethereum never enter this branch (hasEnoughBalance is
+  // true) and keep the cross-chain path.
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') return
+    if (!modalEnabled || !address) return
+    if (!fundingBalanceResolved) return
+    if (hasEnoughBalance) return
+    if (payChainStable.id === DEFAULT_CHAIN_V5.id) return
+    const target = chains.find((c) => c.id === DEFAULT_CHAIN_V5.id)
+    if (!target) return
+    setUserChosePayChainInModal(true)
+    setSelectedChain(target)
+  }, [
+    modalEnabled,
+    address,
+    fundingBalanceResolved,
+    hasEnoughBalance,
+    payChainStable.id,
+    chains,
+    setSelectedChain,
+  ])
+
   const applyMaxContribution = useCallback(() => {
     if (!ethUsdPrice || fundingBalanceWei === null || !address) return
     const maxUsd = computeContributionMaxUsd({
@@ -1262,6 +1292,29 @@ export default function MissionContributeModal({
 
       let receipt: any
       if (chainSlug !== defaultChainSlug) {
+        // Never fire a cross-chain tx the wallet can't fund. If the balance on
+        // this (non-default) chain doesn't cover the cross-chain cost, the tx
+        // is doomed ("likely to fail") — this happens when card funding landed
+        // on Arbitrum but the contribution is pointed at Ethereum. Abort with a
+        // clear message instead; the same-chain effect will move the flow to
+        // Arbitrum where the money actually is.
+        if (
+          fundingBalanceWei !== null &&
+          requiredWei > BigInt(0) &&
+          fundingBalanceWei < requiredWei
+        ) {
+          const networkLabel = (payChainStable.name ?? 'this network').replace(
+            ' One',
+            ''
+          )
+          toast.error(
+            `You don't have enough ETH on ${networkLabel} for a cross-chain contribution. Switch the network to Arbitrum to contribute with the ETH you have.`,
+            { style: toastStyle, duration: 8000 }
+          )
+          throw new Error(
+            `Insufficient balance on ${networkLabel} for cross-chain contribution`
+          )
+        }
         // The fresh LayerZero quote read can fail when the browser RPC is
         // rate-limited. Fall back to the cached quote already fetched for the
         // fee display instead of aborting the whole contribution.
