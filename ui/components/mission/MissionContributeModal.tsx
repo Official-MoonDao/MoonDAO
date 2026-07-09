@@ -58,7 +58,7 @@ import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
 import type { FundingChainBalanceEntry } from '@/lib/mission/useMissionDefaultFundingChain'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import type { Chain } from '@/lib/rpc/chains'
-import { arbitrum, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
+import { arbitrum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
@@ -132,11 +132,15 @@ export default function MissionContributeModal({
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
-  // Base was previously offered here but caused confusion / abandonment for
-  // contributors who didn't have ETH on Base. Arbitrum + Ethereum are the
-  // supported funding chains; users on Base will be prompted to switch.
+  // Production contributions are same-chain (Arbitrum) only. The cross-chain
+  // LayerZero path from Ethereum repeatedly stranded contributors: the LZ
+  // messaging fee could exceed small contributions, the wallet often sat on a
+  // different network than the payment, and onramp purchases sized without the
+  // fee left wallets unable to sign. Users without ETH fund via Apple Pay /
+  // Google Pay directly on Arbitrum; users with mainnet ETH can bridge.
+  // Testnet keeps two chains so the cross-chain code path stays testable.
   const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
+    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum]),
     [isTestnet]
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
@@ -179,9 +183,14 @@ export default function MissionContributeModal({
     stayOnSelectedAppChainRef,
   ])
 
-  /** Stable `Chain` reference for RPC hooks (avoids refetch when context swaps object identity). */
+  /**
+   * Stable `Chain` reference for RPC hooks (avoids refetch when context swaps object identity).
+   * Clamped to the supported funding chains: if the app-wide selection is on an unsupported
+   * network (e.g. Ethereum picked in the header selector), payment still runs on the
+   * mission chain rather than silently re-enabling the cross-chain path.
+   */
   const payChainStable = useMemo(
-    () => chains.find((c) => c.id === payChain.id) ?? payChain,
+    () => chains.find((c) => c.id === payChain.id) ?? chains[0],
     [chains, payChain]
   )
 
@@ -340,8 +349,8 @@ export default function MissionContributeModal({
     refetch: refetchNativeBalance,
   } = useNativeBalance()
   const walletOnPayChain = useMemo(
-    () => nativeBalanceChain != null && nativeBalanceChain.id === payChain.id,
-    [nativeBalanceChain, payChain.id]
+    () => nativeBalanceChain != null && nativeBalanceChain.id === payChainStable.id,
+    [nativeBalanceChain, payChainStable.id]
   )
 
   /** Balance on `payChain` (funding network). RPC when wallet is elsewhere. */
@@ -1018,7 +1027,7 @@ export default function MissionContributeModal({
     if (!ethUsdPrice || fundingBalanceWei === null || !address) return
     const maxUsd = computeContributionMaxUsd({
       balanceWei: fundingBalanceWei,
-      selectedChainId: payChain.id,
+      selectedChainId: payChainStable.id,
       chainSlug,
       defaultChainSlug,
       ethUsdPrice,
@@ -1030,7 +1039,7 @@ export default function MissionContributeModal({
     fundingBalanceWei,
     address,
     chainSlug,
-    payChain.id,
+    payChainStable.id,
     defaultChainSlug,
     formatInputWithCommas,
     setUsdInput,
@@ -1767,8 +1776,15 @@ export default function MissionContributeModal({
         return null
       }
     },
-    getChainSlugFromCache: (restored: any) =>
-      restored?.formData?.chainSlug ?? restored?.chainSlug,
+    getChainSlugFromCache: (restored: any) => {
+      const cached = restored?.formData?.chainSlug ?? restored?.chainSlug
+      // JWTs minted before a chain was removed from the supported list (e.g.
+      // the retired Ethereum cross-chain path) must not auto-fire on a chain
+      // we no longer pay on. Returning undefined makes the hook verify
+      // against the current chain instead, which mismatches the stale JWT
+      // and clears it — the user just sees the normal contribute form.
+      return chainSlugs.includes(cached) ? cached : undefined
+    },
     setSelectedWallet,
     waitForReady: () => {
       return !isLoadingGasEstimate && estimatedGas > BigInt(0) && effectiveGasPrice > BigInt(0)
@@ -1966,7 +1982,10 @@ export default function MissionContributeModal({
                     <span className="font-semibold text-cyan-200">
                       {(payChainStable.name ?? 'network').replace(' One', '')}
                     </span>
-                    . Use the button to switch your wallet, or pick another network in the selector.
+                    .{' '}
+                    {chains.length === 1
+                      ? "Use the button to switch your wallet — it's one click and costs nothing."
+                      : 'Use the button to switch your wallet, or pick another network in the selector.'}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <StandardButton
@@ -2003,36 +2022,56 @@ export default function MissionContributeModal({
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                   Network
                 </label>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <NetworkSelector
-                      chains={chains}
-                      align="left"
-                      displayChain={
-                        !userChosePayChainInModal &&
-                        fundingDisplayChain != null &&
-                        selectedChain.id !== fundingDisplayChain.id
-                          ? fundingDisplayChain
-                          : undefined
-                      }
-                      onUserSelectChain={() =>
-                        setUserChosePayChainInModal(true)
-                      }
-                    />
+                {chains.length === 1 ? (
+                  /* Single supported funding chain — show it as a static row
+                     instead of a one-option dropdown, so contributors never
+                     have to make (or second-guess) a network choice. */
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0 flex items-center gap-3 p-3 bg-black/20 rounded-2xl border border-white/5 sm:max-w-[250px]">
+                      <Image
+                        className="h-6 w-6"
+                        src={`/icons/networks/${getChainSlug(payChainStable)}.svg`}
+                        width={24}
+                        height={24}
+                        alt={payChainStable.name || ''}
+                      />
+                      <span className="text-white text-sm font-medium">
+                        {(payChainStable.name ?? 'Arbitrum').replace(' One', '')}
+                      </span>
+                    </div>
+                    <Tooltip
+                      text="Contributions run on Arbitrum, an Ethereum network with near-zero fees. If you pay by card we'll deliver ETH straight to your wallet on Arbitrum — no network choice needed."
+                      compact
+                    >
+                      ?
+                    </Tooltip>
                   </div>
-                  {/* Help text aimed at first-time contributors who aren't
-                      sure which network to pick. Sits to the RIGHT of the
-                      dropdown as a follow-up "?" affordance. Uses the
-                      default 24px Tooltip trigger (no size override) so it
-                      reads as a clearly-tappable help button, larger than
-                      the small inline `?`s elsewhere on the mission card. */}
-                  <Tooltip
-                    text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
-                    compact
-                  >
-                    ?
-                  </Tooltip>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <NetworkSelector
+                        chains={chains}
+                        align="left"
+                        displayChain={
+                          !userChosePayChainInModal &&
+                          fundingDisplayChain != null &&
+                          selectedChain.id !== fundingDisplayChain.id
+                            ? fundingDisplayChain
+                            : undefined
+                        }
+                        onUserSelectChain={() =>
+                          setUserChosePayChainInModal(true)
+                        }
+                      />
+                    </div>
+                    <Tooltip
+                      text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
+                      compact
+                    >
+                      ?
+                    </Tooltip>
+                  </div>
+                )}
               </div>
 
               {/* Contribution amount — primary input */}
@@ -2148,7 +2187,7 @@ export default function MissionContributeModal({
                           </span>
                         )}
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
-                        on {(payChain.name ?? 'network').replace(' One', '')}
+                        on {(payChainStable.name ?? 'network').replace(' One', '')}
                         {!walletOnPayChain && fundingBalanceResolved ? (
                           <span className="text-cyan-400/90"> — switch wallet to this network to pay</span>
                         ) : null}
@@ -2259,7 +2298,7 @@ export default function MissionContributeModal({
                 <div className="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
                   <LoadingSpinner width="w-8" height="h-8" />
                   <p className="text-sm text-center max-w-sm">
-                    Checking your ETH balance on {(payChain.name ?? 'this network').replace(' One', '')}…
+                    Checking your ETH balance on {(payChainStable.name ?? 'this network').replace(' One', '')}…
                   </p>
                 </div>
               ) : hasEnoughBalance ? (
@@ -2550,7 +2589,7 @@ export default function MissionContributeModal({
                     <FundOnramp
                       fullWidth
                       address={address || ''}
-                      selectedChain={payChain}
+                      selectedChain={payChainStable}
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
                       onCoinbaseQuoteCalculated={handleCoinbaseQuote}

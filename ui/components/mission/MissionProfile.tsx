@@ -166,12 +166,13 @@ export default function MissionProfile({
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
-  // Keep this list in sync with MissionContributeModal — Base was removed
-  // from the supported funding chains (users without ETH on Base were
-  // bouncing). Mission funding-chain detection / "switch to richest chain"
-  // banners therefore won't suggest Base anymore.
+  // Keep this list in sync with MissionContributeModal. Production is
+  // Arbitrum-only: the cross-chain Ethereum path stranded contributors
+  // (LayerZero fees rivaling small contributions, wallet/network mismatches,
+  // underfunded onramp purchases). Testnet keeps two chains so the
+  // cross-chain code path stays testable.
   const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
+    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum]),
     [isTestnet]
   )
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
@@ -203,7 +204,13 @@ export default function MissionProfile({
    */
   const handleOpenContributeModal = useCallback(
     async (nextUsdInput?: string) => {
-      if (process.env.NEXT_PUBLIC_TEST_ENV !== 'true') {
+      if (chains.length === 1) {
+        // Single supported funding chain: silently align the app network and
+        // open the modal — no richest-chain comparison or confirmation gate.
+        if (selectedChain.id !== chains[0].id) {
+          setSelectedChain(chains[0])
+        }
+      } else if (process.env.NEXT_PUBLIC_TEST_ENV !== 'true') {
         const canResolveRichest =
           !!walletAddress &&
           mission?.projectId != null &&
@@ -236,6 +243,7 @@ export default function MissionProfile({
       _stage,
       chains,
       selectedChain.id,
+      setSelectedChain,
       setUsdInput,
       setContributeModalEnabled,
     ]
