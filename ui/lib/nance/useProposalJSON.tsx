@@ -36,6 +36,11 @@ export default function useProposalJSON(
   const [proposalJSON, setProposalJSON] = useState<any>()
   useEffect(() => {
     if (!enabled || !project?.proposalIPFS) {
+      // Clear any previously loaded proposal so parents that reuse this
+      // component instance (e.g. index-keyed `ProjectCard`s on `/projects`)
+      // don't keep rendering the prior project's author/title/budget while
+      // heavy loading is deferred or the new row lacks a proposal.
+      setProposalJSON(undefined)
       return
     }
     let cancelled = false
