@@ -15,11 +15,13 @@ function usableUrl(u: string): boolean {
 
 const INFURA_SUBDOMAINS: Record<number, string> = {
   1: 'mainnet',
+  137: 'polygon-mainnet',
   42161: 'arbitrum-mainnet',
   8453: 'base-mainnet',
   11155111: 'sepolia',
   421614: 'arbitrum-sepolia',
   11155420: 'optimism-sepolia',
+  84532: 'base-sepolia',
 }
 
 const PUBLIC_RPC_URLS: Record<number, string[]> = {
@@ -29,11 +31,13 @@ const PUBLIC_RPC_URLS: Record<number, string[]> = {
     'https://eth.llamarpc.com',
     'https://1rpc.io/eth',
   ],
+  137: ['https://polygon-rpc.com', 'https://polygon-bor.publicnode.com'],
   42161: ['https://arb1.arbitrum.io/rpc', 'https://arbitrum-one.publicnode.com'],
   8453: ['https://mainnet.base.org', 'https://base.publicnode.com'],
   11155111: ['https://rpc.sepolia.org', 'https://ethereum-sepolia.publicnode.com'],
   421614: ['https://sepolia-rollup.arbitrum.io/rpc'],
   11155420: ['https://sepolia.optimism.io'],
+  84532: ['https://sepolia.base.org', 'https://base-sepolia.publicnode.com'],
 }
 
 export function serverRpcUrlsForChain(chainId: number): string[] {
@@ -111,4 +115,81 @@ export async function jsonRpcWithFallback(
   }
 
   throw lastError ?? new Error(`All RPC endpoints failed for ${method}`)
+}
+
+export type JsonRpcProxyResult = {
+  status: number
+  body: unknown
+}
+
+/**
+ * Forward a raw JSON-RPC payload (single call or batch array) through the
+ * chain's endpoint list. Used by `/api/rpc/[chainId]` so browser thirdweb
+ * reads survive Infura 429s the same way mission gas estimation does.
+ *
+ * Returns the first HTTP 200 JSON body that looks like a JSON-RPC response.
+ * Transport failures / 429s advance to the next URL.
+ */
+export async function proxyJsonRpcRequest(
+  chainId: number,
+  payload: unknown,
+  { timeoutMs = 20_000 }: { timeoutMs?: number } = {}
+): Promise<JsonRpcProxyResult> {
+  const urls = serverRpcUrlsForChain(chainId)
+  if (urls.length === 0) {
+    throw new Error(`Unsupported chain ID: ${chainId}`)
+  }
+
+  let lastStatus = 502
+  let lastBody: unknown = { error: 'All RPC endpoints failed' }
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(timeoutMs),
+      })
+      const text = await response.text()
+      let data: unknown
+      try {
+        data = text ? JSON.parse(text) : null
+      } catch {
+        lastStatus = response.status || 502
+        lastBody = { error: 'Invalid JSON from upstream RPC' }
+        continue
+      }
+
+      // Rate limits / gateway errors → try the next endpoint.
+      if (response.status === 429 || response.status >= 500) {
+        lastStatus = response.status
+        lastBody = data ?? { error: `Upstream RPC ${response.status}` }
+        continue
+      }
+
+      if (!response.ok) {
+        lastStatus = response.status
+        lastBody = data ?? { error: `Upstream RPC ${response.status}` }
+        continue
+      }
+
+      // Empty / non-JSON-RPC payloads cause thirdweb's ABI decoder to throw
+      // `Cannot read properties of undefined (reading 'buffer')`.
+      if (data == null) {
+        lastStatus = 502
+        lastBody = { error: 'Empty RPC response' }
+        continue
+      }
+
+      return { status: 200, body: data }
+    } catch (err) {
+      lastStatus = 502
+      lastBody = {
+        error: err instanceof Error ? err.message : 'Unknown RPC error',
+      }
+    }
+  }
+
+  return { status: lastStatus, body: lastBody }
 }

@@ -183,10 +183,20 @@ const TopNavBar = ({
                         onMouseLeave={handleDropdownLeave}
                       >
                           <div className="min-w-56 max-w-xs w-full bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 px-2 rounded-xl">
+                          {/* Mount dynamic dropdowns only while open: their hooks
+                              (useTeamWearer / useProjectWearer) can trigger the
+                              on-chain role-hat index scan — hundreds of eth_calls —
+                              which must not run on every page load just because the
+                              nav bar exists. Results are cached (5 min TTL), so
+                              reopening is cheap. */}
                           {item.dynamicChildren === 'Teams' ? (
-                            <TeamsNavDropdown variant="desktop" />
+                            openDropdown === item.name ? (
+                              <TeamsNavDropdown variant="desktop" />
+                            ) : null
                           ) : item.dynamicChildren === 'Projects' ? (
-                            <ProjectsNavDropdown variant="desktop" />
+                            openDropdown === item.name ? (
+                              <ProjectsNavDropdown variant="desktop" />
+                            ) : null
                           ) : openDropdown === item.name ? (
                             item.children?.map((child: any, j: number) => {
                               if (!child.href) {

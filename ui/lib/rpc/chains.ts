@@ -26,15 +26,34 @@ const ankrRpcs = {
   base: `${ankrRpcBase}/base/${ankrApiKey}`,
 }
 
-const mainnetRpc =
-  process.env.NEXT_PUBLIC_RPC === 'ankr' ? ankrRpcs : infuraRpcs
+const useAnkr = process.env.NEXT_PUBLIC_RPC === 'ankr'
+const mainnetRpc = useAnkr ? ankrRpcs : infuraRpcs
+
+/**
+ * Browser reads go through `/api/rpc/<chainId>`, which tries Infura then public
+ * fallbacks (see `serverJsonRpc.proxyJsonRpcRequest`). That keeps the signed-in
+ * dashboard alive when the shared Infura key returns HTTP 429.
+ *
+ * Server-side code keeps the direct Infura/Ankr URL so SSR / API routes / scripts
+ * do not recurse into the Next API from the same process.
+ *
+ * `NEXT_PUBLIC_RPC=ankr` still bypasses the proxy and talks to Ankr directly.
+ */
+function clientRpcUrl(chainId: number, directRpc: string): string {
+  if (useAnkr) return directRpc
+  // Server / SSR: talk to Infura (or Ankr) directly — never recurse into the
+  // Next API from the same process.
+  if (typeof window === 'undefined') return directRpc
+  // Absolute URL so viem/thirdweb's HTTP transport does not reject a relative path.
+  return `${window.location.origin}/api/rpc/${chainId}`
+}
 
 export type Chain = ThirdwebChain
 
 export const ethereum = defineChain({
   id: 1,
   name: 'Ethereum',
-  rpc: mainnetRpc.ethereum,
+  rpc: clientRpcUrl(1, mainnetRpc.ethereum),
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -53,8 +72,11 @@ export const arbitrum = defineChain({
   id: 42161,
   name: 'Arbitrum One',
   // Allow a fork/Tenderly RPC override for end-to-end preview testing (Track B of
-  // the Frank re-open rollout). Falls back to the normal Infura/Ankr mainnet RPC.
-  rpc: process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL || mainnetRpc.arbitrum,
+  // the Frank re-open rollout). Falls back to the normal Infura/Ankr mainnet RPC
+  // (browser → /api/rpc proxy with public fallbacks).
+  rpc:
+    process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL ||
+    clientRpcUrl(42161, mainnetRpc.arbitrum),
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -72,7 +94,7 @@ export const arbitrum = defineChain({
 export const base = defineChain({
   id: 8453,
   name: 'Base',
-  rpc: mainnetRpc.base,
+  rpc: clientRpcUrl(8453, mainnetRpc.base),
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -90,7 +112,7 @@ export const base = defineChain({
 export const polygon = defineChain({
   id: 137,
   name: 'Polygon',
-  rpc: mainnetRpc.polygon,
+  rpc: clientRpcUrl(137, mainnetRpc.polygon),
   nativeCurrency: {
     name: 'Matic',
     symbol: 'MATIC',
@@ -108,7 +130,7 @@ export const polygon = defineChain({
 export const sepolia = defineChain({
   id: 11155111,
   name: 'Sepolia',
-  rpc: `https://sepolia.infura.io/v3/${infuraKey}`,
+  rpc: clientRpcUrl(11155111, infuraRpcs.sepolia),
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -127,7 +149,7 @@ export const sepolia = defineChain({
 export const arbitrumSepolia = defineChain({
   id: 421614,
   name: 'Arbitrum Sepolia',
-  rpc: `https://arbitrum-sepolia.infura.io/v3/${infuraKey}`,
+  rpc: clientRpcUrl(421614, infuraRpcs.arbitrumSepolia),
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -146,7 +168,7 @@ export const arbitrumSepolia = defineChain({
 export const optimismSepolia = defineChain({
   id: 11155420,
   name: 'Optimism Sepolia',
-  rpc: `https://optimism-sepolia.infura.io/v3/${infuraKey}`,
+  rpc: clientRpcUrl(11155420, infuraRpcs.optimismSepolia),
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -165,7 +187,7 @@ export const optimismSepolia = defineChain({
 export const baseSepolia = defineChain({
   id: 84532,
   name: 'Base Sepolia',
-  rpc: `https://base-sepolia.infura.io/v3/${infuraKey}`,
+  rpc: clientRpcUrl(84532, infuraRpcs.baseSepolia),
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
