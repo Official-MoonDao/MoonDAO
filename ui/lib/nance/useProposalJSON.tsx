@@ -46,8 +46,8 @@ export default function useProposalJSON(
     let cancelled = false
     async function fetchData() {
       try {
-        const proposal = await fetchProposalJsonCached(project.proposalIPFS)
-        if (cancelled || !proposal) return
+        const cached = await fetchProposalJsonCached(project.proposalIPFS)
+        if (cancelled || !cached) return
         // Delegate to the shared extractor so the dashboard, project cards,
         // and the server-side member-vote tally all derive the budget the
         // same way.
@@ -56,10 +56,19 @@ export default function useProposalJSON(
         // (`BUDGET_OVERRIDES_USD`) propagate to the proposal card and
         // anywhere else this hook feeds — keeping the displayed number in
         // lock-step with what the server-side tally actually used.
-        proposal.usdBudget = extractUsdBudget(proposal, {
-          stablecoinAddresses: STABLECOIN_ADDRESSES,
-          MDP: project?.MDP,
-        })
+        //
+        // Shallow-clone before assigning `usdBudget`: `fetchProposalJsonCached`
+        // returns a shared reference across cards, and MDP-specific overrides
+        // mean two cards on the same CID can compute different budgets — so
+        // mutating the cached object would let the later run stomp the
+        // earlier card's displayed value on the next parent re-render.
+        const proposal = {
+          ...cached,
+          usdBudget: extractUsdBudget(cached, {
+            stablecoinAddresses: STABLECOIN_ADDRESSES,
+            MDP: project?.MDP,
+          }),
+        }
         setProposalJSON(proposal)
       } catch {
         // Leave proposalJSON undefined; card falls back to tableland fields.
