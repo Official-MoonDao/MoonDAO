@@ -10,7 +10,7 @@ import {
 import { getProposalVideoUrl } from 'const/proposalVideos'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
+import React, { useContext, memo, useState, useMemo, useEffect, useRef } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
@@ -22,6 +22,7 @@ import useProjectData, { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useOnceVisible } from '@/lib/utils/hooks/useOnceVisible'
 import { normalizeJsonString } from '@/lib/utils/rewards'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -175,8 +176,9 @@ const ProjectCardContent = memo(
     citizenContract,
     isSenateVote = IS_SENATE_VOTE,
     hideStatusBadge = false,
+    loadHeavy = true,
   }: any) => {
-    const proposalJSON = useProposalJSON(project)
+    const proposalJSON = useProposalJSON(project, { enabled: loadHeavy })
     const account = useActiveAccount()
     const isProposalAuthor = Boolean(
       proposalJSON?.authorAddress &&
@@ -268,6 +270,7 @@ const ProjectCardContent = memo(
                           citizenContract={citizenContract}
                           authorName={authorName}
                           compact
+                          enabled={loadHeavy}
                         />
                       </div>
                     )}
@@ -464,8 +467,16 @@ export default function ProjectCard({
   const account = useActiveAccount()
   const address = account?.address
   const [isExpanded, setIsExpanded] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+  // Defer Engine/IPFS/NFT work until the card is near the viewport so /projects
+  // doesn't fire N parallel eth_calls + IPFS fetches for every card on mount.
+  const isVisible = useOnceVisible(cardRef, { rootMargin: '300px 0px' })
+  // Once expanded (vote UI), always load — user is interacting with this card.
+  const loadHeavy = isVisible || isExpanded
 
-  const { adminHatId } = useProjectData(projectContract, hatsContract, project)
+  const { adminHatId } = useProjectData(projectContract, hatsContract, project, {
+    enabled: loadHeavy,
+  })
   const { authenticated } = usePrivy()
 
   const { selectedChain } = useContext(ChainContextV5)
@@ -475,7 +486,11 @@ export default function ProjectCard({
     abi: CitizenABI as any,
     chain: selectedChain,
   })
-  const hats = useSubHats(selectedChain, adminHatId, !!project?.eligible)
+  const hats = useSubHats(
+    selectedChain,
+    adminHatId,
+    loadHeavy && !!project?.eligible
+  )
   const wearers = useUniqueHatWearers(hats)
 
   // Improved contributor detection with both hat-based and rewardDistribution-based checks
@@ -509,6 +524,7 @@ export default function ProjectCard({
   }, [wearers, address, project])
 
   const isMembershipDataLoading = useMemo(() => {
+    if (!loadHeavy) return false
     // Still loading if we have an adminHatId but no hats or wearers data yet
     const hatDataLoading = !!(adminHatId && (!hats || !wearers))
 
@@ -521,7 +537,7 @@ export default function ProjectCard({
       !wearers // But no wearers data yet
 
     return hatDataLoading || contributionCheckLoading
-  }, [adminHatId, hats, wearers, distribute, address, project])
+  }, [loadHeavy, adminHatId, hats, wearers, distribute, address, project])
 
   if (!project) return null
 
@@ -547,6 +563,7 @@ export default function ProjectCard({
 
     return (
       <div
+        ref={cardRef}
         role="link"
         tabIndex={0}
         onClick={handleCardClick}
@@ -568,13 +585,14 @@ export default function ProjectCard({
           citizenContract={citizenContract}
           isSenateVote={isSenateVote}
           hideStatusBadge={hideStatusBadge}
+          loadHeavy={loadHeavy}
         />
       </div>
     )
   }
 
   return (
-    <div className="h-full">
+    <div ref={cardRef} className="h-full">
       {distribute || isSenateVote ? (
         <ProjectCardContent
           project={project}
@@ -591,6 +609,7 @@ export default function ProjectCard({
           citizenContract={citizenContract}
           isSenateVote={isSenateVote}
           hideStatusBadge={hideStatusBadge}
+          loadHeavy={loadHeavy}
         />
       ) : (
         // `ProjectCardContent` renders a top-level `<div>`, so wrapping it
@@ -613,6 +632,7 @@ export default function ProjectCard({
             citizenContract={citizenContract}
             isSenateVote={isSenateVote}
             hideStatusBadge={hideStatusBadge}
+            loadHeavy={loadHeavy}
           />
         </CardLinkWrapper>
       )}
