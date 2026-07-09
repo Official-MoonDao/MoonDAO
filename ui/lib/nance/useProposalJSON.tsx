@@ -1,5 +1,6 @@
 import { DAI_ADDRESSES, USDC_ADDRESSES, USDT_ADDRESSES } from 'const/config'
 import { useEffect, useState } from 'react'
+import { fetchProposalJsonCached } from '@/lib/ipfs/fetchProposalJsonCached'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 
 // Flatten every known stablecoin address across every supported chain into
@@ -28,28 +29,56 @@ const STABLECOIN_ADDRESSES: ReadonlySet<string> = new Set(
     .map((a) => a.toLowerCase())
 )
 
-export default function useProposalJSON(project: any) {
+export default function useProposalJSON(
+  project: any,
+  { enabled = true }: { enabled?: boolean } = {}
+) {
   const [proposalJSON, setProposalJSON] = useState<any>()
   useEffect(() => {
+    if (!enabled || !project?.proposalIPFS) {
+      // Clear any previously loaded proposal so parents that reuse this
+      // component instance (e.g. index-keyed `ProjectCard`s on `/projects`)
+      // don't keep rendering the prior project's author/title/budget while
+      // heavy loading is deferred or the new row lacks a proposal.
+      setProposalJSON(undefined)
+      return
+    }
+    let cancelled = false
     async function fetchData() {
-      const proposalResponse = await fetch(project.proposalIPFS)
-      const proposal = await proposalResponse.json()
-      // Delegate to the shared extractor so the dashboard, project cards,
-      // and the server-side member-vote tally all derive the budget the
-      // same way.
-      //
-      // Pass the project's MDP so author-negotiated budget overrides
-      // (`BUDGET_OVERRIDES_USD`) propagate to the proposal card and
-      // anywhere else this hook feeds — keeping the displayed number in
-      // lock-step with what the server-side tally actually used.
-      proposal.usdBudget = extractUsdBudget(proposal, {
-        stablecoinAddresses: STABLECOIN_ADDRESSES,
-        MDP: project?.MDP,
-      })
-      setProposalJSON(proposal)
+      try {
+        const cached = await fetchProposalJsonCached(project.proposalIPFS)
+        if (cancelled || !cached) return
+        // Delegate to the shared extractor so the dashboard, project cards,
+        // and the server-side member-vote tally all derive the budget the
+        // same way.
+        //
+        // Pass the project's MDP so author-negotiated budget overrides
+        // (`BUDGET_OVERRIDES_USD`) propagate to the proposal card and
+        // anywhere else this hook feeds — keeping the displayed number in
+        // lock-step with what the server-side tally actually used.
+        //
+        // Shallow-clone before assigning `usdBudget`: `fetchProposalJsonCached`
+        // returns a shared reference across cards, and MDP-specific overrides
+        // mean two cards on the same CID can compute different budgets — so
+        // mutating the cached object would let the later run stomp the
+        // earlier card's displayed value on the next parent re-render.
+        const proposal = {
+          ...cached,
+          usdBudget: extractUsdBudget(cached, {
+            stablecoinAddresses: STABLECOIN_ADDRESSES,
+            MDP: project?.MDP,
+          }),
+        }
+        setProposalJSON(proposal)
+      } catch {
+        // Leave proposalJSON undefined; card falls back to tableland fields.
+      }
     }
     fetchData()
-  }, [project])
+    return () => {
+      cancelled = true
+    }
+  }, [project, enabled])
 
   return proposalJSON
 }

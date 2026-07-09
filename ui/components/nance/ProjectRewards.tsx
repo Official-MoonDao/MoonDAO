@@ -40,6 +40,7 @@ import {
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
+import { fetchProposalJsonCached } from '@/lib/ipfs/fetchProposalJsonCached'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
@@ -573,9 +574,11 @@ export function ProjectRewards({
         proposals.map(async (project) => {
           if (!project.proposalIPFS) return null
           try {
-            const res = await fetch(project.proposalIPFS, { signal })
-            const json = await res.json()
-            if (!json.authorAddress) return null
+            // Shared cache with useProposalJSON so cards + this map don't
+            // double-fetch every CID on /projects mount.
+            const json = await fetchProposalJsonCached(project.proposalIPFS)
+            if (signal.aborted) return null
+            if (!json?.authorAddress) return null
             return [String(project.id), json.authorAddress] as const
           } catch {
             // ignore fetch errors (including aborts)
