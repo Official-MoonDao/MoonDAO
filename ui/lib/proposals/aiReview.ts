@@ -3,11 +3,7 @@
  * Rubric mirrors the MoonDAO Senate Proposal Review Pack (Appendix A).
  */
 
-export type ProvisionalVote =
-  | 'Approve'
-  | 'Approve with conditions'
-  | 'Request rewrite'
-  | 'Reject'
+export type ProvisionalVote = 'Approve' | 'Approve with conditions' | 'Request rewrite' | 'Reject'
 
 export type DimensionKey =
   | 'mission'
@@ -155,7 +151,7 @@ function parseVote(raw: unknown): ProvisionalVote {
 }
 
 export function hasNoveltySection(body: string): boolean {
-  return /novelty\s*(&|and)?\s*prior\s*art/i.test(body)
+  return /novelty\s*(&|and)?\s*prior\s*art|prior\s*art\s*(&|and)?\s*novelty/i.test(body)
 }
 
 export function extractJsonObject(text: string): unknown {
@@ -171,8 +167,7 @@ export function extractJsonObject(text: string): unknown {
 }
 
 export type GroqReviewOutcome =
-  | { ok: true; review: ProposalAIReviewResult }
-  | { ok: false; status: number; error: string }
+  { ok: true; review: ProposalAIReviewResult } | { ok: false; status: number; error: string }
 
 type MinimalResponse = {
   ok: boolean
@@ -294,11 +289,7 @@ export function normalizeReviewResult(params: {
 
   let askUsd: number | null =
     typeof raw.askUsd === 'number' && Number.isFinite(raw.askUsd) ? raw.askUsd : null
-  if (
-    (askUsd == null || askUsd <= 0) &&
-    params.budgetHintUsd != null &&
-    params.budgetHintUsd > 0
-  ) {
+  if ((askUsd == null || askUsd <= 0) && params.budgetHintUsd != null && params.budgetHintUsd > 0) {
     askUsd = params.budgetHintUsd
   }
 
@@ -351,10 +342,7 @@ export function normalizeReviewResult(params: {
   let provisionalVote = parseVote(raw.provisionalVote)
   const overMax = askUsd != null && askUsd > params.quarterlyMaxUsd
   const hasHard = hardFlags.length > 0 || dimensions.some((d) => d.score <= 3)
-  if (
-    overMax &&
-    (provisionalVote === 'Approve' || provisionalVote === 'Approve with conditions')
-  ) {
+  if (overMax && (provisionalVote === 'Approve' || provisionalVote === 'Approve with conditions')) {
     provisionalVote = 'Request rewrite'
   }
   if (hasHard && provisionalVote === 'Approve') {
@@ -373,9 +361,7 @@ export function normalizeReviewResult(params: {
   hardFlags.push(...dedupedFlags)
 
   const average =
-    Math.round(
-      (dimensions.reduce((sum, d) => sum + d.score, 0) / dimensions.length) * 10
-    ) / 10
+    Math.round((dimensions.reduce((sum, d) => sum + d.score, 0) / dimensions.length) * 10) / 10
 
   const finding =
     typeof raw.finding === 'string' && raw.finding.trim()
@@ -389,10 +375,7 @@ export function normalizeReviewResult(params: {
     askWithinMax: askUsd == null ? null : askUsd <= params.quarterlyMaxUsd,
     dimensions,
     hardFlags: hardFlags.slice(0, 8),
-    topIssues:
-      topIssues.length > 0
-        ? topIssues
-        : hardFlags.slice(0, 3).map((f) => `Fix: ${f}`),
+    topIssues: topIssues.length > 0 ? topIssues : hardFlags.slice(0, 3).map((f) => `Fix: ${f}`),
     conditions: provisionalVote === 'Approve with conditions' ? conditions : [],
     finding,
     advisory: true,

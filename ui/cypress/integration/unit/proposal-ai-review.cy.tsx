@@ -42,6 +42,8 @@ describe('proposal AI review — helpers', () => {
     expect(hasNoveltySection('## Novelty & Prior Art\n\nStuff')).to.eq(true)
     expect(hasNoveltySection('### novelty and prior art')).to.eq(true)
     expect(hasNoveltySection('Novelty  &  Prior  Art')).to.eq(true)
+    expect(hasNoveltySection('## Prior Art and Novelty\n\nStuff')).to.eq(true)
+    expect(hasNoveltySection('### prior art & novelty')).to.eq(true)
     expect(hasNoveltySection('## Abstract\n\nHello')).to.eq(false)
     expect(hasNoveltySection('we are novel')).to.eq(false)
   })
