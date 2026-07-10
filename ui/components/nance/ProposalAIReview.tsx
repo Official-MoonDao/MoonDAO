@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ProposalAIReviewResult, ProvisionalVote } from '@/lib/proposals/aiReview'
 
 type Props = {
@@ -6,7 +6,7 @@ type Props = {
   body?: string
   budgetHintUsd?: number
   disabled?: boolean
-  onReview?: (review: ProposalAIReviewResult) => void
+  onReview?: (review: ProposalAIReviewResult | undefined) => void
 }
 
 function voteStyles(vote: ProvisionalVote): string {
@@ -43,6 +43,17 @@ export default function ProposalAIReview({
   const [review, setReview] = useState<ProposalAIReviewResult | undefined>()
   const [quarterlyMaxUsd, setQuarterlyMaxUsd] = useState<number | undefined>()
   const requestIdRef = useRef(0)
+
+  // Drop any prior review when the draft changes so the UI and post-submit
+  // snapshot never present scores for an older title/body/budget.
+  useEffect(() => {
+    requestIdRef.current += 1
+    setLoading(false)
+    setError(undefined)
+    setReview(undefined)
+    setQuarterlyMaxUsd(undefined)
+    onReview?.(undefined)
+  }, [title, body, budgetHintUsd])
 
   async function runReview() {
     setError(undefined)
