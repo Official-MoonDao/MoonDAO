@@ -24,7 +24,7 @@ import StandardButton from '../components/layout/StandardButton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import DashboardActiveProjects from '@/components/project/DashboardActiveProjects'
 import Reveal from '@/components/home/landing/Reveal'
-import { PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
 
 const EASE: [number, number, number, number] = [0.21, 0.47, 0.32, 0.98]
 
@@ -101,8 +101,6 @@ const CHECKLIST = [
 
 const ProjectsOverview: React.FC<{
   currentProjects: Project[]
-  pastProjects: Project[]
-  distributions: any[]
 }> = ({ currentProjects }) => {
   const title = 'MoonDAO Project System'
   const description =
@@ -585,58 +583,42 @@ export default ProjectsOverview
 
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
-    const { DEFAULT_CHAIN_V5, DISTRIBUTION_TABLE_NAMES, PROJECT_TABLE_NAMES } = await import(
-      'const/config'
-    )
+    const { DEFAULT_CHAIN_V5, PROJECT_TABLE_NAMES } = await import('const/config')
     const { getChainSlug } = await import('@/lib/thirdweb/chain')
 
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
-    const { quarter, year } = getRelativeQuarter(0)
 
     const statement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = await queryTable(chain, statement)
 
     const currentProjects = []
-    const pastProjects = []
 
     if (projects && projects.length > 0) {
       for (let i = 0; i < projects.length; i++) {
-        if (projects[i]) {
-          const activeStatus = projects[i].active
-          if (activeStatus == PROJECT_ACTIVE) {
-            currentProjects.push(projects[i])
-          } else if (activeStatus == PROJECT_ENDED) {
-            pastProjects.push(projects[i])
-          }
+        if (projects[i] && projects[i].active == PROJECT_ACTIVE) {
+          currentProjects.push(projects[i])
         }
       }
     }
 
-    await enrichProjectNames([...currentProjects, ...pastProjects])
+    await enrichProjectNames(currentProjects)
 
     currentProjects.sort((a, b) => {
       if (a.eligible === b.eligible) return 0
       return a.eligible ? 1 : -1
     })
 
-    const distributionStatement = `SELECT * FROM ${DISTRIBUTION_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
-    const distributions = await queryTable(chain, distributionStatement)
-
     return {
       props: {
         currentProjects: currentProjects.reverse(),
-        pastProjects: pastProjects.reverse(),
-        distributions,
       },
     }
   } catch (error) {
-    console.error('Error fetching projects or distributions:', error)
+    console.error('Error fetching projects:', error)
     return {
       props: {
         currentProjects: [],
-        pastProjects: [],
-        distributions: [],
       },
     }
   }
