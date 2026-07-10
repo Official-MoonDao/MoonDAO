@@ -163,6 +163,7 @@ export function ExpandedFooter({
 
   const projectsLinks = [
     { text: 'Propose Project', href: '/proposals' },
+    { text: 'Proposal Template', href: '/proposal-template' },
     { text: 'Explore Projects', href: '/projects' },
     { text: 'Submit Contribution', href: '/contributions' },
     { text: 'Projects Overview', href: '/projects-overview' },

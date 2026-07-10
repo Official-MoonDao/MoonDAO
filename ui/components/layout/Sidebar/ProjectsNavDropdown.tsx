@@ -112,6 +112,11 @@ export function ProjectsNavDropdown({
           Projects Overview
         </Link>
       )}
+      {wrapMobile(
+        <Link href="/proposal-template" className={baseLinkClass} onClick={onNavigate}>
+          Proposal Template
+        </Link>
+      )}
       {isDesktop ? (
         <div className="pt-2">
           <div className="px-4 py-2 mx-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
