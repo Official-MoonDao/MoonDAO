@@ -170,6 +170,103 @@ export function extractJsonObject(text: string): unknown {
   return JSON.parse(clean.slice(start, end + 1))
 }
 
+export type GroqReviewOutcome =
+  | { ok: true; review: ProposalAIReviewResult }
+  | { ok: false; status: number; error: string }
+
+type MinimalResponse = {
+  ok: boolean
+  json: () => Promise<any>
+}
+
+type FetchImpl = (url: string, init: any) => Promise<MinimalResponse>
+
+/**
+ * Calls Groq's chat completions endpoint and returns a normalized review.
+ * The network client is injectable so this can be unit-tested without a
+ * live API key. Returns a discriminated outcome so the API route can map
+ * failures to HTTP status codes without try/catch gymnastics.
+ */
+export async function performGroqReview(params: {
+  title: string
+  body: string
+  quarterlyMaxUsd: number
+  budgetHintUsd?: number | null
+  apiKey: string
+  model?: string
+  fetchImpl?: FetchImpl
+}): Promise<GroqReviewOutcome> {
+  const model = params.model || AI_REVIEW_MODEL
+  const doFetch: FetchImpl = params.fetchImpl || (fetch as unknown as FetchImpl)
+
+  let res: MinimalResponse
+  try {
+    res = await doFetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${params.apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: buildReviewSystemPrompt(params.quarterlyMaxUsd) },
+          {
+            role: 'user',
+            content: buildReviewUserPrompt({
+              title: params.title,
+              body: params.body,
+              quarterlyMaxUsd: params.quarterlyMaxUsd,
+              budgetHintUsd: params.budgetHintUsd,
+            }),
+          },
+        ],
+      }),
+    })
+  } catch (e: any) {
+    return { ok: false, status: 500, error: e?.message || 'AI review request failed.' }
+  }
+
+  let data: any
+  try {
+    data = await res.json()
+  } catch (e) {
+    return { ok: false, status: 502, error: 'AI review returned a non-JSON response.' }
+  }
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      status: 502,
+      error: data?.error?.message || 'AI review provider returned an error.',
+    }
+  }
+
+  const text = data?.choices?.[0]?.message?.content?.trim()
+  if (!text) {
+    return { ok: false, status: 502, error: 'AI review returned an empty response.' }
+  }
+
+  let parsed: unknown
+  try {
+    parsed = extractJsonObject(text)
+  } catch (e) {
+    return { ok: false, status: 502, error: 'AI review returned invalid JSON.' }
+  }
+
+  const review = normalizeReviewResult({
+    raw: parsed,
+    body: params.body,
+    quarterlyMaxUsd: params.quarterlyMaxUsd,
+    budgetHintUsd: params.budgetHintUsd,
+    model,
+  })
+
+  return { ok: true, review }
+}
+
 export function normalizeReviewResult(params: {
   raw: unknown
   body: string
@@ -260,6 +357,17 @@ export function normalizeReviewResult(params: {
   if (hasHard && provisionalVote === 'Approve') {
     provisionalVote = 'Approve with conditions'
   }
+
+  // Dedupe hard flags case-insensitively, preserving first-seen order.
+  const seenFlags = new Set<string>()
+  const dedupedFlags = hardFlags.filter((f) => {
+    const key = f.trim().toLowerCase()
+    if (!key || seenFlags.has(key)) return false
+    seenFlags.add(key)
+    return true
+  })
+  hardFlags.length = 0
+  hardFlags.push(...dedupedFlags)
 
   const average =
     Math.round(
