@@ -67,7 +67,7 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 
 # Risks
 
-*Highlight risks (technical, schedule, partner dependency, safety, collaboration method). How are you mitigating them? Avoid relying on ad-hoc Zoom with part-time strangers as the primary method for technical design—prefer a named synthesizer + named reviewers, or a team that already works together.*
+*Highlight risks (technical, schedule, partner dependency, safety, collaboration method). How are you mitigating them? Prefer a named synthesizer with named reviewers, or a team that already works together, over assembling ad-hoc contributors after funding for technical design.*
 
 # Objectives
 
@@ -100,7 +100,7 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 
 ***Same-type prior work (required):** For each major deliverable, link prior work of that same type (e.g. prior course if promising a course; prior device build if promising hardware; prior report if promising a study). Domain expertise alone is not enough.*
 
-***Initial Team:** Keep teams small and focused, with clear roles and deliverables. Prefer people who already work together over recruiting strangers after funding for technical Zoom brainstorms.*
+***Initial Team:** Keep teams small and focused, with clear roles and deliverables. Prefer people who already work together over recruiting contributors after funding for technical brainstorms.*
 
 | Project Lead | *@DiscordUsername* |
 | :---- | :---- |
