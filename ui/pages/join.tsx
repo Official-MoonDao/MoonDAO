@@ -766,7 +766,7 @@ async function filterUnexpiredNFTs(
           batch.map(({ callData }) => ({
             target: targetAddress,
             allowFailure: true,
-            callData,
+            callData: callData as `0x${string}`,
           })),
         ],
       })

@@ -355,7 +355,7 @@ export default function NativeToMooney({ selectedChain }: any) {
                 if (!hasValidRoute) return toast.error('No swap route available for this pair. Try a different amount.')
 
                 // check native balance
-                if (numAmount > +nativeBalance) {
+                if (numAmount > +(nativeBalance ?? 0)) {
                   return toast.error('Insufficient balance — you don\'t have enough ETH to complete this swap.')
                 }
 

@@ -468,7 +468,7 @@ const MissionProfileHeader = React.memo(
                             isLoadingTotalFunding
                               ? 'Loading...'
                               : offChainCommittedUsd > 0
-                              ? `The total includes both on-chain and off-chain committed funds. On-chain: ${truncateTokenValue(onChainEthRaised, 'ETH')} ETH (about $${Math.round(onChainEthRaised * ethPrice).toLocaleString()} at the current ETH price). Off-chain committed: $${offChainCommittedUsd.toLocaleString()}.`
+                              ? `The total includes both on-chain and off-chain committed funds. On-chain: ${truncateTokenValue(onChainEthRaised, 'ETH')} ETH (about $${Math.round(onChainEthRaised * (ethPrice ?? 0)).toLocaleString()} at the current ETH price). Off-chain committed: $${offChainCommittedUsd.toLocaleString()}.`
                               : `${truncateTokenValue(onChainEthRaised, 'ETH').toLocaleString()} ETH has been raised. The USD equivalent fluctuates based on the current price of Ethereum.`
                           }
                           buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"

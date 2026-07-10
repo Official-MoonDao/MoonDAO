@@ -964,7 +964,7 @@ function MissionPayRedeemComponent({
       return
     }
 
-    if (tokenBalance <= 0) {
+    if ((tokenBalance ?? 0) <= 0) {
       toast.error('You have no tokens to redeem.', {
         style: toastStyle,
       })
