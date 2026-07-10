@@ -24,11 +24,18 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 
 # Problem
 
-*Describe the specific problem. Avoid vague “space is hard” framing. If this is hardware, state the operational failure (who, when, environment). If MoonDAO has funded related work before, acknowledge it and explain what is new.*
+*Describe the specific problem. Avoid vague “space is hard” framing. If MoonDAO has funded related work before, acknowledge it and explain what is new—do not claim a false “first” or “never funded.”*
+
+**If this is hardware / a product (required):**
+1. *What exact operational failure happens today (who, when, environment)?*
+2. *Why are commercial off-the-shelf (COTS) tools insufficient—especially in micro‑g / suit / vacuum / lunar conditions?*
+3. *What is novel relative to COTS + prior art?*
 
 # Solution
 
 *Describe the work that will be done this quarter. Keep scope to inspectable deliverables. Note open questions and future directions separately from funded objectives. Do not list entity formation, buying a general computer, or clearing tax bills as solutions.*
+
+**If success depends on a partner** *(university, launch provider, facility, platform):* *Name them and attach LOI, quote, ICD, or access MOU before the vote.*
 
 # Novelty & Prior Art
 
@@ -50,13 +57,17 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 
 *Required. In 3–5 sentences, explain how this quarter’s outputs change MoonDAO’s path to a sustained human presence on the Moon. LEO tourism, generic STEAM branding, or “space is inspiring” alone are not enough.*
 
+# Community Standing
+
+*Briefly: How have you engaged with MoonDAO in the last 1–2 quarters (Discord, Town Halls, prior contributions)? If you lead an adjacent org, what ongoing bridge work exists beyond this funding ask? MoonDAO prefers builders who participate—not parachute treasury asks.*
+
 # Benefits
 
 *Core benefits for MoonDAO members and the mission. If you claim revenue potential, separate long-term upside from what this grant actually buys. Do not promise megaproject outcomes from a single quarterly ask.*
 
 # Risks
 
-*Highlight risks (technical, schedule, partner dependency, safety). How are you mitigating them?*
+*Highlight risks (technical, schedule, partner dependency, safety, collaboration method). How are you mitigating them? Avoid relying on ad-hoc Zoom with part-time strangers as the primary method for technical design—prefer a named synthesizer + named reviewers, or a team that already works together.*
 
 # Objectives
 
@@ -151,6 +162,7 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 - [ ] Ask ≤ posted quarterly max ($${maxFormatted})
 - [ ] Novelty & Prior Art filled with links
 - [ ] Lunar Bridge paragraph completed
+- [ ] Community standing / engagement noted
 - [ ] Key Results are non-empty and testable
 - [ ] Budget classes filled; (C) and (D) are $0
 - [ ] Specialized gear has ownership/access terms
@@ -158,6 +170,7 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 - [ ] IP disclosure completed
 - [ ] Only one primary proposal from this Lead this quarter
 - [ ] Partner LOIs/quotes attached if the plan depends on them
+- [ ] Hardware asks include COTS / why-not-existing rationale
 - [ ] No megaproject OKRs mixed into this quarter’s funded scope
 `
 }

@@ -51,7 +51,9 @@ export default function ProposalTemplatePage() {
             </h1>
             <p className="mb-8 max-w-2xl text-lg text-gray-300">
               Copy this markdown into a Google Doc or editor, fill every required section, then
-              import it on the propose page. Current max ask:{' '}
+              import it on the propose page. Includes Novelty &amp; Prior Art, Lunar Bridge,
+              Community Standing, budget classes, IP, COTS (for hardware), and a pre-submit
+              checklist. Current max ask:{' '}
               <span className="font-semibold text-white">
                 ${MAX_BUDGET_USD.toLocaleString()}
               </span>
