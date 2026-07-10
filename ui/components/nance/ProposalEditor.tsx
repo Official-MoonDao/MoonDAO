@@ -155,13 +155,13 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const { wallet } = useAccount()
   const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
 
+  const watchedBudget = watch('budget') as
+    | Array<{ token: string; amount: string }>
+    | undefined
   const budgetHintUsd = (() => {
-    const budgetItems = getValues()['budget'] as
-      | Array<{ token: string; amount: string }>
-      | undefined
-    if (!budgetItems || !Array.isArray(budgetItems)) return undefined
+    if (!watchedBudget || !Array.isArray(watchedBudget)) return undefined
     let total = 0
-    for (const item of budgetItems) {
+    for (const item of watchedBudget) {
       if (
         item.token === 'USD' ||
         item.token === 'USDC' ||
