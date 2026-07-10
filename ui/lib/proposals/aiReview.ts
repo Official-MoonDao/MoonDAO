@@ -351,7 +351,10 @@ export function normalizeReviewResult(params: {
   let provisionalVote = parseVote(raw.provisionalVote)
   const overMax = askUsd != null && askUsd > params.quarterlyMaxUsd
   const hasHard = hardFlags.length > 0 || dimensions.some((d) => d.score <= 3)
-  if (overMax && provisionalVote === 'Approve') {
+  if (
+    overMax &&
+    (provisionalVote === 'Approve' || provisionalVote === 'Approve with conditions')
+  ) {
     provisionalVote = 'Request rewrite'
   }
   if (hasHard && provisionalVote === 'Approve') {
@@ -390,7 +393,7 @@ export function normalizeReviewResult(params: {
       topIssues.length > 0
         ? topIssues
         : hardFlags.slice(0, 3).map((f) => `Fix: ${f}`),
-    conditions: provisionalVote === 'Approve with conditions' ? conditions : conditions.slice(0, 3),
+    conditions: provisionalVote === 'Approve with conditions' ? conditions : [],
     finding,
     advisory: true,
     model: params.model,

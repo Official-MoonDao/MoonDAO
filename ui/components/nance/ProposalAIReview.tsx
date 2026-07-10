@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { ProposalAIReviewResult, ProvisionalVote } from '@/lib/proposals/aiReview'
 
 type Props = {
@@ -42,6 +42,7 @@ export default function ProposalAIReview({
   const [error, setError] = useState<string | undefined>()
   const [review, setReview] = useState<ProposalAIReviewResult | undefined>()
   const [quarterlyMaxUsd, setQuarterlyMaxUsd] = useState<number | undefined>()
+  const requestIdRef = useRef(0)
 
   async function runReview() {
     setError(undefined)
@@ -54,6 +55,7 @@ export default function ProposalAIReview({
       return
     }
 
+    const requestId = ++requestIdRef.current
     setLoading(true)
     try {
       const res = await fetch('/api/proposals/ai-review', {
@@ -66,6 +68,7 @@ export default function ProposalAIReview({
         }),
       })
       const data = await res.json()
+      if (requestId !== requestIdRef.current) return
       if (!res.ok) {
         throw new Error(data?.error || 'AI review failed.')
       }
@@ -73,9 +76,12 @@ export default function ProposalAIReview({
       setQuarterlyMaxUsd(data.quarterlyMaxUsd)
       onReview?.(data.review)
     } catch (e: any) {
+      if (requestId !== requestIdRef.current) return
       setError(e?.message || 'AI review failed.')
     } finally {
-      setLoading(false)
+      if (requestId === requestIdRef.current) {
+        setLoading(false)
+      }
     }
   }
 
