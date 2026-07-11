@@ -134,3 +134,15 @@ Unit:   236 passing
 ```
 
 No production behavior intentionally changed except Privy config nesting (required by current SDK types; matches documented ethereum wallet creation path).
+
+---
+
+## Follow-up: CI / BrowserStack (same PR)
+
+**Root cause of E2E timeouts (exit 124 ~43m):** each of 3 GH jobs uploaded and ran the full BrowserStack matrix (Chrome latest + latest-1, Firefox, WebKit, Edge) at `parallels: 5`. One attempt routinely exceeded the 40m `timeout`, and retries (up to 3) made wall time worse. Parallel jobs also reused an account-level Local tunnel because `local_identifier` in `browserstack.json` was not reliably applied.
+
+**Fixes:**
+- `browserstack.json`: Chrome latest only; `parallels: 2`; `local_identifier` from `BROWSERSTACK_LOCAL_IDENTIFIER`.
+- CI: bake Local identifier into JSON before run; stream logs (no shell-var buffer); max 2 attempts / 20m; only retry true API flakes; E2E matrix 3 → 2 containers.
+- Component tests: stub on-chain/`waitForReceipt`/`useRead` so CT never hits missing `/api/rpc/*` or hangs on Sepolia.
+

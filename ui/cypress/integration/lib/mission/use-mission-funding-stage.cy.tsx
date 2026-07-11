@@ -1,8 +1,12 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
-import * as thirdweb from 'thirdweb'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+import * as useReadModule from '@/lib/thirdweb/hooks/useRead'
 
-const MissionFundingStageWrapper = ({ missionId }: { missionId: number | undefined }) => {
+const MissionFundingStageWrapper = ({
+  missionId,
+}: {
+  missionId: number | undefined
+}) => {
   const currentStage = useMissionFundingStage(missionId)
 
   return (
@@ -17,18 +21,38 @@ const MissionFundingStageWrapper = ({ missionId }: { missionId: number | undefin
 describe('useMissionFundingStage', () => {
   beforeEach(() => {
     cy.mountNextRouter('/')
-    const readStub = cy.stub(thirdweb, 'readContract')
-    readStub.callsFake(async (options: { method?: string }) => {
-      if (options?.method === 'stage') return BigInt(1)
-      return BigInt(0)
-    })
+
+    // Stub useRead (not thirdweb.readContract) so webpack/ESM binding of the
+    // hook module cannot bypass the mock and hit /api/rpc in CT.
+    cy.stub(useReadModule, 'default').callsFake(
+      ({ method, params }: { method: string; params: any[] }) => {
+        const paramsReady =
+          Array.isArray(params) &&
+          params.every((p) => p !== undefined && p !== null)
+
+        if (!paramsReady) {
+          return { data: undefined, isLoading: false }
+        }
+
+        if (method === 'stage') {
+          return { data: BigInt(1), isLoading: false }
+        }
+        if (method === 'missionIdToPayHook') {
+          return {
+            data: '0x0000000000000000000000000000000000000000',
+            isLoading: false,
+          }
+        }
+        return { data: undefined, isLoading: false }
+      }
+    )
   })
 
   it('returns undefined when missionId is undefined', () => {
     cy.mount(
       <TestnetProviders>
         <MissionFundingStageWrapper missionId={undefined} />
-      </TestnetProviders>,
+      </TestnetProviders>
     )
 
     cy.get('[data-testid="stage"]').should('contain', 'undefined')
@@ -38,10 +62,13 @@ describe('useMissionFundingStage', () => {
     cy.mount(
       <TestnetProviders>
         <MissionFundingStageWrapper missionId={1} />
-      </TestnetProviders>,
+      </TestnetProviders>
     )
 
-    cy.get('[data-testid="stage"]', { timeout: 10000 }).should('not.contain', 'undefined')
+    cy.get('[data-testid="stage"]', { timeout: 10000 }).should(
+      'not.contain',
+      'undefined'
+    )
     cy.get('[data-testid="stage"]').should('contain', '1')
   })
 })
