@@ -107,6 +107,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       selectedChain,
       destinationNetwork: providedNetwork,
       ethAmount,
+      // Alias for ethAmount — used when purchaseCurrency is not ETH (e.g. USDC).
+      cryptoAmount,
+      purchaseCurrency: providedPurchaseCurrency,
       paymentMethod,
       email,
       phoneNumber,
@@ -136,9 +139,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!partnerUserRef) {
       return res.status(400).json({ error: 'partnerUserRef is required' })
     }
-    if (!ethAmount || Number(ethAmount) <= 0) {
-      return res.status(400).json({ error: 'A valid ethAmount is required' })
+    const purchaseAmountValue = Number(
+      cryptoAmount != null ? cryptoAmount : ethAmount
+    )
+    if (!purchaseAmountValue || purchaseAmountValue <= 0) {
+      return res
+        .status(400)
+        .json({ error: 'A valid crypto purchase amount is required' })
     }
+    const purchaseCurrency =
+      providedPurchaseCurrency === 'USDC' ? 'USDC' : 'ETH'
 
     const method: OnrampOrderPaymentMethod = VALID_PAYMENT_METHODS.includes(
       paymentMethod
@@ -195,11 +205,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const clientIp = getClientIp(req)
 
+    // USDC uses up to 6 decimals; ETH keeps the existing 8-decimal precision.
+    const purchaseAmount =
+      purchaseCurrency === 'USDC'
+        ? purchaseAmountValue.toFixed(6)
+        : purchaseAmountValue.toFixed(8)
+
     const orderBody: CreateOnrampOrderRequest & { clientIp?: string } = {
       destinationAddress,
       destinationNetwork,
-      purchaseAmount: Number(ethAmount).toFixed(8),
-      purchaseCurrency: 'ETH',
+      purchaseAmount,
+      purchaseCurrency,
       paymentCurrency: 'USD',
       paymentMethod: method,
       email,
