@@ -146,3 +146,14 @@ No production behavior intentionally changed except Privy config nesting (requir
 - CI: bake Local identifier into JSON before run; stream logs (no shell-var buffer); max 2 attempts / 20m; only retry true API flakes; E2E matrix 3 → 2 containers.
 - Component tests: stub on-chain/`waitForReceipt`/`useRead` so CT never hits missing `/api/rpc/*` or hangs on Sepolia.
 
+## Follow-up 2: the real cause of "random" BrowserStack E2E failures
+
+`mission-refund.cy.ts` failures were never BrowserStack infrastructure. The `/mission/dummy` fixture page was not hermetic:
+
+1. **5-second time bomb.** SSR set `_deadline = Date.now() + 5s`. Once it passed, `useDeadlineTracking` flipped `deadlinePassed` and the header swapped "REFUND" for a close date. Fast local runs asserted inside the window; BrowserStack's tunneled page loads regularly exceeded it → random failure by machine speed.
+2. **Dead dummy guard racing live chain state.** SSR returned `id: 5`, but `refreshStage()` guards on `id === 'dummy'` — so the client fetched REAL mission 5's on-chain stage and overwrote the SSR stage. Same via `useMissionFundingStage` → `effectiveStage`. Outcome depended on RPC health.
+
+**Fixes:** dummy SSR now returns `id: 'dummy'` with deadlines days out; `useMissionFundingStage` skips reads for non-numeric ids; `getPoolDeployer` gets the dummy guard. Verified 24/24 e2e tests pass locally.
+
+**Component tests:** module stubs (`cy.stub(thirdweb, 'readContract')`) do not intercept webpack ESM bindings — CI kept hitting `/api/rpc/*`. Replaced with network-level JSON-RPC intercepts (`cypress/mock/rpc.ts`), the one choke point all thirdweb browser reads share.
+

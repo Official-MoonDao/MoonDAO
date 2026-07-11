@@ -1,6 +1,6 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { interceptRpc } from '@/cypress/mock/rpc'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
-import * as useReadModule from '@/lib/thirdweb/hooks/useRead'
 
 const MissionFundingStageWrapper = ({
   missionId,
@@ -22,30 +22,12 @@ describe('useMissionFundingStage', () => {
   beforeEach(() => {
     cy.mountNextRouter('/')
 
-    // Stub useRead (not thirdweb.readContract) so webpack/ESM binding of the
-    // hook module cannot bypass the mock and hit /api/rpc in CT.
-    cy.stub(useReadModule, 'default').callsFake(
-      ({ method, params }: { method: string; params: any[] }) => {
-        const paramsReady =
-          Array.isArray(params) &&
-          params.every((p) => p !== undefined && p !== null)
-
-        if (!paramsReady) {
-          return { data: undefined, isLoading: false }
-        }
-
-        if (method === 'stage') {
-          return { data: BigInt(1), isLoading: false }
-        }
-        if (method === 'missionIdToPayHook') {
-          return {
-            data: '0x0000000000000000000000000000000000000000',
-            isLoading: false,
-          }
-        }
-        return { data: undefined, isLoading: false }
-      }
-    )
+    // Answer /api/rpc at the network layer (module stubs don't intercept the
+    // hook's webpack ESM binding of readContract). The default eth_call
+    // result decodes as uint 1, so MissionCreator.stage() reads back stage 1
+    // and missionIdToPayHook returns a non-zero (but inactive) address,
+    // keeping the hook on its fallback stage path.
+    interceptRpc()
   })
 
   it('returns undefined when missionId is undefined', () => {
@@ -70,5 +52,15 @@ describe('useMissionFundingStage', () => {
       'undefined'
     )
     cy.get('[data-testid="stage"]').should('contain', '1')
+  })
+
+  it('returns undefined for the non-numeric dummy mission id', () => {
+    cy.mount(
+      <TestnetProviders>
+        <MissionFundingStageWrapper missionId={'dummy' as any} />
+      </TestnetProviders>
+    )
+
+    cy.get('[data-testid="stage"]').should('contain', 'undefined')
   })
 })

@@ -28,12 +28,22 @@ import {
  * projectId/terminal are unavailable).
  */
 export default function useMissionFundingStage(
-  missionId: number | undefined,
+  missionId: number | string | undefined,
   projectId?: number | undefined,
   primaryTerminalAddress?: string | undefined
 ) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
+
+  // The E2E-only `/mission/dummy` page passes id 'dummy' — skip every live
+  // read so its rendered stage stays exactly what SSR provided instead of
+  // racing real contract state. Numeric strings (tableland rows) still work.
+  const numericMissionId =
+    typeof missionId === 'number'
+      ? missionId
+      : typeof missionId === 'string' && /^\d+$/.test(missionId)
+      ? Number(missionId)
+      : undefined
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
@@ -51,8 +61,8 @@ export default function useMissionFundingStage(
   const { data: originalPayHook } = useRead({
     contract: missionCreatorContract,
     method: 'missionIdToPayHook',
-    params: [missionId],
-    deps: [missionId],
+    params: [numericMissionId],
+    deps: [numericMissionId],
   })
 
   // Active ruleset — its dataHook is the live (possibly re-open) hook.
@@ -89,15 +99,15 @@ export default function useMissionFundingStage(
     contract: activePayHookContract,
     method: 'stage',
     params: [primaryTerminalAddress, projectId],
-    deps: [missionId, projectId, activeDataHook],
+    deps: [numericMissionId, projectId, activeDataHook],
   })
 
   // Fallback: MissionCreator.stage() (reads the original PayHook).
   const { data: missionCreatorStage } = useRead({
     contract: missionCreatorContract,
     method: 'stage',
-    params: [missionId],
-    deps: [missionId],
+    params: [numericMissionId],
+    deps: [numericMissionId],
   })
 
   // When a re-open is live, only surface the active hook's stage. Falling
@@ -108,5 +118,6 @@ export default function useMissionFundingStage(
   // window preserves the fallback path.
   const stage = useActiveHook ? activeStage : missionCreatorStage
 
+  if (numericMissionId === undefined) return undefined
   return stage ? +stage.toString() : undefined
 }
