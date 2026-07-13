@@ -1,11 +1,77 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { useCitizen } from '@/lib/citizen/useCitizen'
 import type { Contribution } from './api/contributions/feed'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+
+const CONTRIBUTION_FORM_URL =
+  'https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform'
+
+function CitizenSubmitButton() {
+  const account = useActiveAccount()
+  const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
+  const [citizenCheckDone, setCitizenCheckDone] = useState(false)
+
+  useEffect(() => {
+    if (!account) {
+      setCitizenCheckDone(false)
+      return
+    }
+    if (isCitizen) {
+      setCitizenCheckDone(true)
+      return
+    }
+    const timer = setTimeout(() => setCitizenCheckDone(true), 1500)
+    return () => clearTimeout(timer)
+  }, [account, isCitizen])
+
+  const baseClass =
+    'flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 whitespace-nowrap'
+
+  if (account && !citizenCheckDone) {
+    return (
+      <button disabled className={`${baseClass} bg-blue-500/50 text-white/60 cursor-not-allowed`}>
+        <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+        Checking…
+      </button>
+    )
+  }
+
+  if (account && citizenCheckDone && !isCitizen) {
+    return (
+      <Link
+        href="/citizen"
+        className={`${baseClass} bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white`}
+      >
+        Become a Citizen to Submit
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </Link>
+    )
+  }
+
+  return (
+    <a
+      href={CONTRIBUTION_FORM_URL}
+      target="_blank"
+      rel="noreferrer"
+      className={`${baseClass} bg-blue-500 hover:bg-blue-400 text-white`}
+    >
+      Submit a Contribution
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+      </svg>
+    </a>
+  )
+}
 
 function ContributionFeed() {
   const [contributions, setContributions] = useState<Contribution[]>([])
@@ -218,17 +284,7 @@ export default function ContributionsPage() {
                   <p className="text-white font-semibold text-sm mb-1">Ready to submit?</p>
                   <p className="text-gray-400 text-xs">The form takes about 5 minutes. Submissions are reviewed at the end of each quarter.</p>
                 </div>
-                <a
-                  href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-400 text-white font-semibold text-sm rounded-xl transition-all duration-200 whitespace-nowrap"
-                >
-                  Submit a Contribution
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </a>
+                <CitizenSubmitButton />
               </div>
 
               {/* Feed */}
