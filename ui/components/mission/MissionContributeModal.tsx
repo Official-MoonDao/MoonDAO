@@ -292,6 +292,22 @@ export default function MissionContributeModal({
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
 
+  // Tracks whether the citizen check has had enough time to resolve so we
+  // don't flash the gate at citizens while the RPC call is in-flight.
+  const [citizenCheckDone, setCitizenCheckDone] = useState(false)
+  useEffect(() => {
+    if (!account) {
+      setCitizenCheckDone(false)
+      return
+    }
+    if (isCitizen) {
+      setCitizenCheckDone(true)
+      return
+    }
+    const timer = setTimeout(() => setCitizenCheckDone(true), 1500)
+    return () => clearTimeout(timer)
+  }, [account, isCitizen])
+
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState(() => {
@@ -2164,6 +2180,39 @@ export default function MissionContributeModal({
               router={router}
               formatWithCommas={formatWithCommas}
             />
+          ) : account && !citizenCheckDone ? (
+            <div className="flex flex-col items-center justify-center py-12 px-6 space-y-4">
+              <div className="w-12 h-12 rounded-full border-2 border-blue-500/40 border-t-blue-400 animate-spin" />
+              <p className="text-gray-400 text-sm">Verifying citizenship…</p>
+            </div>
+          ) : account && citizenCheckDone && !isCitizen ? (
+            <div className="flex flex-col items-center justify-center py-10 px-6 space-y-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500/20 to-amber-500/10 border border-yellow-500/30 flex items-center justify-center">
+                <span className="text-3xl">🌙</span>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold text-white">Citizens Only</h3>
+                <p className="text-gray-400 text-sm max-w-sm leading-relaxed">
+                  Contributing to MoonDAO missions is reserved for Citizens of the Space
+                  Acceleration Network. Become a Citizen to participate.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                <Link
+                  href="/citizen"
+                  className="flex-1 flex justify-center items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all duration-300 text-sm"
+                >
+                  Become a Citizen
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleModalClose}
+                  className="flex-1 px-6 py-3 bg-slate-800/60 hover:bg-slate-700/60 border border-white/10 text-white font-medium rounded-xl transition-all duration-300 text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           ) : (
             <>
               <MissionContributeStatusNotices
