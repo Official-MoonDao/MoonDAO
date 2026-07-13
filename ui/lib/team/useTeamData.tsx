@@ -32,6 +32,7 @@ export function useTeamData(
   const [isDeleted, setIsDeleted] = useState<boolean>(false)
   const [isManager, setIsManager] = useState<boolean>(false)
   const [isTableOperator, setIsTableOperator] = useState<boolean>(false)
+  const [isSuperManager, setIsSuperManager] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
   const [hatTreeId, setHatTreeId] = useState<any>()
   const [adminHatId, setAdminHatId] = useState<any>()
@@ -144,6 +145,9 @@ export function useTeamData(
           // (which would surface controls that call contracts they can't satisfy).
           if (SUPER_MANAGERS.includes(address.toLowerCase())) {
             setIsTableOperator(true)
+            setIsSuperManager(true)
+          } else {
+            setIsSuperManager(false)
           }
           const isAddressManager: any = await readContract({
             contract: teamContract,
@@ -153,6 +157,7 @@ export function useTeamData(
           setIsManager(isAddressManager || nft.owner === address)
         } else {
           setIsManager(false)
+          setIsSuperManager(false)
         }
       } catch (err) {
         console.log(err)
@@ -381,6 +386,7 @@ export function useTeamData(
     managerHatId,
     isManager,
     isTableOperator,
+    isSuperManager,
     isLoading,
     subIsValid,
     hasFullAccess,

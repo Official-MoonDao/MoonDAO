@@ -1,4 +1,4 @@
-import { TrashIcon, UserPlusIcon, ShieldCheckIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { TrashIcon, UserPlusIcon, ShieldCheckIcon, ExclamationTriangleIcon, XMarkIcon, ArrowUpCircleIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5, HATS_ADDRESS } from 'const/config'
 import { TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES } from 'const/teams'
 import { ethers } from 'ethers'
@@ -10,8 +10,10 @@ import {
   buildAddRoleTx,
   buildRemoveRoleTx,
   getRoleLabel,
+  isManagerHat,
   isValidEthereumAddress,
   requiresSafeTx,
+  toHatIdHex,
 } from '@/lib/hats/teamRoles'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
@@ -33,6 +35,7 @@ type TeamManageMembersModalProps = {
   multisigAddress: string
   adminHatId: string
   managerHatId: any
+  isSuperManager?: boolean
 }
 
 type TeamManageMembersProps = {
@@ -45,6 +48,7 @@ type TeamManageMembersProps = {
   multisigAddress: string
   adminHatId: string
   managerHatId: any
+  isSuperManager?: boolean
 }
 
 function HatOption({ hat, managerHatId }: any) {
@@ -121,12 +125,53 @@ function TeamMembers({
   teamId,
   queueSafeTx,
   setHasDeletedMember,
+  setHasAddedMember,
   managerHatId,
   adminHatId,
 }: any) {
   const hatNames = useHatNames(hatsContract, wearer.hatIds)
   const chainSlug = getChainSlug(selectedChain)
   const [removingHat, setRemovingHat] = useState<string | null>(null)
+  const [promoting, setPromoting] = useState<boolean>(false)
+
+  // Whether this member already wears the manager hat (so we can offer to
+  // promote members who don't). Comparing against the team's manager hat id
+  // is deterministic and doesn't depend on IPFS metadata.
+  const isAlreadyManager = wearer.hatIds?.some((hatId: string) =>
+    isManagerHat(hatId, managerHatId)
+  )
+
+  async function promoteToManager() {
+    if (managerHatId == null) return toast.error('Manager role unavailable.')
+    setPromoting(true)
+    try {
+      const tx = buildAddRoleTx({
+        hatId: toHatIdHex(managerHatId),
+        memberAddress: wearer.address,
+        managerHatId,
+        adminHatId,
+        hatsAddress: HATS_ADDRESS,
+      })
+      const iface = new ethers.utils.Interface(HatsABI)
+      const txData = iface.encodeFunctionData(tx.functionName, tx.args)
+
+      // Granting the manager hat is always admin-gated, so it routes through
+      // the team Safe (queued for signers to execute).
+      if (tx.routing === 'safe') {
+        await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: '1000000' })
+        setHasAddedMember?.(true)
+        toast.success('Promotion queued.')
+      } else {
+        await account?.sendTransaction({ to: tx.to, data: txData, value: '0', gas: 1000000 })
+        toast.success('Member promoted to Manager!')
+      }
+    } catch (err) {
+      console.log(err)
+      toast.error('Failed to promote member. Connect an authorized Safe signer.')
+    } finally {
+      setPromoting(false)
+    }
+  }
 
   return (
     <div className="flex items-start gap-3 p-4 rounded-xl bg-[#111827] border border-[#1e2a45] hover:bg-[#162035] transition-all duration-200">
@@ -217,6 +262,23 @@ function TeamMembers({
             })}
           </div>
         )}
+
+        {!isAlreadyManager && (
+          <button
+            type="button"
+            onClick={promoteToManager}
+            disabled={promoting}
+            className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-900/40 border border-blue-500/30 text-blue-200 hover:bg-blue-900/60 transition-colors disabled:opacity-40"
+            title="Grant this member the Manager role"
+          >
+            {promoting ? (
+              <span className="block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <ArrowUpCircleIcon className="w-3.5 h-3.5" />
+            )}
+            Make Manager
+          </button>
+        )}
       </div>
     </div>
   )
@@ -232,6 +294,7 @@ function TeamManageMembersModal({
   multisigAddress,
   adminHatId,
   managerHatId,
+  isSuperManager,
   setEnabled,
 }: TeamManageMembersModalProps) {
   const reversedHats = hats.slice().reverse()
@@ -297,6 +360,17 @@ function TeamManageMembersModal({
           </button>
         </div>
 
+        {isSuperManager && (
+          <div className="mx-6 mt-4 flex items-start gap-2 p-3 rounded-lg bg-purple-900/20 border border-purple-500/30 text-purple-200 text-xs">
+            <ShieldCheckIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>
+              You have super manager access. Manager role changes are queued to
+              the team Safe and must be signed by an authorized Safe signer to
+              finalize.
+            </span>
+          </div>
+        )}
+
         {/* Members list */}
         <div className="px-6 py-4">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
@@ -315,6 +389,7 @@ function TeamManageMembersModal({
                   teamId={teamId}
                   queueSafeTx={queueSafeTx}
                   setHasDeletedMember={setHasDeletedMember}
+                  setHasAddedMember={setHasAddedMember}
                   managerHatId={managerHatId}
                   adminHatId={adminHatId}
                 />
@@ -473,6 +548,7 @@ export default function TeamManageMembers({
   multisigAddress,
   adminHatId,
   managerHatId,
+  isSuperManager,
 }: TeamManageMembersProps) {
   const [manageMembersModalEnabled, setManagerModalEnabled] = useState(false)
 
@@ -490,6 +566,7 @@ export default function TeamManageMembers({
           multisigAddress={multisigAddress}
           adminHatId={adminHatId}
           managerHatId={managerHatId}
+          isSuperManager={isSuperManager}
         />
       )}
       <StandardButton

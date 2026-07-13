@@ -2,6 +2,7 @@ import { useContext, useMemo } from 'react'
 import Link from 'next/link'
 import { CITIZEN_TABLE_NAMES } from 'const/config'
 import { BLOCKED_CITIZENS } from 'const/whitelist'
+import { getRoleLabel } from '@/lib/hats/teamRoles'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
@@ -16,12 +17,14 @@ type TeamMemberProps = {
   hatIds: string[]
   hatsContract: any
   citizenNft?: any
+  managerHatId?: any
 }
 
 type TeamMembersProps = {
   hatsContract: any
   citizenContract: any
   hats: any[]
+  managerHatId?: any
 }
 
 type Wearer = {
@@ -54,15 +57,31 @@ function TeamMembersLoadingSkeleton({ count = 3 }: { count?: number }) {
   )
 }
 
-function TeamMember({ address, hatIds, hatsContract, citizenNft }: TeamMemberProps) {
+function TeamMember({
+  address,
+  hatIds,
+  hatsContract,
+  citizenNft,
+  managerHatId,
+}: TeamMemberProps) {
   const hatNames = useHatNames(hatsContract, hatIds)
 
   const metadata = citizenNft?.metadata
   const citizenName = metadata?.name || 'Anon'
   const citizenDescription =
     metadata?.description || 'This citizen has yet to add a profile'
+  // Label roles deterministically: the manager hat is always shown as "Manager"
+  // (via getRoleLabel) even if its IPFS metadata is missing/slow, so managers are
+  // never silently downgraded to a generic member label.
   const roles =
-    hatNames?.map((hatName: any) => hatName.name || '...').join(', ') || 'Team Member'
+    hatNames
+      ?.map((hatName: any) =>
+        getRoleLabel(hatName.hatId, {
+          managerHatId,
+          ipfsName: hatName.name,
+        })
+      )
+      .join(', ') || 'Team Member'
 
   const link = metadata?.name
     ? `/citizen/${generatePrettyLinkWithId(metadata.name, metadata?.id || citizenNft?.id)}`
@@ -103,6 +122,7 @@ export default function TeamMembers({
   hatsContract,
   citizenContract: _citizenContract,
   hats,
+  managerHatId,
 }: TeamMembersProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -175,6 +195,7 @@ export default function TeamMembers({
           address={w.address}
           hatsContract={hatsContract}
           citizenNft={citizensByOwner.get(w.address.toLowerCase())}
+          managerHatId={managerHatId}
         />
       ))}
     </div>
