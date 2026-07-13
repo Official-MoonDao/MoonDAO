@@ -45,7 +45,10 @@ export async function getPrivyUserData(accessToken: string): Promise<PrivyUserDa
     // Extract wallet addresses from the user's linked accounts
     if (userData.linked_accounts) {
       for (const account of userData.linked_accounts) {
-        if (account.type === 'wallet' && account.address) {
+        if (
+          (account.type === 'wallet' || account.type === 'smart_wallet') &&
+          account.address
+        ) {
           walletAddresses.push(account.address)
         }
         // Find the Discord account
