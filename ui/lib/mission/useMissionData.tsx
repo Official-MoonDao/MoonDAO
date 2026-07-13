@@ -169,6 +169,7 @@ export default function useMissionData({
 
   useEffect(() => {
     async function getPoolDeployer() {
+      if (mission.id === 'dummy') return
       try {
         const address: any = await readContract({
           contract: missionCreatorContract,

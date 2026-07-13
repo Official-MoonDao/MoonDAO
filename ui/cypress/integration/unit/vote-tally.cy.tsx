@@ -976,7 +976,7 @@ describe('Vote tally / Layer 3 — computeMemberVoteOutcome integration (stubbed
 
   beforeEach(() => {
     // Tableland: first call returns votes, second returns projects.
-    cy.stub(queryTableModule, 'default')
+    ;(cy.stub(queryTableModule, 'default') as any)
       .onFirstCall()
       .resolves(votesRow)
       .onSecondCall()
@@ -985,10 +985,10 @@ describe('Vote tally / Layer 3 — computeMemberVoteOutcome integration (stubbed
 
     // Senate-approval check: every project passes.
     cy.stub(thirdwebModule, 'getContract').returns({ __mock: 'proposalContract' })
-    cy.stub(thirdwebModule, 'readContract').resolves(true).as('readContract')
+    ;(cy.stub(thirdwebModule, 'readContract') as any).resolves(true).as('readContract')
 
     // IPFS proposal payloads.
-    cy.stub(globalThis, 'fetch').callsFake((url: any) => {
+    ;(cy.stub(globalThis, 'fetch') as any).callsFake((url: any) => {
       const u = String(url)
       const payloads: Record<string, any> = {
         'ipfs://p1': {

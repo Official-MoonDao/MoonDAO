@@ -117,7 +117,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
               </StandardButton>
               {joinModalOpen && (
                 <JoinDePrizeModal
-                  userTeams={userTeams}
+                  userTeams={userTeams ?? []}
                   setJoinModalOpen={setJoinModalOpen}
                   teamContract={teamContract}
                   handleJoinWithTeam={handleJoinWithTeam}

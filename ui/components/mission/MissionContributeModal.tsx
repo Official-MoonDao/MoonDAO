@@ -1429,7 +1429,7 @@ export default function MissionContributeModal({
         let quoteCrossChainPay: bigint
         try {
           quoteCrossChainPay = BigInt(
-            await readContract({
+            (await readContract({
               contract: crossChainPayContract,
               method: 'quoteCrossChainPay' as string,
               params: [
@@ -1441,7 +1441,7 @@ export default function MissionContributeModal({
                 message,
                 '0x00',
               ],
-            })
+            })) as unknown as string | number | bigint | boolean
           )
         } catch (quoteError) {
           if (crossChainQuote > BigInt(0)) {

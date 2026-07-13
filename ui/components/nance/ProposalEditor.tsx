@@ -205,8 +205,8 @@ export default function ProposalEditor({ project }: { project: Project }) {
       return
     }
 
-    const header = `# ${proposalTitle}\n\n`
-    const fileName = `${proposalTitle.replace(/\s+/g, '-')}.md`
+    const header = `# ${trimmedProposalTitle}\n\n`
+    const fileName = `${trimmedProposalTitle.replace(/\s+/g, '-')}.md`
 
     const budgetItems = getValues()['budget'] as Array<{ token: string; amount: string }> | undefined
     let totalBudgetUSDC = 0

@@ -19,6 +19,9 @@ export default function MissionBanner() {
     return null
   }
 
+  // Local binding so TS narrows past the module-level null check above.
+  const featured = FEATURED_MISSION
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#090D21]/95 backdrop-blur-md text-white border-t border-white/[0.06]">
       <div className="relative overflow-hidden h-11 sm:h-12 flex items-center w-full px-3 sm:px-4">
@@ -59,11 +62,11 @@ export default function MissionBanner() {
                   </span>
                   <span className="mx-3 text-white/15">·</span>
                   <span className="font-medium text-white/90">
-                    {FEATURED_MISSION.name}
+                    {featured.name}
                   </span>
                   <span className="mx-3 text-white/15">·</span>
                   <span className="text-white/50">
-                    {FEATURED_MISSION.description}
+                    {featured.description}
                   </span>
                   <span className="mx-3 text-white/15">·</span>
                   <span className="text-white/50">
@@ -77,7 +80,7 @@ export default function MissionBanner() {
 
         {/* CTA Button */}
         <Link
-          href={`/mission/${FEATURED_MISSION.id}`}
+          href={`/mission/${featured.id}`}
           className="flex-shrink-0 inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] hover:from-[#7A4A8C] hover:to-[#6B57B7] text-white text-xs sm:text-sm font-medium rounded-full transition-colors whitespace-nowrap"
         >
           <span className="hidden sm:inline">Support Mission</span>

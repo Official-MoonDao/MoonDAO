@@ -124,7 +124,7 @@ export default function TeamMembers({
     const addresses = ownerAddressesKey.split(',').filter(Boolean)
     if (addresses.length === 0) return null
 
-    const inList = addresses.map((a) => `'${a}'`).join(',')
+    const inList = addresses.map((a: string) => `'${a}'`).join(',')
     const blocked = [...BLOCKED_CITIZENS]
     const blockedClause =
       blocked.length > 0 ? ` AND id NOT IN (${blocked.join(',')})` : ''

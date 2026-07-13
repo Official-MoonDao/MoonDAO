@@ -35,7 +35,7 @@ export function calculateTokensFromPayment(
     const reservedPercentValue = toBigIntSafe(ruleset[1].reservedPercent)
     
     const weight = new RulesetWeight(weightValue)
-    const reservedPercent = new ReservedPercent(reservedPercentValue)
+    const reservedPercent = new ReservedPercent(Number(reservedPercentValue))
 
     const quote = getTokenAToBQuote(payment, {
       weight,

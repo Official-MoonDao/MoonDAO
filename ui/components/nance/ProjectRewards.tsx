@@ -1891,8 +1891,10 @@ export function ProjectRewards({
                             projectContract={projectContract}
                             hatsContract={hatsContract}
                             distribute={
-                              rewardVotingActive &&
-                              (project.finalReportLink || project.finalReportIPFS)
+                              !!(
+                                rewardVotingActive &&
+                                (project.finalReportLink || project.finalReportIPFS)
+                              )
                             }
                             distribution={
                               userHasVotingPower ? distribution : undefined

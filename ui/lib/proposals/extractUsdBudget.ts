@@ -189,7 +189,10 @@ function isUsdLikeTokenField(
     if (!stablecoinAddresses) return false
     const lowered = trimmed.toLowerCase()
     if (stablecoinAddresses instanceof Set) return stablecoinAddresses.has(lowered)
-    return stablecoinAddresses.some((a) => a.toLowerCase() === lowered)
+    if (Array.isArray(stablecoinAddresses)) {
+      return stablecoinAddresses.some((a: string) => a.toLowerCase() === lowered)
+    }
+    return false
   }
   return STABLECOIN_SYMBOLS.has(trimmed.toLowerCase())
 }

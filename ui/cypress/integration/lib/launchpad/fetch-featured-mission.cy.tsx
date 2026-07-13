@@ -109,8 +109,8 @@ describe('fetchFeaturedMissionData', () => {
         expect(result).to.have.property('_ruleset')
         expect(result._ruleset).to.not.be.null
         expect(result).to.have.property('projectMetadata')
-        expect(result.projectMetadata).to.have.property('name')
-        expect(result.projectMetadata.name).to.equal('Test Mission')
+        expect(result.projectMetadata!).to.have.property('name')
+        expect(result.projectMetadata!.name).to.equal('Test Mission')
       }
     })
   })
