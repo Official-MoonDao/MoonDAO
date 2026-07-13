@@ -48,6 +48,20 @@ export function buildSearchClauseForCount(search: string, column: string = 'name
   return buildSearchClause(search, column)
 }
 
+/**
+ * Builds a WHERE clause that searches across citizen name, bio (description),
+ * and location so that queries like "engineer", "Brazil", or "satellite" return
+ * relevant results from the full citizen profile, not just the name field.
+ */
+export function buildCitizenSearchClause(search: string): string {
+  if (!search || search.trim() === '') {
+    return ''
+  }
+  const sanitized = search.trim().replace(/'/g, "''")
+  const term = `'%${sanitized}%'`
+  return `WHERE (LOWER(name) LIKE LOWER(${term}) OR LOWER(description) LIKE LOWER(${term}) OR LOWER(location) LIKE LOWER(${term}))`
+}
+
 export function buildPaginationClause(page: number, pageSize: number): string {
   const offset = (page - 1) * pageSize
   return `LIMIT ${pageSize} OFFSET ${offset}`
