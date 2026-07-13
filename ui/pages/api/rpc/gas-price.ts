@@ -1,10 +1,16 @@
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { cacheGet, cacheSet } from '@/lib/rpc/rpcCache'
 import {
   isSupportedRpcChain,
   jsonRpcWithFallback,
 } from '@/lib/rpc/serverJsonRpc'
+
+// Gas prices drift slowly relative to a page's lifetime; a short cache collapses
+// the 3 upstream calls (eth_gasPrice, eth_getBlockByNumber, eth_maxPriorityFeePerGas)
+// this endpoint makes down to one set per window across every visitor.
+const GAS_PRICE_CACHE_TTL_MS = 12_000
 
 type GasPriceResponse = {
   gasPrice: string // in wei (hex string)
@@ -53,6 +59,18 @@ export async function handler(
       chainId: chainIdNum,
       error: `Unsupported chain ID: ${chainId}`,
     })
+  }
+
+  // Let the CDN serve repeat hits without waking the function at all.
+  res.setHeader(
+    'Cache-Control',
+    's-maxage=12, stale-while-revalidate=30'
+  )
+
+  const cacheKey = `rpc:gasprice:${chainIdNum}`
+  const cached = (await cacheGet(cacheKey)) as GasPriceResponse | undefined
+  if (cached) {
+    return res.status(200).json(cached)
   }
 
   try {
@@ -125,6 +143,7 @@ export async function handler(
       response.baseFeePerGasGwei = (Number(baseFeePerGas) / 1e9).toFixed(2)
     }
 
+    void cacheSet(cacheKey, response, GAS_PRICE_CACHE_TTL_MS)
     return res.status(200).json(response)
   } catch (error) {
     console.error(
