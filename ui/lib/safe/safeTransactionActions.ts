@@ -57,6 +57,46 @@ export function isTokenTransfer(tx: SafeTxLike): boolean {
   )
 }
 
+/**
+ * Returns the human-readable value to display on a transaction card.
+ *
+ * - ETH transfers: format tx.value from wei → "1.5 ETH"
+ * - ERC-20 transfers: decode the token amount from dataDecoded parameters
+ *   (assumes 18 decimals — correct for MOONEY and most standard tokens).
+ *   Returns null when the value is zero and there is no decoded token amount,
+ *   so callers can hide the row entirely for contract calls with no value.
+ */
+export function getTransactionDisplayValue(
+  tx: SafeTxLike
+): { amount: string; symbol: string } | null {
+  if (isEthTransfer(tx)) {
+    return { amount: ethers.utils.formatEther(tx.value ?? '0'), symbol: 'ETH' }
+  }
+
+  if (isTokenTransfer(tx)) {
+    const params = tx.dataDecoded?.parameters ?? []
+    // transfer(address to, uint256 value)  → params[1]
+    // transferFrom(address from, address to, uint256 value) → params[2]
+    const amountParam =
+      tx.dataDecoded?.method === 'transferFrom' ? params[2] : params[1]
+    const raw: string = amountParam?.value ?? '0'
+    return {
+      amount: ethers.utils.formatEther(
+        ethers.BigNumber.from(raw).toString()
+      ),
+      symbol: 'tokens',
+    }
+  }
+
+  // Generic contract call — show ETH value only when non-zero.
+  const valueBN = valueAsBN(tx.value)
+  if (valueBN.gt(0)) {
+    return { amount: ethers.utils.formatEther(tx.value ?? '0'), symbol: 'ETH' }
+  }
+
+  return null
+}
+
 /** Human-friendly method label shown on the card. */
 export function getTransactionMethod(tx: SafeTxLike): string {
   if (isEthTransfer(tx)) return 'Transfer ETH'
