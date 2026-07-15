@@ -23,7 +23,9 @@ import useAccount from '@/lib/nance/useAccountAddress'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { classNames } from '@/lib/utils/tailwind'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
+import type { ProposalAIReviewResult } from '@/lib/proposals/aiReview'
 import GoogleDocsImport from './GoogleDocsImport'
+import ProposalAIReview from './ProposalAIReview'
 import ProposalSubmissionCTA from './ProposalSubmissionCTA'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
 import ReactMarkdown from 'react-markdown'
@@ -61,6 +63,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const [submittedProposalId, setSubmittedProposalId] = useState<string | undefined>()
   const [submitterEmail, setSubmitterEmail] = useState<string>('')
   const [emailError, setEmailError] = useState<string | undefined>()
+  const [latestAIReview, setLatestAIReview] = useState<ProposalAIReviewResult | undefined>()
 
   useEffect(() => {
     async function getProposalJSON() {
@@ -151,6 +154,25 @@ export default function ProposalEditor({ project }: { project: Project }) {
 
   const { wallet } = useAccount()
   const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
+
+  const watchedBudget = watch('budget') as
+    | Array<{ token: string; amount: string }>
+    | undefined
+  const budgetHintUsd = (() => {
+    if (!watchedBudget || !Array.isArray(watchedBudget)) return undefined
+    let total = 0
+    for (const item of watchedBudget) {
+      if (
+        item.token === 'USD' ||
+        item.token === 'USDC' ||
+        item.token === 'USDT' ||
+        item.token === 'DAI'
+      ) {
+        total += Number(item.amount) || 0
+      }
+    }
+    return total > 0 ? total : undefined
+  })()
 
   // Email validation helper
   const validateEmail = (email: string): boolean => {
@@ -503,6 +525,14 @@ export default function ProposalEditor({ project }: { project: Project }) {
               </div>
             </div>
 
+            <ProposalAIReview
+              title={proposalTitle}
+              body={proposalBody}
+              budgetHintUsd={budgetHintUsd}
+              disabled={isUploadingImage || signingStatus === 'loading'}
+              onReview={setLatestAIReview}
+            />
+
             {/* Loading Overlay - Document Import */}
             {isUploadingImage && (
               <div className="fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50">
@@ -615,6 +645,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
       {showSubmissionCTA && (
         <ProposalSubmissionCTA
           proposalId={submittedProposalId}
+          aiReview={latestAIReview}
           onClose={() => {
             setShowSubmissionCTA(false)
             // Redirect to proposal page after closing CTA
