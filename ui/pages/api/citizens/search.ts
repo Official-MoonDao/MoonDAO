@@ -47,11 +47,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         ? `id NOT IN (${OVERVIEW_BLOCKED_CITIZEN_IDS.join(',')})`
         : '1=1'
 
+    const term = `'%${sanitized}%'`
+    const textMatch = `LOWER(name) LIKE LOWER(${term}) OR LOWER(description) LIKE LOWER(${term}) OR LOWER(location) LIKE LOWER(${term})`
     let searchClause: string
     if (isNumeric) {
-      searchClause = `LOWER(name) LIKE LOWER('%${sanitized}%') OR id = ${parseInt(sanitized, 10)}`
+      searchClause = `${textMatch} OR id = ${parseInt(sanitized, 10)}`
     } else {
-      searchClause = `LOWER(name) LIKE LOWER('%${sanitized}%')`
+      searchClause = textMatch
     }
 
     const statement = `SELECT id, name, owner, image FROM ${tableName} WHERE (${searchClause}) AND ${excludeIds} ORDER BY name ASC LIMIT 20`
