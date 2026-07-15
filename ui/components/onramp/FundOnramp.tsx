@@ -1,13 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
+import { OnrampAsset } from '@/lib/onramp/assets'
 import { CBOnramp } from '../coinbase/CBOnramp'
 import { MoonPayOnramp } from '../moonpay/MoonPayOnramp'
 
 export type OnrampProvider = 'moonpay' | 'coinbase'
+export type { OnrampAsset }
 
 interface FundOnrampProps {
   address: string
   selectedChain: any
+  /**
+   * Crypto amount to purchase. Interpreted as the selected `asset` (ETH by
+   * default, or USDC when `asset="USDC"`). Kept as `ethAmount` for backward
+   * compatibility with existing callers.
+   */
   ethAmount: number
+  /** Crypto to purchase. Defaults to ETH (native). Pass 'USDC' for marketplace. */
+  asset?: OnrampAsset
   fullWidth?: boolean
   isWaitingForGasEstimate?: boolean
   onExit?: () => void
@@ -48,6 +57,7 @@ export function FundOnramp({
   address,
   selectedChain,
   ethAmount,
+  asset = 'ETH',
   fullWidth = false,
   isWaitingForGasEstimate = false,
   onExit,
@@ -201,6 +211,7 @@ export function FundOnramp({
           address={address}
           selectedChain={selectedChain}
           ethAmount={ethAmount}
+          asset={asset}
           isWaitingForGasEstimate={isWaitingForGasEstimate}
           onExit={onExit}
           onBeforeOpen={onMoonPayBeforeOpen}
@@ -220,6 +231,7 @@ export function FundOnramp({
           address={address}
           selectedChain={selectedChain}
           ethAmount={ethAmount}
+          asset={asset}
           isWaitingForGasEstimate={isWaitingForGasEstimate}
           onExit={onExit}
           allowAmountInput={allowAmountInput}

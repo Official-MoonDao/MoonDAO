@@ -12,17 +12,25 @@ import {
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
 } from 'const/config'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction, toUnits } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
+import {
+  computePurchasePrice,
+  evaluateUsdcPurchase,
+  parseListingPrice,
+  parseUsdcBalance,
+} from '@/lib/marketplace/usdcListingPurchase'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
+import { FundOnramp } from '@/components/onramp/FundOnramp'
 import { TeamListing } from '@/components/subscription/TeamListing'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Input from '../layout/Input'
@@ -97,6 +105,73 @@ export default function BuyTeamListingModal({
     chain: selectedChain,
   })
 
+  const numericPrice = useMemo(
+    () => parseListingPrice(listing.price),
+    [listing.price]
+  )
+
+  // Final USDC/ETH/etc amount the buyer will pay (includes non-citizen markup).
+  const purchasePrice = useMemo(
+    () =>
+      computePurchasePrice({
+        price: listing.price,
+        isGift,
+        isCitizen: !!citizen,
+      }),
+    [listing.price, isGift, citizen]
+  )
+
+  // USDC onramp: when a listing is priced in USDC and the wallet doesn't hold
+  // enough on Arbitrum, surface the shared FundOnramp flow for the deficit.
+  const isUsdcListing = listing.currency === 'USDC'
+  const usdcAddress = USDC_ADDRESSES[chainSlug] as `0x${string}` | undefined
+  const {
+    data: usdcBalanceData,
+    refetch: refetchUsdcBalance,
+    isLoading: isUsdcBalanceLoading,
+  } = useWalletBalance({
+    client,
+    address: account?.address,
+    chain: selectedChain,
+    tokenAddress: isUsdcListing ? usdcAddress : undefined,
+  })
+
+  const usdcBalance = useMemo(
+    () =>
+      isUsdcListing ? parseUsdcBalance(usdcBalanceData?.displayValue) : null,
+    [isUsdcListing, usdcBalanceData]
+  )
+
+  const { hasEnoughUsdc, usdcDeficit } = useMemo(
+    () =>
+      evaluateUsdcPurchase({
+        isUsdcListing,
+        usdcBalance,
+        purchasePrice,
+      }),
+    [isUsdcListing, usdcBalance, purchasePrice]
+  )
+
+  const [awaitingUsdcOnramp, setAwaitingUsdcOnramp] = useState(false)
+
+  // Poll USDC after an in-app onramp so the Buy button appears once funds land.
+  useEffect(() => {
+    if (!awaitingUsdcOnramp || !isUsdcListing) return
+    if (hasEnoughUsdc) {
+      setAwaitingUsdcOnramp(false)
+      return
+    }
+    const id = setInterval(() => {
+      refetchUsdcBalance()
+    }, 10_000)
+    return () => clearInterval(id)
+  }, [
+    awaitingUsdcOnramp,
+    isUsdcListing,
+    hasEnoughUsdc,
+    refetchUsdcBalance,
+  ])
+
   useEffect(() => {
     async function getTeamNFT() {
       const nft = await getNFT({
@@ -135,14 +210,8 @@ export default function BuyTeamListingModal({
   async function buyListing() {
     if (!account || !resolvedRecipient) return
 
-    const numericPrice = parseFloat(listing.price.replace(/,/g, ''))
-    let price
-    if (isGift || citizen) {
-      // Gifted citizenship is always the flat citizen price (no markup).
-      price = numericPrice
-    } else {
-      price = numericPrice * 1.1 // 10% upcharge for non-citizens
-    }
+    // Gifted citizenship is always the flat citizen price (no markup).
+    const price = purchasePrice
 
     setIsLoading(true)
     let transactionHash
@@ -348,9 +417,7 @@ export default function BuyTeamListingModal({
             </p>
             <div className="mt-auto flex flex-wrap items-center gap-2">
               <p id="listing-price" className="font-GoodTimes text-lg text-white">{`${
-                isGift || citizen
-                  ? truncateTokenValue(listing.price, listing.currency)
-                  : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
+                truncateTokenValue(purchasePrice, listing.currency)
               } ${listing.currency}`}</p>
               {!citizen && !isGift && (
                 <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/50">
@@ -445,38 +512,105 @@ export default function BuyTeamListingModal({
             </div>
           </div>
         )}
-        <PrivyWeb3Button
-          v5
-          requiredChain={DEFAULT_CHAIN_V5}
-          label={
-            isLoading
-              ? 'Processing...'
-              : resolvedRecipient
-              ? 'Buy'
-              : 'Loading vendor...'
-          }
-          action={async () => {
-            if (!resolvedRecipient)
-              return toast.error(
-                'Still loading the vendor details. Please try again in a moment.'
-              )
-            if (!email || email.trim() === '' || !email.includes('@'))
-              return toast.error('Please enter a valid email.')
-            if (listing.shipping === 'true') {
-              if (
-                shippingInfo.streetAddress.trim() === '' ||
-                shippingInfo.city.trim() === '' ||
-                shippingInfo.state.trim() === '' ||
-                shippingInfo.postalCode.trim() === '' ||
-                shippingInfo.country.trim() === ''
-              )
-                return toast.error('Please fill out all fields.')
+        {isUsdcListing && account?.address && !hasEnoughUsdc && (
+          <div
+            data-testid="marketplace-usdc-onramp"
+            className="w-full flex flex-col gap-3"
+          >
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+              <p className="text-amber-100 text-sm font-medium">
+                You need USDC on Arbitrum to buy this listing
+              </p>
+              <p className="text-amber-100/70 text-xs mt-1 leading-relaxed">
+                {isUsdcBalanceLoading || usdcBalance == null
+                  ? `Add ${truncateTokenValue(
+                      purchasePrice,
+                      'USDC'
+                    )} USDC to your wallet to continue.`
+                  : `Your wallet has ${truncateTokenValue(
+                      usdcBalance,
+                      'USDC'
+                    )} USDC. Add ${truncateTokenValue(
+                      usdcDeficit,
+                      'USDC'
+                    )} more to cover this purchase.`}
+              </p>
+              {awaitingUsdcOnramp && (
+                <p className="text-amber-100/60 text-xs mt-2">
+                  Waiting for USDC to arrive…
+                </p>
+              )}
+            </div>
+            {usdcDeficit > 0 && (
+              <FundOnramp
+                fullWidth
+                address={account.address}
+                selectedChain={DEFAULT_CHAIN_V5}
+                ethAmount={usdcDeficit}
+                asset="USDC"
+                coinbaseRedirectUrl={`${DEPLOYED_ORIGIN}/marketplace?onrampSuccess=true`}
+                checkBalanceSufficient={async () => {
+                  const result = await refetchUsdcBalance()
+                  const next = result?.data?.displayValue
+                  if (next == null) return false
+                  const n = Number(next)
+                  return Number.isFinite(n) && n >= purchasePrice
+                }}
+                refetchBalance={async () => {
+                  await refetchUsdcBalance()
+                }}
+                onBalanceSufficient={() => {
+                  setAwaitingUsdcOnramp(false)
+                }}
+                onCoinbaseSuccessInApp={() => {
+                  setAwaitingUsdcOnramp(true)
+                }}
+                onMoonPayPurchaseSubmitted={() => {
+                  setAwaitingUsdcOnramp(true)
+                }}
+              />
+            )}
+          </div>
+        )}
+        {(!isUsdcListing || !account?.address || hasEnoughUsdc) && (
+          <PrivyWeb3Button
+            v5
+            requiredChain={DEFAULT_CHAIN_V5}
+            label={
+              isLoading
+                ? 'Processing...'
+                : resolvedRecipient
+                ? 'Buy'
+                : 'Loading vendor...'
             }
-            await buyListing()
-          }}
-          className="w-full gradient-2 rounded-[5vmax]"
-          isDisabled={isLoading || !resolvedRecipient}
-        />
+            action={async () => {
+              if (!resolvedRecipient)
+                return toast.error(
+                  'Still loading the vendor details. Please try again in a moment.'
+                )
+              if (!email || email.trim() === '' || !email.includes('@'))
+                return toast.error('Please enter a valid email.')
+              if (listing.shipping === 'true') {
+                if (
+                  shippingInfo.streetAddress.trim() === '' ||
+                  shippingInfo.city.trim() === '' ||
+                  shippingInfo.state.trim() === '' ||
+                  shippingInfo.postalCode.trim() === '' ||
+                  shippingInfo.country.trim() === ''
+                )
+                  return toast.error('Please fill out all fields.')
+              }
+              if (isUsdcListing && !hasEnoughUsdc) {
+                return toast.error(
+                  'You need more USDC on Arbitrum before purchasing.'
+                )
+              }
+              await buyListing()
+            }}
+            className="w-full gradient-2 rounded-[5vmax]"
+            isDisabled={isLoading || !resolvedRecipient}
+          />
+        )}
         {!resolvedRecipient && !isLoading && (
           <p className="w-full text-center text-sm opacity-60">Loading vendor details...</p>
         )}
