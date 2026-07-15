@@ -678,12 +678,12 @@ export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
 
 // Project System Configuration
 export const PROJECT_SYSTEM_CONFIG = {
-  // Q1 2026 deadline - second Thursday of the quarter
-  submissionDeadline: 'January 15, 2026',
+  // Q3 2026 deadline - second Thursday of the quarter
+  submissionDeadline: 'July 9, 2026',
   // Approval timeline details
   senateReviewDays: 1, // Senate reviews the day after submission
-  editingDeadline: 'January 22, 2026', // 48 hours before third Thursday
-  votingDate: 'January 22, 2026', // Third Thursday of quarter
+  editingDeadline: 'July 14, 2026', // 48 hours before third Thursday
+  votingDate: 'July 16, 2026', // Third Thursday of quarter
   // Submission link
   submissionUrl: 'https://moondao.com/propose',
   // Documentation link
@@ -695,7 +695,7 @@ export const PROJECT_SYSTEM_CONFIG = {
 // Set IS_SENATE_VOTE to true during Senate Vote phase - shows proposals with "Temperature Check" status
 // Set IS_MEMBER_VOTE to true during Member Vote phase - shows proposals with "Voting" status (passed Senate vote)
 // Only one should be true at a time, or both false when no voting is active
-export const IS_SENATE_VOTE = false
+export const IS_SENATE_VOTE = true
 export const IS_MEMBER_VOTE = false
 
 // When false, the Member Vote phase is still on (results panel, "Member
@@ -713,11 +713,8 @@ export const MEMBER_VOTE_SUBMISSIONS_OPEN = false
 // row stays in the proposals table for the audit trail, it just
 // doesn't count toward the outcome.
 //
-// Q2 2026:
-//   - 0x47cc...be05 (e-Cat) excluded by EB decision.
-export const MEMBER_VOTE_EXCLUDED_ADDRESSES: string[] = [
-  '0x47cc4c7fef42187f9f7901838f316b033e92be05',
-]
+// Q3 2026: no disqualifications yet.
+export const MEMBER_VOTE_EXCLUDED_ADDRESSES: string[] = []
 
 // Set IS_REWARDS_CYCLE to true during the retroactive rewards distribution
 // window. When true, the projects page treats the prior quarter as the active
@@ -727,7 +724,8 @@ export const IS_REWARDS_CYCLE = false
 // Quarterly budget in USD (stablecoins)
 // 5% of liquid non-MOONEY assets, denominated in USD
 // See: https://docs.moondao.com/Projects/Project-System#quarterly-rewards
-export const NEXT_QUARTER_BUDGET_USD = 23409
+// Q3 2026: $24,310 → per-proposal max $4,862 (posted in the Senate review pack).
+export const NEXT_QUARTER_BUDGET_USD = 24310
 
 // Alias used by the retroactive rewards system (ProjectRewards.tsx / getPayouts).
 // The 10% community-circle carve-out is handled inside runQuadraticVoting
