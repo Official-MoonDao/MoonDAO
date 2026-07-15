@@ -12,6 +12,7 @@ export const USDC_BY_CHAIN_ID: Record<number, string> = {
   1: USDC_ADDRESSES.ethereum,
   11155111: USDC_ADDRESSES.sepolia,
   42161: USDC_ADDRESSES.arbitrum,
+  421614: USDC_ADDRESSES['arbitrum-sepolia'],
   8453: USDC_ADDRESSES.base,
   84532: USDC_ADDRESSES['base-sepolia-testnet'],
 }

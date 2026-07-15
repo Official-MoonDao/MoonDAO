@@ -545,7 +545,7 @@ export default function BuyTeamListingModal({
               <FundOnramp
                 fullWidth
                 address={account.address}
-                selectedChain={DEFAULT_CHAIN_V5}
+                selectedChain={selectedChain}
                 ethAmount={usdcDeficit}
                 asset="USDC"
                 coinbaseRedirectUrl={`${DEPLOYED_ORIGIN}/marketplace?onrampSuccess=true`}
