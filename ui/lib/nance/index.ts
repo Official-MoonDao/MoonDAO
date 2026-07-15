@@ -33,7 +33,7 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 
 # Solution
 
-*Describe the work that will be done this quarter. Keep scope to inspectable deliverables. Note open questions and future directions separately from funded objectives. Do not list entity formation, buying a general computer, or clearing tax bills as solutions.*
+*Describe the work that will be done this quarter. Keep scope to inspectable deliverables. Note open questions and future directions separately from funded objectives. Do not list entity formation or buying a general computer as solutions.*
 
 **If success depends on a partner** *(university, launch provider, facility, platform):* *Name them and attach LOI, quote, ICD, or access MOU before the vote.*
 
@@ -136,7 +136,7 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 
 **What MoonDAO funds:** labor for inspectable deliverables, and specialized equipment/services the work uniquely needs (with ownership/access terms).
 
-**What MoonDAO does not fund:** general computers/monitors/printers/furniture; LLC/sole-prop formation; tax bills, re-registration, or private company runway bailouts.
+**What MoonDAO does not fund:** general computers/monitors/printers/furniture; LLC/sole-prop formation; re-registration, or private company runway bailouts.
 
 | Description | Class (A–E) | Amount (USD) | Justification |
 | :---- | :---- | :---- | :---- |
@@ -160,18 +160,13 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 # Pre-submit checklist
 
 - [ ] Ask ≤ posted quarterly max ($${maxFormatted})
-- [ ] Novelty & Prior Art filled with links
-- [ ] Lunar Bridge paragraph completed
-- [ ] Community standing / engagement noted
+- [ ] All required sections completed; italicized instructions removed
 - [ ] Key Results are non-empty and testable
-- [ ] Budget classes filled; (C) and (D) are $0
-- [ ] Specialized gear has ownership/access terms
-- [ ] Same-type prior work linked per major deliverable
-- [ ] IP disclosure completed
+- [ ] Budget justified and within allowed categories
+- [ ] Team, timeline, and IP disclosure filled in
 - [ ] Only one primary proposal from this Lead this quarter
-- [ ] Partner LOIs/quotes attached if the plan depends on them
-- [ ] Hardware asks include COTS / why-not-existing rationale
-- [ ] No megaproject OKRs mixed into this quarter’s funded scope
+- [ ] Supporting docs attached if the plan depends on partners
+- [ ] Scope limited to this quarter’s inspectable deliverables
 `
 }
 

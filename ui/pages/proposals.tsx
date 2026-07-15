@@ -124,7 +124,7 @@ export default function ProposalsPage({ project }: { project: Project }) {
                   <div className="p-3 md:p-4 bg-white/5 border border-white/10 rounded-lg">
                     <p className="text-sm text-gray-300">
                       <strong>Required sections:</strong> Novelty &amp; Prior Art, Lunar Bridge, Community
-                      Standing, SMART Key Results, Budget classes (no foundational PCs / tax /
+                      Standing, SMART Key Results, Budget classes (no foundational PCs /
                       entity fees), IP disclosure, COTS rationale for hardware.
                     </p>
                   </div>

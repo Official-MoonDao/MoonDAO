@@ -69,7 +69,7 @@ const FUND_YES = [
 const FUND_NO = [
   'General computers, monitors, printers, or furniture',
   'LLC / sole-prop formation or registration fees',
-  'Tax bills, re-registration, or private runway bailouts',
+  'Re-registration or private runway bailouts',
 ]
 
 const FIT_YES = [
@@ -80,7 +80,7 @@ const FIT_YES = [
 ]
 
 const FIT_NO = [
-  'The ask is mostly company setup, taxes, or a general workstation',
+  'The ask is mostly company setup or a general workstation',
   'The pitch is LEO tourism, generic STEAM branding, or inspiration alone',
   'Key Results are empty or the plan is a megaproject OKR in one quarter',
   'You are submitting multiple primary asks as the same Lead this quarter',
@@ -88,15 +88,13 @@ const FIT_NO = [
 
 const CHECKLIST = [
   'Ask ≤ quarterly max',
-  'Novelty & Prior Art with citations',
-  'Explicit lunar bridge',
-  'Community standing noted',
+  'All required sections completed',
   'Non-empty SMART key results',
-  'Budget classes A–E (C/D = $0)',
-  'IP disclosed (open or retained)',
+  'Budget justified and within allowed categories',
+  'Team, timeline, and IP filled in',
   'One primary ask per Lead this quarter',
-  'Same-type prior work linked',
-  'Partner LOIs if the plan depends on them',
+  'Supporting docs if the plan depends on partners',
+  'Scope limited to this quarter’s deliverables',
 ]
 
 const ProjectsOverview: React.FC<{
