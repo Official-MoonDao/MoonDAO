@@ -5,6 +5,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
 import { PROJECT_PENDING } from '@/lib/nance/types'
 import { useENS } from '@/lib/utils/hooks/useENS'
+import { useCitizenNameByAddress } from '@/lib/citizen/useCitizenNameByAddress'
 import StandardButton from '../layout/StandardButton'
 import SafeBalances from '../safe/SafeBalances'
 import SafeModal from '../safe/SafeModal'
@@ -71,6 +72,9 @@ function MultisigAddressPill({ address }: { address: string }) {
 
 function SignerAddress({ address }: { address: string }) {
   const { data: ens } = useENS(address)
+  const citizenName = useCitizenNameByAddress(address)
+  const displayName =
+    citizenName || ens?.name || `${address.slice(0, 6)}...${address.slice(-4)}`
   return (
     <a
       href={`https://etherscan.io/address/${address}`}
@@ -79,8 +83,8 @@ function SignerAddress({ address }: { address: string }) {
       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
     >
       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex-shrink-0" />
-      <span className="text-xs sm:text-sm text-gray-300 font-mono truncate">
-        {ens?.name || `${address.slice(0, 6)}...${address.slice(-4)}`}
+      <span className={`text-xs sm:text-sm truncate ${citizenName ? 'text-white font-medium' : 'text-gray-300 font-mono'}`}>
+        {displayName}
       </span>
     </a>
   )
