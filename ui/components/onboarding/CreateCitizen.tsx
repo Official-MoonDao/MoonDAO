@@ -373,7 +373,7 @@ export default function CreateCitizen({
     email: '',
     description: '',
     location: '',
-    view: '',
+    view: 'public',
     discord: '',
     website: '',
     twitter: '',
@@ -2543,44 +2543,6 @@ export default function CreateCitizen({
                       </div>
                     </div>
 
-                    {/* Profile visibility */}
-                    <div className="flex flex-col gap-2">
-                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                        Profile Visibility
-                      </span>
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setCitizenData((prev) => ({ ...prev, view: 'public' }))
-                          }
-                          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
-                            !citizenData.view || citizenData.view === 'public'
-                              ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
-                              : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
-                          }`}
-                        >
-                          Public
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setCitizenData((prev) => ({ ...prev, view: 'private' }))
-                          }
-                          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
-                            citizenData.view === 'private'
-                              ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
-                              : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
-                          }`}
-                        >
-                          Private
-                        </button>
-                      </div>
-                      <p className="text-xs text-slate-600">
-                        Public profiles are visible to other MoonDAO members. Private hides your
-                        details.
-                      </p>
-                    </div>
                   </div>
                 </div>
 

@@ -196,7 +196,9 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
         website: getAttribute(nft.metadata.attributes, 'website').value,
         instagram: getAttribute(nft.metadata.attributes, 'instagram').value,
         linkedin: getAttribute(nft.metadata.attributes, 'linkedin').value,
-        view: 'public',
+        view: (getAttribute(nft.metadata.attributes, 'view').value || 'public') as
+          | 'public'
+          | 'private',
       }
     })
   }, [nft?.metadata?.id])
@@ -468,6 +470,38 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
           <h3 className="text-sm font-semibold text-red-400 uppercase tracking-wide mb-2">
             Danger Zone
           </h3>
+
+          {/* Profile visibility */}
+          <div className="mb-6">
+            <p className="text-gray-400 text-xs mb-3 leading-relaxed">
+              Control whether your profile is visible to other MoonDAO members.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setCitizenData((prev: any) => ({ ...prev, view: 'public' }))}
+                className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
+                  citizenData?.view === 'public' || !citizenData?.view
+                    ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
+                    : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
+                }`}
+              >
+                Public
+              </button>
+              <button
+                type="button"
+                onClick={() => setCitizenData((prev: any) => ({ ...prev, view: 'private' }))}
+                className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
+                  citizenData?.view === 'private'
+                    ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
+                    : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
+                }`}
+              >
+                Private
+              </button>
+            </div>
+          </div>
+
           <p className="text-gray-400 text-xs mb-4 leading-relaxed">
             Deleting your profile data is permanent and cannot be undone. All information —
             including your name, bio, image, and social links — will be erased from the blockchain.
