@@ -169,19 +169,29 @@ export const getServerSideProps: GetServerSideProps = async ({
     // Allow overriding stage via ?stage= query param (default: 3 = refundable)
     const stageParam = query?.stage
     const dummyStage = stageParam ? Number(stageParam) : 3
+    // Deadlines must be far enough out that the page state cannot flip while
+    // an E2E test is still asserting. A near-future deadline (this used to be
+    // now+5s) made `deadlinePassed` turn true mid-test on slow remote
+    // browsers (BrowserStack tunnel), swapping the header's "REFUND" label
+    // for a close date and randomly failing mission-refund.cy.ts.
     const dummyDeadline =
       dummyStage === 4
         ? Date.now() - 86400 * 1000 // deadline in the past for closed missions
-        : Date.now() + 5 * 1000
+        : Date.now() + 7 * 86400 * 1000
     const dummyRefundPeriod =
       dummyStage === 4
         ? Date.now() - 3600 * 1000 // refund period in the past for closed missions
-        : Date.now() + 60 * 1000
+        : Date.now() + 14 * 86400 * 1000
 
     return {
       props: {
         mission: {
-          id: 5,
+          // Must be the literal 'dummy' so client hooks (refreshStage,
+          // useMissionFundingStage) skip live on-chain reads. With a numeric
+          // id here the page raced real contract state for that mission id
+          // and the rendered stage depended on RPC health — the other source
+          // of random E2E failures.
+          id: 'dummy',
           metadata: {
             name: 'Dummy Mission',
             description: 'This is a dummy mission',

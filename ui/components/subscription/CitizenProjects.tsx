@@ -63,7 +63,7 @@ export default function CitizenProjects({ ownerAddress }: CitizenProjectsProps) 
     if (!userProjects?.length) return []
     return userProjects
       .map((entry: { projectId: string }) => Number(entry.projectId))
-      .filter((id) => Number.isFinite(id) && id > 0)
+      .filter((id: number) => Number.isFinite(id) && id > 0)
   }, [userProjects])
 
   const statement = useMemo(() => {

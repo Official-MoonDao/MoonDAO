@@ -71,44 +71,63 @@ export default function ProposalsPage({ project }: { project: Project }) {
               </div>
 
               {/* Step 1: Get the Template - Most Prominent */}
-              <div className="bg-gradient-to-br from-blue-900/40 via-indigo-900/30 to-purple-900/30 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-4 md:p-8 shadow-xl">
+              <div className="bg-gradient-to-br from-slate-900/80 via-blue-950/40 to-slate-900/80 backdrop-blur-xl border border-blue-500/25 rounded-2xl p-4 md:p-8 shadow-xl">
                 <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 flex items-center justify-center text-white font-bold text-lg">
                     1
                   </div>
                   <div className="flex-1">
                     <h2 className="text-xl md:text-2xl font-bold text-white mb-2">Get the Proposal Template</h2>
                     <p className="text-gray-300">
-                      Start by making a copy of our Google Doc template. Fill it out with your project details.
+                      Use the canonical markdown template (novelty &amp; prior art, lunar bridge, budget
+                      classes, IP, checklist). Ask must be ≤ ${MAX_BUDGET_USD.toLocaleString()}.
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                  <Link
+                    href="/proposal-template"
+                    className="flex-1 inline-flex items-center justify-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:opacity-90 text-white rounded-xl transition-all duration-300 shadow-lg text-sm md:text-base font-semibold group"
+                  >
+                    <DocumentDuplicateIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                    Open template &amp; copy
+                  </Link>
+
                   <Link
                     href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing"
                     target="_blank"
                     rel="noreferrer"
-                    className="flex-1 inline-flex items-center justify-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl text-sm md:text-base font-semibold group"
+                    className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-3 md:py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-200 text-sm font-medium border border-white/20"
                   >
-                    <DocumentDuplicateIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                    Open & Copy Template
-                    <ArrowTopRightOnSquareIcon className="w-5 h-5 opacity-70" />
+                    Google Doc
+                    <ArrowTopRightOnSquareIcon className="w-4 h-4 opacity-70" />
                   </Link>
-                  
+
                   <Link
                     href="/project-system-docs"
                     className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-3 md:py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-200 text-sm font-medium border border-white/20"
                   >
                     <QuestionMarkCircleIcon className="w-5 h-5" />
-                    View Documentation
+                    Docs
                   </Link>
                 </div>
 
-                <div className="mt-4 md:mt-5 p-3 md:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-sm text-blue-200">
-                    <strong>Important:</strong> After filling out the template, set sharing to <span className="font-semibold">&quot;Anyone with the link can view&quot;</span> so we can import it.
-                  </p>
+                <div className="mt-4 md:mt-5 grid gap-3 md:grid-cols-2">
+                  <div className="p-3 md:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <p className="text-sm text-blue-200">
+                      <strong>Import tip:</strong> Paste into a Google Doc, set sharing to{' '}
+                      <span className="font-semibold">&quot;Anyone with the link can view&quot;</span>, then
+                      import below.
+                    </p>
+                  </div>
+                  <div className="p-3 md:p-4 bg-white/5 border border-white/10 rounded-lg">
+                    <p className="text-sm text-gray-300">
+                      <strong>Required sections:</strong> Novelty &amp; Prior Art, Lunar Bridge, Community
+                      Standing, SMART Key Results, Budget classes (no foundational PCs /
+                      entity fees), IP disclosure, COTS rationale for hardware.
+                    </p>
+                  </div>
                 </div>
               </div>
 

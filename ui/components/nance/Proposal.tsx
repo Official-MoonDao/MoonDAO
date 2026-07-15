@@ -86,7 +86,8 @@ export default function Proposal({ project, feedStyle = false, linkDisabled = fa
   const config = getStatusIndicatorConfig(proposalStatus)
   const displayLabel =
     STATUS_DISPLAY_LABELS[proposalStatus as ProposalStatus] ??
-    (proposalStatus === 'Vote Closed' || proposalStatus === 'vote closed'
+    ((proposalStatus as string) === 'Vote Closed' ||
+    (proposalStatus as string) === 'vote closed'
       ? 'Vote Closed'
       : proposalStatus)
   const descriptionPreview = getDescriptionPreview(

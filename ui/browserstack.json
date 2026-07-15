@@ -9,21 +9,6 @@
     {
       "browser": "chrome",
       "os": "Windows 10",
-      "versions": ["latest", "latest - 1"]
-    },
-    {
-      "browser": "firefox",
-      "os": "Windows 10",
-      "versions": ["latest"]
-    },
-    {
-      "browser": "webkit",
-      "os": "OS X Monterey",
-      "versions": ["latest"]
-    },
-    {
-      "browser": "edge",
-      "os": "Windows 10",
       "versions": ["latest"]
     }
   ],
@@ -44,7 +29,7 @@
     "project_name": "MoonDAO",
     "build_name": "MoonDAO-E2E-Tests",
     "build_identifier": "${BUILD_NUMBER}",
-    "parallels": 5,
+    "parallels": 2,
     "exclude": [
       ".next/**",
       "node_modules/**",
@@ -75,7 +60,7 @@
   "connection_settings": {
     "local": true,
     "local_mode": "always-on",
-    "local_identifier": "moon-dao-tests-${BUILD_NUMBER}"
+    "local_identifier": "${BROWSERSTACK_LOCAL_IDENTIFIER}"
   },
   "disable_usage_reporting": false
 }

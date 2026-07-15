@@ -65,7 +65,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
               // one (e.g. via SMS/social on a magic-link invite) so they have an
               // address to receive their sponsored citizen mint.
               embeddedWallets: {
-                createOnLogin: 'users-without-wallets',
+                ethereum: {
+                  createOnLogin: 'users-without-wallets',
+                },
               },
               appearance: {
                 theme: '#252c4d',
