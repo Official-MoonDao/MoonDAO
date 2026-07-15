@@ -3,7 +3,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
-const PROJECT_PAGES = ['/projects-overview', '/projects', '/proposals', '/submit']
+const PROJECT_PAGES = [
+  '/projects-overview',
+  '/projects',
+  '/proposals',
+  '/proposal-template',
+  '/submit',
+]
 
 // Check if deadline has passed (computed once on module load)
 const SUBMISSION_DEADLINE = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)

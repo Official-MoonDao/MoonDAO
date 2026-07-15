@@ -47,6 +47,26 @@ const searchMappings = [
   },
   {
     keywords: [
+      'proposal template', 'project template', 'novelty prior art', 'lunar bridge',
+      'proposal checklist', 'how to write proposal', 'grant template',
+    ],
+    title: 'Project Proposal Template',
+    description: 'Canonical markdown template with novelty, lunar bridge, budget classes, and checklist',
+    link: '/proposal-template',
+    category: 'Governance',
+  },
+  {
+    keywords: [
+      'projects overview', 'project system', 'how projects work', 'project grants',
+      'quarterly grants', 'what we fund',
+    ],
+    title: 'Project System Overview',
+    description: 'How MoonDAO funds projects, max budget, what we fund, and how to submit',
+    link: '/projects-overview',
+    category: 'Governance',
+  },
+  {
+    keywords: [
       'projects', 'project rewards', 'fund project', 'active projects', 'current projects',
       'project voting', 'vote project', 'project funding', 'rewards cycle', 'distributions',
     ],
