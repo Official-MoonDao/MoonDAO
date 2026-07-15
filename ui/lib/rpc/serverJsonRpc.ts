@@ -7,7 +7,21 @@
  * Server-only: public endpoints here are not subject to the browser CSP.
  */
 
+import {
+  cacheGetMany,
+  cacheSetMany,
+  hashKey,
+  stableStringify,
+} from './rpcCache'
+
 const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
+
+// How long a "latest"/state read (eth_call, balances, code) may be reused.
+// A couple of seconds collapses duplicate reads fired by concurrent page loads
+// without staling balances/prices enough to matter for display or estimation.
+const SHORT_TTL_MS = Number(process.env.RPC_CACHE_TTL_MS) || 3000
+// Reads pinned to a specific block/hash (or chain identity) never change.
+const IMMUTABLE_TTL_MS = 5 * 60 * 1000
 
 function usableUrl(u: string): boolean {
   return typeof u === 'string' && u.length > 0 && !u.includes('undefined')
@@ -147,6 +161,98 @@ function isWellFormedJsonRpcResponse(request: unknown, body: unknown): boolean {
   return hasResultOrError(body)
 }
 
+type JsonRpcRequest = {
+  jsonrpc?: string
+  id?: unknown
+  method?: string
+  params?: unknown[]
+}
+
+// Reads whose result is a pure function of chain state at a given block. Anything
+// that mutates, depends on the mempool (pending), or must be fresh for correctness
+// (nonce, gas estimate, tx receipt) is intentionally absent so it never caches.
+const CACHEABLE_READ_METHODS = new Set([
+  'eth_call',
+  'eth_getBalance',
+  'eth_getCode',
+  'eth_getStorageAt',
+  'eth_getBlockByNumber',
+  'eth_getBlockByHash',
+  'eth_chainId',
+  'net_version',
+])
+
+// Block tag arg position per method (the tag decides short vs immutable TTL).
+const BLOCK_TAG_INDEX: Record<string, number> = {
+  eth_call: 1,
+  eth_getBalance: 1,
+  eth_getCode: 1,
+  eth_getStorageAt: 2,
+  eth_getBlockByNumber: 0,
+}
+
+/** null → do not cache; otherwise the TTL to use for this block tag. */
+function ttlForBlockTag(tag: unknown): number | null {
+  // Missing tag defaults to "latest".
+  if (tag === undefined || tag === null) return SHORT_TTL_MS
+  if (typeof tag === 'object') {
+    // EIP-1898 { blockNumber } / { blockHash } → pinned, immutable.
+    const obj = tag as Record<string, unknown>
+    if ('blockHash' in obj || 'blockNumber' in obj) return IMMUTABLE_TTL_MS
+    return null
+  }
+  if (typeof tag !== 'string') return null
+  const t = tag.toLowerCase()
+  if (t === 'pending') return null // mempool-dependent, never cache
+  if (t === 'latest' || t === 'safe' || t === 'finalized') return SHORT_TTL_MS
+  if (t === 'earliest') return IMMUTABLE_TTL_MS
+  // A concrete block number (0x...) is immutable once mined.
+  if (t.startsWith('0x')) return IMMUTABLE_TTL_MS
+  return null
+}
+
+/**
+ * Decide whether a single JSON-RPC request may be cached, and under what key /
+ * TTL. Returns null for anything that must always hit the node.
+ */
+function cachePolicyFor(
+  chainId: number,
+  req: JsonRpcRequest
+): { key: string; ttlMs: number } | null {
+  if (!req || typeof req !== 'object') return null
+  // Notifications (no id) can't be matched back into a response — skip.
+  if (req.id === undefined || req.id === null) return null
+  const method = req.method
+  if (!method || !CACHEABLE_READ_METHODS.has(method)) return null
+
+  const params = Array.isArray(req.params) ? req.params : []
+
+  let ttlMs: number
+  if (method === 'eth_chainId' || method === 'net_version') {
+    ttlMs = IMMUTABLE_TTL_MS
+  } else if (method === 'eth_getBlockByHash') {
+    ttlMs = IMMUTABLE_TTL_MS
+  } else {
+    const tagTtl = ttlForBlockTag(params[BLOCK_TAG_INDEX[method]])
+    if (tagTtl === null) return null
+    ttlMs = tagTtl
+  }
+
+  const key = `rpc:${chainId}:${hashKey(`${method}:${stableStringify(params)}`)}`
+  return { key, ttlMs }
+}
+
+/** Only cache successful results (never errors or empty payloads). */
+function isCacheableResponse(entry: unknown): boolean {
+  return (
+    !!entry &&
+    typeof entry === 'object' &&
+    'result' in (entry as object) &&
+    (entry as { result?: unknown }).result !== undefined &&
+    (entry as { result?: unknown }).result !== null
+  )
+}
+
 /**
  * Forward a raw JSON-RPC payload (single call or batch array) through the
  * chain's endpoint list. Used by `/api/rpc/[chainId]` so browser thirdweb
@@ -155,7 +261,7 @@ function isWellFormedJsonRpcResponse(request: unknown, body: unknown): boolean {
  * Returns the first HTTP 200 JSON body that looks like a JSON-RPC response.
  * Transport failures / 429s advance to the next URL.
  */
-export async function proxyJsonRpcRequest(
+async function sendUpstream(
   chainId: number,
   payload: unknown,
   { timeoutMs = 20_000 }: { timeoutMs?: number } = {}
@@ -226,4 +332,103 @@ export async function proxyJsonRpcRequest(
   }
 
   return { status: lastStatus, body: lastBody }
+}
+
+/**
+ * Cache-aware wrapper around {@link sendUpstream}. Serves idempotent reads
+ * (eth_call, balances, code, blocks, chain id) from the shared cache and only
+ * forwards genuine misses to the upstream node — the main lever for cutting
+ * Infura credit usage. Batches are split so cached and uncached sub-calls in
+ * the same request are handled independently, then re-merged in order. Falls
+ * back to a plain passthrough for anything that can't be cached.
+ */
+export async function proxyJsonRpcRequest(
+  chainId: number,
+  payload: unknown,
+  opts: { timeoutMs?: number } = {}
+): Promise<JsonRpcProxyResult> {
+  const isBatch = Array.isArray(payload)
+  const requests = (isBatch ? payload : [payload]) as JsonRpcRequest[]
+
+  // Map each sub-request to its cache policy (or null if uncacheable).
+  const policies = requests.map((req) => cachePolicyFor(chainId, req))
+  const cacheableIdx = policies
+    .map((p, i) => (p ? i : -1))
+    .filter((i) => i >= 0)
+
+  // Nothing is cacheable → straight passthrough (preserves prior behavior).
+  if (cacheableIdx.length === 0) {
+    return sendUpstream(chainId, payload, opts)
+  }
+
+  const cachedValues = await cacheGetMany(
+    cacheableIdx.map((i) => policies[i]!.key)
+  )
+
+  // Responses we already have, keyed by original index.
+  const responses: (unknown | undefined)[] = new Array(requests.length)
+  cacheableIdx.forEach((origIdx, j) => {
+    const value = cachedValues[j]
+    if (value !== undefined) {
+      responses[origIdx] = {
+        jsonrpc: '2.0',
+        id: requests[origIdx].id,
+        result: value,
+      }
+    }
+  })
+
+  // Everything without a cached response must be fetched upstream.
+  const missIdx = requests.map((_, i) => i).filter((i) => responses[i] === undefined)
+
+  if (missIdx.length > 0) {
+    const missPayload = isBatch
+      ? missIdx.map((i) => requests[i])
+      : requests[missIdx[0]]
+
+    const upstream = await sendUpstream(chainId, missPayload, opts)
+    if (upstream.status !== 200) {
+      // Can't partially serve a failed fetch — surface the upstream error.
+      return upstream
+    }
+
+    const upstreamBody = upstream.body
+    const upstreamArr = (
+      Array.isArray(upstreamBody) ? upstreamBody : [upstreamBody]
+    ) as JsonRpcRequest[]
+
+    // Match upstream entries back to requests by id (batch order isn't
+    // guaranteed), falling back to positional mapping.
+    const byId = new Map<unknown, unknown>()
+    for (const entry of upstreamArr) {
+      if (entry && typeof entry === 'object' && 'id' in entry) {
+        byId.set(entry.id, entry)
+      }
+    }
+
+    const toCache: { key: string; value: unknown; ttlMs: number }[] = []
+    missIdx.forEach((origIdx, position) => {
+      const req = requests[origIdx]
+      const entry =
+        (req.id !== undefined && byId.get(req.id)) || upstreamArr[position]
+      responses[origIdx] = entry
+
+      const policy = policies[origIdx]
+      if (policy && isCacheableResponse(entry)) {
+        toCache.push({
+          key: policy.key,
+          value: (entry as { result: unknown }).result,
+          ttlMs: policy.ttlMs,
+        })
+      }
+    })
+
+    if (toCache.length > 0) {
+      // Fire-and-forget; a cache write failure must not delay the response.
+      void cacheSetMany(toCache)
+    }
+  }
+
+  const body = isBatch ? responses : responses[0]
+  return { status: 200, body }
 }
