@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
+import { usePrivy } from '@privy-io/react-auth'
 import { useActiveAccount } from 'thirdweb/react'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { useCitizen } from '@/lib/citizen/useCitizen'
@@ -15,6 +16,7 @@ const CONTRIBUTION_FORM_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform'
 
 function CitizenSubmitButton() {
+  const { authenticated, login } = usePrivy()
   const account = useActiveAccount()
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const [citizenCheckDone, setCitizenCheckDone] = useState(false)
@@ -35,7 +37,28 @@ function CitizenSubmitButton() {
   const baseClass =
     'flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 whitespace-nowrap'
 
-  if (account && !citizenCheckDone) {
+  const arrowIcon = (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+    </svg>
+  )
+
+  // Not signed in → prompt login
+  if (!authenticated) {
+    return (
+      <button
+        type="button"
+        onClick={login}
+        className={`${baseClass} bg-blue-500 hover:bg-blue-400 text-white`}
+      >
+        Sign In to Submit
+        {arrowIcon}
+      </button>
+    )
+  }
+
+  // Signed in but citizen check still in-flight
+  if (!citizenCheckDone) {
     return (
       <button disabled className={`${baseClass} bg-blue-500/50 text-white/60 cursor-not-allowed`}>
         <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -44,20 +67,20 @@ function CitizenSubmitButton() {
     )
   }
 
-  if (account && citizenCheckDone && !isCitizen) {
+  // Signed in but not a citizen
+  if (!isCitizen) {
     return (
       <Link
         href="/citizen"
         className={`${baseClass} bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white`}
       >
         Become a Citizen to Submit
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-        </svg>
+        {arrowIcon}
       </Link>
     )
   }
 
+  // Citizen — open the form
   return (
     <a
       href={CONTRIBUTION_FORM_URL}
@@ -66,9 +89,7 @@ function CitizenSubmitButton() {
       className={`${baseClass} bg-blue-500 hover:bg-blue-400 text-white`}
     >
       Submit a Contribution
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-      </svg>
+      {arrowIcon}
     </a>
   )
 }
