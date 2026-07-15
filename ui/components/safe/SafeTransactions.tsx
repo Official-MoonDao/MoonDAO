@@ -1,5 +1,4 @@
 import { useWallets } from '@privy-io/react-auth'
-import { ethers } from 'ethers'
 import { useContext, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -7,6 +6,7 @@ import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import {
   deriveTransactionActions,
   getRecipientAddress,
+  getTransactionDisplayValue,
   getTransactionMethod,
   groupHasRejection,
   groupTransactionsByNonce,
@@ -147,6 +147,7 @@ export default function SafeTransactions({
 
                     const method = getTransactionMethod(tx)
                     const recipientAddress = getRecipientAddress(tx)
+                    const displayValue = getTransactionDisplayValue(tx)
 
                     const isTransfer = isEthTransfer(tx) || isTokenTransfer(tx)
                     const methodBadgeClass = isTransfer
@@ -186,17 +187,19 @@ export default function SafeTransactions({
                               {recipientAddress}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-slate-500 shrink-0">
-                              Value
-                            </span>
-                            <span
-                              data-testid={`transaction-value-${tx.safeTxHash}`}
-                              className="text-slate-200"
-                            >
-                              {ethers.utils.formatEther(tx.value)} ETH
-                            </span>
-                          </div>
+                          {displayValue && (
+                            <div className="flex items-center justify-between gap-4 text-sm">
+                              <span className="text-slate-500 shrink-0">
+                                Value
+                              </span>
+                              <span
+                                data-testid={`transaction-value-${tx.safeTxHash}`}
+                                className="text-slate-200"
+                              >
+                                {displayValue.amount} {displayValue.symbol}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <div
