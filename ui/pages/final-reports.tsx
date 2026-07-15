@@ -105,9 +105,7 @@ export async function getStaticProps() {
       method: 'getTableName',
     })
 
-    // FIXME use last quarter
-    //const { quarter, year } = getRelativeQuarter(-1)
-    const { quarter, year } = getRelativeQuarter(0)
+    const { quarter, year } = getRelativeQuarter(-1)
 
     const statement = `SELECT * FROM ${projectTableName} WHERE quarter = ${quarter} AND year = ${year}`
     const projectsFromLastQuarter = await queryTable(chain, statement)
