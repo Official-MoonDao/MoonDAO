@@ -19,6 +19,12 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
+import {
+  computePurchasePrice,
+  evaluateUsdcPurchase,
+  parseListingPrice,
+  parseUsdcBalance,
+} from '@/lib/marketplace/usdcListingPurchase'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
@@ -100,15 +106,20 @@ export default function BuyTeamListingModal({
   })
 
   const numericPrice = useMemo(
-    () => parseFloat(String(listing.price).replace(/,/g, '')),
+    () => parseListingPrice(listing.price),
     [listing.price]
   )
 
   // Final USDC/ETH/etc amount the buyer will pay (includes non-citizen markup).
-  const purchasePrice = useMemo(() => {
-    if (isGift || citizen) return numericPrice
-    return numericPrice * 1.1
-  }, [isGift, citizen, numericPrice])
+  const purchasePrice = useMemo(
+    () =>
+      computePurchasePrice({
+        price: listing.price,
+        isGift,
+        isCitizen: !!citizen,
+      }),
+    [listing.price, isGift, citizen]
+  )
 
   // USDC onramp: when a listing is priced in USDC and the wallet doesn't hold
   // enough on Arbitrum, surface the shared FundOnramp flow for the deficit.
@@ -125,26 +136,21 @@ export default function BuyTeamListingModal({
     tokenAddress: isUsdcListing ? usdcAddress : undefined,
   })
 
-  const usdcBalance = useMemo(() => {
-    if (!isUsdcListing) return null
-    if (!usdcBalanceData?.displayValue) return null
-    const n = Number(usdcBalanceData.displayValue)
-    return Number.isFinite(n) ? n : null
-  }, [isUsdcListing, usdcBalanceData])
+  const usdcBalance = useMemo(
+    () =>
+      isUsdcListing ? parseUsdcBalance(usdcBalanceData?.displayValue) : null,
+    [isUsdcListing, usdcBalanceData]
+  )
 
-  const hasEnoughUsdc = useMemo(() => {
-    if (!isUsdcListing) return true
-    // Treat unresolved balance as insufficient so we show the onramp rather
-    // than a Buy button that will fail. Mirrors the mission fund-UI pattern.
-    if (usdcBalance == null) return false
-    return usdcBalance >= purchasePrice
-  }, [isUsdcListing, usdcBalance, purchasePrice])
-
-  const usdcDeficit = useMemo(() => {
-    if (!isUsdcListing) return 0
-    if (usdcBalance == null) return purchasePrice
-    return Math.max(0, purchasePrice - usdcBalance)
-  }, [isUsdcListing, usdcBalance, purchasePrice])
+  const { hasEnoughUsdc, usdcDeficit } = useMemo(
+    () =>
+      evaluateUsdcPurchase({
+        isUsdcListing,
+        usdcBalance,
+        purchasePrice,
+      }),
+    [isUsdcListing, usdcBalance, purchasePrice]
+  )
 
   const [awaitingUsdcOnramp, setAwaitingUsdcOnramp] = useState(false)
 

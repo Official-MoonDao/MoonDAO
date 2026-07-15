@@ -1,7 +1,6 @@
 import { useFiatOnramp, useWallets } from '@privy-io/react-auth'
-import { USDC_ADDRESSES } from 'const/config'
 import { useContext } from 'react'
-import { OnrampAsset } from '@/lib/onramp/assets'
+import { destinationAssetFor, OnrampAsset } from '@/lib/onramp/assets'
 import PrivyWalletContext from '../privy-wallet-context'
 
 /**
@@ -17,28 +16,6 @@ export const SUPPORTED_MOONPAY_CHAIN_IDS = new Set([
   8453, // Base
   84532, // Base Sepolia
 ])
-
-/** Native USDC contract per chain ID (matches `USDC_ADDRESSES` in config). */
-const USDC_BY_CHAIN_ID: Record<number, string> = {
-  1: USDC_ADDRESSES.ethereum,
-  11155111: USDC_ADDRESSES.sepolia,
-  42161: USDC_ADDRESSES.arbitrum,
-  8453: USDC_ADDRESSES.base,
-  84532: USDC_ADDRESSES['base-sepolia-testnet'],
-}
-
-/** Resolve the Privy destination.asset for a given chain + onramp asset. */
-function destinationAssetFor(chainId: number, asset: OnrampAsset): string {
-  if (asset === 'ETH') {
-    // Keep the existing symbol shorthand used across the app for native ETH.
-    return 'eth'
-  }
-  const usdc = USDC_BY_CHAIN_ID[chainId]
-  if (!usdc) {
-    throw new Error(`USDC is not configured for chain ${chainId}`)
-  }
-  return usdc
-}
 
 export function useMoonPay() {
   const { fund } = useFiatOnramp()

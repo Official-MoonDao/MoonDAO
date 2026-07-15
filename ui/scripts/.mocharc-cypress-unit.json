@@ -15,6 +15,7 @@
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
     "cypress/integration/unit/member-vote-tally.cy.tsx",
     "cypress/integration/unit/team-roles.cy.tsx",
+    "cypress/integration/unit/marketplace-usdc-onramp.cy.tsx",
     "cypress/integration/overview-delegate/leaderboard.cy.ts",
     "cypress/integration/overview-path-vote/tally.cy.ts"
   ]

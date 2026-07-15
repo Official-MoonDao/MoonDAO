@@ -16,6 +16,7 @@ import {
   getCountryFromHeaders,
   getClientIp,
 } from '../../../lib/geo'
+import { formatOnrampPurchaseAmount } from '../../../lib/onramp/assets'
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_URL!,
@@ -206,10 +207,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const clientIp = getClientIp(req)
 
     // USDC uses up to 6 decimals; ETH keeps the existing 8-decimal precision.
-    const purchaseAmount =
-      purchaseCurrency === 'USDC'
-        ? purchaseAmountValue.toFixed(6)
-        : purchaseAmountValue.toFixed(8)
+    const purchaseAmount = formatOnrampPurchaseAmount(
+      purchaseAmountValue,
+      purchaseCurrency
+    )
 
     const orderBody: CreateOnrampOrderRequest & { clientIp?: string } = {
       destinationAddress,
