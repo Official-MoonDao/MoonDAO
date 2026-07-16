@@ -588,7 +588,7 @@ function TeamDetailPageContent({
                   />
                   <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
                 </div>
-                {(isManager || isSuperManager) && hats?.[0]?.id && (
+                {(isManager || isSuperManager) && (hats?.[0]?.id || teamContract) && (
                   <TeamManageMembers
                     account={account}
                     hats={hats}

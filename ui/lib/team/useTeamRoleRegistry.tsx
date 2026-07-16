@@ -89,10 +89,9 @@ export default function useTeamRoleRegistry(teamContract: any, teamId: string | 
         if (active) setMembers(withRoles)
       } catch (err) {
         console.error('Failed to load registry roles:', err)
-        if (active) {
-          setRegistryBased(false)
-          setMembers([])
-        }
+        // Leave registryBased and members unchanged. Resetting registryBased
+        // to false would make a registry team appear as a legacy hats team and
+        // blank the roster on transient RPC failures.
       } finally {
         if (active) setIsLoading(false)
       }
