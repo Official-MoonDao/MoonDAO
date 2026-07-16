@@ -23,7 +23,7 @@ import { getContract, readContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import { PROJECT_PENDING } from '@/lib/nance/types'
+import { PROJECT_PENDING, PROJECT_WITHDRAWN } from '@/lib/nance/types'
 import { getProposalStatus, STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
@@ -771,6 +771,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
       return {
         notFound: true,
       }
+    }
+
+    // Author-withdrawn proposals are treated as deleted — the detail page
+    // must 404 so a direct link can't resurface a proposal the author pulled.
+    if (Number(project.active) === PROJECT_WITHDRAWN) {
+      return { notFound: true }
     }
 
     const mdp = project?.MDP

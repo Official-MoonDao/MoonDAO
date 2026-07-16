@@ -9,7 +9,7 @@ import {
 } from 'const/config'
 import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
-import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
+import { PROJECT_ACTIVE, PROJECT_PENDING, PROJECT_WITHDRAWN } from '@/lib/nance/types'
 import {
   getProjectDisplayName,
   isUntitledLike,
@@ -147,6 +147,10 @@ export async function getStaticProps() {
     await Promise.all(
       projects.map(async (project: Project) => {
         if (BLOCKED_PROJECTS.has(project.id) || BLOCKED_MDPS.has(project.MDP)) {
+          return
+        }
+        // Author-withdrawn proposals are hidden from every bucket.
+        if (Number(project.active) === PROJECT_WITHDRAWN) {
           return
         }
         const activeStatus = project.active

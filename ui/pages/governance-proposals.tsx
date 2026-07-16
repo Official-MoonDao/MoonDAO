@@ -15,6 +15,7 @@ import {
   PROJECT_ENDED,
   PROJECT_TEMP_CHECK_FAILED,
   PROJECT_VOTE_FAILED,
+  PROJECT_WITHDRAWN,
 } from '@/lib/nance/types'
 import { getProposalStatus } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
@@ -245,6 +246,9 @@ export const getStaticProps: GetStaticProps = async () => {
     await Promise.all(
       projects.map(async (project: Project, index: number) => {
         if (BLOCKED_PROJECTS.has(project.id) || BLOCKED_MDPS.has(project.MDP)) return
+
+        // Author-withdrawn proposals are hidden from every bucket.
+        if (Number(project.active) === PROJECT_WITHDRAWN) return
 
         if (!isFetchableUrl(project.proposalIPFS)) return
 

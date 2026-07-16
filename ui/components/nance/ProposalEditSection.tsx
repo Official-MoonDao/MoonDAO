@@ -13,6 +13,8 @@ import {
   PencilSquareIcon,
   InformationCircleIcon,
   XMarkIcon,
+  TrashIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 import { ProposalStatus } from '@/lib/nance/useProposalStatus'
 
@@ -43,6 +45,8 @@ export default function ProposalEditSection({
   const [newTitle, setNewTitle] = useState<string | undefined>()
   const [isImporting, setIsImporting] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const isAuthor =
     authenticated &&
@@ -129,16 +133,126 @@ export default function ProposalEditSection({
     }
   }
 
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const res = await fetch('/api/proposals/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, proposalId: mdp }),
+      })
+
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || 'Failed to delete proposal')
+      }
+
+      toast.success('Proposal deleted. Redirecting...', { style: toastStyle })
+      setTimeout(() => {
+        router.replace('/projects')
+      }, 2000)
+    } catch (error: any) {
+      console.error('Error deleting proposal:', error)
+      toast.error(error.message || 'Failed to delete proposal', {
+        style: toastStyle,
+      })
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
+
   if (!isEditing) {
     return (
-      <button
-        data-testid="edit-proposal-button"
-        onClick={() => setIsEditing(true)}
-        className="inline-flex items-center gap-1.5 h-7 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm font-medium text-indigo-300 hover:text-white bg-indigo-900/30 hover:bg-indigo-900/50 border border-indigo-500/30 hover:border-indigo-500/50 rounded-lg transition-all duration-200"
-      >
-        <PencilSquareIcon className="w-3.5 h-3.5" />
-        Edit Proposal
-      </button>
+      <>
+        <button
+          data-testid="edit-proposal-button"
+          onClick={() => setIsEditing(true)}
+          className="inline-flex items-center gap-1.5 h-7 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm font-medium text-indigo-300 hover:text-white bg-indigo-900/30 hover:bg-indigo-900/50 border border-indigo-500/30 hover:border-indigo-500/50 rounded-lg transition-all duration-200"
+        >
+          <PencilSquareIcon className="w-3.5 h-3.5" />
+          Edit Proposal
+        </button>
+        <button
+          data-testid="delete-proposal-button"
+          onClick={() => setShowDeleteConfirm(true)}
+          className="inline-flex items-center gap-1.5 h-7 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm font-medium text-red-300 hover:text-white bg-red-900/30 hover:bg-red-900/50 border border-red-500/30 hover:border-red-500/50 rounded-lg transition-all duration-200"
+        >
+          <TrashIcon className="w-3.5 h-3.5" />
+          Delete Proposal
+        </button>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+            <div
+              data-testid="delete-proposal-modal"
+              className="w-full max-w-md rounded-2xl border border-red-500/30 bg-gradient-to-b from-slate-800 to-slate-900 p-6 shadow-2xl"
+            >
+              <div className="mb-4 flex items-start gap-3">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-900/40">
+                  <ExclamationTriangleIcon className="h-6 w-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Delete this proposal?
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-400">
+                    This withdraws{' '}
+                    <span className="text-white">
+                      MDP-{mdp}: {projectName}
+                    </span>{' '}
+                    and removes it from all proposal listings. This cannot be
+                    undone.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  className="rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-white/10 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  data-testid="confirm-delete-proposal-button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2 text-sm font-semibold text-white transition-all hover:from-red-700 hover:to-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <svg
+                        className="h-4 w-4 animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <TrashIcon className="h-4 w-4" />
+                      Delete Proposal
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     )
   }
 

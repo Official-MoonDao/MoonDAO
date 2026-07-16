@@ -4,7 +4,12 @@ import ProjectABI from 'const/abis/Project.json'
 import { PROJECT_ADDRESSES, PROJECT_TABLE_NAMES } from 'const/config'
 import { useProjectWearer } from '@/lib/hats/useProjectWearer'
 import { proposalIdPrefix } from '@/lib/nance/constants'
-import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
+import {
+  PROJECT_ACTIVE,
+  PROJECT_ENDED,
+  PROJECT_PENDING,
+  PROJECT_WITHDRAWN,
+} from '@/lib/nance/types'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -81,7 +86,10 @@ export default function CitizenProjects({ ownerAddress }: CitizenProjectsProps) 
 
   const projects = useMemo(() => {
     if (!rows?.length) return []
-    return sortProjects(rows as Project[])
+    const visible = (rows as Project[]).filter(
+      (p) => Number(p.active) !== PROJECT_WITHDRAWN
+    )
+    return sortProjects(visible)
   }, [rows])
 
   useEffect(() => {
