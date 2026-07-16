@@ -58,7 +58,34 @@ const DIMENSION_KEYS: DimensionKey[] = [
   'fiduciary',
 ]
 
-export const AI_REVIEW_MODEL = 'openai/gpt-oss-120b'
+export type AIReviewProvider = 'kimi' | 'groq'
+
+/**
+ * Provider registry. Both endpoints speak the OpenAI chat-completions dialect.
+ * - kimi: Moonshot AI's Kimi K3 (released Jul 2026). Reasoning is always on and
+ *   sampling params (temperature/top_p/penalties) are FIXED server-side — the
+ *   API rejects/ignores overrides, so we must omit them.
+ * - groq: fallback. Groq deprecated its hosted Kimi K2 models in Apr 2026 and
+ *   routed users to gpt-oss-120b, which is what we run there.
+ */
+export const AI_REVIEW_PROVIDERS: Record<
+  AIReviewProvider,
+  { url: string; model: string; sendSamplingParams: boolean }
+> = {
+  kimi: {
+    url: 'https://api.moonshot.ai/v1/chat/completions',
+    model: 'kimi-k3',
+    sendSamplingParams: false,
+  },
+  groq: {
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'openai/gpt-oss-120b',
+    sendSamplingParams: true,
+  },
+}
+
+export const AI_REVIEW_MODEL = AI_REVIEW_PROVIDERS.groq.model
+export const KIMI_REVIEW_MODEL = AI_REVIEW_PROVIDERS.kimi.model
 
 export function buildReviewSystemPrompt(quarterlyMaxUsd: number): string {
   return `You are an impersonal MoonDAO Senate proposal reviewer. Score proposals using the official Senate review rubric. Be strict, evidence-tied, and concise. This review is ADVISORY only — not a Senate vote.
@@ -166,7 +193,7 @@ export function extractJsonObject(text: string): unknown {
   return JSON.parse(clean.slice(start, end + 1))
 }
 
-export type GroqReviewOutcome =
+export type AIReviewOutcome =
   { ok: true; review: ProposalAIReviewResult } | { ok: false; status: number; error: string }
 
 type MinimalResponse = {
@@ -177,48 +204,57 @@ type MinimalResponse = {
 type FetchImpl = (url: string, init: any) => Promise<MinimalResponse>
 
 /**
- * Calls Groq's chat completions endpoint and returns a normalized review.
- * The network client is injectable so this can be unit-tested without a
- * live API key. Returns a discriminated outcome so the API route can map
- * failures to HTTP status codes without try/catch gymnastics.
+ * Calls the configured provider's chat-completions endpoint and returns a
+ * normalized review. The network client is injectable so this can be
+ * unit-tested without a live API key. Returns a discriminated outcome so the
+ * API route can map failures to HTTP status codes without try/catch
+ * gymnastics.
  */
-export async function performGroqReview(params: {
+export async function performAIReview(params: {
   title: string
   body: string
   quarterlyMaxUsd: number
   budgetHintUsd?: number | null
   apiKey: string
+  provider?: AIReviewProvider
   model?: string
   fetchImpl?: FetchImpl
-}): Promise<GroqReviewOutcome> {
-  const model = params.model || AI_REVIEW_MODEL
+}): Promise<AIReviewOutcome> {
+  const providerConfig = AI_REVIEW_PROVIDERS[params.provider || 'groq']
+  const model = params.model || providerConfig.model
   const doFetch: FetchImpl = params.fetchImpl || (fetch as unknown as FetchImpl)
+
+  const requestBody: Record<string, unknown> = {
+    model,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: buildReviewSystemPrompt(params.quarterlyMaxUsd) },
+      {
+        role: 'user',
+        content: buildReviewUserPrompt({
+          title: params.title,
+          body: params.body,
+          quarterlyMaxUsd: params.quarterlyMaxUsd,
+          budgetHintUsd: params.budgetHintUsd,
+        }),
+      },
+    ],
+  }
+  // Kimi K3 fixes temperature/top_p server-side and rejects overrides; only
+  // pin temperature on providers that accept it.
+  if (providerConfig.sendSamplingParams) {
+    requestBody.temperature = 0
+  }
 
   let res: MinimalResponse
   try {
-    res = await doFetch('https://api.groq.com/openai/v1/chat/completions', {
+    res = await doFetch(providerConfig.url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${params.apiKey}`,
       },
-      body: JSON.stringify({
-        model,
-        temperature: 0,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: buildReviewSystemPrompt(params.quarterlyMaxUsd) },
-          {
-            role: 'user',
-            content: buildReviewUserPrompt({
-              title: params.title,
-              body: params.body,
-              quarterlyMaxUsd: params.quarterlyMaxUsd,
-              budgetHintUsd: params.budgetHintUsd,
-            }),
-          },
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     })
   } catch (e: any) {
     return { ok: false, status: 500, error: e?.message || 'AI review request failed.' }
