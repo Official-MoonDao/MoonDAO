@@ -58,6 +58,7 @@ import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
 import { resolveTeamIdFromPrettyLink } from '@/lib/team/teamPrettyLinks'
 import { useTeamData } from '@/lib/team/useTeamData'
+import useTeamRoleRegistry from '@/lib/team/useTeamRoleRegistry'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/serverClient'
@@ -210,6 +211,7 @@ function TeamDetailPageContent({
 
   const hats = useSubHats(selectedChain, adminHatId, true)
   const wearers = useUniqueHatWearers(hats)
+  const { registryBased, members: registryMembers } = useTeamRoleRegistry(teamContract, tokenId)
 
   const safeData = useSafe(nft?.owner)
 
@@ -240,9 +242,10 @@ function TeamDetailPageContent({
     params: [tokenId],
   })
 
-  // Calculate stats from fetched data
+  // Calculate stats from fetched data. Registry teams have no hat tree, so
+  // member count comes from TeamRoleRegistry (same source as TeamMembers).
   const teamStats = {
-    memberCount: wearers?.length || 0,
+    memberCount: registryBased ? registryMembers.length : wearers?.length || 0,
     jobCount: jobs?.length || 0,
     listingCount: listings?.length || 0,
     missionCount: missions?.length || 0,

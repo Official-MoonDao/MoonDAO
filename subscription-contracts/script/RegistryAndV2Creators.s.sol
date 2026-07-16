@@ -20,8 +20,11 @@ owner of each contract (the DAO Safe) after deploy, e.g. via Safe transactions:
   missionTable.setMoonDaoTeam(registry)          // repoint mission table authorization
   missionCreator.setMoonDAOTeam(registry)        // repoint launchpad authorization
   teamTableV2.setMoonDaoTeam(registry)           // repoint team-profile authorization
+  teamTableV2.setOperator(teamCreatorV2, true)   // allow V2 team inserts (keeps V1 _teamCreatorAddress)
+  teamTableV2.setOperator(projectCreatorV2, true)// allow V2 project-team inserts
 
 Repointing is reversible: point back at the MoonDAOTeam address to restore hats-only auth.
+TeamTableV2 must support setOperator (redeploy if the live table is still single-creator only).
 */
 
 import "forge-std/Script.sol";
