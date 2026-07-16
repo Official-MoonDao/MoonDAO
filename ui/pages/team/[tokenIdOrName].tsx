@@ -38,6 +38,7 @@ import {
   JBV5_DIRECTORY_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
   EB_TEAM_ID,
+  PROJECT_V2_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_TEAMS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -52,6 +53,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
 import { resolveTeamIdFromPrettyLink } from '@/lib/team/teamPrettyLinks'
@@ -90,6 +92,7 @@ function TeamDetailPageContent({
   queriedJob,
   queriedListing,
   safeOwners,
+  projectActive,
 }: any) {
   const router = useRouter()
   const account = useActiveAccount()
@@ -163,14 +166,24 @@ function TeamDetailPageContent({
     chain: selectedChain,
   })
 
-  const fetchActivityData = useMemo(() => ({
-    teamId: tokenId,
-    selectedChain,
-    jobTableContract,
-    marketplaceTableContract,
-    missionTableContract,
-    jbControllerContract,
-  }), [tokenId, selectedChain, jobTableContract, marketplaceTableContract, missionTableContract, jbControllerContract])
+  const fetchActivityData = useMemo(
+    () => ({
+      teamId: tokenId,
+      selectedChain,
+      jobTableContract,
+      marketplaceTableContract,
+      missionTableContract,
+      jbControllerContract,
+    }),
+    [
+      tokenId,
+      selectedChain,
+      jobTableContract,
+      marketplaceTableContract,
+      missionTableContract,
+      jbControllerContract,
+    ],
+  )
 
   const {
     socials,
@@ -191,6 +204,10 @@ function TeamDetailPageContent({
     isLoadingActivityData,
   } = useTeamData(teamContract, hatsContract, nft, citizen, fetchActivityData)
 
+  // Project-teams are gated by ProjectV2.active instead of subscription expiry,
+  // matching /jobs and /marketplace. null/undefined means ordinary team.
+  const isActive = projectActive != null ? projectActive === PROJECT_ACTIVE : subIsValid
+
   const hats = useSubHats(selectedChain, adminHatId, true)
   const wearers = useUniqueHatWearers(hats)
 
@@ -204,11 +221,17 @@ function TeamDetailPageContent({
     safeOwners && safeOwners.length > 0 ? safeOwners : safeData?.owners || []
 
   const isSigner = resolvedSafeOwners.some(
-    (owner: string) => owner.toLowerCase() === (address || '').toLowerCase()
+    (owner: string) => owner.toLowerCase() === (address || '').toLowerCase(),
   )
 
   // Only citizens (or team managers / owners / signers) can see team content
-  const canViewContent = !!(citizen || isManager || isTableOperator || isSigner || address === nft.owner)
+  const canViewContent = !!(
+    citizen ||
+    isManager ||
+    isTableOperator ||
+    isSigner ||
+    address === nft.owner
+  )
 
   //Subscription Data
   const { data: expiresAt } = useRead({
@@ -244,9 +267,9 @@ function TeamDetailPageContent({
               {nft?.metadata?.image ? (
                 <div id="team-image-container" className="relative flex-shrink-0">
                   <div
-                    className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] relative${subIsValid && isManager ? ' group cursor-pointer' : ''}`}
+                    className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] relative${isActive && isManager ? ' group cursor-pointer' : ''}`}
                     onClick={() => {
-                      if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
+                      if (isActive && isManager) setTeamMetadataModalEnabled(true)
                     }}
                   >
                     <IPFSRenderer
@@ -256,7 +279,7 @@ function TeamDetailPageContent({
                       width={250}
                       alt="Team Image"
                     />
-                    {subIsValid && isManager && (
+                    {isActive && isManager && (
                       <div className="absolute inset-0 rounded-2xl bg-black/50 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <CameraIcon width={36} height={36} className="text-white" />
                         <span className="text-white text-xs font-medium">Edit Photo</span>
@@ -271,13 +294,13 @@ function TeamDetailPageContent({
                 </div>
               ) : (
                 <div
-                  className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex flex-col items-center justify-center flex-shrink-0 gap-2${subIsValid && isManager ? ' group cursor-pointer hover:border-slate-400/70 transition-colors' : ''}`}
+                  className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex flex-col items-center justify-center flex-shrink-0 gap-2${isActive && isManager ? ' group cursor-pointer hover:border-slate-400/70 transition-colors' : ''}`}
                   onClick={() => {
-                    if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
+                    if (isActive && isManager) setTeamMetadataModalEnabled(true)
                   }}
                 >
                   <div className="text-slate-400 text-6xl">🏢</div>
-                  {subIsValid && isManager && (
+                  {isActive && isManager && (
                     <span className="text-slate-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                       Add Photo
                     </span>
@@ -290,15 +313,13 @@ function TeamDetailPageContent({
               >
                 <div id="team-name" className="flex flex-col gap-4 w-full">
                   <div id="team-name-container" className="relative flex flex-col w-full">
-                    {subIsValid && isManager && (
+                    {isActive && isManager && (
                       <button
                         className="absolute top-0 right-0 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
                         onClick={() => {
                           if (address === nft?.owner || isManager) setTeamMetadataModalEnabled(true)
                           else
-                            return toast.error(
-                              'Connect the team admin or multisig wallet to edit.'
-                            )
+                            return toast.error('Connect the team admin or multisig wallet to edit.')
                         }}
                       >
                         <PencilIcon width={24} height={24} className="text-white" />
@@ -421,7 +442,7 @@ function TeamDetailPageContent({
           selectedChain={selectedChain}
           setEnabled={setTeamSubscriptionModalEnabled}
           nft={nft}
-          validPass={subIsValid}
+          validPass={isActive}
           expiresAt={expiresAt}
           subscriptionContract={teamContract}
           type="team"
@@ -486,7 +507,7 @@ function TeamDetailPageContent({
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px] mx-auto pb-10"
         >
           {/* Lock banner for non-citizens */}
-          {!canViewContent && subIsValid && !isDeleted && (
+          {!canViewContent && isActive && !isDeleted && (
             <Action
               title="Unlock Full Profile"
               description="Become a Citizen of the Space Acceleration Network to view the full team profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
@@ -496,7 +517,7 @@ function TeamDetailPageContent({
           )}
 
           {/* Team Statistics Overview */}
-          {!isDeleted && subIsValid && (
+          {!isDeleted && isActive && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title="Team Members"
@@ -525,7 +546,7 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {!isDeleted && subIsValid && (isManager || isTableOperator || address === nft.owner) && (
+          {!isDeleted && isActive && (isManager || isTableOperator || address === nft.owner) && (
             <div
               id="entity-actions-container"
               className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6"
@@ -553,7 +574,7 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {subIsValid && canViewContent && (
+          {isActive && canViewContent && (
             <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
               <TeamTreasury
                 isSigner={isSigner}
@@ -564,7 +585,7 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {subIsValid && canViewContent && (
+          {isActive && canViewContent && (
             <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
               <TeamMissions
                 isManager={isManager}
@@ -575,7 +596,7 @@ function TeamDetailPageContent({
               />
             </div>
           )}
-          {subIsValid && !isDeleted && canViewContent && (
+          {isActive && !isDeleted && canViewContent && (
             <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
                 <div className="flex gap-5 items-center">
@@ -616,7 +637,7 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {subIsValid && !isDeleted && (
+          {isActive && !isDeleted && (
             <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
               <TeamJobs
                 teamId={tokenId}
@@ -629,7 +650,7 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {subIsValid && !isDeleted && (
+          {isActive && !isDeleted && (
             <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
               <TeamMarketplace
                 selectedChain={selectedChain}
@@ -643,12 +664,16 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {subIsValid && !isDeleted && isManager && EB_TEAM_ID && String(tokenId) === String(EB_TEAM_ID) && (
-            <EBRewards isManager={isManager} teamId={tokenId} />
-          )}
+          {isActive &&
+            !isDeleted &&
+            isManager &&
+            EB_TEAM_ID &&
+            String(tokenId) === String(EB_TEAM_ID) && (
+              <EBRewards isManager={isManager} teamId={tokenId} />
+            )}
 
           {/* Subscription expired — only shown to managers/owners who can act on it */}
-          {(!subIsValid || isDeleted) && (isManager || isTableOperator || address === nft.owner) && (
+          {(!isActive || isDeleted) && (isManager || isTableOperator || address === nft.owner) && (
             <div className="bg-gradient-to-b from-red-900/20 to-red-800/30 rounded-2xl border border-red-600/30 p-6 mb-10">
               <div className="text-center mb-6">
                 <h3 className="text-xl font-GoodTimes text-white mb-2">
@@ -735,12 +760,30 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
     } catch (error) {
       console.error(
         `Failed to load Safe owners for team ${tokenId} (${nft.owner}):`,
-        (error as Error)?.message || error
+        (error as Error)?.message || error,
       )
     }
   }
 
   const imageIpfsLink = nft.metadata.image
+
+  // Project-teams are gated by ProjectV2.active instead of subscription expiry.
+  // null means this tokenId is not a project-team (ordinary subscription team).
+  let projectActive: number | null = null
+  const projectTableName = PROJECT_V2_TABLE_NAMES[chainSlug]
+  if (projectTableName) {
+    try {
+      const rows = await queryTable(
+        chain,
+        `SELECT active FROM ${projectTableName} WHERE teamId = ${tokenId} LIMIT 1`,
+      )
+      if (rows?.[0] != null && rows[0].active != null) {
+        projectActive = Number(rows[0].active)
+      }
+    } catch (error) {
+      console.error(`Failed to load ProjectV2 active for team ${tokenId}:`, error)
+    }
+  }
 
   // Optional ?job= and ?listing= query params hydrate the page with metadata
   // for a specific job/listing (used for OG previews when sharing). They are
@@ -809,6 +852,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
       queriedJob,
       queriedListing,
       safeOwners,
+      projectActive,
     },
   }
 }

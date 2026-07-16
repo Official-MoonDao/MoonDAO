@@ -43,11 +43,10 @@ type LaunchProps = {
 
 export default function Launch({ missions, featuredMissionData }: LaunchProps) {
   const account = useActiveAccount()
-  const address = account?.address
   const { user } = usePrivy()
   const wearerAddresses = useMemo(
     () => getLinkedEvmAddresses(user, account?.address),
-    [user, account?.address]
+    [user, account?.address],
   )
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -73,21 +72,17 @@ export default function Launch({ missions, featuredMissionData }: LaunchProps) {
   const { userTeams, isLoading: userTeamsLoading } = useTeamWearer(
     teamContract,
     selectedChain,
-    wearerAddresses
+    wearerAddresses,
   )
 
-  const {
-    userTeamsAsManager: hatsTeamsAsManager,
-    isLoading: hatsManagerLoading,
-  } = useTeamManagerCheck(teamContract, userTeams, userTeamsLoading)
+  const { userTeamsAsManager: hatsTeamsAsManager, isLoading: hatsManagerLoading } =
+    useTeamManagerCheck(teamContract, userTeams, userTeamsLoading)
 
   // Registry-based teams (and projects, which are teams under the hood) are not
   // in the hats subgraph, so discover them from the on-chain role registry and
   // merge the two manager lists (deduped by teamId).
-  const {
-    userTeamsAsManager: registryTeamsAsManager,
-    isLoading: registryManagerLoading,
-  } = useRegistryManagerTeams(teamContract, address)
+  const { userTeamsAsManager: registryTeamsAsManager, isLoading: registryManagerLoading } =
+    useRegistryManagerTeams(teamContract, wearerAddresses)
 
   const userTeamsAsManager = useMemo(() => {
     const byId = new Map<string, any>()
@@ -100,7 +95,7 @@ export default function Launch({ missions, featuredMissionData }: LaunchProps) {
 
   const { hasAccess: citizenHasAccess } = useLaunchpadAccess(
     userTeamsAsManager,
-    userTeamsAsManagerLoading
+    userTeamsAsManagerLoading,
   )
 
   const { status, setStatus, handleCreateMission } = useLaunchStatus(userTeamsAsManager)
@@ -152,7 +147,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
       chain,
       chainSlug,
       MISSION_TABLE_ADDRESSES[chainSlug],
-      JBV5_CONTROLLER_ADDRESS
+      JBV5_CONTROLLER_ADDRESS,
     )
 
     const featuredMissionData = await fetchFeaturedMissionData(
@@ -160,7 +155,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
       chain,
       chainSlug,
       JBV5_CONTROLLER_ADDRESS,
-      JBV5Controller.abi as any
+      JBV5Controller.abi as any,
     )
 
     return {
