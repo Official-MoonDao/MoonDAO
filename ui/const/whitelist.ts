@@ -14,7 +14,7 @@ export const BLOCKED_PROJECTS: any = new Set(
 )
 export const BLOCKED_MDPS: any = new Set(
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? [229, 243, 246, 247, 252, 253, 257, 263]
+    ? [229, 243, 246, 247, 252, 253, 256, 257, 263]
     : []
 )
 export const BLOCKED_PROPOSALS: any = new Set([221])
