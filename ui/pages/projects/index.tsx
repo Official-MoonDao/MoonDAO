@@ -9,7 +9,7 @@ import {
 } from 'const/config'
 import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
-import { PROJECT_ACTIVE, PROJECT_PENDING, PROJECT_WITHDRAWN } from '@/lib/nance/types'
+import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import {
   getProjectDisplayName,
   isUntitledLike,
@@ -149,10 +149,6 @@ export async function getStaticProps() {
         if (BLOCKED_PROJECTS.has(project.id) || BLOCKED_MDPS.has(project.MDP)) {
           return
         }
-        // Author-withdrawn proposals are hidden from every bucket.
-        if (Number(project.active) === PROJECT_WITHDRAWN) {
-          return
-        }
         const activeStatus = project.active
         if (isCurrentPending(project)) {
           if (!project.proposalIPFS) return
@@ -161,6 +157,8 @@ export async function getStaticProps() {
             const proposalResponse = await fetch(project.proposalIPFS)
             const proposalJSON = await proposalResponse.json()
             if (proposalJSON?.nonProjectProposal) return
+            // Author-deleted proposals disappear from the frontend.
+            if (proposalJSON?.deleted) return
             // Enrich name from IPFS while we have the JSON in hand
             if (isUntitledLike(project.name)) {
               const resolved = getProjectDisplayName(project, proposalJSON)

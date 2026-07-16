@@ -136,10 +136,28 @@ export default function ProposalEditSection({
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      const res = await fetch('/api/proposals/delete', {
+      // Deleting reuses the edit flow: re-pin the proposal content with a
+      // `deleted` flag, then point the on-chain row at it. Every frontend
+      // surface that reads the proposal JSON filters `deleted` out, so it
+      // disappears from the UI for everyone.
+      const fileContents = JSON.stringify({
+        ...proposalJSON,
+        authorAddress: proposalJSON?.authorAddress ?? address,
+        deleted: true,
+      })
+      const file = new File([fileContents], `${projectName || 'proposal'}.md`, {
+        type: 'application/json',
+      })
+      const pinResult = await pinBlobOrFile(file, '/api/ipfs/pin')
+
+      const res = await fetch('/api/proposals/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, proposalId: mdp }),
+        body: JSON.stringify({
+          address,
+          proposalIPFS: pinResult.url,
+          proposalId: mdp,
+        }),
       })
 
       if (!res.ok) {
