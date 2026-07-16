@@ -5,17 +5,21 @@
  *   1. Pure helpers (novelty detection, JSON extraction, prompt building).
  *   2. The normalizer's deterministic hard rules (budget cap, novelty,
  *      score clamping, missing-dimension defaults, vote downgrades, dedupe).
- *   3. `performGroqReview` end-to-end with a mocked Groq fetch (success and
- *      every failure branch), verifying the exact response shape.
+ *   3. `performAIReview` end-to-end with a mocked provider fetch (success and
+ *      every failure branch), verifying the exact response shape — plus
+ *      provider routing (Kimi K3 vs Groq endpoint, model id, and Kimi's
+ *      fixed-sampling-params constraint).
  */
 import {
   AI_REVIEW_MODEL,
+  AI_REVIEW_PROVIDERS,
+  KIMI_REVIEW_MODEL,
   buildReviewSystemPrompt,
   buildReviewUserPrompt,
   extractJsonObject,
   hasNoveltySection,
   normalizeReviewResult,
-  performGroqReview,
+  performAIReview,
   type DimensionKey,
 } from '@/lib/proposals/aiReview'
 
@@ -229,7 +233,99 @@ describe('proposal AI review — normalizer hard rules', () => {
   })
 })
 
-describe('performGroqReview — mocked Groq', () => {
+describe('performAIReview — provider routing', () => {
+  const minimalModelJson = JSON.stringify({
+    provisionalVote: 'Approve',
+    askUsd: 1000,
+    dimensions: makeDims(8),
+    hardFlags: [],
+    topIssues: [],
+    conditions: [],
+    finding: 'ok',
+  })
+
+  function capturingFetch() {
+    const calls: { url: string; init: any }[] = []
+    const fetchImpl = async (url: string, init: any) => {
+      calls.push({ url, init })
+      return {
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: minimalModelJson } }] }),
+      }
+    }
+    return { calls, fetchImpl }
+  }
+
+  it('kimi provider hits Moonshot with kimi-k3 and omits sampling params', async () => {
+    const { calls, fetchImpl } = capturingFetch()
+    const outcome = await performAIReview({
+      title: 'T',
+      body: NOVELTY_BODY,
+      quarterlyMaxUsd: QUARTERLY_MAX,
+      apiKey: 'moonshot-key',
+      provider: 'kimi',
+      fetchImpl,
+    })
+
+    expect(outcome.ok).to.eq(true)
+    expect(calls).to.have.length(1)
+    expect(calls[0].url).to.eq('https://api.moonshot.ai/v1/chat/completions')
+    const sent = JSON.parse(calls[0].init.body)
+    expect(sent.model).to.eq(KIMI_REVIEW_MODEL)
+    expect(sent.model).to.eq('kimi-k3')
+    // Kimi K3 fixes temperature server-side; sending it is a request error.
+    expect(sent).to.not.have.property('temperature')
+    expect(sent.response_format).to.deep.eq({ type: 'json_object' })
+    expect(calls[0].init.headers.Authorization).to.eq('Bearer moonshot-key')
+    if (outcome.ok) expect(outcome.review.model).to.eq('kimi-k3')
+  })
+
+  it('groq provider hits Groq with gpt-oss-120b and pins temperature 0', async () => {
+    const { calls, fetchImpl } = capturingFetch()
+    const outcome = await performAIReview({
+      title: 'T',
+      body: NOVELTY_BODY,
+      quarterlyMaxUsd: QUARTERLY_MAX,
+      apiKey: 'groq-key',
+      provider: 'groq',
+      fetchImpl,
+    })
+
+    expect(outcome.ok).to.eq(true)
+    expect(calls[0].url).to.eq('https://api.groq.com/openai/v1/chat/completions')
+    const sent = JSON.parse(calls[0].init.body)
+    expect(sent.model).to.eq(AI_REVIEW_MODEL)
+    expect(sent.temperature).to.eq(0)
+  })
+
+  it('defaults to groq when no provider is given (backwards compatible)', async () => {
+    const { calls, fetchImpl } = capturingFetch()
+    await performAIReview({
+      title: 'T',
+      body: NOVELTY_BODY,
+      quarterlyMaxUsd: QUARTERLY_MAX,
+      apiKey: 'k',
+      fetchImpl,
+    })
+    expect(calls[0].url).to.eq(AI_REVIEW_PROVIDERS.groq.url)
+  })
+
+  it('an explicit model overrides the provider default', async () => {
+    const { calls, fetchImpl } = capturingFetch()
+    await performAIReview({
+      title: 'T',
+      body: NOVELTY_BODY,
+      quarterlyMaxUsd: QUARTERLY_MAX,
+      apiKey: 'k',
+      provider: 'kimi',
+      model: 'kimi-k3-preview',
+      fetchImpl,
+    })
+    expect(JSON.parse(calls[0].init.body).model).to.eq('kimi-k3-preview')
+  })
+})
+
+describe('performAIReview — mocked provider', () => {
   const validModelJson = JSON.stringify({
     provisionalVote: 'Approve with conditions',
     askUsd: 2900,
@@ -248,7 +344,7 @@ describe('performGroqReview — mocked Groq', () => {
   }
 
   it('returns a normalized review on success', async () => {
-    const outcome = await performGroqReview({
+    const outcome = await performAIReview({
       title: 'LunCoSim',
       body: NOVELTY_BODY,
       quarterlyMaxUsd: QUARTERLY_MAX,
@@ -271,7 +367,7 @@ describe('performGroqReview — mocked Groq', () => {
   })
 
   it('parses model output wrapped in markdown fences', async () => {
-    const outcome = await performGroqReview({
+    const outcome = await performAIReview({
       title: 'T',
       body: NOVELTY_BODY,
       quarterlyMaxUsd: QUARTERLY_MAX,
@@ -285,7 +381,7 @@ describe('performGroqReview — mocked Groq', () => {
   })
 
   it('maps provider errors to 502', async () => {
-    const outcome = await performGroqReview({
+    const outcome = await performAIReview({
       title: 'T',
       body: NOVELTY_BODY,
       quarterlyMaxUsd: QUARTERLY_MAX,
@@ -300,7 +396,7 @@ describe('performGroqReview — mocked Groq', () => {
   })
 
   it('errors when the model returns empty content', async () => {
-    const outcome = await performGroqReview({
+    const outcome = await performAIReview({
       title: 'T',
       body: NOVELTY_BODY,
       quarterlyMaxUsd: QUARTERLY_MAX,
@@ -312,7 +408,7 @@ describe('performGroqReview — mocked Groq', () => {
   })
 
   it('errors when the model returns non-JSON content', async () => {
-    const outcome = await performGroqReview({
+    const outcome = await performAIReview({
       title: 'T',
       body: NOVELTY_BODY,
       quarterlyMaxUsd: QUARTERLY_MAX,
@@ -330,7 +426,7 @@ describe('performGroqReview — mocked Groq', () => {
   })
 
   it('handles a network/fetch throw as a 500', async () => {
-    const outcome = await performGroqReview({
+    const outcome = await performAIReview({
       title: 'T',
       body: NOVELTY_BODY,
       quarterlyMaxUsd: QUARTERLY_MAX,
@@ -357,7 +453,7 @@ describe('performGroqReview — mocked Groq', () => {
       conditions: [],
       finding: 'Model was too generous.',
     })
-    const outcome = await performGroqReview({
+    const outcome = await performAIReview({
       title: 'MDRS analog seat',
       body: '## Abstract\n\nNo novelty section, over budget.',
       quarterlyMaxUsd: QUARTERLY_MAX,
