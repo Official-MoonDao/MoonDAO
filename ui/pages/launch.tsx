@@ -21,6 +21,7 @@ import { fetchMissions } from '@/lib/launchpad/fetchMissions'
 import { FeaturedMissionData, Mission } from '@/lib/launchpad/types'
 import { useLaunchStatus } from '@/lib/launchpad/useLaunchStatus'
 import { useLaunchpadAccess } from '@/lib/launchpad/useLaunchpadAccess'
+import { useRegistryManagerTeams } from '@/lib/launchpad/useRegistryManagerTeams'
 import { useTeamManagerCheck } from '@/lib/launchpad/useTeamManagerCheck'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -75,11 +76,27 @@ export default function Launch({ missions, featuredMissionData }: LaunchProps) {
     wearerAddresses
   )
 
-  const { userTeamsAsManager, isLoading: userTeamsAsManagerLoading } = useTeamManagerCheck(
-    teamContract,
-    userTeams,
-    userTeamsLoading
-  )
+  const {
+    userTeamsAsManager: hatsTeamsAsManager,
+    isLoading: hatsManagerLoading,
+  } = useTeamManagerCheck(teamContract, userTeams, userTeamsLoading)
+
+  // Registry-based teams (and projects, which are teams under the hood) are not
+  // in the hats subgraph, so discover them from the on-chain role registry and
+  // merge the two manager lists (deduped by teamId).
+  const {
+    userTeamsAsManager: registryTeamsAsManager,
+    isLoading: registryManagerLoading,
+  } = useRegistryManagerTeams(teamContract, address)
+
+  const userTeamsAsManager = useMemo(() => {
+    const byId = new Map<string, any>()
+    for (const t of hatsTeamsAsManager || []) byId.set(String(t.teamId), t)
+    for (const t of registryTeamsAsManager || []) byId.set(String(t.teamId), t)
+    return Array.from(byId.values())
+  }, [hatsTeamsAsManager, registryTeamsAsManager])
+
+  const userTeamsAsManagerLoading = hatsManagerLoading || registryManagerLoading
 
   const { hasAccess: citizenHasAccess } = useLaunchpadAccess(
     userTeamsAsManager,

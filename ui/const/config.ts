@@ -312,6 +312,47 @@ export const TEAM_TABLE_NAMES: Index = {
   sepolia: 'TEAMTABLE_11155111_1895',
 }
 
+// On-chain role registry that replaces Hats Protocol as the authorization source of
+// truth for teams/projects created via the V2 creators. Falls back to hats for legacy
+// teams. Populate these once deployed; empty values keep the legacy hats path active.
+export const TEAM_ROLE_REGISTRY_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '',
+}
+
+// Router set as MoonDAOTeam.moonDaoCreator so multiple V2 creators may mint teams.
+export const TEAM_MINTER_ROUTER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '',
+}
+
+// Hats-free team creator.
+export const TEAM_CREATOR_V2_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '',
+}
+
+// Governance-driven creator that mints projects as teams under the hood.
+export const PROJECT_CREATOR_V2_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '',
+}
+
+// Project governance overlay table (keyed by teamId).
+export const PROJECT_V2_TABLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '',
+}
+
+export const PROJECT_V2_TABLE_NAMES: Index = {
+  arbitrum: '',
+  sepolia: '',
+}
+
+// Project ids in the ProjectV2 overlay are offset by this amount so they never collide
+// with legacy PROJECT table ids inside reward-distribution JSON.
+export const PROJECT_V2_ID_OFFSET = 10000
+
 export const TEAM_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0x203ca831edec28b7657A022b8aFe5d28b6BE6Eda',
   sepolia: '0xBB22b6bfb410e62BC103CA6cAcc342bEe42117aA',

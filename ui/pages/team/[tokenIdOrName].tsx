@@ -603,12 +603,14 @@ function TeamDetailPageContent({
                   />
                 )}
               </div>
-              {hats?.[0].id && (
+              {(hats?.[0]?.id || teamContract) && (
                 <TeamMembers
                   hats={hats}
                   hatsContract={hatsContract}
                   citizenContract={citizenContract}
                   managerHatId={managerHatId}
+                  teamContract={teamContract}
+                  teamId={tokenId}
                 />
               )}
             </div>

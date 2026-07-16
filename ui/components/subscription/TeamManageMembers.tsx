@@ -2,7 +2,7 @@ import { TrashIcon, UserPlusIcon, ShieldCheckIcon, ExclamationTriangleIcon, XMar
 import { DEFAULT_CHAIN_V5, HATS_ADDRESS } from 'const/config'
 import { TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES } from 'const/teams'
 import { ethers } from 'ethers'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
 import { useCitizen } from '@/lib/citizen/useCitizen'
@@ -18,8 +18,12 @@ import {
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useSafe from '@/lib/safe/useSafe'
+import useTeamRoleRegistry, {
+  REGISTRY_ROLE,
+} from '@/lib/team/useTeamRoleRegistry'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import HatsABI from '../../const/abis/Hats.json'
+import TeamRoleRegistryABI from '../../const/abis/TeamRoleRegistry.json'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -538,6 +542,267 @@ function TeamManageMembersModal({
   )
 }
 
+function RegistryManageMembersModal({
+  account,
+  selectedChain,
+  registryContract,
+  members,
+  refresh,
+  teamId,
+  multisigAddress,
+  setEnabled,
+}: any) {
+  const { queueSafeTx } = useSafe(multisigAddress)
+  const [newMemberAddress, setNewMemberAddress] = useState<string>('')
+  const [selectedRole, setSelectedRole] = useState<number>(REGISTRY_ROLE.MEMBER)
+  const [isValidAddress, setIsValidAddress] = useState(false)
+  const [pending, setPending] = useState<string | null>(null)
+  const [hasQueuedManagerTx, setHasQueuedManagerTx] = useState(false)
+
+  const safeNetwork = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+  const safeUrl = `https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`
+
+  const iface = useMemo(() => new ethers.utils.Interface(TeamRoleRegistryABI), [])
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [])
+
+  // Manager grants/revokes are admin-gated (only the team Safe can call
+  // setManager), so they route through the Safe. Member changes can be made
+  // directly by any connected manager.
+  async function setManagerRole(address: string, enabled: boolean) {
+    const data = iface.encodeFunctionData('setManager', [teamId, address, enabled])
+    await queueSafeTx({
+      to: registryContract.address,
+      data,
+      value: '0',
+      safeTxGas: '1000000',
+    })
+    setHasQueuedManagerTx(true)
+    toast.success('Manager change queued to the Safe.')
+  }
+
+  async function setMemberRole(address: string, enabled: boolean) {
+    const data = iface.encodeFunctionData('setMember', [teamId, address, enabled])
+    await account?.sendTransaction({
+      to: registryContract.address,
+      data,
+      value: '0',
+      gas: 1000000,
+    })
+    toast.success(enabled ? 'Member added.' : 'Member removed.')
+  }
+
+  return (
+    <Modal
+      id="team-manage-members-modal"
+      setEnabled={setEnabled}
+      showCloseButton={false}
+      className="fixed inset-0 z-[9999] w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-start overflow-y-auto px-4 animate-fadeIn"
+    >
+      <div
+        style={{ marginTop: 80, marginBottom: 40, maxHeight: 'calc(100vh - 120px)' }}
+        className="relative z-[10000] flex flex-col w-full md:w-[520px] overflow-y-auto bg-[#0a0f1e] rounded-2xl border border-[#1e2a45] shadow-2xl"
+      >
+        <div className="px-6 pt-6 pb-4 border-b border-[#1e2a45] flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-GoodTimes text-xl text-white tracking-wide">Manage Team</h2>
+            <p className="text-xs text-slate-400 mt-1">Add or remove roles for team members</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEnabled(false)}
+            className="flex-shrink-0 -mr-1 -mt-1 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            aria-label="Close"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="px-6 py-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Current Team</p>
+          <div className="flex flex-col gap-2 pr-1">
+            {members?.length ? (
+              members.map((m: any) => {
+                const isManager = m.role >= REGISTRY_ROLE.MANAGER
+                return (
+                  <div
+                    key={`registry-member-${m.address}`}
+                    className="flex items-center gap-3 p-4 rounded-xl bg-[#111827] border border-[#1e2a45]"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#1a2545] border border-[#2a3a60] flex items-center justify-center flex-shrink-0 text-sm font-bold text-slate-300">
+                      {m.address.slice(2, 4).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <TeamMemberName selectedChain={selectedChain} address={m.address} />
+                      <p className="text-xs text-slate-400 font-mono mt-0.5">
+                        {`${m.address.slice(0, 6)}...${m.address.slice(-4)}`}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <RoleBadge name={isManager ? 'Manager' : 'Member'} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!isManager && (
+                        <button
+                          type="button"
+                          disabled={pending === m.address}
+                          onClick={async () => {
+                            setPending(m.address)
+                            try {
+                              await setManagerRole(m.address, true)
+                            } catch (err) {
+                              console.log(err)
+                              toast.error('Failed. Connect an authorized Safe signer.')
+                            } finally {
+                              setPending(null)
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-blue-900/40 border border-blue-500/30 text-blue-200 hover:bg-blue-900/60 disabled:opacity-40"
+                          title="Promote to Manager"
+                        >
+                          <ArrowUpCircleIcon className="w-3.5 h-3.5" />
+                          Make Manager
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        disabled={pending === m.address}
+                        onClick={async () => {
+                          setPending(m.address)
+                          try {
+                            if (isManager) await setManagerRole(m.address, false)
+                            else await setMemberRole(m.address, false)
+                            refresh?.()
+                          } catch (err) {
+                            console.log(err)
+                            toast.error('Failed to remove role.')
+                          } finally {
+                            setPending(null)
+                          }
+                        }}
+                        className="p-1 text-slate-500 hover:text-red-400 transition-colors disabled:opacity-40"
+                        title="Remove role"
+                      >
+                        {pending === m.address ? (
+                          <span className="block w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <TrashIcon className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
+            ) : (
+              <p className="text-sm text-slate-500 py-4 text-center">No members yet</p>
+            )}
+          </div>
+
+          {hasQueuedManagerTx && (
+            <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-amber-900/20 border border-amber-500/30 text-amber-300 text-xs">
+              <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>
+                Manager change queued.{' '}
+                <button className="underline font-semibold hover:text-amber-200" onClick={() => window.open(safeUrl)}>
+                  Sign & execute in Safe
+                </button>{' '}
+                to finalize.
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="h-px bg-[#1e2a45] mx-6" />
+
+        <form
+          className="px-6 py-5 flex flex-col gap-3"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (!isValidEthereumAddress(newMemberAddress))
+              return toast.error('Please enter a valid Ethereum address (0x...).')
+            try {
+              if (selectedRole >= REGISTRY_ROLE.MANAGER) {
+                await setManagerRole(newMemberAddress, true)
+              } else {
+                await setMemberRole(newMemberAddress, true)
+                refresh?.()
+              }
+              setNewMemberAddress('')
+              setIsValidAddress(false)
+            } catch (err: any) {
+              console.log(err?.message)
+              toast.error('Failed to add member.')
+            }
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <UserPlusIcon className="w-4 h-4 text-slate-400" />
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Add a Teammate</p>
+          </div>
+
+          <div className="relative w-full">
+            <label className="block text-xs text-slate-500 mb-1 pl-1">Role</label>
+            <select
+              className="w-full px-4 py-2.5 bg-[#111827] border border-[#1e2a45] rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-[#425eeb]/50 focus:border-[#425eeb]/60 transition-all"
+              onChange={({ target }) => setSelectedRole(Number(target.value))}
+              value={selectedRole}
+            >
+              <option value={REGISTRY_ROLE.MEMBER} className="bg-[#0e1630] text-white">
+                Member
+              </option>
+              <option value={REGISTRY_ROLE.MANAGER} className="bg-[#0e1630] text-white">
+                Manager
+              </option>
+            </select>
+          </div>
+
+          {selectedRole >= REGISTRY_ROLE.MANAGER ? (
+            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-blue-900/20 border border-blue-500/25 text-blue-300 text-xs">
+              <ShieldCheckIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span>Managers get full administrative access. Granting requires Safe multisig approval.</span>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-[#0d1424] border border-[#1e2a45] text-slate-400 text-xs">
+              <UserPlusIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span>Members get standard access. Assign the Manager role for admin-level control.</span>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs text-slate-500 mb-1 pl-1">Wallet Address</label>
+            <input
+              className="w-full px-4 py-2.5 bg-[#111827] border border-[#1e2a45] rounded-xl text-white text-sm font-mono placeholder:text-slate-600 placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-[#425eeb]/50 focus:border-[#425eeb]/60 transition-all"
+              placeholder="0x..."
+              value={newMemberAddress}
+              onChange={({ target }: any) => {
+                setNewMemberAddress(target.value)
+                setIsValidAddress(isValidEthereumAddress(target.value))
+              }}
+            />
+          </div>
+
+          <PrivyWeb3Button
+            requiredChain={DEFAULT_CHAIN_V5}
+            label={selectedRole >= REGISTRY_ROLE.MANAGER ? 'Queue Safe Transaction' : 'Add Member'}
+            type="submit"
+            className={`w-full gradient-2 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 ${
+              !isValidAddress ? 'opacity-40 cursor-not-allowed' : 'hover:opacity-90'
+            }`}
+            action={() => {}}
+            isDisabled={!isValidAddress}
+          />
+        </form>
+      </div>
+    </Modal>
+  )
+}
+
 export default function TeamManageMembers({
   account,
   selectedChain,
@@ -551,24 +816,38 @@ export default function TeamManageMembers({
   isSuperManager,
 }: TeamManageMembersProps) {
   const [manageMembersModalEnabled, setManagerModalEnabled] = useState(false)
+  const { registryBased, members, refresh, registryContract } =
+    useTeamRoleRegistry(teamContract, teamId)
 
   return (
     <div>
-      {manageMembersModalEnabled && (
-        <TeamManageMembersModal
-          account={account}
-          selectedChain={selectedChain}
-          hatsContract={hatsContract}
-          teamContract={teamContract}
-          teamId={teamId}
-          hats={hats}
-          setEnabled={setManagerModalEnabled}
-          multisigAddress={multisigAddress}
-          adminHatId={adminHatId}
-          managerHatId={managerHatId}
-          isSuperManager={isSuperManager}
-        />
-      )}
+      {manageMembersModalEnabled &&
+        (registryBased ? (
+          <RegistryManageMembersModal
+            account={account}
+            selectedChain={selectedChain}
+            registryContract={registryContract}
+            members={members}
+            refresh={refresh}
+            teamId={teamId}
+            multisigAddress={multisigAddress}
+            setEnabled={setManagerModalEnabled}
+          />
+        ) : (
+          <TeamManageMembersModal
+            account={account}
+            selectedChain={selectedChain}
+            hatsContract={hatsContract}
+            teamContract={teamContract}
+            teamId={teamId}
+            hats={hats}
+            setEnabled={setManagerModalEnabled}
+            multisigAddress={multisigAddress}
+            adminHatId={adminHatId}
+            managerHatId={managerHatId}
+            isSuperManager={isSuperManager}
+          />
+        ))}
       <StandardButton
         className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
         onClick={() => setManagerModalEnabled(true)}
