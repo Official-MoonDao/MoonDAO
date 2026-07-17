@@ -460,6 +460,14 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
   sepolia: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
   'arbitrum-sepolia': '',
 }
+// DePrizeMint bet router (5% JB prize slice + 95% CTF/LMSR collateral). Populate
+// per chain once `script/deprize/DePrizeMint.s.sol` has deployed the router and
+// `setMarket(deprizeId, lmsr)` has bound the market. Empty until then — the
+// production UI degrades gracefully (betting disabled with a notice) when unset.
+export const DEPRIZE_MINT_ADDRESSES: Index = {
+  sepolia: '',
+  'arbitrum-sepolia': '',
+}
 // questionId used when the play market's condition was prepared
 // (prediction/deprize.config.js DEPRIZE_QUESTION_ID). Needed by reportPayouts;
 // the conditionId is keccak256(oracle, questionId, outcomeSlotCount).
