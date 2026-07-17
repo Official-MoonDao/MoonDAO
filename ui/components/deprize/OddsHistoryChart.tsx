@@ -35,8 +35,13 @@ export default function OddsHistoryChart({
 }: Props) {
   const outcomeCount = labels.length
 
-  // recharts wants flat rows: { t, v0, v1, ... }
-  const data = history.map((s) => {
+  // recharts wants flat rows: { t, v0, v1, ... }. With a single live sample,
+  // synthesize a short baseline so the current odds still plot immediately.
+  const samples =
+    history.length === 1
+      ? [{ t: history[0].t - 60_000, p: history[0].p }, history[0]]
+      : history
+  const data = samples.map((s) => {
     const row: Record<string, number> = { t: s.t }
     for (let i = 0; i < outcomeCount; i++) row[`v${i}`] = s.p[i]
     return row

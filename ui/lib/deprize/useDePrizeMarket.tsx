@@ -206,15 +206,26 @@ export function useDePrizeMarket(params: {
   }, [wethAddress, readChain])
 
   // Persist odds history per-market so the chart survives reloads.
+  // v2: prior v1 keys could race-hydrate and pin a stale equal-odds (33/33/33)
+  // sample over live prices.
   const oddsStorageKey = useMemo(
-    () => (marketAddress ? `deprize:oddsHistory:v1:${marketAddress}` : null),
+    () => (marketAddress ? `deprize:oddsHistory:v2:${marketAddress}` : null),
     [marketAddress],
   )
   useEffect(() => {
     if (!oddsStorageKey || typeof window === 'undefined') return
     try {
       const raw = window.localStorage.getItem(oddsStorageKey)
-      setOddsHistory(raw ? (JSON.parse(raw) as OddsSample[]) : [])
+      const stored = raw ? (JSON.parse(raw) as OddsSample[]) : []
+      // Merge — never clobber in-memory samples that are newer than storage
+      // (load()/poll can record before this effect's setState flushes).
+      setOddsHistory((prev) => {
+        if (prev.length === 0) return stored
+        if (stored.length === 0) return prev
+        const prevLast = prev[prev.length - 1]?.t ?? 0
+        const storedLast = stored[stored.length - 1]?.t ?? 0
+        return prevLast >= storedLast ? prev : stored
+      })
     } catch {
       setOddsHistory([])
     }
@@ -223,14 +234,40 @@ export function useDePrizeMarket(params: {
   const recordOddsSample = useCallback(
     (probs: number[]) => {
       if (!probs.length || probs.some((p) => !Number.isFinite(p))) return
+      const isFlatEqual =
+        probs.length > 1 && probs.every((p) => Math.abs(p - probs[0]) < 0.05)
+      const isUniformPrior =
+        isFlatEqual && Math.abs(probs[0] - 100 / probs.length) < 0.5
+
       setOddsHistory((prev) => {
+        // Once we've observed a traded (non-uniform) market, never append a
+        // stale 1/n sample from a racing load/poll — that was pinning the chart
+        // at 33/33/33 while the legend showed live odds.
+        const hasTradedSample = prev.some(
+          (s) =>
+            s.p.length > 1 && s.p.some((p) => Math.abs(p - s.p[0]) > 0.5),
+        )
+        if (isUniformPrior && hasTradedSample) return prev
+
         const last = prev[prev.length - 1]
         const now = Date.now()
-        if (last && now - last.t < ODDS_SAMPLE_MIN_MS) {
-          const moved = probs.some((p, i) => Math.abs(p - last.p[i]) > 0.05)
-          if (!moved) return prev
-        }
-        const next = [...prev, { t: now, p: probs }].slice(-ODDS_HISTORY_MAX)
+        const moved =
+          !last ||
+          last.p.length !== probs.length ||
+          probs.some((p, i) => Math.abs(p - (last.p[i] ?? NaN)) > 0.05)
+        if (last && now - last.t < ODDS_SAMPLE_MIN_MS && !moved) return prev
+
+        // Drop a lone uniform seed when live prices have diverged.
+        const lastIsUniform =
+          !!last &&
+          last.p.length > 1 &&
+          last.p.every((p) => Math.abs(p - last.p[0]) < 0.05) &&
+          Math.abs(last.p[0] - 100 / last.p.length) < 0.5
+        const nextBase =
+          lastIsUniform && moved && !isUniformPrior ? [] : prev
+        const next = [...nextBase, { t: now, p: [...probs] }].slice(
+          -ODDS_HISTORY_MAX,
+        )
         if (oddsStorageKey && typeof window !== 'undefined') {
           try {
             window.localStorage.setItem(oddsStorageKey, JSON.stringify(next))
@@ -243,6 +280,13 @@ export function useDePrizeMarket(params: {
     },
     [oddsStorageKey],
   )
+
+  // Chart samples follow the legend's live outcome probs (single source of truth).
+  useEffect(() => {
+    const probs = outcomes.map((o) => o.probability)
+    if (!probs.length || probs.some((p) => !Number.isFinite(p))) return
+    recordOddsSample(probs)
+  }, [outcomes, recordOddsSample])
 
   // Static-per-market values (condition id, position ids, fee) never change.
   const staticRef = useRef<{
@@ -365,10 +409,11 @@ export function useDePrizeMarket(params: {
           .catch(() => undefined),
       ])
 
+      // Drop stale responses from overlapping loads (Strict Mode / nav churn).
       if (loadGenRef.current !== gen) return
-
       const pricesValid = stg !== MarketStage.Closed
-      if (stg === MarketStage.Running) recordOddsSample(prices as number[])
+      // Odds history is recorded via the outcomes → recordOddsSample effect so
+      // the chart cannot diverge from the legend.
       startTransition(() => {
         if (loadGenRef.current !== gen) return
         setStage(stg)
@@ -409,7 +454,6 @@ export function useDePrizeMarket(params: {
     userAddress,
     wethAddress,
     marketAddress,
-    recordOddsSample,
   ])
 
   useEffect(() => {
@@ -418,7 +462,7 @@ export function useDePrizeMarket(params: {
 
   // Live odds poll while Running (marginal prices only; no spinner).
   useEffect(() => {
-    if (!lmsr || stage !== MarketStage.Running) return
+    if (!lmsr || stage !== MarketStage.Running || numOutcomes <= 0) return
     let stopped = false
     const tick = async () => {
       if (stopped || (typeof document !== 'undefined' && document.hidden)) return
@@ -436,15 +480,15 @@ export function useDePrizeMarket(params: {
           ),
         )
         if (stopped || loadGenRef.current !== gen) return
-        recordOddsSample(prices)
-        // Keep team cards / index list in sync with the chart — both are labeled
-        // "live odds" and must reflect the latest marginal prices.
+        // Update outcomes; the chart effect records from that single source.
         startTransition(() => {
           if (stopped || loadGenRef.current !== gen) return
           setOutcomes((prev) =>
             prev.map((o, i) => ({
               ...o,
-              probability: Number.isFinite(prices[i]) ? (prices[i] as number) : o.probability,
+              probability: Number.isFinite(prices[i])
+                ? (prices[i] as number)
+                : o.probability,
             })),
           )
         })
@@ -452,30 +496,43 @@ export function useDePrizeMarket(params: {
         /* transient — next tick retries */
       }
     }
+    void tick()
     const id = setInterval(tick, ODDS_POLL_MS)
     return () => {
       stopped = true
       clearInterval(id)
     }
-  }, [lmsr, stage, numOutcomes, recordOddsSample])
+  }, [lmsr, stage, numOutcomes])
 
-  // Snap the chart to the payout vector once resolved.
+  const { resolved, winningIndex, isRefundVector } = resolvePayoutVector(
+    payoutNums,
+    payoutDen,
+  )
+
+  // Snap the chart to the payout vector only once actually resolved — a bare
+  // non-zero denominator was writing equal 1/n samples on open markets.
   const resolvedSnapRef = useRef(false)
   useEffect(() => {
-    const den = payoutDen
-    if (den === undefined || den <= 0n) {
+    if (!resolved && !isRefundVector) {
       resolvedSnapRef.current = false
       return
     }
     if (resolvedSnapRef.current) return
+    const den = payoutDen
+    if (den === undefined || den <= 0n) return
     const finalOdds = Array.from({ length: numOutcomes }, (_, i) =>
       i < payoutNums.length ? (Number(payoutNums[i]) / Number(den)) * 100 : NaN,
     )
     recordOddsSample(finalOdds)
     resolvedSnapRef.current = true
-  }, [payoutNums, payoutDen, numOutcomes, recordOddsSample])
-
-  const { resolved, winningIndex, isRefundVector } = resolvePayoutVector(payoutNums, payoutDen)
+  }, [
+    resolved,
+    isRefundVector,
+    payoutNums,
+    payoutDen,
+    numOutcomes,
+    recordOddsSample,
+  ])
 
   return {
     marketAddress,
