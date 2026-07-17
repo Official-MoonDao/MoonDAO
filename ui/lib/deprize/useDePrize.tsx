@@ -156,16 +156,19 @@ export function useDePrize(deprizeId: number | string | undefined, chain: Chain)
 export function useDePrizeCount(chain: Chain): {
   count: number | undefined
   loading: boolean
+  error: string | undefined
   registryConfigured: boolean
 } {
   const registry = useDePrizeRegistryContract(chain)
   const [count, setCount] = useState<number | undefined>()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | undefined>()
 
   useEffect(() => {
     if (!registry) return
     let cancelled = false
     setLoading(true)
+    setError(undefined)
     ;(async () => {
       try {
         const c = await rpcRead<bigint>({
@@ -176,8 +179,13 @@ export function useDePrizeCount(chain: Chain): {
         if (!cancelled) {
           startTransition(() => setCount(Number(c)))
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('[deprize] count failed', err)
+        if (!cancelled) {
+          startTransition(() => {
+            setError(err?.shortMessage || err?.message || 'Failed to load DePrizes.')
+          })
+        }
       } finally {
         if (!cancelled) {
           startTransition(() => setLoading(false))
@@ -189,5 +197,5 @@ export function useDePrizeCount(chain: Chain): {
     }
   }, [registry])
 
-  return { count, loading, registryConfigured: !!registry }
+  return { count, loading, error, registryConfigured: !!registry }
 }

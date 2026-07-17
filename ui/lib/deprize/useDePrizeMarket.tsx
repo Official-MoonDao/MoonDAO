@@ -8,14 +8,7 @@ import {
   DEPRIZE_MINT_ADDRESSES,
   LMSR_WITH_TWAP_ADDRESSES,
 } from 'const/config'
-import {
-  startTransition,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import {
   MarketStage,
@@ -93,9 +86,7 @@ export function useDePrizeMarket(params: {
   const [stage, setStage] = useState<number | undefined>()
   const [feePct, setFeePct] = useState<number | undefined>()
   const [positionIds, setPositionIds] = useState<bigint[]>([])
-  const [outcomes, setOutcomes] = useState<Outcome[]>(() =>
-    emptyOutcomes(numOutcomes)
-  )
+  const [outcomes, setOutcomes] = useState<Outcome[]>(() => emptyOutcomes(numOutcomes))
   const [payoutDen, setPayoutDen] = useState<bigint | undefined>()
   const [payoutNums, setPayoutNums] = useState<bigint[]>([])
   const [marketFeesWei, setMarketFeesWei] = useState<bigint | undefined>()
@@ -120,6 +111,19 @@ export function useDePrizeMarket(params: {
   // it actually settles; otherwise we'd show another DePrize's odds.
   useEffect(() => {
     let cancelled = false
+    // Drop the prior market immediately on id/condition change so quotes,
+    // charts, and direct LMSR trades never target the previous DePrize while
+    // the new binding resolves asynchronously.
+    setMarketAddress(undefined)
+    setStage(undefined)
+    setFeePct(undefined)
+    setPositionIds([])
+    setOutcomes(emptyOutcomes(numOutcomes))
+    setPayoutDen(undefined)
+    setPayoutNums([])
+    setMarketFeesWei(undefined)
+    setOddsHistory([])
+    setError(undefined)
     ;(async () => {
       if (mint && deprizeId !== undefined && /^\d+$/.test(String(deprizeId))) {
         try {
@@ -156,10 +160,8 @@ export function useDePrizeMarket(params: {
           if (!cancelled) {
             startTransition(() =>
               setMarketAddress(
-                marketCond.toLowerCase() === conditionId.toLowerCase()
-                  ? fallbackLmsr
-                  : undefined
-              )
+                marketCond.toLowerCase() === conditionId.toLowerCase() ? fallbackLmsr : undefined,
+              ),
             )
           }
           return
@@ -173,7 +175,7 @@ export function useDePrizeMarket(params: {
     return () => {
       cancelled = true
     }
-  }, [mint, deprizeId, fallbackLmsr, conditionId, readChain])
+  }, [mint, deprizeId, fallbackLmsr, conditionId, readChain, numOutcomes])
 
   const lmsr = useMemo(() => {
     if (!marketAddress) return undefined
@@ -206,7 +208,7 @@ export function useDePrizeMarket(params: {
   // Persist odds history per-market so the chart survives reloads.
   const oddsStorageKey = useMemo(
     () => (marketAddress ? `deprize:oddsHistory:v1:${marketAddress}` : null),
-    [marketAddress]
+    [marketAddress],
   )
   useEffect(() => {
     if (!oddsStorageKey || typeof window === 'undefined') return
@@ -239,7 +241,7 @@ export function useDePrizeMarket(params: {
         return next
       })
     },
-    [oddsStorageKey]
+    [oddsStorageKey],
   )
 
   // Static-per-market values (condition id, position ids, fee) never change.
@@ -311,8 +313,8 @@ export function useDePrizeMarket(params: {
               params: [i],
             })
               .then((p) => (Number(p as bigint) / 2 ** 64) * 100)
-              .catch(() => NaN)
-          )
+              .catch(() => NaN),
+          ),
         ),
         userAddress
           ? Promise.all(
@@ -323,8 +325,8 @@ export function useDePrizeMarket(params: {
                   params: [userAddress, pid],
                 })
                   .then((b) => b as bigint)
-                  .catch(() => undefined)
-              )
+                  .catch(() => undefined),
+              ),
             )
           : Promise.resolve(ids.map(() => undefined)),
         rpcRead({
@@ -342,8 +344,8 @@ export function useDePrizeMarket(params: {
               params: [cond, BigInt(i)],
             })
               .then((v) => v as bigint)
-              .catch(() => 0n)
-          )
+              .catch(() => 0n),
+          ),
         ),
         rpcRead({
           contract: weth,
@@ -371,7 +373,7 @@ export function useDePrizeMarket(params: {
               balanceWei: balWei,
               positionId: pid,
             }
-          })
+          }),
         )
       })
     } catch (err: any) {
@@ -413,8 +415,8 @@ export function useDePrizeMarket(params: {
               params: [i],
             })
               .then((p) => (Number(p as bigint) / 2 ** 64) * 100)
-              .catch(() => NaN)
-          )
+              .catch(() => NaN),
+          ),
         )
         recordOddsSample(prices)
       } catch {
@@ -438,16 +440,13 @@ export function useDePrizeMarket(params: {
     }
     if (resolvedSnapRef.current) return
     const finalOdds = Array.from({ length: numOutcomes }, (_, i) =>
-      i < payoutNums.length ? (Number(payoutNums[i]) / Number(den)) * 100 : NaN
+      i < payoutNums.length ? (Number(payoutNums[i]) / Number(den)) * 100 : NaN,
     )
     recordOddsSample(finalOdds)
     resolvedSnapRef.current = true
   }, [payoutNums, payoutDen, numOutcomes, recordOddsSample])
 
-  const { resolved, winningIndex, isRefundVector } = resolvePayoutVector(
-    payoutNums,
-    payoutDen
-  )
+  const { resolved, winningIndex, isRefundVector } = resolvePayoutVector(payoutNums, payoutDen)
 
   return {
     marketAddress,

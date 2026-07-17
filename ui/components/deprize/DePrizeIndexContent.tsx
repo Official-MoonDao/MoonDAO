@@ -126,10 +126,12 @@ function DePrizeListRow({
     chain,
   })
 
-  const { totalFunding } = useTotalFunding(
-    deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined,
-  )
-  const prizeEth = totalFunding !== undefined ? Number(totalFunding) / Number(UNIT) : undefined
+  // useTotalFunding returns BigInt(0) for a missing projectId / while reads are
+  // in flight, so gate the display on a real project id and !isLoading.
+  const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
+  const { totalFunding, isLoading: isLoadingFunding } = useTotalFunding(jbProjectId)
+  const prizeEth =
+    jbProjectId !== undefined && !isLoadingFunding ? Number(totalFunding) / Number(UNIT) : undefined
 
   // Top 3 providers by live implied odds (desc). Fall back to registry order
   // while prices are still loading so the card still previews the field.
@@ -238,7 +240,7 @@ function DePrizeListRow({
 export default function DePrizeIndexContent() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
-  const { count, loading, registryConfigured } = useDePrizeCount(chain)
+  const { count, loading, error: countError, registryConfigured } = useDePrizeCount(chain)
   const account = useActiveAccount()
   const { login } = useLogin()
   const region = useRegionRestriction()
@@ -332,6 +334,10 @@ export default function DePrizeIndexContent() {
               </div>
             ) : loading && count === undefined ? (
               <div className="p-8 text-center text-gray-400">Loading DePrizes…</div>
+            ) : countError && count === undefined ? (
+              <div className="p-8 text-center text-amber-200/90 text-sm">
+                Couldn&apos;t load DePrizes. Please refresh and try again.
+              </div>
             ) : !count || count === 0 ? (
               <div className="p-8 text-center text-gray-400">
                 No DePrizes have been registered yet.

@@ -94,9 +94,10 @@ export default function DePrizeDetailPage() {
   const region = useRegionRestriction()
   // Pass a plain number: useRead JSON.stringify's its params for memoization,
   // which throws on bigint. JB project ids are small, so Number() is safe.
-  const { totalFunding } = useTotalFunding(
-    deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined,
-  )
+  // useTotalFunding returns BigInt(0) for a missing projectId / while reads are
+  // in flight, so gate the display on a real project id and !isLoading.
+  const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
+  const { totalFunding, isLoading: isLoadingFunding } = useTotalFunding(jbProjectId)
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
 
@@ -348,7 +349,9 @@ export default function DePrizeDetailPage() {
           <p className="text-gray-400 text-sm mt-2">{stateMeta?.description}</p>
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat label="Prize pool">
-              {totalFunding !== undefined ? `${fmt(Number(totalFunding) / Number(UNIT))} ETH` : '—'}
+              {jbProjectId !== undefined && !isLoadingFunding
+                ? `${fmt(Number(totalFunding) / Number(UNIT))} ETH`
+                : '—'}
             </Stat>
             <Stat label="Providers">{numOutcomes || '—'}</Stat>
             <Stat label="Sunset">
@@ -535,6 +538,7 @@ export default function DePrizeDetailPage() {
           outcomeIndex={exitIndex}
           teamName={`Team #${exitIndex + 1}`}
           balanceWei={market.outcomes[exitIndex]?.balanceWei ?? 0n}
+          positionId={market.outcomes[exitIndex]?.positionId ?? 0n}
           numOutcomes={numOutcomes}
           marketAddress={market.marketAddress}
           chain={chain}

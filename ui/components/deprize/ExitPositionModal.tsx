@@ -19,6 +19,7 @@ type ExitPositionModalProps = {
   outcomeIndex: number
   teamName: string
   balanceWei: bigint
+  positionId: bigint
   numOutcomes: number
   marketAddress: string
   chain: Chain
@@ -31,6 +32,7 @@ export default function ExitPositionModal({
   outcomeIndex,
   teamName,
   balanceWei,
+  positionId,
   numOutcomes,
   marketAddress,
   chain,
@@ -53,7 +55,7 @@ export default function ExitPositionModal({
         address: marketAddress,
         abi: LMSRWithTWAP.abi as any,
       }),
-    [chain, marketAddress]
+    [chain, marketAddress],
   )
   const lmsrRead = useMemo(
     () =>
@@ -63,7 +65,7 @@ export default function ExitPositionModal({
         address: marketAddress,
         abi: LMSRWithTWAP.abi as any,
       }),
-    [chain.id, marketAddress]
+    [chain.id, marketAddress],
   )
   const ctf = useMemo(
     () =>
@@ -73,7 +75,7 @@ export default function ExitPositionModal({
         address: ctfAddress,
         abi: ConditionalTokensABI as any,
       }),
-    [chain, ctfAddress]
+    [chain, ctfAddress],
   )
   const ctfRead = useMemo(
     () =>
@@ -83,7 +85,7 @@ export default function ExitPositionModal({
         address: ctfAddress,
         abi: ConditionalTokensABI as any,
       }),
-    [chain.id, ctfAddress]
+    [chain.id, ctfAddress],
   )
 
   // Live quote of what selling the full position returns right now: calcNetCost
@@ -109,9 +111,20 @@ export default function ExitPositionModal({
   }, [lmsrRead, outcomeIndex, balanceWei, numOutcomes])
 
   const cashOut = async () => {
-    if (!account) return
+    if (!account || !positionId) return
     setBusy(true)
     try {
+      // Re-read CTF balance immediately before trade — the prop can lag a poll
+      // cycle (another bet, partial fill, or post-tx refresh delay).
+      const bal = await rpcRead<bigint>({
+        contract: ctfRead,
+        method: 'balanceOf' as string,
+        params: [account.address, positionId],
+      })
+      if (bal <= 0n) {
+        toast.error('You have no position in this outcome.', { style: toastStyle })
+        return
+      }
       // The market must be an operator on the seller's CTF tokens to pull them.
       const approved = await rpcRead<boolean>({
         contract: ctfRead,
@@ -126,11 +139,11 @@ export default function ExitPositionModal({
             contract: ctf,
             method: 'setApprovalForAll' as string,
             params: [marketAddress, true],
-          })
+          }),
         )
         toast.dismiss('approve')
       }
-      const amounts = buildAmounts(outcomeIndex, -balanceWei, numOutcomes)
+      const amounts = buildAmounts(outcomeIndex, -bal, numOutcomes)
       const net = await rpcRead<bigint>({
         contract: lmsrRead,
         method: 'calcNetCost' as string,
@@ -144,13 +157,12 @@ export default function ExitPositionModal({
           contract: lmsr,
           method: 'trade' as string,
           params: [amounts, limit],
-        })
+        }),
       )
       toast.dismiss('sell')
-      toast.success(
-        `Cashed out ${teamName} for ≈ ${fmt(Number(-net) / Number(UNIT))} ETH.`,
-        { style: toastStyle }
-      )
+      toast.success(`Cashed out ${teamName} for ≈ ${fmt(Number(-net) / Number(UNIT))} ETH.`, {
+        style: toastStyle,
+      })
       onDone()
       onClose()
     } catch (err: any) {
@@ -186,7 +198,7 @@ export default function ExitPositionModal({
         </div>
         <StandardButton
           onClick={cashOut}
-          disabled={busy || balanceWei <= 0n}
+          disabled={busy || balanceWei <= 0n || !positionId}
           className="rounded-full w-full"
           backgroundColor="bg-moon-orange"
         >
