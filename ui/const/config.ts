@@ -783,10 +783,12 @@ export const PROJECT_SYSTEM_CONFIG = {
 }
 
 // Voting Phase Flags — derived from PROJECT_CYCLE.phase. These are the
-// DEPLOY-TIME defaults; the operator "Advance Phase" button can override the
-// live phase at runtime (see `lib/operator/cyclePhase.ts` +
-// `getPhaseFlags`). Member Vote and the Retroactive rewards window run
-// concurrently, so both derive from the 'member' phase.
+// DEPLOY-TIME defaults only. After an operator "Advance Phase", the live
+// phase may differ (see `lib/operator/cyclePhase.ts` + `useLivePhase`).
+// Client UI that gates on the current vote window should use `useLivePhase`
+// (or a server-resolved live phase prop), not these constants.
+// Member Vote and the Retroactive rewards window run concurrently, so both
+// derive from the 'member' phase.
 export const IS_SENATE_VOTE = PROJECT_CYCLE.phase === 'senate'
 export const IS_MEMBER_VOTE = PROJECT_CYCLE.phase === 'member'
 export const IS_REWARDS_CYCLE = PROJECT_CYCLE.phase === 'member'

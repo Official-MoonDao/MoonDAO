@@ -5,7 +5,6 @@ import CitizenABI from 'const/abis/Citizen.json'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
-  IS_SENATE_VOTE,
 } from 'const/config'
 import { getProposalVideoUrl } from 'const/proposalVideos'
 import Link from 'next/link'
@@ -17,6 +16,7 @@ import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
+import { useLivePhase } from '@/lib/operator/useLivePhase'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -145,9 +145,8 @@ type ProjectCardProps = {
   userHasVotingPower?: any
   isVotingPeriod?: boolean
   active?: boolean
-  // Optional override for the senate-vote phase. Defaults to the
-  // `IS_SENATE_VOTE` config constant. Operators can flip this off via the
-  // operator panel without redeploying.
+  // Optional override for the senate-vote phase. Defaults to the live
+  // phase from `/api/operator/phase-status` (KV override when set).
   isSenateVote?: boolean
   // Hide the inline status pill ("Active" / "Inactive" / budget) in the
   // card header. Useful when the surrounding tab already provides the
@@ -174,7 +173,7 @@ const ProjectCardContent = memo(
     isExpanded,
     onToggleExpand,
     citizenContract,
-    isSenateVote = IS_SENATE_VOTE,
+    isSenateVote,
     hideStatusBadge = false,
     loadHeavy = true,
   }: any) => {
@@ -462,7 +461,8 @@ export default function ProjectCard({
   hideStatusBadge,
   linkToProjectPage,
 }: ProjectCardProps) {
-  const isSenateVote = isSenateVoteProp ?? IS_SENATE_VOTE
+  const { isSenateVote: liveIsSenateVote } = useLivePhase()
+  const isSenateVote = isSenateVoteProp ?? liveIsSenateVote
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address

@@ -352,11 +352,31 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    const saved = await setLivePhaseOverride({
-      phase: 'member',
-      setBy,
-      note: `Advanced Senate → Member${force ? ' (forced)' : ''} from operator panel`,
-    })
+    // Tallies may already be on-chain at this point. Catch KV failures so the
+    // client learns tallies succeeded and can retry only the phase flip.
+    let saved: Awaited<ReturnType<typeof setLivePhaseOverride>>
+    try {
+      saved = await setLivePhaseOverride({
+        phase: 'member',
+        setBy,
+        note: `Advanced Senate → Member${force ? ' (forced)' : ''} from operator panel`,
+      })
+    } catch (err) {
+      console.error(
+        '[advance-phase] phase override failed after senate tally:',
+        err
+      )
+      return res.status(500).json({
+        error:
+          'Senate tallies succeeded on-chain, but failed to set live phase to member. Retry Advance Phase (or fix Upstash) — already-tallied proposals are skipped.',
+        currentPhase,
+        nextPhase,
+        senateTally: tally.results,
+        blockers: tally.blockers,
+        tallySucceeded: true,
+        phaseOverrideFailed: true,
+      })
+    }
 
     // Bust the ISR cache so visitors who reload (or whose phase poll triggers
     // a reload) pick up fresh Senate flags + retro distributions for the new
@@ -389,11 +409,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         wouldAdvance: true,
       })
     }
-    const saved = await setLivePhaseOverride({
-      phase: 'idle',
-      setBy,
-      note: 'Wrapped up cycle (Member → idle) from operator panel',
-    })
+    let saved: Awaited<ReturnType<typeof setLivePhaseOverride>>
+    try {
+      saved = await setLivePhaseOverride({
+        phase: 'idle',
+        setBy,
+        note: 'Wrapped up cycle (Member → idle) from operator panel',
+      })
+    } catch (err) {
+      console.error('[advance-phase] phase override failed (member → idle):', err)
+      return res.status(500).json({
+        error:
+          err instanceof Error
+            ? err.message
+            : 'Failed to set live phase to idle.',
+        currentPhase,
+        nextPhase,
+        phaseOverrideFailed: true,
+      })
+    }
 
     try {
       await res.revalidate('/projects')
