@@ -47,7 +47,14 @@ export type ProjectType =
   | 'power'
   | 'comms_pnt'
   | 'orbital'
+  | 'construction'
   | 'other'
+
+// Where a project stands in a DePrize competitor roster. `listed` means
+// MoonDAO curators consider it a credible competitor; it does NOT imply the
+// organization has agreed to participate. Consent is tracked explicitly so the
+// UI can stay honest about who has actually signed on.
+export type RosterStatus = 'listed' | 'invited' | 'consented' | 'declined'
 
 export type DatePrecision = 'year' | 'month' | 'day' | 'estimated'
 
@@ -58,12 +65,22 @@ export type MilestoneStatus =
   | 'delayed'
   | 'cancelled'
 
+// A measurable output backing a milestone claim (m² of pad, grams of O₂,
+// Wh through lunar night, …). Evidence should be numbers, not adjectives —
+// these also feed the simulation layer later.
+export type MilestoneMetric = {
+  label: string // e.g. "Continuous load-bearing surface"
+  value: number
+  unit: string // e.g. "m²"
+}
+
 export type Milestone = {
   id: string
   title: string // e.g. "Artemis III crewed landing"
   targetDate: string // ISO year ("2027"), year-month ("2027-09"), or full date.
   datePrecision: DatePrecision
   status: MilestoneStatus
+  metrics?: MilestoneMetric[]
   sources: SourceRef[]
 }
 
@@ -87,6 +104,8 @@ export type Project = {
   modelTransform?: ModelTransform
   milestones: Milestone[]
   sharedGoalIds: string[] // shared goals this project participates in
+  // Present when the project is a competitor in a DePrize-shaped shared goal.
+  rosterStatus?: RosterStatus
   sources: SourceRef[]
   visibility: 'public' // v1: all curated content is public
 }
@@ -101,6 +120,21 @@ export type SharedGoalMarket = {
   deprizeQuestionId?: string // CTF condition / question id
   deprizeRegistryId?: string // DePrizeRegistry entry
   resolutionAuthority?: ResolutionAuthority
+  // Prize distribution across milestones, as fractions summing to 1
+  // (e.g. capability demo 0.3, flight 0.7 — the Frank DePrize structure).
+  payoutSplit?: { capability: number; flight: number }
+  // Human-readable budget gate, e.g. "flight-demo quote ≤ prize-pool TWAP".
+  budgetGate?: string
+}
+
+// One entry of a frozen capability spec — what a competitor must demonstrate
+// to be eligible to win (the "M1" bar). The full spec is pinned to IPFS via
+// `specURI` when the market opens; until then these are draft criteria.
+export type CapabilityCriterion = {
+  id: string
+  statement: string // e.g. "Continuous load-bearing surface from regolith"
+  threshold?: string // measurable bar, e.g. "≥ 25 m², ≥ 90% regolith by mass"
+  specURI?: string // IPFS/URL of the frozen detailed spec
 }
 
 export type SharedGoal = {
@@ -108,6 +142,13 @@ export type SharedGoal = {
   title: string // e.g. "First sustained crewed south-pole base"
   description: string
   projectIds: string[] // competing projects/orgs
+  // Optional globe anchor for capability races: competitors may be Earth
+  // companies with no lunar coordinates, but the race itself often targets a
+  // region (e.g. the South Pole construction zone).
+  location?: LatLon
+  regionLabel?: string
+  // Draft/frozen eligibility criteria for DePrize-shaped goals.
+  criteria?: CapabilityCriterion[]
   targetWindow?: { from?: string; to?: string }
   market?: SharedGoalMarket
   sources: SourceRef[]

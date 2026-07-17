@@ -83,7 +83,10 @@ function Marker({
       base: d.clone().multiplyScalar(seat),
       tip: d.clone().multiplyScalar(seat + PIN_HEIGHT),
       ndir: d,
-      seatRadius: seat,
+      // The model sits exactly on the sampled ground — its skirted pad
+      // handles footprint-scale terrain variation. Only the stem/dot get the
+      // z-fighting lift.
+      seatRadius: ground,
     }
   }, [dir, radiusAt])
 
@@ -121,14 +124,18 @@ function Marker({
       stemRef.current.visible = beaconOpacity > 0.02
     }
     if (ringRef.current) {
-      // Selection halo stays visible even when zoomed in, as a locator.
-      ringRef.current.visible = selected
+      // Selection halo is a *locator* for the selected project — useful from
+      // orbit, but up close (surface view) it would fill the screen and sit
+      // on top of the model, so it fades out with the same proximity ramp as
+      // the beacon dot.
+      const haloOpacity = 0.85 * limb * proximity
+      ringRef.current.visible = selected && haloOpacity > 0.02
       ringRef.current.lookAt(camera.position)
       const t = performance.now() * 0.003
       const pulse = 1 + Math.sin(t) * 0.1
       ringRef.current.scale.setScalar(pulse)
       const rmat = ringRef.current.material as THREE.MeshBasicMaterial
-      rmat.opacity = 0.85 * limb
+      rmat.opacity = haloOpacity
     }
   })
 

@@ -37,6 +37,11 @@ export const DISPLACEMENT_TIERS: string[] = [
 // Globe render radius in scene units. Markers/models place against this.
 export const GLOBE_RADIUS = 2
 
+// Sphere tessellation (width and height segments). The CPU terrain sampler
+// mirrors this lattice so seated objects agree with the rendered ground —
+// change it here and both stay in sync.
+export const MOON_SEGMENTS = 256
+
 // Displacement scale in scene units. Real lunar relief is tiny relative to the
 // radius; this is exaggerated for legibility but kept subtle enough to read as
 // the Moon, not a golf ball.

@@ -6,6 +6,7 @@ import type {
   MilestoneStatus,
   Organization,
   ProjectType,
+  RosterStatus,
 } from './types'
 import type { ProjectTimeStatus } from './selectors'
 
@@ -18,6 +19,7 @@ export const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
   power: 'Power',
   comms_pnt: 'Comms / PNT',
   orbital: 'Orbital',
+  construction: 'Surface construction',
   other: 'Other',
 }
 
@@ -32,7 +34,24 @@ export const PROJECT_TYPE_GLYPH: Record<ProjectType, string> = {
   power: '⚡',
   comms_pnt: '📡',
   orbital: '🛰',
+  construction: '🧱',
   other: '◆',
+}
+
+// Roster status of a DePrize competitor. Wording is deliberately honest:
+// "listed" is MoonDAO's curatorial judgment, not the company's commitment.
+export const ROSTER_STATUS_LABEL: Record<RosterStatus, string> = {
+  listed: 'Listed competitor — participation not confirmed',
+  invited: 'Invited — awaiting response',
+  consented: 'Confirmed competitor',
+  declined: 'Declined to participate',
+}
+
+export const ROSTER_STATUS_CLASSES: Record<RosterStatus, string> = {
+  listed: 'text-white/60 bg-white/5 border-white/15',
+  invited: 'text-amber-200 bg-amber-500/15 border-amber-400/30',
+  consented: 'text-emerald-200 bg-emerald-500/15 border-emerald-400/30',
+  declined: 'text-rose-200 bg-rose-500/15 border-rose-400/30',
 }
 
 export const MILESTONE_STATUS_LABEL: Record<MilestoneStatus, string> = {

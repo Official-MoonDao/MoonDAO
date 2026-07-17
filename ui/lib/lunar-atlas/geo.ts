@@ -172,8 +172,15 @@ export function declusterDirections(
       Math.abs(centroid[1]) > 0.99 ? [1, 0, 0] : [0, 1, 0]
     const u = norm3(cross3(seed, centroid))
     const v = cross3(centroid, u)
-    // Grow the ring slightly for larger clusters so dots keep clear.
-    const spread = spreadRad * (1 + (members.length - 2) * 0.12)
+    // Grow the ring slightly for larger clusters so dots keep clear, but cap
+    // the growth: a big cluster must not fan markers so far from the pole
+    // that their displayed positions misrepresent the (already approximate)
+    // real locations. At the cap, ring circumference still separates ~a dozen
+    // markers comfortably.
+    const spread = Math.min(
+      spreadRad * (1 + (members.length - 2) * 0.12),
+      spreadRad * 1.6
+    )
     const cosS = Math.cos(spread)
     const sinS = Math.sin(spread)
     members.forEach((m, k) => {
@@ -195,6 +202,23 @@ export function declusterDirections(
   })
 
   return result
+}
+
+// Up vector for an orbit (top-down) camera framing at a lat/lon. An orbit
+// camera looks straight down the surface normal, which leaves "up"
+// underdetermined — and a raw world-Y up degenerates at the poles (parallel
+// to the view axis), making orbit controls erratic there. Project world-Y
+// onto the plane perpendicular to the normal so equatorial views keep their
+// familiar orientation, and fall back to world-Z near the poles.
+export function orbitUpVector(lat: number, lon: number): Vec3 {
+  const n = surfaceNormal(lat, lon)
+  const project = (ref: Vec3): Vec3 => {
+    const d = dot3(ref, n)
+    return [ref[0] - n[0] * d, ref[1] - n[1] * d, ref[2] - n[2] * d]
+  }
+  let up = project([0, 1, 0])
+  if (dot3(up, up) < 0.05) up = project([0, 0, 1])
+  return norm3(up)
 }
 
 // A camera position + look target for drilling into a lat/lon region. The

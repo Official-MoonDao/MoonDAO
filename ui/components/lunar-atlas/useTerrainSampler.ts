@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import {
-  displacedRadius,
+  meshDisplacedRadius,
   type HeightField,
 } from '@/lib/lunar-atlas/terrain'
 import {
@@ -13,6 +13,7 @@ import {
   DISPLACEMENT_MAP,
   DISPLACEMENT_SCALE,
   GLOBE_RADIUS,
+  MOON_SEGMENTS,
 } from '@/lib/lunar-atlas/textures'
 
 export type RadiusAt = (lat: number, lon: number) => number
@@ -55,15 +56,21 @@ export default function useTerrainSampler(): RadiusAt | null {
     loadHeightField(DISPLACEMENT_MAP)
       .then((field) => {
         if (cancelled) return
+        // meshDisplacedRadius (not displacedRadius): heights must match the
+        // *rendered* surface — the GPU only displaces the sphere's vertex
+        // lattice, so raw texel sampling disagrees with the visible ground
+        // and seated objects float or sink.
         setRadiusAt(
           () => (lat: number, lon: number) =>
-            displacedRadius(
+            meshDisplacedRadius(
               field,
               lat,
               lon,
               GLOBE_RADIUS,
               DISPLACEMENT_SCALE,
-              DISPLACEMENT_BIAS
+              DISPLACEMENT_BIAS,
+              MOON_SEGMENTS,
+              MOON_SEGMENTS
             )
         )
       })

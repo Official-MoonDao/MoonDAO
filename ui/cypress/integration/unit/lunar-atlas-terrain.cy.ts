@@ -12,6 +12,7 @@ import { expect } from 'chai'
 import {
   displacedRadius,
   latLonToEquirectPixel,
+  meshDisplacedRadius,
   sampleHeightField,
   type HeightField,
 } from '../../../lib/lunar-atlas/terrain'
@@ -125,6 +126,76 @@ describe('lunar-atlas terrain', () => {
       expect(Math.abs(displacedRadius(mid, 0, 0, R, SCALE, BIAS) - R)).to.be.lessThan(
         1e-12
       )
+    })
+  })
+
+  describe('mesh-displaced radius (rendered-surface sampling)', () => {
+    // The GPU displaces only the sphere's vertex lattice; between vertices
+    // the surface is a linear blend of the node heights, regardless of what
+    // the DEM texels say there. Seating must reproduce that, not the texels.
+    const R = 2
+    const SCALE = 0.06
+    const BIAS = -0.03
+    const SEG = 8 // coarse lattice so texel-vs-mesh divergence is obvious
+
+    it('equals texel sampling on a flat field', () => {
+      const field = makeField(64, 32, () => 137)
+      for (const [lat, lon] of [
+        [0, 0],
+        [-85.4, 30],
+        [90, 0],
+        [-90, 0],
+        [12.3, -177.7],
+      ]) {
+        const mesh = meshDisplacedRadius(field, lat, lon, R, SCALE, BIAS, SEG, SEG)
+        const texel = displacedRadius(field, lat, lon, R, SCALE, BIAS)
+        expect(Math.abs(mesh - texel)).to.be.lessThan(1e-9)
+      }
+    })
+
+    it('matches texel sampling exactly at vertex-lattice nodes', () => {
+      const field = makeField(64, 32, (x, y) => (x * 7 + y * 13) % 256)
+      // Node (ix=2, iy=3) of an 8x8 lattice: lon = 2/8*360-180, lat = 90-3/8*180.
+      const lat = 90 - (3 / SEG) * 180
+      const lon = (2 / SEG) * 360 - 180
+      const mesh = meshDisplacedRadius(field, lat, lon, R, SCALE, BIAS, SEG, SEG)
+      const texel = displacedRadius(field, lat, lon, R, SCALE, BIAS)
+      expect(Math.abs(mesh - texel)).to.be.lessThan(1e-9)
+    })
+
+    it('ignores sub-lattice DEM detail between nodes (blends node heights instead)', () => {
+      // A single-texel spike halfway between two lattice nodes: the rendered
+      // mesh never sees it, so the mesh height must stay at the background
+      // level while raw texel sampling reads the spike.
+      const W = 64
+      const H = 32
+      // Lattice nodes (SEG=8) sit every 8 texels; put the spike at x=4 (between
+      // nodes 0 and 1), on the equator row.
+      const eqRow = Math.round((0.5 * H) - 0.5)
+      const field = makeField(W, H, (x, y) => (x === 4 && y === eqRow ? 255 : 0))
+      const spikeLon = ((4 + 0.5) / W) * 360 - 180
+      const spikeLat = 90 - ((eqRow + 0.5) / H) * 180
+
+      const texel = displacedRadius(field, spikeLat, spikeLon, R, SCALE, BIAS)
+      const mesh = meshDisplacedRadius(
+        field,
+        spikeLat,
+        spikeLon,
+        R,
+        SCALE,
+        BIAS,
+        SEG,
+        SEG
+      )
+      expect(texel).to.be.greaterThan(R) // raw texels see the spike
+      expect(mesh).to.be.lessThan(R) // the rendered lattice does not
+    })
+
+    it('is continuous across the ±180 seam', () => {
+      const field = makeField(64, 32, (x, y) => (x * 3 + y * 5) % 256)
+      const west = meshDisplacedRadius(field, -40, 179.99, R, SCALE, BIAS, SEG, SEG)
+      const east = meshDisplacedRadius(field, -40, -179.99, R, SCALE, BIAS, SEG, SEG)
+      expect(Math.abs(west - east)).to.be.lessThan(SCALE * 0.01)
     })
   })
 })

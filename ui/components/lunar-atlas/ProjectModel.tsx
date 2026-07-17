@@ -23,6 +23,9 @@ const SURFACE = GLOBE_RADIUS * 1.004
 const MODEL_SCALE = GLOBE_RADIUS * 0.045
 
 const ASTRONAUT_URI = '/lunar-atlas/models/astronaut.glb'
+// Self-hosted Draco decoder (copied from three's examples into public/draco/).
+// The drei default fetches it from gstatic.com, which the app's CSP blocks.
+const DRACO_PATH = '/draco/'
 
 const HULL = '#d7dbe2'
 const HULL_DARK = '#9aa0ab'
@@ -31,13 +34,19 @@ const DARK = '#3a3f4a'
 const PANEL = '#12325f'
 const PANEL_EDGE = '#2a4d86'
 const WINDOW = '#ffd98a'
-const REGOLITH = '#41372b'
+// Compacted/graded site regolith: read as slightly darker and warmer than the
+// surrounding LROC-gray terrain — a worked surface, not a brown disc.
+const REGOLITH = '#5c5a55'
 
 // A cleared-regolith pad that visually seats an installation on the terrain.
+// Skirted foundation, not a flat disc: the rendered ground under a footprint
+// this size curves away and undulates by more than a rover wheel's height, so
+// a flat disc reads as hovering. The apron's flared sides drop well below the
+// sampled ground and swallow every gap; the buried excess is invisible.
 function Pad({ r = 1.2 }: { r?: number }) {
   return (
-    <mesh position={[0, 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <circleGeometry args={[r, 40]} />
+    <mesh position={[0, 0.01 - 0.155, 0]}>
+      <cylinderGeometry args={[r, r * 1.1, 0.31, 40]} />
       <meshStandardMaterial color={REGOLITH} roughness={1} metalness={0} />
     </mesh>
   )
@@ -458,6 +467,83 @@ function OrbitalRelay({ accent }: { accent: string }) {
   )
 }
 
+// A landing-pad construction site: hardened sintered pad, berm ring with an
+// approach gap, edge beacons, and a construction robot at work. Used for the
+// landing-pad race competitors — deliberately generic infrastructure, not a
+// fake render of any company's proprietary hardware.
+function ConstructionSite({ accent }: { accent: string }) {
+  const bermMounds = 9
+  const beacons = 4
+  return (
+    <group>
+      <Pad r={1.5} />
+      {/* hardened (sintered) pad surface — darker and smoother than regolith */}
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.9, 48]} />
+        <meshStandardMaterial color="#565b66" roughness={0.45} metalness={0.15} />
+      </mesh>
+      {/* pad edge marking ring */}
+      <mesh position={[0, 0.022, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.78, 0.84, 48]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={0.5}
+          roughness={0.6}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* berm ring: regolith mounds with a gap left for the approach road */}
+      {Array.from({ length: bermMounds }, (_, i) => {
+        const a = (i / bermMounds) * Math.PI * 1.65 + Math.PI * 0.2
+        return (
+          <mesh
+            key={i}
+            position={[Math.cos(a) * 1.25, 0.05, Math.sin(a) * 1.25]}
+            rotation={[0, -a, 0]}
+            scale={[0.34, 0.13, 0.16]}
+          >
+            <sphereGeometry args={[1, 10, 7]} />
+            <meshStandardMaterial color={REGOLITH} roughness={1} metalness={0} />
+          </mesh>
+        )
+      })}
+      {/* approach road through the berm gap */}
+      <mesh position={[1.05, 0.008, -0.32]} rotation={[-Math.PI / 2, 0, 0.3]}>
+        <planeGeometry args={[0.9, 0.34]} />
+        <meshStandardMaterial color="#4c5058" roughness={0.6} metalness={0.1} />
+      </mesh>
+      {/* perimeter beacons */}
+      {Array.from({ length: beacons }, (_, i) => {
+        const a = (i / beacons) * Math.PI * 2 + Math.PI / 4
+        const x = Math.cos(a) * 0.95
+        const z = Math.sin(a) * 0.95
+        return (
+          <group key={i} position={[x, 0, z]}>
+            <mesh position={[0, 0.09, 0]}>
+              <cylinderGeometry args={[0.015, 0.02, 0.18, 6]} />
+              <meshStandardMaterial color={METAL} metalness={0.4} />
+            </mesh>
+            <mesh position={[0, 0.2, 0]}>
+              <sphereGeometry args={[0.035, 8, 8]} />
+              <meshStandardMaterial
+                color={accent}
+                emissive={accent}
+                emissiveIntensity={1.6}
+                toneMapped={false}
+              />
+            </mesh>
+          </group>
+        )
+      })}
+      {/* construction robot working the pad edge */}
+      <group position={[0.55, 0, 0.75]} scale={0.45} rotation={[0, -1.1, 0]}>
+        <RoverBody accent={accent} />
+      </group>
+    </group>
+  )
+}
+
 function GenericStructure({ accent }: { accent: string }) {
   return (
     <group>
@@ -492,6 +578,8 @@ function ProceduralModel({ type, accent }: { type: ProjectType; accent: string }
       return <CommsPnt accent={accent} />
     case 'orbital':
       return <OrbitalRelay accent={accent} />
+    case 'construction':
+      return <ConstructionSite accent={accent} />
     case 'other':
     default:
       return <GenericStructure accent={accent} />
@@ -510,7 +598,7 @@ function GLBModel({
   transform?: ModelTransform
   fitHeight?: number
 }) {
-  const { scene } = useGLTF(url)
+  const { scene } = useGLTF(url, DRACO_PATH)
   const object = useMemo(() => {
     const inner = scene.clone(true)
     inner.traverse((o) => {
@@ -629,6 +717,9 @@ export default function ProjectModel({
         <Suspense
           fallback={<ProceduralModel type={project.type} accent={accent} />}
         >
+          {/* GLBs ship without a ground plane — give surface assets the same
+              skirted site pad so they visually bed into the terrain. */}
+          {project.type !== 'orbital' && <Pad r={1.15} />}
           <GLBModel url={project.modelURI} transform={project.modelTransform} />
           {isBase && <AstronautCompanion />}
         </Suspense>
@@ -647,4 +738,4 @@ export default function ProjectModel({
   '/lunar-atlas/models/viking-lander.glb',
   '/lunar-atlas/models/rassor.glb',
   ASTRONAUT_URI,
-].forEach((u) => useGLTF.preload(u))
+].forEach((u) => useGLTF.preload(u, DRACO_PATH))

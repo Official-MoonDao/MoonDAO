@@ -7,6 +7,8 @@ import {
   MILESTONE_STATUS_LABEL,
   PROJECT_TYPE_GLYPH,
   PROJECT_TYPE_LABEL,
+  ROSTER_STATUS_CLASSES,
+  ROSTER_STATUS_LABEL,
   orgColor,
 } from '@/lib/lunar-atlas/display'
 import type {
@@ -100,6 +102,15 @@ export default function ProjectPanel({
 
         {/* Summary */}
         <p className="text-sm leading-relaxed text-white/80">{project.summary}</p>
+
+        {/* DePrize roster status — honest consent state, not implied endorsement */}
+        {project.rosterStatus && (
+          <span
+            className={`inline-flex rounded-md border px-2 py-1 text-xs font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
+          >
+            {ROSTER_STATUS_LABEL[project.rosterStatus]}
+          </span>
+        )}
 
         {/* Milestones */}
         {milestones.length > 0 && (
@@ -195,7 +206,7 @@ export default function ProjectPanel({
   )
 }
 
-function MarketPill({ status }: { status: string }) {
+export function MarketPill({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     none: { label: 'Market TBD', cls: 'text-white/40 border-white/10 bg-white/5' },
     planned: {

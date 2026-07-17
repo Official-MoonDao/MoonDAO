@@ -15,6 +15,7 @@ import {
   drillInFraming,
   latLonToVector3,
   normalizeLon,
+  orbitUpVector,
   surfaceDistanceM,
   surfaceNormal,
   surfaceViewFraming,
@@ -131,6 +132,31 @@ describe('lunar-atlas geo', () => {
       const map = declusterDirections(pts)
       expect(map.size).to.equal(3)
     })
+
+    it('caps ring growth for large clusters so markers stay near the pole', () => {
+      // 12 co-located points (the post-DePrize South Pole census). Uncapped,
+      // the ring would fan out spread*(1 + 10*0.12) = 2.2x; the cap holds it
+      // to 1.6x so displayed positions don't drift far from the real region.
+      const spread = 0.17
+      const pts = Array.from({ length: 12 }, (_, i) => ({
+        id: `p${i}`,
+        lat: -89,
+        lon: i * 30 - 180,
+      }))
+      const map = declusterDirections(pts, spread, 0.32)
+      const pole = latLonToVector3(-90, 0, 1) as [number, number, number]
+      for (const p of pts) {
+        const fromPole = angleBetween(map.get(p.id)!, pole)
+        expect(fromPole).to.be.lessThan(spread * 1.6 + 0.02)
+      }
+      // Still pairwise-separated enough to read as distinct markers.
+      const dirs = pts.map((p) => map.get(p.id)!)
+      for (let i = 0; i < dirs.length; i++) {
+        for (let j = i + 1; j < dirs.length; j++) {
+          expect(angleBetween(dirs[i], dirs[j])).to.be.greaterThan(0.05)
+        }
+      }
+    })
   })
 
   describe('drill-in framing', () => {
@@ -141,6 +167,42 @@ describe('lunar-atlas geo', () => {
       expect(Math.abs(targetR - 100)).to.be.lessThan(1e-6)
       // Camera sits farther out than the surface.
       expect(posR).to.be.greaterThan(targetR)
+    })
+  })
+
+  describe('orbit up vector (pole-safe camera roll)', () => {
+    const len = (v: [number, number, number]) =>
+      Math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
+
+    it('keeps the familiar world-Y up for equatorial views', () => {
+      const up = orbitUpVector(0, 0)
+      expect(angleBetween(up, [0, 1, 0])).to.be.lessThan(1e-6)
+    })
+
+    it('is always a unit vector perpendicular to the view normal', () => {
+      const sites = [
+        { lat: 0, lon: 0 },
+        { lat: 45, lon: 90 },
+        { lat: -89.5, lon: 0 },
+        { lat: -90, lon: 0 },
+        { lat: 90, lon: 0 },
+        { lat: -85.3, lon: 5 },
+      ]
+      for (const s of sites) {
+        const up = orbitUpVector(s.lat, s.lon)
+        const n = surfaceNormal(s.lat, s.lon)
+        expect(Math.abs(len(up) - 1), `|up| at (${s.lat},${s.lon})`).to.be.lessThan(1e-9)
+        const dot = up[0] * n[0] + up[1] * n[1] + up[2] * n[2]
+        expect(Math.abs(dot), `up·n at (${s.lat},${s.lon})`).to.be.lessThan(1e-9)
+        for (const c of up) expect(Number.isFinite(c)).to.equal(true)
+      }
+    })
+
+    it('never degenerates at the poles (where world-Y is parallel to the view axis)', () => {
+      const south = orbitUpVector(-90, 0)
+      const north = orbitUpVector(90, 0)
+      expect(len(south)).to.be.closeTo(1, 1e-9)
+      expect(len(north)).to.be.closeTo(1, 1e-9)
     })
   })
 

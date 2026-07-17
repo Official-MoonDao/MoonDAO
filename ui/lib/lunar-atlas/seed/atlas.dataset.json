@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-01",
+  "updatedAt": "2026-07-16",
   "organizations": [
     {
       "id": "nasa",
@@ -47,6 +47,75 @@
           "label": "Blue Origin — Blue Moon",
           "url": "https://www.blueorigin.com/blue-moon",
           "retrievedAt": "2026-07-01"
+        }
+      ]
+    },
+    {
+      "id": "icon",
+      "name": "ICON",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.iconbuild.com",
+      "brandColor": "#F5B841",
+      "summary": "ICON is developing Project Olympus, a multi-purpose lunar construction system that 3D-prints infrastructure — landing pads, roads, habitats — from local regolith, under a NASA SBIR Phase III contract within the MMPACT project.",
+      "sources": [
+        {
+          "label": "NASA — NASA, ICON advance lunar construction technology",
+          "url": "https://www.nasa.gov/centers-and-facilities/marshall/nasa-icon-advance-lunar-construction-technology-for-moon-missions/",
+          "retrievedAt": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "redwire",
+      "name": "Redwire",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://rdw.com",
+      "brandColor": "#EF476F",
+      "summary": "Redwire is prototyping Mason, a platform-agnostic tool suite (grader, compactor, microwave sintering emitter) that turns lunar regolith into solid berms, landing pads, and roads, under a NASA Tipping Point award.",
+      "sources": [
+        {
+          "label": "Redwire — $12.9M NASA award for lunar infrastructure",
+          "url": "https://rdw.com/newsroom/pads-roads-and-other-forms-of-infrastructure-on-the-moon/",
+          "retrievedAt": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "astroport",
+      "name": "Astroport Space Technologies",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://astroportspace.com",
+      "brandColor": "#2EC4B6",
+      "summary": "Astroport develops the Lunatron/Brickbot induction furnace-nozzle that melts lunar regolith into interlocking bricks for landing pads, roads, and blast shields, advanced through multiple NASA SBIR/STTR awards with UTSA.",
+      "sources": [
+        {
+          "label": "Astroport Space Technologies",
+          "url": "https://astroportspace.com/",
+          "retrievedAt": "2026-07-16"
+        },
+        {
+          "label": "NASA SBIR — Induction Furnace-Nozzle for lunar regolith bricks",
+          "url": "https://www.sbir.gov/awards/189719",
+          "retrievedAt": "2026-07-16"
+        }
+      ]
+    },
+    {
+      "id": "ai-spacefactory",
+      "name": "AI SpaceFactory",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://spacefactory.ai",
+      "brandColor": "#D667CF",
+      "summary": "AI SpaceFactory, winner of NASA's 3D-Printed Habitat Challenge, is developing regolith-polymer additive construction with NASA Kennedy Space Center (REACT), including the LINA lunar outpost concept targeted at the Shackleton crater region.",
+      "sources": [
+        {
+          "label": "AI SpaceFactory — LINA",
+          "url": "https://spacefactory.ai/lina",
+          "retrievedAt": "2026-07-16"
         }
       ]
     }
@@ -400,9 +469,324 @@
         }
       ],
       "visibility": "public"
+    },
+    {
+      "id": "icon-project-olympus",
+      "orgId": "icon",
+      "name": "Project Olympus",
+      "type": "construction",
+      "summary": "A multi-purpose lunar construction system that 3D-prints landing pads, roads, and habitat structures from local regolith. Backed by a $57.2M NASA SBIR Phase III contract (through 2028) under the MMPACT project at Marshall Space Flight Center.",
+      "location": { "lat": -88.4, "lon": 90 },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
+      "milestones": [
+        {
+          "id": "olympus-launched",
+          "title": "Project Olympus launched",
+          "targetDate": "2020",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "Space.com — NASA awards ICON $57M for lunar construction",
+              "url": "https://www.space.com/icon-moon-construction-project-olympus-nasa-funding",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        },
+        {
+          "id": "olympus-sbir3",
+          "title": "NASA SBIR Phase III MMPACT contract awarded ($57.2M)",
+          "targetDate": "2022-11",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "NASA — NASA, ICON advance lunar construction technology",
+              "url": "https://www.nasa.gov/centers-and-facilities/marshall/nasa-icon-advance-lunar-construction-technology-for-moon-missions/",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        },
+        {
+          "id": "olympus-development",
+          "title": "Olympus system development and lunar-gravity testing through contract period",
+          "targetDate": "2028",
+          "datePrecision": "estimated",
+          "status": "in_progress",
+          "sources": [
+            {
+              "label": "NASA — NASA, ICON advance lunar construction technology",
+              "url": "https://www.nasa.gov/centers-and-facilities/marshall/nasa-icon-advance-lunar-construction-technology-for-moon-missions/",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-landing-pads"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "NASA — NASA, ICON advance lunar construction technology",
+          "url": "https://www.nasa.gov/centers-and-facilities/marshall/nasa-icon-advance-lunar-construction-technology-for-moon-missions/",
+          "retrievedAt": "2026-07-16"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "redwire-mason",
+      "orgId": "redwire",
+      "name": "Mason",
+      "type": "construction",
+      "summary": "A platform-agnostic tool suite — BASE grader, PACT compactor, and M3LT microwave sintering emitter — that converts lunar regolith into solid berms, landing pads, and roads. Funded by a $12.9M NASA Tipping Point award; passed Critical Design Review in June 2025.",
+      "location": { "lat": -88.4, "lon": 135 },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
+      "milestones": [
+        {
+          "id": "mason-tipping-point",
+          "title": "NASA Tipping Point award for Mason ($12.9M)",
+          "targetDate": "2023-07",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "Redwire — $12.9M NASA award for lunar infrastructure",
+              "url": "https://rdw.com/newsroom/pads-roads-and-other-forms-of-infrastructure-on-the-moon/",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        },
+        {
+          "id": "mason-cdr",
+          "title": "Mason passes Critical Design Review with NASA",
+          "targetDate": "2025-06",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "Redwire — Mason passes Critical Design Review",
+              "url": "https://rdw.com/newsroom/redwire-receives-nasa-approval-to-advance-cutting-edge-manufacturing-technology-for-building-infrastructure-on-moon-and-mars/",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        },
+        {
+          "id": "mason-flight-demo",
+          "title": "Prototype functional testing; flight demonstration opportunity pursued",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "in_progress",
+          "sources": [
+            {
+              "label": "Redwire — Mason passes Critical Design Review",
+              "url": "https://rdw.com/newsroom/redwire-receives-nasa-approval-to-advance-cutting-edge-manufacturing-technology-for-building-infrastructure-on-moon-and-mars/",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-landing-pads"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Redwire — $12.9M NASA award for lunar infrastructure",
+          "url": "https://rdw.com/newsroom/pads-roads-and-other-forms-of-infrastructure-on-the-moon/",
+          "retrievedAt": "2026-07-16"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "astroport-lunatron",
+      "orgId": "astroport",
+      "name": "Lunatron / Brickbot",
+      "type": "construction",
+      "summary": "An induction furnace-nozzle that melts lunar regolith into interlocking, mortar-free bricks for landing pads, roads, and blast shields — a civil-engineering path to lunar surface infrastructure, developed with UTSA under NASA SBIR/STTR awards.",
+      "location": { "lat": -88.4, "lon": -90 },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
+      "milestones": [
+        {
+          "id": "lunatron-sttr1",
+          "title": "NASA STTR Phase I — induction furnace-nozzle for regolith bricks",
+          "targetDate": "2021",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "NASA SBIR — Induction Furnace-Nozzle award",
+              "url": "https://www.sbir.gov/awards/189719",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        },
+        {
+          "id": "lunatron-awards-2023",
+          "title": "$1.3M in NASA SBIR/STTR awards for landing-pad technologies",
+          "targetDate": "2023-11",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "XArc/Astroport — $1.3M in NASA SBIR/STTR awards",
+              "url": "https://explorationarchitecture.com/xarc-astroport-announce-1-3-million-in-multiple-nasa-sbir-sttr-awards-for-2023/",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        },
+        {
+          "id": "brickbot-ground-test",
+          "title": "Brickbot ground test unit demonstration",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "in_progress",
+          "sources": [
+            {
+              "label": "Astroport Space Technologies",
+              "url": "https://astroportspace.com/",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-landing-pads"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Astroport Space Technologies",
+          "url": "https://astroportspace.com/",
+          "retrievedAt": "2026-07-16"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "ai-spacefactory-react",
+      "orgId": "ai-spacefactory",
+      "name": "REACT / LINA",
+      "type": "construction",
+      "summary": "Regolith-polymer additive construction developed with NASA Kennedy Space Center under the REACT collaboration: a space-rated 3D-printing system tested in a lunar environmental chamber, targeting the LINA outpost concept near Shackleton crater.",
+      "location": { "lat": -89.6, "lon": 165 },
+      "locationPrecision": "region",
+      "regionLabel": "Shackleton crater region (concept target — development is Earth-based)",
+      "milestones": [
+        {
+          "id": "marsha-habitat-challenge",
+          "title": "Won NASA's 3D-Printed Habitat Challenge (MARSHA)",
+          "targetDate": "2019",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "PR Newswire — AI SpaceFactory and NASA KSC release lunar outpost designs",
+              "url": "https://www.prnewswire.com/news-releases/ai-spacefactory-and-nasa-kennedy-space-center-release-lunar-outpost-designs-301578951.html",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        },
+        {
+          "id": "lina-design",
+          "title": "LINA outpost design released; vacuum-chamber print testing with NASA KSC",
+          "targetDate": "2022-06",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "AI SpaceFactory — LINA",
+              "url": "https://spacefactory.ai/lina",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        },
+        {
+          "id": "react-print-system",
+          "title": "Space-rated regolith-polymer printing system demonstration",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "in_progress",
+          "sources": [
+            {
+              "label": "AI SpaceFactory — LINA",
+              "url": "https://spacefactory.ai/lina",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-landing-pads"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "AI SpaceFactory — LINA",
+          "url": "https://spacefactory.ai/lina",
+          "retrievedAt": "2026-07-16"
+        }
+      ],
+      "visibility": "public"
     }
   ],
   "sharedGoals": [
+    {
+      "id": "shared-landing-pads",
+      "title": "First demonstrated lunar landing-pad construction system",
+      "description": "Soft regolith and lander plumes threaten every sustained surface operation — hardened landing pads, roads, and berms are the first infrastructure any base needs. Multiple companies are racing this capability with genuinely different technology bets: laser/large-scale printing (ICON), microwave sintering (Redwire), molten-regolith bricks (Astroport), and regolith-polymer printing (AI SpaceFactory). A future MoonDAO DePrize would reward the first team to meet the frozen capability criteria below.",
+      "projectIds": [
+        "icon-project-olympus",
+        "redwire-mason",
+        "astroport-lunatron",
+        "ai-spacefactory-react"
+      ],
+      "location": { "lat": -88, "lon": 60 },
+      "regionLabel": "Lunar South Pole — candidate construction zone",
+      "criteria": [
+        {
+          "id": "pad-surface",
+          "statement": "Produce a continuous load-bearing surface from lunar regolith simulant",
+          "threshold": "≥ 25 m²; ≥ 90% regolith feedstock by mass"
+        },
+        {
+          "id": "plume-load",
+          "statement": "Survive a published plume / mechanical load profile",
+          "threshold": "MoonDAO-frozen spec derived from NASA/ESA plume-surface interaction data"
+        },
+        {
+          "id": "environment",
+          "statement": "Demonstrate the process in a relevant environment",
+          "threshold": "Vacuum and/or lunar thermal extremes; exact bar frozen at market open"
+        },
+        {
+          "id": "open-data",
+          "statement": "Publish an open performance data pack for peer review and simulation use",
+          "threshold": "Strength, thickness, energy per kg, dust shedding"
+        },
+        {
+          "id": "budget-gate",
+          "statement": "Quote a CLPS-class flight demonstration within budget",
+          "threshold": "Quote ≤ prize-pool TWAP at market close"
+        }
+      ],
+      "targetWindow": { "from": "2026", "to": "2032" },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "payoutSplit": { "capability": 0.3, "flight": 0.7 },
+        "budgetGate": "Winning team's CLPS-class flight-demo quote must not exceed the prize-pool TWAP at market close."
+      },
+      "sources": [
+        {
+          "label": "NASA — NASA, ICON advance lunar construction technology (MMPACT)",
+          "url": "https://www.nasa.gov/centers-and-facilities/marshall/nasa-icon-advance-lunar-construction-technology-for-moon-missions/",
+          "retrievedAt": "2026-07-16"
+        },
+        {
+          "label": "NASA — Tipping Point partnerships (incl. Redwire Mason)",
+          "url": "https://www.nasa.gov/news-release/nasa-partners-with-american-companies-on-key-moon-exploration-tech/",
+          "retrievedAt": "2026-07-16"
+        }
+      ]
+    },
     {
       "id": "shared-south-pole-base",
       "title": "First sustained crewed South Pole presence",

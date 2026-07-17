@@ -72,3 +72,46 @@ export function displacedRadius(
 ): number {
   return radius + (sampleHeightField(field, lat, lon) / 255) * scale + bias
 }
+
+// The displaced surface radius *as actually rendered*. The GPU displaces only
+// the sphere's vertices (a widthSegments × heightSegments lattice) and
+// linearly interpolates the surface between them, so DEM features smaller
+// than the vertex spacing simply do not exist in the rendered mesh. Sampling
+// the DEM texels directly (displacedRadius) therefore disagrees with the
+// visible ground — objects seated that way float above or sink below it,
+// worst in the rough south-polar highlands. This reproduces the render:
+// heights at the four surrounding vertex-lattice nodes (each sampled from the
+// DEM exactly as the vertex shader samples its UV), blended bilinearly.
+export function meshDisplacedRadius(
+  field: HeightField,
+  lat: number,
+  lon: number,
+  radius: number,
+  scale: number,
+  bias: number,
+  widthSegments: number,
+  heightSegments: number
+): number {
+  const u = (normalizeLon(lon) + 180) / 360
+  const v = (90 - clampLat(lat)) / 180
+  const gx = u * widthSegments
+  const gy = v * heightSegments
+  const x0 = Math.floor(gx)
+  const y0 = Math.floor(gy)
+  const fx = gx - x0
+  const fy = gy - y0
+
+  const nodeHeight = (ix: number, iy: number): number => {
+    const wx = ((ix % widthSegments) + widthSegments) % widthSegments
+    const cy = Math.max(0, Math.min(heightSegments, iy))
+    const nodeLon = (wx / widthSegments) * 360 - 180
+    const nodeLat = 90 - (cy / heightSegments) * 180
+    return sampleHeightField(field, nodeLat, nodeLon)
+  }
+
+  const top = nodeHeight(x0, y0) * (1 - fx) + nodeHeight(x0 + 1, y0) * fx
+  const bottom =
+    nodeHeight(x0, y0 + 1) * (1 - fx) + nodeHeight(x0 + 1, y0 + 1) * fx
+  const h = top * (1 - fy) + bottom * fy
+  return radius + (h / 255) * scale + bias
+}

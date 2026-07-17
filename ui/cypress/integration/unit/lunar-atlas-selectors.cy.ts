@@ -133,6 +133,11 @@ describe('lunar-atlas selectors', () => {
       expect(base.length).to.be.greaterThan(1)
       expect(base.every((p) => p.sharedGoalIds.includes('shared-south-pole-base'))).to.equal(true)
     })
+    it('finds the landing-pad race competitors', () => {
+      const racers = filterProjects(projects, { sharedGoalId: 'shared-landing-pads' })
+      expect(racers.length).to.be.greaterThan(2)
+      expect(racers.every((p) => p.type === 'construction')).to.equal(true)
+    })
   })
 
   describe('tableland index projection', () => {
@@ -173,6 +178,53 @@ describe('lunar-atlas selectors', () => {
         for (const m of p.milestones) {
           expect(m.sources.length, `milestone ${m.id}`).to.be.greaterThan(0)
         }
+      }
+    })
+    it('roster statuses, when present, are valid values', () => {
+      const valid = new Set(['listed', 'invited', 'consented', 'declined'])
+      for (const p of SEED_ATLAS.projects) {
+        if (p.rosterStatus !== undefined) {
+          expect(valid.has(p.rosterStatus), `project ${p.id} rosterStatus`).to.equal(true)
+        }
+      }
+    })
+    it('every competitor in a race (goal with criteria) declares a roster status', () => {
+      const projectMap = new Map(SEED_ATLAS.projects.map((p) => [p.id, p]))
+      for (const g of SEED_ATLAS.sharedGoals) {
+        if (!g.criteria?.length) continue
+        for (const pid of g.projectIds) {
+          const p = projectMap.get(pid)
+          expect(p?.rosterStatus, `race ${g.id} competitor ${pid}`).to.be.a('string')
+        }
+      }
+    })
+    it('capability criteria are well-formed and goals with criteria are sourced', () => {
+      for (const g of SEED_ATLAS.sharedGoals) {
+        if (!g.criteria) continue
+        expect(g.criteria.length, `goal ${g.id} criteria`).to.be.greaterThan(0)
+        expect(g.sources.length, `goal ${g.id} sources`).to.be.greaterThan(0)
+        const ids = new Set<string>()
+        for (const c of g.criteria) {
+          expect(c.id, `criterion in ${g.id}`).to.be.a('string').and.not.equal('')
+          expect(c.statement, `criterion ${c.id}`).to.be.a('string').and.not.equal('')
+          expect(ids.has(c.id), `duplicate criterion id ${c.id} in ${g.id}`).to.equal(false)
+          ids.add(c.id)
+        }
+      }
+    })
+    it('race goals with a globe anchor have valid coordinates and a region label', () => {
+      for (const g of SEED_ATLAS.sharedGoals) {
+        if (!g.location) continue
+        expect(g.location.lat, `goal ${g.id} lat`).to.be.within(-90, 90)
+        expect(g.location.lon, `goal ${g.id} lon`).to.be.within(-180, 180)
+        expect(g.regionLabel, `goal ${g.id} regionLabel`).to.be.a('string').and.not.equal('')
+      }
+    })
+    it('market payout splits sum to 1', () => {
+      for (const g of SEED_ATLAS.sharedGoals) {
+        const split = g.market?.payoutSplit
+        if (!split) continue
+        expect(split.capability + split.flight, `goal ${g.id} payoutSplit`).to.be.closeTo(1, 1e-9)
       }
     })
   })

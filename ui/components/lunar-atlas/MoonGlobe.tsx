@@ -20,6 +20,7 @@ import * as THREE from 'three'
 import {
   drillInFraming,
   latLonToVector3,
+  orbitUpVector,
   surfaceNormal,
   surfaceViewFraming,
 } from '@/lib/lunar-atlas/geo'
@@ -29,10 +30,16 @@ import {
   DISPLACEMENT_SCALE,
   DISPLACEMENT_TIERS,
   GLOBE_RADIUS,
+  MOON_SEGMENTS,
 } from '@/lib/lunar-atlas/textures'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
-import type { Organization, Project } from '@/lib/lunar-atlas/types'
+import type {
+  Organization,
+  Project,
+  SharedGoal,
+} from '@/lib/lunar-atlas/types'
 import MarkerLayer, { MarkerStyle } from './MarkerLayer'
+import RaceMarkerLayer from './RaceMarkerLayer'
 import useTerrainSampler, { RadiusAt } from './useTerrainSampler'
 
 export type GlobeFocus = {
@@ -59,6 +66,9 @@ export type MoonGlobeProps = {
   onHoverProject?: (id: string | null) => void
   getProjectStyle?: (project: Project) => MarkerStyle
   markerDirs?: Map<string, Vec3>
+  // Capability races with a globe anchor render as region-zone rings.
+  raceGoals?: SharedGoal[]
+  onSelectRaceGoal?: (goalId: string) => void
   // Fired on a genuine click (not a drag-rotation) of the lunar surface or
   // the empty starfield — the page uses it to deselect and zoom back out.
   onBackgroundClick?: () => void
@@ -149,8 +159,16 @@ function Moon({
     highDetail ? 3 : 2,
     configureColor
   )
-  // 2K LOLA relief always; the 4K DEM upgrades it during drill-in.
+  // Geometry displacement is pinned to the 2K DEM: the CPU terrain sampler
+  // that seats markers, models, and the surface camera reads that exact file,
+  // and the vertex lattice can't resolve finer detail anyway. The 4K DEM
+  // upgrades only the bump map (per-pixel shading) during drill-in.
   const displacement = useProgressiveTexture(
+    DISPLACEMENT_TIERS,
+    1,
+    configureData
+  )
+  const bump = useProgressiveTexture(
     DISPLACEMENT_TIERS,
     highDetail ? 2 : 1,
     configureData
@@ -164,9 +182,10 @@ function Moon({
     }
   }, [color, onReady])
 
-  // Higher tessellation once the geometry can show relief.
+  // Higher tessellation once the geometry can show relief. The segment count
+  // is shared with the CPU terrain sampler so seated objects match the ground.
   const geometry = useMemo(
-    () => new THREE.SphereGeometry(GLOBE_RADIUS, 256, 256),
+    () => new THREE.SphereGeometry(GLOBE_RADIUS, MOON_SEGMENTS, MOON_SEGMENTS),
     []
   )
 
@@ -188,7 +207,7 @@ function Moon({
         displacementMap={displacement ?? undefined}
         displacementScale={displacement ? DISPLACEMENT_SCALE : 0}
         displacementBias={displacement ? DISPLACEMENT_BIAS : 0}
-        bumpMap={displacement ?? undefined}
+        bumpMap={bump ?? displacement ?? undefined}
         bumpScale={displacement ? 0.45 : 0}
         roughness={1}
         metalness={0}
@@ -269,12 +288,16 @@ function CameraRig({
       desiredPos.current.set(position[0], position[1], position[2])
       desiredTarget.current.set(target[0], target[1], target[2])
       // Surface view rolls the camera so "up" is the local outward normal —
-      // otherwise the view is upside down at the poles.
+      // otherwise the view is upside down at the poles. Orbit views use a
+      // pole-safe up: raw world-Y is parallel to the view axis when looking
+      // straight down at a pole, which made the controls erratic exactly
+      // where all the projects are.
       if (focus.view === 'surface') {
         const n = surfaceNormal(focus.lat, focus.lon)
         desiredUp.current.set(n[0], n[1], n[2])
       } else {
-        desiredUp.current.copy(WORLD_Y)
+        const up = orbitUpVector(focus.lat, focus.lon)
+        desiredUp.current.set(up[0], up[1], up[2])
       }
     } else {
       easeBase.current = 0.0022
@@ -296,6 +319,33 @@ function CameraRig({
     // distance to the *target*, which sits on the surface during drill-in.)
     if (camera.position.lengthSq() < CAMERA_FLOOR * CAMERA_FLOOR) {
       camera.position.setLength(CAMERA_FLOOR)
+    }
+
+    // Proximity-adaptive control feel: a rotate/zoom speed that feels right
+    // from orbit whips the camera around violently when it is metres off the
+    // deck after selecting a project. Scale both with the camera's distance
+    // to its pivot (the controls target) so close-in inspection is gentle and
+    // the far view keeps the quick tumble.
+    const pivotDist = camera.position.distanceTo(curTarget)
+    const feel = Math.sqrt(
+      THREE.MathUtils.clamp(pivotDist / (GLOBE_RADIUS * 2), 0, 1)
+    )
+    controls.rotateSpeed = THREE.MathUtils.lerp(0.35, 3.2, feel)
+    controls.zoomSpeed = THREE.MathUtils.lerp(0.5, 1.2, feel)
+
+    // Once the camera pulls well away from a drill-in pivot, glide the pivot
+    // back to the globe center. Without this, zooming out from a project
+    // leaves the Moon hanging half off-screen, orbiting around a surface
+    // point the user can no longer even see.
+    if (!animating.current && curTarget.lengthSq() > 1e-8) {
+      const recenter = THREE.MathUtils.clamp(
+        (camera.position.length() / GLOBE_RADIUS - 3.0) / 1.5,
+        0,
+        1
+      )
+      if (recenter > 0) {
+        curTarget.multiplyScalar(Math.pow(0.02, delta * recenter))
+      }
     }
 
     if (animating.current) {
@@ -361,18 +411,25 @@ function CameraRig({
 // The sun sits far away along a fixed direction so the terminator stays crisp
 // as the user orbits. A dim hemisphere + ambient keep the night side legible
 // without washing out the shadow line.
+//
+// The key light is tilted into the southern hemisphere: the South Pole is the
+// app's home view, and a nearside-flattering sun leaves it pitch black. At
+// lat -22 the polar terrain reads with long, low shadows (artistic license —
+// the real polar sun sits ~1.5° up — but the alternative is an unusable black
+// screen) while the full-globe view keeps an attractive terminator.
 function Sun() {
   const dir = useMemo(() => {
-    const v = latLonToVector3(8, -55, 1)
+    const v = latLonToVector3(-22, -50, 1)
     return new THREE.Vector3(v[0], v[1], v[2]).multiplyScalar(GLOBE_RADIUS * 12)
   }, [])
   return (
     <>
       <directionalLight position={dir} intensity={3.1} color="#fff6ec" />
       {/* Kept dim and desaturated: the lunar night side is earthshine-dark,
-          not blue-washed. Just enough for far-side markers to stay legible. */}
-      <hemisphereLight args={['#232b3d', '#0a0c12', 0.16]} />
-      <ambientLight intensity={0.06} />
+          not blue-washed. The ground tone matters more than usual because
+          south-polar surface normals face world-down and read from it. */}
+      <hemisphereLight args={['#232b3d', '#161b26', 0.22]} />
+      <ambientLight intensity={0.07} />
     </>
   )
 }
@@ -390,6 +447,8 @@ export default function MoonGlobe({
   onHoverProject,
   getProjectStyle,
   markerDirs,
+  raceGoals,
+  onSelectRaceGoal,
   onBackgroundClick,
   children,
 }: MoonGlobeProps) {
@@ -406,7 +465,12 @@ export default function MoonGlobe({
   // onPointerMissed (which R3F fires for any click that hits no object —
   // including the release at the end of a starfield drag).
   const pointerDownAt = useRef<{ x: number; y: number } | null>(null)
-  const spin = autoRotate && !focus && !userInteracting && !isAnimating
+  // Idle spin runs in any orbit framing (including region hotspots — with the
+  // South Pole as the home view, the slow drift around the pole is the page's
+  // resting motion). Surface views hold still: the camera is composed against
+  // a specific installation.
+  const spin =
+    autoRotate && focus?.view !== 'surface' && !userInteracting && !isAnimating
 
   // Release the "interacting" flag on pointer up anywhere.
   useEffect(() => {
@@ -482,6 +546,14 @@ export default function MoonGlobe({
           onHover={onHoverProject}
           getProjectStyle={getProjectStyle}
           dirMap={markerDirs}
+          radiusAt={radiusAt}
+        />
+      )}
+
+      {raceGoals && raceGoals.length > 0 && (
+        <RaceMarkerLayer
+          goals={raceGoals}
+          onSelect={onSelectRaceGoal}
           radiusAt={radiusAt}
         />
       )}
