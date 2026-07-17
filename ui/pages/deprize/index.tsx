@@ -206,7 +206,7 @@ export default function DePrizeIndexPage() {
     <div className="animate-fadeIn flex flex-col items-center">
       <Head
         title="DePrize"
-        description="Back a provider to fly Frank White to space, and win if they do."
+        description="Back a team in open challenges — live odds, growing prize pools, payouts when a winner is declared."
       />
       <Container>
         <ContentLayout
@@ -217,7 +217,7 @@ export default function DePrizeIndexPage() {
           isProfile
           centerHeader
           centerHeaderWidth="760px"
-          description="Bet on which provider wins the right to fly Frank White and a community Candidate to space. Every bet grows the prize."
+          description="Open challenges with live odds. Back the team you think will win — every bet grows the prize pool."
           preFooter={<NoticeFooter />}
         >
           <div className="flex flex-col gap-4 w-full max-w-[760px] mx-auto">
