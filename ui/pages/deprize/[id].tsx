@@ -1,10 +1,6 @@
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import TeamABI from 'const/abis/Team.json'
-import {
-  DEFAULT_CHAIN_V5,
-  DEPRIZE_MINT_ADDRESSES,
-  TEAM_ADDRESSES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
@@ -41,10 +37,9 @@ import DePrizeAdminPanel from '@/components/deprize/DePrizeAdminPanel'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
 
-const OddsHistoryChart = dynamic(
-  () => import('@/components/deprize/OddsHistoryChart'),
-  { ssr: false }
-)
+const OddsHistoryChart = dynamic(() => import('@/components/deprize/OddsHistoryChart'), {
+  ssr: false,
+})
 
 function StateBadge({ state }: { state: DePrizeState }) {
   const meta = DEPRIZE_STATE_META[state]
@@ -77,8 +72,7 @@ function timeUntil(tsSec: bigint): string {
 export default function DePrizeDetailPage() {
   const router = useRouter()
   const rawId = router.query.id
-  const deprizeId =
-    typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
+  const deprizeId = typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
 
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
@@ -86,10 +80,7 @@ export default function DePrizeDetailPage() {
   const userAddress = account?.address
   const { login } = useLogin()
 
-  const { deprize, loading, error, registryConfigured } = useDePrize(
-    deprizeId,
-    chain
-  )
+  const { deprize, error, registryConfigured } = useDePrize(deprizeId, chain)
   const numOutcomes = deprize?.teamIds.length ?? 0
 
   const market = useDePrizeMarket({
@@ -104,7 +95,7 @@ export default function DePrizeDetailPage() {
   // Pass a plain number: useRead JSON.stringify's its params for memoization,
   // which throws on bigint. JB project ids are small, so Number() is safe.
   const { totalFunding } = useTotalFunding(
-    deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
+    deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined,
   )
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
@@ -128,7 +119,7 @@ export default function DePrizeDetailPage() {
             abi: TeamABI as any,
           })
         : undefined,
-    [chain, chainSlug]
+    [chain, chainSlug],
   )
 
   const lmsrRead = useMemo(
@@ -141,7 +132,7 @@ export default function DePrizeDetailPage() {
             abi: LMSRWithTWAP.abi as any,
           })
         : undefined,
-    [market.marketAddress, readChain]
+    [market.marketAddress, readChain],
   )
 
   // Native ETH balance (spendable for bets).
@@ -155,7 +146,7 @@ export default function DePrizeDetailPage() {
       try {
         const b = await eth_getBalance(
           getRpcClient({ client: deprizeReadClient, chain: readChain }),
-          { address: userAddress }
+          { address: userAddress },
         )
         if (!cancelled) setNativeBalance(Number(b) / Number(UNIT))
       } catch {
@@ -173,7 +164,7 @@ export default function DePrizeDetailPage() {
       market.marketAddress && userAddress
         ? `deprize:costBasis:v1:${market.marketAddress}:${userAddress}`
         : null,
-    [market.marketAddress, userAddress]
+    [market.marketAddress, userAddress],
   )
   useEffect(() => {
     if (!costStorageKey || typeof window === 'undefined') {
@@ -197,7 +188,7 @@ export default function DePrizeDetailPage() {
         }
       }
     },
-    [costStorageKey]
+    [costStorageKey],
   )
   const addCostBasis = useCallback(
     (index: number, deltaEth: number) => {
@@ -207,7 +198,7 @@ export default function DePrizeDetailPage() {
         return next
       })
     },
-    [persistCostBasis]
+    [persistCostBasis],
   )
   const resetCostBasis = useCallback(
     (index: number) => {
@@ -217,7 +208,7 @@ export default function DePrizeDetailPage() {
         return next
       })
     },
-    [persistCostBasis]
+    [persistCostBasis],
   )
   const clearCostBasis = useCallback(() => {
     setCostBasis({})
@@ -245,9 +236,7 @@ export default function DePrizeDetailPage() {
       setSellQuotes(new Map())
       return
     }
-    const held = market.outcomes.filter(
-      (o) => Number.isFinite(o.balance) && o.balance > 0
-    )
+    const held = market.outcomes.filter((o) => Number.isFinite(o.balance) && o.balance > 0)
     if (!held.length) {
       setSellQuotes(new Map())
       return
@@ -268,7 +257,7 @@ export default function DePrizeDetailPage() {
           } catch {
             return null
           }
-        })
+        }),
       )
       if (cancelled) return
       setSellQuotes(new Map(entries.filter((e): e is [number, number] => e !== null)))
@@ -279,8 +268,7 @@ export default function DePrizeDetailPage() {
   }, [lmsrRead, market.outcomes, market.stage, numOutcomes])
 
   const spendable = Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
-  const tradingHalted =
-    market.stage !== undefined && market.stage !== MarketStage.Running
+  const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
   const bettingAllowed =
     !!deprize?.bettingOpen &&
     !region.isRestricted &&
@@ -289,8 +277,7 @@ export default function DePrizeDetailPage() {
     !tradingHalted
   const stateMeta = deprize ? DEPRIZE_STATE_META[deprize.state] : undefined
 
-  const winningTeamName =
-    market.winningIndex >= 0 ? `Team #${market.winningIndex + 1}` : undefined
+  const winningTeamName = market.winningIndex >= 0 ? `Team #${market.winningIndex + 1}` : undefined
 
   // --- Render states ---
   if (!registryConfigured) {
@@ -324,14 +311,14 @@ export default function DePrizeDetailPage() {
       </Shell>
     )
   }
-  if (!deprize && loading) {
+  if (!deprize || (deprizeId !== undefined && deprize.deprizeId !== deprizeId)) {
     return (
       <Shell>
         <div className="p-8 text-center text-gray-400">Loading DePrize…</div>
       </Shell>
     )
   }
-  if (deprize && deprize.state === DePrizeState.NONE) {
+  if (deprize.state === DePrizeState.NONE) {
     return (
       <Shell>
         <Notice tone="amber">DePrize #{deprizeId} does not exist.</Notice>
@@ -361,9 +348,7 @@ export default function DePrizeDetailPage() {
           <p className="text-gray-400 text-sm mt-2">{stateMeta?.description}</p>
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat label="Prize pool">
-              {totalFunding !== undefined
-                ? `${fmt(Number(totalFunding) / Number(UNIT))} ETH`
-                : '—'}
+              {totalFunding !== undefined ? `${fmt(Number(totalFunding) / Number(UNIT))} ETH` : '—'}
             </Stat>
             <Stat label="Providers">{numOutcomes || '—'}</Stat>
             <Stat label="Sunset">
@@ -378,8 +363,8 @@ export default function DePrizeDetailPage() {
         {/* Cancellation notice */}
         {deprize?.cancellationPending && (
           <Notice tone="red">
-            A cancellation has been announced for this DePrize. New bets are paused during the
-            7-day notice window. If the cancellation goes through, all positions are refunded.
+            A cancellation has been announced for this DePrize. New bets are paused during the 7-day
+            notice window. If the cancellation goes through, all positions are refunded.
           </Notice>
         )}
 
@@ -457,8 +442,8 @@ export default function DePrizeDetailPage() {
                       positionRedeemValue(
                         o.balanceWei,
                         market.payoutNums[o.index] ?? 0n,
-                        market.payoutDen ?? 0n
-                      )
+                        market.payoutDen ?? 0n,
+                      ),
                     ) / Number(UNIT)
                   : undefined
               return (
@@ -601,13 +586,7 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
   )
 }
 
-function Notice({
-  tone,
-  children,
-}: {
-  tone: 'amber' | 'red'
-  children: React.ReactNode
-}) {
+function Notice({ tone, children }: { tone: 'amber' | 'red'; children: React.ReactNode }) {
   const cls =
     tone === 'amber'
       ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'

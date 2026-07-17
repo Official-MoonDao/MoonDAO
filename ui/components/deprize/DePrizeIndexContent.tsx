@@ -1,9 +1,5 @@
 import TeamABI from 'const/abis/Team.json'
-import {
-  DEFAULT_CHAIN_V5,
-  DEPRIZE_MINT_ADDRESSES,
-  TEAM_ADDRESSES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getContract } from 'thirdweb'
@@ -66,13 +62,7 @@ function ProviderOddsRow({
   const pct = Number.isFinite(probability) ? fmt(probability, 0) : '—'
 
   const avatar = image ? (
-    <IPFSRenderer
-      className="rounded-full shrink-0"
-      src={image}
-      width={28}
-      height={28}
-      alt={name}
-    />
+    <IPFSRenderer className="rounded-full shrink-0" src={image} width={28} height={28} alt={name} />
   ) : (
     <span
       className="w-7 h-7 rounded-full shrink-0 border border-white/10"
@@ -93,16 +83,12 @@ function ProviderOddsRow({
         aria-label={`Bet on ${name} at ${pct}%`}
       >
         {avatar}
-        <span className="text-gray-100 text-sm font-medium truncate flex-1">
-          {name}
-        </span>
+        <span className="text-gray-100 text-sm font-medium truncate flex-1">{name}</span>
         <span
           className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold
             bg-emerald-500 text-gray-950 group-hover:bg-emerald-400 transition-colors"
         >
-          <span className="text-[10px] font-bold uppercase tracking-wide opacity-80">
-            Bet
-          </span>
+          <span className="text-[10px] font-bold uppercase tracking-wide opacity-80">Bet</span>
           <span className="tabular-nums">{pct}%</span>
         </span>
       </button>
@@ -112,9 +98,7 @@ function ProviderOddsRow({
   return (
     <div className="flex items-center gap-3 min-w-0 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/10">
       {avatar}
-      <span className="text-gray-100 text-sm font-medium truncate flex-1">
-        {name}
-      </span>
+      <span className="text-gray-100 text-sm font-medium truncate flex-1">{name}</span>
       <span className="shrink-0 min-w-[72px] px-3 py-1.5 rounded-lg text-sm font-semibold tabular-nums text-center text-gray-300 bg-white/5 border border-white/10">
         {pct}%
       </span>
@@ -143,10 +127,9 @@ function DePrizeListRow({
   })
 
   const { totalFunding } = useTotalFunding(
-    deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
+    deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined,
   )
-  const prizeEth =
-    totalFunding !== undefined ? Number(totalFunding) / Number(UNIT) : undefined
+  const prizeEth = totalFunding !== undefined ? Number(totalFunding) / Number(UNIT) : undefined
 
   // Top 3 providers by live implied odds (desc). Fall back to registry order
   // while prices are still loading so the card still previews the field.
@@ -185,15 +168,9 @@ function DePrizeListRow({
       >
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="min-w-0">
-            <p className="text-white font-GoodTimes text-lg">
-              DePrize #{deprizeId}
-            </p>
-            <p className="text-gray-400 text-sm mt-1">
-              {meta?.description ?? 'Loading…'}
-            </p>
-            <p className="text-sky-300/90 text-xs mt-2 font-medium">
-              View details →
-            </p>
+            <p className="text-white font-GoodTimes text-lg">DePrize #{deprizeId}</p>
+            <p className="text-gray-400 text-sm mt-1">{meta?.description ?? 'Loading…'}</p>
+            <p className="text-sky-300/90 text-xs mt-2 font-medium">View details →</p>
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <span
@@ -283,7 +260,7 @@ export default function DePrizeIndexContent() {
             abi: TeamABI as any,
           })
         : undefined,
-    [chain, chainSlug]
+    [chain, chainSlug],
   )
 
   // Spendable native ETH for the BetModal (keep a little back for gas).
@@ -297,7 +274,7 @@ export default function DePrizeIndexContent() {
       try {
         const bal = await eth_getBalance(
           getRpcClient({ client: deprizeReadClient, chain: readChain }),
-          { address: account.address }
+          { address: account.address },
         )
         if (!cancelled) {
           setSpendableEth(Math.max(0, Number(bal) / Number(UNIT) - GAS_RESERVE_ETH))
@@ -313,14 +290,14 @@ export default function DePrizeIndexContent() {
 
   const handleBet = useCallback(
     (target: BetTarget) => {
-      if (region.isRestricted || region.isLoading) return
+      if (region.isRestricted || region.isLoading || region.isError) return
       if (!account) {
         login()
         return
       }
       setBetTarget(target)
     },
-    [account, login, region.isLoading, region.isRestricted]
+    [account, login, region.isError, region.isLoading, region.isRestricted],
   )
 
   return (
@@ -344,8 +321,8 @@ export default function DePrizeIndexContent() {
           <div className="flex flex-col gap-4 w-full max-w-[760px] mx-auto">
             {region.isRestricted && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
-                Betting isn&apos;t available in your region. You can still browse
-                live odds and prize pools.
+                Betting isn&apos;t available in your region. You can still browse live odds and
+                prize pools.
               </div>
             )}
             {!registryConfigured ? (

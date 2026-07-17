@@ -20,7 +20,7 @@ export async function lmsrNetCost(
   lmsr: any,
   index: number,
   qty: bigint,
-  numOutcomes: number
+  numOutcomes: number,
 ): Promise<bigint> {
   const amounts = buildAmounts(index, qty, numOutcomes)
   return await rpcRead<bigint>({
@@ -38,8 +38,11 @@ export async function lmsrMarketFee(lmsr: any, netWei: bigint): Promise<bigint> 
       method: 'calcMarketFee' as string,
       params: [netWei],
     })
-  } catch {
-    return 0n
+  } catch (err) {
+    // Never fall back to 0: a zero fee underestimates cost and can oversize
+    // qty, causing on-chain CostTooHigh reverts after the user confirms.
+    console.error('[deprize] calcMarketFee failed', err)
+    throw err
   }
 }
 
@@ -51,7 +54,7 @@ export async function quoteQtyForBudget(
   lmsr: any,
   index: number,
   targetWei: bigint,
-  numOutcomes: number
+  numOutcomes: number,
 ): Promise<bigint> {
   if (!lmsr || targetWei <= 0n) return 0n
 

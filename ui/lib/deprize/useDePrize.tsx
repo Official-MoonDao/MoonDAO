@@ -53,10 +53,7 @@ export function useDePrizeRegistryContract(chain: Chain) {
  * are derived client-side from `state` + `cancellationNoticeAt` — exactly the
  * registry's own logic — to keep this to a single RPC read per poll.
  */
-export function useDePrize(
-  deprizeId: number | string | undefined,
-  chain: Chain
-): UseDePrizeResult {
+export function useDePrize(deprizeId: number | string | undefined, chain: Chain): UseDePrizeResult {
   const registry = useDePrizeRegistryContract(chain)
   const [deprize, setDePrize] = useState<DePrizeRecord | undefined>()
   const [loading, setLoading] = useState(false)
@@ -67,8 +64,12 @@ export function useDePrize(
 
   const load = useCallback(async () => {
     if (!registry || !idValid) return
+    const requestedId = Number(deprizeId)
     setLoading(true)
     setError(undefined)
+    // Drop a prior DePrize immediately on id change so consumers never render
+    // the old lifecycle/teams/odds against the new route id mid-fetch.
+    setDePrize((prev) => (prev?.deprizeId === requestedId ? prev : undefined))
     try {
       // `getDePrize` REVERTS with UnknownDePrize for unregistered ids, so probe
       // the non-reverting `state()` first and surface NONE as a real record
@@ -77,13 +78,13 @@ export function useDePrize(
         await rpcRead<bigint | number>({
           contract: registry,
           method: 'state' as string,
-          params: [BigInt(deprizeId as any)],
-        })
+          params: [BigInt(requestedId)],
+        }),
       ) as DePrizeState
       if (probedState === DePrizeState.NONE) {
         startTransition(() => {
           setDePrize({
-            deprizeId: Number(deprizeId),
+            deprizeId: requestedId,
             jbProjectId: 0n,
             conditionId: ZERO_BYTES32,
             sunset: 0n,
@@ -102,13 +103,13 @@ export function useDePrize(
       const dp = await rpcRead<any>({
         contract: registry,
         method: 'getDePrize' as string,
-        params: [BigInt(deprizeId as any)],
+        params: [BigInt(requestedId)],
       })
       const state = Number(dp.state) as DePrizeState
       const cancellationNoticeAt = BigInt(dp.cancellationNoticeAt ?? 0)
       startTransition(() => {
         setDePrize({
-          deprizeId: Number(deprizeId),
+          deprizeId: requestedId,
           jbProjectId: BigInt(dp.jbProjectId ?? 0),
           conditionId: dp.ctfConditionId ?? ZERO_BYTES32,
           sunset: BigInt(dp.sunset ?? 0),
