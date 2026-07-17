@@ -20,7 +20,10 @@ import {
   BUDGET_OVERRIDES_USD,
   getBudgetOverrideUSD,
 } from '../../../lib/proposals/budgetOverrides'
-import { extractUsdBudget } from '../../../lib/proposals/extractUsdBudget'
+import {
+  extractUsdBudget,
+  parseUsdBudgetFromBody,
+} from '../../../lib/proposals/extractUsdBudget'
 
 describe('budget overrides', () => {
   describe('getBudgetOverrideUSD', () => {
@@ -132,6 +135,118 @@ describe('budget overrides', () => {
         body: 'no budget anywhere here',
       }
       expect(extractUsdBudget(proposal, { MDP: 999999 })).to.equal(0)
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Parser regression tests — one test per Q3 2026 failure shape so each
+  // bug is caught if the body-parsing logic regresses.
+  // ─────────────────────────────────────────────────────────────────────────
+  describe('parseUsdBudgetFromBody — regression suite', () => {
+    // MDP-266 shape: 3-column table (desc | quantity | cost), plural "Totals"
+    // row, and an invisible U+200E mark embedded in the amount cell.
+    it('reads the last (cost) column of a 3-column table, plural Totals row (MDP-266 shape)', () => {
+      const body = [
+        '# Budget',
+        '',
+        '| Description | Man-days | Cost |',
+        '| --- | --- | --- |',
+        '| Main modules / Airlocks | 1 | US$ 500 |',
+        '| Central Hub / Counter-rotation | 1 | US$ 500 |',
+        '| Environment Control | 1.5 | US$ 750 |',
+        // U+200E embedded before the dollar sign, as in the real proposal
+        '| Totals | 8 | US\u200E$ 4,000 |',
+        '',
+      ].join('\n')
+      expect(parseUsdBudgetFromBody(body)).to.equal(4000)
+    })
+
+    // MDP-259 shape: Totals row cell contains a mixed-currency string
+    // "$2430 USD 1.30 ETH". The old isUsdValue() rejected the whole cell
+    // because "ETH" appeared in it, even though a $ USD amount was present.
+    it('extracts USD amount from a mixed-currency total cell "$X USD N.N ETH" (MDP-259 shape)', () => {
+      const body = [
+        '# Budget',
+        '',
+        '| Description | Amount | Justification |',
+        '| --- | --- | --- |',
+        '| Kits | $1560 | 150 kits |',
+        '| Transport | $280 | logistics |',
+        '| Total | $2430 USD 1.30 ETH | |',
+        '',
+      ].join('\n')
+      expect(parseUsdBudgetFromBody(body)).to.equal(2430)
+    })
+
+    // MDP-250 shape: budget written as prose with an arithmetic expression.
+    // "Total costs: (820 + 88 + 3200) $= $4108" — the inline parser must
+    // find the LAST / largest $ amount on the trigger line, not the first
+    // number inside the parentheses.
+    it('parses inline "Total costs: (items) $= $total" prose (MDP-250 shape)', () => {
+      const body =
+        'Software costs:\nNvivo $820\nGoogle Workspace $88\n\nResearcher Compensation $3200\n\nTotal costs: (820 + 88 + 3200) $= $4108'
+      expect(parseUsdBudgetFromBody(body)).to.equal(4108)
+    })
+
+    // MDP-255 shape: proposal has a # Budget section whose table carries
+    // no dollar amounts (only category labels), AND the body contains a
+    // large Revenue Potential table. The parser must NOT fall through to
+    // the whole-body scan and accidentally sum the revenue figures.
+    it('does not sum a Revenue table when a Budget section heading exists but has no parseable total (MDP-255 shape)', () => {
+      const body = [
+        '# Solution',
+        'Some description.',
+        '',
+        '# Revenue Potential',
+        '',
+        '| Channel | Revenue |',
+        '| --- | --- |',
+        '| Online courses | $60,000 |',
+        '| Premium paths | $62,500 |',
+        '| Total | $122,500 |',
+        '',
+        '# Budget (Table C)#',
+        '',
+        '| Budget Category |',
+        '| --- |',
+        '| Platform Completion |',
+        '| Marketing |',
+        '',
+      ].join('\n')
+      // Should return 0 (no parseable total in the budget section) rather
+      // than $122,500 from the Revenue table.
+      expect(parseUsdBudgetFromBody(body)).to.equal(0)
+    })
+
+    // Regression: standard 2-column budget table still works after the
+    // extractTableRowPairs refactor.
+    it('still reads a standard 2-column budget table correctly', () => {
+      const body = [
+        '## Budget',
+        '',
+        '| Item | Cost |',
+        '| --- | --- |',
+        '| Dev work | $3,000 |',
+        '| Marketing | $1,000 |',
+        '| Total | $4,000 |',
+      ].join('\n')
+      expect(parseUsdBudgetFromBody(body)).to.equal(4000)
+    })
+
+    // Regression: 3-column desc|amount|justification table (MDP-251 style).
+    // The amount is in the middle column, not the last.
+    it('picks the middle USD column when last column is non-numeric justification text (MDP-251 style)', () => {
+      const body = [
+        '## Budget',
+        '',
+        '| Description | Amount | Justification |',
+        '| --- | --- | --- |',
+        '| Crew registration fee | $3,500 | Published MDRS rate |',
+        '| Security deposit | $250 | Refundable |',
+        '| Travel | $700 | Round-trip |',
+        '| Total | $5,500 USD | Sent in ETH or MOONEY |',
+      ].join('\n')
+      expect(parseUsdBudgetFromBody(body)).to.equal(5500)
     })
   })
 })
