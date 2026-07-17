@@ -5,7 +5,6 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
-import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -85,11 +84,7 @@ function ProviderOddsRow({
     return (
       <button
         type="button"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          onBet(name)
-        }}
+        onClick={() => onBet(name)}
         className="group w-full flex items-center gap-3 min-w-0 px-3 py-2.5 rounded-xl text-left
           bg-emerald-500/10 border border-emerald-500/35
           hover:bg-emerald-500/20 hover:border-emerald-400/60
@@ -178,36 +173,48 @@ function DePrizeListRow({
   const detailHref = `/deprize/${deprizeId}`
 
   return (
-    <Link
-      href={detailHref}
-      className="block p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10 hover:border-white/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-    >
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="min-w-0">
-          <p className="text-white font-GoodTimes text-lg">DePrize #{deprizeId}</p>
-          <p className="text-gray-400 text-sm mt-1">
-            {meta?.description ?? 'Loading…'}
-          </p>
+    <div className="rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10 hover:border-white/25 transition-colors overflow-hidden">
+      {/*
+        Plain <a> (not next/link): client-side transitions to /deprize/[id] can
+        hang with an in-flight route and never complete. A full document
+        navigation is reliable and matches user expectation for "open this card".
+      */}
+      <a
+        href={detailHref}
+        className="block p-4 sm:p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/30"
+      >
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <p className="text-white font-GoodTimes text-lg">
+              DePrize #{deprizeId}
+            </p>
+            <p className="text-gray-400 text-sm mt-1">
+              {meta?.description ?? 'Loading…'}
+            </p>
+            <p className="text-sky-300/90 text-xs mt-2 font-medium">
+              View details →
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                bettingOpen
+                  ? 'bg-moon-green/20 text-moon-green border-moon-green/40'
+                  : 'bg-white/10 text-gray-200 border-white/20'
+              }`}
+            >
+              {meta?.label ?? '—'}
+            </span>
+            <p className="text-white text-lg font-bold tabular-nums">
+              {prizeEth !== undefined ? fmt(prizeEth, 2) : '—'}
+              <span className="text-sm font-medium text-gray-400 ml-1">ETH</span>
+            </p>
+            <p className="text-gray-500 text-[11px]">prize pool</p>
+          </div>
         </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-medium border ${
-              bettingOpen
-                ? 'bg-moon-green/20 text-moon-green border-moon-green/40'
-                : 'bg-white/10 text-gray-200 border-white/20'
-            }`}
-          >
-            {meta?.label ?? '—'}
-          </span>
-          <p className="text-white text-lg font-bold tabular-nums">
-            {prizeEth !== undefined ? fmt(prizeEth, 2) : '—'}
-            <span className="text-sm font-medium text-gray-400 ml-1">ETH</span>
-          </p>
-          <p className="text-gray-500 text-[11px]">prize pool</p>
-        </div>
-      </div>
+      </a>
 
-      <div className="mt-4 flex flex-col gap-2 min-w-0">
+      <div className="px-4 sm:px-5 pb-4 sm:pb-5 flex flex-col gap-2 min-w-0">
         <p className="text-gray-500 text-[11px] uppercase tracking-wide">
           {hasOdds ? 'Live odds' : 'Providers'}
           {bettingOpen ? (
@@ -247,11 +254,10 @@ function DePrizeListRow({
           </p>
         )}
       </div>
-    </Link>
+    </div>
   )
 }
 
-/** Client-only DePrize list body (loaded with ssr:false to avoid Suspense hydration races). */
 export default function DePrizeIndexContent() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
