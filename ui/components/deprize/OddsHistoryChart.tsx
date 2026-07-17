@@ -21,16 +21,38 @@ type Props = {
 const X_TICK_COUNT = 5
 /** Minimum window so a single (or tightly clustered) sample still gets a readable axis. */
 const MIN_SPAN_MS = 5 * 60 * 1000
+/** Nice equal increments for the X axis (ms). */
+const NICE_STEP_MS = [
+  60_000,
+  2 * 60_000,
+  5 * 60_000,
+  10 * 60_000,
+  15 * 60_000,
+  30 * 60_000,
+  60 * 60_000,
+  2 * 60 * 60_000,
+  6 * 60 * 60_000,
+  12 * 60 * 60_000,
+  24 * 60 * 60_000,
+] as const
 
 const fmtTime = (t: number) =>
-  new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
 const fmtTimeFull = (t: number) =>
   new Date(t).toLocaleTimeString([], {
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
     second: '2-digit',
   })
+
+function niceStepMs(span: number, tickCount: number): number {
+  const target = span / Math.max(1, tickCount - 1)
+  return (
+    NICE_STEP_MS.find((step) => step >= target) ??
+    NICE_STEP_MS[NICE_STEP_MS.length - 1]
+  )
+}
 
 function buildTimeDomain(history: OddsSample[]): {
   tMin: number
@@ -44,11 +66,21 @@ function buildTimeDomain(history: OddsSample[]): {
   if (tMax - tMin < MIN_SPAN_MS) {
     tMin = tMax - MIN_SPAN_MS
   }
-  const span = tMax - tMin
-  const ticks = Array.from(
-    { length: X_TICK_COUNT },
-    (_, i) => tMin + (span * i) / (X_TICK_COUNT - 1),
-  )
+
+  // Pick a nice equal time step, align the domain to that step, then emit
+  // ticks at every step so labels never bunch on the left.
+  const step = niceStepMs(tMax - tMin, X_TICK_COUNT)
+  tMin = Math.floor(tMin / step) * step
+  tMax = Math.ceil(tMax / step) * step
+  if (tMax <= tMin) tMax = tMin + step * (X_TICK_COUNT - 1)
+  // Prefer a stable ~5-tick axis: pad the end if alignment shrank the span.
+  const minEnd = tMin + step * (X_TICK_COUNT - 1)
+  if (tMax < minEnd) tMax = minEnd
+
+  const ticks: number[] = []
+  for (let t = tMin; t <= tMax + 1; t += step) {
+    ticks.push(t)
+  }
   return { tMin, tMax, ticks }
 }
 
@@ -110,7 +142,7 @@ export default function OddsHistoryChart({
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: -16 }}>
+      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: -16 }}>
         <CartesianGrid stroke="#ffffff12" vertical={false} />
         <XAxis
           dataKey="t"
@@ -119,10 +151,11 @@ export default function OddsHistoryChart({
           domain={[tMin, tMax]}
           ticks={ticks}
           tickFormatter={fmtTime}
-          tick={{ fill: '#9ca3af', fontSize: 11 }}
+          tick={{ fill: '#9ca3af', fontSize: 11, textAnchor: 'middle' }}
           stroke="#ffffff22"
           interval={0}
-          padding={{ left: 0, right: 0 }}
+          minTickGap={0}
+          padding={{ left: 8, right: 8 }}
         />
         <YAxis
           domain={[0, 100]}
