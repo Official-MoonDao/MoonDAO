@@ -51,6 +51,7 @@ export function useRegistryManagerTeams(
         return
       }
       setIsLoading(true)
+      setUserTeamsAsManager([])
       try {
         const registryContract = getContract({
           client: teamContract.client,

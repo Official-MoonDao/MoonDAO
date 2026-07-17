@@ -165,7 +165,7 @@ contract TeamRoleRegistry is Ownable {
             "Only manager/admin/operator"
         );
         // Never silently demote an existing manager through the member setter.
-        if (!enabled && roles[teamId][account] > MEMBER) {
+        if (roles[teamId][account] > MEMBER) {
             revert("Use setManager to change a manager");
         }
         _setRole(teamId, account, enabled ? MEMBER : NONE);
