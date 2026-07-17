@@ -358,6 +358,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
       saved = await setLivePhaseOverride({
         phase: 'member',
+        // Open distribute/submit UI with the phase flip — config defaults
+        // memberVoteSubmissionsOpen to false until a redeploy, which would
+        // leave Member Vote "open" but submissions permanently gated.
+        memberVoteSubmissionsOpen: true,
         setBy,
         note: `Advanced Senate → Member${force ? ' (forced)' : ''} from operator panel`,
       })

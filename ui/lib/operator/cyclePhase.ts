@@ -13,9 +13,10 @@ import type { ProjectCyclePhase } from 'const/config'
  * unreachable, callers fall back to the config default, so the site always
  * has a safe, deterministic phase.
  *
- * Only the phase flag is stored here. Per-cycle numbers (budget, retro pool,
- * deadlines) are NOT runtime-overridable — those are deliberate, reviewed
- * edits to `PROJECT_CYCLE` that roll the whole cycle forward at once.
+ * Phase and Member Vote submissions-open are stored here. Per-cycle numbers
+ * (budget, retro pool, deadlines) are NOT runtime-overridable — those are
+ * deliberate, reviewed edits to `PROJECT_CYCLE` that roll the whole cycle
+ * forward at once.
  */
 
 export type { ProjectCyclePhase }
@@ -57,6 +58,10 @@ export function getNextPhase(
 export type LivePhaseOverride = {
   // null → follow the PROJECT_CYCLE.phase default.
   phase: ProjectCyclePhase | null
+  // When set, overrides PROJECT_CYCLE.memberVoteSubmissionsOpen so Advance
+  // Phase (Senate → Member) can open the distribute UI without a redeploy.
+  // Cleared with the phase key on wrap-up / delete.
+  memberVoteSubmissionsOpen?: boolean | null
   setBy?: string
   note?: string
   setAt?: string // ISO timestamp
@@ -93,6 +98,10 @@ export async function getLivePhaseOverride(): Promise<LivePhaseOverride> {
       typeof value === 'string' ? JSON.parse(value) : value
     return {
       phase: isProjectCyclePhase(record?.phase) ? record.phase : null,
+      memberVoteSubmissionsOpen:
+        typeof record?.memberVoteSubmissionsOpen === 'boolean'
+          ? record.memberVoteSubmissionsOpen
+          : null,
       setBy: typeof record?.setBy === 'string' ? record.setBy : undefined,
       note: typeof record?.note === 'string' ? record.note : undefined,
       setAt: typeof record?.setAt === 'string' ? record.setAt : undefined,
@@ -110,6 +119,7 @@ export async function getLivePhaseOverride(): Promise<LivePhaseOverride> {
  */
 export async function setLivePhaseOverride(params: {
   phase: ProjectCyclePhase | null
+  memberVoteSubmissionsOpen?: boolean | null
   setBy?: string
   note?: string
 }): Promise<LivePhaseOverride> {
@@ -125,6 +135,10 @@ export async function setLivePhaseOverride(params: {
   }
   const record: LivePhaseOverride = {
     phase: params.phase,
+    memberVoteSubmissionsOpen:
+      typeof params.memberVoteSubmissionsOpen === 'boolean'
+        ? params.memberVoteSubmissionsOpen
+        : null,
     setBy: params.setBy,
     note: params.note,
     setAt: new Date().toISOString(),
@@ -141,4 +155,23 @@ export function resolveLivePhase(
   override: LivePhaseOverride | null | undefined
 ): ProjectCyclePhase {
   return override?.phase ?? PROJECT_CYCLE.phase
+}
+
+/**
+ * Whether Member Vote distribution submit/edit UI is open.
+ * Live override (set true on Senate → Member advance) wins over the
+ * deploy-time PROJECT_CYCLE.memberVoteSubmissionsOpen default. Legacy
+ * overrides that only stored `phase: 'member'` are treated as open —
+ * that advance meant "Open Member Vote".
+ */
+export function resolveMemberVoteSubmissionsOpen(
+  phase: ProjectCyclePhase,
+  override: LivePhaseOverride | null | undefined
+): boolean {
+  if (phase !== 'member') return false
+  if (typeof override?.memberVoteSubmissionsOpen === 'boolean') {
+    return override.memberVoteSubmissionsOpen
+  }
+  if (override?.phase === 'member') return true
+  return PROJECT_CYCLE.memberVoteSubmissionsOpen
 }

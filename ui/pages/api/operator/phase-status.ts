@@ -5,6 +5,7 @@ import {
   getNextPhase,
   getPhaseFlags,
   resolveLivePhase,
+  resolveMemberVoteSubmissionsOpen,
 } from '@/lib/operator/cyclePhase'
 
 // Public read of the current project-cycle phase. Returns the deploy-time
@@ -31,6 +32,10 @@ export default async function handler(
     override,
     nextPhase: getNextPhase(phase),
     flags: getPhaseFlags(phase),
+    memberVoteSubmissionsOpen: resolveMemberVoteSubmissionsOpen(
+      phase,
+      override
+    ),
     quarter: PROJECT_CYCLE.quarter,
     year: PROJECT_CYCLE.year,
   })

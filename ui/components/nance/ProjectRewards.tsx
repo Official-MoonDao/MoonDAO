@@ -15,7 +15,6 @@ import {
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
   USD_BUDGET,
-  MEMBER_VOTE_SUBMISSIONS_OPEN,
   RETRO_PAYOUT_TOKEN,
   RETRO_ETH_BUDGET,
   RETRO_USD_BUDGET,
@@ -90,6 +89,9 @@ export type ProjectRewardsProps = {
   // render matches the operator's live phase override. Falls back to the
   // PROJECT_CYCLE.phase default when not provided.
   initialLivePhase?: ProjectCyclePhase
+  // Whether Member Vote distribute/submit UI is open (live KV override when
+  // set by Advance Phase, else PROJECT_CYCLE.memberVoteSubmissionsOpen).
+  initialMemberVoteSubmissionsOpen?: boolean
 }
 
 // The `distribution` column on both Tableland tables is stored via
@@ -282,6 +284,7 @@ export function ProjectRewards({
   proposalAllocations,
   refreshRewards,
   initialLivePhase,
+  initialMemberVoteSubmissionsOpen,
 }: ProjectRewardsProps) {
   const router = useRouter()
 
@@ -308,7 +311,13 @@ export function ProjectRewards({
   // Member-vote submissions are gated separately so we can keep the rest
   // of the Member Vote UI (badge, results panel, phase callout) live while
   // closing off new distribution submits/edits at the end of the window.
-  const memberVoteSubmissionsOpen = isMemberVote && MEMBER_VOTE_SUBMISSIONS_OPEN
+  // Seeded from SSR (which honors the live KV override set by Advance Phase).
+  const [memberVoteSubmissionsOpen, setMemberVoteSubmissionsOpen] = useState(
+    () =>
+      initialMemberVoteSubmissionsOpen ??
+      ((initialLivePhase ?? PROJECT_CYCLE.phase) === 'member' &&
+        PROJECT_CYCLE.memberVoteSubmissionsOpen)
+  )
 
   // Poll the live phase so operator phase advances propagate without a redeploy.
   // When the phase actually changes, reload the page so getStaticProps data
@@ -325,6 +334,9 @@ export function ProjectRewards({
         .then((data) => {
           if (cancelled || !data?.livePhase) return
           const next = data.livePhase as ProjectCyclePhase
+          if (typeof data.memberVoteSubmissionsOpen === 'boolean') {
+            setMemberVoteSubmissionsOpen(data.memberVoteSubmissionsOpen)
+          }
           if (next === livePhaseRef.current) return
           livePhaseRef.current = next
           setLivePhase(next)
@@ -345,14 +357,10 @@ export function ProjectRewards({
     isRewardsCycle(new Date(), livePhase === 'member') ? -1 : 0
   )
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
-  // The proposals being voted on right now belong to the current calendar
-  // quarter — that's the key the page already filters by in
-  // `getStaticProps`. We deliberately do NOT use `getSubmissionQuarter()`
-  // here: past its ~3-week submission cutoff it advances to the *next*
-  // quarter (because new submissions then target the next cycle), which
-  // would orphan member-vote rows from the in-flight Q{n} proposals.
-  const proposalQuarter = currentQuarter
-  const proposalYear = currentYear
+  // Proposal cohort matches PROJECT_CYCLE (and advance-phase / getStaticProps),
+  // not the calendar quarter — keeps distribute keys aligned with listed MDPs.
+  const proposalQuarter = PROJECT_CYCLE.quarter
+  const proposalYear = PROJECT_CYCLE.year
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
