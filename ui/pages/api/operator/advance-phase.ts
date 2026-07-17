@@ -108,8 +108,9 @@ async function tallySenateForCurrentCycle(
 
   // Read quorum once (same value for every proposal). Fully-qualified
   // signature so thirdweb bypasses the JSON ABI (which omits getQuorum on the
-  // live contract) — same trick closeSenate.ts uses.
-  let quorum = 0
+  // live contract) — same trick closeSenate.ts uses. Abort if we can't read
+  // it: falling back to 0 would let every pending MDP pass the pre-check.
+  let quorum: number
   try {
     quorum = Number(
       await readContractWithRetry<bigint>(
@@ -119,7 +120,8 @@ async function tallySenateForCurrentCycle(
       )
     )
   } catch (error) {
-    console.warn('[advance-phase] getQuorum failed; proceeding with quorum=0', error)
+    console.error('[advance-phase] getQuorum failed:', error)
+    throw new Error('Failed to read Senate quorum from chain.')
   }
 
   for (const project of pending) {
@@ -356,6 +358,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       note: `Advanced Senate → Member${force ? ' (forced)' : ''} from operator panel`,
     })
 
+    // Bust the ISR cache so visitors who reload (or whose phase poll triggers
+    // a reload) pick up fresh Senate flags + retro distributions for the new
+    // phase instead of the prior-cycle getStaticProps snapshot.
+    try {
+      await res.revalidate('/projects')
+    } catch (err) {
+      console.warn('[advance-phase] failed to revalidate /projects:', err)
+    }
+
     return res.status(200).json({
       success: true,
       currentPhase,
@@ -383,6 +394,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       setBy,
       note: 'Wrapped up cycle (Member → idle) from operator panel',
     })
+
+    try {
+      await res.revalidate('/projects')
+    } catch (err) {
+      console.warn('[advance-phase] failed to revalidate /projects:', err)
+    }
+
     return res.status(200).json({
       success: true,
       currentPhase,

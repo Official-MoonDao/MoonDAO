@@ -310,7 +310,13 @@ export function ProjectRewards({
   // closing off new distribution submits/edits at the end of the window.
   const memberVoteSubmissionsOpen = isMemberVote && MEMBER_VOTE_SUBMISSIONS_OPEN
 
-  // Poll the live phase so operator phase advances propagate without a reload.
+  // Poll the live phase so operator phase advances propagate without a redeploy.
+  // When the phase actually changes, reload the page so getStaticProps data
+  // (Senate temp-check flags, retro distributions, cohort quarter) refreshes
+  // for every visitor — same path the operator panel already takes via
+  // onAfterChange → refreshRewards.
+  const livePhaseRef = useRef(livePhase)
+  livePhaseRef.current = livePhase
   useEffect(() => {
     let cancelled = false
     const fetchPhase = () => {
@@ -318,7 +324,11 @@ export function ProjectRewards({
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (cancelled || !data?.livePhase) return
-          setLivePhase(data.livePhase as ProjectCyclePhase)
+          const next = data.livePhase as ProjectCyclePhase
+          if (next === livePhaseRef.current) return
+          livePhaseRef.current = next
+          setLivePhase(next)
+          router.reload()
         })
         .catch(() => {})
     }
@@ -328,8 +338,12 @@ export function ProjectRewards({
       cancelled = true
       clearInterval(id)
     }
-  }, [])
-  const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
+  }, [router])
+  // Derive the retro cohort from livePhase synchronously so we don't lag a
+  // render behind the rewardVotingActive effect when the poll flips to member.
+  const { quarter, year } = getRelativeQuarter(
+    isRewardsCycle(new Date(), livePhase === 'member') ? -1 : 0
+  )
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
   // The proposals being voted on right now belong to the current calendar
   // quarter — that's the key the page already filters by in
@@ -2117,7 +2131,9 @@ export function ProjectRewards({
                     audit page (`/projects/retro-audit`). */}
                 {(() => {
                   const prev = getRelativeQuarter(
-                    rewardVotingActive ? -2 : -1
+                    isRewardsCycle(new Date(), livePhase === 'member')
+                      ? -2
+                      : -1
                   )
                   return (
                     <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10">
