@@ -124,7 +124,7 @@ async function tallySenateForCurrentCycle(
 
   for (const project of pending) {
     const mdp = Number(project.MDP)
-    const base: SenateTallyResult = {
+    const base: Omit<SenateTallyResult, 'status'> = {
       mdp,
       projectId: project.id,
       name: project.name,
