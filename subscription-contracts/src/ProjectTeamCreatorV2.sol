@@ -112,6 +112,7 @@ contract ProjectTeamCreatorV2 is Ownable {
         address[] memory members,
         address[] memory signers
     ) external payable onlyOwner returns (uint256 tokenId) {
+        require(signers.length > 0, "No signers");
         bytes memory safeCallData = constructSafeCallData(signers);
         GnosisSafeProxy gnosisSafe = gnosisSafeProxyFactory.createProxy(gnosisSingleton, safeCallData);
 
