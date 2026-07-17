@@ -134,6 +134,31 @@ export function resolvePayoutVector(
   return { resolved: true, winningIndex, isRefundVector }
 }
 
+/**
+ * Whether the UI should treat the market as resolved (WON / Lost / Refund /
+ * claim panel). A CTF payout vector alone is not enough — test markets can
+ * have a premature reportPayouts while the registry is still OPEN and the
+ * LMSR is only paused. Surface resolution when the registry lifecycle says
+ * so, or when the market is fully Closed with a reported vector.
+ */
+export function shouldSurfaceResolution(opts: {
+  ctfResolved: boolean
+  registryState: DePrizeState
+  marketClosed: boolean
+}): boolean {
+  if (!opts.ctfResolved) return false
+  const { registryState } = opts
+  if (
+    registryState === DePrizeState.SETTLED ||
+    registryState === DePrizeState.M1_RELEASED ||
+    registryState === DePrizeState.M2_COMPLETE ||
+    isRefundableState(registryState)
+  ) {
+    return true
+  }
+  return opts.marketClosed
+}
+
 // What a held position redeems for under a reported payout vector — the CTF's
 // exact integer math (floor division PER POSITION), so UI figures can never
 // disagree with what redeemPositions actually pays.

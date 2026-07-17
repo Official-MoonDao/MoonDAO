@@ -16,11 +16,14 @@ type Props = {
   labels: string[]
   colors: string[]
   height?: number
+  /** Anchor the X domain to the market open time (ms since epoch). */
+  domainStartMs?: number
 }
 
 const X_TICK_COUNT = 5
 /** Minimum window so a single (or tightly clustered) sample still gets a readable axis. */
 const MIN_SPAN_MS = 5 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000
 /** Nice equal increments for the X axis (ms). */
 const NICE_STEP_MS = [
   60_000,
@@ -33,36 +36,63 @@ const NICE_STEP_MS = [
   2 * 60 * 60_000,
   6 * 60 * 60_000,
   12 * 60 * 60_000,
-  24 * 60 * 60_000,
+  DAY_MS,
+  2 * DAY_MS,
+  3 * DAY_MS,
+  7 * DAY_MS,
+  14 * DAY_MS,
+  30 * DAY_MS,
 ] as const
 
-const fmtTime = (t: number) =>
-  new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+function fmtTick(t: number, spanMs: number) {
+  const d = new Date(t)
+  if (spanMs >= DAY_MS) {
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  }
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
 
-const fmtTimeFull = (t: number) =>
-  new Date(t).toLocaleTimeString([], {
+function fmtTooltip(t: number, spanMs: number) {
+  const d = new Date(t)
+  if (spanMs >= DAY_MS) {
+    return d.toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  }
+  return d.toLocaleTimeString([], {
     hour: 'numeric',
     minute: '2-digit',
     second: '2-digit',
   })
+}
 
 function niceStepMs(span: number, tickCount: number): number {
   const target = span / Math.max(1, tickCount - 1)
-  return (
-    NICE_STEP_MS.find((step) => step >= target) ??
-    NICE_STEP_MS[NICE_STEP_MS.length - 1]
-  )
+  const found = NICE_STEP_MS.find((step) => step >= target)
+  if (found) return found
+  // Beyond the table: whole-day multiples.
+  return Math.max(1, Math.ceil(target / DAY_MS)) * DAY_MS
 }
 
-function buildTimeDomain(history: OddsSample[]): {
+function buildTimeDomain(
+  history: OddsSample[],
+  domainStartMs?: number,
+): {
   tMin: number
   tMax: number
   ticks: number[]
+  spanMs: number
 } {
   const now = Date.now()
   const times = history.map((s) => s.t)
   let tMax = Math.max(...times, now)
-  let tMin = Math.min(...times)
+  let tMin =
+    domainStartMs !== undefined && Number.isFinite(domainStartMs)
+      ? Math.min(domainStartMs, ...times)
+      : Math.min(...times)
   if (tMax - tMin < MIN_SPAN_MS) {
     tMin = tMax - MIN_SPAN_MS
   }
@@ -73,15 +103,26 @@ function buildTimeDomain(history: OddsSample[]): {
   tMin = Math.floor(tMin / step) * step
   tMax = Math.ceil(tMax / step) * step
   if (tMax <= tMin) tMax = tMin + step * (X_TICK_COUNT - 1)
-  // Prefer a stable ~5-tick axis: pad the end if alignment shrank the span.
-  const minEnd = tMin + step * (X_TICK_COUNT - 1)
-  if (tMax < minEnd) tMax = minEnd
+  // For short windows only, pad up to ~5 ticks. Never invent a large future
+  // span past "now" on long-lived markets (that pushed labels into next month).
+  const alignedTicks = Math.floor((tMax - tMin) / step) + 1
+  if (alignedTicks < 3) {
+    tMax = tMin + step * Math.max(2, X_TICK_COUNT - 1)
+  }
 
   const ticks: number[] = []
   for (let t = tMin; t <= tMax + 1; t += step) {
     ticks.push(t)
   }
-  return { tMin, tMax, ticks }
+  // Guard against an oversized tick list if span/step misalign.
+  const thinned =
+    ticks.length <= 8
+      ? ticks
+      : Array.from(
+          { length: X_TICK_COUNT },
+          (_, i) => tMin + Math.round(((tMax - tMin) * i) / (X_TICK_COUNT - 1)),
+        )
+  return { tMin, tMax, ticks: thinned, spanMs: tMax - tMin }
 }
 
 export default function OddsHistoryChart({
@@ -89,20 +130,42 @@ export default function OddsHistoryChart({
   labels,
   colors,
   height = 220,
+  domainStartMs,
 }: Props) {
   const outcomeCount = labels.length
 
-  const { data, tMin, tMax, ticks } = useMemo(() => {
+  const { data, tMin, tMax, ticks, spanMs } = useMemo(() => {
     if (!history.length) {
-      return { data: [] as Record<string, number>[], tMin: 0, tMax: 0, ticks: [] as number[] }
+      return {
+        data: [] as Record<string, number>[],
+        tMin: 0,
+        tMax: 0,
+        ticks: [] as number[],
+        spanMs: 0,
+      }
     }
 
-    const domain = buildTimeDomain(history)
+    const domain = buildTimeDomain(history, domainStartMs)
+    const anchored =
+      domainStartMs !== undefined && Number.isFinite(domainStartMs)
 
-    // Ensure the series spans the full domain so a single live reading still
-    // draws across the chart (flat at current odds until more samples arrive).
+    // With a market-open anchor, plot real samples only and extend the last
+    // point to "now" — do not invent a flat history back to open. Without an
+    // anchor (short live window), keep the prior baseline so a single reading
+    // still draws immediately.
     let samples = history
-    if (history.length === 1) {
+    if (anchored) {
+      const last = history[history.length - 1]
+      if (last && last.t < domain.tMax) {
+        samples = [...history, { t: domain.tMax, p: last.p }]
+      }
+      if (samples.length === 1) {
+        samples = [
+          samples[0],
+          { t: Math.min(samples[0].t + 1, domain.tMax), p: samples[0].p },
+        ]
+      }
+    } else if (history.length === 1) {
       samples = [
         { t: domain.tMin, p: history[0].p },
         { t: domain.tMax, p: history[0].p },
@@ -126,7 +189,7 @@ export default function OddsHistoryChart({
     })
 
     return { data: rows, ...domain }
-  }, [history, outcomeCount])
+  }, [history, outcomeCount, domainStartMs])
 
   if (data.length < 2) {
     return (
@@ -150,7 +213,7 @@ export default function OddsHistoryChart({
           scale="linear"
           domain={[tMin, tMax]}
           ticks={ticks}
-          tickFormatter={fmtTime}
+          tickFormatter={(t) => fmtTick(Number(t), spanMs)}
           tick={{ fill: '#9ca3af', fontSize: 11, textAnchor: 'middle' }}
           stroke="#ffffff22"
           interval={0}
@@ -173,7 +236,7 @@ export default function OddsHistoryChart({
             fontSize: 12,
           }}
           labelStyle={{ color: '#9ca3af' }}
-          labelFormatter={(t) => fmtTimeFull(Number(t))}
+          labelFormatter={(t) => fmtTooltip(Number(t), spanMs)}
           formatter={(value: any, _name, item) => {
             const idx = Number(String(item?.dataKey).replace('v', ''))
             return [`${Number(value).toFixed(1)}%`, labels[idx]]

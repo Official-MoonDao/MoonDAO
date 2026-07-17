@@ -45,6 +45,8 @@ export type UseDePrizeMarketResult = {
   resolved: boolean
   winningIndex: number
   isRefundVector: boolean
+  /** LMSR market open time (ms), when available — anchors the odds chart domain. */
+  marketStartMs: number | undefined
   oddsHistory: OddsSample[]
   loading: boolean
   error: string | undefined
@@ -122,6 +124,7 @@ export function useDePrizeMarket(params: {
     setPayoutDen(undefined)
     setPayoutNums([])
     setMarketFeesWei(undefined)
+    setMarketStartMs(undefined)
     setOddsHistory([])
     setError(undefined)
     ;(async () => {
@@ -288,12 +291,14 @@ export function useDePrizeMarket(params: {
     recordOddsSample(probs)
   }, [outcomes, recordOddsSample])
 
-  // Static-per-market values (condition id, position ids, fee) never change.
+  // Static-per-market values (condition id, position ids, fee, start) never change.
   const staticRef = useRef<{
     conditionId: string
     positionIds: bigint[]
     feePct?: number
+    marketStartMs?: number
   } | null>(null)
+  const [marketStartMs, setMarketStartMs] = useState<number | undefined>()
   // Bumped whenever the bound market changes so in-flight loads/polls from a
   // prior navigation cannot overwrite the current market's state.
   const loadGenRef = useRef(0)
@@ -344,12 +349,27 @@ export function useDePrizeMarket(params: {
         })
           .then((v) => (Number(v) / 1e18) * 100)
           .catch(() => undefined)
+        const startSec = await rpcRead<bigint>({
+          contract: lmsr,
+          method: 'startTime' as string,
+          params: [],
+        })
+          .then((v) => Number(v))
+          .catch(() => 0)
         if (loadGenRef.current !== gen) return
-        staticRef.current = { conditionId: cond as string, positionIds: ids, feePct: fee }
+        const startMs =
+          Number.isFinite(startSec) && startSec > 0 ? startSec * 1000 : undefined
+        staticRef.current = {
+          conditionId: cond as string,
+          positionIds: ids,
+          feePct: fee,
+          marketStartMs: startMs,
+        }
         startTransition(() => {
           if (loadGenRef.current !== gen) return
           setPositionIds(ids)
           setFeePct(fee)
+          setMarketStartMs(startMs)
         })
       }
       const { conditionId: cond, positionIds: ids } = staticRef.current
@@ -548,6 +568,7 @@ export function useDePrizeMarket(params: {
     resolved,
     winningIndex,
     isRefundVector,
+    marketStartMs: marketStartMs ?? staticRef.current?.marketStartMs,
     oddsHistory,
     loading,
     error,

@@ -3,6 +3,7 @@ import {
   DEPRIZE_STATE_META,
   deriveDePrizeFlags,
   isRefundableState,
+  shouldSurfaceResolution,
   isTerminalState,
   positionRedeemValue,
   resolvePayoutVector,
@@ -104,6 +105,55 @@ describe('deprize lifecycle derivations', () => {
       expect(r.resolved).to.equal(true)
       expect(r.winningIndex).to.equal(-1)
       expect(r.isRefundVector).to.equal(false)
+    })
+  })
+
+  describe('shouldSurfaceResolution (registry + market gate)', () => {
+    it('ignores a CTF refund vector while registry is still OPEN and market not Closed', () => {
+      expect(
+        shouldSurfaceResolution({
+          ctfResolved: true,
+          registryState: DePrizeState.OPEN,
+          marketClosed: false,
+        }),
+      ).to.equal(false)
+    })
+
+    it('surfaces when registry is settled / refundable', () => {
+      expect(
+        shouldSurfaceResolution({
+          ctfResolved: true,
+          registryState: DePrizeState.SETTLED,
+          marketClosed: false,
+        }),
+      ).to.equal(true)
+      expect(
+        shouldSurfaceResolution({
+          ctfResolved: true,
+          registryState: DePrizeState.NO_WINNER,
+          marketClosed: false,
+        }),
+      ).to.equal(true)
+    })
+
+    it('surfaces when the LMSR is Closed with a reported vector', () => {
+      expect(
+        shouldSurfaceResolution({
+          ctfResolved: true,
+          registryState: DePrizeState.OPEN,
+          marketClosed: true,
+        }),
+      ).to.equal(true)
+    })
+
+    it('stays hidden when CTF has not reported', () => {
+      expect(
+        shouldSurfaceResolution({
+          ctfResolved: false,
+          registryState: DePrizeState.SETTLED,
+          marketClosed: true,
+        }),
+      ).to.equal(false)
     })
   })
 

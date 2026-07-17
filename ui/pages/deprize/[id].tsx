@@ -15,6 +15,7 @@ import {
   MarketStage,
   OUTCOME_COLORS,
   positionRedeemValue,
+  shouldSurfaceResolution,
   UNIT,
 } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
@@ -270,13 +271,26 @@ export default function DePrizeDetailPage() {
 
   const spendable = Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
   const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
+  const mintConfigured = /^0x[0-9a-fA-F]{40}$/.test(mintAddress)
   const bettingAllowed =
     !!deprize?.bettingOpen &&
+    mintConfigured &&
     !region.isRestricted &&
     !region.isLoading &&
     !region.isError &&
     !tradingHalted
   const stateMeta = deprize ? DEPRIZE_STATE_META[deprize.state] : undefined
+  // CTF may already have a payout vector on a still-OPEN/paused test market —
+  // only show Refund/WON/claim when the registry lifecycle (or a Closed market)
+  // says resolution should surface.
+  const showResolved =
+    !!deprize &&
+    shouldSurfaceResolution({
+      ctfResolved: market.resolved,
+      registryState: deprize.state,
+      marketClosed: market.stage === MarketStage.Closed,
+    })
+  const showRefundVector = showResolved && market.isRefundVector
 
   const winningTeamName = market.winningIndex >= 0 ? `Team #${market.winningIndex + 1}` : undefined
 
@@ -371,6 +385,26 @@ export default function DePrizeDetailPage() {
           </Notice>
         )}
 
+        {/* Market paused / closed while registry still OPEN */}
+        {deprize?.bettingOpen && market.stage === MarketStage.Paused && (
+          <Notice tone="amber">
+            The prediction market is paused — new bets and cash-outs are halted until an admin
+            resumes trading.
+          </Notice>
+        )}
+        {deprize?.bettingOpen && market.stage === MarketStage.Closed && (
+          <Notice tone="amber">
+            The prediction market is closed. Betting is unavailable even though this DePrize is
+            still marked Open in the registry.
+          </Notice>
+        )}
+        {deprize?.bettingOpen && !tradingHalted && !mintConfigured && (
+          <Notice tone="amber">
+            Betting isn&apos;t wired on this network yet (DePrizeMint router not configured). You
+            can still view live odds.
+          </Notice>
+        )}
+
         {/* Geo notice */}
         {region.isRestricted && (
           <Notice tone="amber">
@@ -406,12 +440,20 @@ export default function DePrizeDetailPage() {
               history={market.oddsHistory}
               labels={market.outcomes.map((o) => `Team #${o.index + 1}`)}
               colors={OUTCOME_COLORS}
+              domainStartMs={market.marketStartMs}
             />
+            {market.marketStartMs !== undefined && (
+              <p className="text-gray-500 text-[11px] mt-2">
+                Axis spans the market since it opened
+                {` (${new Date(market.marketStartMs).toLocaleDateString()})`}. Detailed odds
+                samples collect while this page is open.
+              </p>
+            )}
           </div>
         )}
 
         {/* Connect prompt */}
-        {!userAddress && (
+        {!userAddress && bettingAllowed && (
           <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between gap-3 flex-wrap">
             <p className="text-indigo-100 text-sm font-medium">
               Connect a wallet to back a team, cash out, or claim.
@@ -440,7 +482,7 @@ export default function DePrizeDetailPage() {
               const teamId = deprize?.teamIds[o.index] ?? 0n
               const invested = costBasis[o.index] ?? 0
               const redeemValueEth =
-                market.resolved && o.balanceWei !== undefined
+                showResolved && o.balanceWei !== undefined
                   ? Number(
                       positionRedeemValue(
                         o.balanceWei,
@@ -457,9 +499,9 @@ export default function DePrizeDetailPage() {
                   teamContract={teamContract}
                   color={OUTCOME_COLORS[o.index % OUTCOME_COLORS.length]}
                   loading={market.loading}
-                  resolved={market.resolved}
-                  isRefundVector={market.isRefundVector}
-                  isWinningSlot={market.resolved && o.index === market.winningIndex}
+                  resolved={showResolved}
+                  isRefundVector={showRefundVector}
+                  isWinningSlot={showResolved && o.index === market.winningIndex}
                   redeemValueEth={redeemValueEth}
                   sellQuoteEth={sellQuotes.get(o.index)}
                   investedEth={invested}
@@ -476,13 +518,13 @@ export default function DePrizeDetailPage() {
         )}
 
         {/* Claim / refund */}
-        {market.resolved && (
+        {showResolved && (
           <ClaimPanel
             deprizeId={deprizeId}
             chain={chain}
             account={account}
-            resolved={market.resolved}
-            isRefundVector={market.isRefundVector}
+            resolved={showResolved}
+            isRefundVector={showRefundVector}
             winningTeamName={winningTeamName}
             refreshNonce={refreshNonce}
             onDone={() => {

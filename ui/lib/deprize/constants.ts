@@ -11,6 +11,7 @@ export {
   isTerminalState,
   deriveDePrizeFlags,
   resolvePayoutVector,
+  shouldSurfaceResolution,
   positionRedeemValue,
 } from './lifecycle'
 
