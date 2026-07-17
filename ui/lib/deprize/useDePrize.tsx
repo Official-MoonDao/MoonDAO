@@ -1,6 +1,6 @@
 import DePrizeRegistryABI from 'const/abis/DePrizeRegistry.json'
 import { DEPRIZE_REGISTRY_ADDRESSES } from 'const/config'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import { DePrizeState, deriveDePrizeFlags, ZERO_BYTES32 } from './constants'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from './read'
@@ -81,19 +81,21 @@ export function useDePrize(
         })
       ) as DePrizeState
       if (probedState === DePrizeState.NONE) {
-        setDePrize({
-          deprizeId: Number(deprizeId),
-          jbProjectId: 0n,
-          conditionId: ZERO_BYTES32,
-          sunset: 0n,
-          winningTeamId: 0n,
-          cancellationNoticeAt: 0n,
-          state: DePrizeState.NONE,
-          teamIds: [],
-          bettingOpen: false,
-          isRefundable: false,
-          isTerminal: false,
-          cancellationPending: false,
+        startTransition(() => {
+          setDePrize({
+            deprizeId: Number(deprizeId),
+            jbProjectId: 0n,
+            conditionId: ZERO_BYTES32,
+            sunset: 0n,
+            winningTeamId: 0n,
+            cancellationNoticeAt: 0n,
+            state: DePrizeState.NONE,
+            teamIds: [],
+            bettingOpen: false,
+            isRefundable: false,
+            isTerminal: false,
+            cancellationPending: false,
+          })
         })
         return
       }
@@ -104,22 +106,26 @@ export function useDePrize(
       })
       const state = Number(dp.state) as DePrizeState
       const cancellationNoticeAt = BigInt(dp.cancellationNoticeAt ?? 0)
-      setDePrize({
-        deprizeId: Number(deprizeId),
-        jbProjectId: BigInt(dp.jbProjectId ?? 0),
-        conditionId: dp.ctfConditionId ?? ZERO_BYTES32,
-        sunset: BigInt(dp.sunset ?? 0),
-        winningTeamId: BigInt(dp.winningTeamId ?? 0),
-        cancellationNoticeAt,
-        state,
-        teamIds: (dp.teamIds ?? []).map((t: any) => BigInt(t)),
-        ...deriveDePrizeFlags(state, cancellationNoticeAt),
+      startTransition(() => {
+        setDePrize({
+          deprizeId: Number(deprizeId),
+          jbProjectId: BigInt(dp.jbProjectId ?? 0),
+          conditionId: dp.ctfConditionId ?? ZERO_BYTES32,
+          sunset: BigInt(dp.sunset ?? 0),
+          winningTeamId: BigInt(dp.winningTeamId ?? 0),
+          cancellationNoticeAt,
+          state,
+          teamIds: (dp.teamIds ?? []).map((t: any) => BigInt(t)),
+          ...deriveDePrizeFlags(state, cancellationNoticeAt),
+        })
       })
     } catch (err: any) {
       console.error('[deprize] getDePrize failed', err)
-      setError(err?.shortMessage || err?.message || 'Failed to load DePrize.')
+      startTransition(() => {
+        setError(err?.shortMessage || err?.message || 'Failed to load DePrize.')
+      })
     } finally {
-      setLoading(false)
+      startTransition(() => setLoading(false))
     }
   }, [registry, idValid, deprizeId])
 
@@ -166,11 +172,15 @@ export function useDePrizeCount(chain: Chain): {
           method: 'count' as string,
           params: [],
         })
-        if (!cancelled) setCount(Number(c))
+        if (!cancelled) {
+          startTransition(() => setCount(Number(c)))
+        }
       } catch (err) {
         console.error('[deprize] count failed', err)
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          startTransition(() => setLoading(false))
+        }
       }
     })()
     return () => {

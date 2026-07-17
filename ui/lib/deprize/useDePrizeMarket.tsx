@@ -8,7 +8,14 @@ import {
   DEPRIZE_MINT_ADDRESSES,
   LMSR_WITH_TWAP_ADDRESSES,
 } from 'const/config'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import {
   MarketStage,
@@ -122,7 +129,7 @@ export function useDePrizeMarket(params: {
             params: [BigInt(deprizeId as any)],
           })
           if (!cancelled && bound && !/^0x0+$/.test(bound)) {
-            setMarketAddress(bound)
+            startTransition(() => setMarketAddress(bound))
             return
           }
         } catch {
@@ -130,7 +137,7 @@ export function useDePrizeMarket(params: {
         }
       }
       if (!fallbackLmsr) {
-        if (!cancelled) setMarketAddress(undefined)
+        if (!cancelled) startTransition(() => setMarketAddress(undefined))
         return
       }
       if (conditionId && !/^0x0+$/.test(conditionId)) {
@@ -147,10 +154,12 @@ export function useDePrizeMarket(params: {
             params: [0n],
           })
           if (!cancelled) {
-            setMarketAddress(
-              marketCond.toLowerCase() === conditionId.toLowerCase()
-                ? fallbackLmsr
-                : undefined
+            startTransition(() =>
+              setMarketAddress(
+                marketCond.toLowerCase() === conditionId.toLowerCase()
+                  ? fallbackLmsr
+                  : undefined
+              )
             )
           }
           return
@@ -159,7 +168,7 @@ export function useDePrizeMarket(params: {
         }
       }
       // Registry condition unknown (still loading / DRAFT): don't guess.
-      if (!cancelled) setMarketAddress(undefined)
+      if (!cancelled) startTransition(() => setMarketAddress(undefined))
     })()
     return () => {
       cancelled = true
@@ -343,29 +352,33 @@ export function useDePrizeMarket(params: {
           .catch(() => undefined),
       ])
 
-      setStage(stg)
-      setPayoutDen(den)
-      setPayoutNums(nums)
-      setMarketFeesWei(mktFees)
       const pricesValid = stg !== MarketStage.Closed
       if (stg === MarketStage.Running) recordOddsSample(prices as number[])
-      setOutcomes(
-        ids.map((pid, i) => {
-          const balWei = balances[i] as bigint | undefined
-          return {
-            index: i,
-            probability: pricesValid ? (prices[i] as number) : NaN,
-            balance: balWei !== undefined ? Number(balWei) / Number(UNIT) : NaN,
-            balanceWei: balWei,
-            positionId: pid,
-          }
-        })
-      )
+      startTransition(() => {
+        setStage(stg)
+        setPayoutDen(den)
+        setPayoutNums(nums)
+        setMarketFeesWei(mktFees)
+        setOutcomes(
+          ids.map((pid, i) => {
+            const balWei = balances[i] as bigint | undefined
+            return {
+              index: i,
+              probability: pricesValid ? (prices[i] as number) : NaN,
+              balance: balWei !== undefined ? Number(balWei) / Number(UNIT) : NaN,
+              balanceWei: balWei,
+              positionId: pid,
+            }
+          })
+        )
+      })
     } catch (err: any) {
       console.error('[deprize] market load failed', err)
-      setError(err?.shortMessage || err?.message || 'Failed to read the market.')
+      startTransition(() => {
+        setError(err?.shortMessage || err?.message || 'Failed to read the market.')
+      })
     } finally {
-      setLoading(false)
+      startTransition(() => setLoading(false))
     }
   }, [
     lmsr,
