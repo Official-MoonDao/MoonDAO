@@ -1,45 +1,69 @@
-import { Analytics } from '@vercel/analytics/next'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
-import dynamic from 'next/dynamic'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React from 'react'
-import { useState } from 'react'
-import { useContext } from 'react'
+import React, {
+  ComponentType,
+  startTransition,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 import { Toaster } from 'react-hot-toast'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useNavigation from '@/lib/navigation/useNavigation'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { LogoSidebarLight, LogoSidebar } from '../assets'
-import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
-import CitizenProfileLink from '../subscription/CitizenProfileLink'
-import ColorsAndSocials from './Sidebar/ColorsAndSocials'
-import LanguageChange from './Sidebar/LanguageChange'
+import { useClientHydrated } from '@/lib/utils/hooks/useClientHydrated'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
-import NavigationLink from './Sidebar/NavigationLink'
 import TopNavBar from './TopNavBar'
 
-// Lazy load non-critical components for better LCP
-const SpaceBackground = dynamic(() => import('./SpaceBackground'), {
-  ssr: false,
-})
-const GlobalSearch = dynamic(() => import('./GlobalSearch'), {
-  ssr: false,
-})
-const MissionBanner = dynamic(() => import('./MissionBanner'), {
-  ssr: false,
-})
-const ProjectBanner = dynamic(() => import('./ProjectBanner'), {
-  ssr: false,
-})
-const CookieBanner = dynamic(() => import('./CookieBanner'), {
-  ssr: false,
-})
+/**
+ * Client-only lazy mount without next/dynamic / React.lazy Suspense.
+ *
+ * `dynamic(..., { ssr: false })` creates dehydrated Suspense boundaries that
+ * race Privy / light-mode / citizen setState during hydration and throw:
+ * "Suspense boundary received an update before it finished hydrating".
+ * That surfaces as a Next.js error overlay that covers /deprize and blocks
+ * the page. Importing after mount avoids those Suspense boundaries entirely.
+ */
+function useLazyClient<T extends ComponentType<any>>(
+  loader: () => Promise<{ default: T }>,
+  enabled: boolean
+): T | null {
+  const [Comp, setComp] = useState<T | null>(null)
+  useEffect(() => {
+    if (!enabled) return
+    let cancelled = false
+    loader()
+      .then((mod) => {
+        if (cancelled) return
+        const Next = mod.default
+        startTransition(() => {
+          // Store the component; functional updater avoids React treating the
+          // component function itself as a setState updater.
+          setComp(() => Next)
+        })
+      })
+      .catch((err) => {
+        console.error('[layout] lazy client import failed', err)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, loader])
+  return Comp
+}
+
+const loadSpaceBackground = () => import('./SpaceBackground')
+const loadGlobalSearch = () => import('./GlobalSearch')
+const loadMissionBanner = () => import('./MissionBanner')
+const loadProjectBanner = () => import('./ProjectBanner')
+const loadCookieBanner = () => import('./CookieBanner')
+const loadAnalytics = () =>
+  import('@vercel/analytics/next').then((m) => ({ default: m.Analytics }))
 
 interface Layout {
   children: JSX.Element
@@ -50,6 +74,14 @@ interface Layout {
 
 export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const hydrated = useClientHydrated()
+
+  const SpaceBackground = useLazyClient(loadSpaceBackground, hydrated)
+  const GlobalSearch = useLazyClient(loadGlobalSearch, hydrated)
+  const MissionBanner = useLazyClient(loadMissionBanner, hydrated)
+  const ProjectBanner = useLazyClient(loadProjectBanner, hydrated)
+  const CookieBanner = useLazyClient(loadCookieBanner, hydrated)
+  const Analytics = useLazyClient(loadAnalytics, hydrated)
 
   const router = useRouter()
 
@@ -65,9 +97,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
   const navigation = useNavigation(citizen)
 
-  const [currentLang, setCurrentLang] = useState(router.locale)
-  const { t } = useTranslation('common')
-  //Background is defined in this root div.
+  useTranslation('common')
 
   const fullscreenPaths = [
     '/launch',
@@ -90,20 +120,17 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   ]
 
   const isFullscreen = fullscreenPaths.includes(router.pathname)
-
   const isHomepage = router.pathname === '/'
 
-  // Use top nav for all pages now
-  const layout = (
+  return (
     <div
       id="app-layout"
       className={`${
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen relative`}
     >
-      <SpaceBackground />
+      {SpaceBackground ? <SpaceBackground /> : null}
       <>
-        {/* Mobile menu top bar - for screens smaller than xl */}
         <div className="xl:hidden">
           <MobileMenuTop
             setSidebarOpen={setSidebarOpen}
@@ -122,7 +149,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           isFullscreen={isFullscreen}
         />
 
-        {/* Top Navigation Bar - Show on extra large screens (xl) and up */}
         <div className="hidden xl:block">
           <TopNavBar
             navigation={navigation}
@@ -132,7 +158,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           />
         </div>
 
-        {/* Main Content - Full width with top nav */}
         <main
           className={`pt-16 w-full min-h-screen relative z-10 ${
             isFullscreen || isHomepage ? '' : 'flex justify-center'
@@ -147,21 +172,14 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           </div>
         </main>
 
-        {/* Global Search - Sticky on all pages */}
-        <GlobalSearch />
-
-        {/* Mission Banner - Fixed at bottom */}
-        <MissionBanner />
-
-        {/* Project Banner - Fixed at bottom (when mission banner is hidden) */}
-        <ProjectBanner />
+        {GlobalSearch ? <GlobalSearch /> : null}
+        {MissionBanner ? <MissionBanner /> : null}
+        {ProjectBanner ? <ProjectBanner /> : null}
+        {CookieBanner ? <CookieBanner /> : null}
       </>
 
-      <CookieBanner />
       <Toaster />
-      <Analytics />
+      {Analytics ? <Analytics /> : null}
     </div>
   )
-
-  return layout
 }

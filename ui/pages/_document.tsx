@@ -34,6 +34,16 @@ class WebsiteDocument extends Document {
               __html: `globalThis.Browser = { T: () => {} };`,
             }}
           />
+          {/*
+            Next injects body{display:none} (data-next-hide-fouc) until React
+            hydrates. With large client bundles that can leave a blank page for
+            a long time (or forever if hydration errors). Reveal SSR HTML ASAP.
+          */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){function r(){try{var s=document.querySelector('style[data-next-hide-fouc]');if(s&&s.parentNode)s.parentNode.removeChild(s);if(document.body)document.body.style.display='block';}catch(e){}}r();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',r);setTimeout(r,0);})();`,
+            }}
+          />
         </Head>
         <body className="overflow-hidden relative">
           <Main />
