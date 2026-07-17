@@ -15,14 +15,13 @@ import {
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
   USD_BUDGET,
-  IS_SENATE_VOTE,
-  IS_MEMBER_VOTE,
   MEMBER_VOTE_SUBMISSIONS_OPEN,
-  IS_REWARDS_CYCLE,
   RETRO_PAYOUT_TOKEN,
   RETRO_ETH_BUDGET,
   RETRO_USD_BUDGET,
+  PROJECT_CYCLE,
 } from 'const/config'
+import type { ProjectCyclePhase } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import lodashIsEqual from 'lodash/isEqual'
 import lodashSum from 'lodash/sum'
@@ -87,6 +86,10 @@ export type ProjectRewardsProps = {
   distributions: Distribution[]
   proposalAllocations?: Distribution[]
   refreshRewards: () => void
+  // Live cycle phase resolved server-side (getStaticProps) so the initial
+  // render matches the operator's live phase override. Falls back to the
+  // PROJECT_CYCLE.phase default when not provided.
+  initialLivePhase?: ProjectCyclePhase
 }
 
 // The `distribution` column on both Tableland tables is stored via
@@ -278,6 +281,7 @@ export function ProjectRewards({
   distributions,
   proposalAllocations,
   refreshRewards,
+  initialLivePhase,
 }: ProjectRewardsProps) {
   const router = useRouter()
 
@@ -287,14 +291,44 @@ export function ProjectRewards({
   const account = useActiveAccount()
   const userAddress = account?.address
 
-  const [rewardVotingActive, setRewardVotingActive] = useState(IS_REWARDS_CYCLE)
+  // Live cycle phase. Seeded from the value resolved server-side in
+  // getStaticProps (so the pre-rendered HTML matches), then polled from
+  // /api/operator/phase-status so an operator "Advance Phase" click
+  // propagates to every visitor without a redeploy. Retroactive rewards run
+  // concurrently with the Member Vote, so `member` drives both.
+  const [livePhase, setLivePhase] = useState<ProjectCyclePhase>(
+    initialLivePhase ?? PROJECT_CYCLE.phase
+  )
+  const isSenateVote = livePhase === 'senate'
+  const isMemberVote = livePhase === 'member'
+  const [rewardVotingActive, setRewardVotingActive] = useState(
+    livePhase === 'member'
+  )
   const [approvalVotingActive, setApprovalVotingActive] = useState(false)
-  const isSenateVote = IS_SENATE_VOTE
-  const isMemberVote = IS_MEMBER_VOTE
   // Member-vote submissions are gated separately so we can keep the rest
   // of the Member Vote UI (badge, results panel, phase callout) live while
   // closing off new distribution submits/edits at the end of the window.
   const memberVoteSubmissionsOpen = isMemberVote && MEMBER_VOTE_SUBMISSIONS_OPEN
+
+  // Poll the live phase so operator phase advances propagate without a reload.
+  useEffect(() => {
+    let cancelled = false
+    const fetchPhase = () => {
+      fetch('/api/operator/phase-status')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (cancelled || !data?.livePhase) return
+          setLivePhase(data.livePhase as ProjectCyclePhase)
+        })
+        .catch(() => {})
+    }
+    fetchPhase()
+    const id = setInterval(fetchPhase, 60000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
   const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
   // The proposals being voted on right now belong to the current calendar
@@ -350,11 +384,11 @@ export function ProjectRewards({
   const validProposalIds = useMemo(() => {
     if (!proposals?.length) return new Set<string>()
     let visible = proposals
-    if (IS_SENATE_VOTE) {
+    if (isSenateVote) {
       visible = proposals.filter(
         (p: any) => !p.tempCheckApproved && !p.tempCheckFailed
       )
-    } else if (IS_MEMBER_VOTE) {
+    } else if (isMemberVote) {
       visible = proposals.filter(
         (p: any) => p.tempCheckApproved && !p.tempCheckFailed
       )
@@ -362,7 +396,7 @@ export function ProjectRewards({
       visible = proposals.filter((p: any) => !p.tempCheckFailed)
     }
     return new Set(visible.map((p: any) => String(p.id)))
-  }, [proposals])
+  }, [proposals, isSenateVote, isMemberVote])
 
   const validEligibleIds = useMemo(() => {
     if (!currentProjects?.length) return new Set<string>()
@@ -405,14 +439,14 @@ export function ProjectRewards({
     return () => clearInterval(interval)
   }, [])
 
-  //Check if its the rewards cycle. `IS_REWARDS_CYCLE` (config) acts as a
+  //Check if its the rewards cycle. The live `member` phase acts as a
   // force-on switch; otherwise we fall through to the date-based default.
   useEffect(() => {
     let cancelled = false
 
     const update = () => {
       if (cancelled) return
-      setRewardVotingActive(isRewardsCycle(new Date(), IS_REWARDS_CYCLE))
+      setRewardVotingActive(isRewardsCycle(new Date(), livePhase === 'member'))
     }
 
     update()
@@ -421,7 +455,7 @@ export function ProjectRewards({
       cancelled = true
       clearInterval(updateInterval)
     }
-  }, [])
+  }, [livePhase])
 
   // Check if the user already has a distribution for the current quarter.
   // We prune the loaded distribution to the set of project IDs that are

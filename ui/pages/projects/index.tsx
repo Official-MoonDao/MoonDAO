@@ -5,11 +5,15 @@ import {
   DISTRIBUTION_TABLE_NAMES,
   PROPOSALS_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
-  IS_REWARDS_CYCLE,
 } from 'const/config'
+import type { ProjectCyclePhase } from 'const/config'
 import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
+import {
+  getLivePhaseOverride,
+  resolveLivePhase,
+} from '@/lib/operator/cyclePhase'
 import {
   getProjectDisplayName,
   isUntitledLike,
@@ -28,8 +32,10 @@ export default function Projects({
   pastProjects,
   distributions,
   proposalAllocations,
+  initialLivePhase,
 }: ProjectRewardsProps & {
   proposalAllocations: any[]
+  initialLivePhase: ProjectCyclePhase
 }) {
   const router = useRouter()
   useChainDefault()
@@ -40,6 +46,7 @@ export default function Projects({
       pastProjects={pastProjects}
       distributions={distributions}
       proposalAllocations={proposalAllocations}
+      initialLivePhase={initialLivePhase}
       refreshRewards={() => router.reload()}
     />
   )
@@ -49,17 +56,24 @@ export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
+  // Resolve the live cycle phase (operator override in KV, else the
+  // PROJECT_CYCLE.phase default) so ISR renders match the current phase
+  // without a redeploy. Retro rewards run concurrently with the Member Vote.
+  const livePhase = resolveLivePhase(await getLivePhaseOverride())
+  const rewardsActive = livePhase === 'member'
+
   const emptyProps = {
     proposals: [] as Project[],
     currentProjects: [] as Project[],
     pastProjects: [] as Project[],
     distributions: [] as any[],
     proposalAllocations: [] as any[],
+    initialLivePhase: livePhase,
   }
 
   try {
     const { quarter, year } = getRelativeQuarter(
-      isRewardsCycle(new Date(), IS_REWARDS_CYCLE) ? -1 : 0
+      isRewardsCycle(new Date(), rewardsActive) ? -1 : 0
     )
 
     // The projects table is the one genuinely required read. If it fails
@@ -250,6 +264,7 @@ export async function getStaticProps() {
         pastProjects: pastProjects.reverse(),
         distributions,
         proposalAllocations,
+        initialLivePhase: livePhase,
       },
       revalidate: 60,
     }
