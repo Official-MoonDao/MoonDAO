@@ -21,6 +21,20 @@ export function useIsExecutive() {
     let cancelled = false
 
     async function check() {
+      // In local next-dev on testnet, surface the operator panel without a
+      // Privy session so the Cycle Phase UI can be previewed. Server routes
+      // still use the isOperator middleware (which also bypasses on testnet).
+      // Never enable this for production/mainnet builds.
+      if (
+        process.env.NODE_ENV === 'development' &&
+        process.env.NEXT_PUBLIC_CHAIN === 'testnet'
+      ) {
+        setIsExecutive(true)
+        setStatus('success')
+        setLastError(null)
+        return
+      }
+
       if (sessionStatus === 'loading') return
       if (sessionStatus !== 'authenticated') {
         setIsExecutive(false)
