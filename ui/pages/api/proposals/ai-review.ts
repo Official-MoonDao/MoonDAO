@@ -2,37 +2,17 @@ import { MAX_BUDGET_USD } from 'const/config'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { performAIReview, type AIReviewProvider } from '@/lib/proposals/aiReview'
+import { performGroqReview } from '@/lib/proposals/aiReview'
 
 const MAX_BODY_CHARS = 80_000
-
-/**
- * Provider selection: Kimi K3 (Moonshot) when MOONSHOT_API_KEY is set,
- * otherwise Groq (gpt-oss-120b). Kimi is preferred for review quality;
- * keeping the Groq path means a missing/revoked Moonshot key degrades
- * gracefully instead of disabling the feature.
- */
-function resolveProvider(): { provider: AIReviewProvider; apiKey: string } | null {
-  if (process.env.MOONSHOT_API_KEY) {
-    return { provider: 'kimi', apiKey: process.env.MOONSHOT_API_KEY }
-  }
-  if (process.env.GROQ_API_KEY) {
-    return { provider: 'groq', apiKey: process.env.GROQ_API_KEY }
-  }
-  return null
-}
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const providerConfig = resolveProvider()
-  if (!providerConfig) {
-    return res.status(503).json({
-      error:
-        'AI review is not configured (set MOONSHOT_API_KEY for Kimi K3 or GROQ_API_KEY as fallback).',
-    })
+  if (!process.env.GROQ_API_KEY) {
+    return res.status(503).json({ error: 'AI review is not configured (missing GROQ_API_KEY).' })
   }
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
@@ -57,13 +37,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const quarterlyMaxUsd = MAX_BUDGET_USD
 
-  const outcome = await performAIReview({
+  const outcome = await performGroqReview({
     title,
     body: proposalBody,
     quarterlyMaxUsd,
     budgetHintUsd,
-    apiKey: providerConfig.apiKey,
-    provider: providerConfig.provider,
+    apiKey: process.env.GROQ_API_KEY,
   })
 
   if (!outcome.ok) {
