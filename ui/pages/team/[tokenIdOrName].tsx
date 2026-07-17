@@ -94,6 +94,7 @@ function TeamDetailPageContent({
   queriedListing,
   safeOwners,
   projectActive,
+  projectActiveUnknown,
 }: any) {
   const router = useRouter()
   const account = useActiveAccount()
@@ -206,8 +207,14 @@ function TeamDetailPageContent({
   } = useTeamData(teamContract, hatsContract, nft, citizen, fetchActivityData)
 
   // Project-teams are gated by ProjectV2.active instead of subscription expiry,
-  // matching /jobs and /marketplace. null/undefined means ordinary team.
-  const isActive = projectActive != null ? projectActive === PROJECT_ACTIVE : subIsValid
+  // matching /jobs and /marketplace. null means ordinary team. When the ProjectV2
+  // lookup fails we fail open so a Tableland blip cannot mark an active
+  // project-team as expired via the subscription fallback.
+  const isActive = projectActiveUnknown
+    ? true
+    : projectActive != null
+      ? projectActive === PROJECT_ACTIVE
+      : subIsValid
 
   const hats = useSubHats(selectedChain, adminHatId, true)
   const wearers = useUniqueHatWearers(hats)
@@ -675,17 +682,23 @@ function TeamDetailPageContent({
               <EBRewards isManager={isManager} teamId={tokenId} />
             )}
 
-          {/* Subscription expired — only shown to managers/owners who can act on it */}
+          {/* Inactive / deleted — only shown to managers/owners who can act on it */}
           {(!isActive || isDeleted) && (isManager || isTableOperator || address === nft.owner) && (
             <div className="bg-gradient-to-b from-red-900/20 to-red-800/30 rounded-2xl border border-red-600/30 p-6 mb-10">
               <div className="text-center mb-6">
                 <h3 className="text-xl font-GoodTimes text-white mb-2">
-                  {isDeleted ? 'Profile Deleted' : 'Subscription Expired'}
+                  {isDeleted
+                    ? 'Profile Deleted'
+                    : projectActive != null
+                      ? 'Project Inactive'
+                      : 'Subscription Expired'}
                 </h3>
                 <p className="text-slate-300">
                   {isDeleted
                     ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
-                    : `The profile has expired, please connect the owner or admin wallet to renew.`}
+                    : projectActive != null
+                      ? `This project is not currently active. Manager controls stay locked until governance marks it active.`
+                      : `The profile has expired, please connect the owner or admin wallet to renew.`}
                 </p>
               </div>
 
@@ -772,7 +785,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
 
   // Project-teams are gated by ProjectV2.active instead of subscription expiry.
   // null means this tokenId is not a project-team (ordinary subscription team).
+  // projectActiveUnknown means the lookup failed — callers must not fall back to
+  // subscription validity (that would falsely expire active project-teams).
   let projectActive: number | null = null
+  let projectActiveUnknown = false
   const projectTableName = PROJECT_V2_TABLE_NAMES[chainSlug]
   if (projectTableName) {
     try {
@@ -785,6 +801,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
       }
     } catch (error) {
       console.error(`Failed to load ProjectV2 active for team ${tokenId}:`, error)
+      projectActiveUnknown = true
     }
   }
 
@@ -856,6 +873,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
       queriedListing,
       safeOwners,
       projectActive,
+      projectActiveUnknown,
     },
   }
 }

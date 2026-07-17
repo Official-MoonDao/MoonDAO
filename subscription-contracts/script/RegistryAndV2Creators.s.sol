@@ -38,6 +38,7 @@ contract RegistryAndV2CreatorsScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address authorizedSignerAddress = vm.envAddress("AUTHORIZED_SIGNER_ADDRESS");
+        address daoSafeAddress = vm.envAddress("DAO_SAFE_ADDRESS");
 
         // Arbitrum mainnet addresses (see ui/const/config.ts)
         address TEAM_ADDRESS = 0xAB2C354eC32880C143e87418f80ACc06334Ff55F;
@@ -85,6 +86,14 @@ contract RegistryAndV2CreatorsScript is Script {
 
         projectTable.setRegistry(address(registry));
         projectTable.setOperator(address(projectCreator), true);
+
+        // Hand ownership to the DAO Safe so the broadcast deployer does not
+        // retain privileged write access on the registry (and sibling Ownables).
+        registry.transferOwnership(daoSafeAddress);
+        router.transferOwnership(daoSafeAddress);
+        projectTable.transferOwnership(daoSafeAddress);
+        teamCreator.transferOwnership(daoSafeAddress);
+        projectCreator.transferOwnership(daoSafeAddress);
 
         vm.stopBroadcast();
 

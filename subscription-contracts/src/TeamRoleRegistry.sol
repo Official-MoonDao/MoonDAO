@@ -92,7 +92,10 @@ contract TeamRoleRegistry is Ownable {
      */
     function isManager(uint256 teamId, address sender) external view returns (bool) {
         if (registryBased[teamId]) {
-            return roles[teamId][sender] >= MANAGER || _isPrivileged(sender);
+            // Privileged accounts (owner/operators) may write roles via setRole /
+            // setManager, but must not implicitly pass per-team manager checks for
+            // every registry-based team (feature tables, UI gating, etc.).
+            return roles[teamId][sender] >= MANAGER;
         }
         try moonDAOTeam.isManager(teamId, sender) returns (bool result) {
             return result;
