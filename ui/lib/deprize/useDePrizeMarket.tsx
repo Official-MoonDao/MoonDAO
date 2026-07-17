@@ -292,8 +292,10 @@ export function useDePrizeMarket(params: {
           .then((v) => (Number(v) / 1e18) * 100)
           .catch(() => undefined)
         staticRef.current = { conditionId: cond as string, positionIds: ids, feePct: fee }
-        setPositionIds(ids)
-        setFeePct(fee)
+        startTransition(() => {
+          setPositionIds(ids)
+          setFeePct(fee)
+        })
       }
       const { conditionId: cond, positionIds: ids } = staticRef.current
 
