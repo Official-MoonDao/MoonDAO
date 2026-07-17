@@ -7,7 +7,7 @@ import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { buildAmounts } from '@/lib/deprize/quote'
-import { rpcRead } from '@/lib/deprize/read'
+import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -43,6 +43,8 @@ export default function ExitPositionModal({
 
   const ctfAddress = CONDITIONAL_TOKEN_ADDRESSES[getChainSlug(chain)] ?? ''
 
+  // Writes go through the app's shared client (consistent with the connected
+  // account); reads go through the batching-disabled client on the RPC edge.
   const lmsr = useMemo(
     () =>
       getContract({
@@ -52,6 +54,16 @@ export default function ExitPositionModal({
         abi: LMSRWithTWAP.abi as any,
       }),
     [chain, marketAddress]
+  )
+  const lmsrRead = useMemo(
+    () =>
+      getContract({
+        client: deprizeReadClient,
+        chain: deprizeReadChain(chain.id),
+        address: marketAddress,
+        abi: LMSRWithTWAP.abi as any,
+      }),
+    [chain.id, marketAddress]
   )
   const ctf = useMemo(
     () =>
@@ -63,6 +75,16 @@ export default function ExitPositionModal({
       }),
     [chain, ctfAddress]
   )
+  const ctfRead = useMemo(
+    () =>
+      getContract({
+        client: deprizeReadClient,
+        chain: deprizeReadChain(chain.id),
+        address: ctfAddress,
+        abi: ConditionalTokensABI as any,
+      }),
+    [chain.id, ctfAddress]
+  )
 
   // Live quote of what selling the full position returns right now: calcNetCost
   // with a negative amount returns negative collateral (what the LMSR pays back).
@@ -72,7 +94,7 @@ export default function ExitPositionModal({
       try {
         const amounts = buildAmounts(outcomeIndex, -balanceWei, numOutcomes)
         const net = await rpcRead<bigint>({
-          contract: lmsr,
+          contract: lmsrRead,
           method: 'calcNetCost' as string,
           params: [amounts],
         })
@@ -84,7 +106,7 @@ export default function ExitPositionModal({
     return () => {
       cancelled = true
     }
-  }, [lmsr, outcomeIndex, balanceWei, numOutcomes])
+  }, [lmsrRead, outcomeIndex, balanceWei, numOutcomes])
 
   const cashOut = async () => {
     if (!account) return
@@ -92,7 +114,7 @@ export default function ExitPositionModal({
     try {
       // The market must be an operator on the seller's CTF tokens to pull them.
       const approved = await rpcRead<boolean>({
-        contract: ctf,
+        contract: ctfRead,
         method: 'isApprovedForAll' as string,
         params: [account.address, marketAddress],
       }).catch(() => false)
@@ -110,7 +132,7 @@ export default function ExitPositionModal({
       }
       const amounts = buildAmounts(outcomeIndex, -balanceWei, numOutcomes)
       const net = await rpcRead<bigint>({
-        contract: lmsr,
+        contract: lmsrRead,
         method: 'calcNetCost' as string,
         params: [amounts],
       }) // negative: collateral returned

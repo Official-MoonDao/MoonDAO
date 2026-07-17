@@ -15,6 +15,7 @@ import {
   ODDS_HISTORY_MAX,
   ODDS_POLL_MS,
   ODDS_SAMPLE_MIN_MS,
+  resolvePayoutVector,
   UNIT,
   ZERO_BYTES32,
 } from './constants'
@@ -105,7 +106,11 @@ export function useDePrizeMarket(params: {
     })
   }, [mintAddress, readChain])
 
-  // Resolve the market address: prefer the router's binding, fall back to config.
+  // Resolve the market address: prefer the router's binding (setMarket already
+  // validated the wiring on-chain). The config fallback exists only so odds
+  // render before the router ships — but the config LMSR is one specific
+  // market, so it must ONLY be used for the DePrize whose registry condition
+  // it actually settles; otherwise we'd show another DePrize's odds.
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -124,12 +129,42 @@ export function useDePrizeMarket(params: {
           /* fall through to config fallback */
         }
       }
-      if (!cancelled) setMarketAddress(fallbackLmsr || undefined)
+      if (!fallbackLmsr) {
+        if (!cancelled) setMarketAddress(undefined)
+        return
+      }
+      if (conditionId && !/^0x0+$/.test(conditionId)) {
+        try {
+          const fallbackContract = getContract({
+            client: deprizeReadClient,
+            chain: readChain,
+            address: fallbackLmsr,
+            abi: LMSRWithTWAP.abi as any,
+          })
+          const marketCond = await rpcRead<string>({
+            contract: fallbackContract,
+            method: 'conditionIds' as string,
+            params: [0n],
+          })
+          if (!cancelled) {
+            setMarketAddress(
+              marketCond.toLowerCase() === conditionId.toLowerCase()
+                ? fallbackLmsr
+                : undefined
+            )
+          }
+          return
+        } catch {
+          /* RPC hiccup — treat as unvalidated below */
+        }
+      }
+      // Registry condition unknown (still loading / DRAFT): don't guess.
+      if (!cancelled) setMarketAddress(undefined)
     })()
     return () => {
       cancelled = true
     }
-  }, [mint, deprizeId, fallbackLmsr])
+  }, [mint, deprizeId, fallbackLmsr, conditionId, readChain])
 
   const lmsr = useMemo(() => {
     if (!marketAddress) return undefined
@@ -394,14 +429,10 @@ export function useDePrizeMarket(params: {
     resolvedSnapRef.current = true
   }, [payoutNums, payoutDen, numOutcomes, recordOddsSample])
 
-  const resolved = payoutDen !== undefined && payoutDen > 0n
-  const winningIndex = resolved
-    ? payoutNums.findIndex(
-        (n, _, arr) => n > 0n && arr.filter((x) => x > 0n).length === 1
-      )
-    : -1
-  const isRefundVector =
-    resolved && payoutNums.length > 0 && payoutNums.every((n) => n > 0n)
+  const { resolved, winningIndex, isRefundVector } = resolvePayoutVector(
+    payoutNums,
+    payoutDen
+  )
 
   return {
     marketAddress,

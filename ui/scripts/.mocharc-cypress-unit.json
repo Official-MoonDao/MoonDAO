@@ -18,6 +18,8 @@
     "cypress/integration/unit/marketplace-usdc-onramp.cy.tsx",
     "cypress/integration/unit/proposal-ai-review.cy.tsx",
     "cypress/integration/overview-delegate/leaderboard.cy.ts",
-    "cypress/integration/overview-path-vote/tally.cy.ts"
+    "cypress/integration/overview-path-vote/tally.cy.ts",
+    "cypress/integration/lib/deprize/quote.cy.ts",
+    "cypress/integration/lib/deprize/lifecycle.cy.ts"
   ]
 }

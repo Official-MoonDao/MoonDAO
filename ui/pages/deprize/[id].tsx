@@ -18,6 +18,7 @@ import {
   GAS_RESERVE_ETH,
   MarketStage,
   OUTCOME_COLORS,
+  positionRedeemValue,
   UNIT,
 } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
@@ -100,8 +101,10 @@ export default function DePrizeDetailPage() {
   })
 
   const region = useRegionRestriction()
+  // Pass a plain number: useRead JSON.stringify's its params for memoization,
+  // which throws on bigint. JB project ids are small, so Number() is safe.
   const { totalFunding } = useTotalFunding(
-    deprize?.jbProjectId !== undefined ? deprize.jbProjectId : undefined
+    deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
   )
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
@@ -449,13 +452,13 @@ export default function DePrizeDetailPage() {
               const teamId = deprize?.teamIds[o.index] ?? 0n
               const invested = costBasis[o.index] ?? 0
               const redeemValueEth =
-                market.resolved &&
-                o.balanceWei !== undefined &&
-                market.payoutDen !== undefined &&
-                market.payoutDen > 0n
+                market.resolved && o.balanceWei !== undefined
                   ? Number(
-                      (o.balanceWei * (market.payoutNums[o.index] ?? 0n)) /
-                        market.payoutDen
+                      positionRedeemValue(
+                        o.balanceWei,
+                        market.payoutNums[o.index] ?? 0n,
+                        market.payoutDen ?? 0n
+                      )
                     ) / Number(UNIT)
                   : undefined
               return (

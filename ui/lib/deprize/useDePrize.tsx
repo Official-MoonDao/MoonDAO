@@ -2,12 +2,7 @@ import DePrizeRegistryABI from 'const/abis/DePrizeRegistry.json'
 import { DEPRIZE_REGISTRY_ADDRESSES } from 'const/config'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
-import {
-  DePrizeState,
-  isRefundableState,
-  isTerminalState,
-  ZERO_BYTES32,
-} from './constants'
+import { DePrizeState, deriveDePrizeFlags, ZERO_BYTES32 } from './constants'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from './read'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
@@ -75,6 +70,33 @@ export function useDePrize(
     setLoading(true)
     setError(undefined)
     try {
+      // `getDePrize` REVERTS with UnknownDePrize for unregistered ids, so probe
+      // the non-reverting `state()` first and surface NONE as a real record
+      // (the page renders "does not exist") instead of a generic RPC error.
+      const probedState = Number(
+        await rpcRead<bigint | number>({
+          contract: registry,
+          method: 'state' as string,
+          params: [BigInt(deprizeId as any)],
+        })
+      ) as DePrizeState
+      if (probedState === DePrizeState.NONE) {
+        setDePrize({
+          deprizeId: Number(deprizeId),
+          jbProjectId: 0n,
+          conditionId: ZERO_BYTES32,
+          sunset: 0n,
+          winningTeamId: 0n,
+          cancellationNoticeAt: 0n,
+          state: DePrizeState.NONE,
+          teamIds: [],
+          bettingOpen: false,
+          isRefundable: false,
+          isTerminal: false,
+          cancellationPending: false,
+        })
+        return
+      }
       const dp = await rpcRead<any>({
         contract: registry,
         method: 'getDePrize' as string,
@@ -82,7 +104,6 @@ export function useDePrize(
       })
       const state = Number(dp.state) as DePrizeState
       const cancellationNoticeAt = BigInt(dp.cancellationNoticeAt ?? 0)
-      const cancellationPending = cancellationNoticeAt > 0n
       setDePrize({
         deprizeId: Number(deprizeId),
         jbProjectId: BigInt(dp.jbProjectId ?? 0),
@@ -92,10 +113,7 @@ export function useDePrize(
         cancellationNoticeAt,
         state,
         teamIds: (dp.teamIds ?? []).map((t: any) => BigInt(t)),
-        bettingOpen: state === DePrizeState.OPEN && !cancellationPending,
-        isRefundable: isRefundableState(state),
-        isTerminal: isTerminalState(state),
-        cancellationPending,
+        ...deriveDePrizeFlags(state, cancellationNoticeAt),
       })
     } catch (err: any) {
       console.error('[deprize] getDePrize failed', err)

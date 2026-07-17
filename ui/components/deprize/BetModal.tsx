@@ -6,7 +6,7 @@ import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { UNIT } from '@/lib/deprize/constants'
 import { fmt, toEth, toWei } from '@/lib/deprize/format'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
-import { rpcRead } from '@/lib/deprize/read'
+import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import client from '@/lib/thirdweb/client'
@@ -60,15 +60,17 @@ export default function BetModal({
   const insufficient =
     betAmountNum > 0 && betAmountNum > spendableEth + 1e-12
 
+  // Quote reads go through the batching-disabled read client on the thirdweb
+  // RPC edge (RPC batching silently breaks decodes in this thirdweb version).
   const lmsr = useMemo(
     () =>
       getContract({
-        client,
-        chain,
+        client: deprizeReadClient,
+        chain: deprizeReadChain(chain.id),
         address: marketAddress,
         abi: LMSRWithTWAP.abi as any,
       }),
-    [chain, marketAddress]
+    [chain.id, marketAddress]
   )
   const mint = useMemo(
     () =>
