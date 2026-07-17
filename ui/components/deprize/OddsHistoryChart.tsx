@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -17,6 +18,10 @@ type Props = {
   height?: number
 }
 
+const X_TICK_COUNT = 5
+/** Minimum window so a single (or tightly clustered) sample still gets a readable axis. */
+const MIN_SPAN_MS = 5 * 60 * 1000
+
 const fmtTime = (t: number) =>
   new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
@@ -27,6 +32,26 @@ const fmtTimeFull = (t: number) =>
     second: '2-digit',
   })
 
+function buildTimeDomain(history: OddsSample[]): {
+  tMin: number
+  tMax: number
+  ticks: number[]
+} {
+  const now = Date.now()
+  const times = history.map((s) => s.t)
+  let tMax = Math.max(...times, now)
+  let tMin = Math.min(...times)
+  if (tMax - tMin < MIN_SPAN_MS) {
+    tMin = tMax - MIN_SPAN_MS
+  }
+  const span = tMax - tMin
+  const ticks = Array.from(
+    { length: X_TICK_COUNT },
+    (_, i) => tMin + (span * i) / (X_TICK_COUNT - 1),
+  )
+  return { tMin, tMax, ticks }
+}
+
 export default function OddsHistoryChart({
   history,
   labels,
@@ -35,17 +60,41 @@ export default function OddsHistoryChart({
 }: Props) {
   const outcomeCount = labels.length
 
-  // recharts wants flat rows: { t, v0, v1, ... }. With a single live sample,
-  // synthesize a short baseline so the current odds still plot immediately.
-  const samples =
-    history.length === 1
-      ? [{ t: history[0].t - 60_000, p: history[0].p }, history[0]]
-      : history
-  const data = samples.map((s) => {
-    const row: Record<string, number> = { t: s.t }
-    for (let i = 0; i < outcomeCount; i++) row[`v${i}`] = s.p[i]
-    return row
-  })
+  const { data, tMin, tMax, ticks } = useMemo(() => {
+    if (!history.length) {
+      return { data: [] as Record<string, number>[], tMin: 0, tMax: 0, ticks: [] as number[] }
+    }
+
+    const domain = buildTimeDomain(history)
+
+    // Ensure the series spans the full domain so a single live reading still
+    // draws across the chart (flat at current odds until more samples arrive).
+    let samples = history
+    if (history.length === 1) {
+      samples = [
+        { t: domain.tMin, p: history[0].p },
+        { t: domain.tMax, p: history[0].p },
+      ]
+    } else {
+      const first = history[0]
+      const last = history[history.length - 1]
+      samples = history
+      if (first.t > domain.tMin) {
+        samples = [{ t: domain.tMin, p: first.p }, ...samples]
+      }
+      if (last.t < domain.tMax) {
+        samples = [...samples, { t: domain.tMax, p: last.p }]
+      }
+    }
+
+    const rows = samples.map((s) => {
+      const row: Record<string, number> = { t: s.t }
+      for (let i = 0; i < outcomeCount; i++) row[`v${i}`] = s.p[i]
+      return row
+    })
+
+    return { data: rows, ...domain }
+  }, [history, outcomeCount])
 
   if (data.length < 2) {
     return (
@@ -61,17 +110,19 @@ export default function OddsHistoryChart({
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+      <LineChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: -16 }}>
         <CartesianGrid stroke="#ffffff12" vertical={false} />
         <XAxis
           dataKey="t"
           type="number"
-          scale="time"
-          domain={['dataMin', 'dataMax']}
+          scale="linear"
+          domain={[tMin, tMax]}
+          ticks={ticks}
           tickFormatter={fmtTime}
           tick={{ fill: '#9ca3af', fontSize: 11 }}
           stroke="#ffffff22"
-          minTickGap={40}
+          interval={0}
+          padding={{ left: 0, right: 0 }}
         />
         <YAxis
           domain={[0, 100]}
