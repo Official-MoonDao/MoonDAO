@@ -32,23 +32,31 @@ export default function MoonGlobeLazy(props: MoonGlobeProps) {
     const el = containerRef.current
     if (!el) return
 
-    // Mount immediately if already visible; otherwise wait for intersection.
+    let cancelled = false
+    let mountTimer: ReturnType<typeof setTimeout> | undefined
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          // Mounting swaps content inside next/dynamic's lazy boundary; if it
-          // lands while the page is still hydrating, React 18 throws
-          // "Suspense boundary received an update before it finished
-          // hydrating". Marking it as a transition lets React schedule it
-          // after hydration instead.
+        if (!entries.some((e) => e.isIntersecting)) return
+        observer.disconnect()
+        // IntersectionObserver can fire synchronously from observe() inside
+        // this effect — i.e. during React's hydration passive-effects flush.
+        // Mounting a next/dynamic boundary in that same turn races dehydrated
+        // Suspense siblings and throws. Defer to a macrotask, then mark the
+        // update as a transition so React schedules it after hydration.
+        mountTimer = setTimeout(() => {
+          if (cancelled) return
           startTransition(() => setHasMounted(true))
-          observer.disconnect()
-        }
+        }, 0)
       },
       { rootMargin: '200px' }
     )
     observer.observe(el)
-    return () => observer.disconnect()
+    return () => {
+      cancelled = true
+      observer.disconnect()
+      if (mountTimer) clearTimeout(mountTimer)
+    }
   }, [hasMounted])
 
   return (

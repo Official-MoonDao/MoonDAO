@@ -2,7 +2,7 @@ import { DEFAULT_CHAIN_V5 } from 'const/defaultChain'
 import { FlagProvider } from 'const/flags'
 import { SessionProvider } from 'next-auth/react'
 import { NextQueryParamProvider } from 'next-query-params'
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, startTransition } from 'react'
 import { Chain as ChainV5 } from 'thirdweb/chains'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -25,10 +25,12 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
 
   const [lightMode, setLightMode] = useLightMode()
 
-  // Force dark mode once on mount (the site has no light theme); a missing
-  // dependency array here used to re-run this after every render.
+  // Force dark mode once on mount (the site has no light theme). useLightMode
+  // already initializes to false, so this is a no-op unless something flipped
+  // it; wrap in startTransition so it cannot race Layout's dehydrated
+  // Suspense boundaries during hydration.
   useEffect(() => {
-    setLightMode(false)
+    startTransition(() => setLightMode(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
