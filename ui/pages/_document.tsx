@@ -35,13 +35,17 @@ class WebsiteDocument extends Document {
             }}
           />
           {/*
-            Next injects body{display:none} (data-next-hide-fouc) until React
-            hydrates. With large client bundles that can leave a blank page for
-            a long time (or forever if hydration errors). Reveal SSR HTML ASAP.
+            Next injects body{display:none} (data-next-hide-fouc) until styles
+            are ready + React hydrates, then removes it — this is what prevents a
+            flash of unstyled (raw) HTML, especially in `next dev` where global
+            CSS is injected by JS rather than a <link>. Do NOT reveal early: it
+            shows raw HTML for seconds until Tailwind loads. Keep only a delayed
+            safety net so a genuinely stalled hydration can't leave the page
+            blank forever.
           */}
           <script
             dangerouslySetInnerHTML={{
-              __html: `(function(){function r(){try{var s=document.querySelector('style[data-next-hide-fouc]');if(s&&s.parentNode)s.parentNode.removeChild(s);if(document.body)document.body.style.display='block';}catch(e){}}r();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',r);setTimeout(r,0);})();`,
+              __html: `(function(){function r(){try{var l=document.querySelectorAll('style[data-next-hide-fouc]');for(var i=0;i<l.length;i++){var s=l[i];if(s&&s.parentNode)s.parentNode.removeChild(s);}if(document.body)document.body.style.display='';}catch(e){}}setTimeout(r,8000);})();`,
             }}
           />
         </Head>
