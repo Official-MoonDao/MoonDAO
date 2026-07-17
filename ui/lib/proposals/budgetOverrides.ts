@@ -26,6 +26,34 @@ export const BUDGET_OVERRIDES_USD: Record<string, number> = {
   // published audit screenshot. Pin to the audited value so the
   // displayed budget and the budget-cap math both match.
   '237': 4650,
+
+  // Q3 2026: MDP-250 ("Human Space Migration Ethics Framework"). The body
+  // parser returns $0 because the budget is written as freeform prose
+  // ("Total costs: (820 + 88 + 3200) $= $4108") rather than a table row
+  // the extractor recognises.
+  '250': 4108,
+
+  // Q3 2026: MDP-251 ("MDRS Crew Seat"). Author James Burk revised the
+  // budget downward from $5,500 to $4,000 after submission. The extractor
+  // reads the original $5,500 correctly; this override pins the agreed
+  // revised amount.
+  '251': 4000,
+
+  // Q3 2026: MDP-255 ("AORA Aerospace E-Learning Platform"). The body
+  // parser over-counts to ~$219,500 by summing the Revenue Potential
+  // projection table instead of the funding ask. Correct ask is $3,000.
+  '255': 3000,
+
+  // Q3 2026: MDP-259 ("Mission Cosmic Colombia"). The parser returns $0
+  // because the totals row contains a mixed-currency cell ("$2430 USD
+  // 1.30 ETH") which isUsdValue() rejects due to the ETH mention.
+  '259': 2430,
+
+  // Q3 2026: MDP-266 ("Island Zero Study Project"). The parser returns $0
+  // because the totals row uses the plural "Totals", the table has three
+  // columns (desc | man-days | cost), and the amount cell contains an
+  // invisible U+200E mark ("US$\u200E 4,000").
+  '266': 4000,
 }
 
 export function getBudgetOverrideUSD(
