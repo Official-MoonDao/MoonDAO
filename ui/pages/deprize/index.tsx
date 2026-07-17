@@ -1,6 +1,6 @@
 import TeamABI from 'const/abis/Team.json'
 import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES } from 'const/config'
-import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import { getContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -22,6 +22,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import StandardButton from '@/components/layout/StandardButton'
 
 function ProviderOddsRow({
   teamId,
@@ -77,6 +78,7 @@ function DePrizeListRow({
   deprizeId: number
   teamContract: any
 }) {
+  const router = useRouter()
   const chain = DEFAULT_CHAIN_V5
   const { deprize } = useDePrize(deprizeId, chain)
   const numOutcomes = deprize?.teamIds.length ?? 0
@@ -114,13 +116,22 @@ function DePrizeListRow({
   if (deprize && deprize.state === DePrizeState.NONE) return null
 
   const meta = deprize ? DEPRIZE_STATE_META[deprize.state] : undefined
-  const isOpen = deprize?.state === DePrizeState.OPEN
+  const bettingOpen = !!deprize?.bettingOpen
   const hasOdds = topProviders.some((p) => Number.isFinite(p.probability))
+  const detailHref = `/deprize/${deprizeId}`
 
   return (
-    <Link
-      href={`/deprize/${deprizeId}`}
-      className="block p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10 hover:border-white/25 transition-colors"
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(detailHref)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          router.push(detailHref)
+        }
+      }}
+      className="block p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10 hover:border-white/25 transition-colors cursor-pointer"
     >
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
@@ -132,7 +143,7 @@ function DePrizeListRow({
         <div className="flex items-center gap-3 shrink-0">
           <span
             className={`px-3 py-1 rounded-full text-xs font-medium border ${
-              isOpen
+              bettingOpen
                 ? 'bg-moon-green/20 text-moon-green border-moon-green/40'
                 : 'bg-white/10 text-gray-200 border-white/20'
             }`}
@@ -169,18 +180,38 @@ function DePrizeListRow({
           )}
         </div>
 
-        {/* Prize pool */}
-        <div className="sm:text-right shrink-0">
-          <p className="text-gray-500 text-[11px] uppercase tracking-wide">
-            Prize pool
-          </p>
-          <p className="text-white text-2xl font-bold leading-tight mt-1 tabular-nums">
-            {prizeEth !== undefined ? fmt(prizeEth, 2) : '—'}
-            <span className="text-base font-medium text-gray-400 ml-1">ETH</span>
-          </p>
+        {/* Prize pool + bet CTA */}
+        <div className="sm:text-right shrink-0 flex flex-col sm:items-end gap-3">
+          <div>
+            <p className="text-gray-500 text-[11px] uppercase tracking-wide">
+              Prize pool
+            </p>
+            <p className="text-white text-2xl font-bold leading-tight mt-1 tabular-nums">
+              {prizeEth !== undefined ? fmt(prizeEth, 2) : '—'}
+              <span className="text-base font-medium text-gray-400 ml-1">ETH</span>
+            </p>
+          </div>
+          {bettingOpen ? (
+            <StandardButton
+              className="rounded-full"
+              backgroundColor="bg-moon-green"
+              link={detailHref}
+              onClick={(e: any) => e.stopPropagation()}
+            >
+              Bet on a team
+            </StandardButton>
+          ) : (
+            <StandardButton
+              className="rounded-full"
+              backgroundColor="bg-white/10"
+              disabled
+            >
+              Betting closed
+            </StandardButton>
+          )}
         </div>
       </div>
-    </Link>
+    </div>
   )
 }
 
