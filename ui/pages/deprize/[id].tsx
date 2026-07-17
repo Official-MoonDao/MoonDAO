@@ -42,10 +42,19 @@ const OddsHistoryChart = dynamic(() => import('@/components/deprize/OddsHistoryC
   ssr: false,
 })
 
-function StateBadge({ state }: { state: DePrizeState }) {
+function StateBadge({
+  state,
+  labelOverride,
+  toneOverride,
+}: {
+  state: DePrizeState
+  labelOverride?: string
+  toneOverride?: 'amber'
+}) {
   const meta = DEPRIZE_STATE_META[state]
-  const tone =
-    state === DePrizeState.OPEN
+  const tone = toneOverride
+    ? 'bg-amber-500/15 text-amber-200 border-amber-500/40'
+    : state === DePrizeState.OPEN
       ? 'bg-moon-green/20 text-moon-green border-moon-green/40'
       : state === DePrizeState.M2_COMPLETE
         ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/40'
@@ -54,7 +63,7 @@ function StateBadge({ state }: { state: DePrizeState }) {
           : 'bg-white/10 text-gray-200 border-white/20'
   return (
     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${tone}`}>
-      {meta?.label ?? 'Unknown'}
+      {labelOverride ?? meta?.label ?? 'Unknown'}
     </span>
   )
 }
@@ -292,6 +301,33 @@ export default function DePrizeDetailPage() {
     })
   const showRefundVector = showResolved && market.isRefundVector
 
+  // Reconcile registry lifecycle with the LMSR trading stage into ONE status so
+  // the header can't say "Accepting bets" while the market is actually paused.
+  // The registry can be OPEN while the underlying market is paused/closed or the
+  // bet router isn't wired — in all those cases betting is not actually possible.
+  const bettingBlockedReason: string | undefined = (() => {
+    if (!deprize?.bettingOpen) return undefined
+    if (market.stage === MarketStage.Paused)
+      return 'Betting is temporarily paused while the market is halted. Live odds stay visible.'
+    if (market.stage === MarketStage.Closed)
+      return 'The prediction market is closed, so betting is unavailable.'
+    if (!mintConfigured)
+      return 'Betting isn’t wired on this network yet. You can still view live odds.'
+    return undefined
+  })()
+  const effectiveDescription =
+    deprize?.bettingOpen && bettingBlockedReason
+      ? bettingBlockedReason
+      : stateMeta?.description
+  const statusLabelOverride =
+    deprize?.bettingOpen && bettingBlockedReason
+      ? market.stage === MarketStage.Closed
+        ? 'Open · market closed'
+        : market.stage === MarketStage.Paused
+          ? 'Open · paused'
+          : 'Open · betting unavailable'
+      : undefined
+
   const winningTeamName = market.winningIndex >= 0 ? `Team #${market.winningIndex + 1}` : undefined
 
   // --- Render states ---
@@ -349,7 +385,13 @@ export default function DePrizeDetailPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
               <h1 className="text-white font-GoodTimes text-xl">DePrize #{deprizeId}</h1>
-              {deprize && <StateBadge state={deprize.state} />}
+              {deprize && (
+                <StateBadge
+                  state={deprize.state}
+                  labelOverride={statusLabelOverride}
+                  toneOverride={statusLabelOverride ? 'amber' : undefined}
+                />
+              )}
             </div>
             <StandardButton
               onClick={refreshAll}
@@ -360,7 +402,7 @@ export default function DePrizeDetailPage() {
               {market.loading ? 'Refreshing…' : 'Refresh'}
             </StandardButton>
           </div>
-          <p className="text-gray-400 text-sm mt-2">{stateMeta?.description}</p>
+          <p className="text-gray-400 text-sm mt-2">{effectiveDescription}</p>
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat label="Prize pool">
               {jbProjectId !== undefined && !isLoadingFunding
@@ -382,26 +424,6 @@ export default function DePrizeDetailPage() {
           <Notice tone="red">
             A cancellation has been announced for this DePrize. New bets are paused during the 7-day
             notice window. If the cancellation goes through, all positions are refunded.
-          </Notice>
-        )}
-
-        {/* Market paused / closed while registry still OPEN */}
-        {deprize?.bettingOpen && market.stage === MarketStage.Paused && (
-          <Notice tone="amber">
-            The prediction market is paused — new bets and cash-outs are halted until an admin
-            resumes trading.
-          </Notice>
-        )}
-        {deprize?.bettingOpen && market.stage === MarketStage.Closed && (
-          <Notice tone="amber">
-            The prediction market is closed. Betting is unavailable even though this DePrize is
-            still marked Open in the registry.
-          </Notice>
-        )}
-        {deprize?.bettingOpen && !tradingHalted && !mintConfigured && (
-          <Notice tone="amber">
-            Betting isn&apos;t wired on this network yet (DePrizeMint router not configured). You
-            can still view live odds.
           </Notice>
         )}
 
