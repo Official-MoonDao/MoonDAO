@@ -695,14 +695,14 @@ export const PROJECT_SYSTEM_CONFIG = {
 // Set IS_SENATE_VOTE to true during Senate Vote phase - shows proposals with "Temperature Check" status
 // Set IS_MEMBER_VOTE to true during Member Vote phase - shows proposals with "Voting" status (passed Senate vote)
 // Only one should be true at a time, or both false when no voting is active
-export const IS_SENATE_VOTE = true
-export const IS_MEMBER_VOTE = false
+export const IS_SENATE_VOTE = false
+export const IS_MEMBER_VOTE = true
 
 // When false, the Member Vote phase is still on (results panel, "Member
 // Vote" badge, etc. still render) but the actual submit/edit Distribution
 // UI on the proposals tab is hidden. Used to close member-vote submissions
 // while keeping the rest of the cycle UI intact.
-export const MEMBER_VOTE_SUBMISSIONS_OPEN = false
+export const MEMBER_VOTE_SUBMISSIONS_OPEN = true
 
 // Addresses (lowercase) whose Member Vote distribution should be dropped
 // from the *current* calendar quarter's tally — both the read-only
@@ -719,7 +719,7 @@ export const MEMBER_VOTE_EXCLUDED_ADDRESSES: string[] = []
 // Set IS_REWARDS_CYCLE to true during the retroactive rewards distribution
 // window. When true, the projects page treats the prior quarter as the active
 // retro cycle and surfaces the Citizen / Voting Member distribution UI.
-export const IS_REWARDS_CYCLE = false
+export const IS_REWARDS_CYCLE = true
 
 // Quarterly budget in USD (stablecoins)
 // 5% of liquid non-MOONEY assets, denominated in USD
@@ -766,7 +766,9 @@ export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = 'USDC'
 export const RETRO_ETH_BUDGET = 2.215
 
 // Q2 2026 retroactives (current cycle, USDC-paid): $5,629.26 for projects.
-// The quarter's total USD budget is $23,409 (NEXT_QUARTER_BUDGET_USD).
+// The Q2 2026 quarterly USD budget was $23,409 (this is pinned to the
+// retro cohort's own quarter, NOT the live NEXT_QUARTER_BUDGET_USD, which
+// has since rolled forward to the Q3 2026 senate/member-vote budget).
 // 90% goes to projects ($21,068.10); $15,438.84 was committed upfront
 // to the 4 Member-Vote winners (MDP-240 $3,955 + MDP-235 $3,600 +
 // MDP-245 $3,233.84 + MDP-237 $4,650). The cycle approved 4 winners
@@ -783,11 +785,16 @@ export const RETRO_USD_BUDGET = 5629.26
 // receive upfront funding. Audit / results displays surface this value
 // alongside the project pool so every part of the cycle's spend is visible.
 //
-// USDC cycles: 10% of NEXT_QUARTER_BUDGET_USD (Q2 2026 = $2,340.90).
+// USDC cycles: 10% of the retro cohort's OWN quarterly budget. The
+// currently-voting retro cohort is Q2 2026, whose quarterly budget was
+// $23,409, so the community circle is $2,340.90. This is pinned to the
+// cohort quarter on purpose — it must NOT track NEXT_QUARTER_BUDGET_USD,
+// which has already rolled forward to the Q3 2026 senate/member-vote
+// budget ($24,310) and would otherwise mis-state this cycle's payout.
 // ETH cycles: must be hardcoded against the cycle's quarterly ETH total
 // (e.g. Q1 2026 was 1.16 ETH, set when RETRO_PAYOUT_TOKEN was 'ETH').
 // Past cycles are pinned in `HISTORICAL_RETRO_POOLS` (see
 // `lib/proposals/computeRetroactiveOutcome.ts`) so this constant only
 // needs to track the current cycle.
 export const RETRO_PRIMARY_COMMUNITY_CIRCLE: number =
-  RETRO_PAYOUT_TOKEN === 'USDC' ? NEXT_QUARTER_BUDGET_USD * 0.1 : 0
+  RETRO_PAYOUT_TOKEN === 'USDC' ? 2340.9 : 0
