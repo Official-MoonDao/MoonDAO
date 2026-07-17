@@ -369,7 +369,24 @@ export default function DePrizeIndexContent() {
           account={account}
           spendableEth={spendableEth}
           onClose={() => setBetTarget(null)}
-          onDone={() => {
+          onDone={(index, costEth) => {
+            // Persist cost basis so the detail page's P&L matches index bets.
+            const user = account.address
+            const marketAddr = betTarget.marketAddress
+            if (typeof window !== 'undefined' && user && marketAddr) {
+              const key = `deprize:costBasis:v1:${marketAddr}:${user}`
+              try {
+                const raw = window.localStorage.getItem(key)
+                const prev = raw ? (JSON.parse(raw) as Record<number, number>) : {}
+                const next = {
+                  ...prev,
+                  [index]: Math.max(0, (prev[index] ?? 0) + costEth),
+                }
+                window.localStorage.setItem(key, JSON.stringify(next))
+              } catch {
+                /* quota / private mode */
+              }
+            }
             setRefreshNonce((n) => n + 1)
             setBetTarget(null)
           }}

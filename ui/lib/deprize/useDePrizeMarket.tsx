@@ -250,14 +250,19 @@ export function useDePrizeMarket(params: {
     positionIds: bigint[]
     feePct?: number
   } | null>(null)
+  // Bumped whenever the bound market changes so in-flight loads/polls from a
+  // prior navigation cannot overwrite the current market's state.
+  const loadGenRef = useRef(0)
   const prevMarketRef = useRef<string | undefined>(marketAddress)
   if (prevMarketRef.current !== marketAddress) {
     prevMarketRef.current = marketAddress
     staticRef.current = null
+    loadGenRef.current += 1
   }
 
   const load = useCallback(async () => {
     if (!lmsr || !ctf || !weth || numOutcomes <= 0) return
+    const gen = ++loadGenRef.current
     setLoading(true)
     setError(undefined)
     try {
@@ -271,6 +276,7 @@ export function useDePrizeMarket(params: {
             params: [0n],
           })
         }
+        if (loadGenRef.current !== gen) return
         const ids: bigint[] = []
         for (let i = 0; i < numOutcomes; i++) {
           const indexSet = 1n << BigInt(i)
@@ -279,6 +285,7 @@ export function useDePrizeMarket(params: {
             method: 'getCollectionId' as string,
             params: [ZERO_BYTES32, cond, indexSet],
           })
+          if (loadGenRef.current !== gen) return
           const pid = await rpcRead<bigint>({
             contract: ctf,
             method: 'getPositionId' as string,
@@ -293,8 +300,10 @@ export function useDePrizeMarket(params: {
         })
           .then((v) => (Number(v) / 1e18) * 100)
           .catch(() => undefined)
+        if (loadGenRef.current !== gen) return
         staticRef.current = { conditionId: cond as string, positionIds: ids, feePct: fee }
         startTransition(() => {
+          if (loadGenRef.current !== gen) return
           setPositionIds(ids)
           setFeePct(fee)
         })
@@ -356,9 +365,12 @@ export function useDePrizeMarket(params: {
           .catch(() => undefined),
       ])
 
+      if (loadGenRef.current !== gen) return
+
       const pricesValid = stg !== MarketStage.Closed
       if (stg === MarketStage.Running) recordOddsSample(prices as number[])
       startTransition(() => {
+        if (loadGenRef.current !== gen) return
         setStage(stg)
         setPayoutDen(den)
         setPayoutNums(nums)
@@ -377,12 +389,16 @@ export function useDePrizeMarket(params: {
         )
       })
     } catch (err: any) {
+      if (loadGenRef.current !== gen) return
       console.error('[deprize] market load failed', err)
       startTransition(() => {
+        if (loadGenRef.current !== gen) return
         setError(err?.shortMessage || err?.message || 'Failed to read the market.')
       })
     } finally {
-      startTransition(() => setLoading(false))
+      if (loadGenRef.current === gen) {
+        startTransition(() => setLoading(false))
+      }
     }
   }, [
     lmsr,
@@ -406,6 +422,7 @@ export function useDePrizeMarket(params: {
     let stopped = false
     const tick = async () => {
       if (stopped || (typeof document !== 'undefined' && document.hidden)) return
+      const gen = loadGenRef.current
       try {
         const prices = await Promise.all(
           Array.from({ length: numOutcomes }, (_, i) =>
@@ -418,7 +435,19 @@ export function useDePrizeMarket(params: {
               .catch(() => NaN),
           ),
         )
+        if (stopped || loadGenRef.current !== gen) return
         recordOddsSample(prices)
+        // Keep team cards / index list in sync with the chart — both are labeled
+        // "live odds" and must reflect the latest marginal prices.
+        startTransition(() => {
+          if (stopped || loadGenRef.current !== gen) return
+          setOutcomes((prev) =>
+            prev.map((o, i) => ({
+              ...o,
+              probability: Number.isFinite(prices[i]) ? (prices[i] as number) : o.probability,
+            })),
+          )
+        })
       } catch {
         /* transient — next tick retries */
       }
