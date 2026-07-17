@@ -87,7 +87,8 @@ export const TERMINAL_STATES: ReadonlySet<DePrizeState> = new Set([
 ])
 
 // Prize slice: every bet routes 5% (1/20) to the Juicebox prize pool.
-export const SLICE_DENOMINATOR = 20n
+// Single source of truth lives in the dependency-free quote-math module.
+export { SLICE_DENOMINATOR } from './quote-math'
 
 export const ZERO_BYTES32 =
   '0x0000000000000000000000000000000000000000000000000000000000000000'

@@ -300,6 +300,13 @@ export default function DePrizeDetailPage() {
       </Shell>
     )
   }
+  if (!router.isReady) {
+    return (
+      <Shell>
+        <div className="p-8 text-center text-gray-400">Loading DePrize…</div>
+      </Shell>
+    )
+  }
   if (deprizeId === undefined) {
     return (
       <Shell>

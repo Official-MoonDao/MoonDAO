@@ -3,7 +3,7 @@ import {
   betSlice,
   buildAmounts,
   searchMaxQtyWithinCost,
-} from '@/lib/deprize/quote'
+} from '@/lib/deprize/quote-math'
 
 const ETH = 10n ** 18n
 
@@ -74,8 +74,8 @@ describe('deprize quote math', () => {
       }
       const budget = 1_010_000n
       const qty = await searchMaxQtyWithinCost(cost, budget)
-      expect(await cost(qty)).to.be.at.most(budget)
-      expect(await cost(qty + 1n)).to.be.greaterThan(budget)
+      expect((await cost(qty)) <= budget).to.equal(true)
+      expect((await cost(qty + 1n)) > budget).to.equal(true)
     })
   })
 })
