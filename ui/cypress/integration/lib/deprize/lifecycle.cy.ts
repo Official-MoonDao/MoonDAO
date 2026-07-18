@@ -119,21 +119,41 @@ describe('deprize lifecycle derivations', () => {
       ).to.equal(false)
     })
 
-    it('surfaces when registry is settled / refundable', () => {
-      expect(
-        shouldSurfaceResolution({
-          ctfResolved: true,
-          registryState: DePrizeState.SETTLED,
-          marketClosed: false,
-        }),
-      ).to.equal(true)
-      expect(
-        shouldSurfaceResolution({
-          ctfResolved: true,
-          registryState: DePrizeState.NO_WINNER,
-          marketClosed: false,
-        }),
-      ).to.equal(true)
+    it('ignores CTF resolution in DRAFT / LOCKED / VOTING unless market is Closed', () => {
+      for (const registryState of [
+        DePrizeState.DRAFT,
+        DePrizeState.LOCKED,
+        DePrizeState.VOTING,
+      ]) {
+        expect(
+          shouldSurfaceResolution({
+            ctfResolved: true,
+            registryState,
+            marketClosed: false,
+          }),
+          `state ${registryState}`,
+        ).to.equal(false)
+      }
+    })
+
+    it('surfaces when registry is settled / refundable / post-M1', () => {
+      for (const registryState of [
+        DePrizeState.SETTLED,
+        DePrizeState.M1_RELEASED,
+        DePrizeState.M2_COMPLETE,
+        DePrizeState.NO_WINNER,
+        DePrizeState.CANCELLED,
+        DePrizeState.M2_FAILED,
+      ]) {
+        expect(
+          shouldSurfaceResolution({
+            ctfResolved: true,
+            registryState,
+            marketClosed: false,
+          }),
+          `state ${registryState}`,
+        ).to.equal(true)
+      }
     })
 
     it('surfaces when the LMSR is Closed with a reported vector', () => {

@@ -21,6 +21,11 @@ import {
 import { fmt } from '@/lib/deprize/format'
 import { buildAmounts } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
+import {
+  formatBettingCloses,
+  isMintConfigured,
+  reconcileBettingStatus,
+} from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
@@ -66,17 +71,6 @@ function StateBadge({
       {labelOverride ?? meta?.label ?? 'Unknown'}
     </span>
   )
-}
-
-function timeUntil(tsSec: bigint): string {
-  const now = Math.floor(Date.now() / 1000)
-  const diff = Number(tsSec) - now
-  if (diff <= 0) return 'elapsed'
-  const d = Math.floor(diff / 86400)
-  const h = Math.floor((diff % 86400) / 3600)
-  if (d > 0) return `${d}d ${h}h`
-  const m = Math.floor((diff % 3600) / 60)
-  return `${h}h ${m}m`
 }
 
 export default function DePrizeDetailPage() {
@@ -280,7 +274,7 @@ export default function DePrizeDetailPage() {
 
   const spendable = Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
   const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
-  const mintConfigured = /^0x[0-9a-fA-F]{40}$/.test(mintAddress)
+  const mintConfigured = isMintConfigured(mintAddress)
   const bettingAllowed =
     !!deprize?.bettingOpen &&
     mintConfigured &&
@@ -288,7 +282,6 @@ export default function DePrizeDetailPage() {
     !region.isLoading &&
     !region.isError &&
     !tradingHalted
-  const stateMeta = deprize ? DEPRIZE_STATE_META[deprize.state] : undefined
   // CTF may already have a payout vector on a still-OPEN/paused test market —
   // only show Refund/WON/claim when the registry lifecycle (or a Closed market)
   // says resolution should surface.
@@ -301,32 +294,14 @@ export default function DePrizeDetailPage() {
     })
   const showRefundVector = showResolved && market.isRefundVector
 
-  // Reconcile registry lifecycle with the LMSR trading stage into ONE status so
-  // the header can't say "Accepting bets" while the market is actually paused.
-  // The registry can be OPEN while the underlying market is paused/closed or the
-  // bet router isn't wired — in all those cases betting is not actually possible.
-  const bettingBlockedReason: string | undefined = (() => {
-    if (!deprize?.bettingOpen) return undefined
-    if (market.stage === MarketStage.Paused)
-      return 'Betting is temporarily paused while the market is halted. Live odds stay visible.'
-    if (market.stage === MarketStage.Closed)
-      return 'The prediction market is closed, so betting is unavailable.'
-    if (!mintConfigured)
-      return 'Betting isn’t wired on this network yet. You can still view live odds.'
-    return undefined
-  })()
-  const effectiveDescription =
-    deprize?.bettingOpen && bettingBlockedReason
-      ? bettingBlockedReason
-      : stateMeta?.description
-  const statusLabelOverride =
-    deprize?.bettingOpen && bettingBlockedReason
-      ? market.stage === MarketStage.Closed
-        ? 'Open · market closed'
-        : market.stage === MarketStage.Paused
-          ? 'Open · paused'
-          : 'Open · betting unavailable'
-      : undefined
+  const { effectiveDescription, statusLabelOverride } = deprize
+    ? reconcileBettingStatus({
+        bettingOpen: deprize.bettingOpen,
+        marketStage: market.stage,
+        mintConfigured,
+        registryState: deprize.state,
+      })
+    : { effectiveDescription: undefined, statusLabelOverride: undefined }
 
   const winningTeamName = market.winningIndex >= 0 ? `Team #${market.winningIndex + 1}` : undefined
 
@@ -421,9 +396,7 @@ export default function DePrizeDetailPage() {
               title="After this time the market can be locked and moved to winner determination. Until then, betting stays open."
             >
               {deprize && deprize.sunset > 0n
-                ? Number(deprize.sunset) * 1000 <= Date.now()
-                  ? 'Closing soon'
-                  : timeUntil(deprize.sunset)
+                ? formatBettingCloses(deprize.sunset)
                 : '—'}
             </Stat>
           </div>
