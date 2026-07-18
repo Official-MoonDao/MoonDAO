@@ -403,18 +403,22 @@ export default function DePrizeDetailPage() {
             </StandardButton>
           </div>
           <p className="text-gray-400 text-sm mt-2">{effectiveDescription}</p>
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="mt-4 grid grid-cols-3 gap-3">
             <Stat label="Prize pool">
               {jbProjectId !== undefined && !isLoadingFunding
                 ? `${fmt(Number(totalFunding) / Number(UNIT))} ETH`
                 : '—'}
             </Stat>
             <Stat label="Providers">{numOutcomes || '—'}</Stat>
-            <Stat label="Sunset">
-              {deprize && deprize.sunset > 0n ? timeUntil(deprize.sunset) : '—'}
-            </Stat>
-            <Stat label="Market fee">
-              {market.feePct !== undefined ? `${fmt(market.feePct, 2)}%` : '—'}
+            <Stat
+              label="Betting closes"
+              title="After this time the market can be locked and moved to winner determination. Until then, betting stays open."
+            >
+              {deprize && deprize.sunset > 0n
+                ? Number(deprize.sunset) * 1000 <= Date.now()
+                  ? 'Closing soon'
+                  : timeUntil(deprize.sunset)
+                : '—'}
             </Stat>
           </div>
         </div>
@@ -645,10 +649,23 @@ function Shell({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+function Stat({
+  label,
+  title,
+  children,
+}: {
+  label: string
+  title?: string
+  children: React.ReactNode
+}) {
   return (
     <div>
-      <p className="text-gray-400 text-xs">{label}</p>
+      <p
+        className={`text-gray-400 text-xs ${title ? 'cursor-help' : ''}`}
+        title={title}
+      >
+        {label}
+      </p>
       <p className="text-white text-sm font-semibold">{children}</p>
     </div>
   )
