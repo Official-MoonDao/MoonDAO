@@ -402,7 +402,13 @@ export default function DePrizeDetailPage() {
               {market.loading ? 'Refreshing…' : 'Refresh'}
             </StandardButton>
           </div>
-          <p className="text-gray-400 text-sm mt-2">{effectiveDescription}</p>
+          <p className="text-gray-300 text-sm mt-2">
+            Back the provider you think will win the right to fly Frank + a
+            community Candidate to space.
+          </p>
+          {effectiveDescription && (
+            <p className="text-gray-500 text-sm mt-1">{effectiveDescription}</p>
+          )}
           <div className="mt-4 grid grid-cols-3 gap-3">
             <Stat label="Prize pool">
               {jbProjectId !== undefined && !isLoadingFunding
@@ -632,14 +638,12 @@ function Shell({ children }: { children: React.ReactNode }) {
       />
       <Container>
         <ContentLayout
-          header="DePrize"
           mainPadding
           mode="compact"
           popOverEffect={false}
           isProfile
           centerHeader
           centerHeaderWidth="860px"
-          description="Back the provider you think will win the right to fly Frank + a community Candidate to space."
           preFooter={<NoticeFooter />}
         >
           <div className="w-full max-w-[860px] mx-auto">{children}</div>
