@@ -83,7 +83,12 @@ export default function DePrizeDetailPage() {
   const userAddress = account?.address
   const { login } = useLogin()
 
-  const { deprize, error, registryConfigured } = useDePrize(deprizeId, chain)
+  const {
+    deprize,
+    error,
+    registryConfigured,
+    refresh: refreshRegistry,
+  } = useDePrize(deprizeId, chain)
   const numOutcomes = deprize?.teamIds.length ?? 0
 
   const market = useDePrizeMarket({
@@ -230,12 +235,14 @@ export default function DePrizeDetailPage() {
 
   const refreshAll = useCallback(() => {
     market.refresh()
+    refreshRegistry()
     setRefreshNonce((n) => n + 1)
     setTimeout(() => {
       market.refresh()
+      refreshRegistry()
       setRefreshNonce((n) => n + 1)
     }, 2500)
-  }, [market])
+  }, [market, refreshRegistry])
 
   // Live sell quotes for held outcomes while the market is trading.
   useEffect(() => {
