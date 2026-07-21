@@ -5,6 +5,7 @@ import {
   PROJECT_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
 } from 'const/config'
+import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { isOperator } from 'middleware/isOperator'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
@@ -95,12 +96,62 @@ async function tallySenateForCurrentCycle(
   const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE quarter = ${PROJECT_CYCLE.quarter} AND year = ${PROJECT_CYCLE.year}`
   const projects = (await queryTable(chain, projectStatement)) || []
 
-  // Only pending proposals with an MDP can be in Senate Vote.
-  const pending = projects.filter(
+  // Only pending proposals with an MDP can be in Senate Vote. Proposals that
+  // are blocked from the /projects UI (withdrawn, resubmitted, or otherwise
+  // removed via `BLOCKED_MDPS` / `BLOCKED_PROJECTS`) are excluded here too —
+  // they were pulled from Senate voting, so senators never voted on them and
+  // they'd otherwise show up as permanent below-quorum blockers. This mirrors
+  // the `isCurrentPending` filter in `pages/projects/index.tsx`.
+  const pendingCandidates = projects.filter(
     (p: any) =>
       Number(p.active) === PROJECT_PENDING &&
       p.MDP !== undefined &&
-      p.MDP !== null
+      p.MDP !== null &&
+      !BLOCKED_PROJECTS.has(Number(p.id)) &&
+      !BLOCKED_MDPS.has(Number(p.MDP)) &&
+      !!p.proposalIPFS
+  )
+
+  // Mirror the IPFS filters in `pages/projects/index.tsx` / PR #1475: author
+  // delete re-pins the proposal JSON with `deleted: true`, and non-project
+  // proposals are governance-only. Both are hidden from the Senate Vote UI,
+  // so they must not appear as below-quorum blockers here either. A failed
+  // IPFS fetch must still include the proposal (same as /projects): senators
+  // still see it as open, so it must be tallied / able to block advance.
+  const pending: any[] = []
+  await Promise.all(
+    pendingCandidates.map(async (project: any) => {
+      try {
+        const res = await fetch(project.proposalIPFS)
+        if (!res.ok) {
+          console.warn(
+            `[advance-phase] proposalIPFS HTTP ${res.status} for MDP-${project.MDP}; including for tally`
+          )
+          pending.push(project)
+          return
+        }
+        const proposalJSON = await res.json()
+        if (proposalJSON?.deleted) {
+          console.log(
+            `[advance-phase] skipping MDP-${project.MDP}: author-deleted (IPFS deleted:true)`
+          )
+          return
+        }
+        if (proposalJSON?.nonProjectProposal) {
+          console.log(
+            `[advance-phase] skipping MDP-${project.MDP}: non-project proposal`
+          )
+          return
+        }
+        pending.push(project)
+      } catch (error) {
+        console.warn(
+          `[advance-phase] failed to read proposalIPFS for MDP-${project.MDP}; including for tally`,
+          error
+        )
+        pending.push(project)
+      }
+    })
   )
 
   const results: SenateTallyResult[] = []
