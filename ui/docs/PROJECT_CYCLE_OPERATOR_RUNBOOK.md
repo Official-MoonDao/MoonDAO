@@ -71,9 +71,12 @@ When senators have voted (quorum met on the proposals you intend to advance):
    - `passed` / `failed` — would tally
    - `below-quorum` — still needs senators (or Force later)
    - `already-closed` / `passed`/`failed` from prior close — already done
-   - Proposals blocked from the UI (withdrawn / resubmitted / in
-     `BLOCKED_MDPS` or `BLOCKED_PROJECTS`) are **skipped automatically** — they
-     never show up as blockers, so a withdrawn proposal can't stall the advance.
+   - Proposals hidden from the Senate Vote UI are **skipped automatically** —
+     they never show up as blockers:
+     - `BLOCKED_MDPS` / `BLOCKED_PROJECTS` (withdrawn / resubmitted)
+     - Author-deleted proposals (`deleted: true` in the proposal IPFS JSON,
+       from the author-delete flow in PR #1475)
+     - Non-project proposals (`nonProjectProposal: true`)
 3. Click **Close Senate & Open Member Vote**. Confirm the dialog.
 4. The server will:
    - Sign `Proposals.tallyVotes(mdp)` for every pending current-cycle MDP
@@ -159,6 +162,7 @@ cohort you just closed, `phase: 'senate'`), PR, deploy.
 | `OwnableUnauthorizedAccount` | HSM is not contract owner | Transfer ownership back to `GCP_HSM_SIGNER_ADDRESS` |
 | Advance 409 with blockers | Quorum not met on some real (non-blocked) MDPs | Wait for votes, or Force if intentional |
 | A withdrawn/resubmitted proposal shows as a blocker | It isn't in `BLOCKED_MDPS`/`BLOCKED_PROJECTS` yet | Add it to `const/whitelist.ts` and deploy; it will then be skipped |
+| An author-deleted proposal shows as a blocker | Its IPFS JSON is missing `deleted: true`, or the IPFS fetch failed open | Confirm the author-delete re-pin landed; advance skips any proposal whose JSON has `deleted: true` |
 | UI still on Senate after Advance | Stale ISR / cache | Wait ~60s or hard-refresh; panel polls `/api/operator/phase-status` |
 | Phase stuck / wrong after deploy | Live KV override still set | Expected — override wins over `PROJECT_CYCLE.phase`. Wrap up or advance, or clear the Redis key `moondao:operator:cycle_phase` |
 

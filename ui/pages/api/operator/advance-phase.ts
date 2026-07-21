@@ -102,13 +102,54 @@ async function tallySenateForCurrentCycle(
   // they were pulled from Senate voting, so senators never voted on them and
   // they'd otherwise show up as permanent below-quorum blockers. This mirrors
   // the `isCurrentPending` filter in `pages/projects/index.tsx`.
-  const pending = projects.filter(
+  const pendingCandidates = projects.filter(
     (p: any) =>
       Number(p.active) === PROJECT_PENDING &&
       p.MDP !== undefined &&
       p.MDP !== null &&
       !BLOCKED_PROJECTS.has(Number(p.id)) &&
-      !BLOCKED_MDPS.has(Number(p.MDP))
+      !BLOCKED_MDPS.has(Number(p.MDP)) &&
+      !!p.proposalIPFS
+  )
+
+  // Mirror the IPFS filters in `pages/projects/index.tsx` / PR #1475: author
+  // delete re-pins the proposal JSON with `deleted: true`, and non-project
+  // proposals are governance-only. Both are hidden from the Senate Vote UI,
+  // so they must not appear as below-quorum blockers here either. A failed
+  // IPFS fetch is treated as skip (same spirit as the projects page, which
+  // won't surface a proposal without readable JSON for delete checks).
+  const pending: any[] = []
+  await Promise.all(
+    pendingCandidates.map(async (project: any) => {
+      try {
+        const res = await fetch(project.proposalIPFS)
+        if (!res.ok) {
+          console.warn(
+            `[advance-phase] skipping MDP-${project.MDP}: proposalIPFS HTTP ${res.status}`
+          )
+          return
+        }
+        const proposalJSON = await res.json()
+        if (proposalJSON?.deleted) {
+          console.log(
+            `[advance-phase] skipping MDP-${project.MDP}: author-deleted (IPFS deleted:true)`
+          )
+          return
+        }
+        if (proposalJSON?.nonProjectProposal) {
+          console.log(
+            `[advance-phase] skipping MDP-${project.MDP}: non-project proposal`
+          )
+          return
+        }
+        pending.push(project)
+      } catch (error) {
+        console.warn(
+          `[advance-phase] skipping MDP-${project.MDP}: failed to read proposalIPFS`,
+          error
+        )
+      }
+    })
   )
 
   const results: SenateTallyResult[] = []
