@@ -680,9 +680,9 @@ export const EB_TEAM_ID = '0'
 // on the EB team listing.
 export const CITIZENSHIP_GIFT_TAG = 'citizenship-gift'
 
-/** MoonDAO docs — Overview Flight mission (e.g. mission id 4). */
+/** MoonDAO docs — Overview Effect Flight mission (e.g. mission id 4). */
 export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
-  'https://docs.moondao.com/Legal/Overview-Flight/Overview-Flight-Terms-and-Conditions'
+  'https://docs.moondao.com/Legal/Overview-Effect-Flight/Overview-Effect-Flight-Terms-and-Conditions'
 
 // ---------------------------------------------------------------------------
 // PROJECT CYCLE — single source of truth for the quarterly project system.
