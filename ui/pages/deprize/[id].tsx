@@ -1,10 +1,10 @@
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import TeamABI from 'const/abis/Team.json'
-import { DEFAULT_CHAIN_V5, DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { getContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
@@ -31,6 +31,7 @@ import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -78,7 +79,9 @@ export default function DePrizeDetailPage() {
   const rawId = router.query.id
   const deprizeId = typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
 
-  const chain = DEFAULT_CHAIN_V5
+  // Follow the app's live selected chain (wallet / header dropdown), not the
+  // build-time default — otherwise switching networks never re-queries DePrize.
+  const { selectedChain: chain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
   const userAddress = account?.address

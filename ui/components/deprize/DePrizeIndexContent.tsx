@@ -1,8 +1,8 @@
 import TeamABI from 'const/abis/Team.json'
-import { DEFAULT_CHAIN_V5, DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getContract } from 'thirdweb'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { getContract, type Chain } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount, useReadContract } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
@@ -20,6 +20,7 @@ import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
 import Container from '@/components/layout/Container'
@@ -109,13 +110,14 @@ function ProviderOddsRow({
 function DePrizeListRow({
   deprizeId,
   teamContract,
+  chain,
   onBet,
 }: {
   deprizeId: number
   teamContract: any
+  chain: Chain
   onBet: (target: BetTarget) => void
 }) {
-  const chain = DEFAULT_CHAIN_V5
   const { deprize } = useDePrize(deprizeId, chain)
   const numOutcomes = deprize?.teamIds.length ?? 0
 
@@ -238,7 +240,9 @@ function DePrizeListRow({
 }
 
 export default function DePrizeIndexContent() {
-  const chain = DEFAULT_CHAIN_V5
+  // Follow the app's live selected chain (wallet / header dropdown), not the
+  // build-time default — otherwise switching networks never re-queries DePrize.
+  const { selectedChain: chain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(chain)
   const { count, loading, error: countError, registryConfigured } = useDePrizeCount(chain)
   const account = useActiveAccount()
@@ -348,6 +352,7 @@ export default function DePrizeIndexContent() {
                   key={i + 1}
                   deprizeId={i + 1}
                   teamContract={teamContract}
+                  chain={chain}
                   onBet={handleBet}
                 />
               ))
