@@ -116,8 +116,8 @@ async function tallySenateForCurrentCycle(
   // delete re-pins the proposal JSON with `deleted: true`, and non-project
   // proposals are governance-only. Both are hidden from the Senate Vote UI,
   // so they must not appear as below-quorum blockers here either. A failed
-  // IPFS fetch is treated as skip (same spirit as the projects page, which
-  // won't surface a proposal without readable JSON for delete checks).
+  // IPFS fetch must still include the proposal (same as /projects): senators
+  // still see it as open, so it must be tallied / able to block advance.
   const pending: any[] = []
   await Promise.all(
     pendingCandidates.map(async (project: any) => {
@@ -125,8 +125,9 @@ async function tallySenateForCurrentCycle(
         const res = await fetch(project.proposalIPFS)
         if (!res.ok) {
           console.warn(
-            `[advance-phase] skipping MDP-${project.MDP}: proposalIPFS HTTP ${res.status}`
+            `[advance-phase] proposalIPFS HTTP ${res.status} for MDP-${project.MDP}; including for tally`
           )
+          pending.push(project)
           return
         }
         const proposalJSON = await res.json()
@@ -145,9 +146,10 @@ async function tallySenateForCurrentCycle(
         pending.push(project)
       } catch (error) {
         console.warn(
-          `[advance-phase] skipping MDP-${project.MDP}: failed to read proposalIPFS`,
+          `[advance-phase] failed to read proposalIPFS for MDP-${project.MDP}; including for tally`,
           error
         )
+        pending.push(project)
       }
     })
   )
