@@ -684,56 +684,132 @@ export const CITIZENSHIP_GIFT_TAG = 'citizenship-gift'
 export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
   'https://docs.moondao.com/Legal/Overview-Flight/Overview-Flight-Terms-and-Conditions'
 
-// Project System Configuration
-export const PROJECT_SYSTEM_CONFIG = {
-  // Q3 2026 deadline - second Thursday of the quarter
-  submissionDeadline: 'July 9, 2026',
-  // Approval timeline details
-  senateReviewDays: 1, // Senate reviews the day after submission
-  editingDeadline: 'July 14, 2026', // 48 hours before third Thursday
-  votingDate: 'July 16, 2026', // Third Thursday of quarter
-  // Submission link
-  submissionUrl: 'https://moondao.com/propose',
-  // Documentation link
-  docsUrl: 'https://docs.moondao.com/Projects/Project-System',
-  // Total quarterly budget is displayed dynamically on the page
+// ---------------------------------------------------------------------------
+// PROJECT CYCLE — single source of truth for the quarterly project system.
+// ---------------------------------------------------------------------------
+// This is the ONE object the Executive Branch edits when rolling the project
+// system forward to a new cycle. Everything below (phase flags, budgets,
+// deadlines, retro pool) is derived from it so the per-cycle numbers can never
+// drift apart across quarters.
+//
+// Rolling to the NEXT cycle (once, by editing this object):
+//   1. Bump `quarter` / `year` and the three deadline strings.
+//   2. Set `budgetUSD` to the new quarterly budget.
+//   3. Set `phase` to 'senate' (Senate Vote opens first).
+//   4. Update `retro` for the cohort being paid out this cycle (the prior
+//      quarter's completed projects) — see the field comments below.
+//   5. Reset `memberVoteExcludedAddresses` to [].
+//
+// Advancing WITHIN a cycle (Senate -> Member -> idle) no longer requires a
+// redeploy: an operator clicks "Advance Phase" on /projects, which runs the
+// required on-chain calls and flips a live phase override stored in Upstash
+// KV (see `lib/operator/cyclePhase.ts`). `phase` here is the deploy-time
+// DEFAULT / fallback the live override layers on top of.
+export type ProjectCyclePhase = 'senate' | 'member' | 'idle'
+
+export interface ProjectCycleConfig {
+  // Deploy-time default phase. 'senate' = Senate Vote, 'member' = Member Vote
+  // + Retroactive rewards (they run concurrently), 'idle' = nothing active
+  // (between cycles / wrapped up). The operator "Advance Phase" button moves
+  // the LIVE phase forward without a redeploy.
+  phase: ProjectCyclePhase
+  // Calendar quarter/year the current proposals belong to (the Senate/Member
+  // vote cohort). The retro cohort is always the PRIOR quarter.
+  quarter: number
+  year: number
+  // When false, the Member Vote phase is still on (results panel, badge, etc.
+  // still render) but the submit/edit Distribution UI is hidden — used to
+  // close member-vote submissions while keeping the rest of the cycle intact.
+  memberVoteSubmissionsOpen: boolean
+  // Addresses (lowercase) whose Member Vote distribution is dropped from THIS
+  // cycle's tally (both the read-only display and the on-chain close). Past
+  // quarters are unaffected so historical audits stay reproducible. Use for
+  // one-off disqualifications; the row stays in the table for the audit trail.
+  memberVoteExcludedAddresses: string[]
+  // Deadlines shown on /projects and the project banner.
+  submissionDeadline: string // second Thursday of the quarter
+  editingDeadline: string // 48 hours before the third Thursday
+  votingDate: string // third Thursday of the quarter
+  // Quarterly project budget in USD (stablecoins): 5% of liquid non-MOONEY
+  // assets. Per-proposal max is 1/5 of this. See docs Projects/Project-System.
+  budgetUSD: number
+  // Retroactive rewards pool for the cohort being paid THIS cycle — i.e. the
+  // PRIOR quarter's completed projects. These are pinned to the retro cohort's
+  // own quarter and must NOT be derived from `budgetUSD` (which describes the
+  // current Senate/Member-vote cohort, a different quarter).
+  retro: {
+    // Primary payout asset. 'USDC' uses `usdBudget`; 'ETH' uses `ethBudget`.
+    payoutToken: 'ETH' | 'USDC'
+    // USDC pool for projects (post-upfront remainder) when payoutToken='USDC'.
+    usdBudget: number
+    // ETH pool for projects (post-upfront remainder) when payoutToken='ETH'.
+    ethBudget: number
+    // Community circle's slice of the primary asset = 10% of the retro
+    // cohort's OWN quarterly budget (before upfront funding). Parallel cohort,
+    // not a carve-out of the project pool. ETH cycles: set to the ETH amount.
+    communityCirclePrimary: number
+  }
 }
 
-// Voting Phase Flags
-// Set IS_SENATE_VOTE to true during Senate Vote phase - shows proposals with "Temperature Check" status
-// Set IS_MEMBER_VOTE to true during Member Vote phase - shows proposals with "Voting" status (passed Senate vote)
-// Only one should be true at a time, or both false when no voting is active
-export const IS_SENATE_VOTE = true
-export const IS_MEMBER_VOTE = false
+export const PROJECT_CYCLE: ProjectCycleConfig = {
+  phase: 'senate',
+  quarter: 3,
+  year: 2026,
+  memberVoteSubmissionsOpen: false,
+  memberVoteExcludedAddresses: [],
+  // Q3 2026 deadlines.
+  submissionDeadline: 'July 9, 2026',
+  editingDeadline: 'July 14, 2026',
+  votingDate: 'July 16, 2026',
+  // Q3 2026: $24,310 → per-proposal max $4,862 (posted in the Senate review pack).
+  budgetUSD: 24310,
+  retro: {
+    // Q2 2026 retroactives (the cohort paid out this cycle), USDC-paid:
+    //   - $5,629.26 for projects = ($23,409 * 0.9) - $15,438.84 upfront to the
+    //     4 Member-Vote winners (MDP-240 $3,955 + MDP-235 $3,600 +
+    //     MDP-245 $3,233.84 + MDP-237 $4,650).
+    //   - $2,340.90 community circle = 10% of Q2's $23,409 budget (pinned to
+    //     the cohort's own quarter, NOT the current $24,310 budget).
+    // The prior ETH cycle (Q1 2026) kept 2.215 ETH here for reference.
+    payoutToken: 'USDC',
+    usdBudget: 5629.26,
+    ethBudget: 2.215,
+    communityCirclePrimary: 2340.9,
+  },
+}
 
-// When false, the Member Vote phase is still on (results panel, "Member
-// Vote" badge, etc. still render) but the actual submit/edit Distribution
-// UI on the proposals tab is hidden. Used to close member-vote submissions
-// while keeping the rest of the cycle UI intact.
-export const MEMBER_VOTE_SUBMISSIONS_OPEN = false
+// Project System Configuration (deadlines/links surfaced on /projects + banner).
+// Derived from PROJECT_CYCLE so the deadlines live in exactly one place.
+export const PROJECT_SYSTEM_CONFIG = {
+  submissionDeadline: PROJECT_CYCLE.submissionDeadline,
+  // Approval timeline details
+  senateReviewDays: 1, // Senate reviews the day after submission
+  editingDeadline: PROJECT_CYCLE.editingDeadline,
+  votingDate: PROJECT_CYCLE.votingDate,
+  submissionUrl: 'https://moondao.com/propose',
+  docsUrl: 'https://docs.moondao.com/Projects/Project-System',
+}
 
-// Addresses (lowercase) whose Member Vote distribution should be dropped
-// from the *current* calendar quarter's tally — both the read-only
-// display in `computeMemberVoteOutcome` and the on-chain close in
-// `/api/proposals/vote`. Past-quarter audits/tallies are unaffected, so
-// historical results stay reproducible. Use this for one-off
-// disqualifications (e.g. a vote ruled invalid post-hoc); the wallet's
-// row stays in the proposals table for the audit trail, it just
-// doesn't count toward the outcome.
-//
-// Q3 2026: no disqualifications yet.
-export const MEMBER_VOTE_EXCLUDED_ADDRESSES: string[] = []
+// Voting Phase Flags — derived from PROJECT_CYCLE.phase. These are the
+// DEPLOY-TIME defaults only. After an operator "Advance Phase", the live
+// phase may differ (see `lib/operator/cyclePhase.ts` + `useLivePhase`).
+// Client UI that gates on the current vote window should use `useLivePhase`
+// (or a server-resolved live phase prop), not these constants.
+// Member Vote and the Retroactive rewards window run concurrently, so both
+// derive from the 'member' phase.
+export const IS_SENATE_VOTE = PROJECT_CYCLE.phase === 'senate'
+export const IS_MEMBER_VOTE = PROJECT_CYCLE.phase === 'member'
+export const IS_REWARDS_CYCLE = PROJECT_CYCLE.phase === 'member'
 
-// Set IS_REWARDS_CYCLE to true during the retroactive rewards distribution
-// window. When true, the projects page treats the prior quarter as the active
-// retro cycle and surfaces the Citizen / Voting Member distribution UI.
-export const IS_REWARDS_CYCLE = false
+// See PROJECT_CYCLE.memberVoteSubmissionsOpen.
+export const MEMBER_VOTE_SUBMISSIONS_OPEN = PROJECT_CYCLE.memberVoteSubmissionsOpen
 
-// Quarterly budget in USD (stablecoins)
-// 5% of liquid non-MOONEY assets, denominated in USD
-// See: https://docs.moondao.com/Projects/Project-System#quarterly-rewards
-// Q3 2026: $24,310 → per-proposal max $4,862 (posted in the Senate review pack).
-export const NEXT_QUARTER_BUDGET_USD = 24310
+// See PROJECT_CYCLE.memberVoteExcludedAddresses.
+export const MEMBER_VOTE_EXCLUDED_ADDRESSES: string[] =
+  PROJECT_CYCLE.memberVoteExcludedAddresses
+
+// Quarterly budget in USD (stablecoins). See PROJECT_CYCLE.budgetUSD.
+export const NEXT_QUARTER_BUDGET_USD = PROJECT_CYCLE.budgetUSD
 
 // Alias used by the retroactive rewards system (ProjectRewards.tsx / getPayouts).
 // The 10% community-circle carve-out is handled inside runQuadraticVoting
@@ -761,41 +837,23 @@ export const OPERATORS: string[] = [
   '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da', // miguel
 ]
 
-// Retroactive rewards payout token for the *currently-voting* cycle.
-// Switch to 'ETH' (and use RETRO_ETH_BUDGET) when the cycle pays in ETH;
-// 'USDC' (and RETRO_USD_BUDGET) is the default for stablecoin retros.
-export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = 'USDC'
+// Retroactive rewards pool for the *currently-voting* cycle — all derived
+// from PROJECT_CYCLE.retro so the pool, payout token, and community circle
+// stay pinned together to the retro cohort's own quarter (never the live
+// project budget). Past cycles are pinned in `HISTORICAL_RETRO_POOLS`
+// (see `lib/proposals/computeRetroactiveOutcome.ts`) so these constants only
+// need to track the current cycle.
+export const RETRO_PAYOUT_TOKEN: 'ETH' | 'USDC' = PROJECT_CYCLE.retro.payoutToken
 
-// Q1 2026 retroactives (last cycle, ETH-paid): 2.215 ETH for projects.
-// The quarter's total ETH budget was 11.6, of which 90% goes to projects
-// (10.44 ETH). 8.225 ETH was paid out upfront to funded projects, so the
-// remainder for retroactive distribution is (11.6 * 0.9) - 8.225 = 2.215 ETH.
-// The community circle slice for that cycle was 1.16 ETH (10% of 11.6).
-export const RETRO_ETH_BUDGET = 2.215
+export const RETRO_ETH_BUDGET = PROJECT_CYCLE.retro.ethBudget
 
-// Q2 2026 retroactives (current cycle, USDC-paid): $5,629.26 for projects.
-// The quarter's total USD budget is $23,409 (NEXT_QUARTER_BUDGET_USD).
-// 90% goes to projects ($21,068.10); $15,438.84 was committed upfront
-// to the 4 Member-Vote winners (MDP-240 $3,955 + MDP-235 $3,600 +
-// MDP-245 $3,233.84 + MDP-237 $4,650). The cycle approved 4 winners
-// (not 5) because rank-5 MDP-248 ($3,000) would have pushed cumulative
-// upfront past the 3/4 cap of $17,556.75.
-// Retroactive remainder = ($23,409 * 0.9) - $15,438.84 = $5,629.26.
-export const RETRO_USD_BUDGET = 5629.26
+export const RETRO_USD_BUDGET = PROJECT_CYCLE.retro.usdBudget
 
-// Community circle's slice of the primary asset for the *currently-voting*
-// cycle. The community circle is reserved as 10% of the original quarterly
-// budget (before any upfront project funding), in the same asset paid out
-// to projects via `RETRO_PAYOUT_TOKEN`. This is a parallel cohort, NOT a
-// carve-out of the retro project pool: it does NOT scale down when projects
-// receive upfront funding. Audit / results displays surface this value
-// alongside the project pool so every part of the cycle's spend is visible.
-//
-// USDC cycles: 10% of NEXT_QUARTER_BUDGET_USD (Q2 2026 = $2,340.90).
-// ETH cycles: must be hardcoded against the cycle's quarterly ETH total
-// (e.g. Q1 2026 was 1.16 ETH, set when RETRO_PAYOUT_TOKEN was 'ETH').
-// Past cycles are pinned in `HISTORICAL_RETRO_POOLS` (see
-// `lib/proposals/computeRetroactiveOutcome.ts`) so this constant only
-// needs to track the current cycle.
+// Community circle's slice of the primary asset for the currently-voting
+// cycle. A parallel cohort (10% of the retro cohort's original quarterly
+// budget, before upfront funding) — NOT a carve-out of the project pool, so
+// it does not scale down when projects get funded upfront. Surfaced alongside
+// the project pool so every part of the cycle's spend is visible. Zero when
+// the cycle pays in ETH but no ETH community circle is configured.
 export const RETRO_PRIMARY_COMMUNITY_CIRCLE: number =
-  RETRO_PAYOUT_TOKEN === 'USDC' ? NEXT_QUARTER_BUDGET_USD * 0.1 : 0
+  PROJECT_CYCLE.retro.communityCirclePrimary

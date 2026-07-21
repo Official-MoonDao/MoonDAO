@@ -1,5 +1,4 @@
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
-import { IS_MEMBER_VOTE, IS_SENATE_VOTE } from 'const/config'
 import { useRouter } from 'next/router'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
 import {
@@ -9,6 +8,7 @@ import {
   type StatusIndicatorStyle,
   ProposalStatus,
 } from '@/lib/nance/useProposalStatus'
+import { useLivePhase } from '@/lib/operator/useLivePhase'
 import ProposalInfo from './ProposalInfo'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
 
@@ -44,15 +44,19 @@ function StatusDot({
 
 /**
  * Resolve the user-facing voting-phase context for a proposal based on the
- * current cycle flags in `const/config.ts` (IS_SENATE_VOTE / IS_MEMBER_VOTE).
+ * live cycle phase (KV override when set, else PROJECT_CYCLE.phase defaults).
  *
  * - Member Vote: proposals in `Voting` status need vMOONEY holders to allocate
  *   their voting power on /projects. Treat this as an active call to action.
  * - Senate Vote: proposals in `Temperature Check` status are awaiting Senate
  *   approval. Surface this so members understand the proposal isn't stale.
  */
-function getVotingPhaseContext(status: ProposalStatus | undefined) {
-  if (IS_MEMBER_VOTE && status === 'Voting') {
+function getVotingPhaseContext(
+  status: ProposalStatus | undefined,
+  isMemberVote: boolean,
+  isSenateVote: boolean
+) {
+  if (isMemberVote && status === 'Voting') {
     return {
       label: 'Member Vote',
       cta: 'Vote Now',
@@ -61,7 +65,7 @@ function getVotingPhaseContext(status: ProposalStatus | undefined) {
       pulse: true,
     }
   }
-  if (IS_SENATE_VOTE && status === 'Temperature Check') {
+  if (isSenateVote && status === 'Temperature Check') {
     return {
       label: 'Senate Vote In Progress',
       cta: null,
@@ -81,6 +85,7 @@ function getDescriptionPreview(body: string | undefined, maxLength = 120): strin
 }
 
 export default function Proposal({ project, feedStyle = false, linkDisabled = false }: ProposalProps) {
+  const { isMemberVote, isSenateVote } = useLivePhase()
   const proposalStatus = (useProposalStatus(project) || project?.status) as ProposalStatus
   const proposalJSON = useProposalJSON(project) || project?.proposalJSON
   const config = getStatusIndicatorConfig(proposalStatus)
@@ -93,7 +98,11 @@ export default function Proposal({ project, feedStyle = false, linkDisabled = fa
   const descriptionPreview = getDescriptionPreview(
     proposalJSON?.body || project?.description
   )
-  const phase = getVotingPhaseContext(proposalStatus)
+  const phase = getVotingPhaseContext(
+    proposalStatus,
+    isMemberVote,
+    isSenateVote
+  )
 
   if (feedStyle) {
     return (

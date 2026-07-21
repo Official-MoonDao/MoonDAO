@@ -1,69 +1,49 @@
+import { Analytics } from '@vercel/analytics/next'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import React, {
-  ComponentType,
-  startTransition,
-  useContext,
-  useEffect,
-  useState,
-} from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useNavigation from '@/lib/navigation/useNavigation'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { useClientHydrated } from '@/lib/utils/hooks/useClientHydrated'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
 import TopNavBar from './TopNavBar'
 
-/**
- * Client-only lazy mount without next/dynamic / React.lazy Suspense.
- *
- * `dynamic(..., { ssr: false })` creates dehydrated Suspense boundaries that
- * race Privy / light-mode / citizen setState during hydration and throw:
- * "Suspense boundary received an update before it finished hydrating".
- * That surfaces as a Next.js error overlay that covers /deprize and blocks
- * the page. Importing after mount avoids those Suspense boundaries entirely.
- */
-function useLazyClient<T extends ComponentType<any>>(
-  loader: () => Promise<{ default: T }>,
-  enabled: boolean
-): T | null {
-  const [Comp, setComp] = useState<T | null>(null)
-  useEffect(() => {
-    if (!enabled) return
-    let cancelled = false
-    loader()
-      .then((mod) => {
-        if (cancelled) return
-        const Next = mod.default
-        startTransition(() => {
-          // Store the component; functional updater avoids React treating the
-          // component function itself as a setState updater.
-          setComp(() => Next)
-        })
-      })
-      .catch((err) => {
-        console.error('[layout] lazy client import failed', err)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [enabled, loader])
-  return Comp
-}
+// Lazy load non-critical components for better LCP
+const SpaceBackground = dynamic(() => import('./SpaceBackground'), {
+  ssr: false,
+})
+const GlobalSearch = dynamic(() => import('./GlobalSearch'), {
+  ssr: false,
+})
+const MissionBanner = dynamic(() => import('./MissionBanner'), {
+  ssr: false,
+})
+const ProjectBanner = dynamic(() => import('./ProjectBanner'), {
+  ssr: false,
+})
+const CookieBanner = dynamic(() => import('./CookieBanner'), {
+  ssr: false,
+})
 
-const loadSpaceBackground = () => import('./SpaceBackground')
-const loadGlobalSearch = () => import('./GlobalSearch')
-const loadMissionBanner = () => import('./MissionBanner')
-const loadProjectBanner = () => import('./ProjectBanner')
-const loadCookieBanner = () => import('./CookieBanner')
-const loadAnalytics = () =>
-  import('@vercel/analytics/next').then((m) => ({ default: m.Analytics }))
+// Gate `ssr: false` dynamics so they never enter the SSR tree as dehydrated
+// Suspense boundaries. Mounting them only after hydration avoids React 18's
+// "Suspense boundary received an update before it finished hydrating" when a
+// sibling effect (theme, auth, banners) updates during the same pass.
+function ClientOnly({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  if (!mounted) return null
+  return <>{children}</>
+}
 
 interface Layout {
   children: JSX.Element
@@ -74,14 +54,6 @@ interface Layout {
 
 export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const hydrated = useClientHydrated()
-
-  const SpaceBackground = useLazyClient(loadSpaceBackground, hydrated)
-  const GlobalSearch = useLazyClient(loadGlobalSearch, hydrated)
-  const MissionBanner = useLazyClient(loadMissionBanner, hydrated)
-  const ProjectBanner = useLazyClient(loadProjectBanner, hydrated)
-  const CookieBanner = useLazyClient(loadCookieBanner, hydrated)
-  const Analytics = useLazyClient(loadAnalytics, hydrated)
 
   const router = useRouter()
 
@@ -129,7 +101,9 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen relative`}
     >
-      {SpaceBackground ? <SpaceBackground /> : null}
+      <ClientOnly>
+        <SpaceBackground />
+      </ClientOnly>
       <>
         <div className="xl:hidden">
           <MobileMenuTop
@@ -172,14 +146,18 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           </div>
         </main>
 
-        {GlobalSearch ? <GlobalSearch /> : null}
-        {MissionBanner ? <MissionBanner /> : null}
-        {ProjectBanner ? <ProjectBanner /> : null}
-        {CookieBanner ? <CookieBanner /> : null}
+        <ClientOnly>
+          <GlobalSearch />
+          <MissionBanner />
+          <ProjectBanner />
+          <CookieBanner />
+        </ClientOnly>
       </>
 
-      <Toaster />
-      {Analytics ? <Analytics /> : null}
+      <ClientOnly>
+        <Toaster />
+        <Analytics />
+      </ClientOnly>
     </div>
   )
 }
