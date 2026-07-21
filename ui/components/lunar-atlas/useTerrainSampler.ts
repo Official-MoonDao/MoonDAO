@@ -1,28 +1,42 @@
-// Decodes the 2K LOLA displacement JPEG into a CPU-side height field (once,
-// module-cached) and exposes `radiusAt(lat, lon)` — the actual displaced
-// surface radius of the rendered globe. Markers, on-surface models, and the
-// surface camera use it to sit on the terrain instead of the analytic sphere.
+// Decodes the baked south-pole height PNGs (16-bit heights split across the
+// R/G channels) into CPU-side height fields (once, module-cached) and exposes
+// `radiusAt(lat, lon)` — the rendered terrain radius at that point. Markers,
+// on-surface models, the surface camera, and the camera's terrain floor all
+// use it to sit on the ground the GPU actually draws.
 
 import { useEffect, useState } from 'react'
 import {
-  meshDisplacedRadius,
-  type HeightField,
-} from '@/lib/lunar-atlas/terrain'
+  FAR_EXTENT_M,
+  FAR_GRID,
+  FAR_HEIGHT_MAX_M,
+  FAR_HEIGHT_MIN_M,
+  INNER_EXTENT_M,
+  INNER_GRID,
+  INNER_HEIGHT_MAX_M,
+  INNER_HEIGHT_MIN_M,
+  capRadiusAt,
+  isInsideCap,
+  type PolarHeightField,
+} from '@/lib/lunar-atlas/southpole'
 import {
-  DISPLACEMENT_BIAS,
-  DISPLACEMENT_MAP,
-  DISPLACEMENT_SCALE,
   GLOBE_RADIUS,
-  MOON_SEGMENTS,
+  SP_FAR_HEIGHT_MAP,
+  SP_HEIGHT_MAP,
 } from '@/lib/lunar-atlas/textures'
 
 export type RadiusAt = (lat: number, lon: number) => number
 
-let fieldPromise: Promise<HeightField> | null = null
+const fieldCache = new Map<string, Promise<PolarHeightField>>()
 
-function loadHeightField(url: string): Promise<HeightField> {
-  if (fieldPromise) return fieldPromise
-  fieldPromise = new Promise((resolve, reject) => {
+export function loadPolarField(
+  url: string,
+  extentM: number,
+  minM: number,
+  maxM: number
+): Promise<PolarHeightField> {
+  const cached = fieldCache.get(url)
+  if (cached) return cached
+  const promise = new Promise<PolarHeightField>((resolve, reject) => {
     const img = new Image()
     img.onload = () => {
       const canvas = document.createElement('canvas')
@@ -35,44 +49,60 @@ function loadHeightField(url: string): Promise<HeightField> {
       }
       ctx.drawImage(img, 0, 0)
       const rgba = ctx.getImageData(0, 0, canvas.width, canvas.height).data
-      // Grayscale source — the red channel is the height value.
-      const data = new Uint8ClampedArray(canvas.width * canvas.height)
-      for (let i = 0; i < data.length; i++) data[i] = rgba[i * 4]
-      resolve({ width: canvas.width, height: canvas.height, data })
+      const data = new Uint16Array(canvas.width * canvas.height)
+      // 16-bit height: R is the high byte, G the low byte.
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (rgba[i * 4] << 8) | rgba[i * 4 + 1]
+      }
+      resolve({ size: canvas.width, extentM, minM, maxM, data })
     }
-    img.onerror = () => reject(new Error(`failed to load DEM: ${url}`))
+    img.onerror = () => reject(new Error(`failed to load height map: ${url}`))
     img.src = url
   })
-  return fieldPromise
+  fieldCache.set(url, promise)
+  return promise
 }
 
-// Returns null until the DEM has decoded; callers fall back to the analytic
-// sphere radius in the meantime.
+export function loadInnerField(): Promise<PolarHeightField> {
+  return loadPolarField(
+    SP_HEIGHT_MAP,
+    INNER_EXTENT_M,
+    INNER_HEIGHT_MIN_M,
+    INNER_HEIGHT_MAX_M
+  )
+}
+
+export function loadFarField(): Promise<PolarHeightField> {
+  return loadPolarField(
+    SP_FAR_HEIGHT_MAP,
+    FAR_EXTENT_M,
+    FAR_HEIGHT_MIN_M,
+    FAR_HEIGHT_MAX_M
+  )
+}
+
+// Returns null until the height maps decode; callers fall back to the
+// analytic sphere radius in the meantime.
 export default function useTerrainSampler(): RadiusAt | null {
   const [radiusAt, setRadiusAt] = useState<RadiusAt | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    loadHeightField(DISPLACEMENT_MAP)
-      .then((field) => {
+    Promise.all([loadInnerField(), loadFarField()])
+      .then(([inner, far]) => {
         if (cancelled) return
-        // meshDisplacedRadius (not displacedRadius): heights must match the
-        // *rendered* surface — the GPU only displaces the sphere's vertex
-        // lattice, so raw texel sampling disagrees with the visible ground
-        // and seated objects float or sink.
-        setRadiusAt(
-          () => (lat: number, lon: number) =>
-            meshDisplacedRadius(
-              field,
-              lat,
-              lon,
-              GLOBE_RADIUS,
-              DISPLACEMENT_SCALE,
-              DISPLACEMENT_BIAS,
-              MOON_SEGMENTS,
-              MOON_SEGMENTS
-            )
-        )
+        setRadiusAt(() => (lat: number, lon: number) => {
+          // The inner cap mesh renders on top wherever it covers; outside it
+          // the coarse far mesh is the visible ground. Points past the far
+          // cap (nothing rendered there) fall back to the sphere radius.
+          if (isInsideCap(lat, lon, INNER_EXTENT_M)) {
+            return capRadiusAt(inner, INNER_GRID, lat, lon)
+          }
+          if (isInsideCap(lat, lon, FAR_EXTENT_M)) {
+            return capRadiusAt(far, FAR_GRID, lat, lon)
+          }
+          return GLOBE_RADIUS
+        })
       })
       .catch(() => {
         // Non-fatal: seating falls back to the analytic sphere.

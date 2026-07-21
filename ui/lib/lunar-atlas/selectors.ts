@@ -2,11 +2,15 @@
 // state, dataset year range, and Tableland index-row projection. No React /
 // three imports so these are unit-testable headlessly and reused by the UI.
 
+import { centroidDirection, vector3ToLatLon } from './geo'
 import type {
   AtlasDataset,
   AtlasIndexRow,
+  LatLon,
   Milestone,
   Project,
+  ProjectType,
+  SharedGoal,
 } from './types'
 
 // Parse an atlas date ("2027", "2027-09", "2027-09-15") into a fractional year
@@ -162,6 +166,68 @@ export function indexRowsFromDataset(
       updatedAt: dataset.updatedAt,
     }
   })
+}
+
+// A tech tree: one capability category (landers, surface construction, …),
+// its competing projects, and — when one is declared — the shared-goal race
+// whose prediction market prices the category. The globe renders ONE generic
+// site per tech tree; clicking it opens the race/market view, and picking a
+// competitor there swaps in that company's specific model.
+export type TechTree = {
+  category: ProjectType
+  // Member projects with a surface location (drives the site placement).
+  projects: Project[]
+  // The capability race for this category, if a goal declares one.
+  goal?: SharedGoal
+  // Where the category's site marker sits: the race's target region when
+  // anchored, otherwise the spherical centroid of the member locations.
+  location: LatLon
+}
+
+// Orbital assets aren't "on the surface" — they keep their own markers and
+// never join a surface tech-tree site.
+const NON_SURFACE_TYPES: ProjectType[] = ['orbital']
+
+// Group located surface projects into tech trees, one per category present.
+// Applies AFTER org/type filtering so legend filters still work.
+export function buildTechTrees(
+  projects: Project[],
+  sharedGoals: SharedGoal[]
+): TechTree[] {
+  const byCategory = new Map<ProjectType, Project[]>()
+  for (const p of projects) {
+    if (!p.location || NON_SURFACE_TYPES.includes(p.type)) continue
+    if (!byCategory.has(p.type)) byCategory.set(p.type, [])
+    byCategory.get(p.type)!.push(p)
+  }
+
+  const trees: TechTree[] = []
+  byCategory.forEach((members, category) => {
+    // Prefer a goal that declares this category as its race; otherwise fall
+    // back to any goal that lists one of the members as a competitor (e.g.
+    // the ISRU+power goal covers both the isru_plant and power trees).
+    const goal =
+      sharedGoals.find((g) => g.category === category) ??
+      sharedGoals.find((g) =>
+        members.some((m) => g.projectIds.includes(m.id))
+      )
+    // Only trust the goal's anchor when the goal is *this* category's race —
+    // a fallback goal borrowed from another category may target a different
+    // zone.
+    const location =
+      (goal?.category === category ? goal.location : undefined) ??
+      (() => {
+        const dir = centroidDirection(
+          members.map((m) => ({ lat: m.location!.lat, lon: m.location!.lon }))
+        )
+        const ll = vector3ToLatLon(dir)
+        return { lat: ll.lat, lon: ll.lon }
+      })()
+    trees.push({ category, projects: members, goal, location })
+  })
+
+  // Stable order for rendering/tests.
+  return trees.sort((a, b) => a.category.localeCompare(b.category))
 }
 
 // Convenience lookups used across the UI.

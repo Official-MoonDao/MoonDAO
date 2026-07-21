@@ -11,16 +11,21 @@
 // reveals a legible little outpost rather than a blob.
 
 import { useGLTF } from '@react-three/drei'
-import { Suspense, useMemo } from 'react'
+import { ReactNode, Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { ModelTransform, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 
-const SURFACE = GLOBE_RADIUS * 1.004
-// Local model space is ~unit-scale; this maps it onto the globe. Fixed size —
-// models don't grow on selection; clicking simply zooms the camera in.
-const MODEL_SCALE = GLOBE_RADIUS * 0.045
+// Fallback seat while the height maps decode (polar heights are within
+// ±0.9% of the sphere radius, so the sphere itself is a fine placeholder).
+const SURFACE = GLOBE_RADIUS
+// Local model space is ~unit-scale; this maps it onto the south-pole cap
+// (which spans ~0.42 GLOBE_RADIUS). Deliberately oversized versus reality —
+// a true-scale lander would be a sub-pixel speck on a 369 km map — but small
+// enough to read as an installation, not a landmark. Fixed size: models
+// don't grow on selection; clicking simply zooms the camera in.
+const MODEL_SCALE = GLOBE_RADIUS * 0.005
 
 const ASTRONAUT_URI = '/lunar-atlas/models/astronaut.glb'
 // Self-hosted Draco decoder (copied from three's examples into public/draco/).
@@ -34,20 +39,26 @@ const DARK = '#3a3f4a'
 const PANEL = '#12325f'
 const PANEL_EDGE = '#2a4d86'
 const WINDOW = '#ffd98a'
-// Compacted/graded site regolith: read as slightly darker and warmer than the
-// surrounding LROC-gray terrain — a worked surface, not a brown disc.
-const REGOLITH = '#5c5a55'
+// Compacted/graded site regolith: just slightly darker than the hillshaded
+// terrain's flat-ground tone — a worked surface that blends in, not a dark
+// puck stamped on the map. Pad aprons render UNLIT (like the terrain, whose
+// lighting is baked into its albedo), so this is the exact displayed color.
+const REGOLITH = '#aaa69d'
 
 // A cleared-regolith pad that visually seats an installation on the terrain.
-// Skirted foundation, not a flat disc: the rendered ground under a footprint
-// this size curves away and undulates by more than a rover wheel's height, so
-// a flat disc reads as hovering. The apron's flared sides drop well below the
-// sampled ground and swallow every gap; the buried excess is invisible.
+// A wide-flared apron, not a straight-walled disc: models seat on the
+// *highest* ground under their footprint, so on a slope the downhill side
+// can drop a long way before the terrain reappears — a vertical skirt there
+// reads as a hovering hockey puck, while a ~30° flare reads as graded
+// regolith sloping down to meet the ground. The buried excess is invisible.
 function Pad({ r = 1.2 }: { r?: number }) {
+  // Unlit, like the terrain: the apron stands in for graded ground, and
+  // ground gets its lighting from the baked hillshade. A lit apron pops out
+  // of the unlit landscape as a shaded disc from every camera angle.
   return (
-    <mesh position={[0, 0.01 - 0.155, 0]}>
-      <cylinderGeometry args={[r, r * 1.1, 0.31, 40]} />
-      <meshStandardMaterial color={REGOLITH} roughness={1} metalness={0} />
+    <mesh position={[0, 0.01 - 0.26, 0]}>
+      <cylinderGeometry args={[r, r * 1.7, 0.54, 40]} />
+      <meshBasicMaterial color={REGOLITH} />
     </mesh>
   )
 }
@@ -467,57 +478,39 @@ function OrbitalRelay({ accent }: { accent: string }) {
   )
 }
 
-// A landing-pad construction site: hardened sintered pad, berm ring with an
-// approach gap, edge beacons, and a construction robot at work. Used for the
-// landing-pad race competitors — deliberately generic infrastructure, not a
-// fake render of any company's proprietary hardware.
+// A landing-pad construction site: hardened sintered pad with edge markings,
+// a smooth berm ring with an approach gap, corner beacons, and a paver robot
+// at work. Used for the landing-pad race — deliberately generic
+// infrastructure, not a fake render of any company's proprietary hardware.
 function ConstructionSite({ accent }: { accent: string }) {
-  const bermMounds = 9
   const beacons = 4
   return (
     <group>
       <Pad r={1.5} />
-      {/* hardened (sintered) pad surface — darker and smoother than regolith */}
+      {/* hardened (sintered) pad surface — a shade darker + smoother than
+          the worked regolith apron, so it reads as pavement, not a hole.
+          Unlit, like the apron and terrain. */}
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.9, 48]} />
-        <meshStandardMaterial color="#565b66" roughness={0.45} metalness={0.15} />
+        <meshBasicMaterial color="#8f8c85" />
       </mesh>
-      {/* pad edge marking ring */}
-      <mesh position={[0, 0.022, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.78, 0.84, 48]} />
-        <meshStandardMaterial
-          color={accent}
-          emissive={accent}
-          emissiveIntensity={0.5}
-          roughness={0.6}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      {/* berm ring: regolith mounds with a gap left for the approach road */}
-      {Array.from({ length: bermMounds }, (_, i) => {
-        const a = (i / bermMounds) * Math.PI * 1.65 + Math.PI * 0.2
-        return (
-          <mesh
-            key={i}
-            position={[Math.cos(a) * 1.25, 0.05, Math.sin(a) * 1.25]}
-            rotation={[0, -a, 0]}
-            scale={[0.34, 0.13, 0.16]}
-          >
-            <sphereGeometry args={[1, 10, 7]} />
-            <meshStandardMaterial color={REGOLITH} roughness={1} metalness={0} />
-          </mesh>
-        )
-      })}
-      {/* approach road through the berm gap */}
-      <mesh position={[1.05, 0.008, -0.32]} rotation={[-Math.PI / 2, 0, 0.3]}>
-        <planeGeometry args={[0.9, 0.34]} />
-        <meshStandardMaterial color="#4c5058" roughness={0.6} metalness={0.1} />
+      {/* touchdown target: two thin concentric rings */}
+      {[0.84, 0.38].map((r) => (
+        <mesh key={r} position={[0, 0.022, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[r - 0.045, r, 48]} />
+          <meshBasicMaterial color="#dcd9d2" side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+      {/* smooth pushed-up berm ring, gap left for the approach */}
+      <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, Math.PI * 0.2]}>
+        <torusGeometry args={[1.28, 0.1, 10, 48, Math.PI * 1.65]} />
+        <meshStandardMaterial color={REGOLITH} roughness={1} metalness={0} />
       </mesh>
       {/* perimeter beacons */}
       {Array.from({ length: beacons }, (_, i) => {
         const a = (i / beacons) * Math.PI * 2 + Math.PI / 4
-        const x = Math.cos(a) * 0.95
-        const z = Math.sin(a) * 0.95
+        const x = Math.cos(a) * 1.02
+        const z = Math.sin(a) * 1.02
         return (
           <group key={i} position={[x, 0, z]}>
             <mesh position={[0, 0.09, 0]}>
@@ -536,7 +529,7 @@ function ConstructionSite({ accent }: { accent: string }) {
           </group>
         )
       })}
-      {/* construction robot working the pad edge */}
+      {/* paver robot working the pad edge */}
       <group position={[0.55, 0, 0.75]} scale={0.45} rotation={[0, -1.1, 0]}>
         <RoverBody accent={accent} />
       </group>
@@ -560,7 +553,7 @@ function GenericStructure({ accent }: { accent: string }) {
   )
 }
 
-function ProceduralModel({ type, accent }: { type: ProjectType; accent: string }) {
+export function ProceduralModel({ type, accent }: { type: ProjectType; accent: string }) {
   switch (type) {
     case 'crewed_base':
       return <CrewedBase accent={accent} />
@@ -656,12 +649,68 @@ function AstronautCompanion() {
 // Pointer travel beyond this between down and up is a globe drag, not a click.
 const CLICK_DRAG_TOLERANCE_PX = 8
 
+// Anchors any model on the globe: seats it at the sampled terrain radius
+// along `dir`, orients its +Y to the local surface normal, and makes the
+// whole thing a drag-tolerant click/hover target. Shared by per-project
+// models and the generic tech-tree site models.
+export function SurfaceAnchor({
+  dir,
+  surfaceRadius,
+  onClick,
+  onHoverChange,
+  children,
+}: {
+  dir: Vec3 // unit surface direction (declustered)
+  // Displaced terrain radius at this direction — seats the model on the
+  // rendered ground. Falls back to the analytic-sphere constant.
+  surfaceRadius?: number
+  onClick?: () => void
+  onHoverChange?: (hovered: boolean) => void
+  children: ReactNode
+}) {
+  const { position, quaternion } = useMemo(() => {
+    const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
+    const q = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      d
+    )
+    return {
+      position: d.multiplyScalar(surfaceRadius ?? SURFACE),
+      quaternion: q,
+    }
+  }, [dir, surfaceRadius])
+
+  return (
+    <group
+      position={position}
+      quaternion={quaternion}
+      scale={MODEL_SCALE}
+      onClick={(e) => {
+        // Stop here so the Moon mesh behind the model doesn't also receive
+        // the click and immediately deselect.
+        e.stopPropagation()
+        if (e.delta <= CLICK_DRAG_TOLERANCE_PX) onClick?.()
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        onHoverChange?.(true)
+        document.body.style.cursor = 'pointer'
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation()
+        onHoverChange?.(false)
+        document.body.style.cursor = 'auto'
+      }}
+    >
+      {children}
+    </group>
+  )
+}
+
 type ProjectModelProps = {
   project: Project
   dir: Vec3 // unit surface direction (declustered)
   accent: string
-  // Displaced terrain radius at this direction — seats the model on the
-  // rendered ground. Falls back to the analytic-sphere constant.
   surfaceRadius?: number
   // The model itself is a click/hover target, same as its marker pin — when
   // zoomed in, the installation is the obvious thing to click.
@@ -677,41 +726,14 @@ export default function ProjectModel({
   onSelect,
   onHover,
 }: ProjectModelProps) {
-  const { position, quaternion } = useMemo(() => {
-    const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
-    const q = new THREE.Quaternion().setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      d
-    )
-    return {
-      position: d.multiplyScalar(surfaceRadius ?? SURFACE),
-      quaternion: q,
-    }
-  }, [dir, surfaceRadius])
-
   const isBase = project.type === 'crewed_base' || project.type === 'habitat'
 
   return (
-    <group
-      position={position}
-      quaternion={quaternion}
-      scale={MODEL_SCALE}
-      onClick={(e) => {
-        // Stop here so the Moon mesh behind the model doesn't also receive
-        // the click and immediately deselect.
-        e.stopPropagation()
-        if (e.delta <= CLICK_DRAG_TOLERANCE_PX) onSelect?.(project.id)
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation()
-        onHover?.(project.id)
-        document.body.style.cursor = 'pointer'
-      }}
-      onPointerOut={(e) => {
-        e.stopPropagation()
-        onHover?.(null)
-        document.body.style.cursor = 'auto'
-      }}
+    <SurfaceAnchor
+      dir={dir}
+      surfaceRadius={surfaceRadius}
+      onClick={() => onSelect?.(project.id)}
+      onHoverChange={(h) => onHover?.(h ? project.id : null)}
     >
       {project.modelURI ? (
         <Suspense
@@ -726,7 +748,7 @@ export default function ProjectModel({
       ) : (
         <ProceduralModel type={project.type} accent={accent} />
       )}
-    </group>
+    </SurfaceAnchor>
   )
 }
 

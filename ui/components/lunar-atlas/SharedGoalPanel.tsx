@@ -43,6 +43,14 @@ export default function SharedGoalPanel({
       c.project.rosterStatus === 'invited'
   )
   const split = goal.market?.payoutSplit
+  const odds = goal.market?.impliedOdds
+  const oddsLive = goal.market?.status === 'live'
+  // Highest-odds competitor first; ties and odds-less entries keep seed order.
+  const ranked = odds
+    ? [...competitors].sort(
+        (a, b) => (odds[b.project.id] ?? -1) - (odds[a.project.id] ?? -1)
+      )
+    : competitors
 
   return (
     <div className="pointer-events-auto flex h-full w-full flex-col overflow-hidden rounded-2xl border border-fuchsia-400/20 bg-[#0a0c14]/95 shadow-2xl backdrop-blur-xl">
@@ -104,41 +112,67 @@ export default function SharedGoalPanel({
               Competitors ({competitors.length})
             </h3>
             <div className="space-y-2">
-              {competitors.map(({ project, organization }) => {
+              {ranked.map(({ project, organization }) => {
                 const color = orgColor(organization)
+                const p = odds?.[project.id]
                 return (
                   <button
                     key={project.id}
                     onClick={() => onSelectProject(project.id)}
-                    className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-left transition hover:border-cyan-400/40 hover:bg-white/10"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-left transition hover:border-cyan-400/40 hover:bg-white/10"
                   >
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{
-                        backgroundColor: color,
-                        boxShadow: `0 0 10px ${color}`,
-                      }}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-white">
-                        {project.name}
-                      </span>
-                      <span className="block truncate text-xs text-white/50">
-                        {organization?.name ?? project.orgId}
-                      </span>
-                    </span>
-                    {project.rosterStatus && (
+                    <span className="flex w-full items-center gap-3">
                       <span
-                        className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
-                        title={ROSTER_STATUS_LABEL[project.rosterStatus]}
-                      >
-                        {project.rosterStatus}
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{
+                          backgroundColor: color,
+                          boxShadow: `0 0 10px ${color}`,
+                        }}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-white">
+                          {project.name}
+                        </span>
+                        <span className="block truncate text-xs text-white/50">
+                          {organization?.name ?? project.orgId}
+                        </span>
+                      </span>
+                      {p != null && (
+                        <span className="shrink-0 text-sm font-semibold tabular-nums text-cyan-200">
+                          {Math.round(p * 100)}%
+                        </span>
+                      )}
+                      {project.rosterStatus && (
+                        <span
+                          className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
+                          title={ROSTER_STATUS_LABEL[project.rosterStatus]}
+                        >
+                          {project.rosterStatus}
+                        </span>
+                      )}
+                    </span>
+                    {p != null && (
+                      <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-white/10">
+                        <span
+                          className="block h-full rounded-full"
+                          style={{
+                            width: `${Math.round(p * 100)}%`,
+                            backgroundColor: color,
+                          }}
+                        />
                       </span>
                     )}
                   </button>
                 )
               })}
             </div>
+            {odds && (
+              <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+                {oddsLive
+                  ? 'Odds are live market-implied probabilities.'
+                  : 'Illustrative curator priors — live odds replace these when the prediction market opens.'}
+              </p>
+            )}
             {anyUnconfirmed && (
               <p className="mt-2 text-[11px] leading-relaxed text-white/40">
                 &ldquo;Listed&rdquo; reflects MoonDAO&apos;s curatorial judgment

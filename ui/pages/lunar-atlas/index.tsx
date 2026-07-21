@@ -5,6 +5,7 @@ import { declusterDirections, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
 import { TIME_STATUS_OPACITY } from '@/lib/lunar-atlas/display'
 import {
   atlasYear,
+  buildTechTrees,
   datasetYearRange,
   filterProjects,
   orgById,
@@ -18,17 +19,22 @@ import Legend from '@/components/lunar-atlas/Legend'
 import MoonGlobeLazy from '@/components/lunar-atlas/MoonGlobeLazy'
 import ProjectPanel from '@/components/lunar-atlas/ProjectPanel'
 import SharedGoalPanel from '@/components/lunar-atlas/SharedGoalPanel'
+import TechTreePanel from '@/components/lunar-atlas/TechTreePanel'
 import TimelineScrubber from '@/components/lunar-atlas/TimelineScrubber'
 import Head from '@/components/layout/Head'
 
+// The scene IS the south pole now — a photorealistic LOLA-derived cap, no
+// full globe. Hotspots are points of interest on the cap; distances are
+// camera altitude above the surface in GLOBE_RADIUS units.
 const HOTSPOTS: { label: string; focus: GlobeFocus }[] = [
-  { label: 'South Pole', focus: { lat: -89.5, lon: 0, distanceRadii: 1.45 } },
-  { label: 'Shackleton', focus: { lat: -89.9, lon: 0, distanceRadii: 1.2 } },
-  { label: 'Full Moon', focus: null },
-  { label: 'Nearside', focus: { lat: 0, lon: 0, distanceRadii: 1.7 } },
+  { label: 'Overview', focus: { lat: -90, lon: 0, distanceRadii: 0.32 } },
+  { label: 'Shackleton', focus: { lat: -89.9, lon: 0, distanceRadii: 0.05 } },
+  {
+    label: 'Artemis Zone',
+    focus: { lat: -85.3, lon: 0, distanceRadii: 0.12 },
+  },
 ]
-// The South Pole is where nearly every real program is headed, so it is the
-// page's home view — the full globe stays one click away for context.
+// The pole overview is the page's home view.
 const HOME_HOTSPOT = 0
 
 export default function LunarAtlasIndex() {
@@ -36,9 +42,16 @@ export default function LunarAtlasIndex() {
 
   const [focus, setFocus] = useState<GlobeFocus>(HOTSPOTS[HOME_HOTSPOT].focus)
   const [activeHotspot, setActiveHotspot] = useState(HOME_HOTSPOT)
+  // Selection is layered: a tech-tree site (category) opens the race/market
+  // view; picking a competitor there selects a project, which swaps the
+  // site's generic model for the company-specific one.
+  const [selectedTreeCategory, setSelectedTreeCategory] =
+    useState<ProjectType | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
-  const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null)
+  const [hoveredCategory, setHoveredCategory] = useState<ProjectType | null>(
+    null
+  )
   const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([])
   const [selectedTypes, setSelectedTypes] = useState<ProjectType[]>([])
 
@@ -77,18 +90,40 @@ export default function LunarAtlasIndex() {
     return () => clearInterval(id)
   }, [playing, yearRange.min, yearRange.max])
 
-  // Shared declustered directions so marker pins, on-surface models, and camera
-  // focus all agree on where each project sits.
+  const filteredProjects = useMemo(
+    () =>
+      filterProjects(dataset.projects, {
+        orgIds: selectedOrgIds.length ? selectedOrgIds : undefined,
+        types: selectedTypes.length ? selectedTypes : undefined,
+      }),
+    [dataset.projects, selectedOrgIds, selectedTypes]
+  )
+
+  // One surface site per capability category (post-filter, so legend filters
+  // hide whole trees when their members are filtered out).
+  const trees = useMemo(
+    () => buildTechTrees(filteredProjects, dataset.sharedGoals),
+    [filteredProjects, dataset.sharedGoals]
+  )
+
+  // Shared declustered site directions so markers, models, and camera focus
+  // all agree on where each tech-tree site sits (keyed by category). Spread
+  // must clear the site models' ground footprints (~0.014 rad across), so
+  // co-located polar sites fan onto a ring of 0.02 rad ≈ 35 km — visibly
+  // separated installations instead of a pile, while staying honest about
+  // "the south pole region".
   const markerDirs = useMemo(
     () =>
       declusterDirections(
-        dataset.projects
-          .filter((p) => p.location)
-          .map((p) => ({ id: p.id, lat: p.location!.lat, lon: p.location!.lon })),
-        0.17,
-        0.32
+        trees.map((t) => ({
+          id: t.category,
+          lat: t.location.lat,
+          lon: t.location.lon,
+        })),
+        0.02,
+        0.045
       ),
-    [dataset.projects]
+    [trees]
   )
 
   const typesPresent = useMemo(() => {
@@ -108,15 +143,6 @@ export default function LunarAtlasIndex() {
     [year]
   )
 
-  const filteredProjects = useMemo(
-    () =>
-      filterProjects(dataset.projects, {
-        orgIds: selectedOrgIds.length ? selectedOrgIds : undefined,
-        types: selectedTypes.length ? selectedTypes : undefined,
-      }),
-    [dataset.projects, selectedOrgIds, selectedTypes]
-  )
-
   const selectedProject = selectedProjectId
     ? projectById(dataset, selectedProjectId)
     : undefined
@@ -133,15 +159,14 @@ export default function LunarAtlasIndex() {
     [dataset.sharedGoals, selectedProject]
   )
 
-  // Capability races: shared goals with a globe anchor render as region-zone
-  // rings on the globe and open the race panel.
-  const raceGoals = useMemo(
-    () => dataset.sharedGoals.filter((g) => g.location),
-    [dataset.sharedGoals]
-  )
   const selectedGoal: SharedGoal | undefined = selectedGoalId
     ? dataset.sharedGoals.find((g) => g.id === selectedGoalId)
     : undefined
+  // A tree selection without a race goal renders the plain tech-tree panel.
+  const selectedTree =
+    !selectedGoal && selectedTreeCategory
+      ? trees.find((t) => t.category === selectedTreeCategory)
+      : undefined
   const goalCompetitors = useMemo(
     () =>
       selectedGoal
@@ -153,14 +178,15 @@ export default function LunarAtlasIndex() {
     [dataset, selectedGoal]
   )
 
-  const highDetail = focus != null || selectedProjectId != null
+  // The direction of a category's site marker on the globe.
+  const siteDir = (category: ProjectType) => markerDirs.get(category)
 
-  // Fly in close and centered on the project's (declustered) marker so its
-  // on-surface installation fills the view.
+  // Fly in close and centered on the project's category site — the selected
+  // competitor's model renders there, replacing the generic asset.
   const flyToProject = (project: Project) => {
-    if (!project.location) return
-    const dir = markerDirs.get(project.id)
+    const dir = siteDir(project.type)
     const ll = dir ? vector3ToLatLon(dir) : project.location
+    if (!ll) return
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
     setActiveHotspot(-1)
   }
@@ -168,33 +194,57 @@ export default function LunarAtlasIndex() {
   const handleSelectProject = (id: string) => {
     // Re-clicking the already-selected project is a no-op — the camera is
     // there (or on its way); re-triggering the transition just stutters it.
-    if (id === selectedProjectId && !selectedGoalId) return
-    // One panel at a time: picking a project (including a competitor from the
-    // race panel) closes the race view.
+    if (id === selectedProjectId && !selectedGoalId && !selectedTreeCategory)
+      return
+    // One panel at a time: picking a competitor from the race panel closes
+    // the race view, but its model swaps in at the category site.
     setSelectedGoalId(null)
+    setSelectedTreeCategory(null)
     setSelectedProjectId(id)
     const p = projectById(dataset, id)
     if (p) flyToProject(p)
   }
 
-  // Opens the race panel and frames its target region from orbit — a zone
-  // view, not the cinematic surface pan reserved for single installations.
-  const flyToGoalRegion = (goal: SharedGoal) => {
-    if (!goal.location) return
-    setFocus({
-      lat: goal.location.lat,
-      lon: goal.location.lon,
-      distanceRadii: 1.35,
-    })
+  // Frames a tech-tree site from orbit — a zone view, not the cinematic
+  // surface pan reserved for single installations.
+  const flyToSite = (category: ProjectType) => {
+    const dir = siteDir(category)
+    if (!dir) return
+    const ll = vector3ToLatLon(dir)
+    setFocus({ lat: ll.lat, lon: ll.lon, distanceRadii: 0.045 })
     setActiveHotspot(-1)
   }
 
+  // Clicking a site opens its tech tree: the prediction-market race view when
+  // one is declared, otherwise the plain category listing.
+  const handleSelectTree = (category: ProjectType) => {
+    if (category === selectedTreeCategory && !selectedProjectId) return
+    const tree = trees.find((t) => t.category === category)
+    if (!tree) return
+    setSelectedProjectId(null)
+    setSelectedGoalId(tree.goal?.id ?? null)
+    setSelectedTreeCategory(category)
+    flyToSite(category)
+  }
+
+  // Opening a goal directly (from a ProjectPanel link or a race zone ring)
+  // also highlights its category's site when it has one.
   const handleSelectSharedGoal = (goalId: string) => {
-    if (goalId === selectedGoalId) return
+    if (goalId === selectedGoalId && !selectedProjectId) return
+    const g = dataset.sharedGoals.find((x) => x.id === goalId)
     setSelectedProjectId(null)
     setSelectedGoalId(goalId)
-    const g = dataset.sharedGoals.find((x) => x.id === goalId)
-    if (g) flyToGoalRegion(g)
+    setSelectedTreeCategory(g?.category ?? null)
+    if (g?.category && siteDir(g.category)) {
+      flyToSite(g.category)
+    } else if (g?.location) {
+      setFocus({
+        lat: g.location.lat,
+        lon: g.location.lon,
+        distanceRadii: 0.045,
+      })
+      setActiveHotspot(-1)
+    }
   }
 
   // Backing out of a selection returns to the South Pole overview (home),
@@ -202,6 +252,7 @@ export default function LunarAtlasIndex() {
   const clearSelection = () => {
     setSelectedProjectId(null)
     setSelectedGoalId(null)
+    setSelectedTreeCategory(null)
     setFocus(HOTSPOTS[HOME_HOTSPOT].focus)
     setActiveHotspot(HOME_HOTSPOT)
   }
@@ -210,7 +261,8 @@ export default function LunarAtlasIndex() {
   // is open. Without a selection it does nothing — it must not yank the
   // camera away from a hotspot the user chose.
   const handleBackgroundClick = () => {
-    if (selectedProjectId || selectedGoalId) clearSelection()
+    if (selectedProjectId || selectedGoalId || selectedTreeCategory)
+      clearSelection()
   }
 
   // Switching region closes any open panel: keeping a selection while flying
@@ -220,6 +272,7 @@ export default function LunarAtlasIndex() {
   const handleHotspot = (focusValue: GlobeFocus, index: number) => {
     setSelectedProjectId(null)
     setSelectedGoalId(null)
+    setSelectedTreeCategory(null)
     setFocus(focusValue ? { ...focusValue } : null)
     setActiveHotspot(index)
   }
@@ -241,22 +294,20 @@ export default function LunarAtlasIndex() {
     <>
       <Head
         title="Lunar Atlas"
-        description="A high-fidelity 3D map of humanity's publicly-stated plans for the Moon — real programs from NASA, SpaceX, and Blue Origin, placed and dated."
+        description="A photorealistic 3D map of the lunar south pole — humanity's publicly-stated plans from NASA, SpaceX, and Blue Origin, placed on real LOLA terrain."
       />
       <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#03040a]">
         <MoonGlobeLazy
           focus={focus}
-          highDetail={highDetail}
-          projects={filteredProjects}
+          trees={trees}
           organizations={dataset.organizations}
-          selectedProjectId={selectedProjectId}
-          hoveredProjectId={hoveredProjectId}
-          onSelectProject={handleSelectProject}
-          onHoverProject={setHoveredProjectId}
+          selectedTreeCategory={selectedTreeCategory}
+          selectedProject={selectedProject ?? null}
+          hoveredCategory={hoveredCategory}
+          onSelectTree={handleSelectTree}
+          onHoverTree={setHoveredCategory}
           getProjectStyle={getProjectStyle}
           markerDirs={markerDirs}
-          raceGoals={raceGoals}
-          onSelectRaceGoal={handleSelectSharedGoal}
           onBackgroundClick={handleBackgroundClick}
         />
 
@@ -270,8 +321,9 @@ export default function LunarAtlasIndex() {
                 <h1 className="text-lg font-semibold text-white">Lunar Atlas</h1>
               </div>
               <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-                A living map of humanity&apos;s publicly-stated plans for the Moon.
-                Click a marker to explore a project, its timeline, and sources.
+                The lunar south pole, built from NASA LOLA terrain data —
+                where every serious program is headed. Click a site to explore
+                its capability race, competitors, and sources.
               </p>
             </div>
 
@@ -328,7 +380,7 @@ export default function LunarAtlasIndex() {
             Positioned absolutely (not in the HUD flex column) so its height
             doesn't depend on how tall the Legend happens to be; it overlays
             the Legend while open. One panel at a time — race view wins. */}
-        {(selectedGoal || selectedProject) && (
+        {(selectedGoal || selectedTree || selectedProject) && (
           <div className="pointer-events-none absolute inset-x-4 bottom-40 top-auto z-20 h-[55vh] sm:inset-x-auto sm:bottom-40 sm:right-4 sm:top-20 sm:h-auto sm:w-[380px]">
             {selectedGoal ? (
               <SharedGoalPanel
@@ -336,7 +388,32 @@ export default function LunarAtlasIndex() {
                 competitors={goalCompetitors}
                 onClose={clearSelection}
                 onSelectProject={handleSelectProject}
-                onFlyToRegion={() => flyToGoalRegion(selectedGoal)}
+                onFlyToRegion={
+                  selectedGoal.category || selectedGoal.location
+                    ? () => {
+                        if (
+                          selectedGoal.category &&
+                          siteDir(selectedGoal.category)
+                        ) {
+                          flyToSite(selectedGoal.category)
+                        } else if (selectedGoal.location) {
+                          setFocus({
+                            lat: selectedGoal.location.lat,
+                            lon: selectedGoal.location.lon,
+                            distanceRadii: 0.045,
+                          })
+                          setActiveHotspot(-1)
+                        }
+                      }
+                    : undefined
+                }
+              />
+            ) : selectedTree ? (
+              <TechTreePanel
+                tree={selectedTree}
+                organizations={dataset.organizations}
+                onClose={clearSelection}
+                onSelectProject={handleSelectProject}
               />
             ) : selectedProject ? (
               <ProjectPanel
