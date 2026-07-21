@@ -38,6 +38,23 @@ export const PROJECT_TYPE_GLYPH: Record<ProjectType, string> = {
   other: '◆',
 }
 
+// Accent color per tech-tree category. Sites on the globe are category-level
+// (one generic asset per tech tree), so they color by capability, not by
+// organization — org brand colors take over once a specific competitor is
+// selected.
+export const PROJECT_TYPE_COLOR: Record<ProjectType, string> = {
+  crewed_base: '#5eead4', // teal
+  habitat: '#86efac', // green
+  lander: '#67e8f9', // cyan
+  rover: '#fcd34d', // amber
+  isru_plant: '#c4b5fd', // violet
+  power: '#fde047', // yellow
+  comms_pnt: '#93c5fd', // blue
+  orbital: '#a5b4fc', // indigo
+  construction: '#f0abfc', // fuchsia — matches the race zone rings
+  other: '#d1d5db', // gray
+}
+
 // Roster status of a DePrize competitor. Wording is deliberately honest:
 // "listed" is MoonDAO's curatorial judgment, not the company's commitment.
 export const ROSTER_STATUS_LABEL: Record<RosterStatus, string> = {

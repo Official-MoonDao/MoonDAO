@@ -14,7 +14,7 @@
     "cypress/integration/unit/member-vote-tally.cy.tsx",
     "cypress/integration/unit/lunar-atlas-geo.cy.ts",
     "cypress/integration/unit/lunar-atlas-selectors.cy.ts",
-    "cypress/integration/unit/lunar-atlas-terrain.cy.ts",
+    "cypress/integration/unit/lunar-atlas-southpole.cy.ts",
     "cypress/integration/overview-delegate/leaderboard.cy.ts",
     "cypress/integration/overview-path-vote/tally.cy.ts"
   ]

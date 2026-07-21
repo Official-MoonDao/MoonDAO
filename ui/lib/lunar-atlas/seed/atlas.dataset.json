@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-16",
+  "updatedAt": "2026-07-20",
   "organizations": [
     {
       "id": "nasa",
@@ -128,7 +128,10 @@
       "type": "crewed_base",
       "modelURI": "/lunar-atlas/models/habitat-demo-unit.glb",
       "summary": "NASA's planned sustained surface habitation at the lunar South Pole, including a foundation surface habitat, mobility (LTV and habitable mobility platform), and power — the anchor of a long-term human presence.",
-      "location": { "lat": -89.5, "lon": 0 },
+      "location": {
+        "lat": -89.5,
+        "lon": 0
+      },
       "locationPrecision": "region",
       "regionLabel": "Lunar South Pole",
       "milestones": [
@@ -161,7 +164,9 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-south-pole-base"],
+      "sharedGoalIds": [
+        "shared-south-pole-base"
+      ],
       "sources": [
         {
           "label": "NASA — Artemis Base Camp",
@@ -178,7 +183,10 @@
       "type": "crewed_base",
       "modelURI": "/lunar-atlas/models/apollo-lunar-module.glb",
       "summary": "The first crewed Artemis landing, targeting a South Pole region and delivering astronauts to the surface via a commercial Human Landing System.",
-      "location": { "lat": -85.3, "lon": 0 },
+      "location": {
+        "lat": -85.3,
+        "lon": 0
+      },
       "locationPrecision": "approximate",
       "regionLabel": "South Pole candidate regions",
       "milestones": [
@@ -197,7 +205,9 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-south-pole-base"],
+      "sharedGoalIds": [
+        "shared-south-pole-base"
+      ],
       "sources": [
         {
           "label": "NASA — Artemis III candidate regions",
@@ -248,7 +258,10 @@
       "type": "rover",
       "modelURI": "/lunar-atlas/models/perseverance-rover.glb",
       "summary": "An unpressurized rover to let Artemis crews explore farther from the landing site and to operate autonomously between crewed missions near the South Pole.",
-      "location": { "lat": -88.8, "lon": 10 },
+      "location": {
+        "lat": -88.8,
+        "lon": 10
+      },
       "locationPrecision": "approximate",
       "regionLabel": "Lunar South Pole",
       "milestones": [
@@ -283,7 +296,10 @@
       "name": "Fission Surface Power",
       "type": "power",
       "summary": "A demonstration nuclear fission reactor to provide continuous surface power through the lunar night, enabling sustained operations at the South Pole.",
-      "location": { "lat": -89, "lon": 45 },
+      "location": {
+        "lat": -89,
+        "lon": 45
+      },
       "locationPrecision": "region",
       "regionLabel": "Lunar South Pole",
       "milestones": [
@@ -302,7 +318,9 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-isru-power"],
+      "sharedGoalIds": [
+        "shared-isru-power"
+      ],
       "sources": [
         {
           "label": "NASA — Fission Surface Power",
@@ -319,7 +337,10 @@
       "type": "lander",
       "modelURI": "/lunar-atlas/models/apollo-lunar-module.glb",
       "summary": "A lunar-optimized Starship variant contracted by NASA to carry Artemis III and IV astronauts from lunar orbit to the South Pole surface and back.",
-      "location": { "lat": -85, "lon": 5 },
+      "location": {
+        "lat": -85,
+        "lon": 5
+      },
       "locationPrecision": "approximate",
       "regionLabel": "South Pole candidate regions",
       "milestones": [
@@ -352,7 +373,10 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-south-pole-base"],
+      "sharedGoalIds": [
+        "shared-south-pole-base",
+        "shared-crewed-lander"
+      ],
       "sources": [
         {
           "label": "SpaceX — Human Spaceflight: Moon",
@@ -360,7 +384,8 @@
           "retrievedAt": "2026-07-01"
         }
       ],
-      "visibility": "public"
+      "visibility": "public",
+      "rosterStatus": "listed"
     },
     {
       "id": "blue-origin-blue-moon-mk1",
@@ -369,7 +394,10 @@
       "type": "lander",
       "modelURI": "/lunar-atlas/models/viking-lander.glb",
       "summary": "An uncrewed cargo lander able to deliver several tonnes to the lunar surface, serving as a precursor and logistics platform for the crewed MK2 lander.",
-      "location": { "lat": -86, "lon": -20 },
+      "location": {
+        "lat": -86,
+        "lon": -20
+      },
       "locationPrecision": "approximate",
       "regionLabel": "Lunar South Pole",
       "milestones": [
@@ -405,7 +433,10 @@
       "type": "lander",
       "modelURI": "/lunar-atlas/models/apollo-lunar-module.glb",
       "summary": "Blue Origin's crewed lunar lander, selected by NASA to land Artemis V astronauts at the South Pole, developed with the National Team.",
-      "location": { "lat": -85.5, "lon": -10 },
+      "location": {
+        "lat": -85.5,
+        "lon": -10
+      },
       "locationPrecision": "approximate",
       "regionLabel": "South Pole candidate regions",
       "milestones": [
@@ -424,7 +455,10 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-south-pole-base"],
+      "sharedGoalIds": [
+        "shared-south-pole-base",
+        "shared-crewed-lander"
+      ],
       "sources": [
         {
           "label": "NASA — Second Artemis lunar lander provider",
@@ -432,7 +466,8 @@
           "retrievedAt": "2026-07-01"
         }
       ],
-      "visibility": "public"
+      "visibility": "public",
+      "rosterStatus": "listed"
     },
     {
       "id": "blue-origin-blue-alchemist",
@@ -441,7 +476,10 @@
       "type": "isru_plant",
       "modelURI": "/lunar-atlas/models/rassor.glb",
       "summary": "A process to manufacture solar cells and oxygen from lunar regolith simulant, aimed at powering and sustaining a surface presence with in-situ resources.",
-      "location": { "lat": -88, "lon": -45 },
+      "location": {
+        "lat": -88,
+        "lon": -45
+      },
       "locationPrecision": "region",
       "regionLabel": "Lunar South Pole (concept)",
       "milestones": [
@@ -460,7 +498,9 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-isru-power"],
+      "sharedGoalIds": [
+        "shared-isru-power"
+      ],
       "sources": [
         {
           "label": "Blue Origin — Blue Alchemist",
@@ -476,7 +516,10 @@
       "name": "Project Olympus",
       "type": "construction",
       "summary": "A multi-purpose lunar construction system that 3D-prints landing pads, roads, and habitat structures from local regolith. Backed by a $57.2M NASA SBIR Phase III contract (through 2028) under the MMPACT project at Marshall Space Flight Center.",
-      "location": { "lat": -88.4, "lon": 90 },
+      "location": {
+        "lat": -88.4,
+        "lon": 90
+      },
       "locationPrecision": "region",
       "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
       "milestones": [
@@ -523,7 +566,9 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-landing-pads"],
+      "sharedGoalIds": [
+        "shared-landing-pads"
+      ],
       "rosterStatus": "listed",
       "sources": [
         {
@@ -540,7 +585,10 @@
       "name": "Mason",
       "type": "construction",
       "summary": "A platform-agnostic tool suite — BASE grader, PACT compactor, and M3LT microwave sintering emitter — that converts lunar regolith into solid berms, landing pads, and roads. Funded by a $12.9M NASA Tipping Point award; passed Critical Design Review in June 2025.",
-      "location": { "lat": -88.4, "lon": 135 },
+      "location": {
+        "lat": -88.4,
+        "lon": 135
+      },
       "locationPrecision": "region",
       "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
       "milestones": [
@@ -587,7 +635,9 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-landing-pads"],
+      "sharedGoalIds": [
+        "shared-landing-pads"
+      ],
       "rosterStatus": "listed",
       "sources": [
         {
@@ -604,7 +654,10 @@
       "name": "Lunatron / Brickbot",
       "type": "construction",
       "summary": "An induction furnace-nozzle that melts lunar regolith into interlocking, mortar-free bricks for landing pads, roads, and blast shields — a civil-engineering path to lunar surface infrastructure, developed with UTSA under NASA SBIR/STTR awards.",
-      "location": { "lat": -88.4, "lon": -90 },
+      "location": {
+        "lat": -88.4,
+        "lon": -90
+      },
       "locationPrecision": "region",
       "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
       "milestones": [
@@ -651,7 +704,9 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-landing-pads"],
+      "sharedGoalIds": [
+        "shared-landing-pads"
+      ],
       "rosterStatus": "listed",
       "sources": [
         {
@@ -668,7 +723,10 @@
       "name": "REACT / LINA",
       "type": "construction",
       "summary": "Regolith-polymer additive construction developed with NASA Kennedy Space Center under the REACT collaboration: a space-rated 3D-printing system tested in a lunar environmental chamber, targeting the LINA outpost concept near Shackleton crater.",
-      "location": { "lat": -89.6, "lon": 165 },
+      "location": {
+        "lat": -89.6,
+        "lon": 165
+      },
       "locationPrecision": "region",
       "regionLabel": "Shackleton crater region (concept target — development is Earth-based)",
       "milestones": [
@@ -715,7 +773,9 @@
           ]
         }
       ],
-      "sharedGoalIds": ["shared-landing-pads"],
+      "sharedGoalIds": [
+        "shared-landing-pads"
+      ],
       "rosterStatus": "listed",
       "sources": [
         {
@@ -738,7 +798,10 @@
         "astroport-lunatron",
         "ai-spacefactory-react"
       ],
-      "location": { "lat": -88, "lon": 60 },
+      "location": {
+        "lat": -88,
+        "lon": 60
+      },
       "regionLabel": "Lunar South Pole — candidate construction zone",
       "criteria": [
         {
@@ -767,12 +830,24 @@
           "threshold": "Quote ≤ prize-pool TWAP at market close"
         }
       ],
-      "targetWindow": { "from": "2026", "to": "2032" },
+      "targetWindow": {
+        "from": "2026",
+        "to": "2032"
+      },
       "market": {
         "status": "planned",
         "resolutionAuthority": "senate",
-        "payoutSplit": { "capability": 0.3, "flight": 0.7 },
-        "budgetGate": "Winning team's CLPS-class flight-demo quote must not exceed the prize-pool TWAP at market close."
+        "payoutSplit": {
+          "capability": 0.3,
+          "flight": 0.7
+        },
+        "budgetGate": "Winning team's CLPS-class flight-demo quote must not exceed the prize-pool TWAP at market close.",
+        "impliedOdds": {
+          "icon-project-olympus": 0.34,
+          "redwire-mason": 0.27,
+          "astroport-lunatron": 0.21,
+          "ai-spacefactory-react": 0.14
+        }
       },
       "sources": [
         {
@@ -784,6 +859,46 @@
           "label": "NASA — Tipping Point partnerships (incl. Redwire Mason)",
           "url": "https://www.nasa.gov/news-release/nasa-partners-with-american-companies-on-key-moon-exploration-tech/",
           "retrievedAt": "2026-07-16"
+        }
+      ],
+      "category": "construction"
+    },
+    {
+      "id": "shared-crewed-lander",
+      "title": "First commercial crewed lunar landing",
+      "category": "lander",
+      "description": "NASA's Human Landing System program put two competing landers under contract: SpaceX's Starship HLS (Artemis III) and Blue Origin's Blue Moon MK2 (Artemis V). Which system puts crew on the lunar surface first is the defining near-term race in the lander tech tree — schedules on both sides have moved, and each vehicle still has major flight-test milestones ahead.",
+      "projectIds": [
+        "spacex-starship-hls",
+        "blue-origin-blue-moon-mk2"
+      ],
+      "location": {
+        "lat": -87.5,
+        "lon": -40
+      },
+      "regionLabel": "Lunar South Pole — Artemis candidate landing zone",
+      "targetWindow": {
+        "from": "2027",
+        "to": "2031"
+      },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "spacex-starship-hls": 0.58,
+          "blue-origin-blue-moon-mk2": 0.36
+        }
+      },
+      "sources": [
+        {
+          "label": "NASA — Human Landing System",
+          "url": "https://www.nasa.gov/reference/human-landing-systems/",
+          "retrievedAt": "2026-07-20"
+        },
+        {
+          "label": "NASA — Blue Origin selected for Artemis V lander",
+          "url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-as-second-artemis-lunar-lander-provider/",
+          "retrievedAt": "2026-07-20"
         }
       ]
     },
@@ -797,7 +912,10 @@
         "spacex-starship-hls",
         "blue-origin-blue-moon-mk2"
       ],
-      "targetWindow": { "from": "2027", "to": "2033" },
+      "targetWindow": {
+        "from": "2027",
+        "to": "2033"
+      },
       "market": {
         "status": "planned",
         "resolutionAuthority": "senate"
@@ -808,7 +926,8 @@
           "url": "https://www.nasa.gov/humans-in-space/artemis/",
           "retrievedAt": "2026-07-01"
         }
-      ]
+      ],
+      "category": "crewed_base"
     },
     {
       "id": "shared-isru-power",
@@ -818,7 +937,10 @@
         "nasa-fission-surface-power",
         "blue-origin-blue-alchemist"
       ],
-      "targetWindow": { "from": "2028", "to": "2035" },
+      "targetWindow": {
+        "from": "2028",
+        "to": "2035"
+      },
       "market": {
         "status": "none"
       },
@@ -828,7 +950,8 @@
           "url": "https://www.nasa.gov/tdm/fission-surface-power/",
           "retrievedAt": "2026-07-01"
         }
-      ]
+      ],
+      "category": "isru_plant"
     }
   ]
 }

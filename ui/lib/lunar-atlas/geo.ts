@@ -204,6 +204,31 @@ export function declusterDirections(
   return result
 }
 
+// Spherical centroid of a set of lat/lon points: the normalized mean of their
+// unit direction vectors. Used to place one tech-tree site marker for a group
+// of member projects. Degenerate sets (antipodal points cancelling out) fall
+// back to the first point's direction.
+export function centroidDirection(
+  points: { lat: number; lon: number }[]
+): Vec3 {
+  let x = 0
+  let y = 0
+  let z = 0
+  for (const p of points) {
+    const v = latLonToVector3(p.lat, p.lon, 1)
+    x += v[0]
+    y += v[1]
+    z += v[2]
+  }
+  const len = Math.sqrt(x * x + y * y + z * z)
+  if (len < 1e-9) {
+    return points.length
+      ? latLonToVector3(points[0].lat, points[0].lon, 1)
+      : [0, 1, 0]
+  }
+  return [x / len, y / len, z / len]
+}
+
 // Up vector for an orbit (top-down) camera framing at a lat/lon. An orbit
 // camera looks straight down the surface normal, which leaves "up"
 // underdetermined — and a raw world-Y up degenerates at the poles (parallel

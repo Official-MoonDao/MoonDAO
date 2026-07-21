@@ -125,6 +125,11 @@ export type SharedGoalMarket = {
   payoutSplit?: { capability: number; flight: number }
   // Human-readable budget gate, e.g. "flight-demo quote ≤ prize-pool TWAP".
   budgetGate?: string
+  // Market-implied win probability per competitor project id, as fractions
+  // of 1 (they need not sum to 1 — markets carry spread). Once a market is
+  // live these mirror on-chain prices; while `status` is 'planned' they are
+  // curator-set illustrative priors and the UI labels them as such.
+  impliedOdds?: Record<string, number>
 }
 
 // One entry of a frozen capability spec — what a competitor must demonstrate
@@ -142,6 +147,9 @@ export type SharedGoal = {
   title: string // e.g. "First sustained crewed south-pole base"
   description: string
   projectIds: string[] // competing projects/orgs
+  // When set, this goal IS the capability race for that tech-tree category:
+  // the category's surface site opens this goal's prediction-market view.
+  category?: ProjectType
   // Optional globe anchor for capability races: competitors may be Earth
   // companies with no lunar coordinates, but the race itself often targets a
   // region (e.g. the South Pole construction zone).

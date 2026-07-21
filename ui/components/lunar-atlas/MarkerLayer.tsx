@@ -1,68 +1,120 @@
-// 3D marker layer for the Lunar Atlas globe. Each located project gets a pin
-// that rises off the surface with a glowing, organization-colored dot and a
-// thin stem. Tightly-packed projects (e.g. the South Pole cluster) are fanned
-// out so their markers don't overlap. Pins on the far side of the Moon fade
-// out; hovering reveals a compact label; clicking selects the project. Timeline
-// state (from the year scrubber) modulates opacity/visibility.
+// Tech-tree site layer for the Lunar Atlas globe.
+//
+// The surface shows ONE site per capability category (landers, surface
+// construction, ISRU, …) — a generic installation model plus a beacon pin —
+// rather than one marker per company. Clicking a site opens that tech tree's
+// prediction-market/race view; picking a competitor there swaps the generic
+// model for that company's specific model (e.g. lander site → Blue Moon MK2)
+// and recolors the beacon with the org's brand color. Pins on the far side of
+// the Moon fade out; dots recede as the camera closes in so the models read.
 
 import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { vector3ToLatLon, Vec3 } from '@/lib/lunar-atlas/geo'
 import {
-  declusterDirections,
-  vector3ToLatLon,
-  Vec3,
-} from '@/lib/lunar-atlas/geo'
-import { orgColor } from '@/lib/lunar-atlas/display'
+  PROJECT_TYPE_COLOR,
+  PROJECT_TYPE_LABEL,
+  orgColor,
+} from '@/lib/lunar-atlas/display'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
-import type { Organization, Project } from '@/lib/lunar-atlas/types'
-import ProjectModel from './ProjectModel'
+import type { TechTree } from '@/lib/lunar-atlas/selectors'
+import type {
+  Organization,
+  Project,
+  ProjectType,
+} from '@/lib/lunar-atlas/types'
+import ProjectModel, { ProceduralModel, SurfaceAnchor } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
 export type MarkerStyle = { opacity: number; visible: boolean }
 
 type MarkerLayerProps = {
-  projects: Project[]
+  trees: TechTree[]
   organizations: Organization[]
-  selectedProjectId?: string | null
-  hoveredProjectId?: string | null
-  onSelect?: (id: string) => void
-  onHover?: (id: string | null) => void
+  selectedTreeCategory?: ProjectType | null
+  // Competitor picked from a race panel — its model replaces the generic
+  // site asset for its category.
+  selectedProject?: Project | null
+  hoveredCategory?: ProjectType | null
+  onSelectTree?: (category: ProjectType) => void
+  onHoverTree?: (category: ProjectType | null) => void
+  // Timeline styling per member project; the site aggregates its members.
   getProjectStyle?: (project: Project) => MarkerStyle
+  // Declustered site directions keyed by category (shared with the camera).
   dirMap?: Map<string, Vec3>
   // Displaced terrain radius lookup so pins/models sit on the rendered ground.
   radiusAt?: RadiusAt | null
 }
 
-// Offsets above the local terrain (which the sampler provides per marker).
-const SEAT_LIFT = GLOBE_RADIUS * 0.002 // clears z-fighting with the terrain
-const PIN_HEIGHT = GLOBE_RADIUS * 0.045 // beacon dot altitude above ground
-const DOT_RADIUS = GLOBE_RADIUS * 0.009
+// Offsets above the local terrain (which the sampler provides per marker),
+// tuned to the south-pole cap's scale (the cap is ~0.42 GLOBE_RADIUS across).
+const SEAT_LIFT = GLOBE_RADIUS * 0.0002 // clears z-fighting with the terrain
+const PIN_HEIGHT = GLOBE_RADIUS * 0.007 // beacon dot altitude above ground
+const DOT_RADIUS = GLOBE_RADIUS * 0.0014
 // As the camera closes in, dots fade so the detailed on-surface models take
-// over (findability beacons far, physical builds near).
-const FADE_NEAR = GLOBE_RADIUS * 0.22
-const FADE_FAR = GLOBE_RADIUS * 0.62
+// over (findability beacons far, physical builds near). The site drill-in
+// parks the camera ~0.09 GLOBE_RADIUS from the beacon, which must land well
+// past NEAR — an unfaded dot at that range is a screen-filling balloon that
+// hides the model it marks. The overview sits at ~0.6, comfortably past FAR.
+const FADE_NEAR = GLOBE_RADIUS * 0.055
+const FADE_FAR = GLOBE_RADIUS * 0.16
+// Angular radius (radians) of a site model's ground footprint. Real polar
+// terrain varies by more than a model's height across a footprint this size,
+// so a model seated on the *center* height buries its edges on any slope.
+const FOOTPRINT_ANG = 0.007
 
-function Marker({
-  project,
+// The highest rendered ground within the footprint around `d` — the model
+// seats there and its skirted pad drops to cover the downhill side.
+function footprintSeatRadius(d: THREE.Vector3, radiusAt: RadiusAt): number {
+  const ll = vector3ToLatLon([d.x, d.y, d.z])
+  let seat = radiusAt(ll.lat, ll.lon)
+  // Tangent basis at d (d is never at the equator here, but guard anyway).
+  const ref =
+    Math.abs(d.y) > 0.9 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0)
+  const u = new THREE.Vector3().crossVectors(ref, d).normalize()
+  const w = new THREE.Vector3().crossVectors(d, u)
+  const cosA = Math.cos(FOOTPRINT_ANG)
+  const sinA = Math.sin(FOOTPRINT_ANG)
+  for (let i = 0; i < 8; i++) {
+    const az = (i / 8) * Math.PI * 2
+    const p = d
+      .clone()
+      .multiplyScalar(cosA)
+      .addScaledVector(u, Math.cos(az) * sinA)
+      .addScaledVector(w, Math.sin(az) * sinA)
+    const pll = vector3ToLatLon([p.x, p.y, p.z])
+    seat = Math.max(seat, radiusAt(pll.lat, pll.lon))
+  }
+  return seat
+}
+
+function TechTreeSite({
+  tree,
   dir,
   color,
   selected,
   hovered,
   style,
+  competitor,
+  label,
   onSelect,
   onHover,
   radiusAt,
 }: {
-  project: Project
+  tree: TechTree
   dir: Vec3
   color: string
   selected: boolean
   hovered: boolean
   style: MarkerStyle
-  onSelect?: (id: string) => void
-  onHover?: (id: string | null) => void
+  // When set, this site renders the competitor's specific model instead of
+  // the generic category asset.
+  competitor?: Project | null
+  label: string
+  onSelect?: (category: ProjectType) => void
+  onHover?: (category: ProjectType | null) => void
   radiusAt?: RadiusAt | null
 }) {
   const { camera } = useThree()
@@ -74,18 +126,17 @@ function Marker({
 
   const { base, tip, ndir, seatRadius } = useMemo(() => {
     const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
-    // Seat on the displaced terrain at this (declustered) direction; until
-    // the DEM decodes, fall back to the analytic sphere.
-    const ll = vector3ToLatLon([d.x, d.y, d.z])
-    const ground = radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS
+    // Seat on the highest rendered ground within the model's footprint (a
+    // center-only sample buries the model's uphill edge on any slope); until
+    // the height maps decode, fall back to the analytic sphere.
+    const ground = radiusAt ? footprintSeatRadius(d, radiusAt) : GLOBE_RADIUS
     const seat = ground + SEAT_LIFT
     return {
       base: d.clone().multiplyScalar(seat),
       tip: d.clone().multiplyScalar(seat + PIN_HEIGHT),
       ndir: d,
-      // The model sits exactly on the sampled ground — its skirted pad
-      // handles footprint-scale terrain variation. Only the stem/dot get the
-      // z-fighting lift.
+      // The model sits on the footprint-max ground — its skirted pad drops
+      // to cover the downhill gaps. Only the stem/dot get the z-fight lift.
       seatRadius: ground,
     }
   }, [dir, radiusAt])
@@ -124,7 +175,7 @@ function Marker({
       stemRef.current.visible = beaconOpacity > 0.02
     }
     if (ringRef.current) {
-      // Selection halo is a *locator* for the selected project — useful from
+      // Selection halo is a *locator* for the selected site — useful from
       // orbit, but up close (surface view) it would fill the screen and sit
       // on top of the model, so it fades out with the same proximity ramp as
       // the beacon dot.
@@ -139,17 +190,6 @@ function Marker({
     }
   })
 
-  const handleOver = (e: any) => {
-    e.stopPropagation()
-    onHover?.(project.id)
-    document.body.style.cursor = 'pointer'
-  }
-  const handleOut = (e: any) => {
-    e.stopPropagation()
-    onHover?.(null)
-    document.body.style.cursor = 'auto'
-  }
-
   const stemMid = base.clone().lerp(tip, 0.5)
   const stemLen = base.distanceTo(tip)
   const stemQuat = useMemo(() => {
@@ -158,24 +198,37 @@ function Marker({
     return q
   }, [ndir])
 
+  const handleHoverChange = (h: boolean) => onHover?.(h ? tree.category : null)
+
   return (
     <group ref={groupRef}>
-      {/* On-surface 3D model (hidden for not-yet-revealed / cancelled items) */}
-      {style.opacity > 0.5 && (
-        <ProjectModel
-          project={project}
-          dir={[ndir.x, ndir.y, ndir.z]}
-          accent={color}
-          onSelect={onSelect}
-          onHover={onHover}
-          surfaceRadius={seatRadius}
-        />
-      )}
+      {/* On-surface 3D model: the competitor's specific model when one is
+          picked, the generic category installation otherwise. */}
+      {style.opacity > 0.5 &&
+        (competitor ? (
+          <ProjectModel
+            project={competitor}
+            dir={[ndir.x, ndir.y, ndir.z]}
+            accent={color}
+            onSelect={() => onSelect?.(tree.category)}
+            onHover={(id) => onHover?.(id ? tree.category : null)}
+            surfaceRadius={seatRadius}
+          />
+        ) : (
+          <SurfaceAnchor
+            dir={[ndir.x, ndir.y, ndir.z]}
+            surfaceRadius={seatRadius}
+            onClick={() => onSelect?.(tree.category)}
+            onHoverChange={handleHoverChange}
+          >
+            <ProceduralModel type={tree.category} accent={color} />
+          </SurfaceAnchor>
+        ))}
 
       {/* Stem */}
       <mesh ref={stemRef} position={stemMid} quaternion={stemQuat}>
         <cylinderGeometry
-          args={[GLOBE_RADIUS * 0.0015, GLOBE_RADIUS * 0.0015, stemLen, 6]}
+          args={[GLOBE_RADIUS * 0.00025, GLOBE_RADIUS * 0.00025, stemLen, 6]}
         />
         <meshBasicMaterial color={color} transparent opacity={style.opacity * 0.6} />
       </mesh>
@@ -195,16 +248,7 @@ function Marker({
       </mesh>
 
       {/* Glowing dot */}
-      <mesh
-        ref={dotRef}
-        position={tip}
-        onClick={(e) => {
-          e.stopPropagation()
-          onSelect?.(project.id)
-        }}
-        onPointerOver={handleOver}
-        onPointerOut={handleOut}
-      >
+      <mesh ref={dotRef} position={tip}>
         <sphereGeometry args={[DOT_RADIUS, 16, 16]} />
         <meshStandardMaterial
           color={color}
@@ -216,6 +260,34 @@ function Marker({
         />
       </mesh>
 
+      {/* Generous invisible hit target around the dot — the beacon itself is
+          only a few pixels from orbit, far too small to click reliably. */}
+      <mesh
+        position={tip}
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelect?.(tree.category)
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          handleHoverChange(true)
+          document.body.style.cursor = 'pointer'
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation()
+          handleHoverChange(false)
+          document.body.style.cursor = 'auto'
+        }}
+      >
+        <sphereGeometry args={[DOT_RADIUS * 4.5, 8, 8]} />
+        <meshBasicMaterial
+          transparent
+          opacity={0}
+          depthWrite={false}
+          depthTest={false}
+        />
+      </mesh>
+
       {/* Hover / selected label — fixed on-screen size */}
       {(hovered || selected) && (
         <Html
@@ -224,8 +296,8 @@ function Marker({
           zIndexRange={[30, 0]}
           style={{ pointerEvents: 'none' }}
         >
-          <div className="-translate-y-5 whitespace-nowrap rounded border border-white/15 bg-black/75 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-white shadow-md backdrop-blur-sm">
-            {project.name}
+          <div className="-translate-y-5 whitespace-nowrap rounded border border-white/15 bg-black/75 px-1.5 py-0.5 text-center text-[10px] font-medium leading-tight text-white shadow-md backdrop-blur-sm">
+            {label}
           </div>
         </Html>
       )}
@@ -234,14 +306,15 @@ function Marker({
 }
 
 export default function MarkerLayer({
-  projects,
+  trees,
   organizations,
-  selectedProjectId,
-  hoveredProjectId,
-  onSelect,
-  onHover,
+  selectedTreeCategory,
+  selectedProject,
+  hoveredCategory,
+  onSelectTree,
+  onHoverTree,
   getProjectStyle,
-  dirMap: providedDirMap,
+  dirMap,
   radiusAt,
 }: MarkerLayerProps) {
   const orgMap = useMemo(() => {
@@ -250,41 +323,56 @@ export default function MarkerLayer({
     return m
   }, [organizations])
 
-  const located = useMemo(() => projects.filter((p) => p.location), [projects])
-
-  // Fan out overlapping markers into readable rings. Prefer a shared map from
-  // the page (so camera focus and markers agree) and fall back to computing it.
-  const computedDirMap = useMemo(
-    () =>
-      declusterDirections(
-        located.map((p) => ({
-          id: p.id,
-          lat: p.location!.lat,
-          lon: p.location!.lon,
-        }))
-      ),
-    [located]
-  )
-  const dirMap = providedDirMap ?? computedDirMap
-
   return (
     <group>
-      {located.map((project) => {
-        const style = getProjectStyle?.(project) ?? { opacity: 1, visible: true }
-        if (!style.visible) return null
-        const dir = dirMap.get(project.id)
+      {trees.map((tree) => {
+        // A site is as visible as its most-visible member at the current
+        // timeline year — it appears when the first member program appears.
+        let opacity = 0
+        for (const p of tree.projects) {
+          const s = getProjectStyle?.(p) ?? { opacity: 1, visible: true }
+          if (s.visible) opacity = Math.max(opacity, s.opacity)
+        }
+        if (opacity <= 0) return null
+        const style: MarkerStyle = { opacity, visible: true }
+
+        const dir = dirMap?.get(tree.category)
         if (!dir) return null
+
+        const competitor =
+          selectedProject && selectedProject.type === tree.category
+            ? selectedProject
+            : null
+        const color = competitor
+          ? orgColor(orgMap.get(competitor.orgId))
+          : PROJECT_TYPE_COLOR[tree.category]
+        // A race's roster can span categories (e.g. the power race includes
+        // an ISRU plant), so count the goal's competitors, not the tree's
+        // same-type members — the label must match the panel it opens.
+        const count = tree.goal
+          ? tree.goal.projectIds.length
+          : tree.projects.length
+        const label = competitor
+          ? competitor.name
+          : `${PROJECT_TYPE_LABEL[tree.category]} · ${count} ${
+              tree.goal ? 'competitor' : 'project'
+            }${count === 1 ? '' : 's'}`
+
         return (
-          <Marker
-            key={project.id}
-            project={project}
+          <TechTreeSite
+            key={tree.category}
+            tree={tree}
             dir={dir}
-            color={orgColor(orgMap.get(project.orgId))}
-            selected={selectedProjectId === project.id}
-            hovered={hoveredProjectId === project.id}
+            color={color}
+            selected={
+              selectedTreeCategory === tree.category || Boolean(competitor)
+            }
+            hovered={hoveredCategory === tree.category}
             style={style}
-            onSelect={onSelect}
-            onHover={onHover}
+            competitor={competitor}
+            label={label}
+            onSelect={onSelectTree}
+            onHover={onHoverTree}
             radiusAt={radiusAt}
           />
         )

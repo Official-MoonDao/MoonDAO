@@ -10,6 +10,7 @@ import { expect } from 'chai'
 import {
   MOON_RADIUS_M,
   centralAngle,
+  centroidDirection,
   clampLat,
   declusterDirections,
   drillInFraming,
@@ -167,6 +168,37 @@ describe('lunar-atlas geo', () => {
       expect(Math.abs(targetR - 100)).to.be.lessThan(1e-6)
       // Camera sits farther out than the surface.
       expect(posR).to.be.greaterThan(targetR)
+    })
+  })
+
+  describe('centroid direction (tech-tree site placement)', () => {
+    it('returns the point itself for a single point', () => {
+      const dir = centroidDirection([{ lat: -85, lon: 30 }])
+      const expected = latLonToVector3(-85, 30, 1)
+      expect(angleBetween(dir, expected)).to.be.lessThan(1e-9)
+    })
+
+    it('is a unit vector between clustered points', () => {
+      const dir = centroidDirection([
+        { lat: -85, lon: 0 },
+        { lat: -85, lon: 90 },
+        { lat: -87, lon: 45 },
+      ])
+      const len = Math.sqrt(dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2)
+      expect(Math.abs(len - 1)).to.be.lessThan(1e-9)
+      // Centroid of south-polar points stays deep in the southern hemisphere.
+      const ll = vector3ToLatLon(dir)
+      expect(ll.lat).to.be.lessThan(-80)
+    })
+
+    it('does not blow up on antipodal (cancelling) inputs', () => {
+      const dir = centroidDirection([
+        { lat: 0, lon: 0 },
+        { lat: 0, lon: 180 },
+      ])
+      const len = Math.sqrt(dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2)
+      expect(Math.abs(len - 1)).to.be.lessThan(1e-9)
+      for (const c of dir) expect(Number.isFinite(c)).to.equal(true)
     })
   })
 

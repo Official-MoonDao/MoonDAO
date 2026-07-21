@@ -10,6 +10,7 @@ import { expect } from 'chai'
 import { SEED_ATLAS } from '../../../lib/lunar-atlas/seed'
 import {
   atlasYear,
+  buildTechTrees,
   datasetYearRange,
   filterProjects,
   indexRowsFromDataset,
@@ -140,6 +141,63 @@ describe('lunar-atlas selectors', () => {
     })
   })
 
+  describe('tech trees (one surface site per capability category)', () => {
+    const trees = buildTechTrees(SEED_ATLAS.projects, SEED_ATLAS.sharedGoals)
+
+    it('groups every located surface project into exactly one tree', () => {
+      const surface = SEED_ATLAS.projects.filter(
+        (p) => p.location && p.type !== 'orbital'
+      )
+      const grouped = trees.flatMap((t) => t.projects.map((p) => p.id))
+      expect(grouped.length).to.equal(surface.length)
+      expect(new Set(grouped).size).to.equal(surface.length)
+      for (const t of trees) {
+        for (const p of t.projects) {
+          expect(p.type, `project ${p.id} in tree ${t.category}`).to.equal(
+            t.category
+          )
+        }
+      }
+    })
+
+    it('excludes orbital and unlocated projects from surface sites', () => {
+      const ids = new Set(trees.flatMap((t) => t.projects.map((p) => p.id)))
+      expect(ids.has('nasa-gateway')).to.equal(false)
+    })
+
+    it('binds the race goal declared for a category', () => {
+      const construction = trees.find((t) => t.category === 'construction')
+      expect(construction?.goal?.id).to.equal('shared-landing-pads')
+      const lander = trees.find((t) => t.category === 'lander')
+      expect(lander?.goal?.id).to.equal('shared-crewed-lander')
+    })
+
+    it('falls back to a goal listing a member when no category race exists', () => {
+      const power = trees.find((t) => t.category === 'power')
+      expect(power?.goal?.id).to.equal('shared-isru-power')
+    })
+
+    it('anchors a site at its own race region, not a borrowed goal region', () => {
+      const construction = trees.find((t) => t.category === 'construction')
+      expect(construction?.location).to.deep.equal({ lat: -88, lon: 60 })
+      // power borrows the ISRU goal (no location, different category) so it
+      // must fall back to the member centroid, not any goal anchor.
+      const power = trees.find((t) => t.category === 'power')
+      expect(power).to.not.equal(undefined)
+      expect(power!.location.lat).to.be.within(-90, 90)
+      expect(power!.location.lon).to.be.within(-180, 180)
+    })
+
+    it('applies after filtering, so filtered-out categories have no site', () => {
+      const landersOnly = filterProjects(SEED_ATLAS.projects, {
+        types: ['lander'],
+      })
+      const filtered = buildTechTrees(landersOnly, SEED_ATLAS.sharedGoals)
+      expect(filtered.length).to.equal(1)
+      expect(filtered[0].category).to.equal('lander')
+    })
+  })
+
   describe('tableland index projection', () => {
     it('projects one row per project with lat/lon + date bounds', () => {
       const rows = indexRowsFromDataset(SEED_ATLAS, 'bafyTESTCID')
@@ -225,6 +283,30 @@ describe('lunar-atlas selectors', () => {
         const split = g.market?.payoutSplit
         if (!split) continue
         expect(split.capability + split.flight, `goal ${g.id} payoutSplit`).to.be.closeTo(1, 1e-9)
+      }
+    })
+    it('a goal that declares a race category lists competitors of that category', () => {
+      const projectMap = new Map(SEED_ATLAS.projects.map((p) => [p.id, p]))
+      for (const g of SEED_ATLAS.sharedGoals) {
+        if (!g.category) continue
+        const ofCategory = g.projectIds.filter(
+          (pid) => projectMap.get(pid)?.type === g.category
+        )
+        expect(
+          ofCategory.length,
+          `goal ${g.id} has no ${g.category} competitor`
+        ).to.be.greaterThan(0)
+      }
+    })
+    it('at most one goal declares each race category', () => {
+      const seen = new Map<string, string>()
+      for (const g of SEED_ATLAS.sharedGoals) {
+        if (!g.category) continue
+        expect(
+          seen.has(g.category),
+          `category ${g.category} raced by ${seen.get(g.category)} and ${g.id}`
+        ).to.equal(false)
+        seen.set(g.category, g.id)
       }
     })
   })
