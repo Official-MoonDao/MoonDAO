@@ -248,5 +248,39 @@ describe('budget overrides', () => {
       ].join('\n')
       expect(parseUsdBudgetFromBody(body)).to.equal(5500)
     })
+
+    // MDP-264 shape: a line-item row whose justification prose contains a
+    // trigger substring ("Unexpected project costs") must NOT hijack the $
+    // amount that appears BEFORE the trigger. The real "Total budget $4000"
+    // line, appearing later, is the correct answer.
+    it('ignores a $ amount that precedes a trigger phrase embedded in prose (MDP-264 shape)', () => {
+      const body = [
+        '# Budget (Table C)#',
+        '',
+        'Aerospace research resources        $900        Technical papers',
+        'Research assistance        $1,000        Engineering analysis',
+        'Community presentation & publication        $400        Final report',
+        'Contingency        $400        Unexpected project costs',
+        'Total budget $4000',
+      ].join('\n')
+      expect(parseUsdBudgetFromBody(body)).to.equal(4000)
+    })
+
+    // Guard: the inline trigger must still pick up an amount that follows the
+    // trigger phrase, even when other (smaller) amounts appear earlier on the
+    // line. "Total Budget: $5,000 (includes $500 contingency)" → 5000.
+    it('takes the max $ amount that appears after the trigger phrase', () => {
+      expect(
+        parseUsdBudgetFromBody('Total Budget: $5,000 (includes $500 contingency)')
+      ).to.equal(5000)
+    })
+
+    // Guard: "Total costs: (820 + 88 + 3200) $= $4108" — the arithmetic in
+    // parentheses precedes no $, and the real amount follows the trigger.
+    it('parses inline "Total costs" prose with a trailing $ total (MDP-250 shape)', () => {
+      expect(
+        parseUsdBudgetFromBody('Total costs: (820 + 88 + 3200) $= $4108')
+      ).to.equal(4108)
+    })
   })
 })

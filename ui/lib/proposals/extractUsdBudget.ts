@@ -168,26 +168,37 @@ function parseBudgetFromSection(text: string): number {
 
 /**
  * Scan each line for a budget trigger phrase and return the largest dollar
- * amount found on that same line. Taking the maximum handles patterns like:
+ * amount found AFTER the trigger phrase on that same line. Taking the maximum
+ * handles patterns like:
  *
  *   "Total Budget: $5,000 (includes $500 contingency)"  → 5000
  *   "Total costs: (820 + 88 + 3200) $= $4108"           → 4108
  *   "Total Requested from MoonDAO: $2430 USD"            → 2430
  *
- * If no `$X` pattern exists but a bare "N USD/USDC" pattern is present,
- * that value is returned instead.
+ * Only amounts that occur AFTER the trigger phrase count. Without this,
+ * a prose justification that happens to contain a trigger substring hijacks
+ * an unrelated amount earlier on the line — e.g. a line-item row
+ * "Contingency | $400 | Unexpected project costs" matched "project costs"
+ * and returned $400 as the whole budget (MDP-264).
+ *
+ * If no `$X` pattern exists but a bare "N USD/USDC" pattern is present after
+ * the trigger, that value is returned instead.
  */
 function parseInlineUsdBudget(body: string): number {
   const TRIGGER =
     /(?:total|estimated|project)\s+(?:budget|costs?|funding|requested?(?:\s+from\s+\w+)?|ask)/i
   for (const line of body.split('\n')) {
-    if (!TRIGGER.test(line)) continue
-    const dollars = Array.from(line.matchAll(/\$\s*([\d,]+(?:\.\d+)?)/g))
+    const triggerMatch = line.match(TRIGGER)
+    if (!triggerMatch || triggerMatch.index === undefined) continue
+    const afterTrigger = line.slice(triggerMatch.index + triggerMatch[0].length)
+    const dollars = Array.from(afterTrigger.matchAll(/\$\s*([\d,]+(?:\.\d+)?)/g))
       .map((m) => parseFloat(m[1].replace(/,/g, '')) || 0)
       .filter((v) => v > 0)
     if (dollars.length > 0) return Math.max(...dollars)
-    // No $ sign — try bare "N USD/USDC/DAI" on this line.
-    const bare = line.match(/\b([\d,]+(?:\.\d+)?)\s*(?:USD|USDC|USDT|DAI)\b/i)
+    // No $ sign — try bare "N USD/USDC/DAI" after the trigger phrase.
+    const bare = afterTrigger.match(
+      /\b([\d,]+(?:\.\d+)?)\s*(?:USD|USDC|USDT|DAI)\b/i
+    )
     if (bare) {
       const v = parseFloat(bare[1].replace(/,/g, '')) || 0
       if (v > 0) return v
