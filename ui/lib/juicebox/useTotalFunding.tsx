@@ -12,36 +12,36 @@ import useRead from '@/lib/thirdweb/hooks/useRead'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import { useMemo, useCallback } from 'react'
+import type { Chain } from 'thirdweb'
 
-export default function useTotalFunding(projectId: any) {
+export default function useTotalFunding(projectId: any, chain: Chain = DEFAULT_CHAIN_V5) {
   const router = useRouter()
   const jbTerminalContract = useContract({
     address: JBV5_TERMINAL_ADDRESS,
-    chain: DEFAULT_CHAIN_V5,
+    chain,
     abi: JBV5MultiTerminal.abi as any,
   })
   const jbTerminalStoreContract = useContract({
     address: JBV5_TERMINAL_STORE_ADDRESS,
     abi: JBV5TerminalStore.abi as any,
-    chain: DEFAULT_CHAIN_V5,
+    chain,
   })
   const { data: balance, isLoading: isLoadingBalance } = useRead({
     contract: jbTerminalStoreContract,
     method: 'balanceOf' as string,
     params: [JBV5_TERMINAL_ADDRESS, projectId, JB_NATIVE_TOKEN_ADDRESS],
   })
-  const { data: usedPayoutLimit, isLoading: isLoadingUsedPayoutLimit } =
-    useRead({
-      contract: jbTerminalStoreContract,
-      method: 'usedPayoutLimitOf' as string,
-      params: [
-        JBV5_TERMINAL_ADDRESS,
-        projectId,
-        JB_NATIVE_TOKEN_ADDRESS,
-        2, // Cycle number 2 for payout cycle
-        JB_NATIVE_TOKEN_ID,
-      ],
-    })
+  const { data: usedPayoutLimit, isLoading: isLoadingUsedPayoutLimit } = useRead({
+    contract: jbTerminalStoreContract,
+    method: 'usedPayoutLimitOf' as string,
+    params: [
+      JBV5_TERMINAL_ADDRESS,
+      projectId,
+      JB_NATIVE_TOKEN_ADDRESS,
+      2, // Cycle number 2 for payout cycle
+      JB_NATIVE_TOKEN_ID,
+    ],
+  })
   const isLoading = isLoadingBalance || isLoadingUsedPayoutLimit
   const refetch = () => {
     router.reload()

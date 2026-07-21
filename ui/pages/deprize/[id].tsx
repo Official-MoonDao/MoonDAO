@@ -100,8 +100,10 @@ export default function DePrizeDetailPage() {
   // which throws on bigint. JB project ids are small, so Number() is safe.
   // useTotalFunding returns BigInt(0) for a missing projectId / while reads are
   // in flight, so gate the display on a real project id and !isLoading.
+  // Read Juicebox on the same chain as the DePrize registry (jbTerminal.pay
+  // settles on-chain with the mint router), not the build-time default.
   const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
-  const { totalFunding, isLoading: isLoadingFunding } = useTotalFunding(jbProjectId)
+  const { totalFunding, isLoading: isLoadingFunding } = useTotalFunding(jbProjectId, chain)
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
 
