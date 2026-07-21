@@ -367,8 +367,8 @@ export default function DePrizeDetailPage() {
         {/* Header */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 border border-white/10">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3">
-              <h1 className="text-white font-GoodTimes text-xl">DePrize #{deprizeId}</h1>
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
+              <h1 className="text-white font-GoodTimes text-lg sm:text-xl">DePrize #{deprizeId}</h1>
               {deprize && (
                 <StateBadge
                   state={deprize.state}

@@ -109,16 +109,22 @@ function ProviderOddsRow({
   )
 }
 
+type DePrizeBucket = 'live' | 'closed'
+
 function DePrizeListRow({
   deprizeId,
   teamContract,
   chain,
+  activeTab,
   onBet,
+  onStatus,
 }: {
   deprizeId: number
   teamContract: any
   chain: Chain
+  activeTab: DePrizeBucket
   onBet: (target: BetTarget) => void
+  onStatus: (deprizeId: number, bucket: DePrizeBucket | 'none') => void
 }) {
   const { deprize } = useDePrize(deprizeId, chain)
   const numOutcomes = deprize?.teamIds.length ?? 0
@@ -157,7 +163,25 @@ function DePrizeListRow({
     return ranked.slice(0, 3)
   }, [deprize?.teamIds, market.outcomes])
 
-  if (deprize && deprize.state === DePrizeState.NONE) return null
+  // Bucket the DePrize for the Live / Former tabs. Terminal states (won,
+  // refunded, cancelled, delivery-failed) are "former"; everything else that
+  // exists is "live". Report up so the parent can drive tabs + counts.
+  const bucket: DePrizeBucket | 'none' | 'loading' = !deprize
+    ? 'loading'
+    : deprize.state === DePrizeState.NONE
+      ? 'none'
+      : deprize.isTerminal
+        ? 'closed'
+        : 'live'
+  useEffect(() => {
+    if (bucket === 'live' || bucket === 'closed' || bucket === 'none') {
+      onStatus(deprizeId, bucket)
+    }
+  }, [bucket, deprizeId, onStatus])
+
+  if (!deprize) return null
+  if (deprize.state === DePrizeState.NONE) return null
+  if (bucket !== activeTab) return null
 
   const meta = deprize ? DEPRIZE_STATE_META[deprize.state] : undefined
   // Match the detail page: registry OPEN alone is not enough — LMSR must be
@@ -264,6 +288,31 @@ export default function DePrizeIndexContent() {
   const [betTarget, setBetTarget] = useState<BetTarget | null>(null)
   const [spendableEth, setSpendableEth] = useState(0)
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const [activeTab, setActiveTab] = useState<DePrizeBucket>('live')
+  const [statusMap, setStatusMap] = useState<Record<number, DePrizeBucket | 'none'>>({})
+
+  // Rows report their bucket (live / former) as their on-chain state resolves.
+  const handleStatus = useCallback((id: number, bucket: DePrizeBucket | 'none') => {
+    setStatusMap((prev) => (prev[id] === bucket ? prev : { ...prev, [id]: bucket }))
+  }, [])
+
+  // Reset the bucket map when the chain or the DePrize count changes so stale
+  // ids from another network can't linger in the tab counts.
+  useEffect(() => {
+    setStatusMap({})
+  }, [chain.id, count])
+
+  const liveCount = useMemo(
+    () => Object.values(statusMap).filter((s) => s === 'live').length,
+    [statusMap],
+  )
+  const closedCount = useMemo(
+    () => Object.values(statusMap).filter((s) => s === 'closed').length,
+    [statusMap],
+  )
+  const resolvedCount = useMemo(() => Object.keys(statusMap).length, [statusMap])
+  const stillResolving = count !== undefined && resolvedCount < count
+  const activeCount = activeTab === 'live' ? liveCount : closedCount
 
   const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
 
@@ -358,15 +407,62 @@ export default function DePrizeIndexContent() {
                 No DePrizes have been registered yet.
               </div>
             ) : (
-              Array.from({ length: count }, (_, i) => (
-                <DePrizeListRow
-                  key={i + 1}
-                  deprizeId={i + 1}
-                  teamContract={teamContract}
-                  chain={chain}
-                  onBet={handleBet}
-                />
-              ))
+              <>
+                {/* Live / Former tabs */}
+                <div
+                  role="tablist"
+                  aria-label="DePrize status"
+                  className="flex items-center gap-1 p-1 rounded-full bg-white/5 border border-white/10 self-start max-w-full"
+                >
+                  {(
+                    [
+                      { id: 'live' as const, label: 'Live', n: liveCount },
+                      { id: 'closed' as const, label: 'Former', n: closedCount },
+                    ]
+                  ).map((t) => (
+                    <button
+                      key={t.id}
+                      role="tab"
+                      aria-selected={activeTab === t.id}
+                      onClick={() => setActiveTab(t.id)}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${
+                        activeTab === t.id
+                          ? 'bg-white/15 text-white'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {t.label}
+                      {!stillResolving && (
+                        <span className="ml-1.5 tabular-nums text-xs opacity-70">{t.n}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Rows: every DePrize mounts (to resolve its bucket) but each
+                    self-hides unless it matches the active tab. */}
+                {Array.from({ length: count }, (_, i) => (
+                  <DePrizeListRow
+                    key={i + 1}
+                    deprizeId={i + 1}
+                    teamContract={teamContract}
+                    chain={chain}
+                    activeTab={activeTab}
+                    onBet={handleBet}
+                    onStatus={handleStatus}
+                  />
+                ))}
+
+                {stillResolving ? (
+                  <div className="p-6 text-center text-gray-500 text-sm">Loading DePrizes…</div>
+                ) : activeCount === 0 ? (
+                  <div className="p-8 text-center text-gray-400 text-sm">
+                    {activeTab === 'live'
+                      ? 'No live DePrizes right now. Check the Former tab for past challenges.'
+                      : 'No former DePrizes yet.'}
+                  </div>
+                ) : null}
+              </>
             )}
           </div>
         </ContentLayout>
