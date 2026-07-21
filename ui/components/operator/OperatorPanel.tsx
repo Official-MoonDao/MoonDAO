@@ -457,7 +457,8 @@ export default function OperatorPanel({
                   <ul className="mt-1 ml-4 list-disc space-y-0.5">
                     {(advanceResult.senateTally as SenateTallyRow[]).map((r) => (
                       <li key={r.mdp}>
-                        MDP-{r.mdp}: {r.status}
+                        MDP-{r.mdp}
+                        {r.name ? ` “${r.name}”` : ''}: {r.status}
                         {r.approvalCount != null && r.voteCount != null
                           ? ` (${r.approvalCount}/${r.voteCount})`
                           : ''}

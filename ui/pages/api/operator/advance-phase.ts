@@ -5,6 +5,7 @@ import {
   PROJECT_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
 } from 'const/config'
+import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { isOperator } from 'middleware/isOperator'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
@@ -95,12 +96,19 @@ async function tallySenateForCurrentCycle(
   const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE quarter = ${PROJECT_CYCLE.quarter} AND year = ${PROJECT_CYCLE.year}`
   const projects = (await queryTable(chain, projectStatement)) || []
 
-  // Only pending proposals with an MDP can be in Senate Vote.
+  // Only pending proposals with an MDP can be in Senate Vote. Proposals that
+  // are blocked from the /projects UI (withdrawn, resubmitted, or otherwise
+  // removed via `BLOCKED_MDPS` / `BLOCKED_PROJECTS`) are excluded here too —
+  // they were pulled from Senate voting, so senators never voted on them and
+  // they'd otherwise show up as permanent below-quorum blockers. This mirrors
+  // the `isCurrentPending` filter in `pages/projects/index.tsx`.
   const pending = projects.filter(
     (p: any) =>
       Number(p.active) === PROJECT_PENDING &&
       p.MDP !== undefined &&
-      p.MDP !== null
+      p.MDP !== null &&
+      !BLOCKED_PROJECTS.has(Number(p.id)) &&
+      !BLOCKED_MDPS.has(Number(p.MDP))
   )
 
   const results: SenateTallyResult[] = []
