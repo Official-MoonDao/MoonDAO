@@ -44,6 +44,16 @@ export const BUDGET_OVERRIDES_USD: Record<string, number> = {
   // projection table instead of the funding ask. Correct ask is $3,000.
   '255': 3000,
 
+  // Q3 2026: MDP-258 ("Satellite Payload and Secondary Education Project").
+  // The body has a malformed total row ("| Total | USD 5,176.80" with no
+  // closing pipe) so the extractor drops it and instead picks up the
+  // "$21.63/day" figure from a Meals justification cell, displaying $21.
+  // The proposal's own table total is $5,176.80 while the author states
+  // "Requested budget: USD 4,682" (fundraising the remainder elsewhere).
+  // Pinned to the quarterly per-project maximum (MAX_BUDGET_USD =
+  // round(NEXT_QUARTER_BUDGET_USD / 5) = $4,682) per the author's request.
+  '258': 4682,
+
   // Q3 2026: MDP-259 ("Mission Cosmic Colombia"). The parser returns $0
   // because the totals row contains a mixed-currency cell ("$2430 USD
   // 1.30 ETH") which isUsdValue() rejects due to the ETH mention.
