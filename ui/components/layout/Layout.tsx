@@ -5,9 +5,7 @@ import useTranslation from 'next-translate/useTranslation'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React from 'react'
-import { useState } from 'react'
-import { useContext } from 'react'
+import React, { useEffect, useState, useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useNavigation from '@/lib/navigation/useNavigation'
@@ -40,6 +38,20 @@ const ProjectBanner = dynamic(() => import('./ProjectBanner'), {
 const CookieBanner = dynamic(() => import('./CookieBanner'), {
   ssr: false,
 })
+
+
+// Gate `ssr: false` dynamics so they never enter the SSR tree as dehydrated
+// Suspense boundaries. Mounting them only after hydration avoids React 18's
+// "Suspense boundary received an update before it finished hydrating" when a
+// sibling effect (theme, auth, banners) updates during the same pass.
+function ClientOnly({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  if (!mounted) return null
+  return <>{children}</>
+}
 
 interface Layout {
   children: JSX.Element
@@ -101,7 +113,9 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen relative`}
     >
-      <SpaceBackground />
+      <ClientOnly>
+        <SpaceBackground />
+      </ClientOnly>
       <>
         {/* Mobile menu top bar - for screens smaller than xl */}
         <div className="xl:hidden">
@@ -147,19 +161,24 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           </div>
         </main>
 
-        {/* Global Search - Sticky on all pages */}
-        <GlobalSearch />
+        <ClientOnly>
+          {/* Global Search - Sticky on all pages */}
+          <GlobalSearch />
 
-        {/* Mission Banner - Fixed at bottom */}
-        <MissionBanner />
+          {/* Mission Banner - Fixed at bottom */}
+          <MissionBanner />
 
-        {/* Project Banner - Fixed at bottom (when mission banner is hidden) */}
-        <ProjectBanner />
+          {/* Project Banner - Fixed at bottom (when mission banner is hidden) */}
+          <ProjectBanner />
+
+          <CookieBanner />
+        </ClientOnly>
       </>
 
-      <CookieBanner />
-      <Toaster />
-      <Analytics />
+      <ClientOnly>
+        <Toaster />
+        <Analytics />
+      </ClientOnly>
     </div>
   )
 
