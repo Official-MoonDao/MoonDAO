@@ -185,6 +185,8 @@ export async function getStaticProps() {
             const proposalResponse = await fetch(project.proposalIPFS)
             const proposalJSON = await proposalResponse.json()
             if (proposalJSON?.nonProjectProposal) return
+            // Author-deleted proposals disappear from the frontend.
+            if (proposalJSON?.deleted) return
             // Enrich name from IPFS while we have the JSON in hand
             if (isUntitledLike(project.name)) {
               const resolved = getProjectDisplayName(project, proposalJSON)
