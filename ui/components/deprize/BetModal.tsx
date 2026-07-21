@@ -239,12 +239,24 @@ export default function BetModal({
           </div>
         )}
 
-        {/* Honest disclosure required by the design doc's UX principles. */}
-        <p className="text-amber-300/90 text-[11px] leading-snug">
-          5% of every bet funds the prize pool (you receive $OVERVIEW for it). If the DePrize is
-          cancelled or ends with no winner, positions are refunded pro-rata (1/N per token), so a
-          bet placed at odds above the average may recover less than you put in.
-        </p>
+        {/* Point-of-bet disclosure. Mirrors the non-custodial prediction-market
+            approach (read the rules; total-loss risk; equal-payout on
+            void/cancel; final resolution). Full detail in the DePrize Terms. */}
+        <div className="text-amber-300/90 text-[11px] leading-snug space-y-1.5">
+          <p>
+            You are buying outcome tokens for this team. If the team wins, they redeem for their
+            full share; if it loses, they are <span className="font-semibold">worth $0</span>. Only
+            bet what you can afford to lose. Read this DePrize&apos;s rules before betting —
+            resolution is final and cannot be reversed.
+          </p>
+          <p>
+            5% of every bet funds the prize pool (you receive $OVERVIEW for it). If the DePrize is
+            cancelled or ends with no winner, it resolves on an equal-payout basis —{' '}
+            <span className="font-semibold">every token redeems for 1/N</span>, not your original
+            stake — so a bet placed at odds above the average (1/N) may redeem for less than you put
+            in. See the DePrize Terms &amp; Conditions.
+          </p>
+        </div>
 
         {!canBet ? (
           <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
