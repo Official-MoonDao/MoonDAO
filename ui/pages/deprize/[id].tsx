@@ -21,11 +21,7 @@ import {
 import { fmt } from '@/lib/deprize/format'
 import { buildAmounts } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
-import {
-  formatBettingCloses,
-  isMintConfigured,
-  reconcileBettingStatus,
-} from '@/lib/deprize/status'
+import { formatBettingCloses, isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
@@ -96,6 +92,7 @@ export default function DePrizeDetailPage() {
     numOutcomes,
     chain,
     userAddress,
+    registryState: deprize?.state,
   })
 
   const region = useRegionRestriction()
@@ -381,8 +378,8 @@ export default function DePrizeDetailPage() {
             </StandardButton>
           </div>
           <p className="text-gray-300 text-sm mt-2">
-            Back the provider you think will win the right to fly Frank + a
-            community Candidate to space.
+            Back the provider you think will win the right to fly Frank + a community Candidate to
+            space.
           </p>
           {effectiveDescription && (
             <p className="text-gray-500 text-sm mt-1">{effectiveDescription}</p>
@@ -398,9 +395,7 @@ export default function DePrizeDetailPage() {
               label="Betting closes"
               title="After this time the market can be locked and moved to winner determination. Until then, betting stays open."
             >
-              {deprize && deprize.sunset > 0n
-                ? formatBettingCloses(deprize.sunset)
-                : '—'}
+              {deprize && deprize.sunset > 0n ? formatBettingCloses(deprize.sunset) : '—'}
             </Stat>
           </div>
         </div>
@@ -453,8 +448,8 @@ export default function DePrizeDetailPage() {
             {market.marketStartMs !== undefined && (
               <p className="text-gray-500 text-[11px] mt-2">
                 Axis spans the market since it opened
-                {` (${new Date(market.marketStartMs).toLocaleDateString()})`}. Detailed odds
-                samples collect while this page is open.
+                {` (${new Date(market.marketStartMs).toLocaleDateString()})`}. Detailed odds samples
+                collect while this page is open.
               </p>
             )}
           </div>
@@ -640,10 +635,7 @@ function Stat({
 }) {
   return (
     <div>
-      <p
-        className={`text-gray-400 text-xs ${title ? 'cursor-help' : ''}`}
-        title={title}
-      >
+      <p className={`text-gray-400 text-xs ${title ? 'cursor-help' : ''}`} title={title}>
         {label}
       </p>
       <p className="text-white text-sm font-semibold">{children}</p>

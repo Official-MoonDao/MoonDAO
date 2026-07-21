@@ -10,11 +10,13 @@ import {
   DePrizeState,
   DEPRIZE_STATE_META,
   GAS_RESERVE_ETH,
+  MarketStage,
   OUTCOME_COLORS,
   UNIT,
 } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
+import { isMintConfigured } from '@/lib/deprize/status'
 import { useDePrize, useDePrizeCount } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
@@ -126,6 +128,7 @@ function DePrizeListRow({
     conditionId: deprize?.conditionId,
     numOutcomes,
     chain,
+    registryState: deprize?.state,
   })
 
   // useTotalFunding returns BigInt(0) for a missing projectId / while reads are
@@ -155,7 +158,13 @@ function DePrizeListRow({
   if (deprize && deprize.state === DePrizeState.NONE) return null
 
   const meta = deprize ? DEPRIZE_STATE_META[deprize.state] : undefined
-  const bettingOpen = !!deprize?.bettingOpen && !!market.marketAddress
+  // Match the detail page: registry OPEN alone is not enough — LMSR must be
+  // Running and the mint router must be wired, or the Bet modal invites reverts.
+  const chainSlug = getChainSlug(chain)
+  const mintConfigured = isMintConfigured(DEPRIZE_MINT_ADDRESSES[chainSlug] ?? '')
+  const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
+  const bettingOpen =
+    !!deprize?.bettingOpen && !!market.marketAddress && mintConfigured && !tradingHalted
   const hasOdds = topProviders.some((p) => Number.isFinite(p.probability))
   const detailHref = `/deprize/${deprizeId}`
 

@@ -11,11 +11,13 @@ import {
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import {
+  DePrizeState,
   MarketStage,
   ODDS_HISTORY_MAX,
   ODDS_POLL_MS,
   ODDS_SAMPLE_MIN_MS,
   resolvePayoutVector,
+  shouldSurfaceResolution,
   UNIT,
   ZERO_BYTES32,
 } from './constants'
@@ -74,8 +76,10 @@ export function useDePrizeMarket(params: {
   numOutcomes: number
   chain: Chain
   userAddress?: string
+  /** Registry lifecycle — gates the resolved-odds chart snap with the page. */
+  registryState?: DePrizeState
 }): UseDePrizeMarketResult {
-  const { deprizeId, conditionId, numOutcomes, chain, userAddress } = params
+  const { deprizeId, conditionId, numOutcomes, chain, userAddress, registryState } = params
   const chainSlug = getChainSlug(chain)
   const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
 
@@ -237,18 +241,15 @@ export function useDePrizeMarket(params: {
   const recordOddsSample = useCallback(
     (probs: number[]) => {
       if (!probs.length || probs.some((p) => !Number.isFinite(p))) return
-      const isFlatEqual =
-        probs.length > 1 && probs.every((p) => Math.abs(p - probs[0]) < 0.05)
-      const isUniformPrior =
-        isFlatEqual && Math.abs(probs[0] - 100 / probs.length) < 0.5
+      const isFlatEqual = probs.length > 1 && probs.every((p) => Math.abs(p - probs[0]) < 0.05)
+      const isUniformPrior = isFlatEqual && Math.abs(probs[0] - 100 / probs.length) < 0.5
 
       setOddsHistory((prev) => {
         // Once we've observed a traded (non-uniform) market, never append a
         // stale 1/n sample from a racing load/poll — that was pinning the chart
         // at 33/33/33 while the legend showed live odds.
         const hasTradedSample = prev.some(
-          (s) =>
-            s.p.length > 1 && s.p.some((p) => Math.abs(p - s.p[0]) > 0.5),
+          (s) => s.p.length > 1 && s.p.some((p) => Math.abs(p - s.p[0]) > 0.5),
         )
         if (isUniformPrior && hasTradedSample) return prev
 
@@ -266,11 +267,8 @@ export function useDePrizeMarket(params: {
           last.p.length > 1 &&
           last.p.every((p) => Math.abs(p - last.p[0]) < 0.05) &&
           Math.abs(last.p[0] - 100 / last.p.length) < 0.5
-        const nextBase =
-          lastIsUniform && moved && !isUniformPrior ? [] : prev
-        const next = [...nextBase, { t: now, p: [...probs] }].slice(
-          -ODDS_HISTORY_MAX,
-        )
+        const nextBase = lastIsUniform && moved && !isUniformPrior ? [] : prev
+        const next = [...nextBase, { t: now, p: [...probs] }].slice(-ODDS_HISTORY_MAX)
         if (oddsStorageKey && typeof window !== 'undefined') {
           try {
             window.localStorage.setItem(oddsStorageKey, JSON.stringify(next))
@@ -357,8 +355,7 @@ export function useDePrizeMarket(params: {
           .then((v) => Number(v))
           .catch(() => 0)
         if (loadGenRef.current !== gen) return
-        const startMs =
-          Number.isFinite(startSec) && startSec > 0 ? startSec * 1000 : undefined
+        const startMs = Number.isFinite(startSec) && startSec > 0 ? startSec * 1000 : undefined
         staticRef.current = {
           conditionId: cond as string,
           positionIds: ids,
@@ -465,16 +462,7 @@ export function useDePrizeMarket(params: {
         startTransition(() => setLoading(false))
       }
     }
-  }, [
-    lmsr,
-    ctf,
-    weth,
-    numOutcomes,
-    conditionId,
-    userAddress,
-    wethAddress,
-    marketAddress,
-  ])
+  }, [lmsr, ctf, weth, numOutcomes, conditionId, userAddress, wethAddress, marketAddress])
 
   useEffect(() => {
     load()
@@ -506,9 +494,7 @@ export function useDePrizeMarket(params: {
           setOutcomes((prev) =>
             prev.map((o, i) => ({
               ...o,
-              probability: Number.isFinite(prices[i])
-                ? (prices[i] as number)
-                : o.probability,
+              probability: Number.isFinite(prices[i]) ? (prices[i] as number) : o.probability,
             })),
           )
         })
@@ -524,16 +510,21 @@ export function useDePrizeMarket(params: {
     }
   }, [lmsr, stage, numOutcomes])
 
-  const { resolved, winningIndex, isRefundVector } = resolvePayoutVector(
-    payoutNums,
-    payoutDen,
-  )
+  const { resolved, winningIndex, isRefundVector } = resolvePayoutVector(payoutNums, payoutDen)
 
-  // Snap the chart to the payout vector only once actually resolved — a bare
-  // non-zero denominator was writing equal 1/n samples on open markets.
+  // Snap the chart to the payout vector only when resolution should surface —
+  // a CTF-only report on a still-OPEN/paused market must not jump the chart
+  // while team cards still treat the DePrize as live.
   const resolvedSnapRef = useRef(false)
   useEffect(() => {
-    if (!resolved && !isRefundVector) {
+    const surface =
+      registryState !== undefined &&
+      shouldSurfaceResolution({
+        ctfResolved: resolved,
+        registryState,
+        marketClosed: stage === MarketStage.Closed,
+      })
+    if (!surface) {
       resolvedSnapRef.current = false
       return
     }
@@ -545,14 +536,7 @@ export function useDePrizeMarket(params: {
     )
     recordOddsSample(finalOdds)
     resolvedSnapRef.current = true
-  }, [
-    resolved,
-    isRefundVector,
-    payoutNums,
-    payoutDen,
-    numOutcomes,
-    recordOddsSample,
-  ])
+  }, [resolved, registryState, stage, payoutNums, payoutDen, numOutcomes, recordOddsSample])
 
   return {
     marketAddress,
