@@ -51,3 +51,9 @@ export const OUTCOME_COLORS = [
 export const ODDS_SAMPLE_MIN_MS = 8000
 export const ODDS_HISTORY_MAX = 1000
 export const ODDS_POLL_MS = 30000
+
+// Canonical DePrize Terms & Conditions, published under MoonDAO's Legal docs
+// (same host/pattern as the Website Terms & Privacy Policy). The source draft
+// lives at ui/docs/DEPRIZE_TERMS_AND_CONDITIONS.md until the docs team publishes.
+export const DEPRIZE_TERMS_URL =
+  'https://docs.moondao.com/Legal/DePrize-Terms-and-Conditions'

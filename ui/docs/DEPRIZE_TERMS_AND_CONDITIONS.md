@@ -16,8 +16,14 @@ Last updated: [DATE] · Effective: [DATE]
 By accessing or using DePrize (the "Service") — including connecting a wallet,
 placing a bet, cashing out, or redeeming a position — you acknowledge that you
 have read, understood, and agree to be bound by these Terms & Conditions (these
-"Terms"), MoonDAO's [Website Terms & Conditions] and [Privacy Policy]. If you do
-not agree, do not use the Service.
+"Terms"), MoonDAO's
+[Website Terms & Conditions](https://docs.moondao.com/Legal/Website-Terms-and-Conditions)
+and [Privacy Policy](https://docs.moondao.com/Legal/Website-Privacy-Policy). If you
+do not agree, do not use the Service.
+
+> **Canonical location:** once published, these Terms live at
+> `https://docs.moondao.com/Legal/DePrize-Terms-and-Conditions` and are linked
+> from the DePrize bet flow (`DEPRIZE_TERMS_URL`).
 
 You represent that you are at least 18 years old (or the age of majority in your
 jurisdiction) and that your use of the Service is lawful where you live.

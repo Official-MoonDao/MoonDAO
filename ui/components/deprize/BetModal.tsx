@@ -3,7 +3,7 @@ import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
-import { UNIT } from '@/lib/deprize/constants'
+import { DEPRIZE_TERMS_URL, UNIT } from '@/lib/deprize/constants'
 import { fmt, toEth, toWei } from '@/lib/deprize/format'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
@@ -254,7 +254,16 @@ export default function BetModal({
             cancelled or ends with no winner, it resolves on an equal-payout basis —{' '}
             <span className="font-semibold">every token redeems for 1/N</span>, not your original
             stake — so a bet placed at odds above the average (1/N) may redeem for less than you put
-            in. See the DePrize Terms &amp; Conditions.
+            in. See the{' '}
+            <a
+              href={DEPRIZE_TERMS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-amber-200"
+            >
+              DePrize Terms &amp; Conditions
+            </a>
+            .
           </p>
         </div>
 
