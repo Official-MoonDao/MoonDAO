@@ -20,3 +20,27 @@ export const BLOCKED_MDPS: any = new Set(
 export const BLOCKED_PROPOSALS: any = new Set([221])
 
 export const FEATURED_TEAMS: any = [6, 7, 8, 13, 1, 9, 5, 4, 2]
+
+// Citizen token ids to spotlight on /join as social proof (astronauts,
+// founders, notable community members). Edit this list directly to change
+// who appears in the featured-citizens marquee.
+export const FEATURED_CITIZENS: number[] = [
+  22, 4, 158, 45, 77, 175, 17, 111, 162, 8, 217, 186,
+]
+
+// Marketing tagline shown under each featured citizen's name — not derivable
+// from on-chain data, so it's maintained here alongside the id list above.
+export const FEATURED_CITIZEN_ROLES: Record<number, string> = {
+  22: 'NASA Astronaut Candidate · Inspiration4 Pilot',
+  4: 'Citizen Astronaut · Blue Origin',
+  158: 'Inspiration4 Mission Astronaut',
+  45: 'Civil Rights Advocate · Blue Origin Astronaut',
+  77: 'Author, The Overview Effect',
+  175: '668th Human in Space · Virgin Galactic',
+  17: 'Founder, SpaceFund & EarthLight Foundation',
+  111: 'Executive Director, The Mars Society',
+  162: 'Commercial Astronaut · Physician',
+  8: 'Founder of LifeShip',
+  217: 'NASA Astronaut',
+  186: 'Virgin Galactic Spaceflight Participant · Galactic 07',
+}
