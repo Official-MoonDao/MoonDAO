@@ -436,9 +436,11 @@ contract DePrizeFeeRouterTest is Test {
 
     function testRecoverETH() public {
         vm.deal(address(router), 1 ether);
+        uint256 ownerBefore = owner.balance;
         vm.prank(owner);
         router.recoverETH(owner, 1 ether);
-        assertEq(owner.balance, 1 ether);
+        assertEq(owner.balance - ownerBefore, 1 ether);
+        assertEq(address(router).balance, 0);
     }
 
     function testRecoverERC20() public {
