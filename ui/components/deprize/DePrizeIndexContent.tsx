@@ -16,7 +16,7 @@ import {
 } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
-import { isMintConfigured } from '@/lib/deprize/status'
+import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize, useDePrizeCount } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
@@ -191,6 +191,18 @@ function DePrizeListRow({
   const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
   const bettingOpen =
     !!deprize?.bettingOpen && !!market.marketAddress && mintConfigured && !tradingHalted
+  // Single source of truth for the badge: reconcile the registry lifecycle with
+  // the LMSR trading stage + mint wiring, exactly like the detail page. Prevents
+  // a flat "Open" label while betting is actually paused / unavailable.
+  const { statusLabelOverride } = deprize
+    ? reconcileBettingStatus({
+        bettingOpen: deprize.bettingOpen,
+        marketStage: market.stage,
+        mintConfigured,
+        registryState: deprize.state,
+      })
+    : { statusLabelOverride: undefined }
+  const badgeLabel = statusLabelOverride ?? meta?.label ?? '—'
   const hasOdds = topProviders.some((p) => Number.isFinite(p.probability))
   const detailHref = `/deprize/${deprizeId}`
 
@@ -216,10 +228,12 @@ function DePrizeListRow({
               className={`px-3 py-1 rounded-full text-xs font-medium border ${
                 bettingOpen
                   ? 'bg-moon-green/20 text-moon-green border-moon-green/40'
-                  : 'bg-white/10 text-gray-200 border-white/20'
+                  : statusLabelOverride
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : 'bg-white/10 text-gray-200 border-white/20'
               }`}
             >
-              {meta?.label ?? '—'}
+              {badgeLabel}
             </span>
             <p className="text-white text-lg font-bold tabular-nums">
               {prizeEth !== undefined ? fmt(prizeEth, 2) : '—'}
