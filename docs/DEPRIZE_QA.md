@@ -3,7 +3,7 @@
 **Scope:** Sepolia DePrize lifecycle + FeeRouter + Redeem, plus automated contract/UI suites.  
 **Date run:** 2026-07-22 (bettor smoke + full resolve/redeem/terminal follow-up)  
 **Branch:** `cursor/deprize-production-ui-51ff` (PR #1482)  
-**Subjects:** id **5** (winner → M2_COMPLETE), id **4** (NO_WINNER equal redeem), id **6** (failM2 + cashOut stage 3). Ids 4/5 are **terminal** after this run.
+**Subjects:** id **5** (winner → M2_COMPLETE), id **4** (NO_WINNER), id **6** (failM2 + cashOut stage 3), id **7** (M5 provider round-trip → M2_COMPLETE), id **8** (SETTLED + provider for Disburse preflight). Registry impl upgraded to `0x82a6830F…`.
 
 ## Reference addresses (Sepolia)
 
@@ -128,7 +128,15 @@ Fresh mission: project **255**, payhook `0x3A81E26dE71A37095C4652D65c64B67f86694
 | Registry: vote path + skip-vote settle | **Yes** — D4 / D17 |
 | Registry: `completeM2` + `failM2` | **Yes** — D7 / D18 |
 | Payhook cashOut disabled (active) / enabled (refundable) | **Yes** — stage 1 then 3 on id 6 |
-| `setProviderPayoutAddress` / M5 provider disburse on-chain | **Blocked** until Sepolia registry upgrade |
+| `setProviderPayoutAddress` / M5 provider disburse on-chain | **Yes** — D9 / D23 below |
+
+### D-E. M5 registry upgrade + provider + disburse (executed after initial D matrix)
+
+| ID | Check | Evidence | Result |
+|---|---|---|---|
+| D9 | UUPS upgrade to M5 impl | New impl `0x82a6830F4E0752b971bEE6815027774caaB6F0f5` on proxy `0x299F…8F3D`; selectors present; states 5/6 preserved | **PASS** |
+| D23 | `setProviderPayoutAddress` round-trip (DePrize **7**) | set at SETTLED → `0x3c5e…`; update at M1_RELEASED → `0x679d…`; before-settle / zero / after-M2_COMPLETE revert | **PASS** |
+| D24 | `DePrizeDisburse` M1 preflight (DePrize **8**, provider set) | Script prints Safe txs: ETH to provider + `releaseM1(8)`; `DEPRIZE_PRIZE_WEI=0` → `ZeroPrize()` | **PASS** |
 
 | ID | Check | Result |
 |---|---|---|
@@ -137,22 +145,32 @@ Fresh mission: project **255**, payhook `0x3A81E26dE71A37095C4652D65c64B67f86694
 
 ---
 
-## E. UI / browser (manual)
+## E. UI / browser
 
-Run against a local or preview build pointed at Sepolia. Prefer DePrize **5** for betting + cashOut messaging.
+Pixel/Privy click-through still needs a human (or a Playwright MCP + test wallet). Headless static + unit coverage below shrinks that list.
 
-| ID | Check | Steps | Result |
-|---|---|---|---|
-| E1 | Index `/deprize` lists Live / Former | Open page; Live includes OPEN ids; Former shows terminals | **MANUAL** |
-| E2 | Detail `/deprize/5` loads | Teams, odds, sunset, status badge | **MANUAL** |
-| E3 | Badge reconciliation | OPEN + Running + mint wired → “Accepting bets”; pause LMSR → “Open · paused” (covered by unit tests in A2) | **MANUAL** UI / **PASS** unit |
-| E4 | Geo-gate | Restricted region hides bet CTAs (`useRegionRestriction`) | **MANUAL** |
-| E5 | Terms links | Present and navigate | **MANUAL** |
-| E6 | BetModal quote → submit | Quote matches `calcNetCost`+fee; tx via mint | **MANUAL** (on-chain bet path **PASS** in C1) |
-| E7 | ExitPositionModal → sell + best-effort sweep | After sell, UI calls `sweepFees` | **MANUAL** (on-chain sell+sweep **PASS** in C4–C5) |
-| E8 | ClaimPanel hidden while unresolved | No redeem CTA while `payoutDenominator==0` / not settled | **MANUAL** |
-| E9 | Mobile layout | Detail + modals usable at narrow width | **MANUAL** |
-| E10 | Post-resolve listing | Ids 4/5 are terminal (Former tab); id 6 is M2_FAILED refundable fixture without a market | **NOTE** |
+### E-headless (static wiring + units — executed)
+
+| ID | Check | Result |
+|---|---|---|
+| E1 | Index Live / Former tab wiring (`DePrizeIndexContent` buckets `live`/`closed`) | **PASS** (static) |
+| E3 | Badge reconciliation | **PASS** (A2 unit) |
+| E4 | Geo-gate: detail `bettingAllowed` requires `!region.isRestricted`; index `handleBet` no-ops when restricted; both render restricted banners; `/api/geo/country` sets `restricted` via `isEUCountry` | **PASS** (static) |
+| E5a | BetModal links `DEPRIZE_TERMS_URL`; local draft at `ui/docs/DEPRIZE_TERMS_AND_CONDITIONS.md` | **PASS** (static) |
+| E5b | Published Terms URL returns 200 | **FAIL** — `https://docs.moondao.com/Legal/DePrize-Terms-and-Conditions` → **404** (draft not published yet) |
+| E6 | Bet path | **PASS** on-chain (C1) + quote units (A2) |
+| E7 | Exit → `sweepFees` | **PASS** static (`ExitPositionModal`) + on-chain (C4–C5) |
+| E8 | ClaimPanel hidden until `shouldSurfaceResolution` (requires `ctfResolved` + registry/market gate); `if (!resolved) return null` | **PASS** (static + A2 lifecycle units) |
+
+### E-visual (still needs a browser)
+
+| ID | Check | Result |
+|---|---|---|
+| E2 | Detail page renders teams/odds/status for a live id | **MANUAL** (no live OPEN market left on Sepolia after resolve dry-run; use a new OPEN DePrize or preview build) |
+| E5c | Click Terms link in BetModal navigates correctly once published | **BLOCKED** on E5b publish |
+| E9 | Mobile layout | **MANUAL** |
+| E10 | Post-resolve listing | Ids 4/5/7 → Former; id 6 M2_FAILED; id 8 SETTLED with provider set | **NOTE** |
+| E21 | Admin panel UI | **MANUAL** (= D21) |
 
 ---
 
@@ -175,10 +193,10 @@ Run against a local or preview build pointed at Sepolia. Prefer DePrize **5** fo
 | Automated (A) | A1–A4 | — |
 | Wiring (B) | B1–B16 | — |
 | Live bettor (C) | C1–C6 | — |
-| Resolve/redeem/terminal (D) | D1–D8, D10–D20, F5 | D9 blocked (registry upgrade); D21 manual; D22 7d cancel wall-clock |
-| Browser (E) | E3/E6/E7 via units + chain | E1–E2, E4–E5, E8–E9 |
+| Resolve/redeem/terminal/M5 (D) | D1–D9, D10–D20, D23–D24, F5 | D21 manual; D22 7d cancel wall-clock |
+| UI headless (E) | E1, E3–E4, E5a, E6–E8 | E5b Terms **404** (publish draft); E2/E9/E21 visual |
 
-**Verdict:** Phase 2 routes are exercised on Sepolia end-to-end: live fee→prize-pool, winner redeem, equal-payout redeem, terminal fee→treasury (`M2_COMPLETE` + `NO_WINNER`), `failM2` + payhook cashOut stage 3, cancel announce/abort, pause/resume/close, and the main negative edges. Remaining gaps: browser smoke, 7-day full `cancel()`, and Sepolia registry upgrade for `setProviderPayoutAddress`.
+**Verdict:** Phase 2 is green on Sepolia including the M5 registry upgrade (`setProviderPayoutAddress` + Disburse M1 preflight). UI logic for geo-gate, claim gating, Live/Former tabs, BetModal terms link, and exit `sweepFees` is verified headless. Remaining gaps: publish DePrize Terms to docs.moondao.com (currently 404), visual browser smoke, and the 7-day full `cancel()`.
 
 ### Quick re-run commands
 
