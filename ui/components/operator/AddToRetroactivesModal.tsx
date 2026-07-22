@@ -42,7 +42,7 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
   // Default proposes activating a not-yet-active project, matching the prior
   // checkbox behavior.
   const [activeAction, setActiveAction] = useState<ActiveAction>(
-    project.active === PROJECT_ACTIVE ? 'noop' : 'activate'
+    Number(project.active) === PROJECT_ACTIVE ? 'noop' : 'activate'
   )
   const [status, setStatus] = useState<SignStatus>('idle')
   const [resultTxs, setResultTxs] = useState<Array<{ label: string; hash: string }>>([])
@@ -292,7 +292,7 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
                   Set <code>active = 2</code> (PROJECT_ACTIVE — required so it
                   appears in the current pool)
                 </span>
-                {project.active === PROJECT_ACTIVE && (
+                {Number(project.active) === PROJECT_ACTIVE && (
                   <span className="text-[11px] text-green-400">already active</span>
                 )}
               </label>
@@ -309,7 +309,7 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
                   Set not active (<code>active = 0</code>) — no longer running,
                   not a retro-reward candidate
                 </span>
-                {project.active !== PROJECT_ACTIVE && (
+                {Number(project.active) !== PROJECT_ACTIVE && (
                   <span className="text-[11px] text-amber-400">
                     not currently active
                   </span>
