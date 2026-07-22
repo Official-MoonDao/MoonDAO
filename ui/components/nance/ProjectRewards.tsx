@@ -422,17 +422,15 @@ export function ProjectRewards({
 
   const validEligibleIds = useMemo(() => {
     if (!currentProjects?.length) return new Set<string>()
+    // Mirror `eligibleProjects`: any active (`currentProjects`) project the
+    // operator has explicitly flagged eligible is part of the current retro
+    // cohort, regardless of the quarter it was originally proposed in.
     return new Set(
       currentProjects
-        .filter(
-          (p: any) =>
-            p.eligible &&
-            Number(p.quarter) === quarter &&
-            Number(p.year) === year
-        )
+        .filter((p: any) => p.eligible)
         .map((p: any) => String(p.id))
     )
-  }, [currentProjects, quarter, year])
+  }, [currentProjects])
 
   // Helper: keep only the entries whose key appears in `validKeys`. Used to
   // strip orphan project ids from a distribution loaded out of the
@@ -786,29 +784,24 @@ export function ProjectRewards({
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
   const nonCitizenDistributions = distributions?.filter((_, i) => !isCitizens[i])
 
-  // `eligibleProjects` is cohort-scoped on purpose: the Retroactive
-  // Rewards tab votes on a *specific* cycle's eligible cohort, so it has
-  // to track `quarter`/`year` (which adapt to the rewards-cycle flag).
-  // Otherwise projects from a closed cycle whose `eligible = 1` was
-  // never cleared would bleed into the live retro tab.
-  //
-  // `ineligibleProjects` (the Active Projects tab body) is intentionally
-  // NOT cohort-scoped. A project being "active and not yet eligible for
-  // retro" is a property of the project, not of the cycle the page is
-  // currently focused on. Scoping it to a single quarter caused the
-  // freshly-approved cohort to disappear from the Active Projects tab
-  // immediately after a Member Vote close — they're `active = 2` on
-  // chain but their quarter doesn't match the rewards-cycle quarter
-  // the page is otherwise viewing.
+  // The eligible flag on an *active* project is the operator-curated source
+  // of truth for the current retro cohort. An EB operator explicitly marks a
+  // completed project eligible (and active = 2) via the operator panel to add
+  // it to the current pool — even when it was proposed in an earlier quarter
+  // (e.g. a Q1 project settled during a Q2 cycle). So neither tab is
+  // cohort-scoped by quarter:
+  //   - `eligibleProjects` (Retroactives tab) = active projects flagged
+  //     eligible. Previously this also required the project's quarter/year to
+  //     equal the rewards-cycle quarter, which hid legitimately-marked
+  //     projects from other quarters.
+  //   - `ineligibleProjects` (Active Projects tab) = active projects not (yet)
+  //     eligible.
+  // Stale `eligible = 1` flags from a closed cycle no longer leak in because
+  // "Clear Retro Cohort" now also sets those projects to active = 0, dropping
+  // them out of `currentProjects` entirely.
   const eligibleProjects = useMemo(
-    () =>
-      currentProjects.filter(
-        (p) =>
-          p.eligible &&
-          Number(p.quarter) === quarter &&
-          Number(p.year) === year
-      ),
-    [currentProjects, quarter, year]
+    () => currentProjects.filter((p) => p.eligible),
+    [currentProjects]
   )
 
   const ineligibleProjects = useMemo(
