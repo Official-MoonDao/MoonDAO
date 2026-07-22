@@ -465,7 +465,7 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
 // `setMarket(deprizeId, lmsr)` has bound the market. Empty until then — the
 // production UI degrades gracefully (betting disabled with a notice) when unset.
 export const DEPRIZE_MINT_ADDRESSES: Index = {
-  sepolia: '',
+  sepolia: '0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8',
   'arbitrum-sepolia': '',
 }
 // DePrizeFeeRouter: owns the LMSR market and routes its accrued 1% trade fees
@@ -474,7 +474,7 @@ export const DEPRIZE_MINT_ADDRESSES: Index = {
 // market's LMSR ownership has been transferred to it. Empty = no post-sell sweep
 // (bets still sweep on-chain via DePrizeMint once its feeRouter is set).
 export const DEPRIZE_FEE_ROUTER_ADDRESSES: Index = {
-  sepolia: '',
+  sepolia: '0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a',
   'arbitrum-sepolia': '',
 }
 // questionId used when the play market's condition was prepared
