@@ -466,39 +466,48 @@ export async function sendTransactionBatch(
   const hashes: string[] = []
   let lastHash: string | undefined
 
-  for (const tx of txs) {
-    let gasLimit
-    try {
-      gasLimit = await provider.estimateGas({
+  try {
+    for (const tx of txs) {
+      let gasLimit
+      try {
+        gasLimit = await provider.estimateGas({
+          to: tx.to,
+          data: tx.data,
+          from,
+          value: tx.value || 0,
+        })
+        gasLimit = gasLimit.mul(120).div(100)
+      } catch (error) {
+        console.warn('HSM batch - gas estimation failed, using default:', error)
+        gasLimit = utils.parseUnits('500000', 'wei')
+      }
+
+      const finalTx = {
         to: tx.to,
         data: tx.data,
-        from,
         value: tx.value || 0,
-      })
-      gasLimit = gasLimit.mul(120).div(100)
-    } catch (error) {
-      console.warn('HSM batch - gas estimation failed, using default:', error)
-      gasLimit = utils.parseUnits('500000', 'wei')
-    }
+        from,
+        nonce,
+        type: 2,
+        chainId: network.chainId,
+        gasLimit,
+        maxFeePerGas: fee.maxFeePerGas ?? fee.gasPrice,
+        maxPriorityFeePerGas: fee.maxPriorityFeePerGas ?? undefined,
+      }
 
-    const finalTx = {
-      to: tx.to,
-      data: tx.data,
-      value: tx.value || 0,
-      from,
-      nonce,
-      type: 2,
-      chainId: network.chainId,
-      gasLimit,
-      maxFeePerGas: fee.maxFeePerGas ?? fee.gasPrice,
-      maxPriorityFeePerGas: fee.maxPriorityFeePerGas ?? undefined,
+      const raw = await signSerializedTx(cfg, finalTx, from)
+      const sent = await provider.sendTransaction(raw)
+      hashes.push(sent.hash)
+      lastHash = sent.hash
+      nonce++
     }
-
-    const raw = await signSerializedTx(cfg, finalTx, from)
-    const sent = await provider.sendTransaction(raw)
-    hashes.push(sent.hash)
-    lastHash = sent.hash
-    nonce++
+  } catch (err) {
+    // Preserve hashes already broadcast so callers can report partial progress
+    // instead of returning an empty submittedTxs list on mid-batch failure.
+    if (err && typeof err === 'object') {
+      ;(err as { submittedHashes?: string[] }).submittedHashes = hashes
+    }
+    throw err
   }
 
   if (opts?.waitForConfirmation !== false && lastHash) {

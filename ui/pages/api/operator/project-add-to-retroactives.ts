@@ -199,6 +199,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       txs.push({ label: call.label, hash })
     })
   } catch (err: any) {
+    // Mid-batch failures still leave earlier broadcasts in-flight; surface
+    // those hashes so operators/retries know which writes already landed.
+    if (Array.isArray(err?.submittedHashes)) {
+      err.submittedHashes.forEach((hash: string, i: number) => {
+        if (calls[i] && hash) {
+          txs.push({ label: calls[i].label, hash })
+        }
+      })
+    }
     console.error('project-add-to-retroactives failed:', err)
     return res.status(500).json({
       error: err?.message || 'Unknown error sending operator transactions',
