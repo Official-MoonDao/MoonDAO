@@ -30,14 +30,17 @@ import {IWETH} from "./interfaces/IWETH.sol";
 ///         `sweepFees` be permissionless and automatic.
 ///
 ///         Routing policy:
-///         - While the DePrize is NOT terminal: fees -> `jbTerminal.pay` into the
-///           DePrize's Juicebox project (the prize pool). $OVERVIEW minted for the
-///           payment goes to the treasury (`owner()`), since fees have no single
-///           attributable bettor.
-///         - Once the DePrize IS terminal: fees -> `owner()` (treasury). On
-///           refundable terminals, topping up the JB pot would silently inflate
-///           the $OVERVIEW cash-out floor and distort the disclosed refund; on
-///           M2_COMPLETE the prize has already been disbursed.
+///         - While the DePrize is live (NOT terminal AND no cancellation notice
+///           pending): fees -> `jbTerminal.pay` into the DePrize's Juicebox
+///           project (the prize pool). $OVERVIEW minted for the payment goes to
+///           the treasury (`owner()`), since fees have no single attributable
+///           bettor.
+///         - Once the DePrize IS terminal OR a cancellation notice is pending:
+///           fees -> `owner()` (treasury). On refundable terminals (and during
+///           the 7-day cancel notice that precedes CANCELLED), topping up the
+///           JB pot would silently inflate the $OVERVIEW cash-out floor and
+///           distort the disclosed refund; on M2_COMPLETE the prize has already
+///           been disbursed.
 ///
 ///         The M4 unwind still works, via the owner passthroughs below: the Safe
 ///         (this contract's owner) pauses/closes the market through this contract
@@ -128,7 +131,12 @@ contract DePrizeFeeRouter is Ownable, ReentrancyGuard, IERC1155Receiver, IDePriz
 
         weth.withdraw(swept);
 
-        bool toPrizePool = !registry.isTerminal(deprizeId);
+        // Cancellation notice leaves the DePrize non-terminal (often still OPEN)
+        // while betting is already closed and sells can still accrue LMSR fees.
+        // Route those to treasury so the pending refund path cannot inflate the
+        // $OVERVIEW cash-out floor via trade-fee top-ups (same guard as terminal).
+        bool toPrizePool =
+            !registry.isTerminal(deprizeId) && !registry.cancellationPending(deprizeId);
         if (toPrizePool) {
             jbTerminal.pay{value: swept}(
                 registry.getDePrize(deprizeId).jbProjectId,

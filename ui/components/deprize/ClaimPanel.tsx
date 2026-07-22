@@ -2,7 +2,7 @@ import ConditionalTokensABI from 'const/abis/ConditionalTokens.json'
 import DePrizeRedeemABI from 'const/abis/DePrizeRedeem.json'
 import { CONDITIONAL_TOKEN_ADDRESSES } from 'const/config'
 import confetti from 'canvas-confetti'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { fmt, toEth } from '@/lib/deprize/format'
@@ -37,6 +37,12 @@ export default function ClaimPanel({
   const userAddress = account?.address
   const [busy, setBusy] = useState(false)
   const [claimed, setClaimed] = useState(false)
+
+  // Local success flag is per-session; clear it when the holder or DePrize changes
+  // so a wallet switch cannot leave the previous address's "Claimed" UI stuck.
+  useEffect(() => {
+    setClaimed(false)
+  }, [userAddress, deprizeId])
 
   const { helperAddress, helperConfigured, previewWei, approved } =
     useDePrizeRedeemPreview({
