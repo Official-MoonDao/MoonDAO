@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import type { ProjectCyclePhase } from 'const/config'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
 import { Project } from '@/lib/project/useProjectData'
 import AddToRetroactivesModal from './AddToRetroactivesModal'
@@ -228,7 +229,9 @@ export default function OperatorPanel({
       return
     }
     const confirmed = window.confirm(
-      `Clear eligible flag (set to 0) on ${eligibleCohort.length} project(s)?\n\nEach project requires one HSM-signed transaction.`
+      `Clear ${eligibleCohort.length} project(s) from the retro cohort?\n\n` +
+        `Each will be set eligible = 0 and (if still active) active = ended, ` +
+        `removing it from both the Retroactives and Active tabs.`
     )
     if (!confirmed) return
 
@@ -250,6 +253,11 @@ export default function OperatorPanel({
           body: JSON.stringify({
             projectId: project.id,
             markEligible: false,
+            // Also retire it from the current pool so it doesn't linger in the
+            // Active tab (which lists active === PROJECT_ACTIVE projects that
+            // aren't eligible). Skip the extra write for projects that are
+            // already inactive.
+            markInactive: project.active === PROJECT_ACTIVE,
           }),
         })
         const json = await res.json()
@@ -526,7 +534,10 @@ export default function OperatorPanel({
           </h4>
           <p className="text-xs text-gray-400">
             Sets <code>eligible = 0</code> on every project currently flagged
-            <code className="mx-1">eligible = 1</code>. Run this once a cycle&apos;s
+            <code className="mx-1">eligible = 1</code> and retires any that are
+            still <code className="mx-1">active = 2</code> to
+            <code className="mx-1">active = 0</code> (ended), removing them from
+            both the Retroactives and Active tabs. Run this once a cycle&apos;s
             retro voting has closed and payouts have been settled, before
             marking next cycle&apos;s projects eligible.
           </p>

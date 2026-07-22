@@ -8,6 +8,7 @@ import { isOperator } from 'middleware/isOperator'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getHSMSigner, isHSMAvailable } from '@/lib/google/hsm-signer'
+import { PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
 type Body = {
@@ -17,7 +18,12 @@ type Body = {
   rewardDistribution?: Record<string, number> | string
   upfrontPayments?: Record<string, any> | string
   markEligible?: boolean
+  // `markActive` → active = PROJECT_ACTIVE (2), so the project joins the
+  // current retro pool. `markInactive` → active = PROJECT_ENDED (0), so a
+  // retired project drops out of the "Active" tab and the current pool. They
+  // are mutually exclusive.
   markActive?: boolean
+  markInactive?: boolean
 }
 
 // Owner-only contract operations needed to put a completed project into the
@@ -168,10 +174,33 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
+  if (body.markActive && body.markInactive) {
+    return res.status(400).json({
+      error: 'markActive and markInactive are mutually exclusive',
+    })
+  }
+
   if (body.markActive) {
     calls.push({
       label: 'updateTableCol(active=2)',
-      data: iface.encodeFunctionData('updateTableCol', [projectId, 'active', '2']),
+      data: iface.encodeFunctionData('updateTableCol', [
+        projectId,
+        'active',
+        String(PROJECT_ACTIVE),
+      ]),
+    })
+  } else if (body.markInactive) {
+    // Retire the project from the current pool. Clearing the retro cohort
+    // pairs this with `markEligible: false` so a settled project leaves both
+    // the retro tab (no longer eligible) and the Active tab (no longer
+    // active === PROJECT_ACTIVE).
+    calls.push({
+      label: 'updateTableCol(active=0)',
+      data: iface.encodeFunctionData('updateTableCol', [
+        projectId,
+        'active',
+        String(PROJECT_ENDED),
+      ]),
     })
   }
 
