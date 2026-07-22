@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import { Project } from '@/lib/project/useProjectData'
 import Modal from '@/components/layout/Modal'
 
@@ -12,6 +13,7 @@ type Props = {
 
 type SignStatus = 'idle' | 'submitting' | 'success' | 'error'
 type EligibleAction = 'noop' | 'set' | 'clear'
+type ActiveAction = 'noop' | 'activate' | 'deactivate'
 
 function tryParseJson(value: string): unknown | null {
   if (!value?.trim()) return null
@@ -34,7 +36,14 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
   const [eligibleAction, setEligibleAction] = useState<EligibleAction>(
     project.eligible === 1 ? 'noop' : 'set'
   )
-  const [markActive, setMarkActive] = useState(project.active !== 2)
+  // Tri-state active flag: leave unchanged, set to PROJECT_ACTIVE (2, so it
+  // joins the current pool), or set to not-active (0, PROJECT_ENDED — for a
+  // project that's no longer running but isn't a retro-reward candidate).
+  // Default proposes activating a not-yet-active project, matching the prior
+  // checkbox behavior.
+  const [activeAction, setActiveAction] = useState<ActiveAction>(
+    project.active === PROJECT_ACTIVE ? 'noop' : 'activate'
+  )
   const [status, setStatus] = useState<SignStatus>('idle')
   const [resultTxs, setResultTxs] = useState<Array<{ label: string; hash: string }>>([])
 
@@ -57,7 +66,7 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
       !rewardDistribution &&
       !upfrontPayments &&
       eligibleAction === 'noop' &&
-      !markActive
+      activeAction === 'noop'
     ) {
       toast.error('Nothing to update — fill in at least one field or toggle.', {
         style: toastStyle,
@@ -76,8 +85,9 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
     try {
       const body: Record<string, any> = {
         projectId: project.id,
-        markActive,
       }
+      if (activeAction === 'activate') body.markActive = true
+      else if (activeAction === 'deactivate') body.markInactive = true
       if (eligibleAction === 'set') body.markEligible = true
       else if (eligibleAction === 'clear') body.markEligible = false
       if (finalReportLink) body.finalReportLink = finalReportLink
@@ -250,21 +260,63 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
               </label>
             </div>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={markActive}
-              onChange={(e) => setMarkActive(e.target.checked)}
-              disabled={isSubmitting}
-            />
-            <span className="text-gray-200">
-              Set <code>active = 2</code> (PROJECT_ACTIVE — required so it appears in the
-              current pool)
+          <div className="flex flex-col gap-1">
+            <span className="text-xs uppercase tracking-wider text-gray-400 flex items-center gap-2">
+              Active flag
+              <span className="text-[11px] normal-case tracking-normal text-gray-500">
+                current: <code>{String(project.active)}</code>
+              </span>
             </span>
-            {project.active === 2 && (
-              <span className="text-[11px] text-green-400">already active</span>
-            )}
-          </label>
+            <div className="flex flex-col gap-1 mt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="active-action"
+                  value="noop"
+                  checked={activeAction === 'noop'}
+                  onChange={() => setActiveAction('noop')}
+                  disabled={isSubmitting}
+                />
+                <span className="text-gray-200">Leave unchanged</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="active-action"
+                  value="activate"
+                  checked={activeAction === 'activate'}
+                  onChange={() => setActiveAction('activate')}
+                  disabled={isSubmitting}
+                />
+                <span className="text-gray-200">
+                  Set <code>active = 2</code> (PROJECT_ACTIVE — required so it
+                  appears in the current pool)
+                </span>
+                {project.active === PROJECT_ACTIVE && (
+                  <span className="text-[11px] text-green-400">already active</span>
+                )}
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="active-action"
+                  value="deactivate"
+                  checked={activeAction === 'deactivate'}
+                  onChange={() => setActiveAction('deactivate')}
+                  disabled={isSubmitting}
+                />
+                <span className="text-gray-200">
+                  Set not active (<code>active = 0</code>) — no longer running,
+                  not a retro-reward candidate
+                </span>
+                {project.active !== PROJECT_ACTIVE && (
+                  <span className="text-[11px] text-amber-400">
+                    not currently active
+                  </span>
+                )}
+              </label>
+            </div>
+          </div>
         </div>
 
         {(() => {
