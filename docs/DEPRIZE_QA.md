@@ -3,7 +3,7 @@
 **Scope:** Sepolia DePrize lifecycle + FeeRouter + Redeem, plus automated contract/UI suites.  
 **Date run:** 2026-07-22 (bettor smoke + full resolve/redeem/terminal follow-up)  
 **Branch:** `cursor/deprize-production-ui-51ff` (PR #1482)  
-**Subjects:** id **5** (winner → M2_COMPLETE), id **4** (NO_WINNER), id **6** (failM2 + cashOut stage 3), id **7** (M5 provider round-trip → M2_COMPLETE), id **8** (SETTLED + provider for Disburse preflight). Registry impl upgraded to `0x82a6830F…`.
+**Subjects:** id **5** (winner → M2_COMPLETE), id **4** (NO_WINNER), id **6** (failM2 + cashOut stage 3), id **7** (M5 provider round-trip → M2_COMPLETE), id **8** (SETTLED + provider for Disburse preflight), id **9** (fresh OPEN + Running LMSR for full in-browser Privy→MetaMask QA). Registry impl upgraded to `0x82a6830F…`.
 
 ## Reference addresses (Sepolia)
 
@@ -19,8 +19,10 @@
 | Pay hook (registry-aware) | `0x99cF7c1f29c6BFAf7952501Ab8d32CF169Aa39Cb` |
 | MissionCreator (fresh, not app-wide) | `0xa692eEd67c4D2C1C73DC0515240d27cf7d6fF9D1` |
 | MissionTable (fresh) | `0x0AbB0DB4CffFed867C8A94893e7cFae6ee39F807` |
+| **DePrize 9** (browser fixture) | id **9**, JB **256**, LMSR `0x6e1a513f3DfB6288836CacdF0a9d3496b411130C`, condition `0x7334d1e6…560d`, payhook `0xec3ba013…7E66`, teams **301/302/303**, oracle = deployer `0x3c5e…E011` |
+| DePrize 9 questionId | `0xab937cdea2250786bf37ee2dd06f244bbeed62159c337927074523844d5759fb` |
 
-UI config (`ui/const/config.ts`) wires registry / redeem / mint / fee-router. It does **not** repoint app-wide `MISSION_CREATOR_ADDRESSES` (intentional — avoids fragmenting general launchpad listing).
+UI config (`ui/const/config.ts`) wires registry / redeem / mint / fee-router. It does **not** repoint app-wide `MISSION_CREATOR_ADDRESSES` (intentional — avoids fragmenting general launchpad listing). DePrize **9** resolves its LMSR via `mint.marketOf(9)` (no config LMSR fallback needed).
 
 ---
 
@@ -178,7 +180,30 @@ Ran 2026-07-22 against `http://localhost:3000` (PR branch). Screenshots under `.
 | E10 | Terminal detail `/deprize/5` | **PASS** — loads as Delivered / M2_COMPLETE (`05-detail-5-terminal.png`) |
 | E21 | Admin panel without owner wallet | **PASS** — not shown (expected) |
 
-**Wallet note:** App auth is Privy (`useLogin` / `useActiveAccount`). `$PRIVATE_KEY` alone cannot open Bet/Exit modals in the browser without a Privy (or injected EIP-1193) connect path. On-chain bet/exit/claim for that key remain proven via `cast` (sections C/D).
+**Wallet note (updated):** Privy → MetaMask works under headed dappwright (`TEST_PARALLEL_INDEX=0`, `headless: false`). Import `$PRIVATE_KEY`, complete **Connect** then **Confirm** (SIWE). See section **G**.
+
+---
+
+## G. Fresh Running LMSR + full in-browser QA (DePrize 9)
+
+Provisioned 2026-07-22 on Sepolia: new mission (JB **256** via `MissionCreator` `0xa692…`), CTF condition + LMSR (0.03 ETH funding), `register`/`setCondition`/`open`, `mint.setMarket` + `feeRouter.setMarket`, LMSR ownership → FeeRouter. State **OPEN (2)**, LMSR **Running (0)**.
+
+| ID | Check | Result |
+|---|---|---|
+| G1 | Index Live lists `#9` | **PASS** |
+| G2 | Detail `/deprize/9` — Open (not paused), teams 301–303, equal ~33% odds | **PASS** |
+| G3 | Privy Sign in → Continue with a wallet → MetaMask Connect + SIWE Confirm | **PASS** — header `0x3c5e…E011` |
+| G4 | BetModal opens; empty amount CTA disabled | **PASS** |
+| G5 | DePrize Terms link in BetModal | **PASS** href; published URL still **404** (E5b) |
+| G6 | UI bet (0.004 ETH) + MetaMask Confirm → position / Cash out CTA | **PASS** (`d01-bet-done.png`) |
+| G7 | On-chain bet via mint (0.005 ETH) + fee sweep to prize pool | **PASS** — tx `0xf5f66804…` |
+| G8 | ExitPositionModal cash out in browser | **PASS** — Cash out ≈ 0.0094 ETH confirmed in MM |
+| G9 | `feeRouter.pauseMarket(9)` → UI shows paused / no Back CTA | **PASS** |
+| G10 | `feeRouter.resumeMarket(9)` → Back CTA returns | **PASS** |
+| G11 | Former tab excludes live `#9`; Live still shows it | **PASS** |
+| G12 | Mobile viewport no horizontal overflow | **PASS** |
+
+Screenshots: `.cursor/artifacts/deprize-browser-qa/` (`b0*`, `c0*`, `d0*`). Fixture env: `/tmp/deprize_deploy.env` (`DPID9`, `MKT9`, `CID9`, `QID9`, `PAYHOOK9`).
 
 ---
 
@@ -202,9 +227,10 @@ Ran 2026-07-22 against `http://localhost:3000` (PR branch). Screenshots under `.
 | Wiring (B) | B1–B16 | — |
 | Live bettor (C) | C1–C6 | — |
 | Resolve/redeem/terminal/M5 (D) | D1–D9, D10–D20, D23–D24, F5 | D21 manual; D22 7d cancel wall-clock |
-| UI headless + browser (E) | E1–E4, E8–E10, E21, E6–E7 (chain) | E5b Terms **404**; E5a BetModal needs connected wallet + Running market; prod `/deprize` 404 until deploy |
+| UI headless + browser (E) | E1–E4, E8–E10, E21, E6–E7 (chain) | E5b Terms **404**; prod `/deprize` 404 until deploy |
+| Fresh Running + in-browser (G) | G1–G12 | G5 published Terms still 404 |
 
-**Verdict:** Phase 2 is green on Sepolia including M5 upgrade and local browser smoke (Live/Former, detail odds/badge, mobile, claim gating). Remaining gaps: publish DePrize Terms (404), deploy `/deprize` to prod, Privy/wallet connect to exercise BetModal Terms click, and the 7-day full `cancel()`.
+**Verdict:** Phase 2 is green on Sepolia including M5 upgrade and a full in-browser Privy→MetaMask path on fresh DePrize **9** (bet, cash out, pause/resume, Live/Former). Remaining gaps: publish DePrize Terms (404), deploy `/deprize` to prod, and the 7-day full `cancel()`.
 
 ### Quick re-run commands
 
