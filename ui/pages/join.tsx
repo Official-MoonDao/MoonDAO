@@ -13,7 +13,17 @@ import {
   TEAM_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
-import { BLOCKED_CITIZENS, BLOCKED_TEAMS, FEATURED_TEAMS } from 'const/whitelist'
+import {
+  BLOCKED_CITIZENS,
+  BLOCKED_TEAMS,
+  FEATURED_CITIZENS,
+  FEATURED_CITIZEN_ROLES,
+  FEATURED_TEAMS,
+} from 'const/whitelist'
+import {
+  testimonials as testimonialsContent,
+  TESTIMONIAL_CITIZEN_IDS,
+} from 'const/joinPageContent'
 import useTranslation from 'next-translate/useTranslation'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -43,9 +53,14 @@ import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
+import { SectionSkeleton } from '@/components/layout/SkeletonLoader'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
+import JoinHero from '@/components/join/JoinHero'
+import type { FeaturedCitizen } from '@/components/join/FeaturedCitizensMarquee'
+import type { FeaturedTeam } from '@/components/join/FeaturedTeamsMarquee'
+import type { TestimonialWithPhoto } from 'const/joinPageContent'
 import JobsABI from '../const/abis/JobBoardTable.json'
 
 // Dynamic imports for globe components. Only one globe is mounted at a time
@@ -53,11 +68,35 @@ import JobsABI from '../const/abis/JobBoardTable.json'
 const LazyEarth = dynamic(() => import('@/components/globe/LazyEarth'), { ssr: false })
 const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 
+// Below-the-fold marketing sections are code-split the same way the homepage
+// splits its landing sections (see pages/index.tsx) to keep initial JS light.
+const FeaturedCitizensMarquee = dynamic(
+  () => import('@/components/join/FeaturedCitizensMarquee'),
+  { loading: () => <SectionSkeleton minHeight="min-h-[300px]" /> }
+)
+const FeaturedTeamsMarquee = dynamic(() => import('@/components/join/FeaturedTeamsMarquee'), {
+  loading: () => <SectionSkeleton minHeight="min-h-[300px]" />,
+})
+const WhyJoinSection = dynamic(() => import('@/components/join/WhyJoinSection'), {
+  loading: () => <SectionSkeleton />,
+})
+const TestimonialsCarousel = dynamic(() => import('@/components/join/TestimonialsCarousel'), {
+  loading: () => <SectionSkeleton />,
+})
+const InlineJoinCTA = dynamic(() => import('@/components/join/InlineJoinCTA'), {
+  loading: () => <SectionSkeleton minHeight="min-h-[200px]" />,
+})
+
 type JoinProps = {
   filteredTeams: any[]
   filteredCitizens: any[]
   jobs: JobType[]
   citizensLocationData?: any[]
+  featuredCitizens?: FeaturedCitizen[]
+  featuredTeams?: FeaturedTeam[]
+  testimonials?: TestimonialWithPhoto[]
+  citizenCount?: number
+  teamCount?: number
 }
 
 export default function Join({
@@ -65,6 +104,11 @@ export default function Join({
   filteredCitizens = [],
   jobs = [],
   citizensLocationData = [],
+  featuredCitizens = [],
+  featuredTeams = [],
+  testimonials = [],
+  citizenCount = 0,
+  teamCount = 0,
 }: JoinProps) {
   const { t } = useTranslation('common')
   const { selectedChain } = useContext(ChainContextV5)
@@ -85,7 +129,7 @@ export default function Join({
     })
   }
 
-  const [tab, setTab] = useState<string>('citizens')
+  const [tab, setTab] = useState<string>('map')
   const [mapView, setMapView] = useState<string>('earth') // For map sub-tabs
 
   function loadByTab(tab: string) {
@@ -230,7 +274,7 @@ export default function Join({
   }
 
   return (
-    <section id="join-container" className="overflow-hidden">
+    <section id="join-container" className="overflow-hidden bg-[#010208]">
       <Head
         title={'Join MoonDAO - Space Acceleration Network'}
         description={
@@ -243,50 +287,25 @@ export default function Join({
         <link rel="preload" as="image" href="/assets/citizen-default.webp" />
         <link rel="preload" as="image" href="/assets/team_image.webp" />
       </Head>
-      <Container>
-        {/* Hero Section */}
-        <div className="relative w-full h-screen rounded-3xl overflow-hidden">
-          <Image
-            src="/assets/NetworkHero.webp"
-            alt="Space Acceleration Network"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center max-w-4xl px-8">
-              <h1 className="header font-GoodTimes text-white drop-shadow-lg mb-4">
-                Join the Space Acceleration Network
-              </h1>
-              <p className="sub-header text-white/90 drop-shadow-lg mb-8">
-                An onchain startup society focused on building a permanent settlement on the Moon
-                and beyond
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <StandardButton
-                  className="gradient-2 hover:opacity-90 transition-opacity"
-                  textColor="text-white"
-                  borderRadius="rounded-xl"
-                  hoverEffect={false}
-                  link="/citizen"
-                >
-                  Become a Citizen
-                </StandardButton>
-                <StandardButton
-                  className="gradient-2 hover:opacity-90 transition-opacity"
-                  textColor="text-white"
-                  borderRadius="rounded-xl"
-                  hoverEffect={false}
-                  link="/team"
-                >
-                  Create a Team
-                </StandardButton>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Container>
+      <JoinHero citizenCount={citizenCount} teamCount={teamCount} />
+
+      <FeaturedCitizensMarquee citizens={featuredCitizens} />
+
+      <FeaturedTeamsMarquee teams={featuredTeams} />
+
+      <InlineJoinCTA
+        headline="Ready to be part of the network?"
+        subtext="Join the citizens and teams building humanity's future in space."
+      />
+
+      <WhyJoinSection />
+
+      <TestimonialsCarousel testimonials={testimonials} />
+
+      <InlineJoinCTA
+        headline="Be Part of the First Space Program by and for the People"
+        subtext="Vote on proposals, access the jobs board, and help decide where humanity goes next."
+      />
 
       <Container>
         {/* Join MoonDAO Section */}
@@ -307,16 +326,20 @@ export default function Join({
 
           <div className="relative z-10 max-w-6xl mx-auto px-6">
             <div className="text-center mb-8">
-              <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">Join MoonDAO</h2>
+              <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">
+                Ready to Join?
+              </h2>
               <p className="sub-header text-white/90 max-w-3xl mx-auto drop-shadow-lg">
-                Join our decentralized space collective and help accelerate humanity's expansion to
-                the Moon and beyond
+                Pick your path into the Space Acceleration Network
               </p>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-6">
-              <div className="flex-1">
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
+            <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+              <div className="flex-1 lg:max-w-md lg:mx-auto">
+                <div className="relative bg-white/5 backdrop-blur-sm border-2 border-blue-400/40 rounded-2xl p-6 h-full shadow-[0_0_40px_rgba(37,99,235,0.15)]">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wide">
+                    Most Popular
+                  </div>
                   <div className="flex flex-col items-center text-center">
                     <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
                       <Image
@@ -328,11 +351,12 @@ export default function Join({
                       />
                     </div>
                     <h3 className="text-2xl font-GoodTimes text-white mb-4">Become a Citizen</h3>
-                    <p className="text-slate-300 mb-6 leading-relaxed">
-                      Citizens are the trailblazers supporting the creation of off-world
-                      settlements. Whether you're already part of a team or seeking to join one,
-                      everyone has a crucial role to play in this mission.
-                    </p>
+                    <ul className="text-slate-300 mb-6 leading-relaxed text-left space-y-2 w-full max-w-xs">
+                      <li>✓ Vote on proposals &amp; funding</li>
+                      <li>✓ Access the jobs board</li>
+                      <li>✓ Eligible for flights &amp; experiences</li>
+                      <li>✓ A permanent onchain identity</li>
+                    </ul>
                     <div className="flex flex-col items-center mb-6">
                       <div className="text-2xl font-semibold text-white">
                         ~${Math.round(citizenUsdPrice || 0)} / Year
@@ -343,7 +367,7 @@ export default function Join({
                       </div>
                     </div>
                     <StandardButton
-                      className="gradient-2 hover:opacity-90 transition-opacity"
+                      className="gradient-2 hover:opacity-90 transition-opacity w-full"
                       textColor="text-white"
                       borderRadius="rounded-xl"
                       hoverEffect={false}
@@ -355,7 +379,7 @@ export default function Join({
                 </div>
               </div>
 
-              <div className="flex-1">
+              <div className="flex-1 lg:max-w-md lg:mx-auto">
                 <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
                   <div className="flex flex-col items-center text-center">
                     <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
@@ -368,11 +392,12 @@ export default function Join({
                       />
                     </div>
                     <h3 className="text-2xl font-GoodTimes text-white mb-4">Create a Team</h3>
-                    <p className="text-slate-300 mb-6 leading-relaxed">
-                      Teams are driving innovation and tackling ambitious space challenges together.
-                      From non-profits to startups and university teams, every group has something
-                      to contribute to our multiplanetary future.
-                    </p>
+                    <ul className="text-slate-300 mb-6 leading-relaxed text-left space-y-2 w-full max-w-xs">
+                      <li>✓ List roles on the jobs board</li>
+                      <li>✓ Raise funding through missions</li>
+                      <li>✓ Reach a space-positive audience</li>
+                      <li>✓ A permanent onchain identity</li>
+                    </ul>
                     <div className="flex flex-col items-center mb-6">
                       <div className="text-2xl font-semibold text-white">
                         ~${Math.round(teamUsdPrice || 0)} / Year
@@ -383,7 +408,7 @@ export default function Join({
                       </div>
                     </div>
                     <StandardButton
-                      className="gradient-2 hover:opacity-90 transition-opacity"
+                      className="gradient-2 hover:opacity-90 transition-opacity w-full"
                       textColor="text-white"
                       borderRadius="rounded-xl"
                       hoverEffect={false}
@@ -805,6 +830,75 @@ function toDirectoryItem(nft: any, type: 'team' | 'citizen') {
   }
 }
 
+// Strips a citizen NFT down to what the /join featured-citizens marquee
+// renders, and attaches the marketing tagline from FEATURED_CITIZEN_ROLES
+// (not on-chain data, so it's maintained in const/whitelist.ts).
+function toFeaturedCitizen(nft: any) {
+  const id = nft.id ?? nft.metadata?.id ?? ''
+  return {
+    id,
+    name: nft.metadata?.name ?? '',
+    image: nft.metadata?.image ?? '',
+    role: FEATURED_CITIZEN_ROLES[Number(id)] ?? '',
+  }
+}
+
+// Strips a team NFT down to what the /join featured-teams marquee renders.
+function toFeaturedTeam(nft: any) {
+  return {
+    id: nft.id ?? nft.metadata?.id ?? '',
+    name: nft.metadata?.name ?? '',
+    image: nft.metadata?.image ?? '',
+  }
+}
+
+// Loosely normalize a name for matching testimonial authors against on-chain
+// citizen records — strips quoted nicknames (e.g. "Andrew 'Titan' Parris")
+// and collapses whitespace so first-name-only testimonials still match.
+function normalizeName(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/["'][^"']*["']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Best-effort match of a testimonial author to their citizen profile photo.
+// Checks the explicit TESTIMONIAL_CITIZEN_IDS override first (for cases where
+// the on-chain display name doesn't resemble the testimonial name), then
+// falls back to a fuzzy name match. Falls back to no image (component renders
+// an initials avatar) when neither finds a match — logged so it's visible in
+// build output.
+function matchCitizenPhotoByName(name: string, citizens: any[]): string | null {
+  const overrideId = TESTIMONIAL_CITIZEN_IDS[name]
+  if (overrideId !== undefined) {
+    const overrideMatch = citizens.find(
+      (nft: any) => Number(nft.id ?? nft.metadata?.id) === overrideId
+    )
+    if (overrideMatch) return overrideMatch.metadata?.image || null
+  }
+
+  const needle = normalizeName(name)
+  const matches = citizens.filter((nft: any) => {
+    const rowName = normalizeName(nft.metadata?.name ?? '')
+    return rowName && (rowName.includes(needle) || needle.includes(rowName))
+  })
+  if (!matches.length) {
+    console.warn(
+      `[join] No citizen match found for testimonial name "${name}" — using fallback avatar.`
+    )
+    return null
+  }
+  if (matches.length > 1) {
+    console.warn(
+      `[join] Multiple citizen matches for testimonial name "${name}" — using the first match.`
+    )
+  }
+  // getStaticProps props must be JSON-serializable — undefined isn't allowed,
+  // so an unset image on the citizen record falls back to null, not undefined.
+  return matches[0].metadata?.image || null
+}
+
 export async function getStaticProps() {
   try {
     const chain = DEFAULT_CHAIN_V5
@@ -922,6 +1016,27 @@ export async function getStaticProps() {
     const { fetchCitizensWithLocation } = await import('@/lib/citizen/citizenDataService')
     const citizensLocationData = await fetchCitizensWithLocation(chain)
 
+    // Social-proof data for the /join sales sections — sourced from the same
+    // valid (non-expired) citizen rows already fetched above, no extra queries.
+    const featuredCitizens = FEATURED_CITIZENS.map((id: number) =>
+      filteredValidCitizens.find(
+        (nft: any) => Number(nft.id ?? nft.metadata?.id) === Number(id)
+      )
+    )
+      .filter(Boolean)
+      .map(toFeaturedCitizen)
+
+    const testimonialsWithPhotos = testimonialsContent.map((testimonial) => ({
+      ...testimonial,
+      image: matchCitizenPhotoByName(testimonial.name, filteredValidCitizens),
+    }))
+
+    const featuredTeams = FEATURED_TEAMS.map((id: number) =>
+      sortedValidTeams.find((nft: any) => Number(nft.id ?? nft.metadata?.id) === Number(id))
+    )
+      .filter(Boolean)
+      .map(toFeaturedTeam)
+
     return {
       props: {
         filteredTeams: sortedValidTeams.map((nft: any) => toDirectoryItem(nft, 'team')),
@@ -930,6 +1045,11 @@ export async function getStaticProps() {
           .map((nft: any) => toDirectoryItem(nft, 'citizen')),
         jobs: jobs || [],
         citizensLocationData: citizensLocationData,
+        featuredCitizens,
+        featuredTeams,
+        testimonials: testimonialsWithPhotos,
+        citizenCount: filteredValidCitizens.length,
+        teamCount: sortedValidTeams.length,
       },
       revalidate: 60,
     }
@@ -941,6 +1061,11 @@ export async function getStaticProps() {
         filteredCitizens: [],
         jobs: [],
         citizensLocationData: [],
+        featuredCitizens: [],
+        featuredTeams: [],
+        testimonials: testimonialsContent,
+        citizenCount: 0,
+        teamCount: 0,
       },
       revalidate: 60,
     }
