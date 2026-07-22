@@ -468,6 +468,15 @@ export const DEPRIZE_MINT_ADDRESSES: Index = {
   sepolia: '',
   'arbitrum-sepolia': '',
 }
+// DePrizeFeeRouter: owns the LMSR market and routes its accrued 1% trade fees
+// into the DePrize's Juicebox prize pool (sweepFees is permissionless). Populate
+// per chain once `script/deprize/DePrizeFeeRouter.s.sol` has deployed it and the
+// market's LMSR ownership has been transferred to it. Empty = no post-sell sweep
+// (bets still sweep on-chain via DePrizeMint once its feeRouter is set).
+export const DEPRIZE_FEE_ROUTER_ADDRESSES: Index = {
+  sepolia: '',
+  'arbitrum-sepolia': '',
+}
 // questionId used when the play market's condition was prepared
 // (prediction/deprize.config.js DEPRIZE_QUESTION_ID). Needed by reportPayouts;
 // the conditionId is keccak256(oracle, questionId, outcomeSlotCount).

@@ -1,6 +1,7 @@
 import ConditionalTokensABI from 'const/abis/ConditionalTokens.json'
+import DePrizeFeeRouterABI from 'const/abis/DePrizeFeeRouter.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
-import { CONDITIONAL_TOKEN_ADDRESSES } from 'const/config'
+import { CONDITIONAL_TOKEN_ADDRESSES, DEPRIZE_FEE_ROUTER_ADDRESSES } from 'const/config'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
@@ -16,6 +17,7 @@ import Modal from '@/components/layout/Modal'
 import StandardButton from '@/components/layout/StandardButton'
 
 type ExitPositionModalProps = {
+  deprizeId: number
   outcomeIndex: number
   teamName: string
   balanceWei: bigint
@@ -29,6 +31,7 @@ type ExitPositionModalProps = {
 }
 
 export default function ExitPositionModal({
+  deprizeId,
   outcomeIndex,
   teamName,
   balanceWei,
@@ -163,6 +166,31 @@ export default function ExitPositionModal({
       toast.success(`Cashed out ${teamName} for ≈ ${fmt(Number(-net) / Number(UNIT))} ETH.`, {
         style: toastStyle,
       })
+      // Best-effort: sweep the sell's 1% market fee into the Juicebox prize
+      // pool (bets sweep on-chain via DePrizeMint; sells hit the LMSR directly,
+      // so the sweep is triggered here). sweepFees is permissionless — a
+      // rejected/failed sweep never affects the completed cash-out.
+      const feeRouterAddress = DEPRIZE_FEE_ROUTER_ADDRESSES[getChainSlug(chain)] ?? ''
+      if (feeRouterAddress) {
+        try {
+          const feeRouter = getContract({
+            client,
+            chain,
+            address: feeRouterAddress,
+            abi: DePrizeFeeRouterABI as any,
+          })
+          await sendDePrizeTx(
+            account,
+            prepareContractCall({
+              contract: feeRouter,
+              method: 'sweepFees' as string,
+              params: [BigInt(deprizeId)],
+            }),
+          )
+        } catch (err) {
+          console.warn('[deprize] post-sell fee sweep skipped', err)
+        }
+      }
       onDone()
       onClose()
     } catch (err: any) {

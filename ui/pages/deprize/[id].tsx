@@ -589,6 +589,7 @@ export default function DePrizeDetailPage() {
       {/* Exit modal */}
       {exitIndex !== null && market.marketAddress && account && (
         <ExitPositionModal
+          deprizeId={deprizeId}
           outcomeIndex={exitIndex}
           teamName={`Team #${exitIndex + 1}`}
           balanceWei={market.outcomes[exitIndex]?.balanceWei ?? 0n}
