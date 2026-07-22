@@ -1,0 +1,147 @@
+# DePrize Phase 2 — QA checklist
+
+**Scope:** Sepolia DePrize **id 5** (full M2 cashOut gating + FeeRouter) plus automated contract/UI suites.  
+**Date run:** 2026-07-22  
+**Branch:** `cursor/deprize-production-ui-51ff` (PR #1482)  
+**Primary subject:** Prefer DePrize **5** over id **4** for gated QA (id 4’s pay hook is not registry-aware).
+
+## Reference addresses (Sepolia)
+
+| Piece | Address / value |
+|---|---|
+| Registry | `0x299F163705AbBFa1A8DE7670F33171730F828F3D` |
+| Redeem | `0x2fec56899a1121a46b6bcba0bb924796b6ddf4f7` |
+| DePrizeMint | `0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8` |
+| FeeRouter | `0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a` |
+| DePrize 5 LMSR | `0x9ad7705a1d0a057749b0336fd93961c3983124c0` |
+| Condition | `0x9ed3f4688e33403885080d68b63fb7775a3c3adc02ebecb18b85c7e85992a5ee` |
+| JB project | **254** (token `0xE9755B52Ee7e1dC499B3137Beaa57Cd0de81BbFf`) |
+| Pay hook (registry-aware) | `0x99cF7c1f29c6BFAf7952501Ab8d32CF169Aa39Cb` |
+| MissionCreator (fresh, not app-wide) | `0xa692eEd67c4D2C1C73DC0515240d27cf7d6fF9D1` |
+| MissionTable (fresh) | `0x0AbB0DB4CffFed867C8A94893e7cFae6ee39F807` |
+
+UI config (`ui/const/config.ts`) wires registry / redeem / mint / fee-router. It does **not** repoint app-wide `MISSION_CREATOR_ADDRESSES` (intentional — avoids fragmenting general launchpad listing).
+
+---
+
+## A. Automated suites
+
+| ID | Check | How | Result |
+|---|---|---|---|
+| A1 | Forge DePrize suite | `cd subscription-contracts && forge test --match-path 'test/deprize/*'` | **PASS** — 178/178 |
+| A2 | UI DePrize unit tests | `cd ui && yarn test:deprize` | **PASS** — 45/45 |
+| A3 | Live ABI read harness | `cd ui && yarn verify:deprize-reads` | **PASS** — 16/16 (targets play DePrize **3** + its LMSR) |
+| A4 | UI `tsc --noEmit` | `cd ui && yarn tsc --noEmit` | **PASS for DePrize paths**; 2 pre-existing BigInt errors in `cypress/e2e/free-mint.cy.ts` and `lib/hats/resolveEntityIdFromHat.ts` (unrelated) |
+
+Covered by A1 (high value): registry lifecycle, mint bet+sweep integration, FeeRouter prize-pool vs treasury routing, redeem, disburse, LaunchPadPayHook DePrize gating.
+
+---
+
+## B. On-chain wiring (DePrize 5)
+
+| ID | Check | Expected | Result |
+|---|---|---|---|
+| B1 | `registry.count()` | ≥ 5 | **PASS** — `5` |
+| B2 | `registry.state(5)` | `OPEN` (2) | **PASS** |
+| B3 | `registry.bettingOpen(5)` | `true` | **PASS** |
+| B4 | `registry.isTerminal(5)` / `isRefundable(5)` | `false` / `false` | **PASS** |
+| B5 | `registry.deprizeIdByJBProject(254)` | `5` | **PASS** |
+| B6 | Condition unresolved | `payoutDenominator(cond)==0` | **PASS** |
+| B7 | `mint.marketOf(5)` == LMSR | `0x9ad7705a…` | **PASS** |
+| B8 | `feeRouter.marketOf(5)` == LMSR | same | **PASS** |
+| B9 | `mint.feeRouter()` | FeeRouter | **PASS** |
+| B10 | LMSR `owner()` | FeeRouter | **PASS** |
+| B11 | LMSR `stage()` | Running (0) | **PASS** |
+| B12 | LMSR `fee()` | 1% (`1e16`) | **PASS** |
+| B13 | Pay hook `deprizeRegistry()` | Registry | **PASS** |
+| B14 | Pay hook `stage(terminal, 254)` | `1` (active / cashOut disabled) | **PASS** |
+| B15 | Config addresses present in `ui/const/config.ts` | mint + fee-router + registry + redeem | **PASS** |
+| B16 | Docs mention FeeRouter mid-life sweep | `DEPRIZE.md` / `DEPRIZE_M4.md` | **PASS** |
+
+---
+
+## C. Live bettor flows (on-chain, DePrize 5)
+
+| ID | Check | Evidence | Result |
+|---|---|---|---|
+| C1 | Place bet via `DePrizeMint.bet` | tx [`0xcf276270…05acb70`](https://sepolia.etherscan.io/tx/0xcf2762708606261cebd9328d9c019621f7cd1eab5e599b8499e5e40fe05acb70) — status success; JB pay “DePrize bet”; outcome tokens to bettor | **PASS** |
+| C2 | 5% prize slice paid to JB project 254 | JB terminal pay logs in C1 receipt (project `0xfe` = 254) | **PASS** |
+| C3 | Per-bet fee sweep → prize pool | `FeesSwept(5, amount, toPrizePool=true)` on FeeRouter in C1 receipt | **PASS** |
+| C4 | Sell via LMSR `trade` (UI exit path) | tx [`0xf3bcae41…4f13db`](https://sepolia.etherscan.io/tx/0xf3bcae410922996565ba8a20cd751652ba4de94d724249693d9fba15234f13db) | **PASS** |
+| C5 | Post-sell permissionless `sweepFees(5)` → prize pool | tx [`0xa3e2504e…39b30b`](https://sepolia.etherscan.io/tx/0xa3e2504e66838ea4064f96b1ce1418e9d309908be5365b581ef6fd598039b30b) — `FeesSwept` amount `20726813767665`, `toPrizePool=1` | **PASS** |
+| C6 | CashOut gate while OPEN | `isRefundable(5)==false` and payhook `stage==1`; hook reverts `"DePrize is active. Refunds are disabled."` when `!isRefundable` (unit-tested in A1; prior E2E sim on this deployment) | **PASS** (view + suite; full JB cashOut UI not re-run this session) |
+
+---
+
+## D. Resolution / admin / terminal (not fully exercised on DePrize 5)
+
+These need deliberate lifecycle txs (pause/close, `reportPayouts`, registry transitions). Do **not** run against a market you want to keep OPEN for demos without a plan to recreate it.
+
+| ID | Check | How | Result |
+|---|---|---|---|
+| D1 | Lock / startVote / settleWinner | Registry owner txs | **SKIP** — would leave id 5 non-OPEN |
+| D2 | Oracle `reportPayouts` + LMSR close | Oracle EOA = deployer for id 5 | **SKIP** |
+| D3 | `DePrizeRedeem.previewRedeem` / `redeem` after settle | Needs D1–D2 | **SKIP** |
+| D4 | FeeRouter terminal routing (fees → treasury) | `sweepFees` after `isTerminal` | **SKIP** on-chain; **PASS** in A1 (`DePrizeFeeRouter.t.sol`) |
+| D5 | Cancellation notice → betting closed → cancel → cashOut re-enabled | Registry + payhook | **SKIP** on-chain; **PASS** in A1 |
+| D6 | Admin panel UI actions | Browser + owner wallet | **MANUAL** |
+| D7 | M1/M2 disburse scripts | `DePrizeDisburse.s.sol` after settle | **SKIP** on-chain; **PASS** in A1 |
+
+---
+
+## E. UI / browser (manual)
+
+Run against a local or preview build pointed at Sepolia. Prefer DePrize **5** for betting + cashOut messaging.
+
+| ID | Check | Steps | Result |
+|---|---|---|---|
+| E1 | Index `/deprize` lists Live / Former | Open page; Live includes OPEN ids; Former shows terminals | **MANUAL** |
+| E2 | Detail `/deprize/5` loads | Teams, odds, sunset, status badge | **MANUAL** |
+| E3 | Badge reconciliation | OPEN + Running + mint wired → “Accepting bets”; pause LMSR → “Open · paused” (covered by unit tests in A2) | **MANUAL** UI / **PASS** unit |
+| E4 | Geo-gate | Restricted region hides bet CTAs (`useRegionRestriction`) | **MANUAL** |
+| E5 | Terms links | Present and navigate | **MANUAL** |
+| E6 | BetModal quote → submit | Quote matches `calcNetCost`+fee; tx via mint | **MANUAL** (on-chain bet path **PASS** in C1) |
+| E7 | ExitPositionModal → sell + best-effort sweep | After sell, UI calls `sweepFees` | **MANUAL** (on-chain sell+sweep **PASS** in C4–C5) |
+| E8 | ClaimPanel hidden while unresolved | No redeem CTA while `payoutDenominator==0` / not settled | **MANUAL** |
+| E9 | Mobile layout | Detail + modals usable at narrow width | **MANUAL** |
+| E10 | DePrize 4 vs 5 | Id 4 may still show bets if mint wired, but **no** M2 cashOut gate on its pay hook — do not use for refund-gate QA | **NOTE** |
+
+---
+
+## F. Negative / safety spot-checks
+
+| ID | Check | Result |
+|---|---|---||
+| F1 | Unknown registry id: `state(999999)==NONE`, `getDePrize` reverts | **PASS** (A3) |
+| F2 | Bet when market unset reverts | **PASS** (A1) |
+| F3 | Sweep on terminal routes to treasury not JB | **PASS** (A1); on-chain **SKIP** (D4) |
+| F4 | App-wide MissionCreator still production Sepolia address (not fresh test creator) | **PASS** by design — DePrize UI does not depend on it |
+
+---
+
+## Summary (this run)
+
+| Bucket | Pass | Skip / manual |
+|---|---|---|
+| Automated (A) | A1–A4 (DePrize-scoped) | — |
+| Wiring (B) | B1–B16 | — |
+| Live flows (C) | C1–C6 | — |
+| Resolution/admin (D) | D4/D5/D7 via unit tests | D1–D3, D6 on-chain/UI |
+| Browser (E) | E3/E6/E7 partially via units + chain | E1–E2, E4–E5, E8–E9 |
+
+**Verdict:** Phase 2 core path for DePrize 5 is green — wiring, bet → JB slice → fee sweep to prize pool, sell → post-sell sweep, cashOut disabled while active, and full automated suites. Remaining work is browser smoke (E) and an intentional resolve/redeem dry-run (D) on a disposable market if you want that path proven on Sepolia before mainnet.
+
+### Quick re-run commands
+
+```bash
+# Contracts
+cd subscription-contracts && forge test --match-path 'test/deprize/*'
+
+# UI units + ABI smoke
+cd ui && yarn test:deprize && yarn verify:deprize-reads
+
+# Live bettor smoke (needs DEPLOYER_PK + funded Sepolia ETH)
+# source /tmp/deprize_deploy.env  # or recreate from table above
+# cast send $DEPRIZE_MINT "bet(uint256,uint256,uint256,uint256)" 5 0 $QTY $MAXCOST \
+#   --value ${VALUE}wei --private-key $PK --rpc-url $SEPOLIA_RPC
+```
