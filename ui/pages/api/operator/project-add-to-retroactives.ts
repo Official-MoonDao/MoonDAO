@@ -183,18 +183,31 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const txs: Array<{ label: string; hash: string }> = []
   try {
-    for (const call of calls) {
-      const result = await signer.sendTransaction({
-        to: projectTableAddress,
-        data: call.data,
-      })
-      const hash = result?.transactionHash || result?.hash
+    // Broadcast every column write in one nonce-managed batch instead of
+    // awaiting a confirmation per call. Waiting per-tx serially made this
+    // route exceed the serverless time budget once a project needed multiple
+    // writes (final report + eligible + active), which surfaced in the
+    // operator UI as an "Add to Retroactives" modal stuck on "Sending…".
+    const hashes = await signer.sendTransactionBatch(
+      calls.map((call) => ({ to: projectTableAddress, data: call.data }))
+    )
+    calls.forEach((call, i) => {
+      const hash = hashes[i]
       if (!hash) {
         throw new Error(`No tx hash returned for ${call.label}`)
       }
       txs.push({ label: call.label, hash })
-    }
+    })
   } catch (err: any) {
+    // Mid-batch failures still leave earlier broadcasts in-flight; surface
+    // those hashes so operators/retries know which writes already landed.
+    if (Array.isArray(err?.submittedHashes)) {
+      err.submittedHashes.forEach((hash: string, i: number) => {
+        if (calls[i] && hash) {
+          txs.push({ label: calls[i].label, hash })
+        }
+      })
+    }
     console.error('project-add-to-retroactives failed:', err)
     return res.status(500).json({
       error: err?.message || 'Unknown error sending operator transactions',
@@ -208,5 +221,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     txs,
   })
 }
+
+// Multiple sequential on-chain writes (KMS signing + broadcast) can take well
+// over the platform default; give the function room so the operator request
+// resolves cleanly instead of the client hanging on a dropped connection.
+export const maxDuration = 60
 
 export default withMiddleware(handler, isOperator)
