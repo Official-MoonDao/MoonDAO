@@ -406,6 +406,116 @@ export async function sendTransaction(
   throw new Error('Recovery failed')
 }
 
+function getHSMProvider(): providers.JsonRpcProvider {
+  return new providers.JsonRpcProvider(
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum.rpc : sepolia.rpc
+  )
+}
+
+// Sign a fully-populated EIP-1559 tx object with the KMS key and return the
+// serialized raw tx, recovering the correct `v`. Shared by the single-send
+// and batch-send paths so their signing logic can't drift apart.
+async function signSerializedTx(
+  cfg: HSMConfig,
+  finalTx: any,
+  from: string
+): Promise<string> {
+  const unsigned = utils.serializeTransaction(finalTx)
+  const digest = keccak256(unsigned)
+  const { r, s } = await kmsSignDigest(cfg, arrayify(digest))
+  for (const v of [27, 28]) {
+    const rec = utils.recoverAddress(digest, { r, s, v })
+    if (utils.getAddress(rec) === utils.getAddress(from)) {
+      return utils.serializeTransaction(finalTx, { v, r, s })
+    }
+  }
+  throw new Error('Recovery failed')
+}
+
+/**
+ * Broadcast several transactions from the HSM EOA back-to-back.
+ *
+ * Why this exists (vs. calling `sendTransaction` in a loop):
+ *   - `sendTransaction` reads the *latest* (confirmed) nonce and awaits a
+ *     confirmation for every tx. Firing it in a loop either collides on the
+ *     nonce (a load-balanced RPC hasn't yet caught up after `wait()`) or
+ *     blocks the request for one confirmation per tx — which is what makes the
+ *     operator "Add to Retroactives" call hang on "Sending…" once it needs to
+ *     write several columns.
+ *   - Here we read the *pending* nonce once and increment it locally, so each
+ *     broadcast gets a unique nonce without waiting, then confirm only the
+ *     final tx (bounded by a timeout). Because nonces are sequential, the last
+ *     tx confirming implies every earlier one did too.
+ *
+ * Returns the tx hashes in the same order as `txs`. A confirmation timeout is
+ * non-fatal: the txs are already broadcast, so we still return their hashes.
+ */
+export async function sendTransactionBatch(
+  cfg: HSMConfig,
+  txs: Array<{ to: string; data: string; value?: any }>,
+  opts?: { waitForConfirmation?: boolean; confirmationTimeoutMs?: number }
+): Promise<string[]> {
+  if (txs.length === 0) return []
+
+  const provider = getHSMProvider()
+  const from = (await getPublicKey(cfg)).address
+  const fee = await provider.getFeeData()
+  const network = await provider.getNetwork()
+  let nonce = await provider.getTransactionCount(from, 'pending')
+
+  const hashes: string[] = []
+  let lastHash: string | undefined
+
+  for (const tx of txs) {
+    let gasLimit
+    try {
+      gasLimit = await provider.estimateGas({
+        to: tx.to,
+        data: tx.data,
+        from,
+        value: tx.value || 0,
+      })
+      gasLimit = gasLimit.mul(120).div(100)
+    } catch (error) {
+      console.warn('HSM batch - gas estimation failed, using default:', error)
+      gasLimit = utils.parseUnits('500000', 'wei')
+    }
+
+    const finalTx = {
+      to: tx.to,
+      data: tx.data,
+      value: tx.value || 0,
+      from,
+      nonce,
+      type: 2,
+      chainId: network.chainId,
+      gasLimit,
+      maxFeePerGas: fee.maxFeePerGas ?? fee.gasPrice,
+      maxPriorityFeePerGas: fee.maxPriorityFeePerGas ?? undefined,
+    }
+
+    const raw = await signSerializedTx(cfg, finalTx, from)
+    const sent = await provider.sendTransaction(raw)
+    hashes.push(sent.hash)
+    lastHash = sent.hash
+    nonce++
+  }
+
+  if (opts?.waitForConfirmation !== false && lastHash) {
+    const timeoutMs = opts?.confirmationTimeoutMs ?? 45_000
+    try {
+      await provider.waitForTransaction(lastHash, 1, timeoutMs)
+    } catch (err) {
+      console.warn(
+        'HSM batch - confirmation wait timed out; txs remain broadcast:',
+        err
+      )
+    }
+  }
+
+  return hashes
+}
+
 // -----------------------------
 // HSM Availability and Signer Creation
 // -----------------------------
@@ -497,6 +607,13 @@ export function getHSMSigner(): any {
     async sendTransaction(transaction: any): Promise<any> {
       const txHash = await sendTransaction(config, transaction)
       return { transactionHash: txHash }
+    },
+
+    async sendTransactionBatch(
+      txs: Array<{ to: string; data: string; value?: any }>,
+      opts?: { waitForConfirmation?: boolean; confirmationTimeoutMs?: number }
+    ): Promise<string[]> {
+      return sendTransactionBatch(config, txs, opts)
     },
   }
 }

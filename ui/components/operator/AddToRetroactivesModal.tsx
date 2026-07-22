@@ -67,6 +67,12 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
 
     setStatus('submitting')
     setResultTxs([])
+    // Guard against the request never settling (e.g. an RPC/HSM stall on the
+    // server) leaving the button stuck on "Sending…" forever. If we hit the
+    // timeout the txs may still land on-chain, so we tell the operator to
+    // check the explorer rather than implying nothing happened.
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 90_000)
     try {
       const body: Record<string, any> = {
         projectId: project.id,
@@ -83,6 +89,7 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       })
       const json = await res.json()
       if (!res.ok) {
@@ -96,10 +103,16 @@ export default function AddToRetroactivesModal({ project, onClose, onSuccess }: 
       onSuccess?.()
     } catch (err: any) {
       console.error('AddToRetroactivesModal submit failed:', err)
-      toast.error(err?.message || 'Failed to submit operator transactions.', {
+      const message =
+        err?.name === 'AbortError'
+          ? 'Request timed out. The transactions may still be processing — check the block explorer before retrying.'
+          : err?.message || 'Failed to submit operator transactions.'
+      toast.error(message, {
         style: toastStyle,
       })
       setStatus('error')
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 

@@ -1716,17 +1716,21 @@ export function ProjectRewards({
                     These proposals have been submitted and are awaiting the next voting cycle.
                   </p>
                 )}
-                {/* Member Vote results panel — renders only when there are
-                    votes for the current proposal quarter. The component
-                    self-hides during loading / error so it doesn't add a
-                    flicker on cold cache. The quarter budget the panel
-                    displays comes from the API response itself, not from
-                    a prop, so the header can't drift from the budget cap
-                    the tally actually used. */}
-                <MemberVoteResults
-                  quarter={proposalQuarter}
-                  year={proposalYear}
-                />
+                {/* Member Vote results panel — kept hidden while member-vote
+                    submissions are still open so voters can't see running
+                    Approved/Failed tallies mid-vote. It appears only once the
+                    voting phase is closed (`memberVoteSubmissionsOpen` false,
+                    which is also the case outside the member phase). The
+                    component still self-hides during loading / error and when
+                    there are no votes for the quarter, and sources the pool
+                    budget from the API response itself so the header can't
+                    drift from the budget cap the tally actually used. */}
+                {!memberVoteSubmissionsOpen && (
+                  <MemberVoteResults
+                    quarter={proposalQuarter}
+                    year={proposalYear}
+                  />
+                )}
                 <div className="flex flex-col gap-1.5 sm:gap-6">
                   {proposals && proposals.length > 0 ? (
                     proposals
