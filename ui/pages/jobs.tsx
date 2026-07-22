@@ -1,4 +1,6 @@
 import { DEFAULT_CHAIN_V5, JOBS_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
+import getProjectActiveMap from '@/lib/project/getProjectActiveMap'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
@@ -175,14 +177,27 @@ export async function getStaticProps() {
 
     const allJobs = await queryTable(chain, statement)
 
-    const validJobs = allJobs?.filter(async (job: any) => {
-      const teamExpiration = await readContract({
-        contract: teamContract,
-        method: 'expiresAt',
-        params: [job.teamId],
-      })
-      return +teamExpiration.toString() > now
-    })
+    // Project-teams (projects that are teams under the hood) are gated by the
+    // ProjectV2 `active` flag rather than subscription expiry. Build a map of
+    // project teamId -> active status so we can gate their jobs.
+    const projectActiveByTeamId = await getProjectActiveMap(chain, chainSlug)
+
+    const validJobs = (
+      await Promise.all(
+        (allJobs || []).map(async (job: any) => {
+          const projectActive = projectActiveByTeamId.get(String(job.teamId))
+          if (projectActive !== undefined) {
+            return projectActive === PROJECT_ACTIVE ? job : null
+          }
+          const teamExpiration = await readContract({
+            contract: teamContract,
+            method: 'expiresAt',
+            params: [job.teamId],
+          })
+          return +teamExpiration.toString() > now ? job : null
+        })
+      )
+    ).filter(Boolean)
 
     return {
       props: {

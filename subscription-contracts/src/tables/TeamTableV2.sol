@@ -13,10 +13,17 @@ contract MoonDAOTeamTable is ERC721Holder, Ownable {
     uint256 private _tableId;
     string private _TABLE_PREFIX;
     MoonDAOTeam public _moonDaoTeam;
+    // Legacy single-creator slot (V1 MoonDAOTeamCreator). Prefer `operators` for new creators.
     address public _teamCreatorAddress;
+    mapping(address => bool) public operators;
+
+    event OperatorSet(address indexed operator, bool enabled);
 
     modifier onlyOperators() {
-        require(msg.sender == _teamCreatorAddress || msg.sender == owner(), "Only MoonDaoTeamCreator or Owner can call this function");
+        require(
+            msg.sender == _teamCreatorAddress || operators[msg.sender] || msg.sender == owner(),
+            "Only MoonDaoTeamCreator, Operator, or Owner can call this function"
+        );
         _;
     }
 
@@ -46,6 +53,11 @@ contract MoonDAOTeamTable is ERC721Holder, Ownable {
 
     function setTeamCreatorAddress(address teamCreatorAddress) external onlyOwner{
         _teamCreatorAddress = teamCreatorAddress;
+    }
+
+    function setOperator(address operator, bool enabled) external onlyOwner {
+        operators[operator] = enabled;
+        emit OperatorSet(operator, enabled);
     }
 
     function addColumn(string memory columnName, string memory columnType) external onlyOwner {
