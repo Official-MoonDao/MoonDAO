@@ -496,7 +496,7 @@ export default function OperatorPanel({
               className="flex-1 min-w-0 max-w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-400/40 truncate"
             >
               <option value="">Select a project…</option>
-              {allProjects
+              {currentProjects
                 .slice()
                 .sort((a, b) => b.id - a.id)
                 .map((p) => {
