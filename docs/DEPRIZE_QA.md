@@ -73,19 +73,67 @@ Covered by A1 (high value): registry lifecycle, mint bet+sweep integration, FeeR
 
 ---
 
-## D. Resolution / admin / terminal (not fully exercised on DePrize 5)
+## D. Resolution / redeem / terminal fee (executed 2026-07-22)
 
-These need deliberate lifecycle txs (pause/close, `reportPayouts`, registry transitions). Do **not** run against a market you want to keep OPEN for demos without a plan to recreate it.
+On-chain dry-run after the initial checklist. **DePrize 4 and 5 are now terminal** (not demo-OPEN). Prefer DePrize **6** only as a failM2/cashOut fixture (no LMSR).
 
-| ID | Check | How | Result |
+### D-A. DePrize 5 — winner redeem → M2_COMPLETE → treasury fees
+
+| ID | Check | Evidence | Result |
 |---|---|---|---|
-| D1 | Lock / startVote / settleWinner | Registry owner txs | **SKIP** — would leave id 5 non-OPEN |
-| D2 | Oracle `reportPayouts` + LMSR close | Oracle EOA = deployer for id 5 | **SKIP** |
-| D3 | `DePrizeRedeem.previewRedeem` / `redeem` after settle | Needs D1–D2 | **SKIP** |
-| D4 | FeeRouter terminal routing (fees → treasury) | `sweepFees` after `isTerminal` | **SKIP** on-chain; **PASS** in A1 (`DePrizeFeeRouter.t.sol`) |
-| D5 | Cancellation notice → betting closed → cancel → cashOut re-enabled | Registry + payhook | **SKIP** on-chain; **PASS** in A1 |
-| D6 | Admin panel UI actions | Browser + owner wallet | **MANUAL** |
-| D7 | M1/M2 disburse scripts | `DePrizeDisburse.s.sol` after settle | **SKIP** on-chain; **PASS** in A1 |
+| D1 | Sell leaves unswept LMSR fees | `0x19823e6f…dd23d3` — WETH on market `8.16e12` | **PASS** |
+| D2 | `announceCancellation` closes betting; early `cancel` reverts; `abortCancellation` restores | announce `0xd77fab4c…`, abort `0xc94b05b0…` | **PASS** |
+| D3 | FeeRouter `pause` → `resume` → `pause` | stages 1 → 0 → 1 | **PASS** |
+| D4 | `lock` → `startVote` → `settleWinner(19)` | states 3 → 4 → 5; `isTerminal=false` at SETTLED | **PASS** |
+| D5 | Oracle `reportPayouts([1,0,0])` + `closeMarket` | report `0xe8e3581d…`; close `0x62c22eb0…`; stage=Closed | **PASS** |
+| D6 | `previewRedeem` + `redeem` (winner 1:1) | preview `4.3e16`; redeem `0xde4eb497…`; ETH +~0.043; second redeem reverts | **PASS** |
+| D7 | `releaseM1` → `completeM2` | states 6 → 7; `isTerminal=true`; `isRefundable=false`; payhook stage stays `1` | **PASS** |
+| D8 | Terminal `sweepFees` → **treasury** (`toPrizePool=0`) | `0x6b1daac1…` amount `8166539307672`; zero-sweep idempotent | **PASS** |
+| D9 | `setProviderPayoutAddress` | Deployed registry impl `0x4610b19c…` **lacks** selector (M5 provider not upgraded on Sepolia) | **BLOCKED** (code+unit only) |
+
+### D-B. DePrize 4 — NO_WINNER equal redeem → treasury fees
+
+| ID | Check | Evidence | Result |
+|---|---|---|---|
+| D10 | Bet + sell to accrue fees | bets `0xa14dae52…` / `0x2927914a…`; fees left on market | **PASS** |
+| D11 | `pause` → `lock` → `settleNoWinner` | state `10` (NO_WINNER); `isTerminal`+`isRefundable` true | **PASS** |
+| D12 | `reportPayouts([1,1,1])`; second report reverts | den=3; report `0x154bd5d3…` | **PASS** |
+| D13 | `closeMarket` + `redeem` equal refund | preview `1.466e16`; redeem `0xbf04bc7d…` | **PASS** |
+| D14 | Terminal `sweepFees` → treasury | `0x90ac103c…` amount `3986059951335`, `toPrizePool=0` | **PASS** |
+| D15 | Edges: `settleWinner` on terminal, bet when closed, `resume` after close | all revert | **PASS** |
+
+### D-C. DePrize 6 — failM2 + cashOut re-enable (registry-aware payhook)
+
+Fresh mission: project **255**, payhook `0x3A81E26dE71A37095C4652D65c64B67f86694a6B`, DePrize **6** (no LMSR — lifecycle/cashOut only).
+
+| ID | Check | Evidence | Result |
+|---|---|---|---|
+| D16 | `setDePrizeRegistry` + register/setCondition/open | active payhook `stage=1`, `isRefundable=false` | **PASS** |
+| D17 | `lock` → `settleWinner(20)` **from LOCKED** (skip vote) | state SETTLED | **PASS** |
+| D18 | `reportPayouts([0,1,0])` → `releaseM1` → `failM2` | state `8` (M2_FAILED); terminal+refundable | **PASS** |
+| D19 | Payhook cashOut stage re-enabled | `stage(terminal,255)=3` | **PASS** |
+| D20 | Edges: `completeM2` after fail, announce on terminal, re-open, redeem with no positions | all revert / empty preview 0 | **PASS** |
+
+### D-D. Routes coverage matrix
+
+| Route | Exercised |
+|---|---|
+| FeeRouter → prize pool (live) | **Yes** — C3/C5 on id 5 (prior run) |
+| FeeRouter → treasury (`M2_COMPLETE`) | **Yes** — D8 |
+| FeeRouter → treasury (`NO_WINNER`) | **Yes** — D14 |
+| FeeRouter → treasury (`M2_FAILED` / `CANCELLED`) | Same `isTerminal` branch as D8/D14; state `M2_FAILED` reached in D18 (no market fees left to sweep) |
+| Redeem winner vector | **Yes** — D6 |
+| Redeem equal (1/N) vector | **Yes** — D13 |
+| Registry: cancel announce/abort + early cancel revert | **Yes** — D2 (`cancel()` after 7d notice not waited — unit-tested in A1) |
+| Registry: vote path + skip-vote settle | **Yes** — D4 / D17 |
+| Registry: `completeM2` + `failM2` | **Yes** — D7 / D18 |
+| Payhook cashOut disabled (active) / enabled (refundable) | **Yes** — stage 1 then 3 on id 6 |
+| `setProviderPayoutAddress` / M5 provider disburse on-chain | **Blocked** until Sepolia registry upgrade |
+
+| ID | Check | Result |
+|---|---|---|
+| D21 | Admin panel UI | **MANUAL** |
+| D22 | Full 7-day `cancel()` → CANCELLED | **SKIP** (wall-clock); announce/abort/early-revert **PASS**; unit suite **PASS** |
 
 ---
 
@@ -104,32 +152,33 @@ Run against a local or preview build pointed at Sepolia. Prefer DePrize **5** fo
 | E7 | ExitPositionModal → sell + best-effort sweep | After sell, UI calls `sweepFees` | **MANUAL** (on-chain sell+sweep **PASS** in C4–C5) |
 | E8 | ClaimPanel hidden while unresolved | No redeem CTA while `payoutDenominator==0` / not settled | **MANUAL** |
 | E9 | Mobile layout | Detail + modals usable at narrow width | **MANUAL** |
-| E10 | DePrize 4 vs 5 | Id 4 may still show bets if mint wired, but **no** M2 cashOut gate on its pay hook — do not use for refund-gate QA | **NOTE** |
+| E10 | Post-resolve listing | Ids 4/5 are terminal (Former tab); id 6 is M2_FAILED refundable fixture without a market | **NOTE** |
 
 ---
 
 ## F. Negative / safety spot-checks
 
 | ID | Check | Result |
-|---|---|---||
+|---|---|---|
 | F1 | Unknown registry id: `state(999999)==NONE`, `getDePrize` reverts | **PASS** (A3) |
-| F2 | Bet when market unset reverts | **PASS** (A1) |
-| F3 | Sweep on terminal routes to treasury not JB | **PASS** (A1); on-chain **SKIP** (D4) |
+| F2 | Bet when market unset / not OPEN reverts | **PASS** (A1 + D15) |
+| F3 | Sweep on terminal routes to treasury not JB | **PASS** on-chain (D8, D14) + A1 |
 | F4 | App-wide MissionCreator still production Sepolia address (not fresh test creator) | **PASS** by design — DePrize UI does not depend on it |
+| F5 | Double `reportPayouts` / double `redeem` / resume-after-close | **PASS** (D12, D6, D15) |
 
 ---
 
-## Summary (this run)
+## Summary
 
-| Bucket | Pass | Skip / manual |
+| Bucket | Pass | Skip / manual / blocked |
 |---|---|---|
-| Automated (A) | A1–A4 (DePrize-scoped) | — |
+| Automated (A) | A1–A4 | — |
 | Wiring (B) | B1–B16 | — |
-| Live flows (C) | C1–C6 | — |
-| Resolution/admin (D) | D4/D5/D7 via unit tests | D1–D3, D6 on-chain/UI |
-| Browser (E) | E3/E6/E7 partially via units + chain | E1–E2, E4–E5, E8–E9 |
+| Live bettor (C) | C1–C6 | — |
+| Resolve/redeem/terminal (D) | D1–D8, D10–D20, F5 | D9 blocked (registry upgrade); D21 manual; D22 7d cancel wall-clock |
+| Browser (E) | E3/E6/E7 via units + chain | E1–E2, E4–E5, E8–E9 |
 
-**Verdict:** Phase 2 core path for DePrize 5 is green — wiring, bet → JB slice → fee sweep to prize pool, sell → post-sell sweep, cashOut disabled while active, and full automated suites. Remaining work is browser smoke (E) and an intentional resolve/redeem dry-run (D) on a disposable market if you want that path proven on Sepolia before mainnet.
+**Verdict:** Phase 2 routes are exercised on Sepolia end-to-end: live fee→prize-pool, winner redeem, equal-payout redeem, terminal fee→treasury (`M2_COMPLETE` + `NO_WINNER`), `failM2` + payhook cashOut stage 3, cancel announce/abort, pause/resume/close, and the main negative edges. Remaining gaps: browser smoke, 7-day full `cancel()`, and Sepolia registry upgrade for `setProviderPayoutAddress`.
 
 ### Quick re-run commands
 
