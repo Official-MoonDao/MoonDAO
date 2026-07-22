@@ -63,6 +63,22 @@ export function requiresSafeTx(
   return isManagerHat(hatId, managerHatId) || isAdminHat(hatId, adminHatId)
 }
 
+/**
+ * True when removing `hatId` would leave the team with no manager.
+ *
+ * `managerCount` is the number of distinct wallets currently wearing the manager
+ * hat. A team with zero managers can no longer manage its own roles (only the
+ * manager hat wearer or the Safe owner can), so the UI must block removing the
+ * manager hat while it is the last one held.
+ */
+export function wouldRemoveLastManager(
+  hatId: string | undefined | null,
+  managerHatId: string | number | bigint | undefined | null,
+  managerCount: number
+): boolean {
+  return isManagerHat(hatId, managerHatId) && (managerCount ?? 0) <= 1
+}
+
 /** Routing for a role mint/remove: 'safe' (multisig) or 'direct' (connected wallet). */
 export function getRoleTxRouting(
   hatId: string | undefined | null,
