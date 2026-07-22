@@ -1,4 +1,4 @@
-import { MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
 import { parseAtlasYear } from '@/lib/lunar-atlas/selectors'
 import {
@@ -25,6 +25,10 @@ type ProjectPanelProps = {
   onClose: () => void
   onFocusRegion?: (project: Project) => void
   onSelectSharedGoal?: (goalId: string) => void
+  // When this competitor was opened from a capability-race list, a one-click
+  // return to that list.
+  onBack?: () => void
+  backLabel?: string
 }
 
 export default function ProjectPanel({
@@ -34,6 +38,8 @@ export default function ProjectPanel({
   onClose,
   onFocusRegion,
   onSelectSharedGoal,
+  onBack,
+  backLabel = 'Back to competitors',
 }: ProjectPanelProps) {
   const color = orgColor(organization)
   const approximate = project.locationPrecision !== 'exact'
@@ -48,6 +54,15 @@ export default function ProjectPanel({
 
   return (
     <div className="pointer-events-auto flex h-full w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0c14]/95 shadow-2xl backdrop-blur-xl">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 border-b border-white/10 px-4 py-2 text-xs font-medium text-cyan-200/80 transition hover:bg-white/5 hover:text-cyan-100"
+        >
+          <ArrowLeftIcon className="h-3.5 w-3.5" />
+          {backLabel}
+        </button>
+      )}
       {/* Header */}
       <div className="flex items-start justify-between gap-3 border-b border-white/10 p-4">
         <div className="min-w-0">

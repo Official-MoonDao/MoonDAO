@@ -118,6 +118,54 @@
           "retrievedAt": "2026-07-16"
         }
       ]
+    },
+    {
+      "id": "intuitive-machines",
+      "name": "Intuitive Machines",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.intuitivemachines.com",
+      "brandColor": "#F97316",
+      "summary": "Intuitive Machines leads the Moon RACER team developing an unpressurized Lunar Terrain Vehicle for NASA's LTV Services contract, building on its Nova-C lunar lander heritage.",
+      "sources": [
+        {
+          "label": "NASA — Lunar Terrain Vehicle Services",
+          "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+          "retrievedAt": "2026-07-01"
+        }
+      ]
+    },
+    {
+      "id": "lunar-outpost",
+      "name": "Lunar Outpost",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.lunaroutpost.com",
+      "brandColor": "#84CC16",
+      "summary": "Lunar Outpost leads the Lunar Dawn team developing the Lunar Voyager LTV for NASA's LTV Services contract, drawing on its MAPP rover flight experience.",
+      "sources": [
+        {
+          "label": "NASA — Lunar Terrain Vehicle Services",
+          "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+          "retrievedAt": "2026-07-01"
+        }
+      ]
+    },
+    {
+      "id": "astrolab",
+      "name": "Venturi Astrolab",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.astrolab.space",
+      "brandColor": "#06B6D4",
+      "summary": "Venturi Astrolab develops the FLEX (Flexible Logistics and Exploration) rover, a modular lunar terrain vehicle competing in NASA's LTV Services contract.",
+      "sources": [
+        {
+          "label": "NASA — Lunar Terrain Vehicle Services",
+          "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+          "retrievedAt": "2026-07-01"
+        }
+      ]
     }
   ],
   "projects": [
@@ -280,10 +328,137 @@
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-lunar-rover"
+      ],
       "sources": [
         {
           "label": "NASA — LTV Services",
+          "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "im-moon-racer",
+      "orgId": "intuitive-machines",
+      "name": "Moon RACER LTV",
+      "type": "rover",
+      "modelURI": "/lunar-atlas/models/perseverance-rover.glb",
+      "summary": "Intuitive Machines' Moon RACER unpressurized rover, offered for NASA's LTV Services contract to carry Artemis crews across the South Pole and operate autonomously between missions.",
+      "location": {
+        "lat": -88.6,
+        "lon": 22
+      },
+      "locationPrecision": "approximate",
+      "regionLabel": "Lunar South Pole — Artemis operating area",
+      "milestones": [
+        {
+          "id": "racer-ltv-demo",
+          "title": "LTV service demonstration",
+          "targetDate": "2030",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Lunar Terrain Vehicle Services",
+              "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-lunar-rover"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "NASA — Lunar Terrain Vehicle Services",
+          "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "astrolab-flex",
+      "orgId": "astrolab",
+      "name": "FLEX Rover",
+      "type": "rover",
+      "summary": "Venturi Astrolab's FLEX (Flexible Logistics and Exploration) modular rover, offered for NASA's LTV Services contract, designed to carry crew and swap cargo payloads across the lunar surface.",
+      "location": {
+        "lat": -88.9,
+        "lon": -8
+      },
+      "locationPrecision": "approximate",
+      "regionLabel": "Lunar South Pole — Artemis operating area",
+      "milestones": [
+        {
+          "id": "flex-ltv-demo",
+          "title": "LTV service demonstration",
+          "targetDate": "2031",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Lunar Terrain Vehicle Services",
+              "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-lunar-rover"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "NASA — Lunar Terrain Vehicle Services",
+          "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "lunar-outpost-lunar-dawn",
+      "orgId": "lunar-outpost",
+      "name": "Lunar Voyager LTV",
+      "type": "rover",
+      "modelURI": "/lunar-atlas/models/perseverance-rover.glb",
+      "summary": "The Lunar Dawn team's Lunar Voyager rover, led by Lunar Outpost, offered for NASA's LTV Services contract to support crewed South Pole mobility and robotic operations.",
+      "location": {
+        "lat": -89.1,
+        "lon": 35
+      },
+      "locationPrecision": "approximate",
+      "regionLabel": "Lunar South Pole — Artemis operating area",
+      "milestones": [
+        {
+          "id": "voyager-ltv-demo",
+          "title": "LTV service demonstration",
+          "targetDate": "2031",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Lunar Terrain Vehicle Services",
+              "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-lunar-rover"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "NASA — Lunar Terrain Vehicle Services",
           "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
           "retrievedAt": "2026-07-01"
         }
@@ -374,7 +549,6 @@
         }
       ],
       "sharedGoalIds": [
-        "shared-south-pole-base",
         "shared-crewed-lander"
       ],
       "sources": [
@@ -431,7 +605,7 @@
       "orgId": "blue-origin",
       "name": "Blue Moon MK2 Crewed Lander",
       "type": "lander",
-      "modelURI": "/lunar-atlas/models/apollo-lunar-module.glb",
+      "modelURI": "/lunar-atlas/models/insight-lander.glb",
       "summary": "Blue Origin's crewed lunar lander, selected by NASA to land Artemis V astronauts at the South Pole, developed with the National Team.",
       "location": {
         "lat": -85.5,
@@ -456,7 +630,6 @@
         }
       ],
       "sharedGoalIds": [
-        "shared-south-pole-base",
         "shared-crewed-lander"
       ],
       "sources": [
@@ -905,12 +1078,10 @@
     {
       "id": "shared-south-pole-base",
       "title": "First sustained crewed South Pole presence",
-      "description": "Multiple organizations are racing to land and sustain crews at the lunar South Pole. NASA's Artemis campaign anchors the goal, with SpaceX and Blue Origin providing the landers that deliver astronauts to the surface.",
+      "description": "NASA's Artemis campaign is building toward a permanent crewed foothold at the lunar South Pole: Artemis III returns astronauts to the surface, and Artemis Base Camp establishes the habitats, power, and mobility for sustained stays. The crewed landers that ferry astronauts down are raced separately in the lander tech tree.",
       "projectIds": [
-        "nasa-artemis-base-camp",
         "nasa-artemis-iii",
-        "spacex-starship-hls",
-        "blue-origin-blue-moon-mk2"
+        "nasa-artemis-base-camp"
       ],
       "targetWindow": {
         "from": "2027",
@@ -918,7 +1089,11 @@
       },
       "market": {
         "status": "planned",
-        "resolutionAuthority": "senate"
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "nasa-artemis-base-camp": 0.55,
+          "nasa-artemis-iii": 0.45
+        }
       },
       "sources": [
         {
@@ -942,7 +1117,12 @@
         "to": "2035"
       },
       "market": {
-        "status": "none"
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "nasa-fission-surface-power": 0.55,
+          "blue-origin-blue-alchemist": 0.45
+        }
       },
       "sources": [
         {
@@ -952,6 +1132,42 @@
         }
       ],
       "category": "isru_plant"
+    },
+    {
+      "id": "shared-lunar-rover",
+      "title": "First crewed lunar terrain vehicle in service",
+      "description": "NASA's LTV Services approach put the unpressurized lunar rover out to industry. Three teams — Intuitive Machines (Moon RACER), Venturi Astrolab (FLEX), and Lunar Outpost's Lunar Dawn (Lunar Voyager) — completed feasibility work, and NASA will issue a demonstration task order for a crew-capable rover at the South Pole. Which vehicle reaches operational service first is the rover tech tree's race.",
+      "projectIds": [
+        "im-moon-racer",
+        "astrolab-flex",
+        "lunar-outpost-lunar-dawn"
+      ],
+      "location": {
+        "lat": -88.8,
+        "lon": 10
+      },
+      "regionLabel": "Lunar South Pole — Artemis operating area",
+      "targetWindow": {
+        "from": "2029",
+        "to": "2034"
+      },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "im-moon-racer": 0.42,
+          "astrolab-flex": 0.33,
+          "lunar-outpost-lunar-dawn": 0.25
+        }
+      },
+      "sources": [
+        {
+          "label": "NASA — Lunar Terrain Vehicle Services",
+          "url": "https://www.nasa.gov/humans-in-space/lunar-terrain-vehicle/",
+          "retrievedAt": "2026-07-01"
+        }
+      ],
+      "category": "rover"
     }
   ]
 }

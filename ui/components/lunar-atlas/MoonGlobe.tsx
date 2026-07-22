@@ -91,12 +91,14 @@ const POLE_UP = (() => {
 // Minimum camera clearance above the local terrain, in scene units.
 const CAMERA_CLEARANCE = GLOBE_RADIUS * 0.0015
 
-// Low-angle surface framing tuned to the cap's scale (fractions of
-// GLOBE_RADIUS): the eye sits ~2 model-heights up, a short walk back.
+// Three-quarter "hero" framing tuned to the cap's scale (fractions of
+// GLOBE_RADIUS): the eye sits well above the model and a short walk back,
+// looking down at ~35° so the installation's form reads — not a top-down
+// birdseye, not a horizon-height squint. targetLift aims at mid-model.
 const SURFACE_VIEW_OPTS = {
-  eyeHeight: 0.010,
-  standoff: 0.028,
-  targetLift: 0.005,
+  eyeHeight: 0.042,
+  standoff: 0.05,
+  targetLift: 0.008,
 }
 
 // Animates the camera toward a lat/lon focus (or back to the home framing)

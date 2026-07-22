@@ -5,4 +5,7 @@
 import type { AtlasDataset } from '../types'
 import atlasJson from './atlas.dataset.json'
 
-export const SEED_ATLAS: AtlasDataset = atlasJson as AtlasDataset
+// Cast through `unknown`: TypeScript infers a wide union for the JSON literal
+// (each goal's `impliedOdds` has a different key set), which no longer directly
+// overlaps AtlasDataset. The JSON's shape is validated by the unit tests.
+export const SEED_ATLAS: AtlasDataset = atlasJson as unknown as AtlasDataset

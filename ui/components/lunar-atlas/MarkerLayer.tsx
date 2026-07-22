@@ -13,11 +13,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { vector3ToLatLon, Vec3 } from '@/lib/lunar-atlas/geo'
-import {
-  PROJECT_TYPE_COLOR,
-  PROJECT_TYPE_LABEL,
-  orgColor,
-} from '@/lib/lunar-atlas/display'
+import { PROJECT_TYPE_LABEL, orgColor } from '@/lib/lunar-atlas/display'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import type {
@@ -25,8 +21,22 @@ import type {
   Project,
   ProjectType,
 } from '@/lib/lunar-atlas/types'
-import ProjectModel, { ProceduralModel, SurfaceAnchor } from './ProjectModel'
+import ProjectModel from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
+
+// The competitor a tech-tree site shows by default: the front-runner by market
+// odds, or the sole/first member when the race has no odds yet. This is what
+// makes each site read as "who's currently winning this capability".
+function leadingProject(tree: TechTree): Project | undefined {
+  if (tree.projects.length === 0) return undefined
+  const odds = tree.goal?.market?.impliedOdds
+  if (odds) {
+    return [...tree.projects].sort(
+      (a, b) => (odds[b.id] ?? -1) - (odds[a.id] ?? -1)
+    )[0]
+  }
+  return tree.projects[0]
+}
 
 export type MarkerStyle = { opacity: number; visible: boolean }
 
@@ -97,7 +107,7 @@ function TechTreeSite({
   selected,
   hovered,
   style,
-  competitor,
+  displayProject,
   label,
   onSelect,
   onHover,
@@ -109,9 +119,9 @@ function TechTreeSite({
   selected: boolean
   hovered: boolean
   style: MarkerStyle
-  // When set, this site renders the competitor's specific model instead of
-  // the generic category asset.
-  competitor?: Project | null
+  // The project whose model this site renders: the leading company's asset by
+  // default, or a specific competitor once one is picked from the race panel.
+  displayProject: Project
   label: string
   onSelect?: (category: ProjectType) => void
   onHover?: (category: ProjectType | null) => void
@@ -202,28 +212,18 @@ function TechTreeSite({
 
   return (
     <group ref={groupRef}>
-      {/* On-surface 3D model: the competitor's specific model when one is
-          picked, the generic category installation otherwise. */}
-      {style.opacity > 0.5 &&
-        (competitor ? (
-          <ProjectModel
-            project={competitor}
-            dir={[ndir.x, ndir.y, ndir.z]}
-            accent={color}
-            onSelect={() => onSelect?.(tree.category)}
-            onHover={(id) => onHover?.(id ? tree.category : null)}
-            surfaceRadius={seatRadius}
-          />
-        ) : (
-          <SurfaceAnchor
-            dir={[ndir.x, ndir.y, ndir.z]}
-            surfaceRadius={seatRadius}
-            onClick={() => onSelect?.(tree.category)}
-            onHoverChange={handleHoverChange}
-          >
-            <ProceduralModel type={tree.category} accent={color} />
-          </SurfaceAnchor>
-        ))}
+      {/* On-surface 3D model: the leading company's asset by default, or the
+          picked competitor's model once one is selected from the race panel. */}
+      {style.opacity > 0.5 && (
+        <ProjectModel
+          project={displayProject}
+          dir={[ndir.x, ndir.y, ndir.z]}
+          accent={color}
+          onSelect={() => onSelect?.(tree.category)}
+          onHover={(id) => onHover?.(id ? tree.category : null)}
+          surfaceRadius={seatRadius}
+        />
+      )}
 
       {/* Stem */}
       <mesh ref={stemRef} position={stemMid} quaternion={stemQuat}>
@@ -339,21 +339,29 @@ export default function MarkerLayer({
         const dir = dirMap?.get(tree.category)
         if (!dir) return null
 
-        const competitor =
-          selectedProject && selectedProject.type === tree.category
+        // A competitor picked from the race panel overrides the default; with
+        // nothing picked, the site shows the *leading* company's asset (top
+        // market odds), not a generic category placeholder. The pick renders
+        // at the *focused* site (which may host a cross-category race), not
+        // the competitor's own type — so selecting one never jumps sites.
+        const picked =
+          selectedProject && selectedTreeCategory === tree.category
             ? selectedProject
             : null
-        const color = competitor
-          ? orgColor(orgMap.get(competitor.orgId))
-          : PROJECT_TYPE_COLOR[tree.category]
+        const shown = picked ?? leadingProject(tree)
+        if (!shown) return null
+        const org = orgMap.get(shown.orgId)
+        const color = orgColor(org)
         // A race's roster can span categories (e.g. the power race includes
         // an ISRU plant), so count the goal's competitors, not the tree's
         // same-type members — the label must match the panel it opens.
         const count = tree.goal
           ? tree.goal.projectIds.length
           : tree.projects.length
-        const label = competitor
-          ? competitor.name
+        const label = picked
+          ? picked.name
+          : tree.goal && org
+          ? `${PROJECT_TYPE_LABEL[tree.category]} · ${org.name} leading`
           : `${PROJECT_TYPE_LABEL[tree.category]} · ${count} ${
               tree.goal ? 'competitor' : 'project'
             }${count === 1 ? '' : 's'}`
@@ -365,11 +373,11 @@ export default function MarkerLayer({
             dir={dir}
             color={color}
             selected={
-              selectedTreeCategory === tree.category || Boolean(competitor)
+              selectedTreeCategory === tree.category || Boolean(picked)
             }
             hovered={hoveredCategory === tree.category}
             style={style}
-            competitor={competitor}
+            displayProject={shown}
             label={label}
             onSelect={onSelectTree}
             onHover={onHoverTree}

@@ -25,7 +25,7 @@ const SURFACE = GLOBE_RADIUS
 // a true-scale lander would be a sub-pixel speck on a 369 km map — but small
 // enough to read as an installation, not a landmark. Fixed size: models
 // don't grow on selection; clicking simply zooms the camera in.
-const MODEL_SCALE = GLOBE_RADIUS * 0.005
+const MODEL_SCALE = GLOBE_RADIUS * 0.0085
 
 const ASTRONAUT_URI = '/lunar-atlas/models/astronaut.glb'
 // Self-hosted Draco decoder (copied from three's examples into public/draco/).
@@ -43,23 +43,33 @@ const WINDOW = '#ffd98a'
 // terrain's flat-ground tone — a worked surface that blends in, not a dark
 // puck stamped on the map. Pad aprons render UNLIT (like the terrain, whose
 // lighting is baked into its albedo), so this is the exact displayed color.
-const REGOLITH = '#aaa69d'
+// Pad surfaces read as *worked* ground, so they sit a shade below the
+// hillshaded terrain's flat tone (a bright disc pops off the map as an
+// awkward blob). Rendered UNLIT like the terrain, so these are the exact
+// displayed colors.
+const PAD_SURFACE = '#8b887f' // compacted/graded pad deck
+const PAD_RIM = '#6b6862' // darker berm edge that defines the pad boundary
 
-// A cleared-regolith pad that visually seats an installation on the terrain.
-// A wide-flared apron, not a straight-walled disc: models seat on the
-// *highest* ground under their footprint, so on a slope the downhill side
-// can drop a long way before the terrain reappears — a vertical skirt there
-// reads as a hovering hockey puck, while a ~30° flare reads as graded
-// regolith sloping down to meet the ground. The buried excess is invisible.
+// A cleared-regolith landing pad that visually seats an installation on the
+// terrain. A short flared skirt (models seat on the *highest* ground under
+// their footprint, so a slope's downhill side drops away — the flare grades
+// down to meet it instead of hovering) plus a low rim torus that gives the
+// pad a clean engineered edge rather than a blobby apron.
 function Pad({ r = 1.2 }: { r?: number }) {
-  // Unlit, like the terrain: the apron stands in for graded ground, and
-  // ground gets its lighting from the baked hillshade. A lit apron pops out
-  // of the unlit landscape as a shaded disc from every camera angle.
   return (
-    <mesh position={[0, 0.01 - 0.26, 0]}>
-      <cylinderGeometry args={[r, r * 1.7, 0.54, 40]} />
-      <meshBasicMaterial color={REGOLITH} />
-    </mesh>
+    <group>
+      {/* Graded deck + skirt: unlit, like the terrain whose lighting is baked
+          into its albedo (a lit apron pops out of the unlit landscape). */}
+      <mesh position={[0, 0.01 - 0.24, 0]}>
+        <cylinderGeometry args={[r, r * 1.34, 0.5, 48]} />
+        <meshBasicMaterial color={PAD_SURFACE} />
+      </mesh>
+      {/* Low rim berm around the deck edge for definition. */}
+      <mesh position={[0, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[r * 0.97, r * 0.05, 8, 48]} />
+        <meshBasicMaterial color={PAD_RIM} />
+      </mesh>
+    </group>
   )
 }
 
@@ -501,11 +511,6 @@ function ConstructionSite({ accent }: { accent: string }) {
           <meshBasicMaterial color="#dcd9d2" side={THREE.DoubleSide} />
         </mesh>
       ))}
-      {/* smooth pushed-up berm ring, gap left for the approach */}
-      <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, Math.PI * 0.2]}>
-        <torusGeometry args={[1.28, 0.1, 10, 48, Math.PI * 1.65]} />
-        <meshStandardMaterial color={REGOLITH} roughness={1} metalness={0} />
-      </mesh>
       {/* perimeter beacons */}
       {Array.from({ length: beacons }, (_, i) => {
         const a = (i / beacons) * Math.PI * 2 + Math.PI / 4
@@ -599,6 +604,14 @@ function GLBModel({
       if (m.isMesh) {
         m.castShadow = true
         m.receiveShadow = true
+        // Some source GLBs (e.g. the single-mesh MMSEV) ship a bounding
+        // sphere that, once seated + scaled tiny on the globe, makes three's
+        // frustum test flicker the mesh in and out as the camera moves.
+        // Recompute the bounds and opt this mesh out of culling — there are
+        // only ever a couple of models on screen, so the cost is negligible.
+        m.frustumCulled = false
+        m.geometry?.computeBoundingSphere?.()
+        m.geometry?.computeBoundingBox?.()
       }
     })
     if (transform?.rotationEuler) {
@@ -758,6 +771,7 @@ export default function ProjectModel({
   '/lunar-atlas/models/apollo-lunar-module.glb',
   '/lunar-atlas/models/perseverance-rover.glb',
   '/lunar-atlas/models/viking-lander.glb',
+  '/lunar-atlas/models/insight-lander.glb',
   '/lunar-atlas/models/rassor.glb',
   ASTRONAUT_URI,
 ].forEach((u) => useGLTF.preload(u, DRACO_PATH))

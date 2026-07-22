@@ -27,7 +27,6 @@ type SharedGoalPanelProps = {
   competitors: Competitor[]
   onClose: () => void
   onSelectProject: (id: string) => void
-  onFlyToRegion?: () => void
 }
 
 export default function SharedGoalPanel({
@@ -35,7 +34,6 @@ export default function SharedGoalPanel({
   competitors,
   onClose,
   onSelectProject,
-  onFlyToRegion,
 }: SharedGoalPanelProps) {
   const anyUnconfirmed = competitors.some(
     (c) =>
@@ -91,14 +89,6 @@ export default function SharedGoalPanel({
               <MapPinIcon className="h-3.5 w-3.5" />
               {goal.regionLabel}
             </span>
-            {goal.location && onFlyToRegion && (
-              <button
-                onClick={onFlyToRegion}
-                className="ml-auto rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/70 transition hover:border-cyan-400/40 hover:text-cyan-200"
-              >
-                Fly to region
-              </button>
-            )}
           </div>
         )}
 

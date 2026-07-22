@@ -1,6 +1,31 @@
-# Lunar Atlas — texture attribution
+# Lunar Atlas — asset attribution
 
 All terrain assets are derived from **public-domain NASA data**.
+
+## 3D models (`models/`)
+
+Every GLB is from **NASA 3D Resources** (<https://science.nasa.gov/3d-resources/>,
+mirrored at <https://github.com/nasa/NASA-3D-Resources>). NASA 3D Resources assets
+are free and without copyright; see the
+[NASA Images and Media Usage Guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/).
+Models marked "optimized" were Draco-compressed with `@gltf-transform/cli`
+(geometry only; no remodeling) to keep web payloads small.
+
+| File | NASA source model | Used for |
+|---|---|---|
+| `apollo-lunar-module.glb` | Apollo Lunar Module | Starship HLS, Artemis III (crewed-lander stand-ins) |
+| `viking-lander.glb` | Viking Lander | Blue Moon MK1 cargo lander (stand-in) |
+| `insight-lander.glb` (optimized) | InSight Cruise Lander | Blue Moon MK2 crewed lander (stand-in) |
+| `perseverance-rover.glb` | Mars 2020 Perseverance Rover | Moon RACER LTV, Lunar Voyager LTV, NASA LTV (rover stand-ins) |
+| `rassor.glb` | RASSOR (Regolith Advanced Surface Systems Operations Robot) | Blue Alchemist ISRU |
+| `habitat-demo-unit.glb` | Habitat Demonstration Unit | Artemis Base Camp |
+| `astronaut.glb` | Astronaut | Crew companion on crewed sites |
+
+Landers/rovers for specific commercial vehicles (SpaceX Starship, Blue Origin
+Blue Moon, the LTV competitors) have **no free, brand-accurate, photoreal model**
+available; the closest real NASA spacecraft are used as honest, visually-distinct
+stand-ins. Types without any suitable model (fission surface power, regolith
+construction / ISRU plants) fall back to procedural geometry in `ProjectModel.tsx`.
 
 ## South-pole terrain (`southpole/`)
 
