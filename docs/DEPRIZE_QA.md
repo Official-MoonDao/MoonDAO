@@ -162,15 +162,23 @@ Pixel/Privy click-through still needs a human (or a Playwright MCP + test wallet
 | E7 | Exit → `sweepFees` | **PASS** static (`ExitPositionModal`) + on-chain (C4–C5) |
 | E8 | ClaimPanel hidden until `shouldSurfaceResolution` (requires `ctfResolved` + registry/market gate); `if (!resolved) return null` | **PASS** (static + A2 lifecycle units) |
 
-### E-visual (still needs a browser)
+### E-browser (local Playwright on `NEXT_PUBLIC_CHAIN=sepolia` + BrowserStack Live)
+
+Ran 2026-07-22 against `http://localhost:3000` (PR branch). Screenshots under `.cursor/artifacts/deprize-browser-qa/`. BrowserStack Live also opened for desktop (prod URL) and iPhone 15 Pro — **prod `/deprize` currently 404s** (feature not deployed).
 
 | ID | Check | Result |
 |---|---|---|
-| E2 | Detail page renders teams/odds/status for a live id | **MANUAL** (no live OPEN market left on Sepolia after resolve dry-run; use a new OPEN DePrize or preview build) |
-| E5c | Click Terms link in BetModal navigates correctly once published | **BLOCKED** on E5b publish |
-| E9 | Mobile layout | **MANUAL** |
-| E10 | Post-resolve listing | Ids 4/5/7 → Former; id 6 M2_FAILED; id 8 SETTLED with provider set | **NOTE** |
-| E21 | Admin panel UI | **MANUAL** (= D21) |
+| E1 | Index Live / Former tabs clickable | **PASS** (Playwright + screenshot `01`/`02`) |
+| E2 | Detail `/deprize/3` renders odds, providers, status badge | **PASS** — badge **Open · paused** (play LMSR paused); prize pool + Teams #201–203 visible (`03-detail-3.png`) |
+| E4 | Geo banner | **PASS** (not shown — unrestricted geo); wiring already static-verified |
+| E5a | BetModal DePrize Terms link | **BLOCKED in UI** — “Back this team” disabled while market paused / no wallet; link still present in `BetModal.tsx` (static) |
+| E5b | Published Terms URL | **FAIL** — HTTP **404** |
+| E8 | ClaimPanel absent on OPEN unresolved | **PASS** (no claim panel on id 3) |
+| E9 | Mobile layout (iPhone 14 viewport) | **PASS** — renders; no horizontal overflow (`06`/`07`) |
+| E10 | Terminal detail `/deprize/5` | **PASS** — loads as Delivered / M2_COMPLETE (`05-detail-5-terminal.png`) |
+| E21 | Admin panel without owner wallet | **PASS** — not shown (expected) |
+
+**Wallet note:** App auth is Privy (`useLogin` / `useActiveAccount`). `$PRIVATE_KEY` alone cannot open Bet/Exit modals in the browser without a Privy (or injected EIP-1193) connect path. On-chain bet/exit/claim for that key remain proven via `cast` (sections C/D).
 
 ---
 
@@ -194,9 +202,9 @@ Pixel/Privy click-through still needs a human (or a Playwright MCP + test wallet
 | Wiring (B) | B1–B16 | — |
 | Live bettor (C) | C1–C6 | — |
 | Resolve/redeem/terminal/M5 (D) | D1–D9, D10–D20, D23–D24, F5 | D21 manual; D22 7d cancel wall-clock |
-| UI headless (E) | E1, E3–E4, E5a, E6–E8 | E5b Terms **404** (publish draft); E2/E9/E21 visual |
+| UI headless + browser (E) | E1–E4, E8–E10, E21, E6–E7 (chain) | E5b Terms **404**; E5a BetModal needs connected wallet + Running market; prod `/deprize` 404 until deploy |
 
-**Verdict:** Phase 2 is green on Sepolia including the M5 registry upgrade (`setProviderPayoutAddress` + Disburse M1 preflight). UI logic for geo-gate, claim gating, Live/Former tabs, BetModal terms link, and exit `sweepFees` is verified headless. Remaining gaps: publish DePrize Terms to docs.moondao.com (currently 404), visual browser smoke, and the 7-day full `cancel()`.
+**Verdict:** Phase 2 is green on Sepolia including M5 upgrade and local browser smoke (Live/Former, detail odds/badge, mobile, claim gating). Remaining gaps: publish DePrize Terms (404), deploy `/deprize` to prod, Privy/wallet connect to exercise BetModal Terms click, and the 7-day full `cancel()`.
 
 ### Quick re-run commands
 
