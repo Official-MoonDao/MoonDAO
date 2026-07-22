@@ -190,7 +190,11 @@ contract MoonDAOTeamCreator is Ownable {
         for (uint i = 1; i < ownersLength; i++) {
             owners[i] = members[i - 1];
         }
-        uint256 threshold = owners.length / 2 + 1;
+        // Default to a 1-of-N Safe so the team lead OR any MoonDAO steward
+        // co-signer can operate the treasury (e.g. mint manager/member hats)
+        // while groups new to multisigs get set up. Teams can raise the
+        // threshold later from the Manage Team portal once established.
+        uint256 threshold = 1;
         //see https://github.com/safe-global/safe-smart-account/blob/main/contracts/Safe.sol#L84
         bytes memory proxyInitData = abi.encodeWithSelector(
             // function selector (setup)

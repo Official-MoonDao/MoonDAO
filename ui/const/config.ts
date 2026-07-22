@@ -820,6 +820,16 @@ export const SUPER_MANAGERS: string[] = [
   '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da', // miguel.eth
 ]
 
+// MoonDAO steward wallets added as co-signers on every new team's Safe (in
+// addition to the team lead/creator), so a steward can help teams that are new
+// to multisigs get set up — e.g. mint manager/member hats — without needing the
+// lead online. Combined with the team creator's 1-of-N threshold this produces a
+// default 1/3 Safe (lead + Ryan + Pablo). Checksummed for Safe owner setup.
+export const DEFAULT_TEAM_MULTISIG_SIGNERS: string[] = [
+  '0xB2d3900807094D4Fe47405871B0C8AdB58E10D42', // ryand2d.eth
+  '0x679d87D8640e66778c3419D164998E720D7495f6', // pmoncada.eth
+]
+
 // Hard-coded allowlist of wallet addresses that can use the operator panel
 // on /projects (start the retro cycle, mark projects eligible, etc.).
 // Lowercase for cheap comparison.
