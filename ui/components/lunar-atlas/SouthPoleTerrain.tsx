@@ -9,32 +9,23 @@
 // from every camera angle. Only the 3D models and markers are dynamically
 // lit (their sun matches the baked hillshade azimuth).
 //
-// Two nested layers over empty space:
-//   - inner cap (~369 km square, 512² grid): real 16-bit heights, hillshaded
-//     albedo, tiled detail grain for close-ups.
-//   - far surround (~915 km square, 192² grid): coarse context terrain whose
-//     albedo and heights feather out toward the dataset edge.
+// A single south-pole cap over empty space (~369 km square, 512² grid): real
+// 16-bit heights, hillshaded albedo, tiled detail grain for close-ups. No
+// surrounding whole-Moon context — this is the pole region and nothing else.
 //
-// Geometry positions come from the same decoded height fields the CPU
-// sampler (useTerrainSampler) reads, so everything seated on the terrain
-// agrees with the rendered ground by construction.
+// Geometry positions come from the same decoded height field the CPU sampler
+// (useTerrainSampler) reads, so everything seated on the terrain agrees with
+// the rendered ground by construction.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
-  FAR_GRID,
-  INNER_EXTENT_M,
-  FAR_EXTENT_M,
   INNER_GRID,
   buildCapGeometry,
   type PolarHeightField,
 } from '@/lib/lunar-atlas/southpole'
-import {
-  GLOBE_RADIUS,
-  SP_ALBEDO_MAP,
-  SP_FAR_ALBEDO_MAP,
-} from '@/lib/lunar-atlas/textures'
-import { loadFarField, loadInnerField } from './useTerrainSampler'
+import { SP_ALBEDO_MAP } from '@/lib/lunar-atlas/textures'
+import { loadInnerField } from './useTerrainSampler'
 
 // A pointer that travels farther than this between down and up is a drag
 // (camera tumble), not a click.
@@ -107,10 +98,8 @@ export default function SouthPoleTerrain({
   onSurfaceClick?: () => void
 }) {
   const [innerGeo, setInnerGeo] = useState<THREE.BufferGeometry | null>(null)
-  const [farGeo, setFarGeo] = useState<THREE.BufferGeometry | null>(null)
 
   const albedo = useTexture(SP_ALBEDO_MAP, true)
-  const farAlbedo = useTexture(SP_FAR_ALBEDO_MAP, true)
   const detail = useMemo(() => makeDetailNoise(), [])
   useEffect(() => () => detail.dispose(), [detail])
 
@@ -119,18 +108,6 @@ export default function SouthPoleTerrain({
     loadInnerField().then((field) => {
       if (cancelled) return
       setInnerGeo(toBufferGeometry(field, INNER_GRID))
-    })
-    loadFarField().then((field) => {
-      if (cancelled) return
-      // Sink the far mesh under the inner cap's footprint so the two never
-      // z-fight; it ramps back to true height just outside the rim.
-      setFarGeo(
-        toBufferGeometry(field, FAR_GRID, {
-          innerHalfRatio: (0.5 * INNER_EXTENT_M) / FAR_EXTENT_M,
-          rampRatio: 0.035,
-          depth: GLOBE_RADIUS * 0.002,
-        })
-      )
     })
     return () => {
       cancelled = true
@@ -143,12 +120,6 @@ export default function SouthPoleTerrain({
     },
     [innerGeo]
   )
-  useEffect(
-    () => () => {
-      farGeo?.dispose()
-    },
-    [farGeo]
-  )
 
   const notified = useRef(false)
   useEffect(() => {
@@ -158,9 +129,8 @@ export default function SouthPoleTerrain({
     }
   }, [innerGeo, albedo, onReady])
 
-  // Multiplies two octaves of tiled grain into the inner cap's diffuse so
-  // magnified close-ups keep texture. Mean is ~1.0, so the overall tone and
-  // the far cap's brightness stay matched.
+  // Multiplies two octaves of tiled grain into the cap's diffuse so magnified
+  // close-ups keep texture. Mean is ~1.0, so the overall tone is preserved.
   const onBeforeCompile = useMemo(
     () => (shader: THREE.WebGLProgramParametersWithUniforms) => {
       shader.uniforms.detailMap = { value: detail }
@@ -199,12 +169,6 @@ export default function SouthPoleTerrain({
           customProgramCacheKey={() => 'sp-inner-detail'}
         />
       </mesh>
-
-      {farGeo && farAlbedo && (
-        <mesh geometry={farGeo} onClick={handleClick}>
-          <meshBasicMaterial map={farAlbedo} />
-        </mesh>
-      )}
     </group>
   )
 }
