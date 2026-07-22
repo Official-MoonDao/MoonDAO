@@ -8,6 +8,7 @@ import {
   PROJECT_CREATOR_ADDRESSES,
 } from 'const/config'
 import { getPrivyUserData } from '@/lib/privy'
+import { isProposalAuthor } from '@/lib/proposals/isProposalAuthor'
 import { DISCORD_TO_ETH_ADDRESS } from 'const/usernames'
 import { ethers } from 'ethers'
 import { getSubmissionQuarter } from 'lib/utils/dates'
@@ -360,6 +361,45 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
 
       const projects = await queryTable(chain, projectStatement)
       const project = projects[0]
+
+      if (!project) {
+        return res.status(404).json({ error: 'Proposal not found.' })
+      }
+
+      // Authorization: only the recorded proposal author may update or delete
+      // a proposal. The client gates the Edit/Delete UI on
+      // `proposalJSON.authorAddress`, but the server previously only verified
+      // that the session owned the caller-supplied `address` — it never
+      // checked that `address` authored THIS proposal. That let any
+      // authenticated user rewrite or (via the delete flow) withdraw ANY
+      // proposal by MDP, removing competitors from the listings and the Senate
+      // tally. Re-derive the author from the CURRENT on-chain proposalIPFS
+      // (never the caller-supplied `proposalIPFS`, which the attacker controls)
+      // and require the caller to be that author. Fail closed if the author
+      // can't be established.
+      let currentAuthorAddress: string | undefined
+      try {
+        if (project.proposalIPFS && typeof project.proposalIPFS === 'string') {
+          const currentRes = await fetch(project.proposalIPFS)
+          if (currentRes.ok) {
+            const currentJSON = await currentRes.json()
+            if (typeof currentJSON?.authorAddress === 'string') {
+              currentAuthorAddress = currentJSON.authorAddress
+            }
+          }
+        }
+      } catch (err) {
+        console.error(
+          `[proposals/submit] failed to read current proposalIPFS for MDP-${proposalId}:`,
+          err
+        )
+      }
+
+      if (!isProposalAuthor(currentAuthorAddress, address)) {
+        return res.status(403).json({
+          error: 'Only the proposal author can update or delete this proposal.',
+        })
+      }
 
       const validIPFS =
         proposalIPFS && typeof proposalIPFS === 'string'
