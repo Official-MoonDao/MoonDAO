@@ -9,14 +9,11 @@
 // from every camera angle. Only the 3D models and markers are dynamically
 // lit (their sun matches the baked hillshade azimuth).
 //
-// Three nested layers:
+// Two nested layers over empty space:
 //   - inner cap (~369 km square, 512² grid): real 16-bit heights, hillshaded
 //     albedo, tiled detail grain for close-ups.
 //   - far surround (~915 km square, 192² grid): coarse context terrain whose
 //     albedo and heights feather out toward the dataset edge.
-//   - a whole-Moon backdrop sphere (real LROC color map, which carries its
-//     own baked shading), so the horizon past the cap is the actual Moon's
-//     limb, not the edge of a floating terrain chunk.
 //
 // Geometry positions come from the same decoded height fields the CPU
 // sampler (useTerrainSampler) reads, so everything seated on the terrain
@@ -34,7 +31,6 @@ import {
 } from '@/lib/lunar-atlas/southpole'
 import {
   GLOBE_RADIUS,
-  MOON_COLOR_MAP,
   SP_ALBEDO_MAP,
   SP_FAR_ALBEDO_MAP,
 } from '@/lib/lunar-atlas/textures'
@@ -43,10 +39,6 @@ import { loadFarField, loadInnerField } from './useTerrainSampler'
 // A pointer that travels farther than this between down and up is a drag
 // (camera tumble), not a click.
 const CLICK_DRAG_TOLERANCE_PX = 8
-
-// Slightly below the reference radius so the feathered far-cap rim (which
-// lands exactly at the datum) never z-fights the sphere.
-const BACKDROP_RADIUS = GLOBE_RADIUS * 0.9992
 
 function toBufferGeometry(
   field: PolarHeightField,
@@ -119,7 +111,6 @@ export default function SouthPoleTerrain({
 
   const albedo = useTexture(SP_ALBEDO_MAP, true)
   const farAlbedo = useTexture(SP_FAR_ALBEDO_MAP, true)
-  const moonColor = useTexture(MOON_COLOR_MAP, true)
   const detail = useMemo(() => makeDetailNoise(), [])
   useEffect(() => () => detail.dispose(), [detail])
 
@@ -214,18 +205,6 @@ export default function SouthPoleTerrain({
           <meshBasicMaterial map={farAlbedo} />
         </mesh>
       )}
-
-      {/* Whole-Moon backdrop: the caps sit on an actual planet, so oblique
-          and surface views end at the Moon's limb instead of the edge of a
-          floating terrain square. The LROC color map carries its own baked
-          shading, so this is unlit too. */}
-      <mesh onClick={handleClick}>
-        <sphereGeometry args={[BACKDROP_RADIUS, 192, 192]} />
-        <meshBasicMaterial
-          map={moonColor ?? undefined}
-          color={moonColor ? '#ffffff' : '#6b6a66'}
-        />
-      </mesh>
     </group>
   )
 }

@@ -48,7 +48,6 @@ export type GlobeFocus = {
 
 export type MoonGlobeProps = {
   focus?: GlobeFocus
-  autoRotate?: boolean
   onReady?: () => void
   // Tech-tree site layer: one generic installation per capability category.
   trees?: TechTree[]
@@ -109,14 +108,12 @@ function CameraRig({
   focus,
   controlsRef,
   userInteracting,
-  spin,
   onAnimatingChange,
   radiusAt,
 }: {
   focus: GlobeFocus
   controlsRef: React.MutableRefObject<any>
   userInteracting: boolean
-  spin: boolean
   onAnimatingChange: (animating: boolean) => void
   // Rendered terrain radius lookup — framings and the camera floor work
   // against the real ground height, not the analytic sphere.
@@ -267,16 +264,7 @@ function CameraRig({
       }
       return
     }
-
-    // Idle: a gentle drift around the pole axis (world vertical passes
-    // through the pole target, so this orbits the cap). TrackballControls
-    // reads the camera position at the start of its own update, so nudging
-    // it here is preserved and never fights the user's free rotation.
-    if (spin) {
-      const offset = camera.position.clone().sub(curTarget)
-      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.03 * delta)
-      camera.position.copy(curTarget).add(offset)
-    }
+    // Idle: the camera holds still. TrackballControls owns free rotation.
   })
 
   return null
@@ -308,7 +296,6 @@ function Sun() {
 
 export default function MoonGlobe({
   focus = null,
-  autoRotate = true,
   onReady,
   trees,
   organizations,
@@ -335,11 +322,6 @@ export default function MoonGlobe({
   // onPointerMissed (which R3F fires for any click that hits no object —
   // including the release at the end of a starfield drag).
   const pointerDownAt = useRef<{ x: number; y: number } | null>(null)
-  // Idle drift runs in any orbit framing — the slow orbit around the pole is
-  // the page's resting motion. Surface views hold still: the camera is
-  // composed against a specific installation.
-  const spin =
-    autoRotate && focus?.view !== 'surface' && !userInteracting && !isAnimating
 
   // Release the "interacting" flag on pointer up anywhere.
   useEffect(() => {
@@ -423,7 +405,6 @@ export default function MoonGlobe({
         focus={focus}
         controlsRef={controlsRef}
         userInteracting={userInteracting}
-        spin={spin}
         onAnimatingChange={setIsAnimating}
         radiusAt={radiusAt}
       />
