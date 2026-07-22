@@ -1,9 +1,9 @@
 # DePrize Phase 2 — QA checklist
 
-**Scope:** Sepolia DePrize **id 5** (full M2 cashOut gating + FeeRouter) plus automated contract/UI suites.  
-**Date run:** 2026-07-22  
+**Scope:** Sepolia DePrize lifecycle + FeeRouter + Redeem, plus automated contract/UI suites.  
+**Date run:** 2026-07-22 (bettor smoke + full resolve/redeem/terminal follow-up)  
 **Branch:** `cursor/deprize-production-ui-51ff` (PR #1482)  
-**Primary subject:** Prefer DePrize **5** over id **4** for gated QA (id 4’s pay hook is not registry-aware).
+**Subjects:** id **5** (winner → M2_COMPLETE), id **4** (NO_WINNER equal redeem), id **6** (failM2 + cashOut stage 3). Ids 4/5 are **terminal** after this run.
 
 ## Reference addresses (Sepolia)
 
