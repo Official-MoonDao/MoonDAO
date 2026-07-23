@@ -5,6 +5,7 @@ import { CONDITIONAL_TOKEN_ADDRESSES, DEPRIZE_FEE_ROUTER_ADDRESSES } from 'const
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
+import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { buildAmounts } from '@/lib/deprize/quote'
@@ -163,6 +164,7 @@ export default function ExitPositionModal({
         }),
       )
       toast.dismiss('sell')
+      fireDePrizeConfetti()
       toast.success(`Cashed out ${teamName} for ≈ ${fmt(Number(-net) / Number(UNIT))} ETH.`, {
         style: toastStyle,
       })

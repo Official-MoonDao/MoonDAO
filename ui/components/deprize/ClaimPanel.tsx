@@ -1,10 +1,10 @@
 import ConditionalTokensABI from 'const/abis/ConditionalTokens.json'
 import DePrizeRedeemABI from 'const/abis/DePrizeRedeem.json'
 import { CONDITIONAL_TOKEN_ADDRESSES } from 'const/config'
-import confetti from 'canvas-confetti'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
+import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { fmt, formatPrizeTokenLabel, toEth } from '@/lib/deprize/format'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
@@ -81,15 +81,6 @@ export default function ClaimPanel({
   const claimEth = toEth(previewWei)
   const nothingToClaim = claimEth !== undefined && claimEth <= 0
 
-  const fireConfetti = () =>
-    confetti({
-      particleCount: 150,
-      spread: 100,
-      origin: { y: 0.6 },
-      shapes: ['circle', 'star'],
-      colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
-    })
-
   const approveHelper = async () => {
     if (!account || !ctf) return
     setBusy(true)
@@ -129,7 +120,7 @@ export default function ClaimPanel({
       )
       toast.dismiss('claim')
       setClaimed(true)
-      fireConfetti()
+      fireDePrizeConfetti()
       toast.success(
         claimEth !== undefined
           ? `Claimed ≈ ${fmt(claimEth)} ETH.`

@@ -3,6 +3,7 @@ import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
+import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { DEPRIZE_TERMS_URL, UNIT } from '@/lib/deprize/constants'
 import { fmt, formatPrizeTokenLabel, toEth, toWei } from '@/lib/deprize/format'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
@@ -146,6 +147,7 @@ export default function BetModal({
       )
       toast.dismiss('bet')
       const qtyNum = Number(qty) / Number(UNIT)
+      fireDePrizeConfetti()
       toast.success(
         `Backed ${teamName} with ${fmt(betAmountNum)} ETH. To win ≈ ${fmt(qtyNum)} ETH if it wins.`,
         { style: toastStyle, duration: 8000 }

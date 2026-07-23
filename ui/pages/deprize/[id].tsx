@@ -31,12 +31,12 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import BetModal from '@/components/deprize/BetModal'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DePrizeAdminPanel from '@/components/deprize/DePrizeAdminPanel'
+import DePrizeComingSoon from '@/components/deprize/DePrizeComingSoon'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import DePrizeTeamLink, { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
@@ -72,6 +72,14 @@ function StateBadge({
 }
 
 export default function DePrizeDetailPage() {
+  const { selectedChain } = useContext(ChainContextV5)
+  if (getChainSlug(selectedChain) === 'arbitrum') {
+    return <DePrizeComingSoon />
+  }
+  return <DePrizeDetailContent />
+}
+
+function DePrizeDetailContent() {
   const router = useRouter()
   const rawId = router.query.id
   const deprizeId = typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
@@ -673,17 +681,10 @@ function Shell({ children }: { children: React.ReactNode }) {
         description="Back a provider to fly Frank White to space, and win if they do."
       />
       <Container>
-        <ContentLayout
-          mainPadding
-          mode="compact"
-          popOverEffect={false}
-          isProfile
-          centerHeader
-          centerHeaderWidth="860px"
-          preFooter={<NoticeFooter />}
-        >
-          <div className="w-full max-w-[860px] mx-auto">{children}</div>
-        </ContentLayout>
+        <div className="w-full max-w-[860px] mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
+          {children}
+        </div>
+        <NoticeFooter />
       </Container>
     </div>
   )
