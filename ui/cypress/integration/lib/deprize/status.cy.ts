@@ -95,6 +95,19 @@ describe('deprize status helpers', () => {
       expect(view.statusLabelOverride).to.equal(undefined)
       expect(view.effectiveDescription).to.include('closed')
     })
+
+    it('surfaces cancellation copy when OPEN but bettingOpen is false (notice pending)', () => {
+      const view = reconcileBettingStatus({
+        bettingOpen: false,
+        marketStage: MarketStage.Running,
+        mintConfigured: true,
+        registryState: DePrizeState.OPEN,
+        marketBound: true,
+      })
+      expect(view.statusLabelOverride).to.equal('Open · cancelling')
+      expect(view.effectiveDescription).to.include('Cancellation announced')
+      expect(view.effectiveDescription).to.not.include('Accepting bets')
+    })
   })
 
   describe('deprizeListBucket', () => {
@@ -185,9 +198,7 @@ describe('deprize status helpers', () => {
 
   describe('isMintConfigured', () => {
     it('accepts a 0x address', () => {
-      expect(isMintConfigured('0x299F163705AbBFa1A8DE7670F33171730F828F3D')).to.equal(
-        true,
-      )
+      expect(isMintConfigured('0x299F163705AbBFa1A8DE7670F33171730F828F3D')).to.equal(true)
     })
 
     it('rejects empty / invalid', () => {

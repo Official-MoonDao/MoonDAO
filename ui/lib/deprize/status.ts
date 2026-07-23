@@ -29,8 +29,7 @@ export function reconcileBettingStatus(opts: {
    */
   marketBound?: boolean
 }): BettingStatusView {
-  const defaultDescription =
-    DEPRIZE_STATE_META[opts.registryState]?.description ?? ''
+  const defaultDescription = DEPRIZE_STATE_META[opts.registryState]?.description ?? ''
 
   let bettingBlockedReason: string | undefined
   if (opts.bettingOpen) {
@@ -44,18 +43,19 @@ export function reconcileBettingStatus(opts: {
       bettingBlockedReason =
         'Betting is temporarily paused while the market is halted. Live odds stay visible.'
     } else if (opts.marketStage === MarketStage.Closed) {
-      bettingBlockedReason =
-        'The prediction market is closed, so betting is unavailable.'
-    } else if (
-      opts.marketBound === true &&
-      opts.marketStage !== MarketStage.Running
-    ) {
+      bettingBlockedReason = 'The prediction market is closed, so betting is unavailable.'
+    } else if (opts.marketBound === true && opts.marketStage !== MarketStage.Running) {
       // Any non-Running LMSR stage (e.g. Created) — don't claim "Accepting bets".
       bettingBlockedReason = 'The prediction market is not open for trading yet.'
     } else if (!opts.mintConfigured) {
       bettingBlockedReason =
         "Betting isn't wired on this network yet. You can still view live odds."
     }
+  } else if (opts.registryState === DePrizeState.OPEN) {
+    // OPEN + !bettingOpen ⇒ cancellation notice pending (deriveDePrizeFlags).
+    // Don't fall through to DEPRIZE_STATE_META[OPEN] ("Accepting bets").
+    bettingBlockedReason =
+      'Cancellation announced — new bets are paused during the 7-day notice window.'
   }
 
   const statusLabelOverride =
@@ -69,14 +69,13 @@ export function reconcileBettingStatus(opts: {
             : bettingBlockedReason.startsWith('Loading')
               ? 'Open'
               : 'Open · betting unavailable'
-      : undefined
+      : !opts.bettingOpen && opts.registryState === DePrizeState.OPEN && bettingBlockedReason
+        ? 'Open · cancelling'
+        : undefined
 
   return {
     bettingBlockedReason,
-    effectiveDescription:
-      opts.bettingOpen && bettingBlockedReason
-        ? bettingBlockedReason
-        : defaultDescription,
+    effectiveDescription: bettingBlockedReason ? bettingBlockedReason : defaultDescription,
     statusLabelOverride,
   }
 }
@@ -95,14 +94,9 @@ export function deprizeListBucket(opts: {
   marketStage: number | undefined
   marketLoading: boolean
 }): 'live' | 'closed' | 'none' | 'loading' {
-  const { state, isTerminal, mintConfigured, marketBound, marketStage, marketLoading } =
-    opts
+  const { state, isTerminal, mintConfigured, marketBound, marketStage, marketLoading } = opts
   if (state === DePrizeState.NONE) return 'none'
-  if (
-    isTerminal ||
-    state === DePrizeState.SETTLED ||
-    state === DePrizeState.M1_RELEASED
-  ) {
+  if (isTerminal || state === DePrizeState.SETTLED || state === DePrizeState.M1_RELEASED) {
     return 'closed'
   }
   if (state === DePrizeState.OPEN) {
