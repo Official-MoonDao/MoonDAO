@@ -1,0 +1,267 @@
+[
+  {
+    "type": "function",
+    "name": "state",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "uint8" }]
+  },
+  {
+    "type": "function",
+    "name": "getDePrize",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "components": [
+          { "name": "jbProjectId", "type": "uint256" },
+          { "name": "ctfConditionId", "type": "bytes32" },
+          { "name": "sunset", "type": "uint256" },
+          { "name": "winningTeamId", "type": "uint256" },
+          { "name": "cancellationNoticeAt", "type": "uint256" },
+          { "name": "state", "type": "uint8" },
+          { "name": "teamIds", "type": "uint256[]" }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "teamIds",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "uint256[]" }]
+  },
+  {
+    "type": "function",
+    "name": "isTeam",
+    "stateMutability": "view",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256" },
+      { "name": "teamId", "type": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "winningTeamId",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "bettingOpen",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "isRefundable",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "isTerminal",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "cancellationPending",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "count",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "deprizeIdByJBProject",
+    "stateMutability": "view",
+    "inputs": [{ "name": "jbProjectId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "providerPayoutAddress",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "CANCELLATION_NOTICE",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "register",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "jbProjectId", "type": "uint256" },
+      { "name": "teamIds", "type": "uint256[]" },
+      { "name": "sunset", "type": "uint256" }
+    ],
+    "outputs": [{ "name": "deprizeId", "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "setCondition",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256" },
+      { "name": "ctfConditionId", "type": "bytes32" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "setSunset",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256" },
+      { "name": "sunset", "type": "uint256" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "open",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "lock",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "startVote",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "settleWinner",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256" },
+      { "name": "winningTeamId", "type": "uint256" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "settleNoWinner",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "releaseM1",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "completeM2",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "failM2",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "announceCancellation",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "abortCancellation",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "cancel",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "setProviderPayoutAddress",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256" },
+      { "name": "provider", "type": "address" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "event",
+    "name": "StateChanged",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256", "indexed": true },
+      { "name": "from", "type": "uint8", "indexed": true },
+      { "name": "to", "type": "uint8", "indexed": true }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "WinnerDeclared",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256", "indexed": true },
+      { "name": "winningTeamId", "type": "uint256", "indexed": true }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CancellationAnnounced",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256", "indexed": true },
+      { "name": "noticeAt", "type": "uint256", "indexed": false },
+      { "name": "executableAt", "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false
+  }
+]

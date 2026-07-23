@@ -12,6 +12,7 @@ import {IJBTerminal} from "@nana-core-v5/interfaces/IJBTerminal.sol";
 import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
 
 import {IDePrizeRegistry} from "./IDePrizeRegistry.sol";
+import {IDePrizeFeeRouter} from "./interfaces/IDePrizeFeeRouter.sol";
 import {ILMSRWithTWAP} from "./interfaces/ILMSRWithTWAP.sol";
 import {IConditionalTokens} from "./interfaces/IConditionalTokens.sol";
 import {IWETH} from "./interfaces/IWETH.sol";
@@ -58,10 +59,17 @@ contract DePrizeMint is
     uint256[] private _rcvIds;
     uint256[] private _rcvValues;
 
-    /// @dev Storage gap for future upgrades (50 slots - 8 used = 42).
-    uint256[42] private __gap;
+    /// @notice Optional DePrizeFeeRouter. When set, every bet triggers a
+    ///         best-effort sweep of the market's accrued trade fees into the
+    ///         DePrize's Juicebox prize pool. Zero address disables the hook.
+    /// @dev Appended in the fee-router upgrade; takes one reserved gap slot.
+    address public feeRouter;
+
+    /// @dev Storage gap for future upgrades (50 slots - 9 used = 41).
+    uint256[41] private __gap;
 
     event MarketSet(uint256 indexed deprizeId, address indexed market);
+    event FeeRouterSet(address indexed feeRouter);
     event Bet(
         uint256 indexed deprizeId,
         address indexed bettor,
@@ -128,6 +136,14 @@ contract DePrizeMint is
         }
         marketOf[deprizeId] = market;
         emit MarketSet(deprizeId, market);
+    }
+
+    /// @notice Point bets at a DePrizeFeeRouter (zero address disables). The
+    ///         router itself must own the LMSR market for its sweep to succeed;
+    ///         the hook in {bet} is best-effort either way.
+    function setFeeRouter(address feeRouter_) external onlyOwner {
+        feeRouter = feeRouter_;
+        emit FeeRouterSet(feeRouter_);
     }
 
     // ---------------------------------------------------------------------
@@ -221,6 +237,13 @@ contract DePrizeMint is
         }
 
         emit Bet(deprizeId, msg.sender, outcomeIndex, outcomeTokenAmount, cost, slice);
+
+        // 5. Best-effort: sweep the market's accrued trade fees (including this
+        //    bet's 1%) into the Juicebox prize pool. A failing/missing router
+        //    must never block betting, so failures are swallowed.
+        if (feeRouter != address(0)) {
+            try IDePrizeFeeRouter(feeRouter).sweepFees(deprizeId) {} catch {}
+        }
     }
 
     function _flushOutcomeTokens(address to) private {

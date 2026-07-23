@@ -22,6 +22,8 @@
     "cy:run-ct:warp": "bash scripts/test-parallel.sh 8",
     "test:voting-author-restriction": "ts-node -r tsconfig-paths/register scripts/test-voting-author-restriction.ts",
     "test:overview-path-vote": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-cypress-unit.json --spec cypress/integration/overview-path-vote/tally.cy.ts",
+    "test:deprize": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-deprize-unit.json",
+    "verify:deprize-reads": "node scripts/verify-deprize-reads.mjs",
     "snapshot:vmooney": "node scripts/snapshot-vmooney.mjs",
     "snapshot:path-vote": "ts-node -r tsconfig-paths/register scripts/snapshot-path-vote.ts",
     "test:cypress-unit": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-cypress-unit.json",

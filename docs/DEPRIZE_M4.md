@@ -170,6 +170,8 @@ after winner/no-winner decided:  lmsr.close()        ── inventory (ERC-1155)
 
 Treasury recovers: `funding seed − bounded LMSR loss + accrued fees`. Nothing is stranded.
 
+**If the `DePrizeFeeRouter` owns the market** (Phase 2 — see §Fee routing), the LMSR's `onlyOwner` surface sees the *router*, not the Safe. The Safe still drives the unwind, but through the router's owner passthroughs: `router.pauseMarket(id)` / `resumeMarket(id)` / `closeMarket(id)` / `transferMarketOwnership(id, newOwner)`. `closeMarket` pushes the LMSR's ERC-1155 inventory into the router (its acceptance hook only accepts the CTF mid-close); the Safe then pulls it out with `router.recoverERC1155(ids, values, safe)` before redeeming on the CTF. Accrued fees leave via `router.sweepFees(id)` (which, on a terminal DePrize, forwards to the treasury) or `router.recoverERC20/recoverETH`. The `withdrawFees` → treasury economics above are unchanged; only the caller path differs.
+
 ### Double-count guard (policy, enforced by the runbook)
 
 A refunded bettor is made whole from **two separate pools they already own claims on**: (1) CTF collateral via the 1/N redemption (their 95% slice, minus parimutuel skew), and (2) their own `$OVERVIEW` pro-rata cashOut once the M2 hook re-enables it (their 5% slice). The guard:
@@ -177,10 +179,48 @@ A refunded bettor is made whole from **two separate pools they already own claim
 - **Unwound market proceeds (seed + fees) go to the treasury, NOT into the JB project.** Topping up the JB pot post-cancellation would raise the `$OVERVIEW` floor and silently push bettor recovery toward 100%, contradicting the disclosed cancellation loss and draining the treasury's 5%-slice prize funding.
 - The M2 hook needs no change: refund terminals already enable cashOut with no expiry window and block new contributions.
 
+**Interaction with `DePrizeFeeRouter` (Phase 2).** The fee router (see §Fee routing below) is built to *respect* this guard, not break it: it routes accrued trade fees into the JB prize pool **only while the DePrize is non-terminal**, and switches to routing fees to the treasury the moment the DePrize enters any terminal state (`registry.isTerminal(id)`), including the refundable ones. So no fees can land in the JB project after cancellation/no-winner — the `$OVERVIEW` floor is never inflated post-terminal, and the double-count guard holds. The final `withdrawFees()` during market unwind likewise lands in the treasury (the router forwards it to `owner()` once terminal).
+
 ### Out of scope (unchanged)
 
 - `DePrizeMilestoneEscrow` (provider's 30/70 disbursement, incl. `refundToJB` on no-winner) stays **M5** — different pool, orthogonal to bettor payouts.
 - A combined one-click `refundAll` (CTF redemption + JB cashOut in one tx) from the design doc is **dropped for M4**: the JB cashOut leg needs `$OVERVIEW` token approvals + terminal permissions and duplicates a flow Juicebox already ships. Two clicks (redeem + cashOut), one contract less. Revisit as UI polish.
+
+---
+
+## Fee routing (Phase 2 — `DePrizeFeeRouter`)
+
+The original M4 policy above recovered the LMSR's accrued 1% trade fees to the **treasury** at unwind, and the double-count guard warned specifically against topping up the JB pot with them. Phase 2 adds an **optional** `DePrizeFeeRouter` (`subscription-contracts/src/deprize/DePrizeFeeRouter.sol`) that revisits *when* the fees move, while preserving that guard.
+
+**Motivation.** The design doc's "1% of every trade grows the prize pool" property was lost when the Uniswap `DePrizeFeeHook` + `DePrizePrizeEscrow` were deleted in favor of the LMSR built-in fee (which just accrues inside the market). The router restores it without re-introducing a hook or a custody escrow.
+
+**Why it owns the market.** The Gnosis `MarketMaker.withdrawFees()` sends the market's standalone collateral balance to `owner()`. While the market is Running/Paused that balance is *exactly* the accrued fees (net trade collateral and the funding seed are escrowed inside the CTF via `splitPosition`), so sweeping mid-campaign is safe and does not move prices. Making the router the market owner is what lets `sweepFees` be permissionless and automatic.
+
+**Routing policy (the terminal-state split).**
+
+| DePrize state | `sweepFees(id)` destination | Why |
+|---|---|---|
+| Non-terminal (`OPEN`/`LOCKED`/`VOTING`/`SETTLED`/`M1_RELEASED`) | `jbTerminal.pay` → the DePrize's **JB prize pool**; `$OVERVIEW` minted for the payment goes to the treasury (`owner()`) — fees have no single attributable bettor | Grows the provider's prize with trading volume, the intended "1% → prize" behavior |
+| Terminal (`CANCELLED`/`NO_WINNER`/`M2_FAILED`/`M2_COMPLETE`) | `owner()` (**treasury**) | Honors the M4b double-count guard: on refundable terminals, adding to the JB pot would inflate the `$OVERVIEW` cash-out floor and distort the disclosed refund; on `M2_COMPLETE` the prize is already disbursed |
+
+The split is gated on `registry.isTerminal(id)`, checked at sweep time — so the crossover is automatic and no fees reach the JB project once the DePrize is terminal.
+
+**How sweeps are triggered.**
+
+- **On buys:** `DePrizeMint.bet()` ends with a best-effort `try/catch` call to `sweepFees` (enabled once `deprizeMint.setFeeRouter(router)` is set). A failing sweep never blocks a bet.
+- **On sells:** sells hit the LMSR directly (the router is buy-only by design), so there is no on-chain hook — the UI fires a best-effort `sweepFees` after a successful sell. Because `sweepFees` is permissionless, anyone (or a keeper) can also call it.
+
+**Safety properties.** Balance-delta scoped (measures WETH actually received, never trusts the market's return value, so stray WETH can't over-credit or leak into the pool); `nonReentrant`; ERC-1155 acceptance hooks accept only the CTF's inventory push mid-`closeMarket`. Non-upgradeable by design (same rationale as `DePrizeRedeem`): no state worth migrating, and the owner can always exit via `transferMarketOwnership`.
+
+**Activation runbook (Safe txs, per DePrize).**
+
+1. Deploy: `DEPRIZE_REGISTRY=0x… forge script script/deprize/DePrizeFeeRouter.s.sol --rpc-url $RPC --via-ir --optimizer-runs 200 --broadcast`.
+2. `lmsr.transferOwnership(router)` — the router must own the market for `withdrawFees` to work.
+3. `router.setMarket(deprizeId, lmsr)` — validates CTF/WETH/condition match the registry.
+4. `deprizeMint.setFeeRouter(router)` — enables the per-bet auto-sweep.
+5. Fill `DEPRIZE_FEE_ROUTER_ADDRESSES` in `ui/const/config.ts` — enables the post-sell sweep in the UI.
+
+Tests: `subscription-contracts/test/deprize/DePrizeFeeRouter.t.sol` (24 unit + 4 `DePrizeMint` integration), with a mock market that faithfully reproduces the Gnosis fee-escrow accounting.
 
 ---
 
@@ -242,5 +282,5 @@ DEPRIZE_FORK_RPC=<arb-sepolia rpc> [DEPRIZE_FORK_FACTORY=0x<factory>] \
 
 ## Remaining policy decisions (runbook-level, no contract impact)
 
-1. **Where do unwound proceeds land** — treasury (recommended, see §Double-count guard) vs. JB prize pool.
+1. **Where do unwound proceeds land** — **decided (Phase 2):** with the `DePrizeFeeRouter` deployed, accrued trade fees route to the **JB prize pool while the DePrize is live** and to the **treasury on terminal states** (see §Fee routing). The market-unwind proceeds (funding seed + any fees swept at close) still land in the treasury, preserving the §Double-count guard.
 2. **`pause()` timing** — at `lock()` (recommended; freezes odds during the vote) vs. only pre-report (leaves the public LMSR tradable during `VOTING`).

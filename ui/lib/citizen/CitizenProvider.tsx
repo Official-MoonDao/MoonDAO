@@ -1,6 +1,12 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
-import { useCallback, useEffect, useState, useRef } from 'react'
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+} from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTablelandQuery } from '../swr/useTablelandQuery'
 import { citizenRowToNFT } from '../tableland/convertRow'
@@ -202,7 +208,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   useEffect(() => {
     hasLoadedNonDefaultCache.current = false
     optimisticUntilRef.current = 0
-    setOptimisticActive(false)
+    startTransition(() => setOptimisticActive(false))
     if (optimisticTimerRef.current) {
       clearTimeout(optimisticTimerRef.current)
       optimisticTimerRef.current = null
@@ -212,7 +218,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   // Load cached data immediately when address/chain are available
   useEffect(() => {
     if (mock) {
-      setCitizen(mock)
+      startTransition(() => setCitizen(mock))
       return
     }
 
@@ -233,7 +239,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       // Without this, a same-tick Tableland error would set isLoading=true and
       // never clear it, because the data effect doesn't re-run on `citizen`.
       citizenRef.current = cachedData
-      setCitizen(cachedData)
+      startTransition(() => setCitizen(cachedData))
     } else {
       // If the in-memory citizen belongs to a different wallet (wallet switch
       // with no cache for the new address), drop it. Otherwise the data
@@ -244,12 +250,12 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
         typeof existing?.owner === 'string' ? existing.owner : ''
       if (existingOwner && existingOwner.toLowerCase() !== address.toLowerCase()) {
         citizenRef.current = undefined
-        setCitizen(undefined)
+        startTransition(() => setCitizen(undefined))
       }
       if (authenticated && user && isDefaultChain) {
-        setIsLoading(true)
+        startTransition(() => setIsLoading(true))
       } else if (authenticated && user && !isDefaultChain) {
-        setIsLoading(false)
+        startTransition(() => setIsLoading(false))
       }
     }
   }, [address, chainId, mock, isDefaultChain, authenticated, user])

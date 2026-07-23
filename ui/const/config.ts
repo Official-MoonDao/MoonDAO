@@ -460,6 +460,23 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
   sepolia: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
   'arbitrum-sepolia': '',
 }
+// DePrizeMint bet router (5% JB prize slice + 95% CTF/LMSR collateral). Populate
+// per chain once `script/deprize/DePrizeMint.s.sol` has deployed the router and
+// `setMarket(deprizeId, lmsr)` has bound the market. Empty until then — the
+// production UI degrades gracefully (betting disabled with a notice) when unset.
+export const DEPRIZE_MINT_ADDRESSES: Index = {
+  sepolia: '0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8',
+  'arbitrum-sepolia': '',
+}
+// DePrizeFeeRouter: owns the LMSR market and routes its accrued 1% trade fees
+// into the DePrize's Juicebox prize pool (sweepFees is permissionless). Populate
+// per chain once `script/deprize/DePrizeFeeRouter.s.sol` has deployed it and the
+// market's LMSR ownership has been transferred to it. Empty = no post-sell sweep
+// (bets still sweep on-chain via DePrizeMint once its feeRouter is set).
+export const DEPRIZE_FEE_ROUTER_ADDRESSES: Index = {
+  sepolia: '0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a',
+  'arbitrum-sepolia': '',
+}
 // questionId used when the play market's condition was prepared
 // (prediction/deprize.config.js DEPRIZE_QUESTION_ID). Needed by reportPayouts;
 // the conditionId is keccak256(oracle, questionId, outcomeSlotCount).
@@ -672,9 +689,9 @@ export const EB_TEAM_ID = '0'
 // on the EB team listing.
 export const CITIZENSHIP_GIFT_TAG = 'citizenship-gift'
 
-/** MoonDAO docs — Overview Flight mission (e.g. mission id 4). */
+/** MoonDAO docs — Overview Effect Flight mission (e.g. mission id 4). */
 export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
-  'https://docs.moondao.com/Legal/Overview-Flight/Overview-Flight-Terms-and-Conditions'
+  'https://docs.moondao.com/Legal/Overview-Effect-Flight/Overview-Effect-Flight-Terms-and-Conditions'
 
 // ---------------------------------------------------------------------------
 // PROJECT CYCLE — single source of truth for the quarterly project system.

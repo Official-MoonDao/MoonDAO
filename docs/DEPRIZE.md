@@ -101,7 +101,7 @@ Active decisions for the bettor: choose team, choose amount, click bet, optional
 
 A subtle but important point: **bettors and providers are paid from different pools.**
 
-- **The prize pool** (the JB project balance) is paid to the **winning provider** at settlement. This is what funds the actual Frank + Candidate flight. It grows from the 5% primary-mint slices and direct contributions. (As built, the 1% LMSR trade fee accrues inside the market and is recovered by the treasury at unwind, rather than flowing into the prize pool via a separate `DePrizePrizeEscrow`.)
+- **The prize pool** (the JB project balance) is paid to the **winning provider** at settlement. This is what funds the actual Frank + Candidate flight. It grows from the 5% primary-mint slices and direct contributions. (As built, the 1% LMSR trade fee accrues inside the market and — once the optional `DePrizeFeeRouter` is wired in — is swept into the prize pool while the DePrize is live, restoring the "betting volume grows the prize" property the deleted `DePrizePrizeEscrow` was meant to provide. On terminal states the fees route to the treasury instead; see [`DEPRIZE_M4.md`](./DEPRIZE_M4.md) §Fee routing.)
 - **The CTF collateral pool** (Gnosis ConditionalTokens) is paid to **winning bettors** via parimutuel redemption. It comes from the 95% of every bet that goes into CTF. Bettors win from other bettors' losses.
 
 Practical implications for bettors:
@@ -111,7 +111,7 @@ Practical implications for bettors:
 | You receive ~2.32 ETH from the CTF collateral pool (your gain comes from losing bettors on other providers). |
 | You do NOT directly receive a share of the prize pool. The prize pool goes to the provider. |
 | Watching the prize pool grow is exciting (it unlocks higher-tier providers), but your maximum payout per bet is bounded by other bettors' losses, not by the prize size. |
-| The 1% LMSR trade fee you pay is retained by the treasury-seeded market maker (it underwrites liquidity and is recovered at unwind), not paid to you directly. |
+| The 1% LMSR trade fee you pay is not paid to you directly. With the `DePrizeFeeRouter` deployed it is swept into the prize pool while the DePrize is live (growing the provider's prize); on terminal states it goes to the treasury instead. |
 
 This two-pool structure is essential to keep clean. If bettors and providers were paid from the same pool, the math breaks down (winners would need to fund both the next provider's mission AND each other's parimutuel payouts, which is impossible). The two-pool model is standard for prediction markets that fund external prizes.
 
@@ -267,7 +267,7 @@ Refundable terminals: `CANCELLED`, `NO_WINNER`, `M2_FAILED`. Success terminal: `
 
 ## New contracts
 
-As-built status shown. The CTF + `LMSRWithTWAP` decision (see §Implementation status) deleted `DePrizeFeeHook` and `DePrizePrizeEscrow` (the 1% fee is now the LMSR built-in `fee`, retained inside the market).
+As-built status shown. The CTF + `LMSRWithTWAP` decision (see §Implementation status) deleted `DePrizeFeeHook` and `DePrizePrizeEscrow` (the 1% fee is now the LMSR built-in `fee`, accrued inside the market). The optional `DePrizeFeeRouter` was later added to sweep those accrued fees into the prize pool — the prize-growth role `DePrizePrizeEscrow` was originally meant to serve — without a Uniswap hook or a custody escrow.
 
 | Contract | Purpose | Status |
 |---|---|---|
@@ -278,6 +278,7 @@ As-built status shown. The CTF + `LMSRWithTWAP` decision (see §Implementation s
 | `DePrizeRedeem` | Winner `redeemPositions` AND the cancellation/no-winner refund (same code path — refund is an equal-payout report); pays ETH | **Built (M4)** |
 | ~~`DePrizeMilestoneEscrow`~~ | ~~Holds prize pool post-settlement; releases 30% at M1, 70% at M2~~ | **M5 — built without a contract.** JB payout splits are permanently locked (escrow can't be a beneficiary); prize lands in the admin Safe and is disbursed 30/70 by Safe tx (`DePrizeDisburse.s.sol`); `M2_FAILED` returns 70% to JB via `addToBalanceOf`; registry records `providerPayoutAddress` |
 | ~~`DePrizePrizeEscrow`~~ | ~~Holds 1% swap fees during campaign~~ | **Deleted** — LMSR built-in fee |
+| `DePrizeFeeRouter` | Owns the LMSR market and sweeps its accrued 1% trade fees into the JB prize pool while the DePrize is live (routes to the treasury on terminal states); also fronts the M4 market-unwind owner surface for the Safe | **Built (Phase 2, optional)** — non-upgradeable; auto-swept per bet via `DePrizeMint.setFeeRouter`, and per sell via the UI |
 | ~~`DePrizeFeeHook`~~ | ~~Uniswap v4 hook for LP + protocol fee~~ | **Deleted** — no Uniswap layer |
 
 The market maker itself (`LMSRWithTWAP`) and `ConditionalTokens` are **reused external Solidity `0.5` deployments**, not new contracts in this repo — see §Shared infrastructure.
@@ -462,7 +463,7 @@ Frank White is the central beneficiary of the mission and is also a **Senator in
 
 ## Pool seeding and LP economics
 
-> **As built:** there are no Uniswap LP pools. Each DePrize is one Gnosis CTF condition + one `LMSRWithTWAP` market, **seeded by the treasury with `funding` at creation** (`LMSRWithTWAPFactory.createLMSRWithTWAP(ctf, weth, [conditionId], fee = 1e16, 0x0, funding)`, default ~1 ETH × #teams — the same seed magnitude discussed below). LMSR is a bounded-loss market maker: the treasury's maximum loss is capped by `funding` and the curve's `b` parameter, so the "LP cliff risk" framing below is moot — there is no external-LP role to attract. The LMSR's 1% fee accrues to the market and is recovered by the treasury at unwind. The treasury-as-Uniswap-LP analysis below is retained as design-rationale history.
+> **As built:** there are no Uniswap LP pools. Each DePrize is one Gnosis CTF condition + one `LMSRWithTWAP` market, **seeded by the treasury with `funding` at creation** (`LMSRWithTWAPFactory.createLMSRWithTWAP(ctf, weth, [conditionId], fee = 1e16, 0x0, funding)`, default ~1 ETH × #teams — the same seed magnitude discussed below). LMSR is a bounded-loss market maker: the treasury's maximum loss is capped by `funding` and the curve's `b` parameter, so the "LP cliff risk" framing below is moot — there is no external-LP role to attract. The LMSR's 1% fee accrues to the market; with the optional `DePrizeFeeRouter` deployed (which owns the market) those fees are swept into the JB prize pool while the DePrize is live, and to the treasury on terminal states. Without the router, the treasury still recovers them at unwind via `withdrawFees()`. The treasury-as-Uniswap-LP analysis below is retained as design-rationale history.
 
 Outcome-token AMM pools are notoriously hostile to liquidity providers (cliff risk at settlement: an LP holding the losing side gets zero; walk-toward-edge dynamics drive maximum IL; settlement-day total loss). Without explicit incentives, external LPs won't show up and the market becomes illiquid. **Launch-blocker if unaddressed.** This is precisely why the as-built design uses an LMSR market maker (bounded operator loss, no LP needed) rather than constant-product LP pools.
 
@@ -486,7 +487,7 @@ At moderate activity ($5M swap volume), treasury earns ~15 ETH in LP fees agains
 
 The protocol takes revenue in two places: a one-time 5% slice on primary mints (routes to JB project, mints `$OVERVIEW` to the bettor), and a 1% fee on every trade. The split between these two mechanisms is deliberate.
 
-> **As built:** the 1% fee is the `LMSRWithTWAP` market-maker's built-in `fee` parameter (`1e16`), charged on every `trade()` and retained inside the market (which the treasury seeds and ultimately unwinds) — **not** a Uniswap LP fee + protocol fee split. There is a single 1% trade fee, not the "1% LP + 1% protocol = 2%" structure described in the original draft below. The revenue tables below remain directionally valid for the 5%-slice-vs-trade-fee tradeoff but should be read with that single-1%-fee correction.
+> **As built:** the 1% fee is the `LMSRWithTWAP` market-maker's built-in `fee` parameter (`1e16`), charged on every `trade()` and accrued inside the market (which the treasury seeds) — **not** a Uniswap LP fee + protocol fee split. There is a single 1% trade fee, not the "1% LP + 1% protocol = 2%" structure described in the original draft below. With the optional `DePrizeFeeRouter` deployed, that single 1% fee is swept into the prize pool while the DePrize is live — so the design's "1% routes to the prize" property is preserved through a different mechanism (fee sweep) rather than a Uniswap protocol-fee hook. The revenue tables below remain directionally valid for the 5%-slice-vs-trade-fee tradeoff but should be read with that single-1%-fee correction.
 
 ### Revenue dynamics at different activity levels
 
