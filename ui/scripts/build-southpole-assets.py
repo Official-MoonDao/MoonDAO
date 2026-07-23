@@ -6,7 +6,7 @@ Input: LDEM_75S_120M.IMG (NASA LRO/LOLA gridded DEM, polar stereographic,
 relative to the 1737.4 km reference sphere). Download:
   http://imbrium.mit.edu/DATA/LOLA_GDR/POLAR/IMG/LDEM_75S_120M.IMG
 
-Outputs (into ui/public/lunar-atlas/southpole/):
+Outputs (into ui/public/moonbase/southpole/):
   height_rg.png      Inner cap 16-bit height field split across R (high byte)
                      and G (low byte), normalized to the crop's [min, max].
   normal.png         Inner cap tangent-space normal map (full-res gradients).

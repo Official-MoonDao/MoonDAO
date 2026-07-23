@@ -8,19 +8,19 @@
 // The matching projection math and BAKED constants live in ./southpole.ts.
 
 // Inner cap (playable area, ~369 km square centered on the pole).
-export const SP_HEIGHT_MAP = '/lunar-atlas/southpole/height_rg.png'
-export const SP_NORMAL_MAP = '/lunar-atlas/southpole/normal.png'
-export const SP_ALBEDO_MAP = '/lunar-atlas/southpole/albedo.jpg'
+export const SP_HEIGHT_MAP = '/moonbase/southpole/height_rg.png'
+export const SP_NORMAL_MAP = '/moonbase/southpole/normal.png'
+export const SP_ALBEDO_MAP = '/moonbase/southpole/albedo.jpg'
 
 // Far surround (full DEM extent, ~915 km square; albedo and heights feather
 // out toward the dataset edge so the cap dissolves into the backdrop Moon).
-export const SP_FAR_HEIGHT_MAP = '/lunar-atlas/southpole/far_height_rg.png'
-export const SP_FAR_ALBEDO_MAP = '/lunar-atlas/southpole/far_albedo.jpg'
+export const SP_FAR_HEIGHT_MAP = '/moonbase/southpole/far_height_rg.png'
+export const SP_FAR_ALBEDO_MAP = '/moonbase/southpole/far_albedo.jpg'
 
 // Whole-Moon backdrop sphere under the caps (NASA CGI Moon Kit, equirect):
 // the horizon past the cap is the actual Moon's limb, not empty space.
-export const MOON_COLOR_MAP = '/lunar-atlas/lunar_color_4k.jpg'
-export const MOON_BUMP_MAP = '/lunar-atlas/lunar_displacement_2k.jpg'
+export const MOON_COLOR_MAP = '/moonbase/lunar_color_4k.jpg'
+export const MOON_BUMP_MAP = '/moonbase/lunar_displacement_2k.jpg'
 
 // World radius in scene units. Terrain, markers, and camera framings are all
 // expressed against this — the world is still a sphere (positions are

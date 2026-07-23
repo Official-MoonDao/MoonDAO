@@ -190,7 +190,7 @@
       "orgId": "nasa",
       "name": "Artemis Base Camp",
       "type": "crewed_base",
-      "modelURI": "/lunar-atlas/models/habitat-demo-unit.glb",
+      "modelURI": "/moonbase/models/habitat-demo-unit.glb",
       "summary": "NASA's planned sustained surface habitation at the lunar South Pole, including a foundation surface habitat, mobility (LTV and habitable mobility platform), and power — the anchor of a long-term human presence.",
       "location": {
         "lat": -89.5,
@@ -245,7 +245,7 @@
       "orgId": "nasa",
       "name": "Artemis III Crewed Landing",
       "type": "crewed_base",
-      "modelURI": "/lunar-atlas/models/apollo-lunar-module.glb",
+      "modelURI": "/moonbase/models/apollo-lunar-module.glb",
       "summary": "The first crewed Artemis landing, targeting a South Pole region and delivering astronauts to the surface via a commercial Human Landing System.",
       "location": {
         "lat": -85.3,
@@ -320,7 +320,7 @@
       "orgId": "nasa",
       "name": "Lunar Terrain Vehicle (LTV)",
       "type": "rover",
-      "modelURI": "/lunar-atlas/models/perseverance-rover.glb",
+      "modelURI": "/moonbase/models/perseverance-rover.glb",
       "summary": "An unpressurized rover to let Artemis crews explore farther from the landing site and to operate autonomously between crewed missions near the South Pole.",
       "location": {
         "lat": -88.8,
@@ -361,7 +361,7 @@
       "orgId": "intuitive-machines",
       "name": "Moon RACER LTV",
       "type": "rover",
-      "modelURI": "/lunar-atlas/models/perseverance-rover.glb",
+      "modelURI": "/moonbase/models/perseverance-rover.glb",
       "summary": "Intuitive Machines' Moon RACER unpressurized rover, offered for NASA's LTV Services contract to carry Artemis crews across the South Pole and operate autonomously between missions.",
       "location": {
         "lat": -88.6,
@@ -444,7 +444,7 @@
       "orgId": "lunar-outpost",
       "name": "Lunar Voyager LTV",
       "type": "rover",
-      "modelURI": "/lunar-atlas/models/perseverance-rover.glb",
+      "modelURI": "/moonbase/models/perseverance-rover.glb",
       "summary": "The Lunar Dawn team's Lunar Voyager rover, led by Lunar Outpost, offered for NASA's LTV Services contract to support crewed South Pole mobility and robotic operations.",
       "location": {
         "lat": -89.1,
@@ -532,7 +532,7 @@
       "orgId": "spacex",
       "name": "Starship Human Landing System",
       "type": "lander",
-      "modelURI": "/lunar-atlas/models/apollo-lunar-module.glb",
+      "modelURI": "/moonbase/models/apollo-lunar-module.glb",
       "summary": "A lunar-optimized Starship variant contracted by NASA to carry Artemis III and IV astronauts from lunar orbit to the South Pole surface and back.",
       "location": {
         "lat": -85,
@@ -588,7 +588,7 @@
       "orgId": "blue-origin",
       "name": "Blue Moon MK1 Cargo Lander",
       "type": "lander",
-      "modelURI": "/lunar-atlas/models/viking-lander.glb",
+      "modelURI": "/moonbase/models/viking-lander.glb",
       "summary": "An uncrewed cargo lander able to deliver several tonnes to the lunar surface, serving as a precursor and logistics platform for the crewed MK2 lander.",
       "location": {
         "lat": -86,
@@ -627,7 +627,7 @@
       "orgId": "blue-origin",
       "name": "Blue Moon MK2 Crewed Lander",
       "type": "lander",
-      "modelURI": "/lunar-atlas/models/insight-lander.glb",
+      "modelURI": "/moonbase/models/insight-lander.glb",
       "summary": "Blue Origin's crewed lunar lander, selected by NASA to land Artemis V astronauts at the South Pole, developed with the National Team.",
       "location": {
         "lat": -85.5,
@@ -669,7 +669,7 @@
       "orgId": "blue-origin",
       "name": "Blue Alchemist ISRU",
       "type": "isru_plant",
-      "modelURI": "/lunar-atlas/models/rassor.glb",
+      "modelURI": "/moonbase/models/rassor.glb",
       "summary": "A process to manufacture solar cells and oxygen from lunar regolith simulant, aimed at powering and sustaining a surface presence with in-situ resources.",
       "location": {
         "lat": -88,

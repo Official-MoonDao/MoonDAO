@@ -123,6 +123,16 @@ module.exports = withBundleAnalyzer(
             permanent: true,
           },
           {
+            source: '/lunar-atlas',
+            destination: '/moonbase',
+            permanent: true,
+          },
+          {
+            source: '/lunar-atlas/:path*',
+            destination: '/moonbase/:path*',
+            permanent: true,
+          },
+          {
             source: '/docs/introduction',
             destination: 'https://docs.moondao.com/',
             permanent: true,

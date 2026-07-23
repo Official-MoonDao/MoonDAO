@@ -69,7 +69,7 @@ function baseSiteDirections(ids: string[]): Map<string, Vec3> {
   return m
 }
 
-export default function LunarAtlasIndex() {
+export default function MoonBaseZeroIndex() {
   const dataset = SEED_ATLAS
 
   const [focus, setFocus] = useState<GlobeFocus>(null)
@@ -348,8 +348,8 @@ export default function LunarAtlasIndex() {
   return (
     <>
       <Head
-        title="Lunar Atlas"
-        description="A photorealistic 3D map of the lunar south pole — humanity's publicly-stated plans from NASA, SpaceX, and Blue Origin, placed on real LOLA terrain."
+        title="Moon Base Zero"
+        description="A photorealistic south pole moonbase on real NASA LOLA terrain — explore capability races, competitors, and who's leading each tech tree."
       />
       <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#03040a]">
         <MoonGlobeLazy
@@ -373,12 +373,12 @@ export default function LunarAtlasIndex() {
             <div className="pointer-events-auto max-w-sm rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
               <div className="flex items-center gap-2">
                 <GlobeAltIcon className="h-5 w-5 text-cyan-300" />
-                <h1 className="text-lg font-semibold text-white">Lunar Atlas</h1>
+                <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
               </div>
               <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-                The lunar south pole, built from NASA LOLA terrain data —
-                where every serious program is headed. Click a site to explore
-                its capability race, competitors, and sources.
+                A connected moonbase on real LOLA terrain — every serious
+                program is racing here. Click a site to explore its capability
+                race, competitors, and sources.
               </p>
             </div>
 

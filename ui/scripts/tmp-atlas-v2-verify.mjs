@@ -4,7 +4,7 @@
 // Usage: node scripts/tmp-atlas-v2-verify.mjs
 import { chromium } from 'playwright'
 
-const BASE = 'http://localhost:3000/lunar-atlas'
+const BASE = 'http://localhost:3000/moonbase'
 const OUT = '/tmp/atlas-v2'
 
 const browser = await chromium.launch({

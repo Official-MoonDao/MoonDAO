@@ -1,4 +1,4 @@
-# Lunar Atlas — asset attribution
+# Moon Base Zero — asset attribution
 
 All terrain assets are derived from **public-domain NASA data**.
 

@@ -41,7 +41,7 @@ const TYPE_SCALE: Partial<Record<ProjectType, number>> = {
   orbital: 1.0,
 }
 
-const ASTRONAUT_URI = '/lunar-atlas/models/astronaut.glb'
+const ASTRONAUT_URI = '/moonbase/models/astronaut.glb'
 // Self-hosted Draco decoder (copied from three's examples into public/draco/).
 // The drei default fetches it from gstatic.com, which the app's CSP blocks.
 const DRACO_PATH = '/draco/'
@@ -786,11 +786,11 @@ export default function ProjectModel({
 
 // Warm the cache so drilling into a project shows its model immediately.
 ;[
-  '/lunar-atlas/models/habitat-demo-unit.glb',
-  '/lunar-atlas/models/apollo-lunar-module.glb',
-  '/lunar-atlas/models/perseverance-rover.glb',
-  '/lunar-atlas/models/viking-lander.glb',
-  '/lunar-atlas/models/insight-lander.glb',
-  '/lunar-atlas/models/rassor.glb',
+  '/moonbase/models/habitat-demo-unit.glb',
+  '/moonbase/models/apollo-lunar-module.glb',
+  '/moonbase/models/perseverance-rover.glb',
+  '/moonbase/models/viking-lander.glb',
+  '/moonbase/models/insight-lander.glb',
+  '/moonbase/models/rassor.glb',
   ASTRONAUT_URI,
 ].forEach((u) => useGLTF.preload(u, DRACO_PATH))

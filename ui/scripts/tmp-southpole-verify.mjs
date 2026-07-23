@@ -3,7 +3,7 @@
 // pick (model swap + surface view), and background-click deselection.
 import { chromium } from 'playwright-core'
 
-const URL = 'http://localhost:3009/lunar-atlas'
+const URL = 'http://localhost:3009/moonbase'
 const OUT = '/tmp/sp-shots'
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
 const page = await browser.newPage({ viewport: { width: 1440, height: 810 } })

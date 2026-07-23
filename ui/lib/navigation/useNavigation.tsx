@@ -57,9 +57,9 @@ export default function useNavigation(citizen: any) {
         dynamicChildren: 'Projects' as const,
       },
       {
-        name: 'Lunar Atlas',
+        name: 'Moon Base Zero',
         icon: MoonIcon,
-        href: '/lunar-atlas',
+        href: '/moonbase',
       },
       {
         name: '$MOONEY',
