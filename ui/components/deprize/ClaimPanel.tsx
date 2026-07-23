@@ -5,8 +5,9 @@ import confetti from 'canvas-confetti'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
-import { fmt, toEth } from '@/lib/deprize/format'
+import { fmt, formatPrizeTokenLabel, toEth } from '@/lib/deprize/format'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
+import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeRedeemPreview } from '@/lib/deprize/useDePrizeRedeem'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -20,6 +21,8 @@ type ClaimPanelProps = {
   resolved: boolean
   isRefundVector: boolean
   winningTeamName?: string
+  /** Juicebox project id this DePrize tops up — for the refund-token label. */
+  jbProjectId?: number | bigint
   refreshNonce: number
   onDone: () => void
 }
@@ -31,9 +34,12 @@ export default function ClaimPanel({
   resolved,
   isRefundVector,
   winningTeamName,
+  jbProjectId,
   refreshNonce,
   onDone,
 }: ClaimPanelProps) {
+  const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
+  const prizeToken = formatPrizeTokenLabel(launchpad.symbol)
   const userAddress = account?.address
   const [busy, setBusy] = useState(false)
   const [claimed, setClaimed] = useState(false)
@@ -186,9 +192,10 @@ export default function ClaimPanel({
 
       {isRefundVector && userAddress && (
         <p className="text-gray-400 text-[11px] mt-3 leading-snug">
-          The 5% you contributed to the prize pool is refunded separately: burn your $OVERVIEW for
-          a pro-rata ETH cash-out on the mission&apos;s Juicebox project (the standard mission
-          refund flow). That leg is independent of the claim above.
+          The 5% you contributed to the prize pool is refunded separately: burn your {prizeToken}
+          {launchpad.name ? ` (${launchpad.name})` : ''} for a pro-rata ETH cash-out on this
+          DePrize&apos;s launchpad Juicebox project (the standard mission refund flow). That leg is
+          independent of the claim above.
         </p>
       )}
     </div>

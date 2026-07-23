@@ -1,8 +1,6 @@
-import { getNFT } from 'thirdweb/extensions/erc721'
-import { useReadContract } from 'thirdweb/react'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
-import IPFSRenderer from '@/components/layout/IPFSRenderer'
+import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import StandardButton from '@/components/layout/StandardButton'
 
 type DePrizeTeamCardProps = {
@@ -28,6 +26,16 @@ type DePrizeTeamCardProps = {
   onCashOut: (index: number) => void
 }
 
+function PnlSuffix({ pnl }: { pnl: number | undefined }) {
+  if (pnl === undefined) return null
+  return (
+    <span className={`ml-1.5 font-medium ${pnl >= 0 ? 'text-emerald-400/80' : 'text-rose-400/80'}`}>
+      ({pnl >= 0 ? '+' : ''}
+      {fmt(pnl)} ETH)
+    </span>
+  )
+}
+
 export default function DePrizeTeamCard({
   outcome,
   teamId,
@@ -47,37 +55,36 @@ export default function DePrizeTeamCard({
   onBet,
   onCashOut,
 }: DePrizeTeamCardProps) {
-  const { data: teamNFT } = useReadContract(getNFT, {
-    contract: teamContract,
-    tokenId: BigInt(teamId),
-    queryOptions: { enabled: !!teamContract },
-  })
-
-  const teamName = (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
-  const teamImage = (teamNFT as any)?.metadata?.image || ''
-
   const holding = Number.isFinite(outcome.balance) && outcome.balance > 0
   const realizedValue = resolved ? redeemValueEth : sellQuoteEth
   const pnl =
     realizedValue !== undefined && investedEth > 0
       ? realizedValue - investedEth
       : undefined
+  const canCashOut = holding && !tradingHalted && !resolved
+  const showWinSubtitle = holding && !resolved
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10">
-      {/* Top row: chance/result · team identity · actions */}
+    <div
+      className={`p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border shadow-lg ${
+        resolved && isWinningSlot
+          ? 'border-emerald-400/40 ring-1 ring-emerald-400/20'
+          : 'border-white/[0.08]'
+      }`}
+    >
+      {/* Top row: chance/result · team (+ if-wins subtitle) · bet CTA */}
       <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-3 min-w-[110px]">
+        <div className="flex items-center gap-3 min-w-[96px]">
           <span
-            className="inline-block w-2.5 h-8 rounded-full shrink-0"
+            className="inline-block w-1.5 h-10 rounded-full shrink-0"
             style={{ background: color }}
           />
           <div>
             <p
-              className={`text-2xl font-bold leading-none ${
+              className={`text-2xl font-bold leading-none tabular-nums ${
                 resolved
                   ? isWinningSlot
-                    ? 'text-moon-green'
+                    ? 'text-emerald-400'
                     : isRefundVector
                       ? 'text-white'
                       : 'text-gray-500'
@@ -96,90 +103,83 @@ export default function DePrizeTeamCard({
                     : '—'
                   : `${fmt(outcome.probability, 0)}%`}
             </p>
-            {!resolved && <p className="text-gray-500 text-[10px] mt-1">chance</p>}
+            {!resolved && (
+              <p className="text-gray-500 text-[10px] mt-1 uppercase tracking-wide">chance</p>
+            )}
           </div>
         </div>
 
-        <div className="flex-1 min-w-[150px] flex items-center gap-3">
-          {teamImage && (
-            <IPFSRenderer
-              className="rounded-full"
-              src={teamImage}
-              width={40}
-              height={40}
-              alt={teamName}
-            />
+        <div className="flex-1 min-w-[150px] flex flex-col gap-1">
+          <DePrizeTeamLink
+            teamId={teamId}
+            teamContract={teamContract}
+            color={color}
+            size={40}
+            className="text-base font-semibold text-white hover:text-indigo-200"
+          />
+          {showWinSubtitle && (
+            // Align under the team name (avatar 40px + gap-2 8px).
+            <p className="text-xs text-gray-500 pl-12">
+              If wins ·{' '}
+              <span className="text-emerald-400/90 font-medium tabular-nums">
+                {fmt(outcome.balance)} ETH
+              </span>
+            </p>
           )}
-          <p className="text-white font-semibold">{teamName}</p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {bettingOpen && !tradingHalted && (
-            <StandardButton
-              onClick={() => onBet(outcome.index)}
-              disabled={busy || !userConnected}
-              className="rounded-full"
-              backgroundColor="bg-moon-green"
-            >
-              Back this team
-            </StandardButton>
-          )}
-          {holding && !tradingHalted && !resolved && (
-            <StandardButton
-              onClick={() => onCashOut(outcome.index)}
-              disabled={busy || !userConnected}
-              className="rounded-full"
-              backgroundColor="bg-moon-orange"
-            >
-              {sellQuoteEth !== undefined
-                ? `Cash out ≈ ${fmt(sellQuoteEth)} ETH`
-                : 'Cash out'}
-            </StandardButton>
-          )}
-        </div>
+        {bettingOpen && !tradingHalted && (
+          <StandardButton
+            onClick={() => onBet(outcome.index)}
+            disabled={busy || !userConnected}
+            className="rounded-xl shadow-purple-500/10"
+          >
+            Back this team
+          </StandardButton>
+        )}
       </div>
 
-      {/* Position summary */}
+      {/* Single holdings line — one exit quote + action (Polymarket-style) */}
       {holding && (
-        <div className={`mt-3 grid gap-2 ${resolved ? 'grid-cols-2' : 'grid-cols-3'}`}>
-          <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
-            <p className="text-[10px] text-gray-500">
+        <div className="mt-4 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2.5">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wide text-gray-500">
               {resolved ? 'Claimable' : 'Cash out'}
             </p>
-            <p className="text-sm font-semibold text-white">
-              {resolved
-                ? redeemValueEth !== undefined
-                  ? `${fmt(redeemValueEth)} ETH`
-                  : '—'
-                : tradingHalted
-                  ? '—'
-                  : sellQuoteEth !== undefined
-                    ? `${fmt(sellQuoteEth)} ETH`
-                    : '…'}
+            <p className="text-sm font-semibold text-white tabular-nums mt-0.5">
+              {resolved ? (
+                redeemValueEth !== undefined ? (
+                  <>
+                    {fmt(redeemValueEth)} ETH
+                    <PnlSuffix pnl={pnl} />
+                  </>
+                ) : (
+                  '—'
+                )
+              ) : tradingHalted ? (
+                '—'
+              ) : sellQuoteEth !== undefined ? (
+                <>
+                  ≈ {fmt(sellQuoteEth)} ETH
+                  <PnlSuffix pnl={pnl} />
+                </>
+              ) : (
+                '…'
+              )}
             </p>
           </div>
-          {!resolved && (
-            <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
-              <p className="text-[10px] text-gray-500">If this wins</p>
-              <p className="text-sm font-semibold text-moon-green">
-                {fmt(outcome.balance)} ETH
-              </p>
-            </div>
-          )}
-          <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
-            <p className="text-[10px] text-gray-500">Profit</p>
-            <p
-              className={`text-sm font-semibold ${
-                pnl === undefined
-                  ? 'text-gray-400'
-                  : pnl >= 0
-                    ? 'text-moon-green'
-                    : 'text-red-400'
-              }`}
+          {canCashOut && (
+            <button
+              type="button"
+              onClick={() => onCashOut(outcome.index)}
+              disabled={busy || !userConnected || sellQuoteEth === undefined}
+              className="shrink-0 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wide
+                bg-white/5 hover:bg-indigo-500/15 text-white border border-white/10 hover:border-indigo-400/35
+                transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {pnl === undefined ? '—' : `${pnl >= 0 ? '+' : ''}${fmt(pnl)} ETH`}
-            </p>
-          </div>
+              Cash out
+            </button>
+          )}
         </div>
       )}
     </div>

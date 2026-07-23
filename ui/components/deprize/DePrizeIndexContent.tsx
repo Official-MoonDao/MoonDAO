@@ -3,8 +3,7 @@ import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
-import { useActiveAccount, useReadContract } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import {
   DePrizeState,
@@ -14,10 +13,15 @@ import {
   OUTCOME_COLORS,
   UNIT,
 } from '@/lib/deprize/constants'
-import { fmt } from '@/lib/deprize/format'
+import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
-import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
+import {
+  deprizeListBucket,
+  isMintConfigured,
+  reconcileBettingStatus,
+} from '@/lib/deprize/status'
 import { useDePrize, useDePrizeCount } from '@/lib/deprize/useDePrize'
+import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
@@ -25,10 +29,10 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
+import DePrizeTeamLink, { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
-import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 type BetTarget = {
@@ -38,6 +42,7 @@ type BetTarget = {
   probability: number
   numOutcomes: number
   marketAddress: string
+  jbProjectId?: bigint
 }
 
 function ProviderOddsRow({
@@ -55,61 +60,126 @@ function ProviderOddsRow({
   bettingOpen: boolean
   onBet: (teamName: string) => void
 }) {
-  const { data: teamNFT } = useReadContract(getNFT, {
-    contract: teamContract,
-    tokenId: BigInt(teamId),
-    queryOptions: { enabled: !!teamContract && teamId > 0n },
-  })
-  const name = (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
-  const image = (teamNFT as any)?.metadata?.image || ''
-  const pct = Number.isFinite(probability) ? fmt(probability, 0) : '—'
-
-  const avatar = image ? (
-    <IPFSRenderer className="rounded-full shrink-0" src={image} width={28} height={28} alt={name} />
-  ) : (
-    <span
-      className="w-7 h-7 rounded-full shrink-0 border border-white/10"
-      style={{ background: `${color}33` }}
-    />
-  )
-
-  if (bettingOpen) {
-    return (
-      <button
-        type="button"
-        onClick={() => onBet(name)}
-        className="group w-full flex items-center gap-3 min-w-0 px-3 py-2.5 rounded-xl text-left
-          bg-emerald-500/10 border border-emerald-500/35
-          hover:bg-emerald-500/20 hover:border-emerald-400/60
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50
-          transition-colors cursor-pointer"
-        aria-label={`Bet on ${name} at ${pct}%`}
-      >
-        {avatar}
-        <span className="text-gray-100 text-sm font-medium truncate flex-1">{name}</span>
-        <span
-          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold
-            bg-emerald-500 text-gray-950 group-hover:bg-emerald-400 transition-colors"
-        >
-          <span className="text-[10px] font-bold uppercase tracking-wide opacity-80">Bet</span>
-          <span className="tabular-nums">{pct}%</span>
-        </span>
-      </button>
-    )
-  }
+  const name = useDePrizeTeamName(teamId, teamContract)
+  const pct = Number.isFinite(probability) ? fmt(probability, 0) : undefined
 
   return (
-    <div className="flex items-center gap-3 min-w-0 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/10">
-      {avatar}
-      <span className="text-gray-100 text-sm font-medium truncate flex-1">{name}</span>
-      <span className="shrink-0 min-w-[72px] px-3 py-1.5 rounded-lg text-sm font-semibold tabular-nums text-center text-gray-300 bg-white/5 border border-white/10">
-        {pct}%
+    <div
+      className={`w-full flex items-center gap-3 min-w-0 px-3 py-2.5 rounded-xl ${
+        bettingOpen
+          ? 'bg-indigo-500/10 border border-indigo-400/30'
+          : 'bg-white/[0.03] border border-white/[0.06]'
+      }`}
+    >
+      <DePrizeTeamLink
+        teamId={teamId}
+        teamContract={teamContract}
+        color={color}
+        className="flex-1"
+        size={28}
+      />
+      <span className="shrink-0 min-w-[3rem] px-2 py-1.5 rounded-lg text-sm font-semibold tabular-nums text-center text-gray-300 bg-white/5 border border-white/10">
+        {pct !== undefined ? `${pct}%` : '—'}
       </span>
+      {bettingOpen && (
+        <button
+          type="button"
+          onClick={() => onBet(name || `Team #${teamId.toString()}`)}
+          className="shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold
+            bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
+            transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+          aria-label={
+            pct !== undefined ? `Bet on ${name} at ${pct}%` : `Bet on ${name}`
+          }
+        >
+          Bet
+        </button>
+      )}
+    </div>
+  )
+}
+
+function DePrizeCardSkeleton() {
+  return (
+    <div
+      className="rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 border border-white/[0.08] overflow-hidden animate-pulse"
+      aria-hidden
+    >
+      <div className="p-4 sm:p-5 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="h-5 w-32 rounded bg-white/10" />
+          <div className="h-4 w-56 max-w-full rounded bg-white/5" />
+          <div className="h-3 w-24 rounded bg-white/5" />
+        </div>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="h-6 w-16 rounded-full bg-white/10" />
+          <div className="h-6 w-20 rounded bg-white/10" />
+          <div className="h-3 w-14 rounded bg-white/5" />
+        </div>
+      </div>
+      <div className="px-4 sm:px-5 pb-4 sm:pb-5 flex flex-col gap-2">
+        <div className="h-3 w-20 rounded bg-white/5" />
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+          >
+            <div className="w-7 h-7 rounded-full bg-white/10 shrink-0" />
+            <div className="h-4 flex-1 rounded bg-white/5" />
+            <div className="h-8 w-14 rounded-lg bg-white/10 shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DePrizeListSkeleton({ count = 2 }: { count?: number }) {
+  return (
+    <div className="flex flex-col gap-4" role="status" aria-label="Loading DePrizes">
+      {Array.from({ length: count }, (_, i) => (
+        <DePrizeCardSkeleton key={i} />
+      ))}
+      <span className="sr-only">Loading DePrizes…</span>
     </div>
   )
 }
 
 type DePrizeBucket = 'live' | 'closed'
+
+function ClosedOutcomeLine({
+  state,
+  winningTeamId,
+  teamContract,
+}: {
+  state: DePrizeState
+  winningTeamId: bigint
+  teamContract: any
+}) {
+  if (winningTeamId > 0n) {
+    return (
+      <p className="text-moon-green text-sm mt-3 font-medium flex items-center gap-2 flex-wrap">
+        <span className="text-gray-400 font-normal">Winner</span>
+        <DePrizeTeamLink
+          teamId={winningTeamId}
+          teamContract={teamContract}
+          nameOnly
+          className="text-moon-green"
+        />
+      </p>
+    )
+  }
+  if (state === DePrizeState.NO_WINNER) {
+    return <p className="text-amber-300/90 text-sm mt-3">No winner — equal refunds</p>
+  }
+  if (state === DePrizeState.CANCELLED) {
+    return <p className="text-amber-300/90 text-sm mt-3">Cancelled — refunds available</p>
+  }
+  if (state === DePrizeState.M2_FAILED) {
+    return <p className="text-amber-300/90 text-sm mt-3">Delivery failed — refunds available</p>
+  }
+  return null
+}
 
 function DePrizeListRow({
   deprizeId,
@@ -145,6 +215,8 @@ function DePrizeListRow({
   const { totalFunding, isLoading: isLoadingFunding } = useTotalFunding(jbProjectId, chain)
   const prizeEth =
     jbProjectId !== undefined && !isLoadingFunding ? Number(totalFunding) / Number(UNIT) : undefined
+  const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
+  const missionHref = launchpad.missionHref
 
   // Top 3 providers by live implied odds (desc). Fall back to registry order
   // while prices are still loading so the card still previews the field.
@@ -163,16 +235,30 @@ function DePrizeListRow({
     return ranked.slice(0, 3)
   }, [deprize?.teamIds, market.outcomes])
 
-  // Bucket the DePrize for the Live / Former tabs. Terminal states (won,
-  // refunded, cancelled, delivery-failed) are "former"; everything else that
-  // exists is "live". Report up so the parent can drive tabs + counts.
+  const chainSlug = getChainSlug(chain)
+  const mintConfigured = isMintConfigured(DEPRIZE_MINT_ADDRESSES[chainSlug] ?? '')
+  // Prefer a confirmed market address over the load spinner. `market.loading`
+  // flaps on every refresh; treating that as "unbound" hid Live cards while
+  // the tab count still said they were live.
+  const marketBound = !!market.marketAddress && !/^0x0+$/.test(market.marketAddress)
+    ? true
+    : market.loading
+      ? undefined
+      : false
+
+  // Live = bettable / paused-but-bound / mid-lifecycle. Former = terminal,
+  // winner-declared (SETTLED/M1), or OPEN shells with no bound market.
   const bucket: DePrizeBucket | 'none' | 'loading' = !deprize
     ? 'loading'
-    : deprize.state === DePrizeState.NONE
-      ? 'none'
-      : deprize.isTerminal
-        ? 'closed'
-        : 'live'
+    : deprizeListBucket({
+        state: deprize.state,
+        isTerminal: deprize.isTerminal,
+        mintConfigured,
+        marketBound,
+        marketStage: market.stage,
+        // Only block on loading when we still don't know if a market is bound.
+        marketLoading: market.loading && marketBound === undefined,
+      })
   useEffect(() => {
     if (bucket === 'live' || bucket === 'closed' || bucket === 'none') {
       onStatus(deprizeId, bucket)
@@ -181,48 +267,57 @@ function DePrizeListRow({
 
   if (!deprize) return null
   if (deprize.state === DePrizeState.NONE) return null
+  // Still resolving market binding — mount quietly so the parent count can settle.
+  if (bucket === 'loading') return null
   if (bucket !== activeTab) return null
 
-  const meta = deprize ? DEPRIZE_STATE_META[deprize.state] : undefined
+  const meta = DEPRIZE_STATE_META[deprize.state]
   // Match the detail page: registry OPEN alone is not enough — LMSR must be
-  // Running and the mint router must be wired, or the Bet modal invites reverts.
-  const chainSlug = getChainSlug(chain)
-  const mintConfigured = isMintConfigured(DEPRIZE_MINT_ADDRESSES[chainSlug] ?? '')
+  // Running and DePrizeMint must have setMarket, or the Bet modal invites reverts.
   const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
   const bettingOpen =
-    !!deprize?.bettingOpen && !!market.marketAddress && mintConfigured && !tradingHalted
-  // Single source of truth for the badge: reconcile the registry lifecycle with
-  // the LMSR trading stage + mint wiring, exactly like the detail page. Prevents
-  // a flat "Open" label while betting is actually paused / unavailable.
-  const { statusLabelOverride } = deprize
-    ? reconcileBettingStatus({
-        bettingOpen: deprize.bettingOpen,
-        marketStage: market.stage,
-        mintConfigured,
-        registryState: deprize.state,
-      })
-    : { statusLabelOverride: undefined }
+    !!deprize.bettingOpen &&
+    market.mintBound &&
+    mintConfigured &&
+    !tradingHalted &&
+    market.stage === MarketStage.Running
+  // Single source of truth for badge + subheader (don't show "Accepting bets"
+  // while paused / unbound — that copy comes from registry meta alone).
+  const { statusLabelOverride, effectiveDescription } = reconcileBettingStatus({
+    bettingOpen: deprize.bettingOpen,
+    marketStage: market.stage,
+    mintConfigured: mintConfigured && market.mintBound,
+    registryState: deprize.state,
+    marketBound,
+  })
   const badgeLabel = statusLabelOverride ?? meta?.label ?? '—'
   const hasOdds = topProviders.some((p) => Number.isFinite(p.probability))
   const detailHref = `/deprize/${deprizeId}`
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10 hover:border-white/25 transition-colors overflow-hidden">
+    <div className="rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] hover:border-white/20 transition-colors overflow-hidden shadow-lg">
       {/*
         Plain <a> (not next/link): client-side transitions to /deprize/[id] can
         hang with an in-flight route and never complete. A full document
         navigation is reliable and matches user expectation for "open this card".
       */}
-      <a
-        href={detailHref}
-        className="block p-4 sm:p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/30"
-      >
+      <div className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="min-w-0">
+          {/*
+            Plain <a> (not next/link): client-side transitions to /deprize/[id] can
+            hang with an in-flight route and never complete. A full document
+            navigation is reliable and matches user expectation for "open this card".
+          */}
+          <a
+            href={detailHref}
+            className="min-w-0 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
+          >
             <p className="text-white font-GoodTimes text-lg">DePrize #{deprizeId}</p>
-            <p className="text-gray-400 text-sm mt-1">{meta?.description ?? 'Loading…'}</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {effectiveDescription || meta?.description || 'Loading…'}
+            </p>
             <p className="text-sky-300/90 text-xs mt-2 font-medium">View details →</p>
-          </div>
+          </a>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium border ${
@@ -235,23 +330,43 @@ function DePrizeListRow({
             >
               {badgeLabel}
             </span>
-            <p className="text-white text-lg font-bold tabular-nums">
-              {prizeEth !== undefined ? fmt(prizeEth, 2) : '—'}
-              <span className="text-sm font-medium text-gray-400 ml-1">ETH</span>
-            </p>
-            <p className="text-gray-500 text-[11px]">prize pool</p>
+            {missionHref ? (
+              <a
+                href={missionHref}
+                title="Open the launchpad prize pool"
+                className="text-right rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 group"
+              >
+                <p className="text-white text-lg font-bold tabular-nums group-hover:text-indigo-200 transition-colors">
+                  {prizeEth !== undefined ? fmtPrizeEth(prizeEth) : '—'}
+                  <span className="text-sm font-medium text-gray-400 ml-1">ETH</span>
+                </p>
+                <p className="text-indigo-300/90 text-[11px] underline-offset-2 group-hover:underline">
+                  prize pool
+                </p>
+              </a>
+            ) : (
+              <div className="text-right">
+                <p className="text-white text-lg font-bold tabular-nums">
+                  {prizeEth !== undefined ? fmtPrizeEth(prizeEth) : '—'}
+                  <span className="text-sm font-medium text-gray-400 ml-1">ETH</span>
+                </p>
+                <p className="text-gray-500 text-[11px]">prize pool</p>
+              </div>
+            )}
           </div>
         </div>
-      </a>
+        {bucket === 'closed' && (
+          <ClosedOutcomeLine
+            state={deprize.state}
+            winningTeamId={deprize.winningTeamId}
+            teamContract={teamContract}
+          />
+        )}
+      </div>
 
       <div className="px-4 sm:px-5 pb-4 sm:pb-5 flex flex-col gap-2 min-w-0">
         <p className="text-gray-500 text-[11px] uppercase tracking-wide">
           {hasOdds ? 'Live odds' : 'Providers'}
-          {bettingOpen ? (
-            <span className="normal-case tracking-normal text-emerald-400/80 ml-2">
-              · click a team to bet
-            </span>
-          ) : null}
         </p>
         {topProviders.length === 0 ? (
           <p className="text-gray-500 text-sm">Loading providers…</p>
@@ -273,6 +388,7 @@ function DePrizeListRow({
                   probability: p.probability,
                   numOutcomes,
                   marketAddress: market.marketAddress,
+                  jbProjectId: deprize.jbProjectId,
                 })
               }}
             />
@@ -411,7 +527,7 @@ export default function DePrizeIndexContent() {
                 <span className="font-mono">{chainSlug}</span> yet.
               </div>
             ) : loading && count === undefined ? (
-              <div className="p-8 text-center text-gray-400">Loading DePrizes…</div>
+              <DePrizeListSkeleton count={2} />
             ) : countError && count === undefined ? (
               <div className="p-8 text-center text-amber-200/90 text-sm">
                 Couldn&apos;t load DePrizes. Please refresh and try again.
@@ -467,9 +583,12 @@ export default function DePrizeIndexContent() {
                   />
                 ))}
 
-                {stillResolving ? (
-                  <div className="p-6 text-center text-gray-500 text-sm">Loading DePrizes…</div>
-                ) : activeCount === 0 ? (
+                {/* Only skeleton when this tab has nothing to show yet. Once any
+                    matching card is up, don't append another — remaining ids may
+                    belong to the other tab and would look like a phantom listing. */}
+                {stillResolving && activeCount === 0 ? (
+                  <DePrizeListSkeleton count={2} />
+                ) : !stillResolving && activeCount === 0 ? (
                   <div className="p-8 text-center text-gray-400 text-sm">
                     {activeTab === 'live'
                       ? 'No live DePrizes right now. Check the Former tab for past challenges.'
@@ -491,6 +610,7 @@ export default function DePrizeIndexContent() {
           numOutcomes={betTarget.numOutcomes}
           mintAddress={mintAddress}
           marketAddress={betTarget.marketAddress}
+          jbProjectId={betTarget.jbProjectId}
           chain={chain}
           account={account}
           spendableEth={spendableEth}

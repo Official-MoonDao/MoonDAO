@@ -1,6 +1,7 @@
 import { MarketStage } from '@/lib/deprize/constants'
 import { DePrizeState } from '@/lib/deprize/lifecycle'
 import {
+  deprizeListBucket,
   formatBettingCloses,
   isMintConfigured,
   reconcileBettingStatus,
@@ -14,6 +15,7 @@ describe('deprize status helpers', () => {
         marketStage: MarketStage.Running,
         mintConfigured: true,
         registryState: DePrizeState.OPEN,
+        marketBound: true,
       })
       expect(view.bettingBlockedReason).to.equal(undefined)
       expect(view.statusLabelOverride).to.equal(undefined)
@@ -24,11 +26,37 @@ describe('deprize status helpers', () => {
       const view = reconcileBettingStatus({
         bettingOpen: true,
         marketStage: MarketStage.Paused,
-        mintConfigured: false,
+        mintConfigured: true,
         registryState: DePrizeState.OPEN,
+        marketBound: true,
       })
       expect(view.statusLabelOverride).to.equal('Open · paused')
       expect(view.effectiveDescription).to.include('paused')
+      expect(view.effectiveDescription).to.not.include('Accepting bets')
+    })
+
+    it('does not flash Accepting bets while LMSR stage is still loading', () => {
+      const view = reconcileBettingStatus({
+        bettingOpen: true,
+        marketStage: undefined,
+        mintConfigured: true,
+        registryState: DePrizeState.OPEN,
+        marketBound: true,
+      })
+      expect(view.effectiveDescription).to.include('Loading market')
+      expect(view.effectiveDescription).to.not.include('Accepting bets')
+    })
+
+    it('surfaces Open · no market when LMSR is unbound (DePrize #1/#2)', () => {
+      const view = reconcileBettingStatus({
+        bettingOpen: true,
+        marketStage: undefined,
+        mintConfigured: true,
+        registryState: DePrizeState.OPEN,
+        marketBound: false,
+      })
+      expect(view.statusLabelOverride).to.equal('Open · no market')
+      expect(view.effectiveDescription).to.include('No prediction market')
       expect(view.effectiveDescription).to.not.include('Accepting bets')
     })
 
@@ -38,6 +66,7 @@ describe('deprize status helpers', () => {
         marketStage: MarketStage.Closed,
         mintConfigured: true,
         registryState: DePrizeState.OPEN,
+        marketBound: true,
       })
       expect(view.statusLabelOverride).to.equal('Open · market closed')
       expect(view.effectiveDescription).to.include('closed')
@@ -49,6 +78,7 @@ describe('deprize status helpers', () => {
         marketStage: MarketStage.Running,
         mintConfigured: false,
         registryState: DePrizeState.OPEN,
+        marketBound: true,
       })
       expect(view.statusLabelOverride).to.equal('Open · betting unavailable')
       expect(view.effectiveDescription).to.include("isn't wired")
@@ -64,6 +94,68 @@ describe('deprize status helpers', () => {
       expect(view.bettingBlockedReason).to.equal(undefined)
       expect(view.statusLabelOverride).to.equal(undefined)
       expect(view.effectiveDescription).to.include('closed')
+    })
+  })
+
+  describe('deprizeListBucket', () => {
+    const base = {
+      mintConfigured: true,
+      marketBound: true as boolean | undefined,
+      marketStage: MarketStage.Running as number | undefined,
+      marketLoading: false,
+      isTerminal: false,
+    }
+
+    it('puts unbound OPEN shells in Former (closed)', () => {
+      expect(
+        deprizeListBucket({
+          ...base,
+          state: DePrizeState.OPEN,
+          marketBound: false,
+          marketStage: undefined,
+        }),
+      ).to.equal('closed')
+    })
+
+    it('puts SETTLED / winner-declared in Former', () => {
+      expect(
+        deprizeListBucket({
+          ...base,
+          state: DePrizeState.SETTLED,
+          isTerminal: false,
+        }),
+      ).to.equal('closed')
+    })
+
+    it('keeps paused but bound OPEN markets in Live', () => {
+      expect(
+        deprizeListBucket({
+          ...base,
+          state: DePrizeState.OPEN,
+          marketStage: MarketStage.Paused,
+        }),
+      ).to.equal('live')
+    })
+
+    it('keeps Running OPEN markets in Live', () => {
+      expect(
+        deprizeListBucket({
+          ...base,
+          state: DePrizeState.OPEN,
+          marketStage: MarketStage.Running,
+        }),
+      ).to.equal('live')
+    })
+
+    it('returns loading while market binding is unresolved', () => {
+      expect(
+        deprizeListBucket({
+          ...base,
+          state: DePrizeState.OPEN,
+          marketBound: undefined,
+          marketLoading: true,
+        }),
+      ).to.equal('loading')
     })
   })
 

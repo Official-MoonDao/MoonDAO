@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { DEPRIZE_TERMS_URL, UNIT } from '@/lib/deprize/constants'
-import { fmt, toEth, toWei } from '@/lib/deprize/format'
+import { fmt, formatPrizeTokenLabel, toEth, toWei } from '@/lib/deprize/format'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
+import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import client from '@/lib/thirdweb/client'
 import Modal from '@/components/layout/Modal'
@@ -21,6 +22,8 @@ type BetModalProps = {
   numOutcomes: number
   mintAddress: string
   marketAddress: string
+  /** Juicebox project id this DePrize tops up — drives the prize-token label. */
+  jbProjectId?: number | bigint
   chain: Chain
   account: any
   spendableEth: number
@@ -41,6 +44,7 @@ export default function BetModal({
   numOutcomes,
   mintAddress,
   marketAddress,
+  jbProjectId,
   chain,
   account,
   spendableEth,
@@ -51,6 +55,9 @@ export default function BetModal({
   const [quote, setQuote] = useState<{ qty: number } | null>(null)
   const [quoting, setQuoting] = useState(false)
   const [busy, setBusy] = useState(false)
+
+  const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
+  const prizeToken = formatPrizeTokenLabel(launchpad.symbol)
 
   const betAmountWei = useMemo(() => toWei(betAmount), [betAmount])
   const betAmountNum = Number(betAmountWei) / Number(UNIT)
@@ -125,9 +132,9 @@ export default function BetModal({
       if (qty <= 0n) throw new Error('Bet too small for this market.')
       toast.dismiss('quote')
       toast.loading('Placing bet…', { id: 'bet', style: toastStyle })
-      // The router splits msg.value (5% slice -> Juicebox / $OVERVIEW, 95% ->
-      // market) and caps the trade cost at the 95% budget (maxCost), refunding
-      // any unspent ETH.
+      // The router splits msg.value (5% slice -> this DePrize's Juicebox project
+      // / project token, 95% -> market) and caps the trade cost at the 95%
+      // budget (maxCost), refunding any unspent ETH.
       await sendDePrizeTx(
         account,
         prepareContractCall({
@@ -228,13 +235,9 @@ export default function BetModal({
             )}
             <div className="flex items-center justify-between mt-1">
               <span className="text-gray-500 text-xs">
-                Prize contribution (5% → $OVERVIEW)
+                Prize contribution (5% → {prizeToken})
               </span>
               <span className="text-gray-300 text-xs">{fmt(sliceEth)} ETH</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 text-xs">Market fee (1%)</span>
-              <span className="text-gray-300 text-xs">on the 95% traded</span>
             </div>
           </div>
         )}
@@ -250,8 +253,10 @@ export default function BetModal({
             resolution is final and cannot be reversed.
           </p>
           <p>
-            5% of every bet funds the prize pool (you receive $OVERVIEW for it). If the DePrize is
-            cancelled or ends with no winner, it resolves on an equal-payout basis —{' '}
+            5% of every bet funds this DePrize&apos;s launchpad prize pool
+            {launchpad.name ? ` (${launchpad.name})` : ''} — you receive {prizeToken} for that
+            slice. If the DePrize is cancelled or ends with no winner, it resolves on an
+            equal-payout basis —{' '}
             <span className="font-semibold">every token redeems for 1/N</span>, not your original
             stake — so a bet placed at odds above the average (1/N) may redeem for less than you put
             in. See the{' '}

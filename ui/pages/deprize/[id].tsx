@@ -18,11 +18,12 @@ import {
   shouldSurfaceResolution,
   UNIT,
 } from '@/lib/deprize/constants'
-import { fmt } from '@/lib/deprize/format'
+import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { buildAmounts } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
 import { formatBettingCloses, isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
+import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
@@ -33,11 +34,11 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import StandardButton from '@/components/layout/StandardButton'
 import BetModal from '@/components/deprize/BetModal'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DePrizeAdminPanel from '@/components/deprize/DePrizeAdminPanel'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
+import DePrizeTeamLink, { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
 
 const OddsHistoryChart = dynamic(() => import('@/components/deprize/OddsHistoryChart'), {
@@ -109,6 +110,7 @@ export default function DePrizeDetailPage() {
   // settles on-chain with the mint router), not the build-time default.
   const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
   const { totalFunding, isLoading: isLoadingFunding } = useTotalFunding(jbProjectId, chain)
+  const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
 
@@ -284,13 +286,20 @@ export default function DePrizeDetailPage() {
   const spendable = Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
   const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
   const mintConfigured = isMintConfigured(mintAddress)
+  const marketBound = !!market.marketAddress && !/^0x0+$/.test(market.marketAddress)
+    ? true
+    : market.loading
+      ? undefined
+      : false
   const bettingAllowed =
     !!deprize?.bettingOpen &&
+    market.mintBound &&
     mintConfigured &&
     !region.isRestricted &&
     !region.isLoading &&
     !region.isError &&
-    !tradingHalted
+    !tradingHalted &&
+    market.stage === MarketStage.Running
   // CTF may already have a payout vector on a still-OPEN/paused test market —
   // only show Refund/WON/claim when the registry lifecycle (or a Closed market)
   // says resolution should surface.
@@ -307,12 +316,24 @@ export default function DePrizeDetailPage() {
     ? reconcileBettingStatus({
         bettingOpen: deprize.bettingOpen,
         marketStage: market.stage,
-        mintConfigured,
+        mintConfigured: mintConfigured && market.mintBound,
         registryState: deprize.state,
+        marketBound,
       })
     : { effectiveDescription: undefined, statusLabelOverride: undefined }
 
-  const winningTeamName = market.winningIndex >= 0 ? `Team #${market.winningIndex + 1}` : undefined
+  // Prefer the registry's winning team id (NFT id); fall back to the CTF
+  // payout slot → teamIds mapping once resolution is surfaced.
+  const winningTeamId =
+    deprize && deprize.winningTeamId > 0n
+      ? deprize.winningTeamId
+      : showResolved && market.winningIndex >= 0 && deprize?.teamIds[market.winningIndex]
+        ? deprize.teamIds[market.winningIndex]
+        : 0n
+  const winningTeamName = useDePrizeTeamName(
+    winningTeamId > 0n ? winningTeamId : undefined,
+    teamContract,
+  )
 
   // --- Render states ---
   if (!registryConfigured) {
@@ -365,7 +386,7 @@ export default function DePrizeDetailPage() {
     <Shell>
       <div className="flex flex-col gap-6 w-full max-w-[860px] mx-auto">
         {/* Header */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 border border-white/10">
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
               <h1 className="text-white font-GoodTimes text-lg sm:text-xl">DePrize #{deprizeId}</h1>
@@ -377,14 +398,12 @@ export default function DePrizeDetailPage() {
                 />
               )}
             </div>
-            <StandardButton
-              onClick={refreshAll}
-              disabled={market.loading}
-              className="rounded-full"
-              backgroundColor="bg-white/10"
+            <a
+              href="/deprize"
+              className="shrink-0 text-sm text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded"
             >
-              {market.loading ? 'Refreshing…' : 'Refresh'}
-            </StandardButton>
+              ← All prizes
+            </a>
           </div>
           <p className="text-gray-300 text-sm mt-2">
             Back the provider you think will win the right to fly Frank + a community Candidate to
@@ -394,9 +413,17 @@ export default function DePrizeDetailPage() {
             <p className="text-gray-500 text-sm mt-1">{effectiveDescription}</p>
           )}
           <div className="mt-4 grid grid-cols-3 gap-3">
-            <Stat label="Prize pool">
+            <Stat
+              label="Prize pool"
+              href={launchpad.missionHref}
+              title={
+                launchpad.missionHref
+                  ? 'Open the launchpad prize pool'
+                  : undefined
+              }
+            >
               {jbProjectId !== undefined && !isLoadingFunding
-                ? `${fmt(Number(totalFunding) / Number(UNIT))} ETH`
+                ? `${fmtPrizeEth(Number(totalFunding) / Number(UNIT))} ETH`
                 : '—'}
             </Stat>
             <Stat label="Providers">{numOutcomes || '—'}</Stat>
@@ -407,6 +434,32 @@ export default function DePrizeDetailPage() {
               {deprize && deprize.sunset > 0n ? formatBettingCloses(deprize.sunset) : '—'}
             </Stat>
           </div>
+          {winningTeamId > 0n && (
+            <div className="mt-4 flex items-center gap-2 flex-wrap px-3 py-2.5 rounded-xl bg-moon-green/10 border border-moon-green/35">
+              <span className="text-moon-green text-xs font-semibold uppercase tracking-wide">
+                Winner
+              </span>
+              <DePrizeTeamLink
+                teamId={winningTeamId}
+                teamContract={teamContract}
+                size={28}
+                className="text-moon-green hover:text-emerald-300 font-semibold"
+              />
+            </div>
+          )}
+          {showResolved &&
+            winningTeamId === 0n &&
+            (deprize.state === DePrizeState.NO_WINNER ||
+              deprize.state === DePrizeState.CANCELLED ||
+              deprize.state === DePrizeState.M2_FAILED) && (
+              <div className="mt-4 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
+                {deprize.state === DePrizeState.NO_WINNER
+                  ? 'No winner — positions redeem on an equal-payout basis.'
+                  : deprize.state === DePrizeState.CANCELLED
+                    ? 'Cancelled — refunds are available.'
+                    : 'Delivery failed after Milestone 1 — refunds are available.'}
+              </div>
+            )}
         </div>
 
         {/* Cancellation notice */}
@@ -427,7 +480,7 @@ export default function DePrizeDetailPage() {
 
         {/* Live odds */}
         {numOutcomes > 0 && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-blue-900/20 border border-white/10">
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
               <div>
                 <p className="text-white font-semibold">Live odds</p>
@@ -482,7 +535,7 @@ export default function DePrizeDetailPage() {
         {/* Market load error (non-fatal) */}
         {market.error && (
           <Notice tone="red">
-            Couldn&apos;t fully load market data: {market.error}. Try Refresh.
+            Couldn&apos;t fully load market data: {market.error}. Reload the page and try again.
           </Notice>
         )}
 
@@ -537,7 +590,8 @@ export default function DePrizeDetailPage() {
             account={account}
             resolved={showResolved}
             isRefundVector={showRefundVector}
-            winningTeamName={winningTeamName}
+            winningTeamName={winningTeamName || undefined}
+            jbProjectId={deprize?.jbProjectId}
             refreshNonce={refreshNonce}
             onDone={() => {
               clearCostBasis()
@@ -575,6 +629,7 @@ export default function DePrizeDetailPage() {
           numOutcomes={numOutcomes}
           mintAddress={mintAddress}
           marketAddress={market.marketAddress}
+          jbProjectId={deprize.jbProjectId}
           chain={chain}
           account={account}
           spendableEth={spendable}
@@ -637,20 +692,50 @@ function Shell({ children }: { children: React.ReactNode }) {
 function Stat({
   label,
   title,
+  href,
   children,
 }: {
   label: string
   title?: string
+  /** When set, the whole stat is a link (e.g. Prize pool → launchpad). */
+  href?: string
   children: React.ReactNode
 }) {
-  return (
-    <div>
-      <p className={`text-gray-400 text-xs ${title ? 'cursor-help' : ''}`} title={title}>
+  const body = (
+    <>
+      <p
+            className={`text-xs ${
+          href
+            ? 'text-indigo-300/90 underline-offset-2 group-hover:underline'
+            : title
+              ? 'text-gray-400 cursor-help'
+              : 'text-gray-400'
+        }`}
+        title={title}
+      >
         {label}
       </p>
-      <p className="text-white text-sm font-semibold">{children}</p>
-    </div>
+      <p
+        className={`text-sm font-semibold ${
+          href ? 'text-white group-hover:text-indigo-200 transition-colors' : 'text-white'
+        }`}
+      >
+        {children}
+      </p>
+    </>
   )
+  if (href) {
+    return (
+      <a
+        href={href}
+        title={title}
+        className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
+      >
+        {body}
+      </a>
+    )
+  }
+  return <div>{body}</div>
 }
 
 function Notice({ tone, children }: { tone: 'amber' | 'red'; children: React.ReactNode }) {

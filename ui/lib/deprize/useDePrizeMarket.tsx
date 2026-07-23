@@ -35,6 +35,12 @@ export type Outcome = {
 
 export type UseDePrizeMarketResult = {
   marketAddress: string | undefined
+  /**
+   * True when DePrizeMint.marketOf(id) returned this LMSR. False when the UI is
+   * only showing a config-fallback market for odds (bets via the mint router
+   * will revert until setMarket is called).
+   */
+  mintBound: boolean
   marketConfigured: boolean
   stage: number | undefined
   feePct: number | undefined
@@ -89,6 +95,7 @@ export function useDePrizeMarket(params: {
   const wethAddress = COLLATERAL_TOKEN_ADDRESSES[chainSlug] ?? ''
 
   const [marketAddress, setMarketAddress] = useState<string | undefined>()
+  const [mintBound, setMintBound] = useState(false)
   const [stage, setStage] = useState<number | undefined>()
   const [feePct, setFeePct] = useState<number | undefined>()
   const [positionIds, setPositionIds] = useState<bigint[]>([])
@@ -121,6 +128,7 @@ export function useDePrizeMarket(params: {
     // charts, and direct LMSR trades never target the previous DePrize while
     // the new binding resolves asynchronously.
     setMarketAddress(undefined)
+    setMintBound(false)
     setStage(undefined)
     setFeePct(undefined)
     setPositionIds([])
@@ -131,6 +139,7 @@ export function useDePrizeMarket(params: {
     setMarketStartMs(undefined)
     setOddsHistory([])
     setError(undefined)
+    setLoading(false)
     ;(async () => {
       if (mint && deprizeId !== undefined && /^\d+$/.test(String(deprizeId))) {
         try {
@@ -140,7 +149,10 @@ export function useDePrizeMarket(params: {
             params: [BigInt(deprizeId as any)],
           })
           if (!cancelled && bound && !/^0x0+$/.test(bound)) {
-            startTransition(() => setMarketAddress(bound))
+            startTransition(() => {
+              setMarketAddress(bound)
+              setMintBound(true)
+            })
             return
           }
         } catch {
@@ -148,7 +160,12 @@ export function useDePrizeMarket(params: {
         }
       }
       if (!fallbackLmsr) {
-        if (!cancelled) startTransition(() => setMarketAddress(undefined))
+        if (!cancelled) {
+          startTransition(() => {
+            setMarketAddress(undefined)
+            setMintBound(false)
+          })
+        }
         return
       }
       if (conditionId && !/^0x0+$/.test(conditionId)) {
@@ -165,11 +182,11 @@ export function useDePrizeMarket(params: {
             params: [0n],
           })
           if (!cancelled) {
-            startTransition(() =>
-              setMarketAddress(
-                marketCond.toLowerCase() === conditionId.toLowerCase() ? fallbackLmsr : undefined,
-              ),
-            )
+            const matched = marketCond.toLowerCase() === conditionId.toLowerCase()
+            startTransition(() => {
+              setMarketAddress(matched ? fallbackLmsr : undefined)
+              setMintBound(false)
+            })
           }
           return
         } catch {
@@ -177,7 +194,12 @@ export function useDePrizeMarket(params: {
         }
       }
       // Registry condition unknown (still loading / DRAFT): don't guess.
-      if (!cancelled) startTransition(() => setMarketAddress(undefined))
+      if (!cancelled) {
+        startTransition(() => {
+          setMarketAddress(undefined)
+          setMintBound(false)
+        })
+      }
     })()
     return () => {
       cancelled = true
@@ -308,7 +330,12 @@ export function useDePrizeMarket(params: {
   }
 
   const load = useCallback(async () => {
-    if (!lmsr || !ctf || !weth || numOutcomes <= 0) return
+    // No market yet (or deps mid-reset): never leave a prior load()'s spinner
+    // stuck on — that made index cards vanish while tab counts stayed "Live".
+    if (!lmsr || !ctf || !weth || numOutcomes <= 0) {
+      setLoading(false)
+      return
+    }
     const gen = ++loadGenRef.current
     setLoading(true)
     setError(undefined)
@@ -540,6 +567,7 @@ export function useDePrizeMarket(params: {
 
   return {
     marketAddress,
+    mintBound,
     marketConfigured: !!marketAddress && !!ctfAddress && !!wethAddress,
     stage,
     feePct,
