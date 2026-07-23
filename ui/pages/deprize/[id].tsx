@@ -294,15 +294,19 @@ function DePrizeDetailContent() {
   const spendable = Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
   const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
   const mintConfigured = isMintConfigured(mintAddress)
-  const marketBound = !!market.marketAddress && !/^0x0+$/.test(market.marketAddress)
-    ? true
-    : market.loading
-      ? undefined
-      : false
+  const marketBound =
+    !!market.marketAddress && !/^0x0+$/.test(market.marketAddress)
+      ? true
+      : market.loading
+        ? undefined
+        : false
+  // Default-deny when country is unknown: `/api/geo/country` reports
+  // restricted=false for a missing geo header, which must not open betting.
   const bettingAllowed =
     !!deprize?.bettingOpen &&
     market.mintBound &&
     mintConfigured &&
+    !!region.country &&
     !region.isRestricted &&
     !region.isLoading &&
     !region.isError &&
@@ -424,11 +428,7 @@ function DePrizeDetailContent() {
             <Stat
               label="Prize pool"
               href={launchpad.missionHref}
-              title={
-                launchpad.missionHref
-                  ? 'Open the launchpad prize pool'
-                  : undefined
-              }
+              title={launchpad.missionHref ? 'Open the launchpad prize pool' : undefined}
             >
               {jbProjectId !== undefined && !isLoadingFunding
                 ? `${fmtPrizeEth(Number(totalFunding) / Number(UNIT))} ETH`
@@ -478,8 +478,8 @@ function DePrizeDetailContent() {
           </Notice>
         )}
 
-        {/* Geo notice */}
-        {region.isRestricted && (
+        {/* Geo notice — also when country is unresolved (default-deny). */}
+        {(region.isRestricted || (!region.isLoading && !region.isError && !region.country)) && (
           <Notice tone="amber">
             Betting isn&apos;t available in your region. You can still view live odds and, if you
             hold a position, claim or cash out.
@@ -705,7 +705,7 @@ function Stat({
   const body = (
     <>
       <p
-            className={`text-xs ${
+        className={`text-xs ${
           href
             ? 'text-indigo-300/90 underline-offset-2 group-hover:underline'
             : title

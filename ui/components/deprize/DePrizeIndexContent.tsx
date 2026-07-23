@@ -15,11 +15,7 @@ import {
 } from '@/lib/deprize/constants'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
-import {
-  deprizeListBucket,
-  isMintConfigured,
-  reconcileBettingStatus,
-} from '@/lib/deprize/status'
+import { deprizeListBucket, isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize, useDePrizeCount } from '@/lib/deprize/useDePrize'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
@@ -88,9 +84,7 @@ function ProviderOddsRow({
           className="shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold
             bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
             transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
-          aria-label={
-            pct !== undefined ? `Bet on ${name} at ${pct}%` : `Bet on ${name}`
-          }
+          aria-label={pct !== undefined ? `Bet on ${name} at ${pct}%` : `Bet on ${name}`}
         >
           Bet
         </button>
@@ -240,11 +234,12 @@ function DePrizeListRow({
   // Prefer a confirmed market address over the load spinner. `market.loading`
   // flaps on every refresh; treating that as "unbound" hid Live cards while
   // the tab count still said they were live.
-  const marketBound = !!market.marketAddress && !/^0x0+$/.test(market.marketAddress)
-    ? true
-    : market.loading
-      ? undefined
-      : false
+  const marketBound =
+    !!market.marketAddress && !/^0x0+$/.test(market.marketAddress)
+      ? true
+      : market.loading
+        ? undefined
+        : false
 
   // Live = bettable / paused-but-bound / mid-lifecycle. Former = terminal,
   // winner-declared (SETTLED/M1), or OPEN shells with no bound market.
@@ -486,14 +481,18 @@ export default function DePrizeIndexContent() {
 
   const handleBet = useCallback(
     (target: BetTarget) => {
-      if (region.isRestricted || region.isLoading || region.isError) return
+      // Default-deny when country is unknown: `/api/geo/country` reports
+      // restricted=false for a missing geo header, which must not open betting.
+      if (region.isRestricted || region.isLoading || region.isError || !region.country) {
+        return
+      }
       if (!account) {
         login()
         return
       }
       setBetTarget(target)
     },
-    [account, login, region.isError, region.isLoading, region.isRestricted],
+    [account, login, region.country, region.isError, region.isLoading, region.isRestricted],
   )
 
   return (
@@ -515,7 +514,7 @@ export default function DePrizeIndexContent() {
           preFooter={<NoticeFooter />}
         >
           <div className="flex flex-col gap-4 w-full max-w-[760px] mx-auto">
-            {region.isRestricted && (
+            {(region.isRestricted || (!region.isLoading && !region.isError && !region.country)) && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
                 Betting isn&apos;t available in your region. You can still browse live odds and
                 prize pools.
@@ -544,12 +543,10 @@ export default function DePrizeIndexContent() {
                   aria-label="DePrize status"
                   className="flex items-center gap-1 p-1 rounded-full bg-white/5 border border-white/10 self-start max-w-full"
                 >
-                  {(
-                    [
-                      { id: 'live' as const, label: 'Live', n: liveCount },
-                      { id: 'closed' as const, label: 'Former', n: closedCount },
-                    ]
-                  ).map((t) => (
+                  {[
+                    { id: 'live' as const, label: 'Live', n: liveCount },
+                    { id: 'closed' as const, label: 'Former', n: closedCount },
+                  ].map((t) => (
                     <button
                       key={t.id}
                       role="tab"
