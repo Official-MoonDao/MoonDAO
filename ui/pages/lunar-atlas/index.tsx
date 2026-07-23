@@ -24,34 +24,45 @@ import TechTreePanel from '@/components/lunar-atlas/TechTreePanel'
 import TimelineScrubber from '@/components/lunar-atlas/TimelineScrubber'
 import Head from '@/components/layout/Head'
 
-// The scene IS the south pole now — a photorealistic LOLA-derived cap, no
-// full globe. The pole overview is the page's home view; distance is camera
-// altitude above the surface in GLOBE_RADIUS units.
-const HOTSPOTS: { label: string; focus: GlobeFocus }[] = [
-  { label: 'Overview', focus: { lat: -90, lon: 0, distanceRadii: 0.32 } },
-]
-const HOME_HOTSPOT = 0
+// The scene IS the south pole now — a photorealistic LOLA-derived cap, no full
+// globe. The home view is a null focus, which the globe's CameraRig frames with
+// its oblique three-quarter DEFAULT_CAM (not a top-down orbit).
 
-// The tech-tree sites are laid out on a fixed grid across the cap rather than
-// at their (approximate, heavily-overlapping) real coordinates — a showcase
-// arrangement that fills the terrain and keeps every installation legible.
-// Offsets are angular (radians) in the pole's tangent plane; the pole is -Y.
-const SITE_GRID_COLS = 3
-const SITE_SPREAD_X = 0.078
-const SITE_SPREAD_Z = 0.05
+// The tech-tree sites are arranged as a compact, zoned settlement rather than
+// at their (approximate, heavily-overlapping) real coordinates — so the cap
+// reads as one connected moonbase. Offsets are angular (radians) in the pole's
+// tangent plane (the pole is -Y): [east/west, north/south]. Layout logic:
+// habitat at the hub; landing pads + their construction crews to the east;
+// the rover garage out front; ISRU to the west; the reactor set back (safety
+// standoff) to the north-west.
+const BASE_LAYOUT: Partial<Record<string, [number, number]>> = {
+  crewed_base: [0.0, 0.0],
+  habitat: [0.0, 0.0],
+  lander: [0.03, -0.004],
+  construction: [0.026, 0.024],
+  rover: [-0.002, 0.03],
+  isru_plant: [-0.028, 0.016],
+  power: [-0.028, -0.02],
+}
+// Fallback ring for any category not explicitly zoned above.
+const FALLBACK_RING = 0.034
 
-// Evenly place N site ids on a COLS-wide grid (rows = ceil(N/COLS)), centered
-// on the pole, and return unit surface directions keyed by id.
-function gridSiteDirections(ids: string[]): Map<string, Vec3> {
-  const n = ids.length
-  const cols = Math.min(SITE_GRID_COLS, Math.max(n, 1))
-  const rows = Math.ceil(n / cols)
+function baseSiteDirections(ids: string[]): Map<string, Vec3> {
   const m = new Map<string, Vec3>()
-  ids.forEach((id, i) => {
-    const c = i % cols
-    const r = Math.floor(i / cols)
-    const ox = cols === 1 ? 0 : (c / (cols - 1) - 0.5) * 2 * SITE_SPREAD_X
-    const oz = rows === 1 ? 0 : (r / (rows - 1) - 0.5) * 2 * SITE_SPREAD_Z
+  let fallbackIdx = 0
+  const nUnmapped = ids.filter((id) => !BASE_LAYOUT[id]).length
+  ids.forEach((id) => {
+    let ox: number
+    let oz: number
+    const zoned = BASE_LAYOUT[id]
+    if (zoned) {
+      ;[ox, oz] = zoned
+    } else {
+      const a = (fallbackIdx / Math.max(nUnmapped, 1)) * Math.PI * 2
+      ox = Math.cos(a) * FALLBACK_RING
+      oz = Math.sin(a) * FALLBACK_RING
+      fallbackIdx++
+    }
     const len = Math.hypot(ox, 1, oz)
     m.set(id, [ox / len, -1 / len, oz / len])
   })
@@ -61,7 +72,7 @@ function gridSiteDirections(ids: string[]): Map<string, Vec3> {
 export default function LunarAtlasIndex() {
   const dataset = SEED_ATLAS
 
-  const [focus, setFocus] = useState<GlobeFocus>(HOTSPOTS[HOME_HOTSPOT].focus)
+  const [focus, setFocus] = useState<GlobeFocus>(null)
   // Selection is layered: a tech-tree site (category) opens the race/market
   // view; picking a competitor there selects a project, which swaps the
   // site's generic model for the company-specific one.
@@ -83,6 +94,24 @@ export default function LunarAtlasIndex() {
   const yearRange = useMemo(() => datasetYearRange(dataset), [dataset])
   const [year, setYear] = useState(yearRange.max)
   const [playing, setPlaying] = useState(false)
+
+  // This is a fixed, fullscreen scene — it must never scroll. The shared Layout
+  // gives <main> `pt-16` on top of `min-h-screen`, making the document ~4rem
+  // taller than the viewport, so a two-finger scroll over the HUD (the globe
+  // canvas eats wheel events itself) drifts the whole page. Lock the document
+  // scroll while this page is mounted and restore it on unmount.
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const prevHtml = html.style.overflow
+    const prevBody = body.style.overflow
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    return () => {
+      html.style.overflow = prevHtml
+      body.style.overflow = prevBody
+    }
+  }, [])
 
   const histogram = useMemo(() => {
     const counts = new Map<number, number>()
@@ -132,11 +161,11 @@ export default function LunarAtlasIndex() {
   )
 
   // Shared site directions so markers, models, and camera focus all agree on
-  // where each tech-tree site sits (keyed by category). A fixed grid spreads
-  // the sites across the terrain instead of piling them at their overlapping
-  // real coordinates.
+  // where each tech-tree site sits (keyed by category). A zoned base layout
+  // clusters the sites into one connected settlement instead of piling them
+  // at their overlapping real coordinates.
   const markerDirs = useMemo(
-    () => gridSiteDirections(trees.map((t) => t.category)),
+    () => baseSiteDirections(trees.map((t) => t.category)),
     [trees]
   )
 
@@ -292,7 +321,7 @@ export default function LunarAtlasIndex() {
     setSelectedGoalId(null)
     setSelectedTreeCategory(null)
     setRaceReturn(null)
-    setFocus(HOTSPOTS[HOME_HOTSPOT].focus)
+    setFocus(null)
   }
 
   // Clicking the lunar surface or empty space backs out of whichever panel

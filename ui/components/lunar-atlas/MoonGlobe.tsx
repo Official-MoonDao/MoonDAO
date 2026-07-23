@@ -75,17 +75,23 @@ const CLICK_DRAG_TOLERANCE_PX = 8
 // Home framing: hover above the pole, offset toward the sunward side so the
 // cap reads with its long shadows falling away from the viewer.
 const POLE_TARGET = new THREE.Vector3(0, -GLOBE_RADIUS, 0)
+// A close, oblique three-quarter view of the base — NOT a top-down birdseye.
+// The tangential offset (X/Z) dominates the radial one (Y = altitude), so the
+// camera looks *across* the settlement at ~27° above the ground rather than
+// straight down on it, and the small overall magnitude keeps it zoomed in.
 const DEFAULT_CAM = POLE_TARGET.clone().add(
   new THREE.Vector3(
-    GLOBE_RADIUS * 0.16,
-    -GLOBE_RADIUS * 0.30,
-    GLOBE_RADIUS * 0.13
+    GLOBE_RADIUS * 0.075,
+    -GLOBE_RADIUS * 0.05,
+    GLOBE_RADIUS * 0.062
   )
 )
-// "Up" for the home view: the pole-safe orbit up at the pole itself.
+// "Up" for the home view: the pole's outward surface normal, so the ground
+// sits at the bottom of frame and space above — the natural horizon for an
+// oblique view (a tangent "up" only makes sense for the old top-down shot).
 const POLE_UP = (() => {
-  const u = orbitUpVector(-90, 0)
-  return new THREE.Vector3(u[0], u[1], u[2])
+  const n = surfaceNormal(-90, 0)
+  return new THREE.Vector3(n[0], n[1], n[2])
 })()
 
 // Minimum camera clearance above the local terrain, in scene units.

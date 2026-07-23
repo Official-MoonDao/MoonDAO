@@ -27,6 +27,20 @@ const SURFACE = GLOBE_RADIUS
 // don't grow on selection; clicking simply zooms the camera in.
 const MODEL_SCALE = GLOBE_RADIUS * 0.0085
 
+// Per-type size multipliers so the base reads with believable proportions —
+// a rover shouldn't tower as tall as a crewed habitat or a lander. Applied on
+// top of MODEL_SCALE (all GLBs are otherwise normalized to a common height).
+const TYPE_SCALE: Partial<Record<ProjectType, number>> = {
+  crewed_base: 1.6,
+  habitat: 1.2,
+  lander: 1.1,
+  rover: 1.0,
+  power: 0.82,
+  isru_plant: 0.95,
+  construction: 0.8,
+  orbital: 1.0,
+}
+
 const ASTRONAUT_URI = '/lunar-atlas/models/astronaut.glb'
 // Self-hosted Draco decoder (copied from three's examples into public/draco/).
 // The drei default fetches it from gstatic.com, which the app's CSP blocks.
@@ -669,6 +683,7 @@ const CLICK_DRAG_TOLERANCE_PX = 8
 export function SurfaceAnchor({
   dir,
   surfaceRadius,
+  scale = MODEL_SCALE,
   onClick,
   onHoverChange,
   children,
@@ -677,6 +692,9 @@ export function SurfaceAnchor({
   // Displaced terrain radius at this direction — seats the model on the
   // rendered ground. Falls back to the analytic-sphere constant.
   surfaceRadius?: number
+  // World scale for the whole installation (model + pad). Defaults to the
+  // shared MODEL_SCALE; per-type multipliers give believable proportions.
+  scale?: number
   onClick?: () => void
   onHoverChange?: (hovered: boolean) => void
   children: ReactNode
@@ -697,7 +715,7 @@ export function SurfaceAnchor({
     <group
       position={position}
       quaternion={quaternion}
-      scale={MODEL_SCALE}
+      scale={scale}
       onClick={(e) => {
         // Stop here so the Moon mesh behind the model doesn't also receive
         // the click and immediately deselect.
@@ -745,6 +763,7 @@ export default function ProjectModel({
     <SurfaceAnchor
       dir={dir}
       surfaceRadius={surfaceRadius}
+      scale={MODEL_SCALE * (TYPE_SCALE[project.type] ?? 1)}
       onClick={() => onSelect?.(project.id)}
       onHoverChange={(h) => onHover?.(h ? project.id : null)}
     >

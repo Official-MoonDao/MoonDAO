@@ -166,6 +166,22 @@
           "retrievedAt": "2026-07-01"
         }
       ]
+    },
+    {
+      "id": "westinghouse",
+      "name": "Westinghouse",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.westinghousenuclear.com",
+      "brandColor": "#EAB308",
+      "summary": "Westinghouse, partnered with Aerojet Rocketdyne, is developing a lunar surface fission reactor based on its eVinci heat-pipe microreactor for NASA's Fission Surface Power project. NASA and the DOE selected Westinghouse to continue its design in January 2025, competing against Lockheed Martin and the IX (Intuitive Machines–X-energy) team.",
+      "sources": [
+        {
+          "label": "Westinghouse — NASA-DOE contract for space microreactor",
+          "url": "https://info.westinghousenuclear.com/news/westinghouse-awarded-nasa-doe-contract-to-continue-development-of-space-microreactor-concept",
+          "retrievedAt": "2026-07-23"
+        }
+      ]
     }
   ],
   "projects": [
@@ -466,11 +482,11 @@
       "visibility": "public"
     },
     {
-      "id": "nasa-fission-surface-power",
-      "orgId": "nasa",
-      "name": "Fission Surface Power",
+      "id": "westinghouse-fission-surface-power",
+      "orgId": "westinghouse",
+      "name": "eVinci Lunar Microreactor",
       "type": "power",
-      "summary": "A demonstration nuclear fission reactor to provide continuous surface power through the lunar night, enabling sustained operations at the South Pole.",
+      "summary": "Westinghouse's eVinci-based heat-pipe microreactor, developed with Aerojet Rocketdyne for NASA's Fission Surface Power project, to deliver ~40 kW of continuous power through the two-week lunar night. NASA and the DOE contract the reactor to industry — Westinghouse was selected to continue its design in 2025, racing Lockheed Martin (with BWXT) and the IX (Intuitive Machines–X-energy) team.",
       "location": {
         "lat": -89,
         "lon": 45
@@ -496,7 +512,13 @@
       "sharedGoalIds": [
         "shared-isru-power"
       ],
+      "rosterStatus": "listed",
       "sources": [
+        {
+          "label": "Westinghouse — NASA-DOE contract for space microreactor",
+          "url": "https://info.westinghousenuclear.com/news/westinghouse-awarded-nasa-doe-contract-to-continue-development-of-space-microreactor-concept",
+          "retrievedAt": "2026-07-23"
+        },
         {
           "label": "NASA — Fission Surface Power",
           "url": "https://www.nasa.gov/tdm/fission-surface-power/",
@@ -1107,9 +1129,9 @@
     {
       "id": "shared-isru-power",
       "title": "First sustained lunar power & in-situ resource use",
-      "description": "Continuous surface power and the ability to make oxygen, metals, and solar cells from regolith are prerequisites for a permanent presence. NASA's fission power and Blue Origin's Blue Alchemist target this from different angles.",
+      "description": "Continuous surface power and the ability to make oxygen, metals, and solar cells from regolith are prerequisites for a permanent presence. Westinghouse's fission surface power reactor (contracted under NASA's FSP project) and Blue Origin's Blue Alchemist target this from different angles.",
       "projectIds": [
-        "nasa-fission-surface-power",
+        "westinghouse-fission-surface-power",
         "blue-origin-blue-alchemist"
       ],
       "targetWindow": {
@@ -1120,7 +1142,7 @@
         "status": "planned",
         "resolutionAuthority": "senate",
         "impliedOdds": {
-          "nasa-fission-surface-power": 0.55,
+          "westinghouse-fission-surface-power": 0.55,
           "blue-origin-blue-alchemist": 0.45
         }
       },

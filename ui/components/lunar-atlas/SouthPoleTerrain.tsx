@@ -146,6 +146,13 @@ export default function SouthPoleTerrain({
             float dn = texture2D(detailMap, vMapUv * 96.0).r * 0.6
                      + texture2D(detailMap, vMapUv * 13.0).r * 0.4;
             diffuseColor.rgb *= 0.86 + 0.28 * dn;
+            // Radial fade to black: dissolve the square cap's rim into the
+            // dark of space so the terrain reads as an expansive field
+            // receding into shadow, not a hard-edged floating chunk. rr is
+            // 0 at the pole, 1 at the edge midpoint, ~1.41 at the corners —
+            // a long, soft gradient turns the slab into a fading disc.
+            float rr = length(vMapUv - 0.5) * 2.0;
+            diffuseColor.rgb *= 1.0 - smoothstep(0.82, 1.34, rr);
           }`
         )
     },
