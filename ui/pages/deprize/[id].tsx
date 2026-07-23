@@ -2,6 +2,7 @@ import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
@@ -410,12 +411,12 @@ function DePrizeDetailContent() {
                 />
               )}
             </div>
-            <a
+            <Link
               href="/deprize"
               className="shrink-0 text-sm text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded"
             >
               ← All prizes
-            </a>
+            </Link>
           </div>
           <p className="text-gray-300 text-sm mt-2">
             Back the provider you think will win the right to fly Frank + a community Candidate to
