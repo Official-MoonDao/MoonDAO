@@ -1,28 +1,37 @@
-// Photorealistic lunar south-pole scene for the Lunar Atlas.
+// Photorealistic Connecting Ridge scene for Moon Base Zero.
 //
-// Renders the LOLA-derived polar cap (SouthPoleTerrain) under a single
-// grazing "sun" with real-time shadows, a starfield backdrop, and a subtle
-// bloom pass. A camera rig animates smooth transitions to any lat/lon on the
-// cap. Marker/model overlays are injected as children so this component
-// stays presentation-only.
+// Renders a 16x16 km LOLA-derived patch of the Shackleton-de Gerlache
+// connecting ridge (SouthPoleTerrain) under a single "sun", a starfield
+// backdrop, and a subtle bloom pass. The moonbase on it is true-to-scale, so
+// every camera constant here is a real distance in meters (via M_TO_UNITS).
+// A camera rig animates smooth transitions to any lat/lon on the patch.
+// Marker/model overlays are injected as children so this component stays
+// presentation-only.
 //
 // The world is still a sphere mathematically — positions are directions
-// scaled by a radius — so all the geo.ts framing/decluster math carries over;
-// only the rendered patch is the pole.
+// scaled by a radius — so all the geo.ts framing math carries over; only the
+// rendered patch is the ridge.
 
 import { Stars, TrackballControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import {
   drillInFraming,
   latLonToVector3,
+  MOON_RADIUS_M,
   orbitUpVector,
   surfaceNormal,
   surfaceViewFraming,
   vector3ToLatLon,
 } from '@/lib/lunar-atlas/geo'
+import {
+  HOME_CAM as HOME_CAM_M,
+  HOME_TARGET as HOME_TARGET_M,
+} from '@/lib/lunar-atlas/homeview'
+import { M_TO_UNITS, capCenterLatLon } from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
@@ -38,8 +47,9 @@ import useTerrainSampler, { RadiusAt } from './useTerrainSampler'
 export type GlobeFocus = {
   lat: number
   lon: number
-  // Camera altitude above the surface for orbit views, in GLOBE_RADIUS units.
-  // The whole south-pole cap reads at ~0.3; a single site at ~0.05.
+  // Camera altitude above the surface for orbit views, as a fraction of the
+  // sphere radius (metersAboveGround / MOON_RADIUS_M). The whole 16 km patch
+  // reads at ~8 km altitude (~0.0046); a single site at ~500 m (~0.0003).
   distanceRadii?: number
   // 'orbit' (default) looks down from above; 'surface' does a cinematic low
   // pan to a from-the-ground vantage looking across at the model.
@@ -72,39 +82,33 @@ export type MoonGlobeProps = {
 // (camera tumble), not a click — it must never select or deselect anything.
 const CLICK_DRAG_TOLERANCE_PX = 8
 
-// Home framing: hover above the pole, offset toward the sunward side so the
-// cap reads with its long shadows falling away from the viewer.
-const POLE_TARGET = new THREE.Vector3(0, -GLOBE_RADIUS, 0)
-// A close, oblique three-quarter view of the base — NOT a top-down birdseye.
-// The tangential offset (X/Z) dominates the radial one (Y = altitude), so the
-// camera looks *across* the settlement at ~27° above the ground rather than
-// straight down on it, and the small overall magnitude keeps it zoomed in.
-const DEFAULT_CAM = POLE_TARGET.clone().add(
-  new THREE.Vector3(
-    GLOBE_RADIUS * 0.075,
-    -GLOBE_RADIUS * 0.05,
-    GLOBE_RADIUS * 0.062
-  )
-)
-// "Up" for the home view: the pole's outward surface normal, so the ground
-// sits at the bottom of frame and space above — the natural horizon for an
-// oblique view (a tangent "up" only makes sense for the old top-down shot).
-const POLE_UP = (() => {
-  const n = surfaceNormal(-90, 0)
+// Everything below is expressed in REAL METERS via M_TO_UNITS — the base is
+// true-to-scale on the ridge, so camera heights and standoffs are literal
+// distances (a 900 m standoff is a 900 m walk).
+
+// Home framing (defined in lib/homeview so the model layer can aim each
+// asset's presentation side at this same viewpoint).
+const HOME_TARGET = new THREE.Vector3(...HOME_TARGET_M)
+const DEFAULT_CAM = new THREE.Vector3(...HOME_CAM_M)
+// "Up" for the home view: the ridge's outward surface normal, so the ground
+// sits at the bottom of frame and space above.
+const HOME_UP = (() => {
+  const c = capCenterLatLon()
+  const n = surfaceNormal(c.lat, c.lon)
   return new THREE.Vector3(n[0], n[1], n[2])
 })()
 
-// Minimum camera clearance above the local terrain, in scene units.
-const CAMERA_CLEARANCE = GLOBE_RADIUS * 0.0015
+// Minimum camera clearance above the local terrain: 3 m — walking height.
+const CAMERA_CLEARANCE = 3 * M_TO_UNITS
 
-// Three-quarter "hero" framing tuned to the cap's scale (fractions of
-// GLOBE_RADIUS): the eye sits well above the model and a short walk back,
-// looking down at ~35° so the installation's form reads — not a top-down
-// birdseye, not a horizon-height squint. targetLift aims at mid-model.
+// Three-quarter "hero" framing for a single site (fractions of the sphere
+// radius = meters / MOON_RADIUS_M): the eye ~30 m up and ~75 m back, looking
+// down at ~22° so the installation's form reads — not a top-down birdseye,
+// not a horizon-height squint. targetLift aims at mid-model.
 const SURFACE_VIEW_OPTS = {
-  eyeHeight: 0.042,
-  standoff: 0.05,
-  targetLift: 0.008,
+  eyeHeight: 30 / MOON_RADIUS_M,
+  standoff: 75 / MOON_RADIUS_M,
+  targetLift: 10 / MOON_RADIUS_M,
 }
 
 // Animates the camera toward a lat/lon focus (or back to the home framing)
@@ -129,8 +133,8 @@ function CameraRig({
 }) {
   const { camera } = useThree()
   const desiredPos = useRef(DEFAULT_CAM.clone())
-  const desiredTarget = useRef(POLE_TARGET.clone())
-  const desiredUp = useRef(POLE_UP.clone())
+  const desiredTarget = useRef(HOME_TARGET.clone())
+  const desiredUp = useRef(HOME_UP.clone())
   const animating = useRef(false)
   // Per-transition easing base (larger = slower, more cinematic glide).
   const easeBase = useRef(0.0022)
@@ -151,12 +155,22 @@ function CameraRig({
       const surfaceR = radiusAt ? radiusAt(focus.lat, focus.lon) : GLOBE_RADIUS
       const { position, target } =
         focus.view === 'surface'
-          ? surfaceViewFraming(focus.lat, focus.lon, surfaceR, SURFACE_VIEW_OPTS)
+          ? surfaceViewFraming(focus.lat, focus.lon, surfaceR, {
+              ...SURFACE_VIEW_OPTS,
+              // Close in from whichever side the camera is already on, so a
+              // site click zooms straight in rather than orbiting around to
+              // the subject's back.
+              approachFrom: [
+                camera.position.x,
+                camera.position.y,
+                camera.position.z,
+              ],
+            })
           : drillInFraming(
               focus.lat,
               focus.lon,
               surfaceR,
-              focus.distanceRadii ?? 0.3
+              focus.distanceRadii ?? 1500 / MOON_RADIUS_M
             )
       // Surface pans glide in slowly for a cinematic feel; orbit moves snappier.
       easeBase.current = focus.view === 'surface' ? 0.05 : 0.0022
@@ -176,8 +190,8 @@ function CameraRig({
     } else {
       easeBase.current = 0.0022
       desiredPos.current.copy(DEFAULT_CAM)
-      desiredTarget.current.copy(POLE_TARGET)
-      desiredUp.current.copy(POLE_UP)
+      desiredTarget.current.copy(HOME_TARGET)
+      desiredUp.current.copy(HOME_UP)
     }
     setAnimating(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -200,29 +214,30 @@ function CameraRig({
     }
 
     // Proximity-adaptive control feel: a rotate/zoom speed that feels right
-    // from the cap overview whips the camera around violently when it is
+    // from the base overview whips the camera around violently when it is
     // metres off the deck after selecting a site. Scale both with the
     // camera's distance to its pivot so close-in inspection is gentle.
     const pivotDist = camera.position.distanceTo(curTarget)
     const feel = Math.sqrt(
-      THREE.MathUtils.clamp(pivotDist / (GLOBE_RADIUS * 0.45), 0, 1)
+      THREE.MathUtils.clamp(pivotDist / (2000 * M_TO_UNITS), 0, 1)
     )
     controls.rotateSpeed = THREE.MathUtils.lerp(0.3, 2.2, feel)
     controls.zoomSpeed = THREE.MathUtils.lerp(0.5, 1.2, feel)
 
     // Once the camera pulls well away from a drill-in pivot, glide the pivot
-    // back to the pole. Without this, zooming out from a site leaves the cap
-    // hanging half off-screen, orbiting a surface point the user can no
-    // longer even see.
-    if (!animating.current && curTarget.distanceToSquared(POLE_TARGET) > 1e-8) {
-      const alt = camera.position.length() - GLOBE_RADIUS
-      const recenter = THREE.MathUtils.clamp(
-        (alt / (GLOBE_RADIUS * 0.28) - 1) / 0.8,
-        0,
-        1
-      )
+    // back to the ridge center. Without this, zooming out from a site leaves
+    // the patch hanging half off-screen, orbiting a surface point the user
+    // can no longer even see.
+    if (
+      !animating.current &&
+      curTarget.distanceToSquared(HOME_TARGET) > (1 * M_TO_UNITS) ** 2
+    ) {
+      // Altitude above the base's ground level, in meters.
+      const altM =
+        (camera.position.length() - HOME_TARGET.length()) / M_TO_UNITS
+      const recenter = THREE.MathUtils.clamp((altM / 2500 - 1) / 0.8, 0, 1)
       if (recenter > 0) {
-        curTarget.lerp(POLE_TARGET, 1 - Math.pow(0.02, delta * recenter))
+        curTarget.lerp(HOME_TARGET, 1 - Math.pow(0.02, delta * recenter))
       }
     }
 
@@ -265,8 +280,8 @@ function CameraRig({
       const angle = newDir.angleTo(dstDir)
       if (
         angle < 0.01 &&
-        Math.abs(newLen - dstLen) < GLOBE_RADIUS * 0.002 &&
-        newTarget.distanceTo(desiredTarget.current) < GLOBE_RADIUS * 0.002
+        Math.abs(newLen - dstLen) < 2 * M_TO_UNITS &&
+        newTarget.distanceTo(desiredTarget.current) < 2 * M_TO_UNITS
       ) {
         setAnimating(false)
       }
@@ -300,6 +315,27 @@ function Sun() {
       <ambientLight intensity={0.35} />
     </>
   )
+}
+
+// Fully metallic PBR materials (Starship's stainless steel, rover chassis)
+// reflect only their environment — under punctual lights alone they render
+// near-black. A neutral generated studio environment gives them something to
+// reflect; kept subtle so matte surfaces still read as sun-lit regolith
+// hardware. Terrain is unaffected (unlit MeshBasicMaterial).
+function MetalEnvironment() {
+  const { gl, scene } = useThree()
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl)
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+    scene.environment = env
+    scene.environmentIntensity = 0.7
+    return () => {
+      scene.environment = null
+      env.dispose()
+      pmrem.dispose()
+    }
+  }, [gl, scene])
+  return null
 }
 
 export default function MoonGlobe({
@@ -353,15 +389,19 @@ export default function MoonGlobe({
       dpr={[1, 2]}
       camera={{
         position: [DEFAULT_CAM.x, DEFAULT_CAM.y, DEFAULT_CAM.z],
-        up: [POLE_UP.x, POLE_UP.y, POLE_UP.z],
+        up: [HOME_UP.x, HOME_UP.y, HOME_UP.z],
         fov: 42,
-        near: GLOBE_RADIUS * 0.001,
+        // 1 m near plane: the camera can stand right next to a rover.
+        near: 1 * M_TO_UNITS,
         far: GLOBE_RADIUS * 40,
       }}
       gl={{
         antialias: true,
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.2,
+        // Wide near/far span at this closer scale — log depth avoids z-fighting
+        // between terrain, pads, and models up close.
+        logarithmicDepthBuffer: true,
       }}
       onPointerMissed={(e) => {
         const down = pointerDownAt.current
@@ -379,6 +419,7 @@ export default function MoonGlobe({
       <color attach="background" args={['#03040a']} />
 
       <Sun />
+      <MetalEnvironment />
 
       <Stars
         radius={GLOBE_RADIUS * 14}
@@ -418,7 +459,9 @@ export default function MoonGlobe({
       />
 
       {/* Trackball gives full free tumble around the current pivot. The pivot
-          starts at the pole; drill-ins move it to the focused site. */}
+          starts at the ridge center; drill-ins move it to the focused site.
+          Distances are real: from 12 m off a rover out to 40 km above the
+          patch — past that there is nothing more to see. */}
       <TrackballControls
         ref={controlsRef}
         makeDefault
@@ -426,9 +469,9 @@ export default function MoonGlobe({
         rotateSpeed={2.2}
         zoomSpeed={1.2}
         dynamicDampingFactor={0.12}
-        minDistance={GLOBE_RADIUS * 0.004}
-        maxDistance={GLOBE_RADIUS * 0.8}
-        target={[POLE_TARGET.x, POLE_TARGET.y, POLE_TARGET.z]}
+        minDistance={12 * M_TO_UNITS}
+        maxDistance={40000 * M_TO_UNITS}
+        target={[HOME_TARGET.x, HOME_TARGET.y, HOME_TARGET.z]}
       />
 
       {/* High threshold keeps bloom off the sunlit regolith (which read as a

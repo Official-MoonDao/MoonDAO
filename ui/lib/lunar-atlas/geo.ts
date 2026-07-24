@@ -281,6 +281,11 @@ export function surfaceViewFraming(
     standoff?: number
     targetLift?: number
     bearingRad?: number
+    // Where the camera is coming FROM (world space, typically its current
+    // position). The framing then stands off on THAT side, so flying to a
+    // subject zooms straight in instead of swinging around to a fixed
+    // bearing — which parked the camera behind whatever was clicked.
+    approachFrom?: Vec3
   }
 ): { position: Vec3; target: Vec3 } {
   const eyeHeight = (opts?.eyeHeight ?? 0.06) * radius
@@ -294,7 +299,20 @@ export function surfaceViewFraming(
   // world-Y reference degenerates, so fall back to world-Z.
   const ref: Vec3 = Math.abs(n[1]) > 0.9 ? [0, 0, 1] : [0, 1, 0]
   let t = norm3(cross3(ref, n))
-  if (opts?.bearingRad) {
+  if (opts?.approachFrom) {
+    // Tangential component of the approach vector: the compass side the
+    // camera already sits on, with any radial (overhead) part removed.
+    const a = opts.approachFrom
+    const v: Vec3 = [a[0] - surface[0], a[1] - surface[1], a[2] - surface[2]]
+    const radial = dot3(v, n)
+    const tang: Vec3 = [
+      v[0] - n[0] * radial,
+      v[1] - n[1] * radial,
+      v[2] - n[2] * radial,
+    ]
+    // Straight overhead has no usable bearing — keep the stable fallback.
+    if (dot3(tang, tang) > 1e-12) t = norm3(tang)
+  } else if (opts?.bearingRad) {
     const b = opts.bearingRad
     const t2 = cross3(n, t) // second tangent, completes the basis
     t = norm3([

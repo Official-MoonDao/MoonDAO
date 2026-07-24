@@ -13,32 +13,96 @@
 import { useGLTF } from '@react-three/drei'
 import { ReactNode, Suspense, useMemo } from 'react'
 import * as THREE from 'three'
+import { HOME_CAM } from '@/lib/lunar-atlas/homeview'
+import { M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { ModelTransform, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 
-// Fallback seat while the height maps decode (polar heights are within
-// ±0.9% of the sphere radius, so the sphere itself is a fine placeholder).
+// Fallback seat while the height maps decode (ridge heights are within
+// ±0.12% of the sphere radius, so the sphere itself is a fine placeholder).
 const SURFACE = GLOBE_RADIUS
-// Local model space is ~unit-scale; this maps it onto the south-pole cap
-// (which spans ~0.42 GLOBE_RADIUS). Deliberately oversized versus reality —
-// a true-scale lander would be a sub-pixel speck on a 369 km map — but small
-// enough to read as an installation, not a landmark. Fixed size: models
-// don't grow on selection; clicking simply zooms the camera in.
-const MODEL_SCALE = GLOBE_RADIUS * 0.0085
+// Every model (GLB or procedural) is normalized so its largest dimension is
+// ~this many local units; dividing a real size by it gives the world scale.
+const UNIT_MAX_DIM = 1.7
 
-// Per-type size multipliers so the base reads with believable proportions —
-// a rover shouldn't tower as tall as a crewed habitat or a lander. Applied on
-// top of MODEL_SCALE (all GLBs are otherwise normalized to a common height).
-const TYPE_SCALE: Partial<Record<ProjectType, number>> = {
-  crewed_base: 1.6,
-  habitat: 1.2,
-  lander: 1.1,
-  rover: 1.0,
-  power: 0.82,
-  isru_plant: 0.95,
-  construction: 0.8,
-  orbital: 1.0,
+// TRUE SCALE: each installation renders at its real-world size on the 16 km
+// ridge patch. Sizes are the largest dimension in meters — public figures
+// where they exist, honest estimates otherwise. Per-project entries override
+// the per-type defaults (a Starship is not the same size as a Blue Moon).
+const TYPE_SIZE_M: Partial<Record<ProjectType, number>> = {
+  crewed_base: 10,
+  habitat: 9,
+  lander: 16,
+  rover: 4.5,
+  power: 8,
+  isru_plant: 8,
+  construction: 11,
+  orbital: 20,
+}
+const PROJECT_SIZE_M: Record<string, number> = {
+  'spacex-starship-hls': 52, // Ship upper stage ~50 m + gear
+  'blue-origin-blue-moon-mk1': 8,
+  'blue-origin-blue-moon-mk2': 16,
+  'nasa-artemis-iii': 12, // crewed HLS touchdown stack
+  'nasa-artemis-base-camp': 10,
+}
+
+// Real-world largest dimension (meters) of the model a project renders —
+// also used by the marker layer to size beacon pins to their model.
+export function projectSizeM(project: Project): number {
+  return PROJECT_SIZE_M[project.id] ?? TYPE_SIZE_M[project.type] ?? 10
+}
+
+// World scale (scene units per local model unit) for a project's model.
+export function projectScale(project: Project): number {
+  return (projectSizeM(project) * M_TO_UNITS) / UNIT_MAX_DIM
+}
+
+// Which local-frame azimuth of a model is its "presentation" side — the
+// direction SurfaceAnchor aims at the home camera. Angles are atan2(x, z),
+// so 0 = local +Z and PI/2 = local +X.
+//
+// The rule is BROADSIDE: aim the camera down each asset's SHORTER horizontal
+// axis so the longer one spans the frame. A rover or lander reads as itself
+// in profile; head-on or corner-on it's an unreadable lump. Values come from
+// each GLB's authored bounding box, so they are properties of the asset
+// files, not of the curated dataset.
+const MODEL_FRONT_AZ: Record<string, number> = {
+  // X 6.4 m ≈ Z 6.4 m — radially symmetric, any bearing reads the same.
+  '/moonbase/models/apollo-lunar-module.glb': 0,
+  // X 380 > Z 166: long side across the frame.
+  '/moonbase/models/habitat-demo-unit.glb': 0,
+  // X 6.1 > Z 2.8: solar wings span the view.
+  '/moonbase/models/insight-lander.glb': 0,
+  // X 16.7 > Z 12.6.
+  '/moonbase/models/viking-lander.glb': 0,
+  // Z 3.1 > X 2.7: chassis length across the frame.
+  '/moonbase/models/perseverance-rover.glb': Math.PI / 2,
+  // Z 1.7 > X 0.85: bucket-drum arms span the view.
+  '/moonbase/models/rassor.glb': Math.PI / 2,
+  // Z 3.6 > X 1.9 puts broadside at PI/2, which also lands within 1.5° of
+  // the bare stainless flank: the Heatshield_Tiles material's vertices
+  // centroid at local azimuth -91.5°, so the un-tiled side faces +88.5°.
+  // Without this the ship shows the camera its black heat shield.
+  '/moonbase/models/starship-hls.glb': 1.545,
+}
+
+const MODEL_UP = new THREE.Vector3(0, 1, 0)
+
+// The yaw (about the model's own up axis) that turns `frontAz` toward the
+// home viewpoint. Models hold this heading as the user orbits — ground
+// installations shouldn't pivot to track the camera — so the base always
+// looks deliberately arranged from the angle it is first seen at.
+function facingYaw(
+  anchorPos: THREE.Vector3,
+  alignedToSurface: THREE.Quaternion,
+  frontAz: number
+) {
+  const toCam = new THREE.Vector3(...HOME_CAM)
+    .sub(anchorPos)
+    .applyQuaternion(alignedToSurface.clone().invert())
+  return Math.atan2(toCam.x, toCam.z) - frontAz
 }
 
 const ASTRONAUT_URI = '/moonbase/models/astronaut.glb'
@@ -663,11 +727,13 @@ function GLBModel({
 }
 
 // A little astronaut standing beside a crewed base, for scale and life.
+// Local units on a 10 m crewed base are ~5.9 m each, so 0.31 units is a
+// suited astronaut's ~1.85 m.
 function AstronautCompanion() {
   return (
     <Suspense fallback={null}>
       <group position={[0.9, 0, 0.7]} rotation={[0, -0.7, 0]}>
-        <GLBModel url={ASTRONAUT_URI} fitHeight={0.55} />
+        <GLBModel url={ASTRONAUT_URI} fitHeight={0.31} />
       </group>
     </Suspense>
   )
@@ -683,7 +749,8 @@ const CLICK_DRAG_TOLERANCE_PX = 8
 export function SurfaceAnchor({
   dir,
   surfaceRadius,
-  scale = MODEL_SCALE,
+  scale = (10 * M_TO_UNITS) / UNIT_MAX_DIM,
+  frontAz = 0,
   onClick,
   onHoverChange,
   children,
@@ -692,24 +759,31 @@ export function SurfaceAnchor({
   // Displaced terrain radius at this direction — seats the model on the
   // rendered ground. Falls back to the analytic-sphere constant.
   surfaceRadius?: number
-  // World scale for the whole installation (model + pad). Defaults to the
-  // shared MODEL_SCALE; per-type multipliers give believable proportions.
+  // World scale for the whole installation (model + pad). Defaults to a
+  // 10 m installation; use projectScale() for a project's true size.
   scale?: number
+  // Local azimuth of the model's presentation side; see MODEL_FRONT_AZ.
+  frontAz?: number
   onClick?: () => void
   onHoverChange?: (hovered: boolean) => void
   children: ReactNode
 }) {
   const { position, quaternion } = useMemo(() => {
     const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
-    const q = new THREE.Quaternion().setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      d
+    // Align the model's up with the local surface normal. The leftover yaw
+    // from setFromUnitVectors is arbitrary (it depends on where the site sits
+    // on the sphere), which left every asset on a random heading — hence the
+    // explicit facing correction below.
+    const q = new THREE.Quaternion().setFromUnitVectors(MODEL_UP, d)
+    const pos = d.clone().multiplyScalar(surfaceRadius ?? SURFACE)
+    q.multiply(
+      new THREE.Quaternion().setFromAxisAngle(
+        MODEL_UP,
+        facingYaw(pos, q, frontAz)
+      )
     )
-    return {
-      position: d.multiplyScalar(surfaceRadius ?? SURFACE),
-      quaternion: q,
-    }
-  }, [dir, surfaceRadius])
+    return { position: pos, quaternion: q }
+  }, [dir, surfaceRadius, frontAz])
 
   return (
     <group
@@ -763,7 +837,10 @@ export default function ProjectModel({
     <SurfaceAnchor
       dir={dir}
       surfaceRadius={surfaceRadius}
-      scale={MODEL_SCALE * (TYPE_SCALE[project.type] ?? 1)}
+      scale={projectScale(project)}
+      frontAz={
+        (project.modelURI ? MODEL_FRONT_AZ[project.modelURI] : undefined) ?? 0
+      }
       onClick={() => onSelect?.(project.id)}
       onHoverChange={(h) => onHover?.(h ? project.id : null)}
     >
@@ -792,5 +869,6 @@ export default function ProjectModel({
   '/moonbase/models/viking-lander.glb',
   '/moonbase/models/insight-lander.glb',
   '/moonbase/models/rassor.glb',
+  '/moonbase/models/starship-hls.glb',
   ASTRONAUT_URI,
 ].forEach((u) => useGLTF.preload(u, DRACO_PATH))

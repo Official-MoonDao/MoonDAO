@@ -1,51 +1,60 @@
 # Moon Base Zero — asset attribution
 
-All terrain assets are derived from **public-domain NASA data**.
+Terrain assets are derived from **public-domain NASA data**; the 3D models are a
+mix of **NASA 3D Resources** and one third-party community model (noted below).
 
 ## 3D models (`models/`)
 
-Every GLB is from **NASA 3D Resources** (<https://science.nasa.gov/3d-resources/>,
-mirrored at <https://github.com/nasa/NASA-3D-Resources>). NASA 3D Resources assets
-are free and without copyright; see the
+Except where noted, every GLB is from **NASA 3D Resources**
+(<https://science.nasa.gov/3d-resources/>, mirrored at
+<https://github.com/nasa/NASA-3D-Resources>). NASA 3D Resources assets are free
+and without copyright; see the
 [NASA Images and Media Usage Guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/).
-Models marked "optimized" were Draco-compressed with `@gltf-transform/cli`
+Models marked "optimized" were Draco-compressed with `@gltf-transform`
 (geometry only; no remodeling) to keep web payloads small.
 
-| File | NASA source model | Used for |
+| File | Source model | Used for |
 |---|---|---|
-| `apollo-lunar-module.glb` | Apollo Lunar Module | Starship HLS, Artemis III (crewed-lander stand-ins) |
-| `viking-lander.glb` | Viking Lander | Blue Moon MK1 cargo lander (stand-in) |
-| `insight-lander.glb` (optimized) | InSight Cruise Lander | Blue Moon MK2 crewed lander (stand-in) |
-| `perseverance-rover.glb` | Mars 2020 Perseverance Rover | Moon RACER LTV, Lunar Voyager LTV, NASA LTV (rover stand-ins) |
-| `rassor.glb` | RASSOR (Regolith Advanced Surface Systems Operations Robot) | Blue Alchemist ISRU |
-| `habitat-demo-unit.glb` | Habitat Demonstration Unit | Artemis Base Camp |
-| `astronaut.glb` | Astronaut | Crew companion on crewed sites |
+| `starship-hls.glb` (edited) | Third-party "SpaceX Starship Ship 24 / Booster 7" community model (Sketchfab; verify license before production use) | Starship HLS — see note |
+| `apollo-lunar-module.glb` | Apollo Lunar Module (NASA) | Artemis III (crewed-lander stand-in) |
+| `viking-lander.glb` | Viking Lander (NASA) | Blue Moon MK1 cargo lander (stand-in) |
+| `insight-lander.glb` (optimized) | InSight Cruise Lander (NASA) | Blue Moon MK2 crewed lander (stand-in) |
+| `perseverance-rover.glb` | Mars 2020 Perseverance Rover (NASA) | Moon RACER LTV, Lunar Voyager LTV, NASA LTV (rover stand-ins) |
+| `rassor.glb` | RASSOR (Regolith Advanced Surface Systems Operations Robot) (NASA) | Blue Alchemist ISRU |
+| `habitat-demo-unit.glb` | Habitat Demonstration Unit (NASA) | Artemis Base Camp |
+| `astronaut.glb` | Astronaut (NASA) | Crew companion on crewed sites |
 
-Landers/rovers for specific commercial vehicles (SpaceX Starship, Blue Origin
-Blue Moon, the LTV competitors) have **no free, brand-accurate, photoreal model**
-available; the closest real NASA spacecraft are used as honest, visually-distinct
-stand-ins. Types without any suitable model (fission surface power, regolith
-construction / ISRU plants) fall back to procedural geometry in `ProjectModel.tsx`.
+`starship-hls.glb` was produced from the full ship-24 + booster-7 stack by
+removing every mesh below the interstage (Y < 12.3 in model space), keeping only
+the **upper-stage Ship** — the part that lands on the Moon — then Draco-compressing
+the result (36 MB → ~1.9 MB). Its upstream Sketchfab source/license should be
+confirmed and recorded here before any production release.
 
-## South-pole terrain (`southpole/`)
+The other commercial vehicles (Blue Origin Blue Moon, the LTV competitors) have
+**no free, brand-accurate, photoreal model** available; the closest real NASA
+spacecraft are used as honest, visually-distinct stand-ins. Types without any
+suitable model (fission surface power, regolith construction / ISRU plants) fall
+back to procedural geometry in `ProjectModel.tsx`.
 
-Baked from the **LOLA Gridded Data Record `LDEM_75S_120M`** — a 120 m/px
-polar stereographic elevation model of the lunar south pole (75°S–90°S) from
-the Lunar Orbiter Laser Altimeter aboard Lunar Reconnaissance Orbiter.
-Source: [LOLA PDS Data Node](https://imbrium.mit.edu/)
-(`DATA/LOLA_GDR/POLAR/IMG/LDEM_75S_120M.IMG`, LRO-L-LOLA-4-GDR-V1.0).
+## Connecting Ridge terrain (`southpole/`)
+
+Baked from the **PGDA "Improved LOLA Elevation Maps for South Pole Landing
+Sites" Site01 DEM** — a 5 m/px, 16×16 km polar stereographic elevation model
+of the **Shackleton–de Gerlache connecting ridge** (the Artemis-era landing
+zone), produced from Lunar Orbiter Laser Altimeter data by NASA GSFC.
+Source: [PGDA product 78](https://pgda.gsfc.nasa.gov/products/78)
+(`Site01_final_adj_5mpp_surf.tif`, MOON_ME frame).
 
 | File | Derivation |
 |---|---|
-| `height_rg.png` | Inner cap (~369 km square): 16-bit heights split across the R (high byte) / G (low byte) channels, normalized to the crop's height range. |
-| `normal.png` | Tangent-space normal map from full-resolution DEM gradients (2× vertical exaggeration, matching the rendered geometry). |
-| `albedo.jpg` | Synthesized neutral-regolith albedo with cavity/ambient shading baked from the DEM (lunar regolith is near-uniform albedo; there is no usable optical imagery of the permanently-shadowed pole). |
-| `far_height_rg.png`, `far_albedo.jpg` | Full DEM extent (~915 km square) at reduced resolution for the horizon surround; albedo fades to black before the dataset edge. |
+| `height_rg.png` | 16-bit heights split across the R (high byte) / G (low byte) channels, normalized to the patch's height range. True vertical scale (no exaggeration) — the moonbase on it is 1:1. |
+| `albedo.jpg` | Synthesized neutral-regolith albedo with the hillshade lighting baked in at the DEM's native 5 m/px, plus cavity shading and grain (lunar regolith is near-uniform albedo; there is no usable optical imagery of the mostly-shadowed pole). |
 
 Rebuild with `ui/scripts/build-southpole-assets.py` (documents the exact
 pipeline and the constants shared with `ui/lib/lunar-atlas/southpole.ts`).
 
-- **Elevation:** Lunar Orbiter Laser Altimeter (LOLA), NASA / GSFC —
-  Smith, D. E., et al.
+- **Elevation:** LOLA site DEMs — Barker, M. K., et al. (2021), "Improved
+  LOLA Elevation Maps for South Pole Landing Sites: Error Estimates and Their
+  Impact on Illumination Conditions", Planetary & Space Science 203, 105119.
 - **License:** NASA data is generally not copyrighted and is free to use (see
   [NASA media usage guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/)).

@@ -3,7 +3,7 @@
 // pick (model swap + surface view), and background-click deselection.
 import { chromium } from 'playwright-core'
 
-const URL = 'http://localhost:3009/moonbase'
+const URL = 'http://localhost:3000/moonbase'
 const OUT = '/tmp/sp-shots'
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
 const page = await browser.newPage({ viewport: { width: 1440, height: 810 } })
@@ -14,8 +14,26 @@ page.on('console', (m) => {
 })
 
 await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 240000 })
-// Terrain geometry + textures decode takes a moment.
-await page.waitForTimeout(14000)
+// Terrain geometry + textures decode takes a moment — wait for the loading
+// veil to clear, then a beat for the camera to settle.
+await page
+  .locator('text=Rendering the Moon')
+  .waitFor({ state: 'hidden', timeout: 120000 })
+  .catch(() => {})
+await page.waitForTimeout(8000)
+// Dev-only: the Next error overlay (hydration race under headless CPU) and
+// the cookie banner intercept pointer events — keep them out permanently.
+await page.addStyleTag({
+  content: 'nextjs-portal { display: none !important; }',
+})
+const clearOverlays = () =>
+  page.evaluate(() => {
+    document.querySelectorAll('nextjs-portal').forEach((n) => n.remove())
+    document
+      .querySelectorAll('button')
+      .forEach((b) => b.textContent === 'Accept' && b.click())
+  })
+await clearOverlays()
 await page.screenshot({ path: `${OUT}/1-home.png` })
 console.log('shot: home overview')
 
@@ -30,6 +48,7 @@ for (let fx = 0.3; fx <= 0.72; fx += 0.06) {
 }
 let sitePanel = false
 for (const [x, y] of candidates) {
+  await clearOverlays()
   await page.mouse.move(x, y)
   await page.waitForTimeout(180)
   const cursor = await page.evaluate(() => document.body.style.cursor)
@@ -48,7 +67,10 @@ const competitorBtn = page
   .locator('button:has-text("SpaceX"), button:has-text("Blue Origin")')
   .first()
 if ((await competitorBtn.count()) > 0) {
-  await competitorBtn.click()
+  await clearOverlays()
+  // force: an adjacent panel's header overlaps the row box in headless
+  // layout; the row itself is interactive.
+  await competitorBtn.click({ force: true })
   await page.waitForTimeout(8000)
   await page.screenshot({ path: `${OUT}/3-competitor.png` })
   console.log('shot: competitor drill-in')
@@ -57,6 +79,7 @@ if ((await competitorBtn.count()) > 0) {
 }
 
 // Background click deselects and returns home.
+await clearOverlays()
 await page.mouse.click(box.x + box.width * 0.08, box.y + box.height * 0.9)
 await page.waitForTimeout(6000)
 await page.screenshot({ path: `${OUT}/4-deselected.png` })

@@ -1,8 +1,13 @@
 import { GlobeAltIcon } from '@heroicons/react/24/outline'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
-import { vector3ToLatLon } from '@/lib/lunar-atlas/geo'
+import {
+  latLonToVector3,
+  MOON_RADIUS_M,
+  vector3ToLatLon,
+} from '@/lib/lunar-atlas/geo'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
+import { capOffsetLatLon } from '@/lib/lunar-atlas/southpole'
 import { TIME_STATUS_OPACITY } from '@/lib/lunar-atlas/display'
 import {
   atlasYear,
@@ -24,47 +29,53 @@ import TechTreePanel from '@/components/lunar-atlas/TechTreePanel'
 import TimelineScrubber from '@/components/lunar-atlas/TimelineScrubber'
 import Head from '@/components/layout/Head'
 
-// The scene IS the south pole now — a photorealistic LOLA-derived cap, no full
-// globe. The home view is a null focus, which the globe's CameraRig frames with
-// its oblique three-quarter DEFAULT_CAM (not a top-down orbit).
+// The scene IS the Shackleton connecting ridge now — a single photorealistic
+// 16x16 km LOLA-derived patch, no full globe. The home view is a null focus,
+// which the globe's CameraRig frames with its oblique three-quarter
+// DEFAULT_CAM (not a top-down orbit).
 
-// The tech-tree sites are arranged as a compact, zoned settlement rather than
-// at their (approximate, heavily-overlapping) real coordinates — so the cap
-// reads as one connected moonbase. Offsets are angular (radians) in the pole's
-// tangent plane (the pole is -Y): [east/west, north/south]. Layout logic:
-// habitat at the hub; landing pads + their construction crews to the east;
-// the rover garage out front; ISRU to the west; the reactor set back (safety
-// standoff) to the north-west.
-const BASE_LAYOUT: Partial<Record<string, [number, number]>> = {
-  crewed_base: [0.0, 0.0],
-  habitat: [0.0, 0.0],
-  lander: [0.03, -0.004],
-  construction: [0.026, 0.024],
-  rover: [-0.002, 0.03],
-  isru_plant: [-0.028, 0.016],
-  power: [-0.028, -0.02],
+// The tech-tree sites are arranged as a compact, zoned settlement on the
+// ridge crest rather than at their (approximate, heavily-overlapping) real
+// coordinates — so the patch reads as one connected moonbase. The base is
+// TRUE TO SCALE: offsets are real meters in the terrain's map frame
+// [+east, +north]. Layout logic: habitat at the hub; landing pads at a blast
+// standoff to the east with their construction crews between; the rover
+// garage out front; ISRU to the west; the reactor set back (safety standoff)
+// to the north-west.
+// Spacing is COMPACT — a ~120 m settlement — so every asset fills real
+// pixels from the ~130 m load-in camera. The camera looks from the south,
+// so the landing pad goes to the BACK (north): the 52 m Starship reads as
+// a backdrop over the small hardware instead of blocking it.
+const BASE_LAYOUT_M: Partial<Record<string, [number, number]>> = {
+  crewed_base: [0, 0],
+  habitat: [0, 0],
+  lander: [-40, 105],
+  construction: [45, 30],
+  rover: [-15, 20],
+  isru_plant: [-45, 12],
+  power: [-55, -25],
 }
-// Fallback ring for any category not explicitly zoned above.
-const FALLBACK_RING = 0.034
+// Fallback ring (meters) for any category not explicitly zoned above.
+const FALLBACK_RING_M = 70
 
 function baseSiteDirections(ids: string[]): Map<string, Vec3> {
   const m = new Map<string, Vec3>()
   let fallbackIdx = 0
-  const nUnmapped = ids.filter((id) => !BASE_LAYOUT[id]).length
+  const nUnmapped = ids.filter((id) => !BASE_LAYOUT_M[id]).length
   ids.forEach((id) => {
-    let ox: number
-    let oz: number
-    const zoned = BASE_LAYOUT[id]
+    let eastM: number
+    let northM: number
+    const zoned = BASE_LAYOUT_M[id]
     if (zoned) {
-      ;[ox, oz] = zoned
+      ;[eastM, northM] = zoned
     } else {
       const a = (fallbackIdx / Math.max(nUnmapped, 1)) * Math.PI * 2
-      ox = Math.cos(a) * FALLBACK_RING
-      oz = Math.sin(a) * FALLBACK_RING
+      eastM = Math.cos(a) * FALLBACK_RING_M
+      northM = Math.sin(a) * FALLBACK_RING_M
       fallbackIdx++
     }
-    const len = Math.hypot(ox, 1, oz)
-    m.set(id, [ox / len, -1 / len, oz / len])
+    const ll = capOffsetLatLon(eastM, northM)
+    m.set(id, latLonToVector3(ll.lat, ll.lon, 1))
   })
   return m
 }
@@ -309,7 +320,8 @@ export default function MoonBaseZeroIndex() {
       setFocus({
         lat: g.location.lat,
         lon: g.location.lon,
-        distanceRadii: 0.045,
+        // ~200 m above the site — close enough that a real-scale base reads.
+        distanceRadii: 200 / MOON_RADIUS_M,
       })
     }
   }
@@ -349,7 +361,7 @@ export default function MoonBaseZeroIndex() {
     <>
       <Head
         title="Moon Base Zero"
-        description="A photorealistic south pole moonbase on real NASA LOLA terrain — explore capability races, competitors, and who's leading each tech tree."
+        description="A true-to-scale moonbase on the Shackleton connecting ridge — real NASA LOLA terrain at 5 m/px. Explore capability races, competitors, and who's leading each tech tree."
       />
       <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#03040a]">
         <MoonGlobeLazy
@@ -376,9 +388,9 @@ export default function MoonBaseZeroIndex() {
                 <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
               </div>
               <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-                A connected moonbase on real LOLA terrain — every serious
-                program is racing here. Click a site to explore its capability
-                race, competitors, and sources.
+                A true-to-scale moonbase on the Shackleton connecting ridge —
+                every serious program is racing here. Click a site to explore
+                its capability race, competitors, and sources.
               </p>
             </div>
 

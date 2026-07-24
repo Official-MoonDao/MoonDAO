@@ -532,7 +532,7 @@
       "orgId": "spacex",
       "name": "Starship Human Landing System",
       "type": "lander",
-      "modelURI": "/moonbase/models/apollo-lunar-module.glb",
+      "modelURI": "/moonbase/models/starship-hls.glb",
       "summary": "A lunar-optimized Starship variant contracted by NASA to carry Artemis III and IV astronauts from lunar orbit to the South Pole surface and back.",
       "location": {
         "lat": -85,

@@ -12,8 +12,9 @@ import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { vector3ToLatLon, Vec3 } from '@/lib/lunar-atlas/geo'
+import { MOON_RADIUS_M, vector3ToLatLon, Vec3 } from '@/lib/lunar-atlas/geo'
 import { PROJECT_TYPE_LABEL, orgColor } from '@/lib/lunar-atlas/display'
+import { M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import type {
@@ -21,7 +22,7 @@ import type {
   Project,
   ProjectType,
 } from '@/lib/lunar-atlas/types'
-import ProjectModel from './ProjectModel'
+import ProjectModel, { projectSizeM } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
 // The competitor a tech-tree site shows by default: the front-runner by market
@@ -59,21 +60,29 @@ type MarkerLayerProps = {
 }
 
 // Offsets above the local terrain (which the sampler provides per marker),
-// tuned to the south-pole cap's scale (the cap is ~0.42 GLOBE_RADIUS across).
-const SEAT_LIFT = GLOBE_RADIUS * 0.0002 // clears z-fighting with the terrain
-const PIN_HEIGHT = GLOBE_RADIUS * 0.007 // beacon dot altitude above ground
-const DOT_RADIUS = GLOBE_RADIUS * 0.0014
+// in REAL METERS — the base is true-to-scale on the 16 km ridge patch.
+const SEAT_LIFT = 0.5 * M_TO_UNITS // clears z-fighting with the terrain
+// Pins are sized to the model they mark: the dot floats just above the
+// asset (a 4.5 m rover gets a ~25 m pin, the 52 m Starship a ~68 m one).
+// One fixed height either buried the dot inside tall models or dwarfed
+// the small ones.
+const MIN_PIN_HEIGHT_M = 25
+const pinHeightUnits = (modelSizeM: number) =>
+  Math.max(MIN_PIN_HEIGHT_M, modelSizeM * 1.3) * M_TO_UNITS
+const DOT_RADIUS = 3 * M_TO_UNITS
 // As the camera closes in, dots fade so the detailed on-surface models take
 // over (findability beacons far, physical builds near). The site drill-in
-// parks the camera ~0.09 GLOBE_RADIUS from the beacon, which must land well
-// past NEAR — an unfaded dot at that range is a screen-filling balloon that
-// hides the model it marks. The overview sits at ~0.6, comfortably past FAR.
-const FADE_NEAR = GLOBE_RADIUS * 0.055
-const FADE_FAR = GLOBE_RADIUS * 0.16
-// Angular radius (radians) of a site model's ground footprint. Real polar
-// terrain varies by more than a model's height across a footprint this size,
-// so a model seated on the *center* height buries its edges on any slope.
-const FOOTPRINT_ANG = 0.007
+// parks the camera ~75-80 m out, so NEAR sits just above that: a dot still
+// half-opaque at that range is a translucent balloon washing over the very
+// model the user clicked to see. The home view sits ~140-225 m from the
+// various dots, where they stay readable as click targets.
+const FADE_NEAR = 90 * M_TO_UNITS
+const FADE_FAR = 150 * M_TO_UNITS
+// Angular radius (radians) of a site model's ground footprint — ~30 m, the
+// pad size of the largest installation. Real ridge terrain varies by more
+// than a model's height across a footprint this size, so a model seated on
+// the *center* height would bury its edges on any slope.
+const FOOTPRINT_ANG = 30 / MOON_RADIUS_M
 
 // The highest rendered ground within the footprint around `d` — the model
 // seats there and its skirted pad drops to cover the downhill side.
@@ -141,15 +150,16 @@ function TechTreeSite({
     // the height maps decode, fall back to the analytic sphere.
     const ground = radiusAt ? footprintSeatRadius(d, radiusAt) : GLOBE_RADIUS
     const seat = ground + SEAT_LIFT
+    const pinH = pinHeightUnits(projectSizeM(displayProject))
     return {
       base: d.clone().multiplyScalar(seat),
-      tip: d.clone().multiplyScalar(seat + PIN_HEIGHT),
+      tip: d.clone().multiplyScalar(seat + pinH),
       ndir: d,
       // The model sits on the footprint-max ground — its skirted pad drops
       // to cover the downhill gaps. Only the stem/dot get the z-fight lift.
       seatRadius: ground,
     }
-  }, [dir, radiusAt])
+  }, [dir, radiusAt, displayProject])
 
   useFrame((_, delta) => {
     const g = groupRef.current
@@ -228,7 +238,7 @@ function TechTreeSite({
       {/* Stem */}
       <mesh ref={stemRef} position={stemMid} quaternion={stemQuat}>
         <cylinderGeometry
-          args={[GLOBE_RADIUS * 0.00025, GLOBE_RADIUS * 0.00025, stemLen, 6]}
+          args={[0.7 * M_TO_UNITS, 0.7 * M_TO_UNITS, stemLen, 6]}
         />
         <meshBasicMaterial color={color} transparent opacity={style.opacity * 0.6} />
       </mesh>
