@@ -22,7 +22,7 @@ import type {
   Project,
   ProjectType,
 } from '@/lib/lunar-atlas/types'
-import ProjectModel, { projectSizeM } from './ProjectModel'
+import ProjectModel, { hasLandingPad, projectSizeM } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
 // The competitor a tech-tree site shows by default: the front-runner by market
@@ -78,15 +78,19 @@ const DOT_RADIUS = 3 * M_TO_UNITS
 // various dots, where they stay readable as click targets.
 const FADE_NEAR = 90 * M_TO_UNITS
 const FADE_FAR = 150 * M_TO_UNITS
-// Angular radius (radians) of a site model's ground footprint — ~30 m, the
-// pad size of the largest installation. Real ridge terrain varies by more
-// than a model's height across a footprint this size, so a model seated on
-// the *center* height would bury its edges on any slope.
-const FOOTPRINT_ANG = 30 / MOON_RADIUS_M
-
-// The highest rendered ground within the footprint around `d` — the model
-// seats there and its skirted pad drops to cover the downhill side.
-function footprintSeatRadius(d: THREE.Vector3, radiusAt: RadiusAt): number {
+// The highest rendered ground within a model's own ground footprint. Sampling
+// the *center* alone would bury a model's uphill edge on a slope, so the seat
+// is the footprint maximum — but the footprint must be the model's real size.
+// A fixed 30 m radius (the old value, sized for the largest pad) spans two
+// 15.6 m terrain cells, so it picked up relief a 4.5 m rover never covers and
+// left it visibly hovering. At true scale most assets are smaller than one
+// terrain cell, so their footprint max is within centimeters of the center
+// height and they simply sit on the ground.
+function footprintSeatRadius(
+  d: THREE.Vector3,
+  radiusAt: RadiusAt,
+  footprintM: number
+): number {
   const ll = vector3ToLatLon([d.x, d.y, d.z])
   let seat = radiusAt(ll.lat, ll.lon)
   // Tangent basis at d (d is never at the equator here, but guard anyway).
@@ -94,8 +98,9 @@ function footprintSeatRadius(d: THREE.Vector3, radiusAt: RadiusAt): number {
     Math.abs(d.y) > 0.9 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0)
   const u = new THREE.Vector3().crossVectors(ref, d).normalize()
   const w = new THREE.Vector3().crossVectors(d, u)
-  const cosA = Math.cos(FOOTPRINT_ANG)
-  const sinA = Math.sin(FOOTPRINT_ANG)
+  const ang = footprintM / MOON_RADIUS_M
+  const cosA = Math.cos(ang)
+  const sinA = Math.sin(ang)
   for (let i = 0; i < 8; i++) {
     const az = (i / 8) * Math.PI * 2
     const p = d
@@ -145,18 +150,23 @@ function TechTreeSite({
 
   const { base, tip, ndir, seatRadius } = useMemo(() => {
     const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
-    // Seat on the highest rendered ground within the model's footprint (a
-    // center-only sample buries the model's uphill edge on any slope); until
-    // the height maps decode, fall back to the analytic sphere.
-    const ground = radiusAt ? footprintSeatRadius(d, radiusAt) : GLOBE_RADIUS
+    const sizeM = projectSizeM(displayProject)
+    // A padded lander is seated over its whole pad, whose skirt grades down
+    // across the footprint; an unpadded asset is seated over its own much
+    // smaller contact area so it meets the regolith rather than hovering.
+    const footprintM = sizeM * (hasLandingPad(displayProject) ? 0.6 : 0.35)
+    // Until the height maps decode, fall back to the analytic sphere.
+    const ground = radiusAt
+      ? footprintSeatRadius(d, radiusAt, footprintM)
+      : GLOBE_RADIUS
     const seat = ground + SEAT_LIFT
-    const pinH = pinHeightUnits(projectSizeM(displayProject))
+    const pinH = pinHeightUnits(sizeM)
     return {
       base: d.clone().multiplyScalar(seat),
       tip: d.clone().multiplyScalar(seat + pinH),
       ndir: d,
-      // The model sits on the footprint-max ground — its skirted pad drops
-      // to cover the downhill gaps. Only the stem/dot get the z-fight lift.
+      // Models seat on the bare ground height; only the stem/dot take the
+      // small z-fight lift.
       seatRadius: ground,
     }
   }, [dir, radiusAt, displayProject])

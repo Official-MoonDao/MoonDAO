@@ -59,6 +59,14 @@ export function projectScale(project: Project): number {
   return (projectSizeM(project) * M_TO_UNITS) / UNIT_MAX_DIM
 }
 
+// Only landers stand on a prepared pad (see LandingPad). This matters for
+// seating: a padded model can sit on the highest ground under its footprint
+// and let the pad's skirt grade down over the downhill side, while an
+// unpadded one has nothing to hide a gap with and must meet the ground.
+export function hasLandingPad(project: Project): boolean {
+  return project.type === 'lander'
+}
+
 // Which local-frame azimuth of a model is its "presentation" side — the
 // direction SurfaceAnchor aims at the home camera. Angles are atan2(x, z),
 // so 0 = local +Z and PI/2 = local +X.
@@ -119,21 +127,27 @@ const PANEL_EDGE = '#2a4d86'
 const WINDOW = '#ffd98a'
 // Compacted/graded site regolith: just slightly darker than the hillshaded
 // terrain's flat-ground tone — a worked surface that blends in, not a dark
-// puck stamped on the map. Pad aprons render UNLIT (like the terrain, whose
-// lighting is baked into its albedo), so this is the exact displayed color.
-// Pad surfaces read as *worked* ground, so they sit a shade below the
-// hillshaded terrain's flat tone (a bright disc pops off the map as an
-// awkward blob). Rendered UNLIT like the terrain, so these are the exact
-// displayed colors.
+// puck stamped on the map. The pad deck renders UNLIT (like the terrain,
+// whose lighting is baked into its albedo), so this is the exact displayed
+// color. The blast wall is built structure standing up off the ground, so it
+// IS lit, like the vehicles beside it.
 const PAD_SURFACE = '#8b887f' // compacted/graded pad deck
-const PAD_RIM = '#6b6862' // darker berm edge that defines the pad boundary
+const PAD_WALL = '#9d9a92' // sintered-regolith blast wall
 
-// A cleared-regolith landing pad that visually seats an installation on the
-// terrain. A short flared skirt (models seat on the *highest* ground under
-// their footprint, so a slope's downhill side drops away — the flare grades
-// down to meet it instead of hovering) plus a low rim torus that gives the
-// pad a clean engineered edge rather than a blobby apron.
-function Pad({ r = 1.2 }: { r?: number }) {
+// Only LANDERS get a pad — every other installation sits directly on the
+// regolith (a pedestal under a rover or reactor read as a plinth in a museum,
+// not equipment on the Moon). A landing pad is real infrastructure though:
+// a graded deck with a flared skirt that grades down into the terrain (the
+// lander seats on the highest ground under its footprint, so on a slope the
+// downhill side would otherwise hover) ringed by a short blast wall.
+function LandingPad({
+  r = 1.2,
+  wallHeight = 0.09,
+}: {
+  r?: number
+  wallHeight?: number
+}) {
+  const wallR = r * 0.98
   return (
     <group>
       {/* Graded deck + skirt: unlit, like the terrain whose lighting is baked
@@ -142,10 +156,24 @@ function Pad({ r = 1.2 }: { r?: number }) {
         <cylinderGeometry args={[r, r * 1.34, 0.5, 48]} />
         <meshBasicMaterial color={PAD_SURFACE} />
       </mesh>
-      {/* Low rim berm around the deck edge for definition. */}
-      <mesh position={[0, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[r * 0.97, r * 0.05, 8, 48]} />
-        <meshBasicMaterial color={PAD_RIM} />
+      {/* Short perimeter blast wall. Open-ended and double-sided so the
+          inside face shows too — the camera often looks down into the pad. */}
+      <mesh position={[0, 0.02 + wallHeight / 2, 0]}>
+        <cylinderGeometry args={[wallR, wallR, wallHeight, 48, 1, true]} />
+        <meshStandardMaterial
+          color={PAD_WALL}
+          roughness={0.95}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Capped top edge, so the wall reads as built rather than as a ring of
+          paper seen edge-on. */}
+      <mesh
+        position={[0, 0.02 + wallHeight, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <torusGeometry args={[wallR, r * 0.014, 6, 48]} />
+        <meshStandardMaterial color={PAD_WALL} roughness={0.9} />
       </mesh>
     </group>
   )
@@ -297,7 +325,6 @@ function Module({
 function CrewedBase({ accent }: { accent: string }) {
   return (
     <group>
-      <Pad r={1.5} />
       {/* two habitat modules in an L, joined by a node */}
       <group position={[-0.55, 0, -0.1]}>
         <Module length={1.1} radius={0.32} accent={accent} />
@@ -334,7 +361,6 @@ function CrewedBase({ accent }: { accent: string }) {
 function Habitat({ accent }: { accent: string }) {
   return (
     <group>
-      <Pad r={1.0} />
       <Module length={1.0} radius={0.34} accent={accent} />
       <group position={[0, 0, 0.75]} scale={0.7}>
         <SolarArray wings={2} accent={accent} />
@@ -347,7 +373,7 @@ function Lander({ accent }: { accent: string }) {
   const legs = [0, 1, 2, 3]
   return (
     <group>
-      <Pad r={1.1} />
+      <LandingPad r={1.1} />
       {/* descent stage */}
       <mesh position={[0, 0.62, 0]}>
         <cylinderGeometry args={[0.42, 0.52, 0.62, 10]} />
@@ -458,18 +484,12 @@ function RoverBody({ accent }: { accent: string }) {
 }
 
 function Rover({ accent }: { accent: string }) {
-  return (
-    <group>
-      <Pad r={0.9} />
-      <RoverBody accent={accent} />
-    </group>
-  )
+  return <RoverBody accent={accent} />
 }
 
 function IsruPlant({ accent }: { accent: string }) {
   return (
     <group>
-      <Pad r={1.1} />
       {/* main reactor tank */}
       <mesh position={[-0.35, 0.55, 0]}>
         <cylinderGeometry args={[0.32, 0.32, 1.0, 16]} />
@@ -506,7 +526,6 @@ function IsruPlant({ accent }: { accent: string }) {
 function Power({ accent }: { accent: string }) {
   return (
     <group>
-      <Pad r={1.1} />
       {/* reactor drum + shielding */}
       <mesh position={[0, 0.4, 0]}>
         <cylinderGeometry args={[0.24, 0.28, 0.5, 12]} />
@@ -536,12 +555,7 @@ function Power({ accent }: { accent: string }) {
 }
 
 function CommsPnt({ accent }: { accent: string }) {
-  return (
-    <group>
-      <Pad r={0.9} />
-      <DishAntenna accent={accent} scale={1.4} />
-    </group>
-  )
+  return <DishAntenna accent={accent} scale={1.4} />
 }
 
 function OrbitalRelay({ accent }: { accent: string }) {
@@ -574,10 +588,10 @@ function ConstructionSite({ accent }: { accent: string }) {
   const beacons = 4
   return (
     <group>
-      <Pad r={1.5} />
-      {/* hardened (sintered) pad surface — a shade darker + smoother than
-          the worked regolith apron, so it reads as pavement, not a hole.
-          Unlit, like the apron and terrain. */}
+      {/* hardened (sintered) pad surface, laid straight onto the regolith —
+          this site is a pad being BUILT, so it reads as fresh pavement at
+          ground level rather than a finished raised deck. Unlit, like the
+          terrain. */}
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.9, 48]} />
         <meshBasicMaterial color="#8f8c85" />
@@ -623,7 +637,6 @@ function ConstructionSite({ accent }: { accent: string }) {
 function GenericStructure({ accent }: { accent: string }) {
   return (
     <group>
-      <Pad r={0.9} />
       <mesh position={[0, 0.35, 0]}>
         <boxGeometry args={[0.7, 0.7, 0.7]} />
         <meshStandardMaterial color={HULL} roughness={0.8} />
@@ -848,9 +861,10 @@ export default function ProjectModel({
         <Suspense
           fallback={<ProceduralModel type={project.type} accent={accent} />}
         >
-          {/* GLBs ship without a ground plane — give surface assets the same
-              skirted site pad so they visually bed into the terrain. */}
-          {project.type !== 'orbital' && <Pad r={1.15} />}
+          {/* Landers touch down on a prepared pad; everything else stands
+              directly on the regolith (GLBs are seated with their lowest
+              point on the ground, so they need no plinth to rest on). */}
+          {project.type === 'lander' && <LandingPad r={1.15} />}
           <GLBModel url={project.modelURI} transform={project.modelTransform} />
           {isBase && <AstronautCompanion />}
         </Suspense>
