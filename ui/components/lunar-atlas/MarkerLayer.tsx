@@ -343,6 +343,14 @@ export default function MarkerLayer({
     return m
   }, [organizations])
 
+  // A race-panel pick is only honored while it still passes active org/type
+  // filters (i.e. remains in some tree's roster). Cross-category competitors
+  // can still render at the focused site; filtered-out ones fall back to the
+  // leading filtered project so the model matches the legend.
+  const pickStillVisible =
+    Boolean(selectedProject) &&
+    trees.some((t) => t.projects.some((p) => p.id === selectedProject!.id))
+
   return (
     <group>
       {trees.map((tree) => {
@@ -365,7 +373,9 @@ export default function MarkerLayer({
         // at the *focused* site (which may host a cross-category race), not
         // the competitor's own type — so selecting one never jumps sites.
         const picked =
-          selectedProject && selectedTreeCategory === tree.category
+          selectedProject &&
+          selectedTreeCategory === tree.category &&
+          pickStillVisible
             ? selectedProject
             : null
         const shown = picked ?? leadingProject(tree)
