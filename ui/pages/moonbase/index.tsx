@@ -2,11 +2,7 @@ import { GlobeAltIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
-import {
-  latLonToVector3,
-  MOON_RADIUS_M,
-  vector3ToLatLon,
-} from '@/lib/lunar-atlas/geo'
+import { latLonToVector3, MOON_RADIUS_M, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import { capOffsetLatLon } from '@/lib/lunar-atlas/southpole'
 import { TIME_STATUS_OPACITY } from '@/lib/lunar-atlas/display'
@@ -89,18 +85,13 @@ export default function MoonBaseZeroIndex() {
   // Selection is layered: a tech-tree site (category) opens the race/market
   // view; picking a competitor there selects a project, which swaps the
   // site's generic model for the company-specific one.
-  const [selectedTreeCategory, setSelectedTreeCategory] =
-    useState<ProjectType | null>(null)
+  const [selectedTreeCategory, setSelectedTreeCategory] = useState<ProjectType | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
   // The race/tree a selected competitor was opened from, so the project panel
   // can offer a one-click return to that competitor list.
-  const [raceReturn, setRaceReturn] = useState<
-    { kind: 'goal' | 'tree'; id: string } | null
-  >(null)
-  const [hoveredCategory, setHoveredCategory] = useState<ProjectType | null>(
-    null
-  )
+  const [raceReturn, setRaceReturn] = useState<{ kind: 'goal' | 'tree'; id: string } | null>(null)
+  const [hoveredCategory, setHoveredCategory] = useState<ProjectType | null>(null)
   const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([])
   const [selectedTypes, setSelectedTypes] = useState<ProjectType[]>([])
 
@@ -177,10 +168,7 @@ export default function MoonBaseZeroIndex() {
   // where each tech-tree site sits (keyed by category). A zoned base layout
   // clusters the sites into one connected settlement instead of piling them
   // at their overlapping real coordinates.
-  const markerDirs = useMemo(
-    () => baseSiteDirections(trees.map((t) => t.category)),
-    [trees]
-  )
+  const markerDirs = useMemo(() => baseSiteDirections(trees.map((t) => t.category)), [trees])
 
   const typesPresent = useMemo(() => {
     const set = new Set<ProjectType>()
@@ -199,18 +187,15 @@ export default function MoonBaseZeroIndex() {
     [year]
   )
 
+  // Resolve selection against the filtered atlas so panels match the ridge.
   const selectedProject = selectedProjectId
-    ? projectById(dataset, selectedProjectId)
+    ? filteredProjects.find((p) => p.id === selectedProjectId)
     : undefined
-  const selectedOrg = selectedProject
-    ? orgById(dataset, selectedProject.orgId)
-    : undefined
+  const selectedOrg = selectedProject ? orgById(dataset, selectedProject.orgId) : undefined
   const selectedSharedGoals = useMemo(
     () =>
       selectedProject
-        ? dataset.sharedGoals.filter((g) =>
-            selectedProject.sharedGoalIds.includes(g.id)
-          )
+        ? dataset.sharedGoals.filter((g) => selectedProject.sharedGoalIds.includes(g.id))
         : [],
     [dataset.sharedGoals, selectedProject]
   )
@@ -229,12 +214,31 @@ export default function MoonBaseZeroIndex() {
     () =>
       selectedGoal
         ? selectedGoal.projectIds
-            .map((pid) => projectById(dataset, pid))
+            .map((pid) => filteredProjects.find((p) => p.id === pid))
             .filter((p): p is Project => Boolean(p))
-            .map((p) => ({ project: p, organization: orgById(dataset, p.orgId) }))
+            .map((p) => ({
+              project: p,
+              organization: orgById(dataset, p.orgId),
+            }))
         : [],
-    [dataset, selectedGoal]
+    [dataset, selectedGoal, filteredProjects]
   )
+
+  // Drop site/project selection when legend filters hide it from the scene.
+  useEffect(() => {
+    if (selectedTreeCategory && !trees.some((t) => t.category === selectedTreeCategory)) {
+      setSelectedProjectId(null)
+      setSelectedGoalId(null)
+      setSelectedTreeCategory(null)
+      setRaceReturn(null)
+      setFocus(null)
+      return
+    }
+    if (selectedProjectId && !filteredProjects.some((p) => p.id === selectedProjectId)) {
+      setSelectedProjectId(null)
+      setRaceReturn(null)
+    }
+  }, [trees, filteredProjects, selectedTreeCategory, selectedProjectId])
 
   // The direction of a category's site marker on the globe.
   const siteDir = (category: ProjectType) => markerDirs.get(category)
@@ -251,14 +255,23 @@ export default function MoonBaseZeroIndex() {
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
   }
 
+  // Backing out of a selection returns to the South Pole overview (home),
+  // not the full-globe view — that is where the user was working.
+  const clearSelection = () => {
+    setSelectedProjectId(null)
+    setSelectedGoalId(null)
+    setSelectedTreeCategory(null)
+    setRaceReturn(null)
+    setFocus(null)
+  }
+
   const handleSelectProject = (id: string) => {
     // Re-clicking the already-selected project is a no-op — the camera is
     // there (or on its way); re-triggering the transition just stutters it.
     if (id === selectedProjectId && !selectedGoalId) return
     // Remember where we came from so the project panel can return to the list.
     if (selectedGoalId) setRaceReturn({ kind: 'goal', id: selectedGoalId })
-    else if (selectedTreeCategory)
-      setRaceReturn({ kind: 'tree', id: selectedTreeCategory })
+    else if (selectedTreeCategory) setRaceReturn({ kind: 'tree', id: selectedTreeCategory })
     else setRaceReturn(null)
     // Keep the currently-viewed site focused: the competitor's model swaps in
     // *there*, so picking a competitor never teleports to a different site.
@@ -277,10 +290,15 @@ export default function MoonBaseZeroIndex() {
   }
 
   // Honor `/moonbase/[projectId]` deep links once the router has the param.
+  // When the param is cleared (e.g. navigating back to `/moonbase`), drop any
+  // selection the deep link opened — the shared page component can stay mounted.
   useEffect(() => {
     if (!router.isReady) return
     const id = router.query.projectId
-    if (typeof id !== 'string' || !id) return
+    if (typeof id !== 'string' || !id) {
+      clearSelection()
+      return
+    }
     if (!projectById(dataset, id)) return
     handleSelectProject(id)
     // Only react to the deep-link param itself; selection handlers stay stable
@@ -340,32 +358,17 @@ export default function MoonBaseZeroIndex() {
     }
   }
 
-  // Backing out of a selection returns to the South Pole overview (home),
-  // not the full-globe view — that is where the user was working.
-  const clearSelection = () => {
-    setSelectedProjectId(null)
-    setSelectedGoalId(null)
-    setSelectedTreeCategory(null)
-    setRaceReturn(null)
-    setFocus(null)
-  }
-
   // Clicking the lunar surface or empty space backs out of whichever panel
   // is open. Without a selection it does nothing — it must not yank the
   // camera away from a hotspot the user chose.
   const handleBackgroundClick = () => {
-    if (selectedProjectId || selectedGoalId || selectedTreeCategory)
-      clearSelection()
+    if (selectedProjectId || selectedGoalId || selectedTreeCategory) clearSelection()
   }
 
   const toggleOrg = (id: string) =>
-    setSelectedOrgIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
+    setSelectedOrgIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   const toggleType = (t: ProjectType) =>
-    setSelectedTypes((prev) =>
-      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
-    )
+    setSelectedTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
   const clearFilters = () => {
     setSelectedOrgIds([])
     setSelectedTypes([])
@@ -402,9 +405,9 @@ export default function MoonBaseZeroIndex() {
                 <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
               </div>
               <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-                A true-to-scale moonbase on the Shackleton connecting ridge —
-                every serious program is racing here. Click a site to explore
-                its capability race, competitors, and sources.
+                A true-to-scale moonbase on the Shackleton connecting ridge — every serious program
+                is racing here. Click a site to explore its capability race, competitors, and
+                sources.
               </p>
             </div>
 
@@ -416,7 +419,7 @@ export default function MoonBaseZeroIndex() {
               onToggleOrg={toggleOrg}
               onToggleType={toggleType}
               onClear={clearFilters}
-              projects={dataset.projects}
+              projects={filteredProjects}
             />
           </div>
 

@@ -27,19 +27,12 @@ import {
   surfaceViewFraming,
   vector3ToLatLon,
 } from '@/lib/lunar-atlas/geo'
-import {
-  HOME_CAM as HOME_CAM_M,
-  HOME_TARGET as HOME_TARGET_M,
-} from '@/lib/lunar-atlas/homeview'
+import { HOME_CAM as HOME_CAM_M, HOME_TARGET as HOME_TARGET_M } from '@/lib/lunar-atlas/homeview'
 import { M_TO_UNITS, capCenterLatLon } from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
-import type {
-  Organization,
-  Project,
-  ProjectType,
-} from '@/lib/lunar-atlas/types'
+import type { Organization, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import MarkerLayer, { MarkerStyle } from './MarkerLayer'
 import SouthPoleTerrain from './SouthPoleTerrain'
 import useTerrainSampler, { RadiusAt } from './useTerrainSampler'
@@ -160,11 +153,7 @@ function CameraRig({
               // Close in from whichever side the camera is already on, so a
               // site click zooms straight in rather than orbiting around to
               // the subject's back.
-              approachFrom: [
-                camera.position.x,
-                camera.position.y,
-                camera.position.z,
-              ],
+              approachFrom: [camera.position.x, camera.position.y, camera.position.z],
             })
           : drillInFraming(
               focus.lat,
@@ -218,9 +207,7 @@ function CameraRig({
     // metres off the deck after selecting a site. Scale both with the
     // camera's distance to its pivot so close-in inspection is gentle.
     const pivotDist = camera.position.distanceTo(curTarget)
-    const feel = Math.sqrt(
-      THREE.MathUtils.clamp(pivotDist / (2000 * M_TO_UNITS), 0, 1)
-    )
+    const feel = Math.sqrt(THREE.MathUtils.clamp(pivotDist / (2000 * M_TO_UNITS), 0, 1))
     controls.rotateSpeed = THREE.MathUtils.lerp(0.3, 2.2, feel)
     controls.zoomSpeed = THREE.MathUtils.lerp(0.5, 1.2, feel)
 
@@ -228,13 +215,9 @@ function CameraRig({
     // back to the ridge center. Without this, zooming out from a site leaves
     // the patch hanging half off-screen, orbiting a surface point the user
     // can no longer even see.
-    if (
-      !animating.current &&
-      curTarget.distanceToSquared(HOME_TARGET) > (1 * M_TO_UNITS) ** 2
-    ) {
+    if (!animating.current && curTarget.distanceToSquared(HOME_TARGET) > (1 * M_TO_UNITS) ** 2) {
       // Altitude above the base's ground level, in meters.
-      const altM =
-        (camera.position.length() - HOME_TARGET.length()) / M_TO_UNITS
+      const altM = (camera.position.length() - HOME_TARGET.length()) / M_TO_UNITS
       const recenter = THREE.MathUtils.clamp((altM / 2500 - 1) / 0.8, 0, 1)
       if (recenter > 0) {
         curTarget.lerp(HOME_TARGET, 1 - Math.pow(0.02, delta * recenter))
@@ -269,10 +252,7 @@ function CameraRig({
       // up-vector along a real axis (via a partial quaternion) rather than lerp,
       // so a 180° flip at the pole doesn't pass through a degenerate zero.
       const curUp = camera.up.clone().normalize()
-      const full = new THREE.Quaternion().setFromUnitVectors(
-        curUp,
-        desiredUp.current
-      )
+      const full = new THREE.Quaternion().setFromUnitVectors(curUp, desiredUp.current)
       const step = new THREE.Quaternion().slerp(full, t)
       camera.up.copy(curUp).applyQuaternion(step).normalize()
       controls.update()
@@ -412,9 +392,11 @@ export default function MoonGlobe({
       }}
       onPointerMissed={(e) => {
         const down = pointerDownAt.current
-        const moved = down
-          ? Math.hypot(e.clientX - down.x, e.clientY - down.y)
-          : 0
+        pointerDownAt.current = null
+        // Require a canvas pointer-down; a stray miss with no recorded down
+        // must not count as a background click (moved would default to 0).
+        if (!down) return
+        const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y)
         if (moved <= CLICK_DRAG_TOLERANCE_PX) onBackgroundClick?.()
       }}
       onPointerDown={(e) => {
@@ -484,12 +466,7 @@ export default function MoonGlobe({
       {/* High threshold keeps bloom off the sunlit regolith (which read as a
           hazy video-game glow) and reserves it for emissive marker beacons. */}
       <EffectComposer>
-        <Bloom
-          intensity={0.3}
-          luminanceThreshold={0.9}
-          luminanceSmoothing={0.85}
-          mipmapBlur
-        />
+        <Bloom intensity={0.3} luminanceThreshold={0.9} luminanceSmoothing={0.85} mipmapBlur />
       </EffectComposer>
     </Canvas>
   )
