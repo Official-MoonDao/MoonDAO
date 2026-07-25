@@ -10,6 +10,10 @@ import { getContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import {
+  getDePrizeCompetition,
+  isKnownDePrizeCompetition,
+} from '@/lib/deprize/competitions'
+import {
   DePrizeState,
   DEPRIZE_STATE_META,
   GAS_RESERVE_ETH,
@@ -89,6 +93,8 @@ function DePrizeDetailContent() {
   // build-time default — otherwise switching networks never re-queries DePrize.
   const { selectedChain: chain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(chain)
+  const competition = getDePrizeCompetition(chainSlug, deprizeId)
+  const knownCompetition = isKnownDePrizeCompetition(chainSlug, deprizeId)
   const account = useActiveAccount()
   const userAddress = account?.address
   const { login } = useLogin()
@@ -348,10 +354,17 @@ function DePrizeDetailContent() {
     teamContract,
   )
 
+  const shellTitle =
+    knownCompetition && deprizeId !== undefined
+      ? `DePrize #${deprizeId} — ${competition.title}`
+      : deprizeId !== undefined
+        ? `DePrize #${deprizeId}`
+        : competition.title
+
   // --- Render states ---
   if (!registryConfigured) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <Notice tone="amber">
           The DePrize registry isn&apos;t configured on{' '}
           <span className="font-mono">{chainSlug}</span> yet.
@@ -361,48 +374,52 @@ function DePrizeDetailContent() {
   }
   if (!router.isReady) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <div className="p-8 text-center text-gray-400">Loading DePrize…</div>
       </Shell>
     )
   }
   if (deprizeId === undefined) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <Notice tone="amber">Invalid DePrize id.</Notice>
       </Shell>
     )
   }
   if (error) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <Notice tone="red">Couldn&apos;t load this DePrize: {error}</Notice>
       </Shell>
     )
   }
   if (!deprize || (deprizeId !== undefined && deprize.deprizeId !== deprizeId)) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <div className="p-8 text-center text-gray-400">Loading DePrize…</div>
       </Shell>
     )
   }
   if (deprize.state === DePrizeState.NONE) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <Notice tone="amber">DePrize #{deprizeId} does not exist.</Notice>
       </Shell>
     )
   }
 
   return (
-    <Shell>
+    <Shell title={shellTitle} description={competition.metaDescription}>
       <div className="flex flex-col gap-6 w-full max-w-[860px] mx-auto">
         {/* Header */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
-              <h1 className="text-white font-GoodTimes text-lg sm:text-xl">DePrize #{deprizeId}</h1>
+              <h1 className="text-white font-GoodTimes text-lg sm:text-xl">
+                {knownCompetition
+                  ? `DePrize #${deprizeId} — ${competition.title}`
+                  : `DePrize #${deprizeId}`}
+              </h1>
               {deprize && (
                 <StateBadge
                   state={deprize.state}
@@ -418,10 +435,7 @@ function DePrizeDetailContent() {
               ← All prizes
             </Link>
           </div>
-          <p className="text-gray-300 text-sm mt-2">
-            Back the provider you think will win the right to fly Frank + a community Candidate to
-            space.
-          </p>
+          <p className="text-gray-300 text-sm mt-2">{competition.tagline}</p>
           {effectiveDescription && (
             <p className="text-gray-500 text-sm mt-1">{effectiveDescription}</p>
           )}
@@ -674,13 +688,18 @@ function DePrizeDetailContent() {
 }
 
 // --- Small presentational helpers ---
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children,
+  title,
+  description,
+}: {
+  children: React.ReactNode
+  title: string
+  description: string
+}) {
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head
-        title="DePrize"
-        description="Back a provider to fly Frank White to space, and win if they do."
-      />
+      <Head title={title} description={description} />
       <Container>
         <div className="w-full max-w-[860px] mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
           {children}

@@ -1,16 +1,16 @@
 import ConditionalTokensABI from 'const/abis/ConditionalTokens.json'
+import DePrizeFeeRouterABI from 'const/abis/DePrizeFeeRouter.json'
 import DePrizeRegistryABI from 'const/abis/DePrizeRegistry.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import {
   CONDITIONAL_TOKEN_ADDRESSES,
-  DEPRIZE_QUESTION_ID,
+  DEPRIZE_FEE_ROUTER_ADDRESSES,
   DEPRIZE_REGISTRY_ADDRESSES,
-  ORACLE_ADDRESS,
-  OPERATOR_ADDRESS,
 } from 'const/config'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
+import { getDePrizeQuestionId } from '@/lib/deprize/competitions'
 import { DePrizeState, MarketStage, UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { rpcRead } from '@/lib/deprize/read'
@@ -53,17 +53,30 @@ export default function DePrizeAdminPanel({
   const chainSlug = getChainSlug(chain)
   const registryAddress = DEPRIZE_REGISTRY_ADDRESSES[chainSlug] ?? ''
   const ctfAddress = CONDITIONAL_TOKEN_ADDRESSES[chainSlug] ?? ''
+  const feeRouterAddress = DEPRIZE_FEE_ROUTER_ADDRESSES[chainSlug] ?? ''
+  const seededQuestionId = getDePrizeQuestionId(chainSlug, deprizeId) ?? ''
 
   const [busy, setBusy] = useState(false)
   const [isRegistryOwner, setIsRegistryOwner] = useState(false)
+  const [routerOwned, setRouterOwned] = useState(false)
+  const [isMarketController, setIsMarketController] = useState(false)
+  const [isOracle, setIsOracle] = useState(false)
+  // Sticky so editing the questionId away from a match doesn't unmount the
+  // panel (and lose the input) before the user can correct it.
+  const [oracleUnlocked, setOracleUnlocked] = useState(false)
   const [winnerTeamId, setWinnerTeamId] = useState<string>('')
   const [providerAddress, setProviderAddress] = useState('')
-  const [questionId, setQuestionId] = useState(DEPRIZE_QUESTION_ID)
+  const [questionId, setQuestionId] = useState(seededQuestionId)
 
-  const isOracle =
-    !!userAddress && userAddress.toLowerCase() === ORACLE_ADDRESS.toLowerCase()
-  const isOperator =
-    !!userAddress && userAddress.toLowerCase() === OPERATOR_ADDRESS.toLowerCase()
+  // Re-seed the editable questionId when navigating between DePrizes.
+  useEffect(() => {
+    setQuestionId(seededQuestionId)
+    setOracleUnlocked(false)
+  }, [seededQuestionId, marketAddress, userAddress])
+
+  useEffect(() => {
+    if (isOracle) setOracleUnlocked(true)
+  }, [isOracle])
 
   const registry = useMemo(
     () =>
@@ -86,7 +99,20 @@ export default function DePrizeAdminPanel({
         : undefined,
     [chain, ctfAddress]
   )
+  const feeRouter = useMemo(
+    () =>
+      feeRouterAddress
+        ? getContract({
+            client,
+            chain,
+            address: feeRouterAddress,
+            abi: DePrizeFeeRouterABI as any,
+          })
+        : undefined,
+    [chain, feeRouterAddress]
+  )
 
+  // Registry owner — gates lifecycle controls.
   useEffect(() => {
     if (!registry || !userAddress) {
       setIsRegistryOwner(false)
@@ -111,7 +137,93 @@ export default function DePrizeAdminPanel({
     }
   }, [registry, userAddress])
 
-  const canSeeMarket = isOracle || isOperator
+  // Market controller — FeeRouter owner when the router owns the LMSR, else
+  // the LMSR owner directly. Also records whether calls must go through the
+  // router passthroughs.
+  useEffect(() => {
+    if (!lmsr || !userAddress) {
+      setRouterOwned(false)
+      setIsMarketController(false)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const lmsrOwner = await rpcRead<string>({
+          contract: lmsr,
+          method: 'owner' as string,
+          params: [],
+        })
+        const viaRouter =
+          !!feeRouterAddress &&
+          lmsrOwner.toLowerCase() === feeRouterAddress.toLowerCase()
+        if (cancelled) return
+        setRouterOwned(viaRouter)
+        if (viaRouter && feeRouter) {
+          const routerOwner = await rpcRead<string>({
+            contract: feeRouter,
+            method: 'owner' as string,
+            params: [],
+          })
+          if (!cancelled)
+            setIsMarketController(
+              routerOwner.toLowerCase() === userAddress.toLowerCase()
+            )
+        } else {
+          setIsMarketController(lmsrOwner.toLowerCase() === userAddress.toLowerCase())
+        }
+      } catch {
+        if (!cancelled) {
+          setRouterOwned(false)
+          setIsMarketController(false)
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [lmsr, feeRouter, feeRouterAddress, userAddress])
+
+  // Oracle — derived: keccak(user, questionId, numOutcomes) must equal the
+  // market's conditionId. Re-runs when the editable questionId changes so an
+  // oracle whose id isn't in the registry can paste it and unlock the section.
+  useEffect(() => {
+    if (!ctf || !lmsr || !userAddress || !questionId || numOutcomes <= 0) {
+      setIsOracle(false)
+      return
+    }
+    if (!/^0x[0-9a-fA-F]{64}$/.test(questionId)) {
+      setIsOracle(false)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const computed = await rpcRead<string>({
+          contract: ctf,
+          method: 'getConditionId' as string,
+          params: [userAddress, questionId, BigInt(numOutcomes)],
+        })
+        const marketConditionId = await rpcRead<string>({
+          contract: lmsr,
+          method: 'conditionIds' as string,
+          params: [0n],
+        })
+        if (!cancelled)
+          setIsOracle(computed.toLowerCase() === marketConditionId.toLowerCase())
+      } catch {
+        if (!cancelled) setIsOracle(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [ctf, lmsr, userAddress, questionId, numOutcomes])
+
+  // Market unwind is visible to the controller; oracle also needs pause/close
+  // before resolving, so show it to either role. Sweep is permissionless when
+  // router-owned — exposed to any connected admin-role wallet.
+  const canSeeMarket = isMarketController || isOracle || oracleUnlocked
   if (!userAddress || (!isRegistryOwner && !canSeeMarket)) return null
 
   // Generic write helper with a toast lifecycle.
@@ -213,13 +325,37 @@ export default function DePrizeAdminPanel({
 
   const isClosed = stage === MarketStage.Closed
 
+  // Pause / resume / close: FeeRouter passthroughs when the router owns the
+  // LMSR (otherwise the direct lmsr.* calls revert for everyone but the router).
+  const pauseMarket = () =>
+    routerOwned && feeRouter
+      ? run(feeRouter, 'pauseMarket', [BigInt(deprizeId)], 'Market paused via FeeRouter.')
+      : run(lmsr, 'pause', [], 'Market paused.')
+  const resumeMarket = () =>
+    routerOwned && feeRouter
+      ? run(feeRouter, 'resumeMarket', [BigInt(deprizeId)], 'Market resumed via FeeRouter.')
+      : run(lmsr, 'resume', [], 'Market resumed.')
+  const closeMarket = () =>
+    routerOwned && feeRouter
+      ? run(
+          feeRouter,
+          'closeMarket',
+          [BigInt(deprizeId)],
+          'Market closed via FeeRouter — inventory returned to FeeRouter.'
+        )
+      : run(lmsr, 'close', [], 'Market closed — inventory returned to owner.')
+
   return (
     <div className="p-4 rounded-2xl bg-yellow-500/5 border border-yellow-500/20 flex flex-col gap-5">
       <p className="text-yellow-300 text-xs font-medium">
         Admin actions
         {isRegistryOwner ? ' · registry owner' : ''}
         {isOracle ? ' · oracle' : ''}
-        {isOperator ? ' · market owner' : ''}
+        {isMarketController
+          ? routerOwned
+            ? ' · fee-router owner'
+            : ' · market owner'
+          : ''}
       </p>
 
       {/* Registry lifecycle (registry owner) */}
@@ -396,58 +532,89 @@ export default function DePrizeAdminPanel({
         </div>
       )}
 
-      {/* Market unwind (market owner) */}
+      {/* Market unwind — FeeRouter passthroughs when router-owned */}
       {canSeeMarket && lmsr && (
         <div>
           <p className="text-gray-400 text-[11px] mb-2">
-            Market unwind: pause before resolving, close + withdraw fees after.
+            Market unwind
+            {routerOwned
+              ? ' (via FeeRouter — pause before resolving; sweep fees into the prize pool)'
+              : ' (direct LMSR — pause before resolving, close + withdraw fees after)'}
+            {!isMarketController && isOracle
+              ? ' · pause/close requires the fee-router or market owner'
+              : ''}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <StandardButton
-              onClick={() => run(lmsr, 'pause', [], 'Market paused.')}
-              disabled={busy || stage !== MarketStage.Running}
+              onClick={pauseMarket}
+              disabled={busy || !isMarketController || stage !== MarketStage.Running}
               className="rounded-full"
               backgroundColor="bg-white/10"
             >
               Pause
             </StandardButton>
             <StandardButton
-              onClick={() => run(lmsr, 'resume', [], 'Market resumed.')}
-              disabled={busy || stage !== MarketStage.Paused}
+              onClick={resumeMarket}
+              disabled={busy || !isMarketController || stage !== MarketStage.Paused}
               className="rounded-full"
               backgroundColor="bg-white/10"
             >
               Resume
             </StandardButton>
             <StandardButton
-              onClick={() => run(lmsr, 'close', [], 'Market closed — inventory returned to owner.')}
-              disabled={busy || isClosed}
+              onClick={closeMarket}
+              disabled={busy || !isMarketController || isClosed}
               className="rounded-full"
               backgroundColor="bg-white/10"
             >
               Close market
             </StandardButton>
-            <StandardButton
-              onClick={() => run(lmsr, 'withdrawFees', [], 'Fees withdrawn to owner.')}
-              disabled={busy || !isClosed}
-              className="rounded-full"
-              backgroundColor="bg-white/10"
-            >
-              {marketFeesWei !== undefined
-                ? `Withdraw fees (${fmt(Number(marketFeesWei) / Number(UNIT), 4)} WETH)`
-                : 'Withdraw fees'}
-            </StandardButton>
+            {routerOwned && feeRouter ? (
+              <StandardButton
+                onClick={() =>
+                  run(
+                    feeRouter,
+                    'sweepFees',
+                    [BigInt(deprizeId)],
+                    'Fees swept to the prize pool.'
+                  )
+                }
+                // sweepFees is permissionless but returns 0 when the market
+                // holds no WETH — don't spend gas on a known no-op.
+                disabled={busy || marketFeesWei === 0n}
+                className="rounded-full"
+                backgroundColor="bg-white/10"
+              >
+                {marketFeesWei !== undefined
+                  ? `Sweep fees (${fmt(Number(marketFeesWei) / Number(UNIT), 4)} WETH)`
+                  : 'Sweep fees to prize pool'}
+              </StandardButton>
+            ) : (
+              <StandardButton
+                onClick={() => run(lmsr, 'withdrawFees', [], 'Fees withdrawn to owner.')}
+                disabled={busy || !isMarketController || !isClosed}
+                className="rounded-full"
+                backgroundColor="bg-white/10"
+              >
+                {marketFeesWei !== undefined
+                  ? `Withdraw fees (${fmt(Number(marketFeesWei) / Number(UNIT), 4)} WETH)`
+                  : 'Withdraw fees'}
+              </StandardButton>
+            )}
           </div>
         </div>
       )}
 
-      {/* Resolution (oracle) */}
-      {isOracle && ctf && lmsr && (
+      {/* Resolution — shown when derived oracle check passes; questionId stays editable */}
+      {ctf && lmsr && (
         <div>
           <p className="text-gray-400 text-[11px] mb-2">
             Resolution (oracle, one-shot): the market must be paused/closed first; conditionId is
             recomputed from (you, questionId, {numOutcomes}) and must match the market before
             anything is sent.
+            {!isOracle
+              ? ' Paste the condition’s questionId below — the resolve buttons appear when it matches.'
+              : ''}
           </p>
           <label className="text-xs text-gray-400">questionId</label>
           <input
@@ -456,33 +623,34 @@ export default function DePrizeAdminPanel({
             onChange={(e) => setQuestionId(e.target.value.trim())}
             className="mt-1 mb-2 w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white text-xs font-mono placeholder-gray-500"
           />
-          {resolved ? (
-            <p className="text-gray-500 text-xs">
-              Already resolved — the payout vector is write-once.
-            </p>
-          ) : (
-            <div className="flex items-center gap-2 flex-wrap">
-              {Array.from({ length: numOutcomes }, (_, i) => (
+          {isOracle &&
+            (resolved ? (
+              <p className="text-gray-500 text-xs">
+                Already resolved — the payout vector is write-once.
+              </p>
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap">
+                {Array.from({ length: numOutcomes }, (_, i) => (
+                  <StandardButton
+                    key={i}
+                    onClick={() => resolveWinner(i)}
+                    disabled={busy}
+                    className="rounded-full"
+                    backgroundColor="bg-white/10"
+                  >
+                    Resolve #{i + 1} wins
+                  </StandardButton>
+                ))}
                 <StandardButton
-                  key={i}
-                  onClick={() => resolveWinner(i)}
+                  onClick={resolveNoWinner}
                   disabled={busy}
                   className="rounded-full"
-                  backgroundColor="bg-white/10"
+                  backgroundColor="bg-moon-orange"
                 >
-                  Resolve #{i + 1} wins
+                  No winner (refund 1/{numOutcomes})
                 </StandardButton>
-              ))}
-              <StandardButton
-                onClick={resolveNoWinner}
-                disabled={busy}
-                className="rounded-full"
-                backgroundColor="bg-moon-orange"
-              >
-                No winner (refund 1/{numOutcomes})
-              </StandardButton>
-            </div>
-          )}
+              </div>
+            ))}
         </div>
       )}
     </div>

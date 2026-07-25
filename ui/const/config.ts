@@ -477,6 +477,13 @@ export const DEPRIZE_FEE_ROUTER_ADDRESSES: Index = {
   sepolia: '0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a',
   'arbitrum-sepolia': '',
 }
+// ---------------------------------------------------------------------------
+// Play-harness only (`ui/pages/deprize-play.tsx`).
+// Production admin/detail pages derive oracle/questionId per DePrize via
+// `ui/lib/deprize/competitions.ts` and on-chain role checks — do not wire these
+// globals into `DePrizeAdminPanel` or `/deprize/[id]`.
+// ---------------------------------------------------------------------------
+
 // questionId used when the play market's condition was prepared
 // (prediction/deprize.config.js DEPRIZE_QUESTION_ID). Needed by reportPayouts;
 // the conditionId is keccak256(oracle, questionId, outcomeSlotCount).
@@ -489,12 +496,12 @@ export const DEPRIZE_QUESTION_ID =
 // previewRedeem/redeem take this id).
 export const DEPRIZE_PLAY_ID = 3
 
-// Oracle that prepared the CTF condition; the only address that can resolve
-// (reportPayouts). On the fresh Sepolia market this is pmoncada.eth.
+// Oracle that prepared the play market's CTF condition; the only address that
+// can resolve (reportPayouts) that harness market. pmoncada.eth.
 export const ORACLE_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
 
-// Market owner (pause/close/withdrawFees on the LMSR). Ownership of the fresh
-// Sepolia market was transferred to pmoncada.eth so one wallet runs everything.
+// Play-market owner (pause/close/withdrawFees on that LMSR). Ownership of the
+// fresh Sepolia play market was transferred to pmoncada.eth.
 export const OPERATOR_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
 
 export const MOONDAO_TREASURY: string = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
