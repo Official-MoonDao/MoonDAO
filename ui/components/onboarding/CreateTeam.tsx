@@ -28,6 +28,7 @@ import {
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
+import { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
@@ -321,14 +322,18 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
             memberHatURI: 'ipfs://' + memberHatCid,
           },
           {
-            name: teamData.name,
-            bio: teamData.description,
+            // Escape single quotes so an apostrophe in any field can't produce
+            // malformed SQL that the Tableland validator silently rejects (the
+            // team contract builds its INSERT with the same unescaped
+            // SQLHelpers.quote()). `_view` is a fixed enum, so it's left as-is.
+            name: escapeSingleQuotes(teamData.name),
+            bio: escapeSingleQuotes(teamData.description),
             image: 'ipfs://' + newImageIpfsHash,
-            twitter: teamData.twitter,
-            communications: teamData.communications,
-            website: teamData.website,
+            twitter: escapeSingleQuotes(teamData.twitter),
+            communications: escapeSingleQuotes(teamData.communications),
+            website: escapeSingleQuotes(teamData.website),
             _view: teamData.view,
-            formId: teamData.formResponseId,
+            formId: escapeSingleQuotes(teamData.formResponseId),
           },
           [],
         ],
@@ -390,14 +395,15 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
             memberHatURI: 'ipfs://placeholder',
           },
           {
-            name: teamData.name,
-            bio: teamData.description,
+            // Match the real mint's escaping so the gas estimate is accurate.
+            name: escapeSingleQuotes(teamData.name),
+            bio: escapeSingleQuotes(teamData.description),
             image: 'ipfs://placeholder',
-            twitter: teamData.twitter,
-            communications: teamData.communications,
-            website: teamData.website,
+            twitter: escapeSingleQuotes(teamData.twitter),
+            communications: escapeSingleQuotes(teamData.communications),
+            website: escapeSingleQuotes(teamData.website),
             _view: teamData.view,
-            formId: teamData.formResponseId || '0000',
+            formId: escapeSingleQuotes(teamData.formResponseId || '0000'),
           },
           [],
         ],

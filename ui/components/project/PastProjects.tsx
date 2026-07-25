@@ -41,10 +41,6 @@ function buildYearIndex(projects: Project[]): YearGroup[] {
 }
 
 export default function PastProjects({ projects }: PastProjectProps) {
-  const finalReportProjects = useMemo(
-    () => projects.filter(hasFinalReport),
-    [projects]
-  )
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
 
@@ -63,8 +59,8 @@ export default function PastProjects({ projects }: PastProjectProps) {
   const [input, setInput] = useState('')
 
   const yearGroups = useMemo(
-    () => buildYearIndex(finalReportProjects),
-    [finalReportProjects]
+    () => buildYearIndex(projects),
+    [projects]
   )
 
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
@@ -137,7 +133,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
             Past Projects
           </h1>
           <span className="text-[11px] sm:text-xs font-RobotoMono uppercase tracking-wider text-gray-500">
-            {finalReportProjects.length} total
+            {projects.length} total
           </span>
         </div>
         <div className="relative w-full sm:max-w-xs">

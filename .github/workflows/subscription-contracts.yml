@@ -63,15 +63,56 @@ jobs:
         with:
           version: stable
 
+      # The upstream fork RPC can flake, killing anvil silently at startup; without a
+      # health check the job only discovers the dead port ~10 minutes later when
+      # `forge coverage --fork-url 127.0.0.1:854x` gets "connection refused".
+      # Retry the launch and block until the RPC actually answers.
       - name: Run Local Sepolia Chain with Anvil
         run: |
-          anvil --fork-url https://11155111.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} &
+          start_anvil() {
+            local port=$1; shift
+            for attempt in 1 2 3; do
+              "$@" &
+              local pid=$!
+              for i in $(seq 1 15); do
+                if cast chain-id --rpc-url "http://127.0.0.1:${port}" >/dev/null 2>&1; then
+                  echo "anvil ready on port ${port} (attempt ${attempt})"
+                  return 0
+                fi
+                sleep 2
+              done
+              echo "anvil not responding on port ${port} (attempt ${attempt}); retrying"
+              kill "$pid" 2>/dev/null || true
+              sleep 2
+            done
+            echo "anvil failed to start on port ${port} after 3 attempts"
+            return 1
+          }
+          start_anvil 8545 anvil --fork-url https://11155111.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }}
         id: local-sepolia
 
       - name: Run Local Arbitrum Chain with Anvil
         run: |
-          anvil --fork-url https://42161.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --port 8546 &
-          sleep 5
+          start_anvil() {
+            local port=$1; shift
+            for attempt in 1 2 3; do
+              "$@" &
+              local pid=$!
+              for i in $(seq 1 15); do
+                if cast chain-id --rpc-url "http://127.0.0.1:${port}" >/dev/null 2>&1; then
+                  echo "anvil ready on port ${port} (attempt ${attempt})"
+                  return 0
+                fi
+                sleep 2
+              done
+              echo "anvil not responding on port ${port} (attempt ${attempt}); retrying"
+              kill "$pid" 2>/dev/null || true
+              sleep 2
+            done
+            echo "anvil failed to start on port ${port} after 3 attempts"
+            return 1
+          }
+          start_anvil 8546 anvil --fork-url https://42161.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --port 8546
         id: local-arbitrum
 
       - name: Install npm dependencies

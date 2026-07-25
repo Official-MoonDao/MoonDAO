@@ -37,7 +37,7 @@ export default function ArbitrumBridge() {
   const [arbMooneyBalance, setArbMooneyBalance] = useState<any>()
   const [balance, setBalance] = useState(0)
   const [skipNetworkCheck, setSkipNetworkCheck] = useState(false)
-  const { effectiveGasPrice } = useGasPrice(ethereum)
+  const { effectiveGasPrice, maxFeePerGas } = useGasPrice(ethereum)
 
   async function approveMooney(signer: any, erc20Bridger: any) {
     const mooneyContract = getContract({
@@ -270,10 +270,15 @@ export default function ArbitrumBridge() {
   const numAmount = parseFloat(String(amount)) || 0
   // For ETH, reserve L1 gas so a (near-)full-balance entry doesn't revert the
   // deposit on fees. MOONEY gas is paid separately in ETH, so it needs no reserve.
+  //
+  // EIP-1559 wallets lock up maxFeePerGas * gasLimit upfront (not effectiveGasPrice),
+  // so we must use maxFeePerGas here. The Arbitrum deposit also runs ~300k gas, not
+  // 200k, so we use that larger estimate to avoid "insufficient funds" on MAX.
+  const gasPriceForReserve = maxFeePerGas && maxFeePerGas > BigInt(0) ? maxFeePerGas : effectiveGasPrice
   const gasReserveEth =
-    effectiveGasPrice > BigInt(0)
-      ? Number(effectiveGasPrice * BigInt(200000)) / 1e18
-      : 0.002
+    gasPriceForReserve > BigInt(0)
+      ? Number(gasPriceForReserve * BigInt(300000)) / 1e18
+      : 0.004
   const spendableBalance =
     inputToken === 'eth'
       ? Math.max(0, Number(balance) - gasReserveEth)

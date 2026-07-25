@@ -142,7 +142,9 @@ export function useTeamWearer(
   selectedChain: any,
   wearerAddressOrAddresses: string | string[] | null | undefined
 ) {
-  const [wornMoondaoHats, setWornMoondaoHats] = useState<any>()
+  const [wornMoondaoHats, setWornMoondaoHats] = useState<any[] | undefined>(
+    undefined
+  )
   const [isLoading, setIsLoading] = useState(false)
 
   const addresses = normalizeWearerAddresses(wearerAddressOrAddresses)

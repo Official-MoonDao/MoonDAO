@@ -816,6 +816,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
       }
     }
 
+    // Author-deleted proposals are treated as gone — 404 so a direct link
+    // can't resurface a proposal the author removed.
+    if (proposalJSON?.deleted) {
+      return { notFound: true }
+    }
+
     // Non-project proposals do not exist in nance and are tallied on-chain
     // via the NonProjectProposal Tableland table, so the nance status overlay
     // would only mask the correct on-chain status. Skip it for those.

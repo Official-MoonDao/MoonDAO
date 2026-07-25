@@ -1,6 +1,8 @@
 import {
+  CITIZENSHIP_GIFT_TAG,
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
+  EB_TEAM_ID,
   TEAM_ADDRESSES,
   DISCORD_CITIZEN_ROLE_ID,
 } from 'const/config'
@@ -94,6 +96,10 @@ export default function TeamMarketplaceListingModal({
     listingData.title.trim() !== '' &&
     listingData.description.trim() !== '' &&
     listingData.price.trim() !== ''
+
+  // The "gift a citizenship" listing type is only available on the EB team.
+  const isEBTeam = String(teamId) === EB_TEAM_ID
+  const isGift = listingData.tag === CITIZENSHIP_GIFT_TAG
 
   const currTime = useCurrUnixTime()
 
@@ -201,7 +207,7 @@ export default function TeamMarketplaceListingModal({
                   startTime,
                   endTime,
                   currTime,
-                  '',
+                  cleanedData.tag,
                   '',
                   cleanedData.shipping,
                 ],
@@ -220,7 +226,7 @@ export default function TeamMarketplaceListingModal({
                   startTime,
                   endTime,
                   currTime,
-                  '',
+                  cleanedData.tag,
                   '',
                   cleanedData.shipping,
                 ],
@@ -332,9 +338,10 @@ export default function TeamMarketplaceListingModal({
 
             <select
               id="listing-currency-input"
-              className="p-2 bg-[#0f152f]"
+              className="p-2 bg-[#0f152f] disabled:opacity-50"
               onChange={(e) => setListingData({ ...listingData, currency: e.target.value })}
               value={listingData.currency}
+              disabled={isGift}
             >
               <option value="ETH">ETH</option>
               <option value="MOONEY">MOONEY</option>
@@ -342,21 +349,50 @@ export default function TeamMarketplaceListingModal({
               <option value="USDC">USDC</option>
             </select>
           </div>
-          <div className="w-full flex gap-2">
-            <p className="">Require shipping address</p>
-            <input
-              id="listing-shipping-input"
-              className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-              type="checkbox"
-              checked={listingData.shipping === 'true'}
-              onChange={({ target }) =>
-                setListingData({
-                  ...listingData,
-                  shipping: String(target.checked),
-                })
-              }
-            />
-          </div>
+          {isEBTeam && (
+            <div className="w-full flex flex-col gap-1">
+              <div className="flex gap-2">
+                <p className="">Gift a Citizenship</p>
+                <input
+                  id="listing-gift-citizenship-input"
+                  className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                  type="checkbox"
+                  checked={isGift}
+                  onChange={({ target }) =>
+                    setListingData({
+                      ...listingData,
+                      tag: target.checked ? CITIZENSHIP_GIFT_TAG : '',
+                      // Gift purchases are paid in ETH (citizen price) and never shipped.
+                      currency: target.checked ? 'ETH' : listingData.currency,
+                      shipping: target.checked ? 'false' : listingData.shipping,
+                    })
+                  }
+                />
+              </div>
+              {isGift && (
+                <p className="text-[75%] opacity-60">
+                  {`On purchase, the buyer receives a one-time link to mint a free citizenship that they can gift to anyone. Set the price to the standard citizen price.`}
+                </p>
+              )}
+            </div>
+          )}
+          {!isGift && (
+            <div className="w-full flex gap-2">
+              <p className="">Require shipping address</p>
+              <input
+                id="listing-shipping-input"
+                className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                type="checkbox"
+                checked={listingData.shipping === 'true'}
+                onChange={({ target }) =>
+                  setListingData({
+                    ...listingData,
+                    shipping: String(target.checked),
+                  })
+                }
+              />
+            </div>
+          )}
           <div className="w-full flex flex-col gap-2">
             <div className="flex gap-2">
               <p className="">Timed</p>
@@ -409,7 +445,9 @@ export default function TeamMarketplaceListingModal({
               </div>
             )}
           </div>
-          <p className="opacity-60">{`Listings are marked up 10% for non-citizens`}</p>
+          {!isGift && (
+            <p className="opacity-60">{`Listings are marked up 10% for non-citizens`}</p>
+          )}
         </div>
         <PrivyWeb3Button
           requiredChain={DEFAULT_CHAIN_V5}

@@ -167,7 +167,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   const transaction = prepareContractCall({
     contract: proposalContract,
     method: 'function tallyVotes(uint256)',
-    params: [mdp],
+    params: [BigInt(mdp)],
   })
   const MAX_TX_ATTEMPTS = 4
   for (let attempt = 1; attempt <= MAX_TX_ATTEMPTS; attempt++) {

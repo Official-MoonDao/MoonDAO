@@ -2,6 +2,7 @@ import { DEPLOYED_ORIGIN } from 'const/config'
 import { useRouter } from 'next/router'
 import React, { useCallback, useMemo } from 'react'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
+import { OnrampAsset } from '@/lib/onramp/assets'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import Modal from '../layout/Modal'
 import { FundOnramp, OnrampProvider } from './FundOnramp'
@@ -12,6 +13,8 @@ interface FundOnrampModalProps {
   address: string
   selectedChain: any
   ethAmount: number
+  /** Crypto to purchase. Defaults to ETH (native). */
+  asset?: OnrampAsset
   onExit?: () => void
   isWaitingForGasEstimate?: boolean
   defaultProvider?: OnrampProvider
@@ -46,6 +49,7 @@ export const FundOnrampModal: React.FC<FundOnrampModalProps> = ({
   address,
   selectedChain,
   ethAmount,
+  asset = 'ETH',
   onExit,
   isWaitingForGasEstimate = false,
   defaultProvider,
@@ -134,6 +138,7 @@ export const FundOnrampModal: React.FC<FundOnrampModalProps> = ({
         address={address}
         selectedChain={selectedChain}
         ethAmount={ethAmount}
+        asset={asset}
         isWaitingForGasEstimate={isWaitingForGasEstimate}
         onExit={handleExit}
         defaultProvider={defaultProvider}

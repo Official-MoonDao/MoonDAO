@@ -1,8 +1,10 @@
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
+import { getSubmissionCycleInfo } from 'lib/utils/dates'
 
 const generateHTML = (proposalId: string, proposalTitle: string) => {
+  const { quarterLabel, deadlineFormatted } = getSubmissionCycleInfo()
   const proposalUrl = `https://moondao.com/project/${proposalId}`
   const townHallCalendar = 'https://lu.ma/moondao'
   const ideationChannel =
@@ -52,9 +54,9 @@ const generateHTML = (proposalId: string, proposalTitle: string) => {
             <!-- Governance Cycle Notice -->
             <tr>
               <td style="background: #dbeafe; border-radius: 12px; padding: 20px; border: 1px solid #93c5fd; margin-bottom: 24px;">
-                <h3 style="color: #1e40af; font-size: 16px; margin: 0 0 8px 0;">📅 Q2 2026 Governance Cycle</h3>
+                <h3 style="color: #1e40af; font-size: 16px; margin: 0 0 8px 0;">📅 ${quarterLabel} Governance Cycle</h3>
                 <p style="color: #1e3a8a; font-size: 14px; margin: 0; line-height: 1.5;">
-                  Your proposal has been submitted for the <strong>Q2 2026</strong> governance cycle. The submission deadline for this cycle is <strong>April 16, 2026</strong>. Voting will begin shortly after the deadline closes.
+                  Your proposal has been submitted for the <strong>${quarterLabel}</strong> governance cycle. The submission deadline for this cycle is <strong>${deadlineFormatted}</strong> (2nd Thursday of the quarter). Voting will begin shortly after the deadline closes.
                 </p>
               </td>
             </tr>
@@ -114,7 +116,7 @@ const generateHTML = (proposalId: string, proposalTitle: string) => {
                     </td>
                     <td valign="top" style="padding-left: 12px;">
                       <h3 style="color: #1a1a2e; font-size: 16px; margin: 0 0 4px 0;">Prepare for Voting</h3>
-                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Once the Q2 submission deadline passes, voting will begin. Ensure you have community support to pass the governance vote.</p>
+                      <p style="color: #666; font-size: 14px; margin: 0; line-height: 1.5;">Once the submission deadline passes for this cycle, voting will begin. Ensure you have community support to pass the governance vote.</p>
                     </td>
                   </tr>
                 </table>
@@ -144,7 +146,7 @@ const generateHTML = (proposalId: string, proposalTitle: string) => {
                 <p style="color: #666; font-size: 12px; margin: 0;">
                   This email was sent because you submitted a proposal on MoonDAO.<br />
                   <a href="https://moondao.com" style="color: #3b82f6; text-decoration: none;">moondao.com</a> · 
-                  <a href="https://discord.gg/moondao" style="color: #3b82f6; text-decoration: none;">Discord</a> · 
+                  <a href="https://moondao.com/discord" style="color: #3b82f6; text-decoration: none;">Discord</a> · 
                   <a href="https://twitter.com/OfficialMoonDAO" style="color: #3b82f6; text-decoration: none;">Twitter</a>
                 </p>
               </td>

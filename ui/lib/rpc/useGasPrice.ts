@@ -1,6 +1,41 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Chain } from '../rpc/chains'
 
+// Multiple components (contribute modal, onboarding, swap) can mount the hook at
+// once. Share a single in-flight fetch per chain and reuse the last result for a
+// few seconds so we don't fan out identical /api/rpc/gas-price requests.
+const GAS_PRICE_CLIENT_TTL_MS = 10_000
+type GasPricePayload = Record<string, any>
+const gasPriceInFlight = new Map<number, Promise<GasPricePayload>>()
+const gasPriceCache = new Map<number, { data: GasPricePayload; ts: number }>()
+
+async function fetchGasPriceData(chainId: number): Promise<GasPricePayload> {
+  const cached = gasPriceCache.get(chainId)
+  if (cached && Date.now() - cached.ts < GAS_PRICE_CLIENT_TTL_MS) {
+    return cached.data
+  }
+
+  const existing = gasPriceInFlight.get(chainId)
+  if (existing) return existing
+
+  const request = (async () => {
+    const response = await fetch(`/api/rpc/gas-price?chainId=${chainId}`)
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`)
+    }
+    const data = await response.json()
+    if (data.error) throw new Error(data.error)
+    if (!data.gasPrice) throw new Error('No gas price returned from API')
+    gasPriceCache.set(chainId, { data, ts: Date.now() })
+    return data
+  })().finally(() => {
+    gasPriceInFlight.delete(chainId)
+  })
+
+  gasPriceInFlight.set(chainId, request)
+  return request
+}
+
 type UseGasPriceReturn = {
   gasPrice: bigint
   maxFeePerGas?: bigint // EIP-1559 max fee per gas
@@ -42,22 +77,9 @@ export function useGasPrice(
 
     try {
       // Always use API for consistent fee estimation (matches what wallets display)
-      // Wallet provider's getFeeData() may return inflated values that don't match
-      const response = await fetch(`/api/rpc/gas-price?chainId=${chain.id}`)
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`)
-      }
-
-      const data = await response.json()
-
-      if (data.error) {
-        throw new Error(data.error)
-      }
-
-      if (!data.gasPrice) {
-        throw new Error('No gas price returned from API')
-      }
+      // Wallet provider's getFeeData() may return inflated values that don't match.
+      // Shared/deduped across concurrent hook mounts to avoid redundant requests.
+      const data = await fetchGasPriceData(chain.id)
 
       const baseGasPrice = BigInt(data.gasPrice)
       const gasPriceWithBuffer =

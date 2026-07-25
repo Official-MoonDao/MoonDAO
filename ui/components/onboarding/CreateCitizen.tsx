@@ -9,9 +9,7 @@ import {
   LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
   CK_NETWORK_SIGNUP_FORM_ID,
   CK_NETWORK_SIGNUP_TAG_ID,
-  DEPLOYED_ORIGIN,
   DEFAULT_CHAIN_V5,
-  DISCORD_CITIZEN_ROLE_ID,
 } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -41,7 +39,6 @@ import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
-import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import {
   estimateGasWithAPI,
@@ -56,13 +53,12 @@ import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/ch
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import cleanData from '@/lib/tableland/cleanData'
+import cleanData, { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
-import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import { CitizenData, formatCitizenShortFormData } from '@/lib/typeform/citizenFormData'
 import {
   renameFile,
@@ -148,6 +144,37 @@ const CROPPED_IMAGE_SESSION_KEY = 'CreateCitizen_croppedImage'
 const INPUT_IMAGE_SESSION_KEY = 'CreateCitizen_inputImage'
 
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60
+
+/**
+ * Under transient RPC hiccups thirdweb's batched eth_call can resolve with an
+ * empty/undefined body, which crashes viem's ABI decoder with a TypeError
+ * ("Cannot read properties of undefined (reading 'buffer')" / Safari:
+ * "undefined is not an object (evaluating 'e.buffer')"). A short retry clears
+ * it — same pattern as `computeMemberVoteOutcome.readContractWithRetry`.
+ */
+async function readContractWithRetry<T>(
+  options: { contract: any; method: string; params: any[] },
+  maxRetries = 3,
+  baseDelayMs = 500
+): Promise<T> {
+  let lastError: any
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return (await readContract(options as any)) as T
+    } catch (error) {
+      lastError = error
+      const isRetryableDecodeError =
+        error instanceof TypeError && String(error.message).includes('buffer')
+      if (!isRetryableDecodeError || attempt === maxRetries - 1) {
+        throw error
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, baseDelayMs * Math.pow(2, attempt))
+      )
+    }
+  }
+  throw lastError
+}
 
 /** Format small ETH amounts for display without noisy trailing zeros. */
 function formatEthAmount(eth: number): string {
@@ -346,7 +373,7 @@ export default function CreateCitizen({
     email: '',
     description: '',
     location: '',
-    view: '',
+    view: 'public',
     discord: '',
     website: '',
     twitter: '',
@@ -730,15 +757,19 @@ export default function CreateCitizen({
           LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[selectedChainSlug].toString(),
           _options.toHex(),
           address,
-          citizenData.name,
-          profile.bio,
+          // Escape single quotes so an apostrophe (e.g. "Brazil's") can't produce
+          // malformed SQL the Tableland validator silently rejects. `location` is
+          // already escaped upstream (resolveLocationField -> cleanData) and
+          // `view` is a fixed enum, so neither needs re-escaping here.
+          escapeSingleQuotes(citizenData.name),
+          escapeSingleQuotes(profile.bio),
           `ipfs://${imageIpfsHash}`,
           profile.location,
-          profile.discord,
-          profile.twitter,
-          profile.website,
+          escapeSingleQuotes(profile.discord),
+          escapeSingleQuotes(profile.twitter),
+          escapeSingleQuotes(profile.website),
           profile.view,
-          citizenData.formResponseId,
+          escapeSingleQuotes(citizenData.formResponseId),
         ],
         value: MSG_VALUE + LAYER_ZERO_TRANSFER_COST,
       })
@@ -780,15 +811,19 @@ export default function CreateCitizen({
         method: 'mintTo' as string,
         params: [
           address,
-          citizenData.name,
-          profile.bio,
+          // Escape single quotes so an apostrophe (e.g. "Brazil's") can't produce
+          // malformed SQL the Tableland validator silently rejects. `location` is
+          // already escaped upstream (resolveLocationField -> cleanData) and
+          // `view` is a fixed enum, so neither needs re-escaping here.
+          escapeSingleQuotes(citizenData.name),
+          escapeSingleQuotes(profile.bio),
           `ipfs://${imageIpfsHash}`,
           profile.location,
-          profile.discord,
-          profile.twitter,
-          profile.website,
+          escapeSingleQuotes(profile.discord),
+          escapeSingleQuotes(profile.twitter),
+          escapeSingleQuotes(profile.website),
           profile.view,
-          citizenData.formResponseId,
+          escapeSingleQuotes(citizenData.formResponseId),
         ],
         value: cost,
       })
@@ -802,12 +837,28 @@ export default function CreateCitizen({
   )
 
   const handlePostMint = useCallback(
-    async (mintedTokenId: string, profile: CitizenProfileMintFields) => {
+    async (
+      mintedTokenId: string,
+      profile: CitizenProfileMintFields,
+      imageURI: string
+    ) => {
       await tagToNetworkSignup(citizenData.email)
 
-      const citizenNFT = await waitForERC721(citizenContract, +mintedTokenId)
       const citizenName = citizenData.name
       const citizenPrettyLink = generatePrettyLinkWithId(citizenName, mintedTokenId)
+
+      // The citizen's on-chain tokenURI is a Tableland gateway query, so its
+      // metadata (name/image/attributes) only resolves once Tableland has
+      // indexed the row inserted during mint — which routinely takes longer
+      // than a minute under load. Onboarding success must NOT block on that:
+      // the mint receipt already proves the NFT exists, and every field needed
+      // to seed the citizen is known locally (token id, name, profile, image).
+      // CitizenProvider's optimistic seed + Tableland polling reconciles the
+      // record (including the real tokenURI) as soon as it's indexed, so we
+      // seed immediately and never wait on the gateway here. Previously this
+      // awaited waitForERC721, which threw "Failed to fetch NFT after 60
+      // seconds" whenever indexing was slow — failing onboarding for a citizen
+      // whose NFT had already minted successfully on-chain.
 
       // Record referral
       try {
@@ -839,20 +890,23 @@ export default function CreateCitizen({
         console.error('Error recording referral:', error)
       }
 
-      // Normalize the thirdweb NFT to match the Tableland format before seeding.
-      // Reuse the exact profile fields that were written on-chain so the locally
-      // seeded citizen matches the mint — otherwise the seed could show
-      // un-normalized socials, an un-geocoded location, or worse, view='' (which
-      // the directory treats as hidden/deleted) for a citizen minted as 'public'.
-      // `profile.location` is already the geocoded `{lat,lng,name}` JSON string.
+      // Build the seed entirely from local data (matching the Tableland row
+      // shape produced by citizenRowToNFT). Reusing the exact profile fields
+      // written on-chain guarantees the seed matches the mint — otherwise it
+      // could show un-normalized socials, an un-geocoded location, or worse,
+      // view='' (which the directory treats as hidden/deleted) for a citizen
+      // minted as 'public'. `profile.location` is already the geocoded
+      // `{lat,lng,name}` JSON string and `imageURI` is the `ipfs://` URI that
+      // was written on-chain. None of this depends on Tableland indexing.
+      const numericTokenId = Number(mintedTokenId)
       const normalizedCitizen = {
-        id: typeof citizenNFT.id === 'bigint' ? Number(citizenNFT.id) : citizenNFT.id,
+        id: numericTokenId,
         metadata: {
-          id: typeof citizenNFT.id === 'bigint' ? Number(citizenNFT.id) : citizenNFT.id,
-          uri: citizenNFT.tokenURI || '',
-          name: citizenNFT.metadata?.name || '',
-          description: citizenNFT.metadata?.description || '',
-          image: citizenNFT.metadata?.image || '',
+          id: numericTokenId,
+          uri: '',
+          name: citizenName,
+          description: profile.bio,
+          image: imageURI,
           animation_url: '',
           external_url: '',
           attributes: [
@@ -866,8 +920,8 @@ export default function CreateCitizen({
             { trait_type: 'formId', value: citizenData.formResponseId || '' },
           ],
         },
-        owner: citizenNFT.owner || address || '',
-        tokenURI: citizenNFT.tokenURI || '',
+        owner: address || '',
+        tokenURI: '',
         type: 'ERC721',
       }
 
@@ -880,11 +934,18 @@ export default function CreateCitizen({
       setMintComplete(true)
       fireCelebrationConfetti()
 
-      // Fire-and-forget side effects — don't block the celebration on them.
-      sendDiscordMessage(
-        'networkNotifications',
-        `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`,
-      ).catch((err) => console.error('Failed to send Discord message:', err))
+      // Fire-and-forget: notify Discord once Tableland has indexed the new
+      // citizen so Discord's bot can scrape the OG image from the profile page.
+      // The server-side route polls Tableland before sending the message.
+      fetch('/api/discord/notify-new-citizen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokenId: mintedTokenId,
+          citizenName,
+          prettyLink: citizenPrettyLink,
+        }),
+      }).catch((err) => console.error('Failed to send Discord notification:', err))
 
       // Clear the onboarding form cache (the citizen cache was just seeded).
       clearCache()
@@ -898,7 +959,6 @@ export default function CreateCitizen({
       citizenData.email,
       citizenData.name,
       citizenData.formResponseId,
-      citizenContract,
       address,
       clearCache,
       seedCitizen,
@@ -928,7 +988,7 @@ export default function CreateCitizen({
     setIsLoadingGasEstimate(true)
 
     try {
-      const cost: any = await readContract({
+      const cost: any = await readContractWithRetry({
         contract: citizenContract,
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
@@ -1311,7 +1371,7 @@ export default function CreateCitizen({
 
     try {
       // Get cost and check balance
-      const cost: any = await readContract({
+      const cost: any = await readContractWithRetry({
         contract: citizenContract,
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
@@ -1371,12 +1431,20 @@ export default function CreateCitizen({
       }
 
       if (mintedTokenId) {
-        await handlePostMint(mintedTokenId, profile)
+        await handlePostMint(mintedTokenId, profile, `ipfs://${newImageIpfsHash}`)
         setIsLoadingMint(false)
       }
     } catch (err: any) {
       console.error(err)
-      toast.error(err?.message || 'Something went wrong during minting.')
+      // A TypeError mentioning "buffer" is viem failing to decode an empty RPC
+      // response — a transient network issue, not a user-actionable error.
+      const isRpcDecodeError =
+        err instanceof TypeError && String(err?.message).includes('buffer')
+      toast.error(
+        isRpcDecodeError
+          ? 'Network hiccup while reading the mint price. Please try again.'
+          : err?.message || 'Something went wrong during minting.'
+      )
       setIsLoadingMint(false)
     }
   }, [
@@ -1403,7 +1471,7 @@ export default function CreateCitizen({
   // Balance Check Handler
   const checkBalanceSufficient = useCallback(async () => {
     try {
-      const cost: any = await readContract({
+      const cost: any = await readContractWithRetry({
         contract: citizenContract,
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
@@ -1705,7 +1773,7 @@ export default function CreateCitizen({
 
     let cancelled = false
     setIsLoadingRenewalPrice(true)
-    readContract({
+    readContractWithRetry({
       contract: citizenContract,
       method: 'getRenewalPrice' as string,
       params: [address, ONE_YEAR_SECONDS],
@@ -2475,44 +2543,6 @@ export default function CreateCitizen({
                       </div>
                     </div>
 
-                    {/* Profile visibility */}
-                    <div className="flex flex-col gap-2">
-                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                        Profile Visibility
-                      </span>
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setCitizenData((prev) => ({ ...prev, view: 'public' }))
-                          }
-                          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
-                            !citizenData.view || citizenData.view === 'public'
-                              ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
-                              : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
-                          }`}
-                        >
-                          Public
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setCitizenData((prev) => ({ ...prev, view: 'private' }))
-                          }
-                          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
-                            citizenData.view === 'private'
-                              ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
-                              : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
-                          }`}
-                        >
-                          Private
-                        </button>
-                      </div>
-                      <p className="text-xs text-slate-600">
-                        Public profiles are visible to other MoonDAO members. Private hides your
-                        details.
-                      </p>
-                    </div>
                   </div>
                 </div>
 

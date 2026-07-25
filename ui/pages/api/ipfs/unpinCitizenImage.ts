@@ -62,7 +62,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         }
       }
 
-      if (ownedTokens.length === 0 || !ownedTokens.includes(citizenId)) {
+      const citizenIdNum = +citizenId
+      if (ownedTokens.length === 0 || !ownedTokens.includes(citizenIdNum)) {
         return res.status(401).json({ error: 'Citizen not found' })
       }
 

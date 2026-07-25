@@ -36,6 +36,7 @@ import { getBlocksInTimeframe } from '@/lib/utils/blocks'
 import {
   sendContributionThankYouEmail,
   subscribeContributorToNewsletter,
+  tagMissionFrankDonor,
 } from '@/lib/contribution/contributionFollowUp'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import {
@@ -482,6 +483,14 @@ async function handler(req: any, res: any) {
       } catch (err: any) {
         console.error(
           'Contribution thank-you email failed:',
+          err?.message || err
+        )
+      }
+      try {
+        await tagMissionFrankDonor(emailTrim)
+      } catch (err: any) {
+        console.error(
+          'Contribution Mission Frank Donor tag failed:',
           err?.message || err
         )
       }

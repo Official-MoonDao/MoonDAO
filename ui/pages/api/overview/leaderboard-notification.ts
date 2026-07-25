@@ -169,7 +169,11 @@ async function handler(req: any, res: any) {
     let content = `## 🗳️ **${delegateeDisplay}** received a new backer in the Overview Flight!`
 
     if (leaderboard.length > 0) {
-      content += `\n\n### Current Standings\n${formatLeaderboardStandings(leaderboard, DEPLOYED_ORIGIN, generatePrettyLinkWithId)}`
+      content += `\n\n### Current Standings\n${formatLeaderboardStandings(
+        leaderboard,
+        DEPLOYED_ORIGIN,
+        (name, id) => generatePrettyLinkWithId(name, id) ?? String(id)
+      )}`
       content += `\n\n[Vote now →](${DEPLOYED_ORIGIN}/overview-vote)`
     }
 

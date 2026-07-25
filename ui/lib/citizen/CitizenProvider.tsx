@@ -1,6 +1,12 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
-import { useCallback, useEffect, useState, useRef } from 'react'
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+} from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTablelandQuery } from '../swr/useTablelandQuery'
 import { citizenRowToNFT } from '../tableland/convertRow'
@@ -185,6 +191,13 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   const account = useActiveAccount()
   const { authenticated, user } = usePrivy()
   const hasLoadedNonDefaultCache = useRef(false)
+  // Mirror of `citizen` readable inside effects without adding it to their
+  // dependency arrays (doing so would re-run the data effect after every
+  // setCitizen and loop, since citizenRowToNFT returns a new object each time).
+  const citizenRef = useRef<any>()
+  useEffect(() => {
+    citizenRef.current = citizen
+  }, [citizen])
 
   const address = account?.address
   const chainId = selectedChain?.id
@@ -195,7 +208,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   useEffect(() => {
     hasLoadedNonDefaultCache.current = false
     optimisticUntilRef.current = 0
-    setOptimisticActive(false)
+    startTransition(() => setOptimisticActive(false))
     if (optimisticTimerRef.current) {
       clearTimeout(optimisticTimerRef.current)
       optimisticTimerRef.current = null
@@ -205,7 +218,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   // Load cached data immediately when address/chain are available
   useEffect(() => {
     if (mock) {
-      setCitizen(mock)
+      startTransition(() => setCitizen(mock))
       return
     }
 
@@ -221,12 +234,28 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     const cachedData = getCachedCitizen(address, cacheChainId)
 
     if (cachedData) {
-      setCitizen(cachedData)
+      // Sync the ref immediately so the data effect (which runs later in this
+      // same commit) can see the cached citizen even before React re-renders.
+      // Without this, a same-tick Tableland error would set isLoading=true and
+      // never clear it, because the data effect doesn't re-run on `citizen`.
+      citizenRef.current = cachedData
+      startTransition(() => setCitizen(cachedData))
     } else {
+      // If the in-memory citizen belongs to a different wallet (wallet switch
+      // with no cache for the new address), drop it. Otherwise the data
+      // effect's error branch reads citizenRef and treats the new wallet as
+      // a citizen because the old wallet's NFT is still there.
+      const existing = citizenRef.current
+      const existingOwner =
+        typeof existing?.owner === 'string' ? existing.owner : ''
+      if (existingOwner && existingOwner.toLowerCase() !== address.toLowerCase()) {
+        citizenRef.current = undefined
+        startTransition(() => setCitizen(undefined))
+      }
       if (authenticated && user && isDefaultChain) {
-        setIsLoading(true)
+        startTransition(() => setIsLoading(true))
       } else if (authenticated && user && !isDefaultChain) {
-        setIsLoading(false)
+        startTransition(() => setIsLoading(false))
       }
     }
   }, [address, chainId, mock, isDefaultChain, authenticated, user])
@@ -240,6 +269,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   const {
     data: citizenData,
     isLoading: isLoadingQuery,
+    error: citizenQueryError,
     mutate,
   } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
@@ -304,6 +334,19 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       return
     }
 
+    // A failed query (Tableland 429/5xx, our own API rate limit, network blip)
+    // is NOT evidence the user isn't a citizen. Treating it as such used to
+    // set citizen=undefined and poison the localStorage cache, which made
+    // /dashboard bounce the user to / and back in a loop — each bounce
+    // remounting the whole page and re-firing hundreds of RPC calls until the
+    // tab froze. On error: keep the last-known citizen (from cache or a prior
+    // successful query) and, if we have none, stay in "loading" while SWR
+    // retries in the background so route guards don't redirect on unknown.
+    if (citizenQueryError && !citizenData) {
+      setIsLoading(!citizenRef.current)
+      return
+    }
+
     setIsLoading(false)
 
     if (!citizenData || citizenData.length === 0) {
@@ -335,6 +378,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   }, [
     citizenData,
     isLoadingQuery,
+    citizenQueryError,
     authenticated,
     user,
     address,

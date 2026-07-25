@@ -806,14 +806,42 @@ export default function Quest({
               onClick={async () => {
                 try {
                   await linkGithub()
-                  // After linking, refresh the quest data
-                  if (quest.verifier.type === 'staged') {
-                    await fetchStagedProgress()
-                  } else {
-                    await refreshSingleQuestEligibility()
+                  // Privy may take a moment to propagate the new GitHub link
+                  // server-side. Retry the eligibility check with backoff so
+                  // the quest card reflects the linked account without requiring
+                  // a manual page refresh.
+                  toast.success(
+                    'GitHub linked! Verifying quest status…',
+                    { style: toastStyle, duration: 3000 }
+                  )
+                  const maxAttempts = 5
+                  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    const delay = 1500 * Math.pow(2, attempt) // 1.5s, 3s, 6s, 12s, 24s
+                    await new Promise((resolve) => setTimeout(resolve, delay))
+
+                    const { metric, eligible } = await fetchUserMetric()
+                    if (eligible || metric >= 1) {
+                      setUserMetric(metric)
+                      setSingleQuestEligible(eligible ?? metric >= 1)
+                      setNeedsGitHubLink(false)
+                      setError(null)
+                      if (quest.verifier.type === 'staged') {
+                        await fetchStagedProgress()
+                      }
+                      break
+                    }
+
+                    // On the last attempt, do a final refresh regardless
+                    if (attempt === maxAttempts - 1) {
+                      if (quest.verifier.type === 'staged') {
+                        await fetchStagedProgress()
+                      } else {
+                        await refreshSingleQuestEligibility()
+                      }
+                      setNeedsGitHubLink(false)
+                      setError(null)
+                    }
                   }
-                  setNeedsGitHubLink(false)
-                  setError(null) // Clear any errors after successful GitHub linking
                 } catch (error) {
                   console.error('Error linking GitHub:', error)
                   toast.error(

@@ -36,7 +36,11 @@ import {
   readContract,
   waitForReceipt,
 } from 'thirdweb'
-import { useActiveAccount } from 'thirdweb/react'
+import {
+  useActiveAccount,
+  useActiveWallet,
+  useActiveWalletChain,
+} from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
@@ -128,9 +132,11 @@ export default function MissionContributeModal({
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
-  // Base was previously offered here but caused confusion / abandonment for
-  // contributors who didn't have ETH on Base. Arbitrum + Ethereum are the
-  // supported funding chains; users on Base will be prompted to switch.
+  // Arbitrum + Ethereum are the supported funding chains. Arbitrum is the
+  // default and the same-chain path (cheap, no bridge). Ethereum is kept so
+  // the many contributors who already hold mainnet ETH can pay from there via
+  // the LayerZero cross-chain path. Base was removed earlier (users without
+  // ETH on Base were bouncing).
   const chains = useMemo(
     () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
     [isTestnet]
@@ -175,13 +181,32 @@ export default function MissionContributeModal({
     stayOnSelectedAppChainRef,
   ])
 
-  /** Stable `Chain` reference for RPC hooks (avoids refetch when context swaps object identity). */
+  /**
+   * Stable `Chain` reference for RPC hooks (avoids refetch when context swaps object identity).
+   * Clamped to the supported funding chains: if the app-wide selection is on an unsupported
+   * network (e.g. Ethereum picked in the header selector), payment still runs on the
+   * mission chain rather than silently re-enabling the cross-chain path.
+   */
   const payChainStable = useMemo(
-    () => chains.find((c) => c.id === payChain.id) ?? payChain,
+    () => chains.find((c) => c.id === payChain.id) ?? chains[0],
     [chains, payChain]
   )
 
   const chainSlug = getChainSlug(payChainStable)
+
+  /**
+   * The chain card / Apple-Pay funding is delivered to. The Coinbase onramp can
+   * only reliably deliver ETH to the default chain (Arbitrum), and the mission
+   * settles there, so the entire onramp round-trip is pinned here. Pinning
+   * delivery + contribution to one chain is what stops the money and the
+   * contribution from landing on different chains (the cause of the
+   * "likely to fail" tx that then hung forever waiting for a receipt on the
+   * wrong chain).
+   */
+  const onrampFundingChain = useMemo(
+    () => chains.find((c) => c.id === DEFAULT_CHAIN_V5.id) ?? chains[0],
+    [chains]
+  )
 
   /**
    * One-shot / recommended updates only — not on every `selectedChain` change, so explicit
@@ -257,9 +282,31 @@ export default function MissionContributeModal({
   )
 
   const account = useActiveAccount()
+  // The wallet thirdweb will actually SIGN with. We must switch/verify the
+  // chain on *this* wallet (not `wallets[selectedWallet]`, which can be a
+  // different connector) before sending, otherwise the signing wallet can stay
+  // on the wrong network and the tx fails with "underlying network changed".
+  const activeWallet = useActiveWallet()
+  const activeWalletChain = useActiveWalletChain()
   // In test mode (Cypress), use mock address from window if available
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
+
+  // Tracks whether the citizen check has had enough time to resolve so we
+  // don't flash the gate at citizens while the RPC call is in-flight.
+  const [citizenCheckDone, setCitizenCheckDone] = useState(false)
+  useEffect(() => {
+    if (!account) {
+      setCitizenCheckDone(false)
+      return
+    }
+    if (isCitizen) {
+      setCitizenCheckDone(true)
+      return
+    }
+    const timer = setTimeout(() => setCitizenCheckDone(true), 1500)
+    return () => clearTimeout(timer)
+  }, [account, isCitizen])
 
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
@@ -309,6 +356,12 @@ export default function MissionContributeModal({
   })
   const [jwtVerificationError, setJwtVerificationError] = useState<string | null>(null)
   const [transactionRejected, setTransactionRejected] = useState(false)
+  // True while the automatic post-onramp flow is driving buyMissionToken. That
+  // flow retries on transient failures right after the reload, so we suppress
+  // the generic failure toast in that window (the modal already shows a
+  // "Transaction Rejected" notice) to avoid a false "failed" flash immediately
+  // before the retry succeeds.
+  const autoContributionInFlightRef = useRef(false)
 
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
@@ -330,13 +383,17 @@ export default function MissionContributeModal({
     refetch: refetchNativeBalance,
   } = useNativeBalance()
   const walletOnPayChain = useMemo(
-    () => nativeBalanceChain != null && nativeBalanceChain.id === payChain.id,
-    [nativeBalanceChain, payChain.id]
+    () => nativeBalanceChain != null && nativeBalanceChain.id === payChainStable.id,
+    [nativeBalanceChain, payChainStable.id]
   )
 
   /** Balance on `payChain` (funding network). RPC when wallet is elsewhere. */
   const [rpcFundingChainWei, setRpcFundingChainWei] = useState<bigint | null>(null)
   const [isLoadingRpcFundingBalance, setIsLoadingRpcFundingBalance] = useState(false)
+  /** True while an in-app Apple/Google Pay purchase is settling. We poll the
+   *  balance in place (no reload) so the Contribute button appears the moment
+   *  the funds land. */
+  const [awaitingOnrampFunds, setAwaitingOnrampFunds] = useState(false)
 
   useEffect(() => {
     if (!modalEnabled || !address) {
@@ -403,34 +460,77 @@ export default function MissionContributeModal({
     [address, fundingBalanceResolved, walletOnPayChain, chains, payChainStable.id]
   )
 
+  /** Live chain id of the wallet thirdweb signs with (falls back to the hook). */
+  const getActiveWalletChainId = useCallback((): number | undefined => {
+    try {
+      return activeWallet?.getChain?.()?.id ?? activeWalletChain?.id
+    } catch {
+      return activeWalletChain?.id
+    }
+  }, [activeWallet, activeWalletChain])
+
   const switchWalletToPayChain = useCallback(async (): Promise<boolean> => {
     const target = chains.find((c) => c.id === payChainStable.id) ?? payChainStable
-    const wallet = wallets?.[selectedWallet]
-    if (!wallet || typeof wallet.switchChain !== 'function') return false
-    try {
+
+    // Already there — nothing to do.
+    if (getActiveWalletChainId() === target.id) return true
+
+    // Switch the *active* (signing) wallet when available; otherwise fall back
+    // to the Privy-selected wallet. Switching the active wallet guarantees the
+    // network change applies to the connector that will sign the contribution.
+    const runSwitch = async (): Promise<void> => {
+      if (activeWallet && typeof activeWallet.switchChain === 'function') {
+        await activeWallet.switchChain(target)
+        return
+      }
+      const wallet = wallets?.[selectedWallet]
+      if (!wallet || typeof wallet.switchChain !== 'function') {
+        throw new Error('No switchable wallet available')
+      }
       await wallet.switchChain(target.id)
-      return true
+    }
+
+    try {
+      await runSwitch()
     } catch (err: any) {
       if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
         const ok = await addNetworkToWallet(target)
-        if (ok) {
-          try {
-            await wallet.switchChain(target.id)
-            return true
-          } catch {
-            return false
-          }
+        if (!ok) return false
+        try {
+          await runSwitch()
+        } catch {
+          return false
         }
-      } else if (err?.code !== 4001) {
+      } else if (err?.code === 4001) {
+        // User rejected the network switch.
+        return false
+      } else {
         toast.error('Failed to switch network. Please try again.', {
           style: toastStyle,
         })
+        return false
       }
-      return false
     }
-  }, [chains, payChainStable, wallets, selectedWallet])
 
-  const { effectiveGasPrice } = useGasPrice(payChainStable)
+    // Injected wallets (e.g. MetaMask) report the switch asynchronously.
+    // Confirm the signing wallet actually landed on the pay chain before we
+    // build/send the tx — sending too early throws "underlying network changed".
+    for (let i = 0; i < 20; i++) {
+      if (getActiveWalletChainId() === target.id) return true
+      await new Promise((resolve) => setTimeout(resolve, 150))
+    }
+    return getActiveWalletChainId() === target.id
+  }, [
+    chains,
+    payChainStable,
+    wallets,
+    selectedWallet,
+    activeWallet,
+    getActiveWalletChainId,
+  ])
+
+  const { effectiveGasPrice, maxFeePerGas, maxPriorityFeePerGas } =
+    useGasPrice(payChainStable)
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -900,7 +1000,10 @@ export default function MissionContributeModal({
 
     let transactionWei: bigint
     if (isCrossChain && crossChainQuote > BigInt(0) && !layerZeroLimitExceeded) {
-      transactionWei = crossChainQuote
+      // The LayerZero quote is re-read fresh at send time and can drift up
+      // between the onramp purchase and the auto-contribution, so budget a
+      // little above the current quote. Any excess simply stays in the wallet.
+      transactionWei = (crossChainQuote * BigInt(103)) / BigInt(100)
     } else {
       const usdNum = Number(cleanUsdInput)
       if (usdInput && ethUsdPrice && Number.isFinite(usdNum) && usdNum > 0) {
@@ -911,8 +1014,20 @@ export default function MissionContributeModal({
       }
     }
 
+    // Budget gas at the wallet's reserve price, not the expected price.
+    // Wallets (MetaMask etc.) refuse to sign unless
+    // balance >= value + gasLimit * maxFeePerGas, and the tx we submit uses
+    // maxFeePerGas (~2.4x base fee). Sizing the onramp purchase on
+    // effectiveGasPrice (base + priority) covered the expected cost but left
+    // the balance below the wallet's own check, producing "not enough gas"
+    // right after a successful onramp. The reserve is mostly refunded — the
+    // user only pays the actual fee.
+    const gasPriceForBudget =
+      maxFeePerGas && maxFeePerGas > effectiveGasPrice
+        ? maxFeePerGas
+        : effectiveGasPrice
     const baseGasCostWei =
-      effectiveGasPrice && estimatedGas ? estimatedGas * effectiveGasPrice : BigInt(0)
+      gasPriceForBudget && estimatedGas ? estimatedGas * gasPriceForBudget : BigInt(0)
     const safetyBuffer = BigInt(103) // 3% on gas for base-fee drift
     const gasCostWei = (baseGasCostWei * safetyBuffer) / BigInt(100)
 
@@ -922,6 +1037,7 @@ export default function MissionContributeModal({
     ethUsdPrice,
     estimatedGas,
     effectiveGasPrice,
+    maxFeePerGas,
     crossChainQuote,
     chainSlug,
     defaultChainSlug,
@@ -938,6 +1054,55 @@ export default function MissionContributeModal({
     return requiredWei > BigInt(0) && fundingBalanceWei >= requiredWei
   }, [fundingBalanceResolved, fundingBalanceWei, requiredWei])
 
+  // In-app onramp settling: poll the balance in place until the purchased funds
+  // land, then stop. No reload and no auto-contribute — once the balance is
+  // sufficient the normal Contribute button renders and the user taps it.
+  useEffect(() => {
+    if (!awaitingOnrampFunds) return
+    if (!address) return
+    if (hasEnoughBalance) {
+      setAwaitingOnrampFunds(false)
+      return
+    }
+    let cancelled = false
+    const poll = async () => {
+      try {
+        await refetchNativeBalance()
+      } catch {
+        // ignore
+      }
+      if (!cancelled && !walletOnPayChain) {
+        try {
+          const wei = await fetchNativeBalanceWei(payChainStable, address)
+          if (!cancelled) setRpcFundingChainWei(wei)
+        } catch {
+          // ignore
+        }
+      }
+    }
+    void poll()
+    const intervalId = setInterval(() => {
+      void poll()
+    }, 4000)
+    // Funds essentially always arrive within a couple of minutes; stop polling
+    // after a generous window so we don't loop forever if something stalls.
+    const stopId = setTimeout(() => {
+      if (!cancelled) setAwaitingOnrampFunds(false)
+    }, 8 * 60 * 1000)
+    return () => {
+      cancelled = true
+      clearInterval(intervalId)
+      clearTimeout(stopId)
+    }
+  }, [
+    awaitingOnrampFunds,
+    hasEnoughBalance,
+    address,
+    walletOnPayChain,
+    payChainStable,
+    refetchNativeBalance,
+  ])
+
   const showFundingBalanceWait = Boolean(
     address &&
       !walletOnPayChain &&
@@ -945,11 +1110,50 @@ export default function MissionContributeModal({
       requiredWei > BigInt(0)
   )
 
+  // Card / Apple-Pay funding must stay same-chain. The Coinbase onramp delivers
+  // ETH to the *default* chain (Arbitrum), so if a contributor drops into the
+  // funding path while the modal is pointed at Ethereum, the money lands on
+  // Arbitrum while the contribution is built for the Ethereum cross-chain
+  // contract — the two diverge and the tx fails ("likely to fail" / not enough
+  // gas). Whenever the user lacks enough ETH on the selected chain to complete
+  // the contribution, snap the pay chain back to the default so funding,
+  // quoting, and the contribution all happen on Arbitrum. Users who genuinely
+  // hold enough ETH on Ethereum never enter this branch (hasEnoughBalance is
+  // true) and keep the cross-chain path.
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') return
+    if (!modalEnabled || !address) return
+    // Returning from the onramp: card funds always land on the default chain,
+    // so pin the whole flow there immediately (before the auto-contribution
+    // can fire) rather than waiting on a balance read. Otherwise pin only when
+    // the user lacks enough ETH on the selected chain to complete the
+    // contribution — users who genuinely hold ETH on Ethereum keep it.
+    const isOnrampReturn = router?.query?.onrampSuccess === 'true'
+    if (!isOnrampReturn) {
+      if (!fundingBalanceResolved) return
+      if (hasEnoughBalance) return
+    }
+    if (payChainStable.id === DEFAULT_CHAIN_V5.id) return
+    const target = chains.find((c) => c.id === DEFAULT_CHAIN_V5.id)
+    if (!target) return
+    setUserChosePayChainInModal(true)
+    setSelectedChain(target)
+  }, [
+    modalEnabled,
+    address,
+    fundingBalanceResolved,
+    hasEnoughBalance,
+    payChainStable.id,
+    chains,
+    setSelectedChain,
+    router?.query?.onrampSuccess,
+  ])
+
   const applyMaxContribution = useCallback(() => {
     if (!ethUsdPrice || fundingBalanceWei === null || !address) return
     const maxUsd = computeContributionMaxUsd({
       balanceWei: fundingBalanceWei,
-      selectedChainId: payChain.id,
+      selectedChainId: payChainStable.id,
       chainSlug,
       defaultChainSlug,
       ethUsdPrice,
@@ -961,7 +1165,7 @@ export default function MissionContributeModal({
     fundingBalanceWei,
     address,
     chainSlug,
-    payChain.id,
+    payChainStable.id,
     defaultChainSlug,
     formatInputWithCommas,
     setUsdInput,
@@ -991,11 +1195,16 @@ export default function MissionContributeModal({
     }
   }, [crossChainQuote, usdInput, ethUsdPrice, chainSlug, defaultChainSlug, layerZeroLimitExceeded])
 
-  // Calculate how much ETH the user needs to buy
+  // Calculate how much ETH the user needs to buy.
+  // Treat an unresolved balance as 0 for deficit purposes — PaymentBreakdown
+  // already displays null as $0 / "Add via Coinbase", and gating FundOnramp on
+  // a resolved balance left users stuck with only a Close button when the
+  // balance fetch was slow or failed.
   const ethDeficit = useMemo(() => {
-    if (fundingBalanceWei === null || requiredWei === BigInt(0)) return 0
-    if (fundingBalanceWei >= requiredWei) return 0
-    const deficitWei = requiredWei - fundingBalanceWei
+    if (requiredWei === BigInt(0)) return 0
+    const balanceWei = fundingBalanceWei ?? BigInt(0)
+    if (balanceWei >= requiredWei) return 0
+    const deficitWei = requiredWei - balanceWei
     return parseFloat(formatUnits(deficitWei.toString(), 18))
   }, [fundingBalanceWei, requiredWei])
 
@@ -1117,32 +1326,150 @@ export default function MissionContributeModal({
     // Reset rejection state when attempting a new transaction
     setTransactionRejected(false)
 
-    // If wallet is on a different chain than the selected pay network, switch first
-    if (!walletOnPayChain) {
+    // Ensure the wallet that will SIGN is on the pay chain. We check the active
+    // wallet's live chain (not the cached balance chain) because those can
+    // diverge — e.g. MetaMask still on Ethereum while the pay tx targets
+    // Arbitrum, which fails with "underlying network changed" or an
+    // insufficient-gas prompt on the wrong network. Only act when the wallet is
+    // on a *known* different chain: when the chain is unknown (undefined) we let
+    // thirdweb's own switching handle it (embedded wallets, tests) rather than
+    // blocking. If a required switch can't be confirmed, abort with a clear
+    // error instead of signing on the wrong chain.
+    // Resolve the signing wallet's live chain. Right after the onramp page
+    // reload the injected connector (MetaMask etc.) can still be reconnecting
+    // and momentarily report `undefined`. Previously we skipped the whole
+    // guard in that case and fell through to `sendTransaction`, which signs on
+    // whatever chain the wallet happens to be on — that is exactly how an
+    // Ethereum cross-chain tx got fired at a wallet still sitting on Arbitrum
+    // ("likely to fail"). Poll briefly so a real wallet's chain resolves before
+    // we decide. A chain that stays `undefined` means an embedded/mock wallet
+    // (chain-agnostic — thirdweb signs for the tx's chain), so we let it pass.
+    let activeChainId = getActiveWalletChainId()
+    if (activeChainId === undefined) {
+      for (let i = 0; i < 20 && activeChainId === undefined; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 150))
+        activeChainId = getActiveWalletChainId()
+      }
+    }
+    if (activeChainId !== undefined && activeChainId !== payChainStable.id) {
       const switched = await switchWalletToPayChain()
       if (!switched) {
-        return
+        const networkLabel = (payChainStable.name ?? 'the correct network').replace(
+          ' One',
+          ''
+        )
+        toast.error(
+          `Please switch your wallet to ${networkLabel} to complete your contribution.`,
+          { style: toastStyle }
+        )
+        throw new Error(`Wallet is not on the payment network (${networkLabel})`)
       }
       await refetchNativeBalance()
     }
 
+    // Never let receipt polling spin forever. If a tx was somehow broadcast on
+    // a different chain than the one we poll (the old cross-chain/wallet
+    // mismatch), waitForReceipt would never resolve and the modal hung in
+    // "Contributing…" indefinitely. Time out so the error path runs and the
+    // user can retry instead of staring at a spinner.
+    const awaitReceipt = async (submitted: any): Promise<any> =>
+      Promise.race([
+        waitForReceipt(submitted),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Timed out waiting for the transaction to confirm. It may still complete — check your wallet activity before retrying.'
+                )
+              ),
+            120000
+          )
+        ),
+      ])
+
     try {
       flushSync(() => setContributeButtonPhase('wallet'))
+
+      // Explicit gas fields let thirdweb skip its own RPC lookups
+      // (eth_estimateGas + eth_getBlockByNumber) when serializing the tx.
+      // Those lookups hit the primary browser RPC, which can be rate-limited
+      // (429) — previously that aborted the contribution with "Block not
+      // found" even though the wallet could broadcast fine. The values come
+      // from our server gas APIs (which have RPC fallback) and are the same
+      // buffered numbers the modal already shows and budgets for.
+      const gasOverrides: {
+        gas?: bigint
+        maxFeePerGas?: bigint
+        maxPriorityFeePerGas?: bigint
+      } = {}
+      if (estimatedGas > BigInt(0)) gasOverrides.gas = estimatedGas
+      if (
+        maxFeePerGas &&
+        maxPriorityFeePerGas &&
+        maxFeePerGas > BigInt(0) &&
+        maxPriorityFeePerGas >= BigInt(0)
+      ) {
+        gasOverrides.maxFeePerGas = maxFeePerGas
+        gasOverrides.maxPriorityFeePerGas = maxPriorityFeePerGas
+      }
+
       let receipt: any
       if (chainSlug !== defaultChainSlug) {
-        const quoteCrossChainPay: any = await readContract({
-          contract: crossChainPayContract,
-          method: 'quoteCrossChainPay' as string,
-          params: [
-            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
-            toWei(inputValue),
-            mission?.projectId,
-            address || ZERO_ADDRESS,
-            toWei(output),
-            message,
-            '0x00',
-          ],
-        })
+        // Never fire a cross-chain tx the wallet can't fund. If the balance on
+        // this (non-default) chain doesn't cover the cross-chain cost, the tx
+        // is doomed ("likely to fail") — this happens when card funding landed
+        // on Arbitrum but the contribution is pointed at Ethereum. Abort with a
+        // clear message instead; the same-chain effect will move the flow to
+        // Arbitrum where the money actually is.
+        if (
+          fundingBalanceWei !== null &&
+          requiredWei > BigInt(0) &&
+          fundingBalanceWei < requiredWei
+        ) {
+          const networkLabel = (payChainStable.name ?? 'this network').replace(
+            ' One',
+            ''
+          )
+          toast.error(
+            `You don't have enough ETH on ${networkLabel} for a cross-chain contribution. Switch the network to Arbitrum to contribute with the ETH you have.`,
+            { style: toastStyle, duration: 8000 }
+          )
+          throw new Error(
+            `Insufficient balance on ${networkLabel} for cross-chain contribution`
+          )
+        }
+        // The fresh LayerZero quote read can fail when the browser RPC is
+        // rate-limited. Fall back to the cached quote already fetched for the
+        // fee display instead of aborting the whole contribution.
+        let quoteCrossChainPay: bigint
+        try {
+          quoteCrossChainPay = BigInt(
+            (await readContract({
+              contract: crossChainPayContract,
+              method: 'quoteCrossChainPay' as string,
+              params: [
+                LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+                toWei(inputValue),
+                mission?.projectId,
+                address || ZERO_ADDRESS,
+                toWei(output),
+                message,
+                '0x00',
+              ],
+            })) as unknown as string | number | bigint | boolean
+          )
+        } catch (quoteError) {
+          if (crossChainQuote > BigInt(0)) {
+            console.warn(
+              'quoteCrossChainPay read failed; using cached quote:',
+              quoteError
+            )
+            quoteCrossChainPay = crossChainQuote
+          } else {
+            throw quoteError
+          }
+        }
         const transaction = prepareContractCall({
           contract: crossChainPayContract,
           method: 'crossChainPay' as string,
@@ -1155,7 +1482,8 @@ export default function MissionContributeModal({
             message,
             '0x00',
           ],
-          value: BigInt(quoteCrossChainPay),
+          value: quoteCrossChainPay,
+          ...gasOverrides,
         })
 
         const submittedOrigin = await sendTransaction({
@@ -1165,7 +1493,7 @@ export default function MissionContributeModal({
 
         // Wait for origin chain confirmation before showing success
         flushSync(() => setContributeButtonPhase('confirm'))
-        const originReceipt: any = await waitForReceipt(submittedOrigin)
+        const originReceipt: any = await awaitReceipt(submittedOrigin)
 
         // Show success UI immediately. Previously we awaited the notification
         // POST (and up to ~20s of retries) before showing confetti/closing the
@@ -1305,6 +1633,7 @@ export default function MissionContributeModal({
             '0x00',
           ],
           value: toWei(inputValue),
+          ...gasOverrides,
         })
 
         const submittedPay = await sendTransaction({
@@ -1312,7 +1641,7 @@ export default function MissionContributeModal({
           account,
         })
         flushSync(() => setContributeButtonPhase('confirm'))
-        receipt = await waitForReceipt(submittedPay)
+        receipt = await awaitReceipt(submittedPay)
       }
 
       // Show success UI immediately on tx confirmation. Same-chain and
@@ -1421,11 +1750,36 @@ export default function MissionContributeModal({
         })
         refreshMissionData()
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error purchasing tokens:', error)
-      toast.error('Failed to purchase tokens', {
-        style: toastStyle,
-      })
+      const msg = (error?.message || '').toLowerCase()
+      const isUserRejection =
+        error?.code === 4001 ||
+        error?.code === 'ACTION_REJECTED' ||
+        msg.includes('user rejected') ||
+        msg.includes('user denied') ||
+        msg.includes('rejected the request')
+      const isReceiptTimeout = msg.includes(
+        'timed out waiting for the transaction'
+      )
+      if (isUserRejection) {
+        // User dismissed the wallet prompt — not a failure.
+        toast('Transaction cancelled.', { style: toastStyle })
+      } else if (isReceiptTimeout) {
+        // The tx was broadcast but we stopped waiting for the receipt; it may
+        // still confirm. Don't call it a failure.
+        toast(
+          'Your transaction was sent and may still confirm. Check your wallet activity before retrying.',
+          { style: toastStyle, icon: '⏳', duration: 8000 }
+        )
+      } else if (!autoContributionInFlightRef.current) {
+        // Only surface the generic failure for a user-initiated attempt. The
+        // automatic post-onramp flow retries and shows its own notice, so a
+        // toast here would flash "failed" right before a successful retry.
+        toast.error('Failed to purchase tokens', {
+          style: toastStyle,
+        })
+      }
       throw error
     } finally {
       setContributeButtonPhase('idle')
@@ -1456,9 +1810,13 @@ export default function MissionContributeModal({
     newsletterOptIn,
     isOverviewMission,
     toWei,
-    walletOnPayChain,
+    getActiveWalletChainId,
     switchWalletToPayChain,
     refetchNativeBalance,
+    estimatedGas,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
+    crossChainQuote,
   ])
 
   // Calculate quote when payment amount or ruleset changes (aligned with USD → ETH, not rounded `input`)
@@ -1573,12 +1931,15 @@ export default function MissionContributeModal({
       await refetchNativeBalance()
     },
     onTransaction: async () => {
+      autoContributionInFlightRef.current = true
       try {
         await buyMissionToken()
       } catch (error) {
         setTransactionRejected(true)
         setIsAutoTriggering(false)
         throw error
+      } finally {
+        autoContributionInFlightRef.current = false
       }
     },
     onFormRestore: (restored: any) => {
@@ -1633,8 +1994,15 @@ export default function MissionContributeModal({
         return null
       }
     },
-    getChainSlugFromCache: (restored: any) =>
-      restored?.formData?.chainSlug ?? restored?.chainSlug,
+    getChainSlugFromCache: (restored: any) => {
+      const cached = restored?.formData?.chainSlug ?? restored?.chainSlug
+      // JWTs minted before a chain was removed from the supported list (e.g.
+      // the retired Ethereum cross-chain path) must not auto-fire on a chain
+      // we no longer pay on. Returning undefined makes the hook verify
+      // against the current chain instead, which mismatches the stale JWT
+      // and clears it — the user just sees the normal contribute form.
+      return chainSlugs.includes(cached) ? cached : undefined
+    },
     setSelectedWallet,
     waitForReady: () => {
       return !isLoadingGasEstimate && estimatedGas > BigInt(0) && effectiveGasPrice > BigInt(0)
@@ -1812,6 +2180,39 @@ export default function MissionContributeModal({
               router={router}
               formatWithCommas={formatWithCommas}
             />
+          ) : account && !citizenCheckDone ? (
+            <div className="flex flex-col items-center justify-center py-12 px-6 space-y-4">
+              <div className="w-12 h-12 rounded-full border-2 border-blue-500/40 border-t-blue-400 animate-spin" />
+              <p className="text-gray-400 text-sm">Verifying citizenship…</p>
+            </div>
+          ) : account && citizenCheckDone && !isCitizen ? (
+            <div className="flex flex-col items-center justify-center py-10 px-6 space-y-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500/20 to-amber-500/10 border border-yellow-500/30 flex items-center justify-center">
+                <span className="text-3xl">🌙</span>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold text-white">Citizens Only</h3>
+                <p className="text-gray-400 text-sm max-w-sm leading-relaxed">
+                  Contributing to MoonDAO missions is reserved for Citizens of the Space
+                  Acceleration Network. Become a Citizen to participate.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                <Link
+                  href="/citizen"
+                  className="flex-1 flex justify-center items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all duration-300 text-sm"
+                >
+                  Become a Citizen
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleModalClose}
+                  className="flex-1 px-6 py-3 bg-slate-800/60 hover:bg-slate-700/60 border border-white/10 text-white font-medium rounded-xl transition-all duration-300 text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           ) : (
             <>
               <MissionContributeStatusNotices
@@ -1887,11 +2288,8 @@ export default function MissionContributeModal({
                     />
                   </div>
                   {/* Help text aimed at first-time contributors who aren't
-                      sure which network to pick. Sits to the RIGHT of the
-                      dropdown as a follow-up "?" affordance. Uses the
-                      default 24px Tooltip trigger (no size override) so it
-                      reads as a clearly-tappable help button, larger than
-                      the small inline `?`s elsewhere on the mission card. */}
+                      sure which network to pick. If you don't have ETH,
+                      Arbitrum is the cheapest, most reliable choice. */}
                   <Tooltip
                     text="Not sure what network? Choose whichever chain you have ETH on. If you don't have ETH then choose Arbitrum."
                     compact
@@ -2014,7 +2412,7 @@ export default function MissionContributeModal({
                           </span>
                         )}
                       <span className="text-gray-500 text-[11px] sm:text-xs ml-1">
-                        on {(payChain.name ?? 'network').replace(' One', '')}
+                        on {(payChainStable.name ?? 'network').replace(' One', '')}
                         {!walletOnPayChain && fundingBalanceResolved ? (
                           <span className="text-cyan-400/90"> — switch wallet to this network to pay</span>
                         ) : null}
@@ -2125,7 +2523,7 @@ export default function MissionContributeModal({
                 <div className="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
                   <LoadingSpinner width="w-8" height="h-8" />
                   <p className="text-sm text-center max-w-sm">
-                    Checking your ETH balance on {(payChain.name ?? 'this network').replace(' One', '')}…
+                    Checking your ETH balance on {(payChainStable.name ?? 'this network').replace(' One', '')}…
                   </p>
                 </div>
               ) : hasEnoughBalance ? (
@@ -2416,14 +2814,14 @@ export default function MissionContributeModal({
                     <FundOnramp
                       fullWidth
                       address={address || ''}
-                      selectedChain={payChain}
+                      selectedChain={onrampFundingChain}
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
                       onCoinbaseQuoteCalculated={handleCoinbaseQuote}
                       onCoinbaseBeforeNavigate={async () => {
                         await generateOnrampJWT({
                           address: address || '',
-                          chainSlug: chainSlug,
+                          chainSlug: getChainSlug(onrampFundingChain),
                           usdAmount: usdInput.replace(/,/g, ''),
                           agreed: agreedToCondition,
                           message: message || '',
@@ -2442,7 +2840,25 @@ export default function MissionContributeModal({
                       onBalanceSufficient={() => {
                         buyMissionToken()
                       }}
+                      onCoinbaseSuccessInApp={() => {
+                        // In-app Apple/Google Pay: no reload, no auto-contribute.
+                        // Poll for the funds in place; when they land the normal
+                        // Contribute button appears and the user taps it.
+                        setAwaitingOnrampFunds(true)
+                      }}
                     />
+                  )}
+
+                  {usdInput &&
+                    ethDeficit <= 0 &&
+                    agreedToCondition &&
+                    isValidContributorEmail(contributorEmail.trim()) && (
+                    <div className="bg-blue-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-4">
+                      <p className="text-blue-200 text-sm">
+                        Calculating how much ETH you need to add. This usually takes a few
+                        seconds — if nothing appears, refresh the page and try again.
+                      </p>
+                    </div>
                   )}
 
                   {/* Show warning if checkbox not agreed */}

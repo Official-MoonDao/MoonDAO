@@ -112,7 +112,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         })
         if (data?.items?.[0]) {
           answers = data.items[0].answers
-          void cacheTypeformAnswers(responseId as string, answers)
+          if (answers) {
+            void cacheTypeformAnswers(responseId as string, answers)
+          }
         }
       }
 
@@ -132,7 +134,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const { walletAddresses } = privyUserData
       const { hasAccess, error } = await hasAccessToResponse(
         walletAddresses,
-        responseId
+        responseId as string
       )
 
       // Only block when we DEFINITIVELY determine the response is owned by a
@@ -162,7 +164,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Profile updates: verify on-chain ownership before returning answers.
     const { hasAccess, error, formIds } = await hasAccessToResponse(
       walletAddresses,
-      responseId
+      responseId as string
     )
 
     if (!hasAccess) {

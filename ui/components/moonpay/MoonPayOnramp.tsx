@@ -1,8 +1,13 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
+import {
+  estimateOnrampFiatUsd,
+  OnrampAsset,
+  onrampAssetIcon,
+} from '@/lib/onramp/assets'
 import { clearOnrampReturn, setOnrampReturn } from '@/lib/onramp/onrampReturn'
+import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -11,8 +16,13 @@ type FundingState = 'idle' | 'opening' | 'waiting' | 'sufficient'
 interface MoonPayOnrampProps {
   address: string
   selectedChain: any
-  /** Native token amount to pre-fill in the MoonPay widget */
+  /**
+   * Crypto amount to pre-fill. Interpreted as the selected `asset` (ETH by
+   * default, or USDC when `asset="USDC"`).
+   */
   ethAmount: number
+  /** Crypto to purchase. Defaults to ETH (native). */
+  asset?: OnrampAsset
   onExit?: () => void
   /** Called just before the MoonPay widget opens (e.g. cache form data) */
   onBeforeOpen?: () => Promise<void>
@@ -43,6 +53,7 @@ export function MoonPayOnramp({
   address,
   selectedChain,
   ethAmount,
+  asset = 'ETH',
   onExit,
   onBeforeOpen,
   onPurchaseSubmitted,
@@ -72,12 +83,16 @@ export function MoonPayOnramp({
   const [error, setError] = useState<string | null>(null)
   const [pollCount, setPollCount] = useState(0)
 
-  // Display the chain's native token symbol (all supported onramp chains are
-  // ETH-native, so this is "ETH" in practice).
-  const nativeSymbol: string = useMemo(
-    () => selectedChain?.nativeCurrency?.symbol ?? 'ETH',
-    [selectedChain]
+  // Symbol shown in copy / icons. USDC purchases use the stablecoin; otherwise
+  // fall back to the chain's native token (ETH on all supported onramp chains).
+  const assetSymbol: string = useMemo(
+    () =>
+      asset === 'USDC'
+        ? 'USDC'
+        : selectedChain?.nativeCurrency?.symbol ?? 'ETH',
+    [asset, selectedChain]
   )
+  const assetIcon = onrampAssetIcon(asset)
 
   const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pollStartRef = useRef<number | null>(null)
@@ -174,21 +189,22 @@ export function MoonPayOnramp({
       }
 
       // Privy's fiat onramp pre-fills a FIAT (USD) amount, not a token amount.
-      // Convert the native-token deficit to USD (with a small buffer for fees and
+      // Convert the crypto deficit to USD (with a small buffer for fees and
       // price drift) so the purchase covers the amount the user actually needs.
-      // All supported onramp chains are ETH-native, so the ETH spot price applies.
       let fiatAmount: number | undefined
       if (ethAmount > 0) {
-        try {
-          const res = await fetch('/api/coinbase/eth-price')
-          if (res.ok) {
-            const { price } = await res.json()
-            if (price > 0) {
-              fiatAmount = Math.ceil(ethAmount * price * 1.05)
+        if (asset === 'USDC') {
+          fiatAmount = estimateOnrampFiatUsd(ethAmount, 'USDC')
+        } else {
+          try {
+            const res = await fetch('/api/coinbase/eth-price')
+            if (res.ok) {
+              const { price } = await res.json()
+              fiatAmount = estimateOnrampFiatUsd(ethAmount, 'ETH', price)
             }
+          } catch {
+            // Price lookup failed — fall back to letting the user enter the amount.
           }
-        } catch {
-          // Price lookup failed — fall back to letting the user enter the amount.
         }
       }
 
@@ -202,7 +218,7 @@ export function MoonPayOnramp({
       // exits) the flow. It rejects if the user closes the modal before submitting.
       // Pass the known address directly — Privy's useWallets() list can be empty
       // right after load, which would otherwise throw "No wallet selected to fund".
-      const result = await fund(fiatAmount, selectedChain?.id, address)
+      const result = await fund(fiatAmount, selectedChain?.id, address, asset)
 
       // Resolved in-context (no redirect happened) — the breadcrumb isn't needed.
       clearOnrampReturn()
@@ -231,6 +247,7 @@ export function MoonPayOnramp({
   }, [
     address,
     ethAmount,
+    asset,
     selectedChain,
     onBeforeOpen,
     onPurchaseSubmitted,
@@ -284,11 +301,11 @@ export function MoonPayOnramp({
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-              <Image src="/coins/ETH.svg" alt={nativeSymbol} width={20} height={20} className="w-6 h-6" />
+              <Image src={assetIcon} alt={assetSymbol} width={20} height={20} className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">MoonPay Processing</h2>
-              <p className="text-gray-400 text-xs">Waiting for {nativeSymbol} to arrive</p>
+              <p className="text-gray-400 text-xs">Waiting for {assetSymbol} to arrive</p>
             </div>
           </div>
           <button onClick={handleExit} className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200">
@@ -307,7 +324,7 @@ export function MoonPayOnramp({
                   Your purchase is being processed
                 </p>
                 <p className="text-blue-100/80 text-xs leading-relaxed">
-                  MoonPay typically delivers {nativeSymbol} within <strong>5–30 minutes</strong>. Once your funds arrive, your transaction will proceed automatically.
+                  MoonPay typically delivers {assetSymbol} within <strong>5–30 minutes</strong>. Once your funds arrive, your transaction will proceed automatically.
                 </p>
                 {checkBalanceSufficient && (
                   <p className="text-blue-100/60 text-xs mt-2">
@@ -348,7 +365,7 @@ export function MoonPayOnramp({
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-            <Image src="/coins/ETH.svg" alt={nativeSymbol} width={20} height={20} className="w-6 h-6" />
+            <Image src={assetIcon} alt={assetSymbol} width={20} height={20} className="w-6 h-6" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-white">Fund Wallet</h2>
@@ -381,7 +398,12 @@ export function MoonPayOnramp({
               {ethAmount > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Amount needed:</span>
-                  <span className="text-white font-medium">{ethAmount.toFixed(4)} {nativeSymbol}</span>
+                  <span className="text-white font-medium">
+                    {asset === 'USDC'
+                      ? ethAmount.toFixed(2)
+                      : ethAmount.toFixed(4)}{' '}
+                    {assetSymbol}
+                  </span>
                 </div>
               )}
             </>
@@ -413,8 +435,10 @@ export function MoonPayOnramp({
             fundingState === 'opening'
               ? 'Opening MoonPay…'
               : ethAmount > 0
-              ? `Buy ${ethAmount.toFixed(4)} ${nativeSymbol} with MoonPay`
-              : `Buy ${nativeSymbol} with MoonPay`
+              ? `Buy ${
+                  asset === 'USDC' ? ethAmount.toFixed(2) : ethAmount.toFixed(4)
+                } ${assetSymbol} with MoonPay`
+              : `Buy ${assetSymbol} with MoonPay`
           }
           showSignInLabel={false}
           action={handleFund}

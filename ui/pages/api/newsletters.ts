@@ -85,7 +85,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Fallback: try v4 API if v3 returned nothing (v4 uses X-Kit-Api-Key header)
-    if (allBroadcasts.length === 0) {
+    if (allBroadcasts.length === 0 && CONVERTKIT_API_KEY) {
       const v4Endpoints = [
         'https://api.kit.com/v4/broadcasts',
         'https://api.convertkit.com/v4/broadcasts',

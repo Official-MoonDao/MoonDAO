@@ -1,5 +1,5 @@
 import { DEFAULT_CHAIN_V5 } from 'const/config'
-import { BLOCKED_MISSIONS } from 'const/whitelist'
+import { BLOCKED_MISSIONS, GATED_MISSIONS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import dynamic from 'next/dynamic'
 import { fetchFromIPFSWithFallback, getIPFSGateway } from '@/lib/ipfs/gateway'
@@ -106,29 +106,92 @@ export default function MissionProfilePage({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ params, query, res }) => {
-  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
+function parseCookies(cookieHeader?: string): Record<string, string> {
+  if (!cookieHeader) return {}
+  return Object.fromEntries(
+    cookieHeader.split(';').map((c) => {
+      const [k, ...v] = c.trim().split('=')
+      const raw = v.join('=')
+      let decoded: string
+      try {
+        decoded = decodeURIComponent(raw)
+      } catch {
+        decoded = raw
+      }
+      return [k, decoded]
+    })
+  )
+}
 
+function setNoStoreHeaders(res: {
+  setHeader: (name: string, value: string) => void
+}) {
+  // Cover browser, Vercel CDN, and intermediary caches. Setting only
+  // Cache-Control is not enough on Vercel — CDN-Cache-Control / Vercel-CDN-
+  // Cache-Control can still keep a public HIT of a pre-gate page.
+  const value = 'private, no-store, no-cache, must-revalidate, max-age=0'
+  res.setHeader('Cache-Control', value)
+  res.setHeader('CDN-Cache-Control', value)
+  res.setHeader('Vercel-CDN-Cache-Control', value)
+  res.setHeader('Pragma', 'no-cache')
+  res.setHeader('Expires', '0')
+  // Prevent any intermediary that ignores no-store from serving a
+  // cookie-authenticated response to an anonymous visitor (or vice versa).
+  res.setHeader('Vary', 'Cookie')
+}
+
+export const getServerSideProps: GetServerSideProps = async ({
+  params,
+  query,
+  req,
+  res,
+}) => {
   const tokenId: any = params?.tokenId
+  const missionIdNumEarly =
+    tokenId !== undefined && !isNaN(Number(tokenId)) ? Number(tokenId) : NaN
+  const isGatedEarly =
+    Number.isFinite(missionIdNumEarly) && GATED_MISSIONS.has(missionIdNumEarly)
+
+  // Decide cache policy BEFORE any early return. Gated missions must never
+  // receive a public Cache-Control — a stale CDN HIT of the pre-gate page is
+  // exactly how /mission/4 stayed publicly reachable after the gate shipped.
+  if (isGatedEarly) {
+    setNoStoreHeaders(res)
+  } else {
+    res.setHeader(
+      'Cache-Control',
+      'public, s-maxage=60, stale-while-revalidate=120'
+    )
+  }
 
   // Handle dummy mission for testing
   if (tokenId === 'dummy') {
     // Allow overriding stage via ?stage= query param (default: 3 = refundable)
     const stageParam = query?.stage
     const dummyStage = stageParam ? Number(stageParam) : 3
+    // Deadlines must be far enough out that the page state cannot flip while
+    // an E2E test is still asserting. A near-future deadline (this used to be
+    // now+5s) made `deadlinePassed` turn true mid-test on slow remote
+    // browsers (BrowserStack tunnel), swapping the header's "REFUND" label
+    // for a close date and randomly failing mission-refund.cy.ts.
     const dummyDeadline =
       dummyStage === 4
         ? Date.now() - 86400 * 1000 // deadline in the past for closed missions
-        : Date.now() + 5 * 1000
+        : Date.now() + 7 * 86400 * 1000
     const dummyRefundPeriod =
       dummyStage === 4
         ? Date.now() - 3600 * 1000 // refund period in the past for closed missions
-        : Date.now() + 60 * 1000
+        : Date.now() + 14 * 86400 * 1000
 
     return {
       props: {
         mission: {
-          id: 5,
+          // Must be the literal 'dummy' so client hooks (refreshStage,
+          // useMissionFundingStage) skip live on-chain reads. With a numeric
+          // id here the page raced real contract state for that mission id
+          // and the rendered stage depended on RPC health — the other source
+          // of random E2E failures.
+          id: 'dummy',
           metadata: {
             name: 'Dummy Mission',
             description: 'This is a dummy mission',
@@ -165,9 +228,51 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
     return { notFound: true }
   }
 
-  // Check if mission is blocked
-  if (BLOCKED_MISSIONS.has(Number(tokenId))) {
+  // A mission may be hidden from public listings (BLOCKED_MISSIONS) yet still reachable
+  // on this page with an access code (GATED_MISSIONS) — used for a private, shareable
+  // end-to-end test of an unannounced mission. A blocked-but-not-gated mission stays
+  // fully 404'd.
+  const missionIdNum = Number(tokenId)
+  const isGated = GATED_MISSIONS.has(missionIdNum)
+  if (BLOCKED_MISSIONS.has(missionIdNum) && !isGated) {
     return { notFound: true }
+  }
+  if (isGated) {
+    // Headers already set above via isGatedEarly; re-assert so any later
+    // middleware/helper cannot reintroduce a public cache policy.
+    setNoStoreHeaders(res)
+
+    const accessCode = process.env.MISSION_ACCESS_CODE
+    if (!accessCode) {
+      // Default-deny when the deploy hasn't been configured with an access code,
+      // so a misconfigured environment can't accidentally expose the mission via
+      // a fallback string committed to source.
+      return { notFound: true }
+    }
+
+    const cookies = parseCookies(req?.headers?.cookie)
+    const queryAccess =
+      typeof query?.access === 'string' ? query.access : undefined
+    const provided = queryAccess || cookies['mission_access']
+    if (provided !== accessCode) {
+      return { notFound: true }
+    }
+    // Persist access so tab/query navigation works without re-passing ?access=.
+    res.setHeader(
+      'Set-Cookie',
+      `mission_access=${accessCode}; Path=/; Max-Age=604800; SameSite=Lax`
+    )
+    // If the code came in on the query string, redirect to the bare mission URL
+    // so the secret is stripped from the address bar, browser history, and any
+    // referrer headers sent by resources the mission page loads.
+    if (queryAccess) {
+      return {
+        redirect: {
+          destination: `/mission/${tokenId}`,
+          permanent: false,
+        },
+      }
+    }
   }
 
   const maxAttempts = 3
@@ -219,14 +324,18 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query, re
             })
           : Promise.resolve(undefined)
 
-      const metadata = await fetchFromIPFSWithFallback(ipfsHash).catch((error: any) => {
-        console.warn('All IPFS gateways failed:', error)
-        return {
-          name: 'Mission Loading...',
-          description: 'Metadata is loading...',
-          logoUri: '',
+      // Longer per-gateway timeout on SSR — 3s was too aggressive from Vercel
+      // regions and left mission pages stuck on the "Mission Loading..." fallback.
+      const metadata = await fetchFromIPFSWithFallback(ipfsHash, 8000).catch(
+        (error: any) => {
+          console.warn('All IPFS gateways failed:', error)
+          return {
+            name: 'Mission Loading...',
+            description: 'Metadata is loading...',
+            logoUri: '',
+          }
         }
-      })
+      )
 
       const tokenData = await fetchTokenMetadata(contractData.tokenAddress, chain)
 

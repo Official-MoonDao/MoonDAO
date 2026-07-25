@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 
 /**
  * False on the server and on the first client render; true after mount.
@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 export function useClientHydrated(): boolean {
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
-    setHydrated(true)
+    startTransition(() => setHydrated(true))
   }, [])
   return hydrated
 }

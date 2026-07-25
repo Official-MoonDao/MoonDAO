@@ -1,5 +1,4 @@
-import { MOONDAO_ARBITRUM_TREASURY, MOONDAO_TREASURY } from 'const/config'
-import { v4 } from 'uuid'
+import { MAX_BUDGET_USD, MOONDAO_ARBITRUM_TREASURY, MOONDAO_TREASURY } from 'const/config'
 
 export function formatNumberUSStyle(n: string | number | bigint, compact: boolean = false) {
   return new Intl.NumberFormat('en-US', {
@@ -8,63 +7,116 @@ export function formatNumberUSStyle(n: string | number | bigint, compact: boolea
   }).format(n as any)
 }
 
-export const TEMPLATE = `\n*Note: Please remove the italicized instructions before submitting*\n
+/** Markdown project proposal template shown to authors and used as the canonical form. */
+export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): string {
+  const maxFormatted = maxBudgetUsd.toLocaleString('en-US')
+
+  return `\n*Note: Please remove the italicized instructions before submitting. Incomplete Key Results, missing Novelty & Prior Art, or asks above the quarterly max will be returned for rewrite.*\n
 
 **Author:**
+**Discord:**
 **Date:**
+**Other proposals from this Lead this quarter:** *None / list titles — one primary ask per Lead per quarter is strongly preferred.*
 
 # Abstract
 
-*This is a high-level description of the idea. Please use ELI5 (explain like I’m five years old) wording and summarize things for anyone to understand what you want to achieve.*
+*This is a high-level description of the idea. Use ELI5 wording. Summarize what you will deliver in this quarter and how it advances lunar settlement.*
 
 # Problem
 
-*Describe the problem your proposal solves.*
+*Describe the specific problem. Avoid vague “space is hard” framing. If MoonDAO has funded related work before, acknowledge it and explain what is new—do not claim a false “first” or “never funded.”*
+
+**If this is hardware / a product (required):**
+1. *What exact operational failure happens today (who, when, environment)?*
+2. *Why are commercial off-the-shelf (COTS) tools insufficient—especially in micro‑g / suit / vacuum / lunar conditions?*
+3. *What is novel relative to COTS + prior art?*
 
 # Solution
 
-*Describe the “meat & potatoes” of the proposal. Go into necessary detail about the work that needs to be done, alternative solutions considered, open questions, and future directions. Keep it concise.*
+*Describe the work that will be done this quarter. Keep scope to inspectable deliverables. Note open questions and future directions separately from funded objectives. Do not list entity formation or buying a general computer as solutions.*
+
+**If success depends on a partner** *(university, launch provider, facility, platform):* *Name them and attach LOI, quote, ICD, or access MOU before the vote.*
+
+# Novelty & Prior Art
+
+*Required. “This is innovative” without citations is not enough.*
+
+**What already exists?**
+*List the most relevant public prior art: papers, NASA/ESA/agency docs, open tools/datasets, commercial products, and prior MoonDAO projects. Link where possible.*
+
+**What is new about this project?**
+*State the specific deliverable or question that prior work does not already provide (new method, open pack for MoonDAO, integration, audience, test, etc.).*
+
+**Why not just use the existing work?**
+*Explain why pointing members at the citations above is insufficient for MoonDAO’s need this quarter.*
+
+**Honesty check**
+*If your contribution is mainly synthesis, translation, localization, education, or packaging of known ideas, say so. Do not claim “first ever,” “no open methodology exists,” or “completely unique” unless you can defend it against the literature.*
+
+# Lunar Bridge
+
+*Required. In 3–5 sentences, explain how this quarter’s outputs change MoonDAO’s path to a sustained human presence on the Moon. LEO tourism, generic STEAM branding, or “space is inspiring” alone are not enough.*
+
+# Community Standing
+
+*Briefly: How have you engaged with MoonDAO in the last 1–2 quarters (Discord, Town Halls, prior contributions)? If you lead an adjacent org, what ongoing bridge work exists beyond this funding ask? MoonDAO prefers builders who participate—not parachute treasury asks.*
 
 # Benefits
 
-*Point out the core benefits of the proposal implementation and how it will affect MoonDAO. If the proposal can create revenue please create justification for how much revenue it could generate.*
+*Core benefits for MoonDAO members and the mission. If you claim revenue potential, separate long-term upside from what this grant actually buys. Do not promise megaproject outcomes from a single quarterly ask.*
 
 # Risks
 
-*Highlight any risks from implementing the proposal, how could this go wrong? How are you addressing those risks?*
+*Highlight risks (technical, schedule, partner dependency, safety, collaboration method). How are you mitigating them? Prefer a named synthesizer with named reviewers, or a team that already works together, over assembling ad-hoc contributors after funding for technical design.*
 
 # Objectives
 
-*You can write as many OKRs as you think are needed. One focused goal is preferred instead of many. OKRs should use SMART principles (Specific, Measurable, Achievable, Relevant, and Time-Bound).*
+*Prefer one focused objective. OKRs must use SMART principles. Key Results cannot be empty.*
 
-**Objective \#1:** *What do you want to achieve with this project. Be specific.*  
-**Key Results for Objective \#1**: 
+**Objective #1:** *What will exist at the end of this project that does not exist today?*
 
-- *What is a measurable result that indicates this objective has been met?*  
-- *Include 3-4 relevant metrics that indicate success for the objective*
+**Key Results for Objective #1:**
 
-**Member(s) responsible for OKR** **and their role:**
+- *Measurable result #1 (artifact, metric, or demo)*
+- *Measurable result #2*
+- *Measurable result #3*
 
-- *Is there a specific member or set of members that are responsible for this particular objective? If all of them are responsible for this just say “All”*
+**Member(s) responsible for OKR and their role:**
+
+- *Name / role*
+
+**Non-goals this quarter:**
+- *Explicitly list what you will not build (e.g. full habitat design, flight hardware, company formation).*
 
 # Team (Table A)
 
 ***Project Lead:** The Project Lead and representative for the project within the MoonDAO Senate. The Project Lead is responsible for:*
 
-1. *Attending weekly town hall meetings, reviewing incoming proposals and voting on them within the Senate. Missed attendance will result in a 5% penalty to the rocketeer’s retroactive rewards.*  
-2. *Creating weekly updates to the community on the progress of the project in the “progress” channel on DIscord.*  
-3. *Adding team members, removing team members, and making decisions about the use of the budget throughout the lifetime of the project.*  
+1. *Attending weekly town hall meetings, reviewing incoming proposals and voting on them within the Senate. Missed attendance will result in a 5% penalty to the rocketeer’s retroactive rewards.*
+2. *Creating weekly updates to the community on the progress of the project in the “progress” channel on Discord.*
+3. *Adding team members, removing team members, and making decisions about the use of the budget throughout the lifetime of the project.*
 4. *Managing the multi-sig Treasury for the project as well as the payments for each of the members.*
 5. *Creating the Final Report and returning unused funds to the MoonDAO Treasury.*
 
-***Initial Team:** Projects may not need an initial team. It can just be an individual submitting a proposal. You may also create generic roles and hire other teammates after the project is approved. As a general rule of thumb, try to keep teams small and focused in the beginning, **with clear roles, deliverables, and OKRs for each member**. Team members are responsible for:*
+***Same-type prior work (required):** For each major deliverable, link prior work of that same type (e.g. prior course if promising a course; prior device build if promising hardware; prior report if promising a study). Domain expertise alone is not enough.*
 
-1. *Posting a weekly update in the “progress” channel on Discord with their contributions that week. Not posting a weekly update will result in a 5% penalty to their retroactive rewards.*
+***Initial Team:** Keep teams small and focused, with clear roles and deliverables. Prefer people who already work together over recruiting contributors after funding for technical brainstorms.*
 
 | Project Lead | *@DiscordUsername* |
 | :---- | :---- |
 | **Initial Team** | *Role 1: “Developer” @DiscordUsername1: eth:0x0...1. “Description of the role and deliverable for this member” Role 2: “Designer” @DiscordUsername2: eth:0x0...2. “Description of the role and deliverable for this member”* |
-| **Multi-sig signers\*** | *Five required with their ETH addresses listed. “@DiscordUsername1: eth:0x0...1” “@DiscordUsername2: eth:0x0...2” “@DiscordUsername3: eth:0x0...3” “@DiscordUsername4: eth:0x0...4” “@DiscordUsername5: eth:0x0...5” Multi-sig will be automatically created after proposal is submitted. |
+| **Same-type prior work links** | *Deliverable → link to prior same-type work* |
+| **Multi-sig signers\\*** | *Five required with their ETH addresses listed. “@DiscordUsername1: eth:0x0...1” … Multi-sig will be automatically created after proposal is submitted.* |
+
+# Intellectual Property
+
+*Required. Choose one and fill in details.*
+
+- **Open (default):** Creative Commons / open-source license: *e.g. CC BY 4.0 / MIT*
+- **Retained / patented:** *What the Lead or company keeps; what MoonDAO and the public still receive (report, demo, limited license, open subsets).*
+- **Mixed:** *Describe the split.*
+
+*Undisclosed proprietary lock-up is not acceptable. Retained IP is allowed when stated upfront with clear community-facing outputs.*
 
 # Timeline (Table B)
 
@@ -72,23 +124,59 @@ export const TEMPLATE = `\n*Note: Please remove the italicized instructions befo
 | :---- | :---- |
 | 0 | Proposal Passes |
 | 7 | *Insert your milestones here.* |
-|  |  |
+| 30 |  |
+| 60 |  |
+| 90 | *Final deliverables, Town Hall presentation, return unused funds* |
 
-**Deadline for the project: End of Q3.**
+**Deadline for the project:** *End of the funded quarter (confirm on the Project System page).*
 
-# Transactions (Table C)
+# Budget (Table C)
 
-*Please write out the specific transactions that need to be executed if this proposal passes. Please include the exact amount and token type and the receiving address (this is the multi-sig if there is more than one transaction that needs to be executed throughout the lifetime of this project.)*
+*Total ask must be ≤ **$${maxFormatted}** (1/5 of this quarter’s project budget — confirm the live figure on moondao.com/propose). Classify every dollar.*
+
+**What MoonDAO funds:** labor for inspectable deliverables, and specialized equipment/services the work uniquely needs (with ownership/access terms).
+
+**What MoonDAO does not fund:** general computers/monitors/printers/furniture; LLC/sole-prop formation; re-registration, or private company runway bailouts.
+
+| Description | Class (A–E) | Amount (USD) | Justification |
+| :---- | :---- | :---- | :---- |
+| *e.g. Lead labor — report + simulations* | *A = labor* | *$* | *Hours × rate; tied to which KR* |
+| *e.g. Specialized test fixture* | *B = specialized gear / DAO-retained tool* | *$* | *Why not ordinary personal kit; ownership/access terms* |
+| *Foundational PC / home office* | *C — not allowed* | *$0* | *Remove* |
+| *Entity formation / tax / bailout* | *D — not allowed* | *$0* | *Remove* |
+| *Other overhead* | *E* | *$* | *Scrutinize* |
+| **Total** |  | *≤ $${maxFormatted}* |  |
+
+*If success depends on a university, launch provider, or other partner: attach LOI, quote, or access MOU before the vote.*
+
+# Transactions (Table D)
+
+*Please write out the specific transactions that need to be executed if this proposal passes. Include the exact amount, token type, and receiving address (the multi-sig if there is more than one transaction over the project lifetime).*
 
 | Transaction Type | Amount | Token Type | Receiving Address |
 | :---- | :---- | :---- | :---- |
 | *Send* | *0* | *ETH* | *TBD* |
+
+# Pre-submit checklist
+
+- [ ] Ask ≤ posted quarterly max ($${maxFormatted})
+- [ ] All required sections completed; italicized instructions removed
+- [ ] Key Results are non-empty and testable
+- [ ] Budget justified and within allowed categories
+- [ ] Team, timeline, and IP disclosure filled in
+- [ ] Only one primary proposal from this Lead this quarter
+- [ ] Supporting docs attached if the plan depends on partners
+- [ ] Scope limited to this quarter’s inspectable deliverables
 `
+}
+
+/** @deprecated Prefer getProposalTemplate(MAX_BUDGET_USD) so the max stays current. */
+export const TEMPLATE = getProposalTemplate()
 
 export const FINAL_REPORT_TEMPLATE = `
 *The title of the project will be included at the top of the file."
 
-*\*Please read [Projects System v6: Completion](https://docs.moondao.com/Projects/Project-System#completion) before submitting to understand the process of submitting a project final report. When ready, download this doc as a markdown file (File \> Download \> Markdown (.md)) and then upload and submit it at [https://moondao.com/report](https://moondao.com/report)*
+*\\*Please read [Projects System v6: Completion](https://docs.moondao.com/Projects/Project-System#completion) before submitting to understand the process of submitting a project final report. When ready, download this doc as a markdown file (File \\> Download \\> Markdown (.md)) and then upload and submit it at [https://moondao.com/report](https://moondao.com/report)*
 
 ## Original Proposal
 
@@ -114,14 +202,14 @@ export const FINAL_REPORT_TEMPLATE = `
    2. **Key Result**: *Original key result as it appears in your initial proposal.*  
       **Results**: *The actual quantitative result or a link to the work completed.*
 
-   **Grade (Do not fill out \- Exec Leads will review):** *Overall Grade For The Objective*  
-      *Superb \= This is reserved for if the project went incredibly well without any flaws and vastly surpassed all original metrics. Very few projects will meet this grade.*
+   **Grade (Do not fill out \\- Exec Leads will review):** *Overall Grade For The Objective*  
+      *Superb \\= This is reserved for if the project went incredibly well without any flaws and vastly surpassed all original metrics. Very few projects will meet this grade.*
 
-   *Exceeds Expectations \= Did better than expected. The team surpassed expectations and went above and beyond the original scope of the project.*
+   *Exceeds Expectations \\= Did better than expected. The team surpassed expectations and went above and beyond the original scope of the project.*
 
-   *Meets Expectations \= The project met all its original goals and sufficiently hit all the criteria.*
+   *Meets Expectations \\= The project met all its original goals and sufficiently hit all the criteria.*
 
-   *Does Not Meet Expectations \= The project did not achieve its original goal.*
+   *Does Not Meet Expectations \\= The project did not achieve its original goal.*
 
 ## Member Contributions
 
@@ -139,7 +227,7 @@ export const FINAL_REPORT_TEMPLATE = `
 
 | Member Name | % of total rewards | Upfront Payment Received | Wallet to receive ETH |
 | :---- | :---- | :---- | :---- |
-| *@TeamMemberName* | *21%* | *3,000 DAI, 50,000 MOONEY* |  |
+| *@TeamMemberName* | *21%* | *3,000 DAI, 50,000 MOONEY* |  |
 
 ## Treasury Transparency (Table B)
 
@@ -152,5 +240,5 @@ export const FINAL_REPORT_TEMPLATE = `
 
 | Txn Title | Reason | Amount | Recipient | Etherscan Link or Gnosis Link | Deliverable |
 | :---- | :---- | :---- | :---- | :---- | :---- |
-| Legal Retainer | Retainer for contract lawyer | 3,000 DAI | Lawyers Inc. | **\<link\>** | **\<link\>** or if nothing to show please include a description of what was delivered. |
+| Legal Retainer | Retainer for contract lawyer | 3,000 DAI | Lawyers Inc. | **\\<link\\>** | **\\<link\\>** or if nothing to show please include a description of what was delivered. |
 `
