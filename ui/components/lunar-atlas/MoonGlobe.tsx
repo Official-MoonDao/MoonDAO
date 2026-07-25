@@ -378,6 +378,13 @@ export default function MoonGlobe({
     }
   }, [])
 
+  // Clear a pending wheel-idle timeout so unmount during zoom cannot setState.
+  useEffect(() => {
+    return () => {
+      if (wheelTimer.current) clearTimeout(wheelTimer.current)
+    }
+  }, [])
+
   const handleWheel = () => {
     setUserInteracting(true)
     if (wheelTimer.current) clearTimeout(wheelTimer.current)

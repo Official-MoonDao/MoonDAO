@@ -89,7 +89,13 @@ export function projectStateAtYear(
     // Undated project: always present, treated as planned.
     return { revealed: true, status: 'planned' }
   }
-  if (currentYear < range.earliest) {
+  // Integer scrubber years cover the whole calendar year (month-dated
+  // milestones like "2025-06" must count as reached at scrubber year 2025).
+  // Fractional currentYear keeps month/day ordering within a year.
+  const earliest = Number.isInteger(currentYear)
+    ? Math.floor(range.earliest)
+    : range.earliest
+  if (currentYear < earliest) {
     return { revealed: false, status: 'future' }
   }
 
@@ -97,7 +103,11 @@ export function projectStateAtYear(
   // displayed status; ties fall back to the whole set.
   const reached = project.milestones
     .map((m) => ({ m, y: parseAtlasYear(m.targetDate) }))
-    .filter((x): x is { m: Milestone; y: number } => x.y != null && x.y <= currentYear)
+    .filter((x): x is { m: Milestone; y: number } => {
+      if (x.y == null) return false
+      const y = Number.isInteger(currentYear) ? Math.floor(x.y) : x.y
+      return y <= currentYear
+    })
     .sort((a, b) => a.y - b.y)
 
   const active = reached.length ? reached[reached.length - 1].m : undefined
