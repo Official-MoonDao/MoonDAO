@@ -237,6 +237,45 @@ describe('moonbase connecting-ridge terrain', () => {
       expect(meshHeightMeters(field, GRID, s, t)).to.be.lessThan(1)
     })
 
+    // buildCapGeometry splits each cell along the b-c anti-diagonal, so the
+    // rendered ground is two FLAT triangles per cell. Bilinear interpolation
+    // (the intuitive thing to write) is a curved saddle that touches those
+    // triangles only at the nodes, so it floated or sank objects by the saddle
+    // term — several centimeters on real ridge terrain.
+    it('interpolates on the rendered triangle, not bilinearly', () => {
+      // Pure saddle over one cell: corners 0, 1, 1, 0 make the two terms
+      // maximally disagree at the cell center.
+      const grid = 2
+      const size = grid + 1
+      const field = makeField(size, 0, 100, (x, y) =>
+        (x + y) % 2 === 0 ? 0 : 65535
+      )
+      const nodeH = (ix: number, iy: number) =>
+        meshHeightMeters(field, grid, ix / grid - 0.5, 0.5 - iy / grid)
+      const a = nodeH(0, 0)
+      const b = nodeH(1, 0)
+      const c = nodeH(0, 1)
+      const d = nodeH(1, 1)
+      // Center of cell (0,0): fx = fy = 0.5, exactly on the b-c diagonal, so
+      // both triangles give the diagonal's midpoint (b + c) / 2.
+      const center = meshHeightMeters(field, grid, 0.25 - 0.5, 0.5 - 0.25)
+      expect(Math.abs(center - (b + c) / 2)).to.be.lessThan(1e-9)
+      // Bilinear would instead average all four corners.
+      const bilinear = (a + b + c + d) / 4
+      expect(Math.abs(center - bilinear)).to.be.greaterThan(10)
+
+      // A point inside the lower-left triangle (a, c, b) lies on ITS plane.
+      const fx = 0.2
+      const fy = 0.3
+      const got = meshHeightMeters(
+        field,
+        grid,
+        (0 + fx) / grid - 0.5,
+        0.5 - (0 + fy) / grid
+      )
+      expect(Math.abs(got - (a + (b - a) * fx + (c - a) * fy))).to.be.lessThan(1e-9)
+    })
+
     it('capRadiusAt agrees with heightToRadius(meshHeightMeters) at a lat/lon', () => {
       const field = makeField(64, -500, 2000, (x, y) =>
         ((x * 13 + y * 7) * 331) % 65536
@@ -269,12 +308,13 @@ describe('moonbase connecting-ridge terrain', () => {
 
     it('places every vertex on its spherical direction at the sampled height', () => {
       const grid = 4
-      const { positions } = buildCapGeometry(field, grid)
+      const { positions, origin } = buildCapGeometry(field, grid)
       for (let i = 0; i < positions.length; i += 3) {
+        // Positions are relative to `origin` (the mesh transform carries it).
         const v: [number, number, number] = [
-          positions[i],
-          positions[i + 1],
-          positions[i + 2],
+          positions[i] + origin[0],
+          positions[i + 1] + origin[1],
+          positions[i + 2] + origin[2],
         ]
         const r = Math.hypot(...v)
         const ll = vector3ToLatLon(v)
@@ -284,6 +324,25 @@ describe('moonbase connecting-ridge terrain', () => {
         // Deep southern hemisphere, always.
         expect(ll.lat).to.be.lessThan(-89)
       }
+    })
+
+    // Vertices MUST stay near zero. A scene unit is ~869 km, so a float32
+    // attribute holding absolute (magnitude ~2) positions can only resolve
+    // ~21 cm — enough to float seated models, and enough for the vertex
+    // shader's modelViewMatrix product to re-round differently every time the
+    // camera moves, which makes the whole landscape jitter.
+    it('keeps vertices near the origin so float32 resolves millimeters', () => {
+      const { positions, origin } = buildCapGeometry(field, 8)
+      expect(Math.hypot(...origin)).to.be.greaterThan(GLOBE_RADIUS * 0.9)
+      let maxComponent = 0
+      for (const v of positions) maxComponent = Math.max(maxComponent, Math.abs(v))
+      // Half the patch (8 km) is ~0.0092 units; allow slack for relief.
+      expect(maxComponent).to.be.lessThan(0.02)
+      // Float32 spacing at that magnitude, in meters.
+      const exp = Math.floor(Math.log2(maxComponent))
+      const stepM =
+        Math.pow(2, exp - 23) * (MOON_RADIUS_M / GLOBE_RADIUS)
+      expect(stepM).to.be.lessThan(0.005)
     })
   })
 })

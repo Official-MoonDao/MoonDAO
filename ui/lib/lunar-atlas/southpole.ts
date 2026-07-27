@@ -162,10 +162,16 @@ function nodeST(grid: number, ix: number, iy: number): { s: number; t: number } 
 }
 
 // Height (meters) as the *rendered mesh* shows it: the mesh only has heights
-// at its grid-lattice nodes and blends linearly in between, so features
+// at its grid-lattice nodes and is flat across each triangle, so features
 // smaller than the node spacing don't exist in the rendered ground. Sampling
 // texels directly would disagree with the visible surface and float/sink
 // seated objects.
+//
+// This evaluates the SAME triangle the GPU rasterizes. Bilinear interpolation
+// across the quad — the obvious thing to write — is a curved (saddle) surface
+// that the flat triangles never touch except at the nodes, so it left objects
+// hovering or dug in by the saddle term wherever the ground was not planar.
+// buildCapGeometry splits each cell along the b–c anti-diagonal (fx + fy = 1).
 export function meshHeightMeters(
   field: PolarHeightField,
   grid: number,
@@ -183,9 +189,17 @@ export function meshHeightMeters(
     const n = nodeST(grid, cl(ix), cl(iy))
     return sampleFieldMeters(field, n.s, n.t)
   }
-  const top = at(x0, y0) * (1 - fx) + at(x0 + 1, y0) * fx
-  const bottom = at(x0, y0 + 1) * (1 - fx) + at(x0 + 1, y0 + 1) * fx
-  return top * (1 - fy) + bottom * fy
+  // Cell corners, matching buildCapGeometry's naming.
+  const a = at(x0, y0) // (0, 0)
+  const b = at(x0 + 1, y0) // (1, 0)
+  const c = at(x0, y0 + 1) // (0, 1)
+  if (fx + fy <= 1) {
+    // Triangle (a, c, b): plane through the fx=fy=0 corner.
+    return a + (b - a) * fx + (c - a) * fy
+  }
+  // Triangle (b, c, d): plane through the far corner.
+  const d = at(x0 + 1, y0 + 1) // (1, 1)
+  return d + (c - d) * (1 - fx) + (b - d) * (1 - fy)
 }
 
 // Rendered terrain radius (scene units) at a lat/lon inside the patch.
@@ -204,13 +218,31 @@ export function capRadiusAt(
 // ---------------------------------------------------------------------------
 
 export type CapGeometry = {
-  positions: Float32Array // (grid+1)^2 xyz triplets
+  // (grid+1)^2 xyz triplets, RELATIVE to `origin` — see buildCapGeometry.
+  positions: Float32Array
   uvs: Float32Array // (grid+1)^2 uv pairs, matching the baked textures
   indices: Uint32Array
+  // World offset the positions are measured from. The mesh must be placed
+  // here for the vertices to land in the right part of the world.
+  origin: Vec3
 }
 
 // Builds the patch mesh: a regular (grid+1)^2 lattice over the square, each
 // node projected onto its spherical direction at the exact decoded height.
+//
+// Positions are stored RELATIVE TO THE PATCH CENTER, and the caller puts that
+// offset on the mesh's transform. This is not a nicety — it is required for
+// the ground to be stable. A scene unit here is 868 km (GLOBE_RADIUS = 2 over
+// a 1737 km Moon), so absolute vertices sit at magnitude ~2, where a float32
+// attribute can only resolve steps of 2^-22 units ≈ 21 CENTIMETERS. That
+// alone floats seated models, and it gets worse on the GPU: with absolute
+// vertices the vertex shader computes `modelViewMatrix * position` as the
+// difference of two magnitude-2 quantities to get a small camera-relative
+// result — catastrophic cancellation, re-rounded differently every time the
+// camera moves, so the whole landscape jitters against the models standing on
+// it. Relative to the center the vertices span only ±0.01 units, where
+// float32 resolves sub-millimeter, and the object transform carries the large
+// offset in float64 on the CPU.
 export function buildCapGeometry(
   field: PolarHeightField,
   grid: number
@@ -219,6 +251,10 @@ export function buildCapGeometry(
   const positions = new Float32Array(side * side * 3)
   const uvs = new Float32Array(side * side * 2)
 
+  const c = capCenterDirection()
+  const cr = heightToRadius(CAP_CENTER_HEIGHT_M)
+  const origin: Vec3 = [c[0] * cr, c[1] * cr, c[2] * cr]
+
   for (let iy = 0; iy < side; iy++) {
     for (let ix = 0; ix < side; ix++) {
       const { s, t } = nodeST(grid, ix, iy)
@@ -226,9 +262,10 @@ export function buildCapGeometry(
       const ll = stToLatLon(s, t)
       const dir = latLonToVector3(ll.lat, ll.lon, 1)
       const i3 = (iy * side + ix) * 3
-      positions[i3] = dir[0] * r
-      positions[i3 + 1] = dir[1] * r
-      positions[i3 + 2] = dir[2] * r
+      // Differenced in float64, so only the small result is rounded to f32.
+      positions[i3] = dir[0] * r - origin[0]
+      positions[i3 + 1] = dir[1] * r - origin[1]
+      positions[i3 + 2] = dir[2] * r - origin[2]
       const i2 = (iy * side + ix) * 2
       // flipY-style UVs: v = 1 at the image's top row (t = +0.5).
       uvs[i2] = 0.5 + s
@@ -253,5 +290,5 @@ export function buildCapGeometry(
     }
   }
 
-  return { positions, uvs, indices }
+  return { positions, uvs, indices, origin }
 }

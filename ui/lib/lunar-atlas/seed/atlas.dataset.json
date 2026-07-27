@@ -190,7 +190,6 @@
       "orgId": "nasa",
       "name": "Artemis Base Camp",
       "type": "crewed_base",
-      "modelURI": "/moonbase/models/habitat-demo-unit.glb",
       "summary": "NASA's planned sustained surface habitation at the lunar South Pole, including a foundation surface habitat, mobility (LTV and habitable mobility platform), and power — the anchor of a long-term human presence.",
       "location": {
         "lat": -89.5,
@@ -361,7 +360,6 @@
       "orgId": "intuitive-machines",
       "name": "Moon RACER LTV",
       "type": "rover",
-      "modelURI": "/moonbase/models/perseverance-rover.glb",
       "summary": "Intuitive Machines' Moon RACER unpressurized rover, offered for NASA's LTV Services contract to carry Artemis crews across the South Pole and operate autonomously between missions.",
       "location": {
         "lat": -88.6,
@@ -444,7 +442,6 @@
       "orgId": "lunar-outpost",
       "name": "Lunar Voyager LTV",
       "type": "rover",
-      "modelURI": "/moonbase/models/perseverance-rover.glb",
       "summary": "The Lunar Dawn team's Lunar Voyager rover, led by Lunar Outpost, offered for NASA's LTV Services contract to support crewed South Pole mobility and robotic operations.",
       "location": {
         "lat": -89.1,
@@ -669,7 +666,6 @@
       "orgId": "blue-origin",
       "name": "Blue Alchemist ISRU",
       "type": "isru_plant",
-      "modelURI": "/moonbase/models/rassor.glb",
       "summary": "A process to manufacture solar cells and oxygen from lunar regolith simulant, aimed at powering and sustaining a surface presence with in-situ resources.",
       "location": {
         "lat": -88,

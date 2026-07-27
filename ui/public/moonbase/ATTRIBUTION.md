@@ -19,9 +19,9 @@ Models marked "optimized" were Draco-compressed with `@gltf-transform`
 | `apollo-lunar-module.glb` | Apollo Lunar Module (NASA) | Artemis III (crewed-lander stand-in) |
 | `viking-lander.glb` | Viking Lander (NASA) | Blue Moon MK1 cargo lander (stand-in) |
 | `insight-lander.glb` (optimized) | InSight Cruise Lander (NASA) | Blue Moon MK2 crewed lander (stand-in) |
-| `perseverance-rover.glb` | Mars 2020 Perseverance Rover (NASA) | Moon RACER LTV, Lunar Voyager LTV, NASA LTV (rover stand-ins) |
-| `rassor.glb` | RASSOR (Regolith Advanced Surface Systems Operations Robot) (NASA) | Blue Alchemist ISRU |
-| `habitat-demo-unit.glb` | Habitat Demonstration Unit (NASA) | Artemis Base Camp |
+| `perseverance-rover.glb` | Mars 2020 Perseverance Rover (NASA) | NASA LTV (rover stand-in) |
+| `rassor.glb` | RASSOR (Regolith Advanced Surface Systems Operations Robot) (NASA) | Not currently rendered — the ISRU site uses a procedural solar-thermal plant. Kept because the file ships in `public/`. |
+| `habitat-demo-unit.glb` | Habitat Demonstration Unit (NASA) | Not currently rendered — Artemis Base Camp is a procedural camp (domes, habitat, PV farm). Kept because the file ships in `public/`. |
 | `astronaut.glb` | Astronaut (NASA) | Crew companion on crewed sites |
 
 `starship-hls.glb` was produced from the full ship-24 + booster-7 stack by

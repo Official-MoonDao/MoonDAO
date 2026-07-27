@@ -6,11 +6,11 @@
 // prediction-market/race view; picking a competitor there swaps the generic
 // model for that company's specific model (e.g. lander site → Blue Moon MK2)
 // and recolors the beacon with the org's brand color. Pins on the far side of
-// the Moon fade out; dots recede as the camera closes in so the models read.
+// the Moon fade out; beacons recede as the camera closes in so the models read.
 
 import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { MOON_RADIUS_M, vector3ToLatLon, Vec3 } from '@/lib/lunar-atlas/geo'
 import { PROJECT_TYPE_LABEL, orgColor } from '@/lib/lunar-atlas/display'
@@ -22,7 +22,7 @@ import type {
   Project,
   ProjectType,
 } from '@/lib/lunar-atlas/types'
-import ProjectModel, { hasLandingPad, projectSizeM } from './ProjectModel'
+import ProjectModel, { gradedDeckRadiusM, projectSizeM } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
 // The competitor a tech-tree site shows by default: the front-runner by market
@@ -62,30 +62,33 @@ type MarkerLayerProps = {
 // Offsets above the local terrain (which the sampler provides per marker),
 // in REAL METERS — the base is true-to-scale on the 16 km ridge patch.
 const SEAT_LIFT = 0.5 * M_TO_UNITS // clears z-fighting with the terrain
-// Pins are sized to the model they mark: the dot floats just above the
+// Pins are sized to the model they mark: the reticle floats just above the
 // asset (a 4.5 m rover gets a ~25 m pin, the 52 m Starship a ~68 m one).
-// One fixed height either buried the dot inside tall models or dwarfed
+// One fixed height either buried the reticle inside tall models or dwarfed
 // the small ones.
 const MIN_PIN_HEIGHT_M = 25
 const pinHeightUnits = (modelSizeM: number) =>
   Math.max(MIN_PIN_HEIGHT_M, modelSizeM * 1.3) * M_TO_UNITS
-const DOT_RADIUS = 3 * M_TO_UNITS
-// As the camera closes in, dots fade so the detailed on-surface models take
-// over (findability beacons far, physical builds near). The site drill-in
-// parks the camera ~75-80 m out, so NEAR sits just above that: a dot still
-// half-opaque at that range is a translucent balloon washing over the very
-// model the user clicked to see. The home view sits ~140-225 m from the
-// various dots, where they stay readable as click targets.
+// Beacon dimensions, in REAL METERS. These are deliberately hairline: at true
+// scale the old pin was a 1.4 m-thick opaque rod under a 6 m emissive ball —
+// a plastic lollipop the size of a small building, which is what made the
+// markers read as toys next to photoreal hardware. A map marker should be
+// instrument-like, so the beacon is now a thin billboarded reticle on a
+// tether that dissolves toward the ground instead of a solid mast.
+const HEAD_RADIUS = 3.4 * M_TO_UNITS
+const STEM_RADIUS = 0.16 * M_TO_UNITS
+// As the camera closes in, beacons fade so the detailed on-surface models take
+// over (findability markers far, physical builds near). The site drill-in
+// parks the camera ~75-80 m out, so NEAR sits just above that: a beacon still
+// half-opaque at that range hangs over the very model the user clicked to see.
+// The home view sits ~140-225 m out, where beacons stay readable as targets.
 const FADE_NEAR = 90 * M_TO_UNITS
 const FADE_FAR = 150 * M_TO_UNITS
-// The highest rendered ground within a model's own ground footprint. Sampling
-// the *center* alone would bury a model's uphill edge on a slope, so the seat
-// is the footprint maximum — but the footprint must be the model's real size.
-// A fixed 30 m radius (the old value, sized for the largest pad) spans two
-// 15.6 m terrain cells, so it picked up relief a 4.5 m rover never covers and
-// left it visibly hovering. At true scale most assets are smaller than one
-// terrain cell, so their footprint max is within centimeters of the center
-// height and they simply sit on the ground.
+// The highest rendered ground within a footprint. Only the padded lander uses
+// this: a rigid pad cannot sink into a slope, so it rests on the high point and
+// its skirt covers the gap on the downhill side. Everything else seats on the
+// ground directly beneath it — taking the footprint maximum there just lifts
+// the model by the terrain's relief, with no skirt to hide the daylight.
 function footprintSeatRadius(
   d: THREE.Vector3,
   radiusAt: RadiusAt,
@@ -143,7 +146,7 @@ function TechTreeSite({
 }) {
   const { camera } = useThree()
   const groupRef = useRef<THREE.Group>(null)
-  const dotRef = useRef<THREE.Mesh>(null)
+  const headRef = useRef<THREE.Group>(null)
   const stemRef = useRef<THREE.Mesh>(null)
   const ringRef = useRef<THREE.Mesh>(null)
   const scaleRef = useRef(1)
@@ -151,14 +154,21 @@ function TechTreeSite({
   const { base, tip, ndir, seatRadius } = useMemo(() => {
     const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
     const sizeM = projectSizeM(displayProject)
-    // A padded lander is seated over its whole pad, whose skirt grades down
-    // across the footprint; an unpadded asset is seated over its own much
-    // smaller contact area so it meets the regolith rather than hovering.
-    const footprintM = sizeM * (hasLandingPad(displayProject) ? 0.6 : 0.35)
+    const ll = vector3ToLatLon([d.x, d.y, d.z])
+    // A model on a graded deck (a lander's pad, the construction apron) seats
+    // on the highest ground under that deck, whose skirt then grades down over
+    // the downhill side. Anything else has nothing to hide a gap with, so it
+    // seats on the ground directly beneath it: the footprint maximum would
+    // lift it by the terrain's relief across the footprint, which is exactly
+    // the "slightly floating" look. Bedding an edge a centimeter into regolith
+    // is invisible; hovering is not.
     // Until the height maps decode, fall back to the analytic sphere.
-    const ground = radiusAt
-      ? footprintSeatRadius(d, radiusAt, footprintM)
-      : GLOBE_RADIUS
+    const deckR = gradedDeckRadiusM(displayProject)
+    const ground = !radiusAt
+      ? GLOBE_RADIUS
+      : deckR !== null
+      ? footprintSeatRadius(d, radiusAt, deckR)
+      : radiusAt(ll.lat, ll.lon)
     const seat = ground + SEAT_LIFT
     const pinH = pinHeightUnits(sizeM)
     return {
@@ -189,19 +199,26 @@ function TechTreeSite({
     )
     const beaconOpacity = style.opacity * limb * proximity
 
-    // Ease dot scale toward its hover/selected target.
-    const target = selected ? 1.6 : hovered ? 1.35 : 1
+    // Ease the reticle scale toward its hover/selected target. Kept subtle:
+    // the reticle is a fixed-size instrument mark, so it grows just enough to
+    // acknowledge the pointer rather than ballooning.
+    const target = selected ? 1.35 : hovered ? 1.18 : 1
     scaleRef.current += (target - scaleRef.current) * (1 - Math.pow(0.001, delta))
-    if (dotRef.current) {
-      dotRef.current.scale.setScalar(scaleRef.current)
-      const mat = dotRef.current.material as THREE.MeshStandardMaterial
-      mat.opacity = beaconOpacity
-      mat.emissiveIntensity = (selected ? 2.4 : hovered ? 1.8 : 1.1) * limb
-      dotRef.current.visible = beaconOpacity > 0.02
+    const head = headRef.current
+    if (head) {
+      head.visible = beaconOpacity > 0.02
+      head.scale.setScalar(scaleRef.current)
+      head.lookAt(camera.position)
+      const emphasis = selected ? 1 : hovered ? 0.95 : 0.8
+      for (const child of head.children) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial
+        mat.opacity =
+          beaconOpacity * emphasis * (child.userData.alphaScale ?? 1)
+      }
     }
     if (stemRef.current) {
       const smat = stemRef.current.material as THREE.MeshBasicMaterial
-      smat.opacity = beaconOpacity * 0.6
+      smat.opacity = beaconOpacity * 0.85
       stemRef.current.visible = beaconOpacity > 0.02
     }
     if (ringRef.current) {
@@ -228,6 +245,36 @@ function TechTreeSite({
     return q
   }, [ndir])
 
+  // The tether carries a per-vertex alpha ramp: solid where it meets the
+  // reticle, dissolving as it descends so it never draws a hard line across
+  // the hardware it points at. Baking the ramp into the geometry keeps the
+  // material a plain MeshBasicMaterial — a vec4 color attribute is enough,
+  // no custom shader. Normal blending (not additive) so the accent color stays
+  // readable over bright regolith as well as against black sky.
+  const stemGeo = useMemo(() => {
+    const g = new THREE.CylinderGeometry(
+      STEM_RADIUS,
+      STEM_RADIUS * 2.2, // flares slightly where it meets the ground
+      stemLen,
+      8,
+      1,
+      true // open-ended: caps would show as bright discs end-on
+    )
+    const pos = g.attributes.position
+    const rgba = new Float32Array(pos.count * 4)
+    for (let i = 0; i < pos.count; i++) {
+      // Local y runs -len/2 (ground) to +len/2 (reticle).
+      const f = THREE.MathUtils.clamp(pos.getY(i) / stemLen + 0.5, 0, 1)
+      rgba[i * 4] = 1
+      rgba[i * 4 + 1] = 1
+      rgba[i * 4 + 2] = 1
+      rgba[i * 4 + 3] = Math.pow(f, 2.6)
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(rgba, 4))
+    return g
+  }, [stemLen])
+  useEffect(() => () => stemGeo.dispose(), [stemGeo])
+
   const handleHoverChange = (h: boolean) => onHover?.(h ? tree.category : null)
 
   return (
@@ -245,17 +292,26 @@ function TechTreeSite({
         />
       )}
 
-      {/* Stem */}
-      <mesh ref={stemRef} position={stemMid} quaternion={stemQuat}>
-        <cylinderGeometry
-          args={[0.7 * M_TO_UNITS, 0.7 * M_TO_UNITS, stemLen, 6]}
+      {/* Tether — hairline, fading out toward the ground (see stemGeo) */}
+      <mesh
+        ref={stemRef}
+        geometry={stemGeo}
+        position={stemMid}
+        quaternion={stemQuat}
+      >
+        <meshBasicMaterial
+          color={color}
+          vertexColors
+          transparent
+          opacity={style.opacity * 0.85}
+          depthWrite={false}
+          toneMapped={false}
         />
-        <meshBasicMaterial color={color} transparent opacity={style.opacity * 0.6} />
       </mesh>
 
       {/* Selection halo — billboarded, always drawn on top */}
       <mesh ref={ringRef} position={tip} visible={false} renderOrder={10}>
-        <ringGeometry args={[DOT_RADIUS * 2.4, DOT_RADIUS * 3.1, 48]} />
+        <ringGeometry args={[HEAD_RADIUS * 1.5, HEAD_RADIUS * 1.62, 64]} />
         <meshBasicMaterial
           color={color}
           transparent
@@ -267,18 +323,33 @@ function TechTreeSite({
         />
       </mesh>
 
-      {/* Glowing dot */}
-      <mesh ref={dotRef} position={tip}>
-        <sphereGeometry args={[DOT_RADIUS, 16, 16]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={1.1}
-          transparent
-          opacity={style.opacity}
-          toneMapped={false}
-        />
-      </mesh>
+      {/* Reticle: a thin ring around a small core, billboarded to the camera.
+          Flat rings read as precision instrumentation at any distance, where a
+          shaded sphere just reads as a ball of plastic. Depth-TESTED, so a
+          beacon behind the Starship is correctly hidden by it — only the
+          selection halo above is allowed to draw through geometry. */}
+      <group ref={headRef} position={tip}>
+        <mesh userData={{ alphaScale: 0.9 }}>
+          <ringGeometry args={[HEAD_RADIUS * 0.84, HEAD_RADIUS, 64]} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh userData={{ alphaScale: 1 }}>
+          <circleGeometry args={[HEAD_RADIUS * 0.3, 24]} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
 
       {/* Generous invisible hit target around the dot — the beacon itself is
           only a few pixels from orbit, far too small to click reliably. */}
@@ -299,7 +370,7 @@ function TechTreeSite({
           document.body.style.cursor = 'auto'
         }}
       >
-        <sphereGeometry args={[DOT_RADIUS * 4.5, 8, 8]} />
+        <sphereGeometry args={[HEAD_RADIUS * 4, 8, 8]} />
         <meshBasicMaterial
           transparent
           opacity={0}
@@ -316,7 +387,9 @@ function TechTreeSite({
           zIndexRange={[30, 0]}
           style={{ pointerEvents: 'none' }}
         >
-          <div className="-translate-y-5 whitespace-nowrap rounded border border-white/15 bg-black/75 px-1.5 py-0.5 text-center text-[10px] font-medium leading-tight text-white shadow-md backdrop-blur-sm">
+          {/* Lifted clear of the reticle and its selection halo, which are
+              centered on this same point. */}
+          <div className="-translate-y-10 whitespace-nowrap rounded border border-white/15 bg-black/75 px-1.5 py-0.5 text-center text-[10px] font-medium leading-tight text-white shadow-md backdrop-blur-sm">
             {label}
           </div>
         </Html>

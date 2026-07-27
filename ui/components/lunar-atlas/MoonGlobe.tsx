@@ -293,26 +293,70 @@ function CameraRig({
   return null
 }
 
+// Direction from the Moon's center toward the sun. MUST match SUN_AZ_DEG /
+// SUN_EL_DEG in the bake script (lon = azimuth, |lat| = elevation): cast
+// shadows falling a different way than the terrain's baked hillshade would
+// read instantly as fake. At the ridge this works out to a ~44.5° sun.
+const SUN_DIR = (() => {
+  const v = latLonToVector3(-45, 40, 1)
+  return new THREE.Vector3(v[0], v[1], v[2]).normalize()
+})()
+
+// The shadow-casting light is parked 2 km up the sun vector and aimed at the
+// base, rather than out at the real sun: a directional light's shadow map
+// spans its orthographic frustum, so keeping that frustum tight on the
+// settlement is what buys resolution. 400 m of frustum across a 4096 map is
+// ~10 cm per texel — fine enough for a rover's shadow to read as its own
+// silhouette. Ground outside the frustum is simply unshadowed, which is
+// correct here: the terrain's own large-scale shadows are already baked in.
+const SHADOW_LIGHT_DIST = 2000 * M_TO_UNITS
+const SHADOW_EXTENT = 400 * M_TO_UNITS
+
 // The models' sun. The terrain is UNLIT — its lighting is baked into the
 // albedo as hillshade (see build-southpole-assets.py and SouthPoleTerrain) —
-// so this light only shades the 3D installations and markers, and it sits
-// at the same lat/lon as the baked hillshade sun so model shading and
-// terrain shading agree.
+// so this light shades the 3D installations and casts their shadows, while
+// SouthPoleTerrain catches those shadows in a separate pass.
 function Sun() {
-  const dir = useMemo(() => {
-    // MUST match SUN_AZ_DEG / SUN_EL_DEG in the bake script (lon = azimuth,
-    // |lat| = elevation).
-    const v = latLonToVector3(-45, 40, 1)
-    return new THREE.Vector3(v[0], v[1], v[2]).multiplyScalar(GLOBE_RADIUS * 3)
+  // A directional light aims at its `target` object, which must be in the
+  // scene for its world matrix to update.
+  const target = useMemo(() => {
+    const o = new THREE.Object3D()
+    o.position.copy(HOME_TARGET)
+    return o
   }, [])
+  const lightPos = useMemo(
+    () => HOME_TARGET.clone().addScaledVector(SUN_DIR, SHADOW_LIGHT_DIST),
+    []
+  )
 
   return (
     <>
-      <directionalLight position={dir} intensity={2.6} color="#fff6ec" />
-      {/* Generous fill: this is a map first. The baked hillshade already
-          carries the darkness where it matters. */}
-      <hemisphereLight args={['#9aa2b5', '#4a4c52', 0.5]} />
-      <ambientLight intensity={0.35} />
+      <primitive object={target} />
+      <directionalLight
+        position={lightPos}
+        target={target}
+        intensity={3.1}
+        color="#fff6ec"
+        castShadow
+        shadow-mapSize-width={4096}
+        shadow-mapSize-height={4096}
+        shadow-camera-left={-SHADOW_EXTENT}
+        shadow-camera-right={SHADOW_EXTENT}
+        shadow-camera-top={SHADOW_EXTENT}
+        shadow-camera-bottom={-SHADOW_EXTENT}
+        shadow-camera-near={SHADOW_LIGHT_DIST * 0.6}
+        shadow-camera-far={SHADOW_LIGHT_DIST * 1.6}
+        // Offset along the surface normal rather than in depth: it kills
+        // shadow acne on the terrain's sloped cells without the peter-panning
+        // that a plain depth bias causes at contact points.
+        shadow-normalBias={0.35 * M_TO_UNITS}
+      />
+      {/* Airless fill. There is no atmosphere to scatter light on the Moon,
+          so a shadowed face is lit only by regolith bounce (albedo ~0.11) and
+          starlight — nearly black. The generous fill this used to carry is
+          what made the hardware look like plastic toys under a softbox. */}
+      <hemisphereLight args={['#8f9bb5', '#413f3a', 0.14]} />
+      <ambientLight intensity={0.07} />
     </>
   )
 }
@@ -328,7 +372,10 @@ function MetalEnvironment() {
     const pmrem = new THREE.PMREMGenerator(gl)
     const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
     scene.environment = env
-    scene.environmentIntensity = 0.7
+    // Just enough for stainless and foil to stop reading as black holes —
+    // any more and it doubles as ambient fill, flattening the hard lunar
+    // light the directional sun and shadows are there to create.
+    scene.environmentIntensity = 0.28
     return () => {
       scene.environment = null
       env.dispose()
@@ -387,6 +434,7 @@ export default function MoonGlobe({
   return (
     <Canvas
       dpr={[1, 2]}
+      shadows
       camera={{
         position: [DEFAULT_CAM.x, DEFAULT_CAM.y, DEFAULT_CAM.z],
         up: [HOME_UP.x, HOME_UP.y, HOME_UP.z],

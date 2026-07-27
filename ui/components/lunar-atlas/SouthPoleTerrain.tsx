@@ -28,17 +28,19 @@ import { loadInnerField } from './useTerrainSampler'
 // (camera tumble), not a click.
 const CLICK_DRAG_TOLERANCE_PX = 8
 
-function toBufferGeometry(
-  field: PolarHeightField,
-  grid: number
-): THREE.BufferGeometry {
+// The geometry plus the world offset its vertices are relative to (see
+// buildCapGeometry — the offset must go on the mesh transform, which three
+// keeps in float64, or the ground loses centimeters of precision and jitters).
+type CapMesh = { geometry: THREE.BufferGeometry; origin: THREE.Vector3 }
+
+function toBufferGeometry(field: PolarHeightField, grid: number): CapMesh {
   const cap = buildCapGeometry(field, grid)
   const geo = new THREE.BufferGeometry()
   geo.setAttribute('position', new THREE.BufferAttribute(cap.positions, 3))
   geo.setAttribute('uv', new THREE.BufferAttribute(cap.uvs, 2))
   geo.setIndex(new THREE.BufferAttribute(cap.indices, 1))
   geo.computeVertexNormals()
-  return geo
+  return { geometry: geo, origin: new THREE.Vector3(...cap.origin) }
 }
 
 function useTexture(url: string, srgb: boolean): THREE.Texture | null {
@@ -145,7 +147,7 @@ export default function SouthPoleTerrain({
   onReady?: () => void
   onSurfaceClick?: () => void
 }) {
-  const [innerGeo, setInnerGeo] = useState<THREE.BufferGeometry | null>(null)
+  const [innerGeo, setInnerGeo] = useState<CapMesh | null>(null)
 
   const albedo = useTexture(SP_ALBEDO_MAP, true)
   const detail = useMemo(() => makeDetailTile(), [])
@@ -164,7 +166,7 @@ export default function SouthPoleTerrain({
 
   useEffect(
     () => () => {
-      innerGeo?.dispose()
+      innerGeo?.geometry.dispose()
     },
     [innerGeo]
   )
@@ -223,12 +225,41 @@ export default function SouthPoleTerrain({
   return (
     <group>
       {/* Unlit: the albedo IS the final shaded image (see header comment). */}
-      <mesh geometry={innerGeo} onClick={handleClick}>
+      <mesh
+        geometry={innerGeo.geometry}
+        position={innerGeo.origin}
+        onClick={handleClick}
+      >
         <meshBasicMaterial
           map={albedo}
           onBeforeCompile={onBeforeCompile}
           // onBeforeCompile changes don't retrigger compilation on their own.
           customProgramCacheKey={() => 'sp-inner-detail-v2'}
+        />
+      </mesh>
+      {/* Shadow catcher. An unlit material cannot receive shadows, so the
+          installations' cast shadows are drawn as a second, transparent pass
+          over the SAME geometry — ShadowMaterial renders nothing except where
+          something shadows it. Without this the hardware had no contact
+          shadow at all and read as pasted onto a photo.
+
+          The terrain deliberately does NOT cast: its own relief shadows are
+          already baked into the albedo, so casting them again would
+          double-darken every slope. */}
+      <mesh
+        geometry={innerGeo.geometry}
+        position={innerGeo.origin}
+        receiveShadow
+      >
+        <shadowMaterial
+          transparent
+          // Lunar shadows are near-black (no atmosphere to scatter light into
+          // them), lifted a hair by regolith bounce.
+          opacity={0.88}
+          color="#04050a"
+          depthWrite={false}
+          polygonOffset
+          polygonOffsetFactor={-1}
         />
       </mesh>
     </group>
