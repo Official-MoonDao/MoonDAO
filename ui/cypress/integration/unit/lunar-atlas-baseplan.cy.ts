@@ -59,29 +59,36 @@ function tightestGap(plan: SitePlan, list: Plot[]): number {
 
 // The real rosters, by race. Radii are footprints in meters (footprintRadiusM).
 const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
-  // Artemis Base Camp (38 m, dome-to-dome) beside ILRS (13 m, mast-tip to
-  // mast-tip) — the two publicly declared sustained-presence programs, not
-  // one competing against its own precursor lander.
-  crewed_base: plots(19, 6.5),
+  // Artemis Base Camp (38 m, dome-to-dome) beside ILRS (21.9 m, comms guy
+  // anchor to the PV field's far corner) — the two publicly declared
+  // sustained-presence programs, not one competing against its own precursor
+  // lander. ILRS reads as the extended-model station China/Roscosmos have on
+  // the public roadmap for the 2040s, not the single-mast 2035 basic model.
+  crewed_base: plots(19, 12.86),
   lander: plots(31.2, 9.6),
   // eVinci radiator wall, IX's radiator canopy, Lockheed's radiator mast — the
   // three fission bids, and three very different amounts of ground.
   power: plots(11, 6.5, 4),
-  isru_plant: plots(9.5, 9.5, 9.5),
+  // Blue Origin, Sierra, Lunar Resources — dataset order. Sierra's packaged
+  // skid (5.35) and Lunar Resources' single crucible (5.58) are each little
+  // more than half the generic field-plus-tower footprint (9.5) Blue Origin
+  // still stands on.
+  isru_plant: plots(9.5, 5.35, 5.58),
   rover: plots(2.3, 2.1, 2.2),
   // Sierra's inflatable, the MPH module, the Lunar Cruiser — and the inflatable
   // takes the most ground of the three, which is the point of inflating it.
   habitat: plots(6, 5.5, 3.3),
   construction: plots(6.3, 6.3, 6.3, 6.3),
   // Nokia, ESA, Crescent, IM — dataset order. ESA's user terminal (1.04) and
-  // Crescent's (0.61) are a fraction of the ground Nokia takes, and Crescent's
-  // is smaller again than ESA's — both sell a service off a relay in orbit
-  // rather than building a south-pole site, and Crescent's multi-node network
-  // needs even less ground hardware than ESA's single precursor does. IM's
-  // sealed avionics package (1.13) is bigger than either customer terminal —
-  // it operates the network rather than subscribing to one — but a fraction
-  // of the generic mast-shelter-array lot Nokia still stands on.
-  comms_pnt: plots(7.5, 1.04, 0.61, 1.13),
+  // Crescent's (1.52) are a fraction of the ground Nokia takes. Crescent's
+  // case is a bigger footprint than ESA's mast despite being the smaller
+  // program's terminal by design intent, because a mast plants on one point
+  // while a case-plus-panel spreads flat — both still sell a service off a
+  // relay in orbit rather than building a south-pole site. IM's sealed
+  // avionics package (1.13) sits between the two — it operates the network
+  // rather than subscribing to one — but is a fraction of the generic
+  // mast-shelter-array lot Nokia still stands on.
+  comms_pnt: plots(7.5, 1.04, 1.52, 1.13),
 }
 
 const races = Object.entries(ROSTERS) as [ProjectType, Plot[]][]

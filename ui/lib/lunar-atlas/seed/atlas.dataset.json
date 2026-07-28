@@ -451,7 +451,7 @@
       "orgId": "cnsa-roscosmos",
       "name": "International Lunar Research Station",
       "type": "crewed_base",
-      "summary": "A China–Russia lunar base aimed at the South Pole, built up in robotic phases (command/power/telecom, science, ISRU, biomedical, astronomy facilities) ahead of a crewed utilization phase — developed independently of, and on a slower timeline than, Artemis Base Camp.",
+      "summary": "A China–Russia lunar base aimed at the South Pole, built up in robotic phases (command/power/telecom, science, ISRU, biomedical, astronomy facilities) ahead of a crewed utilization phase, then expanded through the 2040s into a considerable-scale, stably-operating \"extended model\" hubbed to a lunar-orbiting station — developed independently of, and on a slower timeline than, Artemis Base Camp.",
       "location": {
         "lat": -84.3,
         "lon": 82.8
@@ -511,6 +511,20 @@
             {
               "label": "Space.com — Not just Artemis: China and Russia shooting for the moon, too",
               "url": "https://www.space.com/china-russia-moon-base-ilrs",
+              "retrievedAt": "2026-07-28"
+            }
+          ]
+        },
+        {
+          "id": "ilrs-extended",
+          "title": "Extended model complete — considerable-scale station hubbed to a lunar-orbiting outpost",
+          "targetDate": "2045",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "People's Daily Online — China unveils International Lunar Research Station details",
+              "url": "http://en.people.cn/n3/2024/0425/c90000-20161617.html",
               "retrievedAt": "2026-07-28"
             }
           ]
@@ -878,7 +892,6 @@
       "orgId": "blue-origin",
       "name": "Blue Moon MK2 Crewed Lander",
       "type": "lander",
-      "modelURI": "/moonbase/models/insight-lander.glb",
       "summary": "Blue Origin's crewed lunar lander, selected by NASA to land Artemis V astronauts at the South Pole, developed with the National Team.",
       "location": {
         "lat": -85.5,

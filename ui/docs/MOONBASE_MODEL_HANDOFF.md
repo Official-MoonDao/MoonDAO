@@ -20,6 +20,7 @@ competitors sharing one model is a real bug, not a cosmetic one.
 | Orbital stations (the sky) | `ui/lib/lunar-atlas/skyplan.ts` |
 | Ground models + beacons on the surface | `ui/components/lunar-atlas/MarkerLayer.tsx` |
 | Satellites overhead | `ui/components/lunar-atlas/SkyLayer.tsx` |
+| Fixed Earth backdrop | `ui/components/lunar-atlas/EarthGlobe.tsx` |
 | Scene, sun, shadows, camera rig | `ui/components/lunar-atlas/MoonGlobe.tsx` |
 | Load-in framing | `ui/lib/lunar-atlas/homeview.ts` |
 | Camera framings (surface / orbit / sky) | `ui/lib/lunar-atlas/geo.ts` |
@@ -36,7 +37,10 @@ representative of the current standard.
 ## 2. The queue — what is still generic
 
 Priority is set by **duplication inside a district**, because that is what a user
-notices. Three districts currently render one model several times over:
+notices. Construction still renders one model four times over. Comms and ISRU
+are each down to a single project (Nokia; Blue Origin) on the generic model,
+which is no longer duplication, just one competitor left where the generic
+model already happens to be that competitor's own concept:
 
 ### Priority 1 — comms / PNT (1 of 4 still on the generic model)
 
@@ -68,12 +72,16 @@ what's on the ground" differently on purpose:
   off-the-shelf Curio smallsat bus (the same one that flew Lunar Trailblazer),
   smaller again than Pathfinder, with two roughly equal dishes (comms AND
   ranging/PNT, sold as equal products) plus a flat phased-array panel for the
-  navigation broadcast. Its ground terminal is the smallest lot in the
-  district by far — a sealed avionics case on point feet, doors and a
-  connector face, a solar panel racked up steeply on its own bracket, a small
-  camera/sensor head, and a fixed patch under a radome with no antenna gimbal
-  at all, because a multi-satellite network means a customer never has to
-  track one specific node.
+  navigation broadcast. Its ground terminal is the smallest MODEL in the
+  district (2.0 m vs. ESA's 2.6 m) — a sealed avionics case on point feet,
+  doors and a connector face, a solar panel racked up steeply on its own
+  bracket, a small camera/sensor head, and a fixed patch under a radome with
+  no antenna gimbal at all, because a multi-satellite network means a
+  customer never has to track one specific node. Its ground FOOTPRINT is
+  actually a little bigger than ESA's mast despite the smaller model — a
+  squat case with a panel racked out behind it covers more ground than one
+  point-mast does, so ESA keeps the smallest-footprint lot and Crescent the
+  smallest model.
 
 All three orbiters are wired through the same generalized lookup —
 `SKY_SAT_MODEL` / `SKY_SAT_SCALE` / `SKY_SAT_SPAN_M` in `ProjectModel.tsx`,
@@ -99,17 +107,46 @@ is essentially ICON's concept, so the cheapest correct move is to let ICON keep
 the generic slot and build the other three. Astroport's is a *brick* plant, not a
 printer, which is a strong visual contrast to lead with.
 
-### Priority 3 — ISRU (3 competitors, 3× the same model)
+### Priority 3 — ISRU (done except Blue Origin, which keeps the generic model on purpose)
 
-| Odds | Org | Project | id |
-|---|---|---|---|
-| 41% | Blue Origin | Blue Alchemist ISRU | `blue-origin-blue-alchemist` |
-| 32% | Sierra Space | Carbothermal Oxygen Reactor | `sierra-space-carbothermal` |
-| 27% | Lunar Resources | Molten Regolith Electrolysis | `lunar-resources-mre` |
+| Odds | Org | Project | id | Status |
+|---|---|---|---|---|
+| 41% | Blue Origin | Blue Alchemist ISRU | `blue-origin-blue-alchemist` | generic `IsruPlant` (IS Blue Alchemist's own concept — see PvField) |
+| 32% | Sierra Space | Carbothermal Oxygen Reactor | `sierra-space-carbothermal` | **done** — `SierraCarbothermal` |
+| 27% | Lunar Resources | Molten Regolith Electrolysis | `lunar-resources-mre` | **done** — `LunarResourcesMre` |
 
-All three render `IsruPlant`. Three different chemistries — molten regolith
-electrolysis, carbothermal reduction, and Blue's own electrolysis — so there is
-real hardware difference to draw.
+Three different chemistries — Blue's own solar-thermal/electrolysis process,
+Sierra's carbothermal reduction, and Lunar Resources' molten regolith
+electrolysis — so there is real hardware difference to draw. `IsruPlant`'s
+photovoltaic field and solar-thermal receiver already read as Blue Alchemist's
+own premise (making solar cells out of regolith), so it keeps the generic
+slot the way ICON and the eVinci reactor do elsewhere on this map.
+
+`SierraCarbothermal` is a packaged skid rather than a field-plus-tower
+installation, because that is the real state of Sierra's hardware: a
+full-scale carbothermal reactor already ran in a thermal-vacuum chamber at
+NASA Johnson (the CaRD demonstration), not a concept spread across open
+ground. A four-post lattice tower holds a wide reactor vessel (where regolith
+actually melts, with a small glowing viewport into the reaction) under a
+narrower condenser stage that recovers the carbon monoxide; a hopper feeds
+regolith into the reactor's crown; two horizontal tanks downstream hold
+product gas; a single solar tracker (not IsruPlant's field of small panels —
+Sierra buys conventional power rather than making its own cells) sits off to
+one side. The hot supply line off the condenser and the cooled recycle line
+back to the hopper follow the same red/blue convention `IsruPlant` uses for
+its own thermal loop.
+
+`LunarResourcesMre` reads as one machine rather than Sierra's chain of stages,
+because MRE's own pitch is "no consumable reagents": there is nothing to feed
+in besides regolith and nothing to recycle back besides current, so the whole
+plant is one riveted crucible (the electrolyte pool itself, seen through a
+viewport at a paler, hotter glow than Sierra's carbothermal flame), a single
+downstream tank collecting both the oxygen and the metal off the same cell,
+and a power-conditioning box wired to the crucible by a heavy copper busbar
+rather than a solar array — electrolysis draws more continuous current than
+a plant this size could collect on its own roof, so it plugs into the base
+grid instead of carrying its own field, the same reasoning `SierraLife`'s
+softgoods module uses for its own power feed.
 
 ### Not actually duplicated (lower priority)
 
@@ -119,8 +156,13 @@ real hardware difference to draw.
 - **`westinghouse-fission-surface-power`** renders the generic `power` model,
   which *is* the eVinci. Power district is fully differentiated (Lockheed / IX /
   eVinci).
-- **Placeholder GLBs** worth replacing eventually: `blue-origin-blue-moon-mk2`
-  uses `insight-lander.glb` (an InSight Mars lander standing in for Blue Moon).
+- **Placeholder GLBs**, replaced: `blue-origin-blue-moon-mk2` used to render
+  `insight-lander.glb` (an InSight Mars lander standing in for Blue Moon). It
+  now renders `BlueMoonMk2` — splayed bipod landing gear on gold-MLI lower
+  struts, a windowed crew module with a deployable ladder opposite the
+  docking hatch, two open lattice bays exposing the propellant tanks, and a
+  tapered ascent hull and nose, built off NASA's own Artemis renders of the
+  selected lander. `spacex-starship-hls` still uses its GLB.
 
 ### Core district — crewed_base (2 of 2 done)
 
@@ -136,12 +178,39 @@ Lunar Research Station (`ilrs`, org `cnsa-roscosmos`) took its place as the
 core's actual second competitor — a real, independently-developed, publicly
 documented program targeting the same capability at the same pole, on a slower
 public timeline (crewed utilization from 2036 vs. Artemis's early-2030s
-target). `ILRSBase` is sized smaller than `CrewedBase` (13 m vs. 38 m) on
-purpose: ILRS's own roadmap has it in a robotic construction phase through
-2035 — a shared power/comms mast with a handful of separately-landed modules
-underneath it — rather than the crewed habitat-plus-greenhouses Artemis Base
-Camp is designed as; the core district's hardstand only has room for a plot
-this size next to the 38 m camp regardless.
+target).
+
+`ILRSBase` was rebuilt a second time to stand as a real second base rather
+than a construction footnote. CNSA's own public roadmap has two horizons, not
+one: a single-mast "basic model" through 2035, then an "extended model" in the
+2040s officials describe as reaching "considerable scale and stable
+operation," hubbed to a second station in lunar orbit (see the `ilrs-extended`
+milestone in the dataset). The rebuilt model portrays that later state: the
+same shared power/comms mast and fan (`IlrsMast`, unchanged) now sits over
+**five** modules (`IlrsModule`, up from three) linked by raised causeways on
+support posts (`IlrsCauseway`) rather than standing as five separate,
+unconnected landings; a second, independent Earth-link mast off on its own
+footing (`IlrsCommsTower`) gives the station redundant comms instead of one
+dish for everything; a fixed ground-mounted PV field in the mast's own gold
+livery (`IlrsPvFarm`) is the visible sign the station now generates more power
+than one fan can carry; and a cargo stack still mid-unload (`IlrsCargoLander`,
+now ×2) keeps the "still under construction" honesty the basic-model version
+had — ILRS grows by accretion, module by module, at every stage of its
+roadmap. `PROJECT_SIZE_M['ilrs']` grew from 13 m to 21.9 m and its footprint
+radius from 6.5 m to 12.86 m (confirmed with `scripts/tmp-ilrs-check.ts`,
+since deleted) — still well under Artemis Base Camp's 38 m / 19 m, keeping
+Artemis the larger of the two the way the higher odds argue it should read,
+but no longer a small cluster next to a monument.
+
+Growing ILRS this much moved three numbers in `baseplan.ts`: `RING_RADIUS_M`
+(40 → 43) and `HARDSTAND.radius` (34 → 36.5) so the core's now-34.9 m combined
+extent still fits inside the perimeter road with a couple of meters to spare,
+and the landing zone's distance (`BASE_PLAN.lander`, 130 m → 140 m) so a
+Starship-class descent still clears the bigger core by more than the 30 m
+ejecta-standoff floor the unit tests assert. `RING_RADIUS_M` is close to its
+ceiling now — the power district's own inner corner lots are what stop it
+going any further without `MAIN_LOOP_M` moving too (see the comment on
+`RING_RADIUS_M`).
 
 ---
 
@@ -208,7 +277,13 @@ avoid up front and annoying to find later.
   sun's bearing rather than lying flat, and radiators lie **flat** to see the
   cold zenith. Both facts are already argued in the MPH and relay comments.
 - **The Earth sits within a few degrees of the horizon**, so an Earth-pointing
-  dish is nearly horizontal — never nadir.
+  dish is nearly horizontal — never nadir. Earth itself is now drawn (see
+  `EarthGlobe.tsx`): a fixed backdrop sphere at the real bearing/elevation
+  (`capLocalDirection` in `southpole.ts`, reusing `SAT_DISH_EL` for elevation
+  so the planet and the dishes pointed at it agree) and the real angular
+  diameter, at a portrayed distance because the true 384,400 km is past this
+  scene's far clip plane and star shell — the same "honest angle, cheated
+  distance" rule `skyplan.ts` already uses for satellite altitude.
 - **Shadows anchor hardware**, so let models cast them. The exception is
   anything far off the ground: the sun's shadow camera is a ±400 m box on the
   colony, so use `castShadows={false}` (as `SkyLayer` does).
@@ -219,6 +294,33 @@ avoid up front and annoying to find later.
   district dim gets fought over by every copy.
 - **Emissive accents** in the operator's colour are the house signature: hatch
   lights, boresight markers, ring bands. Keep them small and `toneMapped={false}`.
+- **A GLB with no skeleton cannot be re-posed.** `astronaut.glb` was a single
+  rigid mesh (no skin, no animation track — check with the raw JSON chunk, not
+  by eyeballing the render) frozen in an arms-out reference pose that read as
+  the Vitruvian Man. There is no fix for that short of new geometry, so it was
+  replaced with a procedural rig (`AstronautRig` / `PatrollingAstronaut` in
+  `ProjectModel.tsx`) built from actual hinge groups and driven by `useFrame`
+  — the same approach as the LTV's wheels or the print gantry's boom. It is
+  now a shared component: drop `<PatrollingAstronaut center={[x, z]}
+  radius={r} seed={n} accent={accent} />` into any model for a walking figure
+  that wanders a bounded patch rather than standing frozen, in whatever local
+  units that model already authors in (see its `fitHeight` prop, which
+  follows `GLBModel`'s convention exactly).
+- **Site clutter is a shared prop layer, not per-project geometry.**
+  `CargoPallet`, `CableReel`, `TailingsPile`, `UtilityCart`, and `ScorchMark`
+  (all in `ProjectModel.tsx`, right after `PatrollingAstronaut`) are hand-
+  placed into the generic models (`IsruPlant`, `Power`, `Habitat`,
+  `CommsPnt`, `ConstructionSite`, `CrewedBase`) and into `ILRSBase`, the same
+  deliberate way the ISRU plant's own staged feedstock or the print site's
+  paver stacks already were — never inside a per-competitor model, and never
+  a random scatter, because an item clipping into a reactor or a dish is
+  worse than no item at all. They're authored directly in real meters like
+  `Strut`/`LandingPad`, since every call site already authors its own
+  geometry that way before its outer `scale={..._M}` wrapper normalizes the
+  whole assembly. `ScorchMark` is the un-paved counterpart to `LandingPad`'s
+  built-in `PAD_SCORCH` core — for hardware that touches down straight on
+  graded regolith (`IlrsCargoLander`) rather than getting a full engineered
+  pad.
 
 ### Comment style
 

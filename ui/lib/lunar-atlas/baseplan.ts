@@ -48,10 +48,16 @@
 import type { ProjectType } from './types'
 
 // Radius of the perimeter road's centreline, in meters. The core district packs
-// to a 28 m extent, so the road's inner curb clears the camp's apron by about
-// 6 m, and the hardstand inside merges under that curb — the core and its ring
-// read as one paved area. Every avenue starts here.
-export const RING_RADIUS_M = 40
+// to a 34.9 m extent now that ILRS stands as a real second base rather than a
+// construction footnote (see PROJECT_SIZE_M['ilrs']), nearly a third bigger
+// than the 28 m the two used to need, so the road's inner curb clears the
+// camp's apron by less than 2 m rather than the old 6 — tight, but the
+// hardstand still merges under that curb rather than leaving open regolith
+// between them. Every avenue starts here. This is close to the ceiling the
+// power district's own inner corner lots leave (see 'leaves the inward corner
+// lots clear of the perimeter road' in the unit tests) — main street would
+// have to move out too before the core could grow any further.
+export const RING_RADIUS_M = 43
 
 // Radius of MAIN STREET, the concentric loop the districts stand on.
 //
@@ -106,7 +112,7 @@ export type SitePlan = {
   reach?: number
   // For a 'lot' district only: the bearing, degrees CCW from east, that its
   // pair of assets stands along. Worth controlling because the core's two are a
-  // 38 m base camp beside a 13 m ILRS cluster, and which of them the eye
+  // 38 m base camp beside a 21.9 m ILRS cluster, and which of them the eye
   // reaches first is the difference between a group portrait and an eclipse.
   lotAxis?: number
   // For a 'flank' district only: which side of the road the largest plot takes,
@@ -358,12 +364,15 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // ground these machines are all bidding to pave. Turned toward the work.
   construction: { ...at(45), turn: 22, reach: 20 },
 
-  // LANDING ZONE, due north (90°) at the back of the plan, 130 m out because a
+  // LANDING ZONE, due north (90°) at the back of the plan, 140 m out because a
   // Starship-class descent throws ejecta on ballistic arcs with no air to stop
-  // them. The two pads FLANK the haul road rather than taking corner lots — at
-  // 62 m across, the Starship's apron is most of a city block on its own.
+  // them — pushed 10 m further than the pads alone need since the core grew
+  // to hold a real ILRS (see HARDSTAND) and the 30 m ejecta-standoff floor
+  // is measured center-to-center against the core's own reach, not the ring
+  // road. The two pads FLANK the haul road rather than taking corner lots —
+  // at 62 m across, the Starship's apron is most of a city block on its own.
   lander: {
-    ...at(90, 130),
+    ...at(90, 140),
     turn: 0,
     front: 'flank',
     flankSide: 1,
@@ -426,8 +435,11 @@ export const PATROL: Partial<
 export const FALLBACK_RING_M = 150
 
 // The cleared hardstand at the core, in meters — the yard the core district
-// stands in, paved continuously with the perimeter road around it.
-export const HARDSTAND = { site: 'crewed_base' as ProjectType, radius: 34 }
+// stands in, paved continuously with the perimeter road around it. Sized to
+// the 34.9 m the two crewed programs now reach (see `crewed_base` in
+// BASE_PLAN and ROSTERS.crewed_base in the unit tests) with a couple of
+// meters to spare before the ring road's own curb.
+export const HARDSTAND = { site: 'crewed_base' as ProjectType, radius: 36.5 }
 
 // Roads, as polylines of [east, north] waypoints in meters. Curves are splined
 // through these, so a handful of waypoints describes a road that bends the way

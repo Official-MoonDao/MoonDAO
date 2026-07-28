@@ -123,6 +123,70 @@ export function capOffsetLatLon(
 }
 
 // ---------------------------------------------------------------------------
+// The ridge's local compass frame — East/North/Up tangent vectors at the
+// patch center, in scene space. SkyLayer's satellites and every district's
+// `bearingDeg` (degrees CCW from east) already assume this frame implicitly;
+// this is the same construction, exported so anything that needs to point at
+// a compass bearing/elevation from the ridge (rather than at a plot or an
+// orbiting station) — e.g. a fixed backdrop object like Earth — can build a
+// world direction without re-deriving the tangent basis.
+// ---------------------------------------------------------------------------
+
+function capUpVector(): Vec3 {
+  return capCenterDirection()
+}
+
+function capEastVector(): Vec3 {
+  // A point 100 m due east of the ridge center, projected back into the
+  // tangent plane. 100 m is arbitrary — only the direction survives the
+  // normalize — and small enough that the patch's local flatness assumption
+  // (see CAP_EXTENT_M) holds comfortably.
+  const up = capUpVector()
+  const ll = capOffsetLatLon(100, 0)
+  const toPoint = latLonToVector3(ll.lat, ll.lon, 1)
+  const dot = up[0] * toPoint[0] + up[1] * toPoint[1] + up[2] * toPoint[2]
+  const tangent: Vec3 = [
+    toPoint[0] - dot * up[0],
+    toPoint[1] - dot * up[1],
+    toPoint[2] - dot * up[2],
+  ]
+  const len = Math.hypot(tangent[0], tangent[1], tangent[2])
+  return [tangent[0] / len, tangent[1] / len, tangent[2] / len]
+}
+
+function cross(a: Vec3, b: Vec3): Vec3 {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ]
+}
+
+// World-space unit direction for a compass bearing (degrees CCW from east,
+// same convention as `SkyStation.bearingDeg` and every district's bearing)
+// and an elevation (degrees up from the LOCAL horizontal at the ridge, i.e.
+// the tangent plane of the patch center — not the great-circle horizon of
+// the true sphere, though at this patch's scale the two are indistinguishable).
+export function capLocalDirection(bearingDeg: number, elevDeg: number): Vec3 {
+  const up = capUpVector()
+  const east = capEastVector()
+  const north = cross(up, east)
+  const b = (bearingDeg * Math.PI) / 180
+  const e = (elevDeg * Math.PI) / 180
+  const cosE = Math.cos(e)
+  const [ex, ey, ez] = east
+  const [nx, ny, nz] = north
+  const [ux, uy, uz] = up
+  const v: Vec3 = [
+    ex * Math.cos(b) * cosE + nx * Math.sin(b) * cosE + ux * Math.sin(e),
+    ey * Math.cos(b) * cosE + ny * Math.sin(b) * cosE + uy * Math.sin(e),
+    ez * Math.cos(b) * cosE + nz * Math.sin(b) * cosE + uz * Math.sin(e),
+  ]
+  const len = Math.hypot(v[0], v[1], v[2])
+  return [v[0] / len, v[1] / len, v[2] / len]
+}
+
+// ---------------------------------------------------------------------------
 // Heights
 // ---------------------------------------------------------------------------
 

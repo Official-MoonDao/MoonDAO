@@ -48,6 +48,7 @@ import type {
   ProjectType,
 } from '@/lib/lunar-atlas/types'
 import BaseRoads from './BaseRoads'
+import EarthGlobe from './EarthGlobe'
 import MarkerLayer, {
   ColonyLayout,
   MarkerStyle,
@@ -531,6 +532,7 @@ export default function MoonGlobe({
 
       <Sun />
       <MetalEnvironment />
+      <EarthGlobe />
 
       <Stars
         radius={GLOBE_RADIUS * 14}

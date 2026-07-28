@@ -17,11 +17,11 @@ Models marked "optimized" were Draco-compressed with `@gltf-transform`
 |---|---|---|
 | `starship-hls.glb` (edited) | Third-party "SpaceX Starship Ship 24 / Booster 7" community model (Sketchfab; verify license before production use) | Starship HLS — see note |
 | `viking-lander.glb` | Viking Lander (NASA) | Blue Moon MK1 cargo lander (stand-in) |
-| `insight-lander.glb` (optimized) | InSight Cruise Lander (NASA) | Blue Moon MK2 crewed lander (stand-in) |
+| `insight-lander.glb` (optimized) | InSight Cruise Lander (NASA) | Not currently rendered — Blue Moon MK2 is now a purpose-built procedural model (`BlueMoonMk2` in `ProjectModel.tsx`). Kept because the file ships in `public/`. |
 | `perseverance-rover.glb` | Mars 2020 Perseverance Rover (NASA) | NASA LTV (rover stand-in) |
 | `rassor.glb` | RASSOR (Regolith Advanced Surface Systems Operations Robot) (NASA) | Not currently rendered — the ISRU site uses a procedural solar-thermal plant. Kept because the file ships in `public/`. |
 | `habitat-demo-unit.glb` | Habitat Demonstration Unit (NASA) | Not currently rendered — Artemis Base Camp is a procedural camp (domes, habitat, PV farm). Kept because the file ships in `public/`. |
-| `astronaut.glb` | Astronaut (NASA) | Crew companion on crewed sites |
+| `astronaut.glb` | Astronaut (NASA) | Not currently rendered — crew figures are a procedural, jointed rig (`AstronautRig` / `PatrollingAstronaut` in `ProjectModel.tsx`) so they can walk. Kept because the file ships in `public/`. |
 
 `starship-hls.glb` was produced from the full ship-24 + booster-7 stack by
 removing every mesh below the interstage (Y < 12.3 in model space), keeping only
@@ -34,6 +34,23 @@ The other commercial vehicles (Blue Origin Blue Moon, the LTV competitors) have
 spacecraft are used as honest, visually-distinct stand-ins. Types without any
 suitable model (fission surface power, regolith construction / ISRU plants) fall
 back to procedural geometry in `ProjectModel.tsx`.
+
+## Earth backdrop (`earth/`)
+
+The fixed Earth prop rendered by `EarthGlobe.tsx` (day map, night lights, and
+cloud layer). All three are NASA public-domain source imagery (Blue Marble
+day composite, Black Marble / DMSP city-lights composite, and a MODIS cloud
+composite), redistributed as processed textures in the MIT-licensed three.js
+project's own example assets and mirrored here rather than re-fetched from
+NASA's own (much larger, unprocessed) originals.
+
+| File | Source | Used for |
+|---|---|---|
+| `earth-day.jpg` | `three.js/examples/textures/planets/earth_atmos_2048.jpg` | Day-side albedo map |
+| `earth-lights.png` | `three.js/examples/textures/planets/earth_lights_2048.png` | Night-side city lights (emissive map) |
+| `earth-clouds.png` | `three.js/examples/textures/planets/earth_clouds_1024.png` | Cloud layer |
+
+Source: <https://github.com/mrdoob/three.js> (MIT license), `examples/textures/planets/`.
 
 ## Connecting Ridge terrain (`southpole/`)
 
