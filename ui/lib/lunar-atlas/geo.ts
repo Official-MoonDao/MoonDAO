@@ -334,3 +334,62 @@ export function surfaceViewFraming(
   ]
   return { position, target }
 }
+
+// A framing for a subject that is ABOVE the surface rather than on it — the
+// relay satellites, which are the only such subject here.
+//
+// The eye RISES above the station and stands off to one side, so the shot looks
+// DOWN at the spacecraft with the lunar surface filling the frame behind it.
+// That is the opposite of what "look up at a satellite" suggests, and it is the
+// right way round for two reasons. Against black sky a spacecraft has nothing to
+// be seen against and no sense of altitude; against the ground several hundred
+// meters below it, it has both. And it is the composition every real photograph
+// of a lunar orbiter uses, for exactly that reason.
+//
+// Offsets are fractions of `stationRadius`, matching the other framings here.
+export function skyViewFraming(
+  lat: number,
+  lon: number,
+  // Distance from the sphere centre to the subject — NOT the ground radius.
+  stationRadius: number,
+  // Direction (from the sphere centre) of what the shot should look back over.
+  // The camera stands off on the far side of the subject from this, which is
+  // what puts it in the background: pass the settlement's centre and the
+  // settlement ends up behind the satellite.
+  backdrop: Vec3,
+  opts?: { rise?: number; standoff?: number }
+): { position: Vec3; target: Vec3 } {
+  const rise = (opts?.rise ?? 0.1) * stationRadius
+  const standoff = (opts?.standoff ?? 0.09) * stationRadius
+
+  const target = latLonToVector3(lat, lon, stationRadius)
+  const n = surfaceNormal(lat, lon)
+
+  // Tangential direction pointing away from the backdrop. The difference of the
+  // two unit directions already lies almost in the tangent plane; projecting the
+  // radial part out makes it exactly so.
+  const b = norm3(backdrop)
+  const v: Vec3 = [n[0] - b[0], n[1] - b[1], n[2] - b[2]]
+  const radial = dot3(v, n)
+  let away: Vec3 = [
+    v[0] - n[0] * radial,
+    v[1] - n[1] * radial,
+    v[2] - n[2] * radial,
+  ]
+  // A subject directly over the backdrop has no "away" side; any bearing will
+  // do, so fall back to a stable tangent as the surface framing does.
+  if (dot3(away, away) < 1e-12) {
+    const ref: Vec3 = Math.abs(n[1]) > 0.9 ? [0, 0, 1] : [0, 1, 0]
+    away = cross3(ref, n)
+  }
+  away = norm3(away)
+
+  return {
+    position: [
+      target[0] + n[0] * rise + away[0] * standoff,
+      target[1] + n[1] * rise + away[1] * standoff,
+      target[2] + n[2] * rise + away[2] * standoff,
+    ],
+    target,
+  }
+}

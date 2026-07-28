@@ -23,6 +23,7 @@ import {
   latLonToVector3,
   MOON_RADIUS_M,
   orbitUpVector,
+  skyViewFraming,
   surfaceNormal,
   surfaceViewFraming,
   vector3ToLatLon,
@@ -31,7 +32,13 @@ import {
   HOME_CAM as HOME_CAM_M,
   HOME_TARGET as HOME_TARGET_M,
 } from '@/lib/lunar-atlas/homeview'
-import { M_TO_UNITS, capCenterLatLon } from '@/lib/lunar-atlas/southpole'
+import {
+  CAP_CENTER_HEIGHT_M,
+  M_TO_UNITS,
+  capCenterDirection,
+  capCenterLatLon,
+  heightToRadius,
+} from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
@@ -46,6 +53,7 @@ import MarkerLayer, {
   MarkerStyle,
   siteOpacity,
 } from './MarkerLayer'
+import SkyLayer from './SkyLayer'
 import SouthPoleTerrain from './SouthPoleTerrain'
 import useTerrainSampler, { RadiusAt } from './useTerrainSampler'
 
@@ -57,8 +65,12 @@ export type GlobeFocus = {
   // reads at ~8 km altitude (~0.0046); a single site at ~500 m (~0.0003).
   distanceRadii?: number
   // 'orbit' (default) looks down from above; 'surface' does a cinematic low
-  // pan to a from-the-ground vantage looking across at the model.
-  view?: 'orbit' | 'surface'
+  // pan to a from-the-ground vantage looking across at the model; 'sky' frames
+  // a subject that is off the ground entirely (see skyViewFraming).
+  view?: 'orbit' | 'surface' | 'sky'
+  // Meters above the base datum of the thing being looked at. Only 'sky' uses
+  // it — every other framing takes its subject to be on the ground.
+  heightM?: number
 } | null
 
 export type MoonGlobeProps = {
@@ -117,6 +129,18 @@ const SURFACE_VIEW_OPTS = {
   targetLift: 10 / MOON_RADIUS_M,
 }
 
+// Framing for the relay constellation, the one subject that is not on the
+// ground. The eye rises 170 m over the satellite and stands off 150 m outward,
+// which is a 227 m slant range: at that distance a 20 m spacecraft covers an
+// eighth of the frame height, its two companions read behind it at half and a
+// third of that, and the colony sits below all three. Backing off far enough to
+// hold satellite and colony in a single wide shot instead makes the satellite a
+// dozen pixels, which is why this framing exists at all.
+const SKY_VIEW_OPTS = {
+  rise: 170 / MOON_RADIUS_M,
+  standoff: 150 / MOON_RADIUS_M,
+}
+
 // Animates the camera toward a lat/lon focus (or back to the home framing)
 // ONLY while a transition is active. It arcs the view direction and eases the
 // distance/target rather than sliding in a straight line. Once it arrives (or
@@ -160,7 +184,17 @@ function CameraRig({
       // this once the sampler arrives, refining the framing in-flight).
       const surfaceR = radiusAt ? radiusAt(focus.lat, focus.lon) : GLOBE_RADIUS
       const { position, target } =
-        focus.view === 'surface'
+        focus.view === 'sky'
+          ? skyViewFraming(
+              focus.lat,
+              focus.lon,
+              heightToRadius(CAP_CENTER_HEIGHT_M + (focus.heightM ?? 0)),
+              // Look back over the settlement, so it fills the background
+              // behind the spacecraft rather than the empty ridge beyond it.
+              capCenterDirection(),
+              SKY_VIEW_OPTS
+            )
+          : focus.view === 'surface'
           ? surfaceViewFraming(focus.lat, focus.lon, surfaceR, {
               ...SURFACE_VIEW_OPTS,
               // Close in from whichever side the camera is already on, so a
@@ -178,15 +212,17 @@ function CameraRig({
               surfaceR,
               focus.distanceRadii ?? 1500 / MOON_RADIUS_M
             )
-      // Surface pans glide in slowly for a cinematic feel; orbit moves snappier.
-      easeBase.current = focus.view === 'surface' ? 0.05 : 0.0022
+      // Pans onto a subject glide in slowly for a cinematic feel, whether that
+      // subject is on the ground or over it; orbit moves snappier.
+      easeBase.current =
+        focus.view === 'surface' || focus.view === 'sky' ? 0.05 : 0.0022
       desiredPos.current.set(position[0], position[1], position[2])
       desiredTarget.current.set(target[0], target[1], target[2])
-      // Surface view rolls the camera so "up" is the local outward normal —
-      // otherwise the view is upside down at the pole. Orbit views use a
-      // pole-safe up (raw world-Y is parallel to the view axis when looking
+      // Surface and sky views roll the camera so "up" is the local outward
+      // normal — otherwise the view is upside down at the pole. Orbit views use
+      // a pole-safe up (raw world-Y is parallel to the view axis when looking
       // straight down at the pole).
-      if (focus.view === 'surface') {
+      if (focus.view === 'surface' || focus.view === 'sky') {
         const n = surfaceNormal(focus.lat, focus.lon)
         desiredUp.current.set(n[0], n[1], n[2])
       } else {
@@ -527,6 +563,20 @@ export default function MoonGlobe({
           onHoverTree={onHoverTree}
           getProjectStyle={getProjectStyle}
           radiusAt={radiusAt}
+        />
+      )}
+
+      {/* The orbital competitors, which have stations rather than plots and so
+          need no layout table. */}
+      {trees && organizations && (
+        <SkyLayer
+          trees={trees}
+          organizations={organizations}
+          selectedTreeCategory={selectedTreeCategory}
+          selectedProject={selectedProject}
+          getProjectStyle={getProjectStyle}
+          onSelectProject={onSelectProject}
+          onHoverTree={onHoverTree}
         />
       )}
 

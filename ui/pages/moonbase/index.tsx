@@ -20,6 +20,7 @@ import {
   TIME_STATUS_OPACITY,
   orgColor,
 } from '@/lib/lunar-atlas/display'
+import { SKY_STATIONS, stationLatLon } from '@/lib/lunar-atlas/skyplan'
 import {
   atlasYear,
   buildTechTrees,
@@ -296,6 +297,17 @@ export default function MoonBaseZeroIndex() {
   // rather than the district — which is the point of picking one out of a list
   // of four. Falls back to the district, then to the project's real location.
   const flyToProject = (project: Project, siteCategory?: ProjectType | null) => {
+    // A competitor whose hardware is in orbit is framed at its station instead.
+    // It keeps its ground lot — a relay service needs a ground segment, and that
+    // terminal is real hardware on real regolith — but the satellites are what
+    // the program IS, and they are not visible from the wide shot at any
+    // altitude that is not a lie (see lib/lunar-atlas/skyplan).
+    const stations = SKY_STATIONS[project.id]
+    if (stations?.length) {
+      const { lat, lon } = stationLatLon(stations[0])
+      setFocus({ lat, lon, view: 'sky', heightM: stations[0].altM })
+      return
+    }
     const cat = siteCategory ?? selectedTreeCategory ?? project.type
     const dir = layout.plots.get(project.id)?.dir ?? siteDir(cat)
     const ll = dir ? vector3ToLatLon(dir) : project.location

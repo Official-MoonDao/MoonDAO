@@ -20,10 +20,19 @@ import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { PATROL_SPEED_MPS, type Slot } from '@/lib/lunar-atlas/baseplan'
-import { MOON_RADIUS_M, vector3ToLatLon, Vec3 } from '@/lib/lunar-atlas/geo'
+import { PATROL, type Slot } from '@/lib/lunar-atlas/baseplan'
+import {
+  MOON_RADIUS_M,
+  latLonToVector3,
+  vector3ToLatLon,
+  Vec3,
+} from '@/lib/lunar-atlas/geo'
 import { PROJECT_TYPE_LABEL, orgColor } from '@/lib/lunar-atlas/display'
-import { M_TO_UNITS, capCenterDirection } from '@/lib/lunar-atlas/southpole'
+import {
+  M_TO_UNITS,
+  capCenterDirection,
+  capOffsetLatLon,
+} from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import type {
@@ -34,9 +43,8 @@ import type {
 import ProjectModel, { gradedDeckRadiusM, projectSizeM } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
-// The competitors of a race, best-placed first. Order matters twice over: the
-// front-runner is the one that gets to drive (see PATROL_SPEED_MPS) and the one
-// the district's beacon is named for.
+// The competitors of a race, best-placed first. Order matters because the
+// front-runner is the one the district's beacon is named for.
 export function rankedMembers(tree: TechTree): Project[] {
   const odds = tree.goal?.market?.impliedOdds
   if (!odds) return tree.projects
@@ -57,8 +65,9 @@ const PATROL_EASE = 0.03
 // How far down a district is taken while a DIFFERENT race is open. Heavy enough
 // that the open race is unmistakably the subject, light enough that the rest of
 // the base is still plainly there — which is the point of dimming rather than
-// hiding.
-const DIM_FACTOR = 0.28
+// hiding. Shared with the sky layer, so the orbital hardware is held back by
+// exactly as much as the ground hardware.
+export const DIM_FACTOR = 0.28
 
 export type MarkerStyle = { opacity: number; visible: boolean }
 
@@ -166,7 +175,8 @@ function CompetitorPlot({
   accent,
   opacity,
   dim,
-  patrolSpeed,
+  patrol,
+  patrolPhase,
   raceOpen,
   called,
   onSelect,
@@ -180,10 +190,16 @@ function CompetitorPlot({
   opacity: number
   // 1 while this plot's race is the subject, DIM_FACTOR while another's is.
   dim: number
-  // Meters per second, if this is the one vehicle in its race that drives.
-  patrolSpeed?: number
+  // The road to drive and how fast, for a race whose hardware drives rather than
+  // stands. Taken straight from PATROL rather than rebuilt per render, because
+  // it keys the seating memos below and a fresh object each render would have
+  // them resample the terrain for nothing.
+  patrol?: { speedMps: number; radiusM: number }
+  // Radians round that road this vehicle starts at, which is what keeps a whole
+  // depot's worth of them off each other.
+  patrolPhase?: number
   // Whether this plot's own race is the open one. Names every asset on the lot,
-  // and brings the driving one to a stand so it can be read.
+  // and brings the driving ones to a stand so they can be read.
   raceOpen: boolean
   // Picked out specifically — hovered, or chosen from the competitor list.
   called: boolean
@@ -193,8 +209,26 @@ function CompetitorPlot({
 }) {
   const groupRef = useRef<THREE.Group>(null)
 
+  // Where this competitor actually stands. Normally its own plot — but a vehicle
+  // that drives starts OUT ON THE ROAD it laps rather than parked in its yard,
+  // spaced from its rivals by `phase` around that road so the whole depot can be
+  // out at once without one machine standing inside another.
+  const standDir = useMemo(() => {
+    if (!patrol) return dir
+    const bearing = Math.atan2(slot.north, slot.east) + (patrolPhase ?? 0)
+    const ll = capOffsetLatLon(
+      Math.cos(bearing) * patrol.radiusM,
+      Math.sin(bearing) * patrol.radiusM
+    )
+    return latLonToVector3(ll.lat, ll.lon, 1)
+  }, [dir, patrol, patrolPhase, slot.east, slot.north])
+
   const { ndir, seatRadius, labelAt } = useMemo(() => {
-    const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
+    const d = new THREE.Vector3(
+      standDir[0],
+      standDir[1],
+      standDir[2]
+    ).normalize()
     const ll = vector3ToLatLon([d.x, d.y, d.z])
     // A model on a graded deck (a lander's pad, the construction apron) seats
     // on the highest ground under that deck, whose skirt then grades down over
@@ -219,40 +253,42 @@ function CompetitorPlot({
         .clone()
         .multiplyScalar(ground + projectSizeM(project) * 1.25 * M_TO_UNITS),
     }
-  }, [dir, radiusAt, project])
+  }, [standDir, radiusAt, project])
 
-  // Laps of the perimeter road, for the one vehicle in its race that drives
-  // rather than stands (see PATROL_SPEED_MPS).
+  // Laps of main street, for a race whose hardware drives rather than stands
+  // (see PATROL).
   //
-  // The lap is a rigid rotation of the plot about the patch axis, which is what
-  // makes it both cheap and correct: a rotation of the sphere holds the vehicle
-  // at exactly its plot's distance from the core — the road — and carries its
-  // seating and its heading with it, so neither has to be recomputed per frame.
-  const patrol = useMemo(() => {
-    if (!patrolSpeed) return null
-    const radius = Math.hypot(slot.east, slot.north)
-    if (radius < 1) return null
-    // Travel direction at the plot. Rotating a point p about axis n moves it
+  // The lap is a rigid rotation of the vehicle about the patch axis, which is
+  // what makes it both cheap and correct: a rotation of the sphere holds it at
+  // exactly the radius it started from — the road — and carries its seating and
+  // its heading with it, so neither has to be recomputed per frame.
+  //
+  // It is also why a whole fleet can share one road safely. Every vehicle turns
+  // through the same angle at the same rate, so the gaps the phases opened up are
+  // held for good: the convoy can never close on itself, however long it runs.
+  const lap = useMemo(() => {
+    if (!patrol) return null
+    // Travel direction where it stands. Rotating a point p about axis n moves it
     // along n × p, so this is the way a positive rate drives.
     const along = CAP_AXIS.clone().cross(ndir).normalize()
     return {
-      rate: patrolSpeed / radius,
+      rate: patrol.speedMps / patrol.radiusM,
       noseAlong: [along.x, along.y, along.z] as Vec3,
     }
-  }, [patrolSpeed, ndir, slot.east, slot.north])
+  }, [patrol, ndir])
   const lapRef = useRef(0)
   const throttleRef = useRef(0)
 
   useFrame((_, delta) => {
     const g = groupRef.current
-    if (!g || !patrol) return
-    // Roll to a stand when this race is opened, so the vehicle is sitting still
+    if (!g || !lap) return
+    // Roll to a stand when this race is opened, so the vehicles are sitting still
     // while the user reads about it — and while the drill-in camera, which
     // frames the district rather than the vehicle, flies in.
     const throttle = raceOpen ? 0 : 1
     throttleRef.current +=
       (throttle - throttleRef.current) * (1 - Math.pow(PATROL_EASE, delta))
-    lapRef.current += patrol.rate * throttleRef.current * delta
+    lapRef.current += lap.rate * throttleRef.current * delta
     g.quaternion.setFromAxisAngle(CAP_AXIS, lapRef.current)
     // Ride the road's rise and fall. Every child is positioned in world space
     // from the globe centre, so a uniform scale IS a radial offset: the ratio of
@@ -275,7 +311,7 @@ function CompetitorPlot({
         dir={[ndir.x, ndir.y, ndir.z]}
         accent={accent}
         turn={THREE.MathUtils.degToRad(slot.turn)}
-        noseAlong={patrol?.noseAlong}
+        noseAlong={lap?.noseAlong}
         dim={dim}
         onSelect={onSelect}
         onHover={(id) => onHover?.(Boolean(id))}
@@ -622,8 +658,11 @@ export default function MarkerLayer({
 
         // The pin has to clear the tallest thing on the lot, not the average.
         const tallestM = Math.max(...members.map((p) => projectSizeM(p)))
-        // Only the front-runner drives; its rivals are parked in the depot.
-        const patrolSpeed = PATROL_SPEED_MPS[tree.category]
+        // The whole field drives, if this race's hardware is vehicles. Spread
+        // evenly round the circuit rather than sent out as a convoy: three rovers
+        // nose to tail is one moving object, where a third of a lap apart puts
+        // traffic somewhere in the city whichever way the camera is pointing.
+        const patrol = PATROL[tree.category]
 
         return (
           <group key={tree.category}>
@@ -645,7 +684,8 @@ export default function MarkerLayer({
                   accent={orgColor(org)}
                   opacity={style.opacity}
                   dim={dim}
-                  patrolSpeed={i === 0 ? patrolSpeed : undefined}
+                  patrol={patrol}
+                  patrolPhase={(i / count) * Math.PI * 2}
                   raceOpen={isOpen}
                   called={selectedProject?.id === project.id}
                   onSelect={() => onSelectProject?.(project.id)}

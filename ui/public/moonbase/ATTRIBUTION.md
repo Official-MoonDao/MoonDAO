@@ -16,7 +16,6 @@ Models marked "optimized" were Draco-compressed with `@gltf-transform`
 | File | Source model | Used for |
 |---|---|---|
 | `starship-hls.glb` (edited) | Third-party "SpaceX Starship Ship 24 / Booster 7" community model (Sketchfab; verify license before production use) | Starship HLS — see note |
-| `apollo-lunar-module.glb` | Apollo Lunar Module (NASA) | Artemis III (crewed-lander stand-in) |
 | `viking-lander.glb` | Viking Lander (NASA) | Blue Moon MK1 cargo lander (stand-in) |
 | `insight-lander.glb` (optimized) | InSight Cruise Lander (NASA) | Blue Moon MK2 crewed lander (stand-in) |
 | `perseverance-rover.glb` | Mars 2020 Perseverance Rover (NASA) | NASA LTV (rover stand-in) |

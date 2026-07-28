@@ -15,23 +15,27 @@
 // lot is what lets you see the bet: press a race and its whole field lights up
 // in one place, at one scale, on the same regolith.
 //
-// Districts hold their competitors as an informal cluster — plots packed round
-// the lot rather than parked in a row — because a row reads as a showroom.
-// The packing is computed (see districtSlots) rather than hand-authored, so a
-// race that gains a competitor next month lays itself out without anyone
-// having to find it a parking space.
+// THE STREET PLAN is radial-concentric, which is what you get whenever a
+// settlement grows outward from one landing: a perimeter road round the core,
+// MAIN STREET as a concentric loop out at the district radius, and an AVENUE
+// running from the perimeter out along each district's bearing. Every district
+// sits on the crossroads where its avenue meets main street and takes the four
+// CORNER LOTS around that junction, so its competitors front two streets and
+// the roads run through the district rather than stopping short of it. Main
+// street is what links the districts to each other; the avenues are what link
+// them downtown.
 //
-// A perimeter road rings the habitat core and the rest of the plan hangs off
-// it. Every road exists because something has to be HAULED along it, and each
-// one is named for that traffic below. That is the whole rule, and it is worth
-// stating because the obvious way to make a base look less bare — draw more
-// roads, add a bypass, cross-link them into blocks — makes it look worse. A
-// loop around ground nobody uses doesn't read as a surveyed lot; it reads as
-// tyre marks. The cure for empty ground is hardware on it, not a road round it.
+// The geometry is exact — true circles, true radials, one setback — and that is
+// the whole reason it works. An earlier plan tried to make the base look less
+// bare by adding roads that wandered between the lots, and it read as tyre
+// marks, because a road only reads as surveyed if you can see the survey in it.
+// Regular geometry reads as a plan even along the stretches with nothing built
+// on them, the same way a city block does.
 //
-// The one cell the plan does close is real: the west approach, the propellant
-// road and the pad approach happen to enclose the ground between the utility
-// yard and the landing zone, because those three routes all have to exist.
+// Nothing here is hand-authored twice: the districts declare where they are and
+// how much ground they need, and both the plot packing (districtSlots) and the
+// road network (BASE_STREETS) are derived from that. A race that gains a
+// competitor gets a corner lot; it never needs a road drawn for it.
 //
 // The camera looks from the south-east, so the landing zone goes at the BACK:
 // the 52 m Starship reads as a backdrop over the small hardware rather than
@@ -43,33 +47,78 @@
 
 import type { ProjectType } from './types'
 
+// Radius of the perimeter road's centreline, in meters. The core district packs
+// to a 28 m extent, so the road's inner curb clears the camp's apron by about
+// 6 m, and the hardstand inside merges under that curb — the core and its ring
+// read as one paved area. Every avenue starts here.
+export const RING_RADIUS_M = 40
+
+// Radius of MAIN STREET, the concentric loop the districts stand on.
+//
+// Set by the deepest district rather than by taste: the power district's inner
+// corner lots hold 11 m reactors 19 m back down their avenue, so the loop has to
+// sit far enough out that those lots still clear the perimeter road's windrow.
+// Pulling it in any further would put a reactor on the ring road.
+export const MAIN_LOOP_M = 82
+
+// Road cross-section, in meters. HALF is the centreline to the outside of the
+// windrow (see PROFILE in BaseRoads, which must agree); SETBACK is the clear
+// regolith a plot keeps between its own edge and that windrow. Together they
+// are the only numbers that decide where a building stands relative to the
+// street it fronts, which is why frontage across the whole base is uniform.
+export const ROAD_HALF_M = 6.3
+export const SETBACK_M = 1.8
+
+// How a district's competitors stand relative to the streets around them.
+export type Frontage =
+  // The four corner lots of the avenue × main-street junction, filled
+  // diagonally. The default, and what makes a district read as a city block.
+  | 'crossroads'
+  // Flanking one road, one plot each side. For the landing zone, whose pads are
+  // far too big to sit on a junction — the haul road runs between them instead.
+  | 'flank'
+  // No road through the lot at all. For the core, which stands on a continuous
+  // hardstand inside the perimeter road.
+  | 'lot'
+
 export type SitePlan = {
   // Meters east and north of the ridge center — the CENTER of the district,
-  // which is a point no asset necessarily stands on. Individual plots are
-  // packed around it by districtSlots.
+  // which for a crossroads district is the middle of its junction and so a
+  // point no asset stands on. Individual plots are placed by districtSlots.
   east: number
   north: number
   // Degrees this installation is turned off the base's common heading.
   //
   // Every site shares ONE bearing by default (see facingYaw in ProjectModel).
-  // That shared axis is the whole trick: sites spread over 100 m that each aim
+  // That shared axis is the whole trick: sites spread over 200 m that each aim
   // independently at a viewpoint 130 m away splay by tens of degrees, and that
   // splay is what made the settlement read as unrelated hardware dropped on a
   // plain. Holding one axis makes it read as surveyed. These are the
   // deliberate departures from it — enough to keep the plan from looking like
   // a chorus line, never enough to turn an asset's back on the viewer.
   turn: number
-  // Where in the district the LARGEST competitor stands, as an angle CCW from
-  // east (the same convention as onRing below). The rest pack around from
-  // there. Worth controlling per district because the biggest asset dominates
-  // the district's silhouette, and whether it lands in front of its rivals or
-  // behind them is the difference between a group portrait and an eclipse.
-  spread?: number
+  front?: Frontage
+  // Meters the lot reaches OUTWARD along its avenue, past the junction. The
+  // avenue is drawn to run that far plus a turning circle, so this is what stops
+  // a road ending in the middle of a district — and, since the avenue comes from
+  // the perimeter road, why only the outward side needs a number. Asserted
+  // against the real packing in the tests rather than trusted.
+  reach?: number
+  // For a 'lot' district only: the bearing, degrees CCW from east, that its
+  // pair of assets stands along. Worth controlling because the core's two are a
+  // 38 m base camp beside a 13 m ILRS cluster, and which of them the eye
+  // reaches first is the difference between a group portrait and an eclipse.
+  lotAxis?: number
+  // For a 'flank' district only: which side of the road the largest plot takes,
+  // +1 for left of the outbound direction. The landing zone's Starship is the
+  // tallest thing on the base and it wants to stand clear of the frame's centre.
+  flankSide?: 1 | -1
 }
 
-// Meters of clear regolith between neighbouring plots. Applies both between
-// competitors inside a district and between the districts themselves, so one
-// number sets how tightly the whole colony is packed.
+// Meters of clear regolith between neighbouring plots on the same side of a
+// street, and between the districts themselves — so one number sets how tightly
+// the whole colony is packed. Plots facing each other across a street are held
+// apart by the road instead (see ROAD_HALF_M).
 export const DISTRICT_GAP_M = 6
 
 // One competitor's plot within its district: an absolute position in the same
@@ -100,96 +149,144 @@ function hash01(seed: string): number {
   return ((h >>> 0) % 100003) / 100003
 }
 
-// Smallest ring radius on which every plot fits shoulder to shoulder without
-// touching. A plot of radius r sitting R from the center subtends a half-angle
-// of asin(r / R), so the ring holds everything exactly when the subtended
-// angles (each padded by half a gap) sum to a full turn. That is monotonic in
-// R, so bisection nails it.
-function ringRadius(radii: number[]): number {
-  const need = (R: number) =>
-    radii.reduce(
-      (sum, r) =>
-        sum + 2 * Math.asin(Math.min(1, (r + DISTRICT_GAP_M / 2) / R)),
-      0
-    )
-  let lo = Math.max(...radii) + DISTRICT_GAP_M / 2
-  let hi = Math.max(lo, 1)
-  while (need(hi) > Math.PI * 2) hi *= 1.6
-  for (let i = 0; i < 48; i++) {
-    const mid = (lo + hi) / 2
-    if (need(mid) > Math.PI * 2) lo = mid
-    else hi = mid
-  }
-  return hi
+// How far off the district's heading an individual plot may be turned, in
+// degrees. Small on purpose now that the plan is streets: buildings on a street
+// read as aligned to it, and the jitter is only here so four identical relay
+// terminals on four corners aren't four copies of one render.
+const PLOT_TURN_JITTER_DEG = 7
+
+// Meters from the centreline of a street to the CENTRE of a plot fronting it.
+// The plot's own radius is in here, so a big asset stands further back and every
+// asset on the base ends up with the same 1.8 m of clear ground at its edge.
+function frontageM(radiusM: number): number {
+  return ROAD_HALF_M + SETBACK_M + radiusM
 }
 
-// How far off the district's heading an individual plot may be turned, in
-// degrees. Enough that the field doesn't read as a chorus line; not enough to
-// turn anyone's back on the camera.
-const PLOT_TURN_JITTER_DEG = 14
-// How far a plot may sit in or out of its ring, as a fraction of the radius.
-// Kept small deliberately: the jitter eats into the clearance the ring solve
-// just bought, and 3% of a 15 m ring is under half a meter against a 6 m gap.
-const PLOT_RADIAL_JITTER = 0.03
+// The four corner lots of a crossroads, in fill order: outward-left, then the
+// diagonally opposite inward-right, then the remaining two. Filling diagonally
+// matters for the small fields — a race with two competitors gets one lot on
+// each side of BOTH streets, which reads as a junction, where taking two
+// adjacent corners would read as one lot cut in half.
+const CORNERS: [number, number][] = [
+  [1, 1],
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+]
 
-// Pack a race's competitors into their district, largest first.
+// Place a race's competitors on the streets of their district, largest first.
 //
-// Two plots is a special case worth having, because a ring of two is not a
-// cluster — it is one asset marooned on each side of an empty middle. A pair
-// stands along a single axis instead, offset so the district center falls at
-// the middle of their combined frontage rather than between their centres
-// (which, for a 62 m Starship pad beside a 19 m one, are not the same point).
+// Positions come back absolute. Everything below works in the district's own
+// frame — `along` runs outward from the core down the avenue, `across` runs to
+// its left — and is rotated into the map frame on the way out, which is why a
+// district's layout is identical whichever bearing it sits on.
 export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> {
   const out = new Map<string, Slot>()
   if (!plots.length) return out
   const order = [...plots].sort(
     (a, b) => b.radiusM - a.radiusM || a.id.localeCompare(b.id)
   )
-  const spread = ((plan.spread ?? 90) * Math.PI) / 180
 
-  const place = (plot: Plot, dist: number, ang: number) => {
+  const bearing = Math.atan2(plan.north, plan.east)
+  const alongVec = [Math.cos(bearing), Math.sin(bearing)]
+  const acrossVec = [-Math.sin(bearing), Math.cos(bearing)]
+
+  const place = (plot: Plot, along: number, across: number) => {
     const turn =
       plan.turn + (hash01(`${plot.id}:turn`) - 0.5) * 2 * PLOT_TURN_JITTER_DEG
     out.set(plot.id, {
-      east: plan.east + Math.cos(ang) * dist,
-      north: plan.north + Math.sin(ang) * dist,
+      east: plan.east + alongVec[0] * along + acrossVec[0] * across,
+      north: plan.north + alongVec[1] * along + acrossVec[1] * across,
       turn,
-      offsetM: dist,
+      offsetM: Math.hypot(along, across),
     })
   }
 
-  if (order.length === 1) {
-    place(order[0], 0, spread)
-    return out
-  }
+  switch (plan.front ?? 'crossroads') {
+    case 'lot': {
+      // No street through the lot, so the assets simply stand along an axis,
+      // offset so the district center falls at the middle of their combined
+      // FRONTAGE rather than between their centres — which, for a 38 m base
+      // camp beside a 12 m stack, are not the same point.
+      const axis = ((plan.lotAxis ?? 0) * Math.PI) / 180
+      let cursor = 0
+      const span = order.reduce(
+        (sum, p, i) => sum + p.radiusM * 2 + (i ? DISTRICT_GAP_M : 0),
+        0
+      )
+      for (const plot of order) {
+        const at = cursor + plot.radiusM - span / 2
+        place(plot, Math.cos(axis - bearing) * at, Math.sin(axis - bearing) * at)
+        cursor += plot.radiusM * 2 + DISTRICT_GAP_M
+      }
+      return out
+    }
 
-  if (order.length === 2) {
-    const [big, small] = order
-    const sep = big.radiusM + small.radiusM + DISTRICT_GAP_M
-    // Centring the pair's EXTENT rather than its centres: solving
-    // p + rBig = q + rSmall with p + q = sep.
-    const p = (sep + small.radiusM - big.radiusM) / 2
-    place(big, p, spread)
-    place(small, sep - p, spread + Math.PI)
-    return out
-  }
+    case 'flank': {
+      // One road with a plot either side. Plots opposite each other are held
+      // apart by the road's full width plus both setbacks, so they never need
+      // spacing along it; a third and a fourth would, which is what the step is.
+      let step = 0
+      for (let i = 2; i < order.length; i++) {
+        step = Math.max(
+          step,
+          order[i].radiusM + order[i - 2].radiusM + DISTRICT_GAP_M
+        )
+      }
+      const side = plan.flankSide ?? 1
+      const rows = Math.ceil(order.length / 2)
+      order.forEach((plot, i) => {
+        const along = Math.floor(i / 2) * step - ((rows - 1) * step) / 2
+        place(plot, along, (i % 2 ? -side : side) * frontageM(plot.radiusM))
+      })
+      return out
+    }
 
-  const radii = order.map((p) => p.radiusM)
-  const R = ringRadius(radii)
-  const half = radii.map((r) =>
-    Math.asin(Math.min(1, (r + DISTRICT_GAP_M / 2) / R))
-  )
-  // Any turn the plots don't need is shared out evenly, so a district of three
-  // small assets breathes instead of huddling on one side of its ring.
-  const slack =
-    Math.max(0, Math.PI * 2 - half.reduce((s, h) => s + 2 * h, 0)) / order.length
-  let ang = spread
-  order.forEach((plot, i) => {
-    const jitter = 1 + (hash01(`${plot.id}:r`) - 0.5) * 2 * PLOT_RADIAL_JITTER
-    place(plot, R * jitter, ang + half[i])
-    ang += 2 * half[i] + slack
-  })
-  return out
+    default: {
+      // Corner lots. Placed in POLAR terms about the base's centre rather than
+      // in the district's own flat frame, because the two streets it fronts are
+      // a CIRCLE and a RADIAL, and only polar offsets are exactly the setback
+      // from both. Offsetting along the tangent instead leaves the inward lots
+      // short: main street's arc cuts inside the tangent line by a couple of
+      // meters at this radius, which is the whole setback gone.
+      //
+      // Beyond four competitors the block repeats further out along the avenue —
+      // a second row of corners — rather than the lots creeping toward each
+      // other.
+      const centre = Math.hypot(plan.east, plan.north)
+      let step = 0
+      for (let i = 4; i < order.length; i++) {
+        step = Math.max(
+          step,
+          frontageM(order[i].radiusM) +
+            frontageM(order[i - 4].radiusM) +
+            DISTRICT_GAP_M
+        )
+      }
+      order.forEach((plot, i) => {
+        const [alongSign, acrossSign] = CORNERS[i % 4]
+        const row = Math.floor(i / 4)
+        const front = frontageM(plot.radiusM)
+        // Radially, `front` off main street's centreline; tangentially, the
+        // angle whose perpendicular distance from the avenue is also `front`.
+        const radius = centre + alongSign * (front + row * step)
+        const swing = acrossSign * Math.asin(Math.min(1, front / radius))
+        const a = bearing + swing
+        out.set(plot.id, {
+          east: Math.cos(a) * radius,
+          north: Math.sin(a) * radius,
+          turn:
+            plan.turn +
+            (hash01(`${plot.id}:turn`) - 0.5) * 2 * PLOT_TURN_JITTER_DEG,
+          offsetM: Math.hypot(
+            Math.cos(a) * radius - plan.east,
+            Math.sin(a) * radius - plan.north
+          ),
+        })
+      })
+      return out
+    }
+  }
 }
 
 // Radius in meters of the ground a district occupies once packed — the farthest
@@ -205,233 +302,238 @@ export function districtExtentM(plan: SitePlan, plots: Plot[]): number {
   return max
 }
 
-// District centres, arranged around the core at radii set by how much ground
-// each one's field needs (see tmp check in scripts: every pair clears by at
-// least 5 m of open regolith, edge to edge, and every district clears the
-// perimeter road).
+// Degrees CCW from east that a district lies on, which is also the bearing of
+// its avenue and the junction it takes on the perimeter road.
+export function districtBearingDeg(plan: SitePlan): number {
+  return (Math.atan2(plan.north, plan.east) * 180) / Math.PI
+}
+
+// Where the districts stand.
 //
-// Districts are spaced from their EDGES, not their centres. A settlement is
-// defined by how little ground it wastes — leave 40 m of nothing between two
-// lots and they read as two expeditions that happened to land on the same
-// plain, however carefully they are aligned. What sets the radii is therefore
-// not taste but the packing: the power district needs a 25 m lot for three
-// reactors, so it sits 80 m out, and the landing zone needs 57 m for two pads,
-// so it goes right to the back.
+// Six junctions on main street, spaced on a regular 45–60° grid, plus the core
+// inside the perimeter road and the landing zone out at the end of the longest
+// avenue. The regularity is doing real work: a viewer reads a plan as surveyed
+// from its spacing long before they read any individual road, and evenly spaced
+// junctions on a true circle is the cheapest way to say a surveyor stood here.
+//
+// Which race gets which junction is composition and traffic. The camera looks
+// from the south-east, so the landing zone takes due north and backs the frame
+// with a 52 m Starship; the habitat, comms and rover districts take the near
+// south-east arc so the foreground carries something at human scale and the one
+// moving vehicle on the base starts close to the eye; the ISRU yard sits next
+// door to the landing zone, because the whole argument for making oxygen on the
+// Moon is pumping it into a lander, and that tanker run is now one leg of main
+// street rather than a trip through town; power goes off west where the crew
+// isn't.
+//
+// Positions are given as a bearing rather than as coordinates so a district is
+// EXACTLY on main street. Writing the pair out by hand rounds it a couple of
+// centimeters off the loop, and every plot's setback is then measured from a
+// junction that isn't quite on the road it fronts.
+const at = (bearingDeg: number, radiusM = MAIN_LOOP_M) => {
+  const [east, north] = radial(bearingDeg, radiusM)
+  return { east, north }
+}
+
 export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
-  // THE CORE, at the origin, inside the perimeter road: the sustained-presence
-  // race, which is Artemis Base Camp against the Artemis III landed stack.
-  // Camp slightly off centre with the smaller stack opposite, so the hero
-  // structure sits where the eye lands.
-  crewed_base: { east: 0, north: 0, turn: 0, spread: 200 },
-  // HABITAT — the pressurized-module race, on the ring's southern frontage.
-  // The near side, so the foreground carries something at human scale and the
-  // eye has somewhere to start before it reaches the core.
-  habitat: { east: 45, north: -54, turn: 10, spread: -50 },
-  // ROVER DEPOT, ON the perimeter road south of the core. Alone among the
-  // districts this one wants to sit at exactly the ring radius, because the
-  // leading vehicle drives laps of that road from its plot (see
-  // PATROL_SPEED_MPS) and a lap is a rotation about the patch centre — it
-  // holds whatever radius the plot has. The three bids park on the road
-  // together and the front-runner pulls out.
-  rover: { east: -4, north: -40, turn: 0, spread: -95 },
-  // ISRU YARD, north-west, deliberately UPHILL OF THE PAD ROAD rather than
-  // tucked somewhere tidier: the entire argument for making oxygen on the Moon
-  // is pumping it into a lander, so the plant wants a short tanker run to the
-  // landing zone. That run is the propellant road.
-  isru_plant: { east: -69, north: 37, turn: 0, spread: 152 },
-  // POWER, south-west and at the far end of the west approach. Fission plants
-  // go where the crew isn't: this is the longest single spur on the base, and
-  // the standoff is the reason for it.
-  power: { east: -75, north: -27, turn: 6, spread: 200 },
-  // CONSTRUCTION, north-east, between the core and the landing zone — the
-  // ground these machines are all bidding to pave. Turned up the pad road,
-  // printing toward the work.
-  construction: { east: 48, north: 57, turn: 22, spread: 50 },
-  // LANDING ZONE, right at the back of the plan. A Starship-class descent
-  // throws ejecta on ballistic arcs with no air to stop it, so a real pad
-  // stands off from anything pressurized by far more than this; ~100 m of clear
-  // regolith from the nearest pad edge to the core is already a compromise with
-  // keeping the vehicle in frame. `spread` puts the 62 m Starship pad on the
-  // FAR side of the district and the Blue Moon pad in front of it, so the big
-  // stack backs the district instead of hiding it.
-  lander: { east: -23, north: 128, turn: 0, spread: 90 },
-  // COMMS AND NAVIGATION, due east on its own. Ground stations are sited clear
-  // of traffic and of the structures that would clutter their horizon, and four
-  // terminals looking at the same sky want the same thing.
+  // THE CORE, at the origin inside the perimeter road: the sustained-presence
+  // race, Artemis Base Camp against China/Russia's International Lunar
+  // Research Station (ILRS). The one district with no street through it — it
+  // stands on a continuous hardstand, which is what a first landing site
+  // would actually be.
+  crewed_base: { east: 0, north: 0, turn: 0, front: 'lot', lotAxis: 200 },
+
+  // COMMS AND NAVIGATION, due east (0°). Ground stations are sited clear of the
+  // structures that would clutter their horizon, and four terminals looking at
+  // the same sky want the same thing — so this junction is the outermost corner
+  // of the settlement on that side.
   //
   // Note there is deliberately no `orbital` district. buildTechTrees treats
   // orbital as a non-surface type, so Gateway can never occupy ground here — a
-  // lot for it would be a road to a plot that stays bare at every year on the
-  // scrubber.
-  comms_pnt: { east: 77, north: -7, turn: -12, spread: -5 },
+  // lot for it would be an avenue to four corners that stay bare regolith at
+  // every year on the scrubber.
+  comms_pnt: { ...at(0), turn: -12, reach: 22 },
+
+  // CONSTRUCTION, north-east (45°), between the core and the landing zone: the
+  // ground these machines are all bidding to pave. Turned toward the work.
+  construction: { ...at(45), turn: 22, reach: 20 },
+
+  // LANDING ZONE, due north (90°) at the back of the plan, 130 m out because a
+  // Starship-class descent throws ejecta on ballistic arcs with no air to stop
+  // them. The two pads FLANK the haul road rather than taking corner lots — at
+  // 62 m across, the Starship's apron is most of a city block on its own.
+  lander: {
+    ...at(90, 130),
+    turn: 0,
+    front: 'flank',
+    flankSide: 1,
+    reach: 32,
+  },
+
+  // ISRU YARD, north-west (135°), one junction round main street from the pad
+  // avenue.
+  isru_plant: { ...at(135), turn: 0, reach: 26 },
+
+  // POWER, west-south-west (195°). Fission plants go where the crew isn't:
+  // these are the deepest lots on the base, and they are what sets main
+  // street's radius.
+  power: { ...at(195), turn: 6, reach: 29 },
+
+  // ROVER DEPOT, south-south-west (255°). Its whole field is out driving laps of
+  // main street (see PATROL) — the only moving things on the base, touring every
+  // district rather than circling the core.
+  //
+  // Which leaves the depot's own corner lots standing empty, and that is the
+  // right answer rather than a gap: a motor pool with its yard bare is a motor
+  // pool whose fleet is working. The lots and the avenue are still what the
+  // vehicles come home to, and still what the race's beacon is planted on.
+  rover: { ...at(255), turn: 0, reach: 13 },
+
+  // HABITAT, south-east (315°). Pressurized modules at human scale, on the near
+  // frontage so the eye has somewhere to start before it reaches the core.
+  habitat: { ...at(315), turn: 10, reach: 19 },
 }
 
-// Sites whose hardware is UNDER WAY, in meters per second, driving laps of the
-// perimeter road from their plot. Absent means parked.
+// Races whose hardware is UNDER WAY: the road the field drives and how fast, in
+// meters per second. Absent means the race stands on its lots.
 //
-// One moving thing is worth a great deal here: everything else on the plan is
-// stationary by nature, so a settlement full of immaculate hardware reads as an
-// architectural render until something in it is working. NASA specifies the LTV
-// around 15 km/h, and a little under half of that is what reads as purposeful
-// at the scale of a 190 m lap — fast enough to be plainly driving, slow enough
-// that it never looks sped up.
+// Traffic is worth a great deal here. Everything else on the plan is stationary
+// by nature, so a settlement full of immaculate hardware reads as an
+// architectural render until something in it is working — and a city reads as a
+// city when there is something on its streets. The whole field drives, spread
+// round the circuit, so main street carries movement wherever you look rather
+// than one vehicle doing laps for an audience.
 //
-// This only works for a site whose plot sits at the ring radius, because a lap
-// is a rigid rotation about the patch center: it holds the vehicle at whatever
-// distance from the core its plot has.
-export const PATROL_SPEED_MPS: Partial<Record<ProjectType, number>> = {
-  rover: 3.2,
+// NASA specifies the LTV around 15 km/h, and a little under half of that is what
+// reads as purposeful at the scale of a 515 m lap: fast enough to be plainly
+// driving, slow enough that it never looks sped up. One speed for the whole
+// field, which is what guarantees the field never closes up on itself — see the
+// lap in MarkerLayer.
+//
+// The road is named here rather than taken from a vehicle's plot because a lap is
+// a rigid rotation about the patch center, which holds a vehicle at whatever
+// radius it starts from: reading that off the plot would have the fleet driving
+// laps 10 m out on the shoulder of its own corner lots.
+export const PATROL: Partial<
+  Record<ProjectType, { speedMps: number; radiusM: number }>
+> = {
+  rover: { speedMps: 3.2, radiusM: MAIN_LOOP_M },
 }
 
-// Ring radius (meters) for any category the plan doesn't zone explicitly.
-export const FALLBACK_RING_M = 95
-
-// Radius of the perimeter road's centreline, in meters. The core district packs
-// to a 28 m extent, so the road's inner curb clears the camp's apron by about
-// 6 m, and the hardstand inside merges under that curb — the core and its ring
-// read as one paved area. Every district spur meets the base here.
-export const RING_RADIUS_M = 40
+// Ring radius (meters) for any category the plan doesn't zone explicitly —
+// outside the built plan, so a race added to the dataset lands on open regolith
+// beyond main street instead of inside somebody's district.
+export const FALLBACK_RING_M = 150
 
 // The cleared hardstand at the core, in meters — the yard the core district
-// stands in, paved continuously with the ring around it.
+// stands in, paved continuously with the perimeter road around it.
 export const HARDSTAND = { site: 'crewed_base' as ProjectType, radius: 34 }
 
 // Roads, as polylines of [east, north] waypoints in meters. Curves are splined
 // through these, so a handful of waypoints describes a road that bends the way
 // a graded one does.
-//
-// Everything is laid out against the plots rather than between them: the ring
-// runs at a radius that clears every apron, so it can carry 188 m unbroken
-// instead of being chopped into stubs between neighbours that nearly touch.
-// Where a road runs into a plot it is because it should — a spur ends at the
-// facility it serves, and the rover is parked on the ring.
 export type Street = {
   points: [number, number][]
   closed?: boolean
   // Lane width as a fraction of a full haul road. The routes that carry cargo
   // and propellant run full width; a track that only ever takes a crew rover
   // out to one machine is narrower, and that difference is most of what stops
-  // five roads reading as one road drawn five times.
+  // eight roads reading as one road drawn eight times.
   width?: number
   // The sites this road exists to reach. It stands as long as any of them do,
   // so a road never runs out to a plot that is still bare regolith at the year
-  // on the scrubber — the comms terminal, for one, isn't in service until the
-  // back half of the decade. Only the ring has no `serves`: it is the core's
-  // own perimeter and arrives with the settlement.
+  // on the scrubber — the comms terminals, for one, aren't in service until the
+  // back half of the decade. The perimeter road and main street have no
+  // `serves`: they are the settlement's own frame and arrive with it.
   serves?: ProjectType[]
 }
 
-// Bearings on the ring, in degrees, where each road meets it. Kept here as
-// named angles because the constraint that matters is the SPACING: junctions
-// closer than about 10 m of arc merge into one shapeless apron, and the rover
-// is parked on the ring at 214° and must not be run over.
-// Now that every district hangs off the ring there is one junction per spur,
-// each placed on the bearing its district actually lies along — so a spur
-// leaves the ring pointing at where it is going instead of setting off sideways
-// and correcting. Spacing is still the constraint that matters: junctions
-// closer than about 10 m of arc (14° at this radius) merge into one shapeless
-// apron. The tightest pair below is 45°.
-const RING_JOIN = {
-  comms: -5,
-  habitat: -50,
-  // No join at the rover depot (-95°): it stands ON the road.
-  power: 200,
-  isru: 152,
-  pad: 100,
-  printer: 50,
+function radial(bearingDeg: number, radiusM: number): [number, number] {
+  const a = (bearingDeg * Math.PI) / 180
+  return [Math.cos(a) * radiusM, Math.sin(a) * radiusM]
 }
 
-function onRing(deg: number): [number, number] {
-  const a = (deg * Math.PI) / 180
-  return [
-    +(Math.cos(a) * RING_RADIUS_M).toFixed(1),
-    +(Math.sin(a) * RING_RADIUS_M).toFixed(1),
-  ]
+// A closed concentric road. Twenty-four stations puts a waypoint every ~21 m at
+// main street's radius, which a Catmull-Rom spline carries round as a circle to
+// well within the width of the windrow.
+function loop(radiusM: number, stations = 24): [number, number][] {
+  return Array.from({ length: stations }, (_, i) =>
+    radial((i / stations) * 360, radiusM)
+  )
+}
+
+// How far past a district's outer lots its avenue runs before it stops. Enough
+// for the turning circle a hauler needs at the end of a road, and no more: an
+// avenue that overshoots its last lot is the one thing on this plan that would
+// read as a road to nowhere.
+const AVENUE_TAIL_M = 7
+
+// An avenue: the radial from the perimeter road out through its district. Three
+// waypoints, because a radial is straight and a spline through collinear points
+// stays straight — the bend is at the junction, where the road meets the ring.
+function avenue(
+  site: ProjectType,
+  opts: { width?: number; serves?: ProjectType[] } = {}
+): Street {
+  const plan = BASE_PLAN[site]!
+  const bearing = districtBearingDeg(plan)
+  const centre = Math.hypot(plan.east, plan.north)
+  const end = centre + (plan.reach ?? 20) + AVENUE_TAIL_M
+  return {
+    serves: opts.serves ?? [site],
+    width: opts.width,
+    points: [
+      radial(bearing, RING_RADIUS_M),
+      radial(bearing, (RING_RADIUS_M + end) / 2),
+      radial(bearing, end),
+    ],
+  }
 }
 
 export const BASE_STREETS: Street[] = [
-  // The perimeter road around the core.
-  {
-    closed: true,
-    points: Array.from({ length: 12 }, (_, i) => onRing((i / 12) * 360)),
-  },
+  // THE PERIMETER ROAD around the core, and downtown: the rover depot parks on
+  // it, the hardstand merges under its inner curb, and all six avenues start
+  // here. Arrives with the settlement, so it has no `serves`.
+  { closed: true, points: loop(RING_RADIUS_M, 12) },
 
-  // PAD APPROACH — the haul road north to the landing zone, and the trunk of
-  // the plan: cargo comes down it off the landers and propellant goes up it,
-  // sharing the last stretch past the propellant road's merge.
-  //
-  // It THREADS BETWEEN the two pads rather than stopping at the near one,
-  // passing a few meters off the Blue Moon apron and running on to the far edge
-  // of the Starship's. A haul road that dead-ends at the first pad leaves the
-  // bigger vehicle — the one the whole district is arranged around — with no way
-  // to be reached, and a road that ends inside an apron reads as unfinished.
-  {
-    serves: ['lander'],
-    points: [
-      onRing(RING_JOIN.pad),
-      [-8, 54],
-      [-9.7, 70],
-      [-10.5, 86],
-      [-11.5, 98],
-      [-15, 108],
-    ],
-  },
+  // MAIN STREET — the concentric loop out at the district radius. This is the
+  // road that makes the base a settlement rather than a hub with spokes: every
+  // district fronts it, and it is how you get from the power district to the
+  // ISRU yard without driving through the core. It crosses all six avenues, and
+  // each of those crossings is a district's own junction.
+  { closed: true, points: loop(MAIN_LOOP_M) },
 
-  // PROPELLANT ROAD — ISRU yard onto the pad haul road. The whole argument for
-  // making oxygen on the Moon is filling a lander with it, so the tanker run
-  // out of the yard is the busiest thing on the base. It merges onto the pad
-  // approach rather than running its own way north: two roads to the same
-  // ground would enclose 60 m of ejecta zone nothing will ever be built in.
-  {
-    serves: ['isru_plant', 'lander'],
-    points: [
-      [-51, 53],
-      [-42, 60],
-      [-30, 65],
-      [-19, 68],
-      [-9.7, 70],
-    ],
-  },
+  // PAD AVENUE — the haul road north to the landing zone, and the trunk of the
+  // plan: cargo comes down it off the landers, propellant goes up it from the
+  // ISRU yard by way of main street, and it runs BETWEEN the two pads rather
+  // than stopping at the near one. Much the longest road on the base, because
+  // the ejecta standoff is what its length is for.
+  avenue('lander'),
 
-  // ISRU SPUR — the plant's own road in to the ring, for everything that isn't
+  // ISRU AVENUE — the plant's own road downtown, for everything that isn't
   // propellant: crews, spares, and the oxygen and metals the base itself uses.
-  {
-    serves: ['isru_plant'],
-    points: [onRing(RING_JOIN.isru), [-40, 21], [-46, 24]],
-  },
+  avenue('isru_plant'),
 
-  // WEST APPROACH — power. Short, but it is the road that carries the base's
-  // entire electrical supply, and the reason the district it reaches sits 80 m
-  // out: a fission plant is sited away from the crew, and every meter of that
-  // standoff is cable that has to be laid along here.
-  {
-    serves: ['power'],
-    points: [onRing(RING_JOIN.power), [-44, -16], [-51, -19]],
-  },
+  // WEST AVENUE — power. It carries the base's entire electrical supply, and
+  // the reason its district sits deepest is the reason this is the longest
+  // avenue after the pad road: every meter of standoff between a fission plant
+  // and the crew is cable that has to be laid along here.
+  avenue('power'),
 
-  // PRINTER TRACK — crew and spares out to the paving machines. A rover-width
-  // track, not a haul road: these things eat regolith they scoop where they
-  // stand, so nothing heavy is ever driven to them.
-  {
-    serves: ['construction'],
-    width: 0.72,
-    points: [onRing(RING_JOIN.printer), [30, 36], [35, 42]],
-  },
+  // CONSTRUCTION AVENUE — crew and spares out to the paving machines. Rover
+  // width, not haul width: these things eat regolith they scoop where they
+  // stand, so nothing heavy is ever driven out to them.
+  avenue('construction', { width: 0.72 }),
 
-  // EAST APPROACH — maintenance out to the comms terminals, sited off on their
-  // own to keep structures off their horizon.
-  {
-    serves: ['comms_pnt'],
-    width: 0.72,
-    points: [onRing(RING_JOIN.comms), [47, -4], [55, -5]],
-  },
+  // COMMS AVENUE — maintenance out to the relay terminals.
+  avenue('comms_pnt', { width: 0.72 }),
 
-  // HABITAT WALK — the crew's own route between quarters and the core. Narrow
+  // DEPOT AVENUE — the rovers' own road downtown. Rover width, for obvious
+  // reasons.
+  avenue('rover', { width: 0.72 }),
+
+  // HABITAT AVENUE — the crew's own route between quarters and the core. Narrow
   // because nothing is hauled along it, but graded, because this is the one
-  // road on the base that people are expected to walk.
-  {
-    serves: ['habitat'],
-    width: 0.85,
-    points: [onRing(RING_JOIN.habitat), [30, -36], [35, -42]],
-  },
+  // road on the base people are expected to walk.
+  avenue('habitat', { width: 0.85 }),
 ]

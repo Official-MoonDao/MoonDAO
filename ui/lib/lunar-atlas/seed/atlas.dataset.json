@@ -358,6 +358,22 @@
           "retrievedAt": "2026-07-27"
         }
       ]
+    },
+    {
+      "id": "cnsa-roscosmos",
+      "name": "CNSA / Roscosmos",
+      "kind": "international",
+      "country": "China / Russia",
+      "website": "https://www.cnsa.gov.cn/english/",
+      "brandColor": "#C8102E",
+      "summary": "China's National Space Administration and Russia's Roscosmos are jointly developing the International Lunar Research Station (ILRS), a robotic-then-crewed base aimed at the lunar South Pole, open to partner nations and developed independently of Artemis.",
+      "sources": [
+        {
+          "label": "China, Russia reveal roadmap for international moon base — SpaceNews / Moon Village Association",
+          "url": "https://moonvillageassociation.org/china-russia-reveal-roadmap-for-international-moon-base/",
+          "retrievedAt": "2026-07-28"
+        }
+      ]
     }
   ],
   "projects": [
@@ -389,6 +405,20 @@
           ]
         },
         {
+          "id": "a3-landing",
+          "title": "Artemis III crewed South Pole landing",
+          "targetDate": "2027",
+          "datePrecision": "year",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Artemis III",
+              "url": "https://www.nasa.gov/mission/artemis-iii/",
+              "retrievedAt": "2026-07-01"
+            }
+          ]
+        },
+        {
           "id": "abc-habitat",
           "title": "Foundation surface habitat delivery",
           "targetDate": "2033",
@@ -406,6 +436,7 @@
       "sharedGoalIds": [
         "shared-south-pole-base"
       ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "NASA — Artemis Base Camp",
@@ -416,30 +447,71 @@
       "visibility": "public"
     },
     {
-      "id": "nasa-artemis-iii",
-      "orgId": "nasa",
-      "name": "Artemis III Crewed Landing",
+      "id": "ilrs",
+      "orgId": "cnsa-roscosmos",
+      "name": "International Lunar Research Station",
       "type": "crewed_base",
-      "modelURI": "/moonbase/models/apollo-lunar-module.glb",
-      "summary": "The first crewed Artemis landing, targeting a South Pole region and delivering astronauts to the surface via a commercial Human Landing System.",
+      "summary": "A China–Russia lunar base aimed at the South Pole, built up in robotic phases (command/power/telecom, science, ISRU, biomedical, astronomy facilities) ahead of a crewed utilization phase — developed independently of, and on a slower timeline than, Artemis Base Camp.",
       "location": {
-        "lat": -85.3,
-        "lon": 0
+        "lat": -84.3,
+        "lon": 82.8
       },
-      "locationPrecision": "approximate",
-      "regionLabel": "South Pole candidate regions",
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (candidate: Amundsen crater)",
       "milestones": [
         {
-          "id": "a3-landing",
-          "title": "Artemis III crewed South Pole landing",
-          "targetDate": "2027",
+          "id": "ilrs-roadmap",
+          "title": "China–Russia ILRS roadmap announced",
+          "targetDate": "2021",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "SpaceNews — China, Russia reveal roadmap for international moon base",
+              "url": "https://moonvillageassociation.org/china-russia-reveal-roadmap-for-international-moon-base/",
+              "retrievedAt": "2026-07-28"
+            }
+          ]
+        },
+        {
+          "id": "ilrs-changE7",
+          "title": "Chang'e-7 South Pole reconnaissance",
+          "targetDate": "2026",
           "datePrecision": "year",
           "status": "planned",
           "sources": [
             {
-              "label": "NASA — Artemis III",
-              "url": "https://www.nasa.gov/mission/artemis-iii/",
-              "retrievedAt": "2026-07-01"
+              "label": "Wikipedia — International Lunar Research Station",
+              "url": "https://en.wikipedia.org/wiki/International_Lunar_Research_Station",
+              "retrievedAt": "2026-07-28"
+            }
+          ]
+        },
+        {
+          "id": "ilrs-1",
+          "title": "ILRS-1: command center, power and telecom facilities",
+          "targetDate": "2031",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Wikipedia — International Lunar Research Station",
+              "url": "https://en.wikipedia.org/wiki/International_Lunar_Research_Station",
+              "retrievedAt": "2026-07-28"
+            }
+          ]
+        },
+        {
+          "id": "ilrs-utilization",
+          "title": "Utilization phase begins — first crewed stays",
+          "targetDate": "2036",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Space.com — Not just Artemis: China and Russia shooting for the moon, too",
+              "url": "https://www.space.com/china-russia-moon-base-ilrs",
+              "retrievedAt": "2026-07-28"
             }
           ]
         }
@@ -447,11 +519,17 @@
       "sharedGoalIds": [
         "shared-south-pole-base"
       ],
+      "rosterStatus": "listed",
       "sources": [
         {
-          "label": "NASA — Artemis III candidate regions",
-          "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/",
-          "retrievedAt": "2026-07-01"
+          "label": "SpaceNews — China, Russia reveal roadmap for international moon base",
+          "url": "https://moonvillageassociation.org/china-russia-reveal-roadmap-for-international-moon-base/",
+          "retrievedAt": "2026-07-28"
+        },
+        {
+          "label": "Space.com — Not just Artemis: China and Russia shooting for the moon, too",
+          "url": "https://www.space.com/china-russia-moon-base-ilrs",
+          "retrievedAt": "2026-07-28"
         }
       ],
       "visibility": "public"
@@ -2251,21 +2329,38 @@
     {
       "id": "shared-south-pole-base",
       "title": "First sustained crewed South Pole presence",
-      "description": "NASA's Artemis campaign is building toward a permanent crewed foothold at the lunar South Pole: Artemis III returns astronauts to the surface, and Artemis Base Camp establishes the habitats, power, and mobility for sustained stays. The crewed landers that ferry astronauts down are raced separately in the lander tech tree.",
+      "description": "Two publicly declared programs are building toward a permanent crewed foothold at the lunar South Pole, on independent tracks: NASA's Artemis Base Camp (habitats, power, and mobility, following the Artemis III crewed landing) and the China–Russia International Lunar Research Station (ILRS), built up through robotic phases toward crewed utilization from 2036. The crewed landers that ferry astronauts down for each program are raced separately in the lander tech tree.",
       "projectIds": [
-        "nasa-artemis-iii",
-        "nasa-artemis-base-camp"
+        "nasa-artemis-base-camp",
+        "ilrs"
+      ],
+      "criteria": [
+        {
+          "id": "continuous-occupancy",
+          "statement": "Establish continuous crewed occupancy at a fixed South Pole site",
+          "threshold": "≥ 2 weeks continuous stay, repeated across multiple missions"
+        },
+        {
+          "id": "life-support",
+          "statement": "Demonstrate closed-loop life support beyond a single sortie",
+          "threshold": "Regenerative O2/water systems operating in situ"
+        },
+        {
+          "id": "local-power",
+          "statement": "Power the site from local generation sized to sustained base load",
+          "threshold": "Solar or fission surface power, not primary batteries or a single sortie's fuel cells"
+        }
       ],
       "targetWindow": {
-        "from": "2027",
-        "to": "2033"
+        "from": "2031",
+        "to": "2040"
       },
       "market": {
         "status": "planned",
         "resolutionAuthority": "senate",
         "impliedOdds": {
-          "nasa-artemis-base-camp": 0.55,
-          "nasa-artemis-iii": 0.45
+          "nasa-artemis-base-camp": 0.6,
+          "ilrs": 0.33
         }
       },
       "sources": [
@@ -2273,6 +2368,11 @@
           "label": "NASA — Artemis",
           "url": "https://www.nasa.gov/humans-in-space/artemis/",
           "retrievedAt": "2026-07-01"
+        },
+        {
+          "label": "SpaceNews — China, Russia reveal roadmap for international moon base",
+          "url": "https://moonvillageassociation.org/china-russia-reveal-roadmap-for-international-moon-base/",
+          "retrievedAt": "2026-07-28"
         }
       ],
       "category": "crewed_base"
