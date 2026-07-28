@@ -139,7 +139,9 @@ export function useProjectWearer(
   selectedChain: any,
   wearerAddressOrAddresses: string | string[] | null | undefined
 ) {
-  const [wornProjectHats, setWornProjectHats] = useState<any>()
+  const [wornProjectHats, setWornProjectHats] = useState<any[] | undefined>(
+    undefined
+  )
   const [isLoading, setIsLoading] = useState(false)
 
   const addresses = normalizeWearerAddresses(wearerAddressOrAddresses)

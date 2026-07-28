@@ -1,0 +1,16 @@
+[
+  {
+    "inputs": [{ "internalType": "uint256", "name": "deprizeId", "type": "uint256" }],
+    "name": "sweepFees",
+    "outputs": [{ "internalType": "uint256", "name": "swept", "type": "uint256" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "marketOf",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

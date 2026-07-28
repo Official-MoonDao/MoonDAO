@@ -1,5 +1,28 @@
-import { CK_NEWSLETTER_FORM_ID } from 'const/config'
+import {
+  CK_MISSION_FRANK_DONOR_TAG_ID,
+  CK_NEWSLETTER_FORM_ID,
+} from 'const/config'
 import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
+
+export async function tagMissionFrankDonor(email: string): Promise<void> {
+  const apiKey = process.env.CONVERT_KIT_API_KEY
+  if (!apiKey) {
+    console.warn('tagMissionFrankDonor: CONVERT_KIT_API_KEY not set')
+    return
+  }
+
+  const tagResultEndpoint = `https://api.convertkit.com/v3/tags/${CK_MISSION_FRANK_DONOR_TAG_ID}/subscribe`
+  const response = await fetch(tagResultEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey, email: email.trim() }),
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    console.error('ConvertKit Mission Frank Donor tag failed:', response.status, text)
+  }
+}
 
 export async function subscribeContributorToNewsletter(email: string): Promise<void> {
   const apiKey = process.env.CONVERT_KIT_API_KEY

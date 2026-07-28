@@ -10,7 +10,11 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpinCitizenImage } from '@/lib/ipfs/unpin'
-import cleanData, { unescapeQuotes } from '@/lib/tableland/cleanData'
+import {
+  formatCitizenLocationForTable,
+  sanitizeTablelandField,
+  unescapeQuotes,
+} from '@/lib/tableland/cleanData'
 import { waitForRow } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -130,7 +134,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
   const [croppedInputImage, setCroppedInputImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
-    getAttribute(nft?.metadata?.attributes, 'formId').value,
+    getAttribute(nft?.metadata?.attributes, 'formId')?.value ?? '',
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
   const [showEmailUpdate, setShowEmailUpdate] = useState(false)
@@ -192,7 +196,9 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
         website: getAttribute(nft.metadata.attributes, 'website').value,
         instagram: getAttribute(nft.metadata.attributes, 'instagram').value,
         linkedin: getAttribute(nft.metadata.attributes, 'linkedin').value,
-        view: 'public',
+        view: (getAttribute(nft.metadata.attributes, 'view').value || 'public') as
+          | 'public'
+          | 'private',
       }
     })
   }, [nft?.metadata?.id])
@@ -301,7 +307,13 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
 
                 const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
-                await unpinCitizenImage(nft.metadata.id)
+                // Unpin the old image best-effort — a failure here must not
+                // block the profile update. The type mismatch between the
+                // numeric token ID and the string the API checks caused every
+                // unpin to return 401 and abort the entire update.
+                unpinCitizenImage(nft.metadata.id).catch((err) =>
+                  console.warn('Failed to unpin old citizen image (non-blocking):', err)
+                )
 
                 imageIpfsLink = `ipfs://${newImageIpfsHash}`
               }
@@ -315,54 +327,59 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 )
               }
 
-              const cleanedCitizenData = cleanData(citizenData)
-
-              let cleanedLocationData: { lat: number; lng: number; name: string } | string = ''
-              if (cleanedCitizenData.location && cleanedCitizenData.location.trim() !== '') {
+              // Geocode from raw user input — cleanData must run only when
+              // building the on-chain payload. Escaping before geocoding can
+              // double-escape location names and produce malformed SQL.
+              let locationForTable = ''
+              const rawLocation = citizenData.location?.trim() ?? ''
+              if (rawLocation !== '') {
                 const locationDataRes = await fetch('/api/google/geocoder', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    location: cleanedCitizenData.location,
+                    location: rawLocation,
                   }),
                 })
                 const { data: locationData } = await locationDataRes.json()
                 const geocodedResult = locationData?.results?.[0]
                 if (geocodedResult) {
-                  const citizenLocationData = {
-                    lat: geocodedResult.geometry.location.lat,
-                    lng: geocodedResult.geometry.location.lng,
-                    name: geocodedResult.formatted_address,
-                  }
-                  cleanedLocationData = cleanData(citizenLocationData)
+                  locationForTable = formatCitizenLocationForTable(
+                    geocodedResult.geometry.location.lat,
+                    geocodedResult.geometry.location.lng,
+                    geocodedResult.formatted_address,
+                  )
                 } else {
-                  cleanedLocationData = cleanData({
-                    lat: 0,
-                    lng: 0,
-                    name: cleanedCitizenData.location.trim(),
-                  })
+                  locationForTable = formatCitizenLocationForTable(0, 0, rawLocation)
                 }
               }
 
-              const formattedCitizenTwitter = cleanedCitizenData.twitter
-                ? addHttpsIfMissing(cleanedCitizenData.twitter)
+              const cleanedName = sanitizeTablelandField(citizenData.name)
+              const cleanedDescription = sanitizeTablelandField(citizenData.description ?? '')
+              const cleanedView = sanitizeTablelandField(citizenData.view ?? 'public')
+
+              const formattedCitizenTwitter = citizenData.twitter?.trim()
+                ? sanitizeTablelandField(addHttpsIfMissing(citizenData.twitter.trim()))
                 : ''
-              const formattedCitizenInstagram = cleanedCitizenData.instagram
-                ? addHttpsIfMissing(cleanedCitizenData.instagram)
+              const formattedCitizenInstagram = citizenData.instagram?.trim()
+                ? sanitizeTablelandField(addHttpsIfMissing(citizenData.instagram.trim()))
                 : ''
-              const formattedCitizenLinkedin = cleanedCitizenData.linkedin
-                ? addHttpsIfMissing(cleanedCitizenData.linkedin)
+              const formattedCitizenLinkedin = citizenData.linkedin?.trim()
+                ? sanitizeTablelandField(addHttpsIfMissing(citizenData.linkedin.trim()))
                 : ''
-              const formattedCitizenWebsite = cleanedCitizenData.website
-                ? addHttpsIfMissing(cleanedCitizenData.website)
+              const formattedCitizenWebsite = citizenData.website?.trim()
+                ? sanitizeTablelandField(addHttpsIfMissing(citizenData.website.trim()))
                 : ''
-              const formattedCitizenDiscord = cleanedCitizenData.discord
-                ? cleanedCitizenData.discord.startsWith('@')
-                  ? cleanedCitizenData.discord.replace('@', '')
-                  : cleanedCitizenData.discord
+              const rawDiscord = citizenData.discord?.trim()
+                ? citizenData.discord.startsWith('@')
+                  ? citizenData.discord.replace('@', '')
+                  : citizenData.discord
                 : ''
+              const formattedCitizenDiscord = rawDiscord
+                ? sanitizeTablelandField(rawDiscord)
+                : ''
+              const formIdForTable = sanitizeTablelandField(formResponseId)
 
               const transaction = prepareContractCall({
                 contract: citizenTableContract,
@@ -383,17 +400,17 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                     'formId',
                   ],
                   [
-                    cleanedCitizenData.name,
-                    cleanedCitizenData.description,
+                    cleanedName,
+                    cleanedDescription,
                     imageIpfsLink,
-                    cleanedLocationData ? JSON.stringify(cleanedLocationData) : '',
+                    locationForTable,
                     formattedCitizenDiscord,
                     formattedCitizenTwitter,
                     formattedCitizenWebsite,
                     formattedCitizenInstagram,
                     formattedCitizenLinkedin,
-                    cleanedCitizenData.view,
-                    formResponseId,
+                    cleanedView,
+                    formIdForTable,
                   ],
                 ],
               })
@@ -411,8 +428,8 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 // rather than the stale version.
                 const tableName = CITIZEN_TABLE_NAMES[getChainSlug(selectedChain)]
                 const statement = `SELECT id, name, description, image FROM ${tableName} WHERE id = ${nft.metadata.id}`
-                const expectedName = unescapeQuotes(cleanedCitizenData.name ?? '')
-                const expectedDescription = unescapeQuotes(cleanedCitizenData.description ?? '')
+                const expectedName = unescapeQuotes(cleanedName)
+                const expectedDescription = unescapeQuotes(cleanedDescription)
                 await waitForRow({
                   statement,
                   checkCondition: (rows) => {
@@ -430,9 +447,20 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                 })
                 router.reload()
               }
-            } catch (err) {
-              console.log(err)
-              toast.error('Something went wrong updating your profile. Please try again.')
+            } catch (err: any) {
+              console.error('Profile update failed:', err)
+              const message = err?.message ?? ''
+              if (
+                message.includes('gas required exceeds allowance') ||
+                message.includes('execution reverted')
+              ) {
+                toast.error(
+                  'Profile update failed — this usually means a name, bio, or location value contains an apostrophe or special character that broke the on-chain update. Try removing quotes/apostrophes and submit again.',
+                  { duration: 12000 },
+                )
+              } else {
+                toast.error('Something went wrong updating your profile. Please try again.')
+              }
             }
           }}
         />
@@ -442,6 +470,38 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
           <h3 className="text-sm font-semibold text-red-400 uppercase tracking-wide mb-2">
             Danger Zone
           </h3>
+
+          {/* Profile visibility */}
+          <div className="mb-6">
+            <p className="text-gray-400 text-xs mb-3 leading-relaxed">
+              Control whether your profile is visible to other MoonDAO members.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setCitizenData((prev: any) => ({ ...prev, view: 'public' }))}
+                className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
+                  citizenData?.view === 'public' || !citizenData?.view
+                    ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
+                    : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
+                }`}
+              >
+                Public
+              </button>
+              <button
+                type="button"
+                onClick={() => setCitizenData((prev: any) => ({ ...prev, view: 'private' }))}
+                className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${
+                  citizenData?.view === 'private'
+                    ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300'
+                    : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]'
+                }`}
+              >
+                Private
+              </button>
+            </div>
+          </div>
+
           <p className="text-gray-400 text-xs mb-4 leading-relaxed">
             Deleting your profile data is permanent and cannot be undone. All information —
             including your name, bio, image, and social links — will be erased from the blockchain.

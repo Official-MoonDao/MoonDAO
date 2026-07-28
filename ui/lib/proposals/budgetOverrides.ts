@@ -26,6 +26,44 @@ export const BUDGET_OVERRIDES_USD: Record<string, number> = {
   // published audit screenshot. Pin to the audited value so the
   // displayed budget and the budget-cap math both match.
   '237': 4650,
+
+  // Q3 2026: MDP-250 ("Human Space Migration Ethics Framework"). The body
+  // parser returns $0 because the budget is written as freeform prose
+  // ("Total costs: (820 + 88 + 3200) $= $4108") rather than a table row
+  // the extractor recognises.
+  '250': 4108,
+
+  // Q3 2026: MDP-251 ("MDRS Crew Seat"). Author James Burk revised the
+  // budget downward from $5,500 to $4,000 after submission. The extractor
+  // reads the original $5,500 correctly; this override pins the agreed
+  // revised amount.
+  '251': 4000,
+
+  // Q3 2026: MDP-255 ("AORA Aerospace E-Learning Platform"). The body
+  // parser over-counts to ~$219,500 by summing the Revenue Potential
+  // projection table instead of the funding ask. Correct ask is $3,000.
+  '255': 3000,
+
+  // Q3 2026: MDP-258 ("Satellite Payload and Secondary Education Project").
+  // The body has a malformed total row ("| Total | USD 5,176.80" with no
+  // closing pipe) so the extractor drops it and instead picks up the
+  // "$21.63/day" figure from a Meals justification cell, displaying $21.
+  // The proposal's own table total is $5,176.80 while the author states
+  // "Requested budget: USD 4,682" (fundraising the remainder elsewhere).
+  // Pinned to the quarterly per-project maximum (MAX_BUDGET_USD =
+  // round(NEXT_QUARTER_BUDGET_USD / 5) = $4,682) per the author's request.
+  '258': 4682,
+
+  // Q3 2026: MDP-259 ("Mission Cosmic Colombia"). The parser returns $0
+  // because the totals row contains a mixed-currency cell ("$2430 USD
+  // 1.30 ETH") which isUsdValue() rejects due to the ETH mention.
+  '259': 2430,
+
+  // Q3 2026: MDP-266 ("Island Zero Study Project"). The parser returns $0
+  // because the totals row uses the plural "Totals", the table has three
+  // columns (desc | man-days | cost), and the amount cell contains an
+  // invisible U+200E mark ("US$\u200E 4,000").
+  '266': 4000,
 }
 
 export function getBudgetOverrideUSD(

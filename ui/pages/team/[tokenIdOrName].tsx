@@ -181,6 +181,7 @@ function TeamDetailPageContent({
     managerHatId,
     isManager,
     isTableOperator,
+    isSuperManager,
     subIsValid,
     isLoading: isLoadingTeamData,
     hasFullAccess,
@@ -587,7 +588,7 @@ function TeamDetailPageContent({
                   />
                   <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
                 </div>
-                {isManager && hats?.[0]?.id && (
+                {(isManager || isSuperManager) && hats?.[0]?.id && (
                   <TeamManageMembers
                     account={account}
                     hats={hats}
@@ -598,6 +599,7 @@ function TeamDetailPageContent({
                     multisigAddress={nft.owner}
                     adminHatId={adminHatId}
                     managerHatId={managerHatId}
+                    isSuperManager={isSuperManager}
                   />
                 )}
               </div>
@@ -606,6 +608,7 @@ function TeamDetailPageContent({
                   hats={hats}
                   hatsContract={hatsContract}
                   citizenContract={citizenContract}
+                  managerHatId={managerHatId}
                 />
               )}
             </div>

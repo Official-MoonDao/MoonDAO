@@ -29,13 +29,27 @@ const STABLECOIN_SYMBOLS = new Set(['usd', 'usdc', 'usdt', 'dai'])
 
 const NON_USD_TOKENS = /\b(ETH|MOONEY|BTC|MATIC|ARB|OP|SOL)\b/i
 
-const TABLE_ROW_PATTERN =
-  /\|\s*([^|]+?)\s*\|\s*([^|]*?\$?[\d,]+(?:\.\d+)?[^|]*?)\s*\|/g
+// Freeform "Item — $1,234" budget lines are short; skip anything longer so a
+// pathological single-line paragraph can't feed the regex below.
+const MAX_FREEFORM_LINE_LENGTH = 500
+
+/**
+ * Strip invisible Unicode directional / zero-width marks that can embed in
+ * copy-pasted text (e.g. U+200E left-to-right mark in "US$‎ 4,000").
+ * Must be called before any regex-based parsing.
+ */
+function sanitizeText(text: string): string {
+  return text.replace(/[\u200B-\u200F\uFEFF\u2060]/g, '')
+}
 
 function isUsdValue(rawCell: string): boolean {
-  if (NON_USD_TOKENS.test(rawCell)) return false
+  // A leading $ or an explicit stablecoin keyword confirms USD even when the
+  // cell also mentions non-USD tokens (e.g. "$2,430 USD  1.30 ETH").
+  // The old code checked NON_USD_TOKENS first, which caused the whole cell
+  // to be rejected whenever ETH/MOONEY appeared alongside a USD amount.
   if (/\$/.test(rawCell)) return true
-  return /\b(USDC|USDT|DAI|USD)\b/i.test(rawCell)
+  if (/\b(USDC|USDT|DAI|USD)\b/i.test(rawCell)) return true
+  return false
 }
 
 function parseAmount(cell: string): number {
@@ -44,14 +58,57 @@ function parseAmount(cell: string): number {
   return parseFloat(match[1].replace(/,/g, '')) || 0
 }
 
+type TableRowPair = { desc: string; value: string }
+
+/**
+ * Extract `{ desc, value }` pairs from markdown table rows, scanning line
+ * by line and splitting on pipes.
+ *
+ * For each row:
+ *   - `desc`  = the first non-empty interior cell.
+ *   - `value` = the first cell (after `desc`) that contains an explicit
+ *               USD marker ($ or stablecoin keyword).  If no USD cell is
+ *               found, falls back to the last numeric cell.
+ *
+ * This handles both:
+ *   desc | $amount | justification text   → picks $amount  (MDP-251 style)
+ *   desc | quantity | $cost               → picks $cost    (MDP-266 style)
+ *
+ * Previously this was a single global regex with nested lazy quantifiers.
+ * On large bodies it backtracked catastrophically — a 333 KB proposal
+ * pinned the browser main thread for ~40 s per pass. Splitting into lines
+ * and cells first keeps the work O(n) in body size.
+ */
+function extractTableRowPairs(text: string): TableRowPair[] {
+  const pairs: TableRowPair[] = []
+  for (const line of text.split('\n')) {
+    if (line.indexOf('|') === -1) continue
+    if (/---/.test(line)) continue
+    const interior = line
+      .split('|')
+      .slice(1, -1)
+      .map((c) => c.trim())
+      .filter(Boolean)
+    if (interior.length < 2) continue
+    const desc = interior[0]
+
+    // Scan forward from the second cell; prefer the first cell that carries
+    // an explicit USD marker, but remember the last numeric cell as a fallback.
+    let value = ''
+    for (let i = 1; i < interior.length; i++) {
+      const cell = interior[i]
+      if (!/\d/.test(cell)) continue
+      value = cell
+      if (isUsdValue(cell)) break // stop on the first explicit USD cell
+    }
+    if (value) pairs.push({ desc, value })
+  }
+  return pairs
+}
+
 function findGrandTotal(text: string): number {
-  TABLE_ROW_PATTERN.lastIndex = 0
-  let match
-  while ((match = TABLE_ROW_PATTERN.exec(text)) !== null) {
-    if (/---/.test(match[0])) continue
-    const desc = match[1]
-    const value = match[2]
-    if (/\bgrand\s+total\b/i.test(desc) && isUsdValue(value)) {
+  for (const { desc, value } of extractTableRowPairs(text)) {
+    if (/\bgrand\s+totals?\b/i.test(desc) && isUsdValue(value)) {
       return parseAmount(value)
     }
   }
@@ -59,15 +116,11 @@ function findGrandTotal(text: string): number {
 }
 
 function sumUsdTotals(text: string): number {
-  TABLE_ROW_PATTERN.lastIndex = 0
   let sum = 0
   let count = 0
-  let match
-  while ((match = TABLE_ROW_PATTERN.exec(text)) !== null) {
-    if (/---/.test(match[0])) continue
-    const desc = match[1]
-    const value = match[2]
-    if (!/\b[Tt]otal\b/i.test(desc)) continue
+  for (const { desc, value } of extractTableRowPairs(text)) {
+    // Match both "Total" and "Totals" (plural used by some budget templates).
+    if (!/\btotals?\b/i.test(desc)) continue
     if (!isUsdValue(value)) continue
     sum += parseAmount(value)
     count++
@@ -75,13 +128,16 @@ function sumUsdTotals(text: string): number {
   return count > 0 ? sum : 0
 }
 
+const FREEFORM_LINE_PATTERN =
+  /^\s*(?:[-*•]\s*)?(?:[A-Za-z][A-Za-z &/()'-]{2,}?)\s*[:\-]?\s*\$?\s*([\d,]+(?:\.\d+)?)(?:\s*(?:-|to|–|—)\s*\$?\s*([\d,]+(?:\.\d+)?))?\s*(?:USD|USDC|USDT|DAI)?\s*$/i
+
 function sumFreeformBudgetLines(text: string): number {
-  const lineRe =
-    /^\s*(?:[-*•]\s*)?(?:[A-Za-z][A-Za-z &/()'-]{2,}?)\s*[:\-]?\s*\$?\s*([\d,]+(?:\.\d+)?)(?:\s*(?:-|to|–|—)\s*\$?\s*([\d,]+(?:\.\d+)?))?\s*(?:USD|USDC|USDT|DAI)?\s*$/gim
   let total = 0
   let matched = false
-  let m
-  while ((m = lineRe.exec(text)) !== null) {
+  for (const line of text.split('\n')) {
+    if (line.length > MAX_FREEFORM_LINE_LENGTH) continue
+    const m = line.match(FREEFORM_LINE_PATTERN)
+    if (!m) continue
     if (NON_USD_TOKENS.test(m[0])) continue
     const low = parseFloat(m[1].replace(/,/g, '')) || 0
     const high = m[2] ? parseFloat(m[2].replace(/,/g, '')) || 0 : 0
@@ -100,12 +156,8 @@ function parseBudgetFromSection(text: string): number {
   const totals = sumUsdTotals(text)
   if (totals > 0) return totals
 
-  TABLE_ROW_PATTERN.lastIndex = 0
   let sum = 0
-  let match
-  while ((match = TABLE_ROW_PATTERN.exec(text)) !== null) {
-    if (/---/.test(match[0])) continue
-    const value = match[2]
+  for (const { value } of extractTableRowPairs(text)) {
     if (!isUsdValue(value)) continue
     sum += parseAmount(value)
   }
@@ -114,37 +166,83 @@ function parseBudgetFromSection(text: string): number {
   return sumFreeformBudgetLines(text)
 }
 
+/**
+ * Scan each line for a budget trigger phrase and return the largest dollar
+ * amount found AFTER the trigger phrase on that same line. Taking the maximum
+ * handles patterns like:
+ *
+ *   "Total Budget: $5,000 (includes $500 contingency)"  → 5000
+ *   "Total costs: (820 + 88 + 3200) $= $4108"           → 4108
+ *   "Total Requested from MoonDAO: $2430 USD"            → 2430
+ *
+ * Only amounts that occur AFTER the trigger phrase count. Without this,
+ * a prose justification that happens to contain a trigger substring hijacks
+ * an unrelated amount earlier on the line — e.g. a line-item row
+ * "Contingency | $400 | Unexpected project costs" matched "project costs"
+ * and returned $400 as the whole budget (MDP-264).
+ *
+ * If no `$X` pattern exists but a bare "N USD/USDC" pattern is present after
+ * the trigger, that value is returned instead.
+ */
 function parseInlineUsdBudget(body: string): number {
-  const inline = body.match(
-    /(?:estimated|total|project)\s+budget\s*:?\s*\(?\s*\$\s*([\d,]+(?:\.\d+)?)/i
-  )
-  if (inline) return parseFloat(inline[1].replace(/,/g, '')) || 0
+  const TRIGGER =
+    /(?:total|estimated|project)\s+(?:budget|costs?|funding|requested?(?:\s+from\s+\w+)?|ask)/i
+  for (const line of body.split('\n')) {
+    const triggerMatch = line.match(TRIGGER)
+    if (!triggerMatch || triggerMatch.index === undefined) continue
+    const afterTrigger = line.slice(triggerMatch.index + triggerMatch[0].length)
+    const dollars = Array.from(afterTrigger.matchAll(/\$\s*([\d,]+(?:\.\d+)?)/g))
+      .map((m) => parseFloat(m[1].replace(/,/g, '')) || 0)
+      .filter((v) => v > 0)
+    if (dollars.length > 0) return Math.max(...dollars)
+    // No $ sign — try bare "N USD/USDC/DAI" after the trigger phrase.
+    const bare = afterTrigger.match(
+      /\b([\d,]+(?:\.\d+)?)\s*(?:USD|USDC|USDT|DAI)\b/i
+    )
+    if (bare) {
+      const v = parseFloat(bare[1].replace(/,/g, '')) || 0
+      if (v > 0) return v
+    }
+  }
   return 0
 }
 
 export function parseUsdBudgetFromBody(body: string | undefined | null): number {
   if (!body || typeof body !== 'string') return 0
 
-  const inline = parseInlineUsdBudget(body)
+  // Strip invisible Unicode control/directional marks before any parsing so
+  // characters like U+200E ("US$‎ 4,000") don't silently break $ detection.
+  const sanitized = sanitizeText(body)
+
+  const inline = parseInlineUsdBudget(sanitized)
   if (inline > 0) return inline
 
-  const budgetHeading = body.match(
-    /^#{1,3}\s+Budget(?:\s+(?:Allocation|Breakdown|Overview|Summary))?\s*(?:\(.*?\))?\s*$/im
+  // Budget heading — handle optional Table label and trailing # markers that
+  // some editors emit (e.g. "# Budget (Table C)#").
+  const budgetHeading = sanitized.match(
+    /^#{1,3}\s+Budget(?:\s+[^\n#]*?)?\s*#*\s*$/im
   )
   if (budgetHeading && budgetHeading.index !== undefined) {
     const sectionStart = budgetHeading.index + budgetHeading[0].length
-    const nextHeading = body.slice(sectionStart).search(/^#{1,2}\s+(?!#)/m)
+    const nextHeading = sanitized.slice(sectionStart).search(/^#{1,2}\s+(?!#)/m)
     const section =
       nextHeading !== -1
-        ? body.slice(sectionStart, sectionStart + nextHeading)
-        : body.slice(sectionStart)
+        ? sanitized.slice(sectionStart, sectionStart + nextHeading)
+        : sanitized.slice(sectionStart)
     const result = parseBudgetFromSection(section)
     if (result > 0) return result
+    // The budget heading was found but its section contains no parseable
+    // total. Stop here rather than falling through to the whole-body scan —
+    // that risks summing Revenue / Projection tables elsewhere in the body
+    // and producing a wildly inflated number (e.g. MDP-255 read $219,500).
+    return 0
   }
 
-  const grand = findGrandTotal(body)
+  // No budget section heading found — whole-body fallback is safe because
+  // there is no Revenue table to accidentally absorb.
+  const grand = findGrandTotal(sanitized)
   if (grand > 0) return grand
-  const totals = sumUsdTotals(body)
+  const totals = sumUsdTotals(sanitized)
   if (totals > 0) return totals
 
   return 0
@@ -161,7 +259,10 @@ function isUsdLikeTokenField(
     if (!stablecoinAddresses) return false
     const lowered = trimmed.toLowerCase()
     if (stablecoinAddresses instanceof Set) return stablecoinAddresses.has(lowered)
-    return stablecoinAddresses.some((a) => a.toLowerCase() === lowered)
+    if (Array.isArray(stablecoinAddresses)) {
+      return stablecoinAddresses.some((a: string) => a.toLowerCase() === lowered)
+    }
+    return false
   }
   return STABLECOIN_SYMBOLS.has(trimmed.toLowerCase())
 }

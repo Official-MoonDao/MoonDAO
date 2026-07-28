@@ -1,6 +1,9 @@
-// Typed accessor for the bundled, MoonDAO-curated seed dataset. This is the
-// source of truth shipped with the app; the persistence layer (IPFS + Tableland)
-// can override/extend it at runtime.
+// Typed accessor for the bundled, MoonDAO-curated seed dataset.
+//
+// Phase A (this PR): SEED_ATLAS is the sole runtime source of truth — no IPFS
+// fetch or Tableland index yet. Curator write routes and remote persistence
+// are deferred to Phase B; `lib/lunar-atlas/server/ownership.ts` is the auth
+// scaffold those routes will reuse.
 
 import type { AtlasDataset } from '../types'
 import atlasJson from './atlas.dataset.json'

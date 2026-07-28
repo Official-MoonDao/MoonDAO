@@ -3,6 +3,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import Image from 'next/image'
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { OnrampAsset, onrampAssetIcon } from '@/lib/onramp/assets'
 import { arbitrum } from '@/lib/rpc/chains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -16,7 +17,13 @@ import {
 interface CBOnrampProps {
   address: string
   selectedChain: any
+  /**
+   * Crypto amount to purchase. Interpreted as the selected `asset` (ETH by
+   * default, or USDC when `asset="USDC"`).
+   */
   ethAmount: number
+  /** Crypto to purchase. Defaults to ETH. */
+  asset?: OnrampAsset
   redirectUrl?: string
   onExit?: () => void
   onBeforeNavigate?: () => Promise<void>
@@ -40,6 +47,11 @@ interface CBOnrampProps {
   /** Region already resolved by a parent (e.g. FundOnramp). When provided,
    *  skips the duplicate /api/coinbase/region request. */
   initialIsUS?: boolean | null
+  /** In-app (headless / Apple Pay) success handler. When provided, a successful
+   *  purchase calls this instead of reloading the page — keeping the flow on a
+   *  single screen. The parent is expected to poll for the funds and reveal its
+   *  own action (e.g. a Contribute button) once they arrive. */
+  onHeadlessSuccessInApp?: () => void
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
@@ -49,6 +61,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   address,
   selectedChain,
   ethAmount,
+  asset = 'ETH',
   redirectUrl,
   onExit,
   onBeforeNavigate,
@@ -60,8 +73,10 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   headerSlot,
   onUnsupported,
   initialIsUS,
+  onHeadlessSuccessInApp,
 }) => {
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
+  const assetIcon = onrampAssetIcon(asset)
 
   // US users get the Headless (Apple Pay) onramp; everyone else keeps the
   // hosted Coinbase redirect. `null` = still detecting region. When a parent
@@ -90,6 +105,12 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   // (cache state via onBeforeNavigate, then reload with the onrampSuccess flag
   // that callers already handle on return).
   const handleHeadlessSuccess = useCallback(async () => {
+    // In-app mode: hand off to the parent (which polls for the funds and shows
+    // its own action) instead of reloading. Keeps the whole flow on one screen.
+    if (onHeadlessSuccessInApp) {
+      onHeadlessSuccessInApp()
+      return
+    }
     try {
       await onBeforeNavigate?.()
     } catch (error) {
@@ -99,7 +120,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     url.searchParams.set('onrampSuccess', 'true')
     window.history.replaceState({}, '', url.toString())
     window.location.reload()
-  }, [onBeforeNavigate])
+  }, [onBeforeNavigate, onHeadlessSuccessInApp])
 
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
@@ -183,6 +204,28 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       setIsLoadingQuote(true)
 
       try {
+        // USDC ≈ $1 — skip the ETH spot-price / iterative quote loop. The
+        // Coinbase quote API also has limited network coverage (no Arbitrum),
+        // so a fiat estimate is more reliable for marketplace USDC purchases.
+        if (asset === 'USDC') {
+          const estimateUSD = Math.max(2, debouncedEthAmount * 1.05)
+          setQuoteData({
+            ethAmount: debouncedEthAmount,
+            purchaseAmount: estimateUSD,
+            totalAmount: estimateUSD,
+            fees: estimateUSD - debouncedEthAmount,
+            quoteId: null,
+          })
+          onQuoteCalculated?.(
+            debouncedEthAmount,
+            debouncedEthAmount,
+            estimateUSD,
+            estimateUSD - debouncedEthAmount
+          )
+          setIsLoadingQuote(false)
+          return
+        }
+
         // For Arbitrum, use Ethereum quotes to estimate fees
         const quoteNetwork = isArbitrum ? 'ethereum' : getQuoteNetworkName(selectedChain)
 
@@ -338,6 +381,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     address,
+    asset,
     debouncedEthAmount,
     selectedChain,
     isArbitrum,
@@ -434,7 +478,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         body: JSON.stringify({
           address,
           blockchains: [networkName],
-          assets: ['ETH', 'USDC'],
+          assets: asset === 'USDC' ? ['USDC'] : ['ETH', 'USDC'],
         }),
       })
 
@@ -453,7 +497,54 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     } catch (error: any) {
       throw error
     }
-  }, [address, selectedChain])
+  }, [address, selectedChain, asset])
+
+  // Hosted Coinbase flow for US users who can't use Apple/Google Pay (e.g.
+  // desktop, no iPhone to scan the QR). Supports signing into an existing
+  // Coinbase account or paying by card/bank. Presets the crypto amount so we
+  // don't depend on the headless quote (which isn't fetched for US users).
+  const handleHostedFallback = useCallback(async () => {
+    if (!address) return
+
+    const projectId = process.env.NEXT_PUBLIC_CB_PROJECT_ID
+    if (!projectId) {
+      console.error('[CBOnramp] hosted fallback missing project ID')
+      return
+    }
+
+    // Mock mode: simulate onramp return instead of redirecting.
+    if (MOCK_ONRAMP) {
+      await onBeforeNavigate?.()
+      const currentUrl = new URL(window.location.href)
+      currentUrl.searchParams.set('onrampSuccess', 'true')
+      window.history.replaceState({}, '', currentUrl.toString())
+      window.location.reload()
+      return
+    }
+
+    const { token } = await generateSessionToken()
+    const network = getOnrampNetworkName(selectedChain)
+    const widgetParams: any = {
+      appId: projectId,
+      sessionToken: token,
+      addresses: { [address]: [network] },
+      defaultNetwork: network,
+      defaultAsset: asset,
+      redirectUrl: redirectUrl || `${DEPLOYED_ORIGIN}/`,
+    }
+    if (ethAmount > 0) widgetParams.presetCryptoAmount = ethAmount
+
+    const url = generateOnRampURL(widgetParams)
+    try {
+      if (onBeforeNavigate) {
+        await onBeforeNavigate()
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+    } catch (error) {
+      console.error('[CBOnramp] onBeforeNavigate (hosted fallback) failed:', error)
+    }
+    window.location.href = url
+  }, [address, asset, ethAmount, redirectUrl, onBeforeNavigate, generateSessionToken, selectedChain])
 
   const handleOpenOnramp = async () => {
     if (!address) {
@@ -500,7 +591,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           [address]: [getOnrampNetworkName(selectedChain)],
         },
         defaultNetwork: getOnrampNetworkName(selectedChain),
-        defaultAsset: 'ETH',
+        defaultAsset: asset,
         redirectUrl: redirectUrl || `${DEPLOYED_ORIGIN}/`,
       }
 
@@ -562,12 +653,15 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         address={address}
         selectedChain={selectedChain}
         ethAmount={ethAmount}
+        asset={asset}
         allowAmountInput={allowAmountInput}
         onExit={onExit}
         isWaitingForGasEstimate={isWaitingForGasEstimate}
         onQuoteCalculated={onQuoteCalculated}
         onSuccess={handleHeadlessSuccess}
         onUnsupported={onUnsupported}
+        onUseAccountFlow={handleHostedFallback}
+        waitForFundsInApp={!!onHeadlessSuccessInApp}
       />
     )
   }
@@ -691,7 +785,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-            <Image src="/coins/ETH.svg" alt="ETH" width={20} height={20} className="w-6 h-6" />
+            <Image src={assetIcon} alt={asset} width={20} height={20} className="w-6 h-6" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-white">Fund</h2>
@@ -712,7 +806,9 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         {/* Amount Input (when allowAmountInput is true) */}
         {allowAmountInput && (
           <div className="space-y-2">
-            <label className="text-gray-300 text-sm font-medium">Amount (ETH)</label>
+            <label className="text-gray-300 text-sm font-medium">
+              Amount ({asset})
+            </label>
             <input
               data-testid="cbonramp-amount-input"
               type="text"
@@ -776,7 +872,12 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
                     data-testid="cbonramp-predetermined-amount"
                   >
                     <span className="text-gray-400 text-sm">Amount:</span>
-                    <span className="text-white font-medium">{ethAmount.toFixed(4)} ETH</span>
+                    <span className="text-white font-medium">
+                      {asset === 'USDC'
+                        ? ethAmount.toFixed(2)
+                        : ethAmount.toFixed(4)}{' '}
+                      {asset}
+                    </span>
                   </div>
                 )}
               </>
@@ -794,7 +895,12 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
                     data-testid="cbonramp-predetermined-amount"
                   >
                     <span className="text-gray-400 text-sm">Amount:</span>
-                    <span className="text-white font-medium">{ethAmount.toFixed(4)} ETH</span>
+                    <span className="text-white font-medium">
+                      {asset === 'USDC'
+                        ? ethAmount.toFixed(2)
+                        : ethAmount.toFixed(4)}{' '}
+                      {asset}
+                    </span>
                   </div>
                 )}
               </>
@@ -870,8 +976,12 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
               : isLoadingQuote
               ? 'Getting quote...'
               : quoteData?.purchaseAmount
-              ? `Buy ${quoteData.ethAmount.toFixed(4)} ETH with Coinbase`
-              : `Buy ETH with Coinbase`
+              ? `Buy ${
+                  asset === 'USDC'
+                    ? quoteData.ethAmount.toFixed(2)
+                    : quoteData.ethAmount.toFixed(4)
+                } ${asset} with Coinbase`
+              : `Buy ${asset} with Coinbase`
           }
           showSignInLabel={false}
           action={handleOpenOnramp}

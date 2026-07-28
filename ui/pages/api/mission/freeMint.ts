@@ -19,6 +19,7 @@ import { CitizenInvite, consumeInvite, peekInvite, restoreInvite } from '@/lib/c
 import { enforceRegionNotRestricted } from '@/lib/geo'
 import { createHSMWallet, sendEthFromHSM } from '@/lib/google/hsm-signer'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
+import { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
@@ -286,26 +287,66 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // on actual mint failures, not on subsequent response serialization errors.
     let mintSucceeded = false
     try {
+      const account = await createHSMWallet()
+
+      // For invite-token redeemers, attempt to add the recipient to the
+      // DiscountList so that getRenewalPrice() returns 0 and the HSM wallet
+      // only covers gas — not the renewal fee — when calling mintTo.
+      // PREREQUISITE: the DiscountList contract's owner must be the HSM wallet
+      // (0xb206325E6562517532686dFeeEaD4C104D9F5d32). Until that one-time Safe
+      // transaction is done (transferOwnership on 0x755D48e6C3744B723bd0326C57F99A92a3Ca3287),
+      // this step will fail silently and the HSM will continue paying the
+      // renewal fee as before — no regression in behavior.
+      if (consumedInvite && CITIZEN_DISCOUNTLIST_ADDRESSES[chainSlug]) {
+        try {
+          const discountListContract = getContract({
+            client: serverClient,
+            address: CITIZEN_DISCOUNTLIST_ADDRESSES[chainSlug],
+            abi: WhitelistABI as any,
+            chain,
+          })
+          const addToDiscountListTx = prepareContractCall({
+            contract: discountListContract,
+            method: 'addToWhitelist' as string,
+            params: [address],
+          })
+          await sendAndConfirmTransaction({ transaction: addToDiscountListTx, account })
+          console.log(`[freeMint] Added ${address} to DiscountList — mint will be gas-only`)
+        } catch (discountErr: any) {
+          console.warn(
+            `[freeMint] Could not add ${address} to DiscountList (HSM may not own it yet): ${discountErr?.message ?? discountErr}. ` +
+              `Transfer DiscountList ownership (0x755D48e6C3744B723bd0326C57F99A92a3Ca3287) to HSM ` +
+              `(0xb206325E6562517532686dFeeEaD4C104D9F5d32) to eliminate renewal-fee payments.`
+          )
+        }
+      }
+
       const cost: any = await readContract({
         contract: citizenContract,
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
       })
-      const account = await createHSMWallet()
       const transaction = prepareContractCall({
         contract: citizenContract,
         method: 'mintTo' as string,
+        // Escape single quotes on every free-text field. The Citizen contract
+        // builds the Tableland INSERT with SQLHelpers.quote(), which does NOT
+        // escape embedded quotes, so an apostrophe (e.g. a bio with "Brazil's")
+        // yields malformed SQL the validator rejects — the NFT mints but the
+        // metadata row is never created. `location` already arrives escaped from
+        // the client (buildCitizenProfileMintFields) and `privacy` is a fixed
+        // enum, so neither is re-escaped here.
         params: [
           address,
-          name,
-          bio,
+          escapeSingleQuotes(name),
+          escapeSingleQuotes(bio),
           image,
           location,
-          discord,
-          twitter,
-          website,
+          escapeSingleQuotes(discord),
+          escapeSingleQuotes(twitter),
+          escapeSingleQuotes(website),
           privacy,
-          formId,
+          escapeSingleQuotes(formId),
         ],
         value: cost,
       })

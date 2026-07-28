@@ -48,6 +48,11 @@ export function loadPolarField(
     }
     img.onerror = () => reject(new Error(`failed to load height map: ${url}`))
     img.src = url
+  }).catch((err) => {
+    // Drop the rejected promise so a later caller can retry after a
+    // transient network/asset failure.
+    fieldCache.delete(url)
+    throw err
   })
   fieldCache.set(url, promise)
   return promise

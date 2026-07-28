@@ -4,6 +4,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import ProjectABI from 'const/abis/Project.json'
 import HatsABI from 'const/abis/Hats.json'
+import { fetchProposalJsonCached } from '@/lib/ipfs/fetchProposalJsonCached'
 import { engineMulticall, EngineReadParams } from '@/lib/thirdweb/engine'
 
 export type Project = {
@@ -29,7 +30,8 @@ export type Project = {
 export default function useProjectData(
   projectContract: any,
   hatsContract: any,
-  project: Project | undefined
+  project: Project | undefined,
+  { enabled = true }: { enabled?: boolean } = {}
 ) {
   const account = useActiveAccount()
   const address = account?.address
@@ -47,21 +49,24 @@ export default function useProjectData(
 
   useEffect(() => {
     async function getProposalJSON() {
-      if (!project?.proposalIPFS) {
+      if (!enabled || !project?.proposalIPFS) {
         return
       }
-      const proposalResponse = await fetch(project.proposalIPFS)
-      const proposal = await proposalResponse.json()
-      let budget = 0
-      if (proposal.budget) {
-        proposal.budget.forEach((item: any) => {
-          budget += item.token === 'ETH' ? Number(item.amount) : 0
-        })
-        setTotalBudget(budget)
+      try {
+        const proposal = await fetchProposalJsonCached(project.proposalIPFS)
+        let budget = 0
+        if (proposal?.budget) {
+          proposal.budget.forEach((item: any) => {
+            budget += item.token === 'ETH' ? Number(item.amount) : 0
+          })
+          setTotalBudget(budget)
+        }
+      } catch {
+        // Leave totalBudget unset; card can still render without ETH budget.
       }
     }
-    if (project?.proposalIPFS) getProposalJSON()
-  }, [project?.proposalIPFS])
+    if (enabled && project?.proposalIPFS) getProposalJSON()
+  }, [project?.proposalIPFS, enabled])
 
   const isActive = useMemo(() => {
     return project?.active === PROJECT_ACTIVE
@@ -75,13 +80,24 @@ export default function useProjectData(
       const markdown = await res.text()
       setFinalReportMarkdown(markdown)
     }
-    if (project?.finalReportIPFS) getFinalReportMarkdown()
-  }, [project?.finalReportIPFS])
+    if (enabled && project?.finalReportIPFS) getFinalReportMarkdown()
+  }, [project?.finalReportIPFS, enabled])
 
   useEffect(() => {
     async function fetchProjectContractData() {
-      if (!projectContract?.address || !projectContract?.chain?.id || !project?.id) {
-        setIsManager(false)
+      if (
+        !enabled ||
+        !projectContract?.address ||
+        !projectContract?.chain?.id ||
+        !project?.id
+      ) {
+        if (!enabled) {
+          setIsManager(false)
+          setAdminHatId(undefined)
+          setManagerHatId(undefined)
+        } else {
+          setIsManager(false)
+        }
         return
       }
 
@@ -147,14 +163,15 @@ export default function useProjectData(
       }
     }
 
-    if (projectContract) {
+    if (enabled && projectContract) {
       fetchProjectContractData()
     }
-  }, [address, project, projectContract])
+  }, [address, project, projectContract, enabled])
 
   useEffect(() => {
     async function getHatTreeId() {
-      if (!hatsContract?.address || !hatsContract?.chain?.id || !adminHatId) return
+      if (!enabled || !hatsContract?.address || !hatsContract?.chain?.id || !adminHatId)
+        return
 
       try {
         const params: EngineReadParams[] = [
@@ -176,8 +193,8 @@ export default function useProjectData(
       }
     }
 
-    if (hatsContract && adminHatId) getHatTreeId()
-  }, [adminHatId, hatsContract])
+    if (enabled && hatsContract && adminHatId) getHatTreeId()
+  }, [adminHatId, hatsContract, enabled])
 
   return {
     ...project,

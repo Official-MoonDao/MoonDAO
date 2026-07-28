@@ -1,4 +1,5 @@
 import { GlobeAltIcon } from '@heroicons/react/24/outline'
+import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
 import {
@@ -96,6 +97,7 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
 }
 
 export default function MoonBaseZeroIndex() {
+  const router = useRouter()
   const dataset = SEED_ATLAS
 
   const [focus, setFocus] = useState<GlobeFocus>(null)
@@ -325,6 +327,18 @@ export default function MoonBaseZeroIndex() {
     const p = projectById(dataset, id)
     if (p) flyToProject(p, site)
   }
+
+  // Honor `/moonbase/[projectId]` deep links once the router has the param.
+  useEffect(() => {
+    if (!router.isReady) return
+    const id = router.query.projectId
+    if (typeof id !== 'string' || !id) return
+    if (!projectById(dataset, id)) return
+    handleSelectProject(id)
+    // Only react to the deep-link param itself; selection handlers stay stable
+    // enough for a one-shot open on navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.projectId])
 
   // Return from a competitor's project panel to the race/tree list it was
   // opened from.

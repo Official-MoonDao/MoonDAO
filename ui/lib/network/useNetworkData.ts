@@ -23,6 +23,7 @@ import client from '@/lib/thirdweb/client'
 import { NetworkNFT, NetworkDataResult, UseNetworkDataOptions } from './types'
 import {
   buildSearchClause,
+  buildCitizenSearchClause,
   buildPaginationClause,
   calculateMaxPage,
   buildExcludeIdsCondition,
@@ -115,7 +116,7 @@ export function useCitizensCount(
   enabled: boolean = true
 ): { count: number; isLoading: boolean } {
   const { citizenTableName } = useTableNames()
-  const searchClause = buildSearchClause(search)
+  const searchClause = buildCitizenSearchClause(search)
   const excludeCondition = buildExcludeIdsCondition(BLOCKED_CITIZENS)
   const whereClause = appendToWhereClause(
     appendToWhereClause(searchClause, excludeCondition),
@@ -195,7 +196,7 @@ export function useCitizens(options: UseNetworkDataOptions = {}): NetworkDataRes
   const { citizenTableName } = useTableNames()
   const { count, isLoading: countLoading } = useCitizensCount(search, enabled)
 
-  const searchClause = buildSearchClause(search)
+  const searchClause = buildCitizenSearchClause(search)
   const excludeCondition = buildExcludeIdsCondition(BLOCKED_CITIZENS)
   const whereClause = appendToWhereClause(
     appendToWhereClause(searchClause, excludeCondition),

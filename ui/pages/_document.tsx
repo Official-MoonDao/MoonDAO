@@ -34,6 +34,20 @@ class WebsiteDocument extends Document {
               __html: `globalThis.Browser = { T: () => {} };`,
             }}
           />
+          {/*
+            Next injects body{display:none} (data-next-hide-fouc) until styles
+            are ready + React hydrates, then removes it — this is what prevents a
+            flash of unstyled (raw) HTML, especially in `next dev` where global
+            CSS is injected by JS rather than a <link>. Do NOT reveal early: it
+            shows raw HTML for seconds until Tailwind loads. Keep only a delayed
+            safety net so a genuinely stalled hydration can't leave the page
+            blank forever.
+          */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){function r(){try{var l=document.querySelectorAll('style[data-next-hide-fouc]');for(var i=0;i<l.length;i++){var s=l[i];if(s&&s.parentNode)s.parentNode.removeChild(s);}if(document.body)document.body.style.display='';}catch(e){}}setTimeout(r,8000);})();`,
+            }}
+          />
         </Head>
         <body className="overflow-hidden relative">
           <Main />

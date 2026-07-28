@@ -52,7 +52,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    if (!privyUserData.walletAddresses.includes(user)) {
+    if (
+      !privyUserData.walletAddresses
+        .map((a) => a.toLowerCase())
+        .includes(user.toLowerCase())
+    ) {
       return res.status(200).json({
         eligible: false,
         prCount: '0',
@@ -60,9 +64,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    // Check if user has a GitHub account linked
+    // Check if user has a GitHub account linked. Privy generally returns
+    // `github_oauth`, but older/client-side objects may use `github`.
     const githubAccount = privyUserData.userData?.linked_accounts?.find(
-      (account: any) => account.type === 'github_oauth'
+      (account: any) =>
+        account.type === 'github_oauth' || account.type === 'github'
     )
 
     if (!githubAccount) {

@@ -1,10 +1,10 @@
 import type { Project } from '@/lib/project/useProjectData'
 
-const UNTITLED_FALLBACK = 'Untitled Project'
+export const UNTITLED_FALLBACK = 'Untitled Project'
 
 const UNTITLED_PATTERN = /^\s*untitled\b/i
 
-function isUntitledLike(value: string | undefined | null): boolean {
+export function isUntitledLike(value: string | undefined | null): boolean {
   if (!value) return true
   const trimmed = value.trim()
   if (!trimmed) return true

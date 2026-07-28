@@ -18,6 +18,7 @@ import {
   JBV5_TOKENS_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
+  OVERVIEW_FLIGHT_RAISE_CLOSED,
   TEAM_ADDRESSES,
 } from 'const/config'
 import Image from 'next/image'
@@ -41,6 +42,7 @@ import {
 import { useMissionDefaultFundingChain } from '@/lib/mission/useMissionDefaultFundingChain'
 import { useManagerActions } from '@/lib/mission/useManagerActions'
 import useMissionData from '@/lib/mission/useMissionData'
+import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
 import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import {
@@ -165,10 +167,9 @@ export default function MissionProfile({
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
-  // Keep this list in sync with MissionContributeModal — Base was removed
-  // from the supported funding chains (users without ETH on Base were
-  // bouncing). Mission funding-chain detection / "switch to richest chain"
-  // banners therefore won't suggest Base anymore.
+  // Keep this list in sync with MissionContributeModal. Arbitrum (default,
+  // same-chain) + Ethereum (cross-chain, for holders of mainnet ETH). Base
+  // was removed (users without ETH on Base were bouncing).
   const chains = useMemo(
     () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
     [isTestnet]
@@ -320,10 +321,23 @@ export default function MissionProfile({
     _ruleset,
   })
 
+  // Re-open-aware live stage. `useMissionData` derives `stage` from
+  // `MissionCreator.stage()` (the original PayHook), which stays at 3
+  // after a re-open even while a fresh fundraising ruleset is live.
+  // Mirror the same fallback pattern used inside `MissionPayRedeem` so
+  // the header, funding-banner gate, and contribute-button guard all
+  // reflect the active hook's stage on re-opened missions.
+  const currentStage = useMissionFundingStage(
+    mission?.id,
+    mission?.projectId,
+    primaryTerminalAddress
+  )
+  const effectiveStage = currentStage ?? stage
+
   const missionDefaultFundingChainEnabled =
     !!primaryTerminalAddress &&
     primaryTerminalAddress !== '0x0000000000000000000000000000000000000000' &&
-    Number(stage) !== 4
+    Number(effectiveStage) !== 4
 
   const fundingBannerEnabled =
     fundingChainCompareEnabled || missionDefaultFundingChainEnabled
@@ -437,7 +451,7 @@ export default function MissionProfile({
         deadlinePassed={deadlinePassed}
         refundPeriodPassed={refundPeriodPassed}
         refundPeriod={refundPeriod}
-        stage={stage}
+        stage={effectiveStage}
         poolDeployerAddress={poolDeployerAddress}
         isManager={isManager}
         availableTokens={availableTokens}
@@ -456,13 +470,17 @@ export default function MissionProfile({
             ? _overviewStats ?? null
             : undefined
         }
+        overviewRaiseClosed={
+          (mission?.id === 4 || String(mission?.id) === '4') &&
+          OVERVIEW_FLIGHT_RAISE_CLOSED
+        }
         contributeButton={
-          !deadlinePassed && Number(stage) !== 3 && (
+          !deadlinePassed && Number(effectiveStage) !== 3 && (
             <MissionPayRedeem
               mission={mission}
               teamNFT={teamNFT}
               token={token}
-              stage={stage}
+              stage={effectiveStage}
               deadline={deadline || 0}
               primaryTerminalAddress={primaryTerminalAddress}
               jbControllerContract={jbControllerContract}

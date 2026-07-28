@@ -4,6 +4,7 @@ import ERC20ABI from 'const/abis/ERC20.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
+  CITIZENSHIP_GIFT_TAG,
   DAI_ADDRESSES,
   TEAM_ADDRESSES,
   MOONEY_ADDRESSES,
@@ -11,17 +12,25 @@ import {
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
 } from 'const/config'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction, toUnits } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
+import {
+  computePurchasePrice,
+  evaluateUsdcPurchase,
+  parseListingPrice,
+  parseUsdcBalance,
+} from '@/lib/marketplace/usdcListingPurchase'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
+import { FundOnramp } from '@/components/onramp/FundOnramp'
 import { TeamListing } from '@/components/subscription/TeamListing'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Input from '../layout/Input'
@@ -44,6 +53,10 @@ export default function BuyTeamListingModal({
   const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
   const account = useActiveAccount()
+
+  // Gift-a-citizenship listing: a flat-priced ETH listing on the EB team that
+  // issues a one-time free-citizen invite link to the buyer on purchase.
+  const isGift = listing.tag === CITIZENSHIP_GIFT_TAG
 
   const citizenContract = useContract({
     address: CITIZEN_ADDRESSES[chainSlug],
@@ -69,6 +82,7 @@ export default function BuyTeamListingModal({
     country: '',
   })
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [giftLink, setGiftLink] = useState<string>()
 
   const citizenEmail = useCitizenEmail(citizen)
 
@@ -90,6 +104,73 @@ export default function BuyTeamListingModal({
     abi: ERC20ABI as any,
     chain: selectedChain,
   })
+
+  const numericPrice = useMemo(
+    () => parseListingPrice(listing.price),
+    [listing.price]
+  )
+
+  // Final USDC/ETH/etc amount the buyer will pay (includes non-citizen markup).
+  const purchasePrice = useMemo(
+    () =>
+      computePurchasePrice({
+        price: listing.price,
+        isGift,
+        isCitizen: !!citizen,
+      }),
+    [listing.price, isGift, citizen]
+  )
+
+  // USDC onramp: when a listing is priced in USDC and the wallet doesn't hold
+  // enough on Arbitrum, surface the shared FundOnramp flow for the deficit.
+  const isUsdcListing = listing.currency === 'USDC'
+  const usdcAddress = USDC_ADDRESSES[chainSlug] as `0x${string}` | undefined
+  const {
+    data: usdcBalanceData,
+    refetch: refetchUsdcBalance,
+    isLoading: isUsdcBalanceLoading,
+  } = useWalletBalance({
+    client,
+    address: account?.address,
+    chain: selectedChain,
+    tokenAddress: isUsdcListing ? usdcAddress : undefined,
+  })
+
+  const usdcBalance = useMemo(
+    () =>
+      isUsdcListing ? parseUsdcBalance(usdcBalanceData?.displayValue) : null,
+    [isUsdcListing, usdcBalanceData]
+  )
+
+  const { hasEnoughUsdc, usdcDeficit } = useMemo(
+    () =>
+      evaluateUsdcPurchase({
+        isUsdcListing,
+        usdcBalance,
+        purchasePrice,
+      }),
+    [isUsdcListing, usdcBalance, purchasePrice]
+  )
+
+  const [awaitingUsdcOnramp, setAwaitingUsdcOnramp] = useState(false)
+
+  // Poll USDC after an in-app onramp so the Buy button appears once funds land.
+  useEffect(() => {
+    if (!awaitingUsdcOnramp || !isUsdcListing) return
+    if (hasEnoughUsdc) {
+      setAwaitingUsdcOnramp(false)
+      return
+    }
+    const id = setInterval(() => {
+      refetchUsdcBalance()
+    }, 10_000)
+    return () => clearInterval(id)
+  }, [
+    awaitingUsdcOnramp,
+    isUsdcListing,
+    hasEnoughUsdc,
+    refetchUsdcBalance,
+  ])
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -129,13 +210,8 @@ export default function BuyTeamListingModal({
   async function buyListing() {
     if (!account || !resolvedRecipient) return
 
-    const numericPrice = parseFloat(listing.price.replace(/,/g, ''))
-    let price
-    if (citizen) {
-      price = numericPrice
-    } else {
-      price = numericPrice * 1.1 // 10% upcharge for non-citizens
-    }
+    // Gifted citizenship is always the flat citizen price (no markup).
+    const price = purchasePrice
 
     setIsLoading(true)
     let transactionHash
@@ -181,6 +257,18 @@ export default function BuyTeamListingModal({
 
         const accessToken = await getAccessToken()
 
+        // The payment has already settled by this point, so the
+        // notification step must never throw. `teamNFT` can be missing when its
+        // lookup was rate-limited even though `resolvedRecipient` resolved from
+        // the parent-provided recipient — fall back to the listing's team data
+        // so a null dereference can't turn a successful purchase into a
+        // "Purchase failed" toast with no vendor notification.
+        const teamSlug = teamNFT?.metadata?.name
+          ? generatePrettyLink(teamNFT.metadata.name)
+          : listing.teamName
+          ? generatePrettyLink(listing.teamName)
+          : listing.teamId
+
         // Send email request with transaction verification
         const res = await fetch('/api/marketplace/marketplace-purchase', {
           method: 'POST',
@@ -198,14 +286,41 @@ export default function BuyTeamListingModal({
             recipient: resolvedRecipient,
             isCitizen: citizen ? true : false,
             shipping,
-            teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(teamNFT.metadata.name)}`,
+            teamLink: `${DEPLOYED_ORIGIN}/team/${teamSlug}`,
+            isGift,
+            listingId: listing.id,
+            teamId: listing.teamId,
             accessToken,
           }),
         })
 
-        const { success, message: responseMessage } = await res.json()
+        const {
+          success,
+          message: responseMessage,
+          giftLink: returnedGiftLink,
+        } = await res.json()
 
         if (success) {
+          if (isGift && returnedGiftLink) {
+            // Keep the modal open so the buyer can copy/share the gift link.
+            setGiftLink(returnedGiftLink)
+            toast.success('Purchase complete! Your gift link is ready below.', {
+              duration: 10000,
+            })
+            setIsLoading(false)
+            return
+          }
+          if (isGift && !returnedGiftLink) {
+            // Payment went through but the gift link was never issued. Don't
+            // close with a misleading generic success — surface it so the buyer
+            // (and support) know the link still needs to be recovered.
+            toast.error(
+              'Your payment went through, but we could not generate your gift link. Please contact support with your transaction to claim it.',
+              { duration: 12000 }
+            )
+            setIsLoading(false)
+            return
+          }
           toast.success('Purchase complete! Confirmation email on the way.', {
             duration: 10000,
           })
@@ -234,6 +349,42 @@ export default function BuyTeamListingModal({
       title="Buy a Listing"
       size="lg"
     >
+      {giftLink ? (
+        <div className="w-full flex flex-col gap-4 items-start justify-start">
+          <p className="font-GoodTimes">Your gift is ready!</p>
+          <p className="opacity-80 text-[90%]">
+            Share this one-time link with the person you want to gift a
+            citizenship to. They can use it to mint their free citizenship. A
+            copy has also been sent to your email.
+          </p>
+          <div className="w-full flex gap-2 items-center bg-darkest-cool rounded-[10px] p-3">
+            <p className="break-all text-[85%]">{giftLink}</p>
+          </div>
+          <div className="w-full flex gap-2">
+            <button
+              type="button"
+              className="gradient-2 rounded-[5vmax] px-4 py-2"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(giftLink)
+                  toast.success('Gift link copied to clipboard.')
+                } catch {
+                  toast.error('Could not copy. Please copy the link manually.')
+                }
+              }}
+            >
+              Copy link
+            </button>
+            <button
+              type="button"
+              className="rounded-[5vmax] px-4 py-2 border border-white/20"
+              onClick={() => setEnabled(false)}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      ) : (
       <form
         className="w-full flex flex-col gap-3 items-start justify-start"
         onSubmit={(e) => {
@@ -266,11 +417,9 @@ export default function BuyTeamListingModal({
             </p>
             <div className="mt-auto flex flex-wrap items-center gap-2">
               <p id="listing-price" className="font-GoodTimes text-lg text-white">{`${
-                citizen
-                  ? truncateTokenValue(listing.price, listing.currency)
-                  : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
+                truncateTokenValue(purchasePrice, listing.currency)
               } ${listing.currency}`}</p>
-              {!citizen && (
+              {!citizen && !isGift && (
                 <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/50">
                   +10% non-citizen fee
                 </span>
@@ -279,8 +428,9 @@ export default function BuyTeamListingModal({
           </div>
         </div>
         <p className="text-xs opacity-60">
-          Enter your details and confirm the transaction. You&apos;ll receive a confirmation email
-          from the vendor.
+          {isGift
+            ? 'Enter your email and confirm the transaction. You will receive a one-time link to gift a free citizenship to whoever you choose.'
+            : "Enter your details and confirm the transaction. You'll receive a confirmation email from the vendor."}
         </p>
         <Input
           type="text"
@@ -362,38 +512,105 @@ export default function BuyTeamListingModal({
             </div>
           </div>
         )}
-        <PrivyWeb3Button
-          v5
-          requiredChain={DEFAULT_CHAIN_V5}
-          label={
-            isLoading
-              ? 'Processing...'
-              : resolvedRecipient
-              ? 'Buy'
-              : 'Loading vendor...'
-          }
-          action={async () => {
-            if (!resolvedRecipient)
-              return toast.error(
-                'Still loading the vendor details. Please try again in a moment.'
-              )
-            if (!email || email.trim() === '' || !email.includes('@'))
-              return toast.error('Please enter a valid email.')
-            if (listing.shipping === 'true') {
-              if (
-                shippingInfo.streetAddress.trim() === '' ||
-                shippingInfo.city.trim() === '' ||
-                shippingInfo.state.trim() === '' ||
-                shippingInfo.postalCode.trim() === '' ||
-                shippingInfo.country.trim() === ''
-              )
-                return toast.error('Please fill out all fields.')
+        {isUsdcListing && account?.address && !hasEnoughUsdc && (
+          <div
+            data-testid="marketplace-usdc-onramp"
+            className="w-full flex flex-col gap-3"
+          >
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+              <p className="text-amber-100 text-sm font-medium">
+                You need USDC on Arbitrum to buy this listing
+              </p>
+              <p className="text-amber-100/70 text-xs mt-1 leading-relaxed">
+                {isUsdcBalanceLoading || usdcBalance == null
+                  ? `Add ${truncateTokenValue(
+                      purchasePrice,
+                      'USDC'
+                    )} USDC to your wallet to continue.`
+                  : `Your wallet has ${truncateTokenValue(
+                      usdcBalance,
+                      'USDC'
+                    )} USDC. Add ${truncateTokenValue(
+                      usdcDeficit,
+                      'USDC'
+                    )} more to cover this purchase.`}
+              </p>
+              {awaitingUsdcOnramp && (
+                <p className="text-amber-100/60 text-xs mt-2">
+                  Waiting for USDC to arrive…
+                </p>
+              )}
+            </div>
+            {usdcDeficit > 0 && (
+              <FundOnramp
+                fullWidth
+                address={account.address}
+                selectedChain={DEFAULT_CHAIN_V5}
+                ethAmount={usdcDeficit}
+                asset="USDC"
+                coinbaseRedirectUrl={`${DEPLOYED_ORIGIN}/marketplace?onrampSuccess=true`}
+                checkBalanceSufficient={async () => {
+                  const result = await refetchUsdcBalance()
+                  const next = result?.data?.displayValue
+                  if (next == null) return false
+                  const n = Number(next)
+                  return Number.isFinite(n) && n >= purchasePrice
+                }}
+                refetchBalance={async () => {
+                  await refetchUsdcBalance()
+                }}
+                onBalanceSufficient={() => {
+                  setAwaitingUsdcOnramp(false)
+                }}
+                onCoinbaseSuccessInApp={() => {
+                  setAwaitingUsdcOnramp(true)
+                }}
+                onMoonPayPurchaseSubmitted={() => {
+                  setAwaitingUsdcOnramp(true)
+                }}
+              />
+            )}
+          </div>
+        )}
+        {(!isUsdcListing || !account?.address || hasEnoughUsdc) && (
+          <PrivyWeb3Button
+            v5
+            requiredChain={DEFAULT_CHAIN_V5}
+            label={
+              isLoading
+                ? 'Processing...'
+                : resolvedRecipient
+                ? 'Buy'
+                : 'Loading vendor...'
             }
-            await buyListing()
-          }}
-          className="w-full gradient-2 rounded-[5vmax]"
-          isDisabled={isLoading || !resolvedRecipient}
-        />
+            action={async () => {
+              if (!resolvedRecipient)
+                return toast.error(
+                  'Still loading the vendor details. Please try again in a moment.'
+                )
+              if (!email || email.trim() === '' || !email.includes('@'))
+                return toast.error('Please enter a valid email.')
+              if (listing.shipping === 'true') {
+                if (
+                  shippingInfo.streetAddress.trim() === '' ||
+                  shippingInfo.city.trim() === '' ||
+                  shippingInfo.state.trim() === '' ||
+                  shippingInfo.postalCode.trim() === '' ||
+                  shippingInfo.country.trim() === ''
+                )
+                  return toast.error('Please fill out all fields.')
+              }
+              if (isUsdcListing && !hasEnoughUsdc) {
+                return toast.error(
+                  'You need more USDC on Arbitrum before purchasing.'
+                )
+              }
+              await buyListing()
+            }}
+            className="w-full gradient-2 rounded-[5vmax]"
+            isDisabled={isLoading || !resolvedRecipient}
+          />
+        )}
         {!resolvedRecipient && !isLoading && (
           <p className="w-full text-center text-sm opacity-60">Loading vendor details...</p>
         )}
@@ -403,6 +620,7 @@ export default function BuyTeamListingModal({
           </p>
         )}
       </form>
+      )}
     </Modal>
   )
 }

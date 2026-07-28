@@ -1213,24 +1213,38 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
       ) : (
         <div className="w-full">
           <button
-            id="sign-in-button"
+            id={type === 'mobile' ? 'sign-in-button-mobile' : 'sign-in-button'}
             onClick={async () => {
-              if (user) {
-                if (activeWallet) {
+              // Always end by opening the login modal. The pre-login cleanup
+              // (disconnecting a stale wallet / Privy session) can throw or hang;
+              // if it isn't guarded, login() never runs and the button looks
+              // dead. Wrap every step so login() is guaranteed to fire.
+              try {
+                if (user) {
+                  if (activeWallet) {
+                    try {
+                      disconnectThirdwebWallet(activeWallet)
+                    } catch (err) {
+                      console.warn('Failed to disconnect thirdweb wallet:', err)
+                    }
+                  }
                   try {
-                    disconnectThirdwebWallet(activeWallet)
+                    wallets.forEach((wallet) => wallet.disconnect())
                   } catch (err) {
-                    console.warn(
-                      'Failed to disconnect thirdweb wallet:',
-                      err
-                    )
+                    console.warn('Failed to disconnect Privy wallets:', err)
+                  }
+                  try {
+                    clearAllCitizenCache()
+                  } catch (err) {
+                    console.warn('Failed to clear citizen cache:', err)
+                  }
+                  try {
+                    await logout()
+                  } catch (err) {
+                    console.warn('Privy logout failed:', err)
                   }
                 }
-                wallets.forEach((wallet) => wallet.disconnect())
-                clearAllCitizenCache()
-                await logout()
-                login()
-              } else {
+              } finally {
                 login()
               }
             }}

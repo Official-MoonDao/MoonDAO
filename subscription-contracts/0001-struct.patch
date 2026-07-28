@@ -133,6 +133,23 @@ diff --git a/subscription-contracts/test/TableOperatorsTest.t.sol b/subscription
          });
          (teamId, ) = creator.createMoonDAOTeam{value: 0.555 ether}(hatURIs, metadata, new address[](0));
          vm.stopPrank();
+diff --git a/subscription-contracts/test/ReopenRulesetTest.t.sol b/subscription-contracts/test/ReopenRulesetTest.t.sol
+index 157ab093..0b6139f4 100644
+--- a/subscription-contracts/test/ReopenRulesetTest.t.sol
++++ b/subscription-contracts/test/ReopenRulesetTest.t.sol
+@@ -175,12 +175,6 @@ contract ReopenRulesetTest is Test, Config {
+             memberHatURI: ""
+         });
+         MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+-            name: "name",
+-            bio: "bio",
+-            image: "image",
+-            twitter: "twitter",
+-            communications: "communications",
+-            website: "website",
+             _view: "view",
+             formId: "formId"
+         });
 -- 
 2.50.1 (Apple Git-155)
 

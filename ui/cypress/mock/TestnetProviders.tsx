@@ -46,7 +46,9 @@ export default function TestnetProviders({ citizen = false, children }: any) {
                 // Mirror the app's _app.tsx config so wallet-dependent
                 // components render in component tests.
                 embeddedWallets: {
-                  createOnLogin: 'users-without-wallets',
+                  ethereum: {
+                    createOnLogin: 'users-without-wallets',
+                  },
                 },
                 appearance: {
                   theme: 'light',

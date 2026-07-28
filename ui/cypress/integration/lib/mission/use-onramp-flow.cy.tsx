@@ -16,7 +16,7 @@ const OnrampFlowWrapper = ({
     setUsdInput,
     contributeModalEnabled,
     setContributeModalEnabled,
-  } = useOnrampFlow(mission, router, chainSlugs)
+  } = useOnrampFlow(router, chainSlugs)
 
   return (
     <div>

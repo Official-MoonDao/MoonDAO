@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -7,40 +8,56 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import {
+  buildOddsTimeDomain,
+  formatOddsTick,
+  formatOddsTooltip,
+  padOddsSamples,
+  type OddsSample,
+} from '@/lib/deprize/odds-chart'
 
-export type OddsSample = { t: number; p: number[] }
+export type { OddsSample }
 
 type Props = {
   history: OddsSample[]
   labels: string[]
   colors: string[]
   height?: number
+  /** Anchor the X domain to the market open time (ms since epoch). */
+  domainStartMs?: number
 }
-
-const fmtTime = (t: number) =>
-  new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-
-const fmtTimeFull = (t: number) =>
-  new Date(t).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
 
 export default function OddsHistoryChart({
   history,
   labels,
   colors,
   height = 220,
+  domainStartMs,
 }: Props) {
   const outcomeCount = labels.length
 
-  // recharts wants flat rows: { t, v0, v1, ... }
-  const data = history.map((s) => {
-    const row: Record<string, number> = { t: s.t }
-    for (let i = 0; i < outcomeCount; i++) row[`v${i}`] = s.p[i]
-    return row
-  })
+  const { data, tMin, tMax, ticks, spanMs } = useMemo(() => {
+    if (!history.length) {
+      return {
+        data: [] as Record<string, number>[],
+        tMin: 0,
+        tMax: 0,
+        ticks: [] as number[],
+        spanMs: 0,
+      }
+    }
+
+    const domain = buildOddsTimeDomain(history, domainStartMs)
+    const samples = padOddsSamples(history, domain)
+
+    const rows = samples.map((s) => {
+      const row: Record<string, number> = { t: s.t }
+      for (let i = 0; i < outcomeCount; i++) row[`v${i}`] = s.p[i]
+      return row
+    })
+
+    return { data: rows, ...domain }
+  }, [history, outcomeCount, domainStartMs])
 
   if (data.length < 2) {
     return (
@@ -56,17 +73,20 @@ export default function OddsHistoryChart({
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: -16 }}>
         <CartesianGrid stroke="#ffffff12" vertical={false} />
         <XAxis
           dataKey="t"
           type="number"
-          scale="time"
-          domain={['dataMin', 'dataMax']}
-          tickFormatter={fmtTime}
-          tick={{ fill: '#9ca3af', fontSize: 11 }}
+          scale="linear"
+          domain={[tMin, tMax]}
+          ticks={ticks}
+          tickFormatter={(t) => formatOddsTick(Number(t), spanMs)}
+          tick={{ fill: '#9ca3af', fontSize: 11, textAnchor: 'middle' }}
           stroke="#ffffff22"
-          minTickGap={40}
+          interval={0}
+          minTickGap={0}
+          padding={{ left: 8, right: 8 }}
         />
         <YAxis
           domain={[0, 100]}
@@ -84,7 +104,7 @@ export default function OddsHistoryChart({
             fontSize: 12,
           }}
           labelStyle={{ color: '#9ca3af' }}
-          labelFormatter={(t) => fmtTimeFull(Number(t))}
+          labelFormatter={(t) => formatOddsTooltip(Number(t), spanMs)}
           formatter={(value: any, _name, item) => {
             const idx = Number(String(item?.dataKey).replace('v', ''))
             return [`${Number(value).toFixed(1)}%`, labels[idx]]

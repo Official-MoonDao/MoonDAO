@@ -3,20 +3,27 @@ import { usePrivy } from '@privy-io/react-auth'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import useOnrampVerification from '@/lib/coinbase/useOnrampVerification'
+import { OnrampAsset, onrampAssetIcon } from '@/lib/onramp/assets'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 interface CBHeadlessOnrampProps {
   address: string
   selectedChain: any
+  /**
+   * Crypto amount to purchase. Interpreted as the selected `asset` (ETH by
+   * default, or USDC when `asset="USDC"`).
+   */
   ethAmount: number
+  /** Crypto to purchase. Defaults to ETH. */
+  asset?: OnrampAsset
   onExit?: () => void
   isWaitingForGasEstimate?: boolean
   fullWidth?: boolean
   embedded?: boolean
   /** When true, shows a USD amount input the user fills in (e.g. generic
    *  wallet top-ups with no predetermined amount). The entered USD is
-   *  converted to ETH for the order. */
+   *  converted to the selected asset for the order. */
   allowAmountInput?: boolean
   /** Optional content rendered just beneath the "Fund" header. */
   headerSlot?: React.ReactNode
@@ -34,9 +41,16 @@ interface CBHeadlessOnrampProps {
   refetchBalance?: () => Promise<void>
   /** Called after a successful purchase (e.g. to resume the parent flow). */
   onSuccess?: () => void
+  /** In-app mode: when funds are purchased, skip the "Continue" confirmation
+   *  screen and hand off to the parent (which polls for the balance and shows
+   *  its own action) instead of reloading. Keeps the whole flow on one screen. */
+  waitForFundsInApp?: boolean
   /** Called when the device doesn't support Apple Pay or Google Pay so the
    *  parent can fall back to MoonPay automatically. */
   onUnsupported?: () => void
+  /** Launches the hosted Coinbase flow (account / card / bank). Surfaced on the
+   *  QR screen for desktop users who don't have an iPhone to scan with. */
+  onUseAccountFlow?: () => void | Promise<void>
 }
 
 type FundingState =
@@ -84,6 +98,7 @@ export function CBHeadlessOnramp({
   address,
   selectedChain,
   ethAmount,
+  asset = 'ETH',
   onExit,
   isWaitingForGasEstimate = false,
   fullWidth = false,
@@ -96,9 +111,13 @@ export function CBHeadlessOnramp({
   refetchBalance,
   onSuccess,
   onUnsupported,
+  onUseAccountFlow,
+  waitForFundsInApp = false,
 }: CBHeadlessOnrampProps) {
   const { user } = usePrivy()
   const verification = useOnrampVerification()
+  const [accountFlowLoading, setAccountFlowLoading] = useState(false)
+  const assetIcon = onrampAssetIcon(asset)
 
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
   const shellChrome = embedded
@@ -113,12 +132,13 @@ export function CBHeadlessOnramp({
   const [quoteLoading, setQuoteLoading] = useState(false)
 
   // USD amount-input mode (e.g. generic wallet top-ups). The user types USD,
-  // which we convert to ETH using the spot price for the order.
+  // which we convert to the selected asset using the spot price for the order.
   const [usdInputString, setUsdInputString] = useState('')
   const [ethPrice, setEthPrice] = useState<number | null>(null)
 
   useEffect(() => {
-    if (!allowAmountInput) return
+    // USDC ≈ $1 — no spot-price fetch needed for the amount-input converter.
+    if (!allowAmountInput || asset === 'USDC') return
     let cancelled = false
     fetch('/api/coinbase/eth-price')
       .then((r) => (r.ok ? r.json() : null))
@@ -129,16 +149,18 @@ export function CBHeadlessOnramp({
     return () => {
       cancelled = true
     }
-  }, [allowAmountInput])
+  }, [allowAmountInput, asset])
 
-  // ETH the order will purchase: typed-USD ÷ spot when in input mode,
-  // otherwise the predetermined prop amount.
+  // Crypto the order will purchase: typed-USD ÷ spot when in input mode,
+  // otherwise the predetermined prop amount. For USDC, USD maps 1:1.
   const effectiveEthAmount = useMemo(() => {
     if (!allowAmountInput) return ethAmount
     const usd = parseFloat(usdInputString) || 0
-    if (!ethPrice || ethPrice <= 0 || usd <= 0) return 0
+    if (usd <= 0) return 0
+    if (asset === 'USDC') return usd
+    if (!ethPrice || ethPrice <= 0) return 0
     return usd / ethPrice
-  }, [allowAmountInput, ethAmount, usdInputString, ethPrice])
+  }, [allowAmountInput, ethAmount, usdInputString, ethPrice, asset])
 
   // Debounce the effective amount so we don't quote on every keystroke.
   const [debouncedEthAmount, setDebouncedEthAmount] = useState(ethAmount)
@@ -186,6 +208,22 @@ export function CBHeadlessOnramp({
       }
       setQuoteLoading(true)
       try {
+        // USDC ≈ $1. Avoid the ETH spot-price path and quote-API network gaps
+        // (Arbitrum isn't always supported by /buy/quote).
+        if (asset === 'USDC') {
+          const total = Math.max(2, debouncedEthAmount * 1.05)
+          if (!cancelled) {
+            setPaymentTotal(total)
+            onQuoteCalculated?.(
+              debouncedEthAmount,
+              debouncedEthAmount,
+              total,
+              total - debouncedEthAmount
+            )
+          }
+          return
+        }
+
         const priceRes = await fetch('/api/coinbase/eth-price')
         if (!priceRes.ok) throw new Error('price')
         const { price } = await priceRes.json()
@@ -227,7 +265,7 @@ export function CBHeadlessOnramp({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, debouncedEthAmount, isWaitingForGasEstimate])
+  }, [address, debouncedEthAmount, isWaitingForGasEstimate, asset])
 
   const handleExit = useCallback(() => {
     setFundingState('idle')
@@ -273,6 +311,8 @@ export function CBHeadlessOnramp({
             name: selectedChain?.name,
           },
           ethAmount: effectiveEthAmount,
+          cryptoAmount: effectiveEthAmount,
+          purchaseCurrency: asset,
           paymentMethod,
           email: verification.email,
           phoneNumber: verification.phoneNumber,
@@ -326,6 +366,7 @@ export function CBHeadlessOnramp({
   }, [
     address,
     agreed,
+    asset,
     effectiveEthAmount,
     paymentMethod,
     useGooglePay,
@@ -395,12 +436,15 @@ export function CBHeadlessOnramp({
           setPaymentLinkUrl(null)
           break
         }
-        case 'onramp_api.commit_error':
-          setError(
-            errorMessage || 'Your payment could not be completed. Please try again.'
-          )
+        case 'onramp_api.commit_error': {
+          const friendlyCommitError =
+            errorCode === 'ERROR_CODE_GUEST_CARD_PREPAID_DECLINED'
+              ? 'Prepaid cards are not supported. Please use a regular debit or credit card and try again.'
+              : errorMessage || 'Your payment could not be completed. Please try again.'
+          setError(friendlyCommitError)
           setFundingState('ready')
           break
+        }
         case 'onramp_api.commit_success':
           setError(null)
           setFundingState('processing')
@@ -415,8 +459,16 @@ export function CBHeadlessOnramp({
           } catch {
             // ignore
           }
-          // onBalanceSufficient / onSuccess are deferred to handleSuccessAck so
-          // the confirmation screen stays up until the user acknowledges it.
+          if (waitForFundsInApp) {
+            // In-app mode: no manual "Continue" step. Hand off to the parent
+            // immediately so it can poll for the funds and reveal its action
+            // (e.g. the Contribute button) as soon as they land — all on the
+            // same screen, no reload.
+            onSuccessRef.current?.()
+          }
+          // Otherwise onBalanceSufficient / onSuccess are deferred to
+          // handleSuccessAck so the confirmation screen stays up until the
+          // user acknowledges it.
           break
         case 'onramp_api.polling_error':
           setError(
@@ -435,10 +487,38 @@ export function CBHeadlessOnramp({
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [fundingState, useGooglePay])
+  }, [fundingState, useGooglePay, waitForFundsInApp])
 
   // --- Success state ---
   if (fundingState === 'success') {
+    // In-app mode: no manual "Continue" step. Show a passive confirmation while
+    // the parent polls for the funds and reveals its own action (e.g. the
+    // Contribute button) automatically the moment they land.
+    if (waitForFundsInApp) {
+      return (
+        <div className={shellChrome}>
+          <div className="p-6 space-y-5 text-center">
+            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <svg className="w-7 h-7 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-white">Payment complete</h2>
+            <p className="text-gray-300 text-sm">
+              Your funds are on the way — this usually takes about a minute. You
+              can continue as soon as they land.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+              <svg className="animate-spin h-4 w-4 text-blue-300" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <span>Waiting for your funds…</span>
+            </div>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className={shellChrome}>
         <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -477,7 +557,7 @@ export function CBHeadlessOnramp({
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-              <Image src="/coins/ETH.svg" alt="ETH" width={20} height={20} className="w-6 h-6" />
+              <Image src={assetIcon} alt={asset} width={20} height={20} className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">
@@ -513,8 +593,10 @@ export function CBHeadlessOnramp({
               referrerPolicy="no-referrer"
               className="w-full"
               style={{
-                height: nativeApplePay ? 220 : useGooglePay ? 360 : 520,
-                maxHeight: '60vh',
+                height: nativeApplePay ? 220 : useGooglePay ? 360 : 560,
+                // The QR-code screen needs its full height to render without an
+                // internal scrollbar; the button-only screens stay capped.
+                maxHeight: nativeApplePay || useGooglePay ? '60vh' : '90vh',
                 border: 'none',
               }}
             />
@@ -524,8 +606,32 @@ export function CBHeadlessOnramp({
               ? 'Press the Apple Pay button above to complete your purchase securely with Coinbase.'
               : useGooglePay
                 ? 'Press the Google Pay button above to complete your purchase securely with Coinbase.'
-                : 'Scan the QR code above with your phone to complete your purchase securely with Apple Pay.'}
+                : 'Scan the QR code above with your iPhone to complete your purchase securely with Apple Pay.'}
           </p>
+          {/* Desktop users without an iPhone can't scan the Apple Pay QR — offer
+              the hosted Coinbase flow (account / card / bank) as an alternative. */}
+          {!nativeApplePay && !useGooglePay && onUseAccountFlow && (
+            <div className="pt-1 text-center">
+              <p className="text-gray-500 text-xs mb-2">No iPhone to scan with?</p>
+              <button
+                type="button"
+                disabled={accountFlowLoading}
+                onClick={async () => {
+                  setAccountFlowLoading(true)
+                  try {
+                    await onUseAccountFlow()
+                  } finally {
+                    setAccountFlowLoading(false)
+                  }
+                }}
+                className="text-sm font-semibold text-blue-300 hover:text-blue-200 underline disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {accountFlowLoading
+                  ? 'Opening Coinbase…'
+                  : 'Pay with a Coinbase account or card instead'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -537,7 +643,7 @@ export function CBHeadlessOnramp({
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-            <Image src="/coins/ETH.svg" alt="ETH" width={20} height={20} className="w-6 h-6" />
+            <Image src={assetIcon} alt={asset} width={20} height={20} className="w-6 h-6" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-white">Fund</h2>
@@ -572,7 +678,11 @@ export function CBHeadlessOnramp({
             </div>
             {effectiveEthAmount > 0 && (
               <p className="text-gray-400 text-xs">
-                ≈ {effectiveEthAmount.toFixed(4)} ETH
+                ≈{' '}
+                {asset === 'USDC'
+                  ? effectiveEthAmount.toFixed(2)
+                  : effectiveEthAmount.toFixed(4)}{' '}
+                {asset}
               </p>
             )}
           </div>
@@ -594,7 +704,10 @@ export function CBHeadlessOnramp({
               {!allowAmountInput && ethAmount > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Amount:</span>
-                  <span className="text-white font-medium">{ethAmount.toFixed(4)} ETH</span>
+                  <span className="text-white font-medium">
+                    {asset === 'USDC' ? ethAmount.toFixed(2) : ethAmount.toFixed(4)}{' '}
+                    {asset}
+                  </span>
                 </div>
               )}
               {paymentTotal != null && (

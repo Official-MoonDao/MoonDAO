@@ -1,19 +1,25 @@
 import React from 'react'
 import { CalendarIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
+import type { ProposalAIReviewResult } from '@/lib/proposals/aiReview'
 
 interface ProposalSubmissionCTAProps {
   proposalId?: string
+  aiReview?: ProposalAIReviewResult
   onClose?: () => void
 }
 
-export default function ProposalSubmissionCTA({ proposalId, onClose }: ProposalSubmissionCTAProps) {
+export default function ProposalSubmissionCTA({
+  proposalId,
+  aiReview,
+  onClose,
+}: ProposalSubmissionCTAProps) {
   // Discord URLs for MoonDAO
   const PROPOSALS_CHANNEL = 'https://discord.com/channels/914720248140279868/1027658256706961509'
   const LUMA_CALENDAR = 'https://lu.ma/moondao'
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl max-w-2xl w-full">
+      <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,6 +35,26 @@ export default function ProposalSubmissionCTA({ proposalId, onClose }: ProposalS
         </div>
 
         <div className="space-y-6">
+          {aiReview && (
+            <div className="bg-black/20 rounded-xl p-6 border border-white/10">
+              <h4 className="text-lg font-semibold text-white mb-2">AI review snapshot</h4>
+              <p className="text-sm text-gray-400 mb-3">
+                Advisory only — not a Senate vote. Avg {aiReview.average}/10 ·{' '}
+                {aiReview.provisionalVote}
+              </p>
+              {aiReview.topIssues.length > 0 && (
+                <ul className="space-y-1">
+                  {aiReview.topIssues.map((issue) => (
+                    <li key={issue} className="text-sm text-gray-300 flex gap-2">
+                      <span className="text-yellow-400">•</span>
+                      <span>{issue}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
           {/* Next Steps Header */}
           <div className="text-center">
             <h3 className="text-xl font-semibold text-white mb-4">

@@ -2,12 +2,14 @@ import {
   WalletIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  ArrowsRightLeftIcon,
   ClipboardDocumentIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { NavLink } from '@/components/layout/NavLink'
 import { FundOnrampModal } from '@/components/onramp/FundOnrampModal'
+import SwapModal from '@/components/swap/SwapModal'
 import { useState, useContext } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
@@ -88,12 +90,13 @@ export default function WalletInfoCard({
   const ens = ensData?.name
   const [copied, setCopied] = useState(false)
   const [fundModalOpen, setFundModalOpen] = useState(false)
+  const [swapModalOpen, setSwapModalOpen] = useState(false)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false)
 
   // ETH (native) balance
-  const { data: ethBalanceData } = useWalletBalance({
+  const { data: ethBalanceData, refetch: refetchEthBalance } = useWalletBalance({
     client,
     address,
     chain: selectedChain,
@@ -102,13 +105,21 @@ export default function WalletInfoCard({
 
   // USDC balance
   const usdcAddress = USDC_ADDRESSES[chainSlug] as `0x${string}` | undefined
-  const { data: usdcBalanceData } = useWalletBalance({
+  const { data: usdcBalanceData, refetch: refetchUsdcBalance } = useWalletBalance({
     client,
     address,
     chain: selectedChain,
     tokenAddress: usdcAddress,
   })
   const usdcBalance = usdcBalanceData ? Number(usdcBalanceData.displayValue) : null
+
+  // After a swap settles, nudge the thirdweb balance hooks to refetch. On-chain
+  // state may lag a few seconds, so the modal also tells the user balances may
+  // take a moment to update.
+  const handleSwapSuccess = () => {
+    refetchEthBalance?.()
+    refetchUsdcBalance?.()
+  }
 
   const availableChains = [
     arbitrum,
@@ -343,17 +354,24 @@ export default function WalletInfoCard({
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <button
           onClick={() => setFundModalOpen(true)}
-          className="flex items-center justify-center gap-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-300 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+          className="flex items-center justify-center gap-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-300 py-2 px-2 rounded-lg text-xs font-medium transition-all"
         >
           <ArrowDownIcon className="w-3.5 h-3.5" />
           Fund
         </button>
         <button
+          onClick={() => setSwapModalOpen(true)}
+          className="flex items-center justify-center gap-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 py-2 px-2 rounded-lg text-xs font-medium transition-all"
+        >
+          <ArrowsRightLeftIcon className="w-3.5 h-3.5" />
+          Swap
+        </button>
+        <button
           onClick={() => setSendModalEnabled ? setSendModalEnabled(true) : onSendClick?.()}
-          className="flex items-center justify-center gap-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+          className="flex items-center justify-center gap-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 py-2 px-2 rounded-lg text-xs font-medium transition-all"
         >
           <ArrowUpIcon className="w-3.5 h-3.5" />
           Send
@@ -369,6 +387,14 @@ export default function WalletInfoCard({
           ethAmount={0}
           context="wallet-fund"
           allowAmountInput
+        />
+      )}
+
+      {address && (
+        <SwapModal
+          enabled={swapModalOpen}
+          setEnabled={setSwapModalOpen}
+          onSuccess={handleSwapSuccess}
         />
       )}
     </div>

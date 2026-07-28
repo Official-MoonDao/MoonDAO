@@ -30,6 +30,11 @@ export function MissionContributeAutoTriggeringView({
   router,
   formatWithCommas,
 }: MissionContributeAutoTriggeringViewProps) {
+  const isPreparingStep =
+    !!account &&
+    !jwtVerificationError &&
+    (!hasEnoughBalance || isLoadingGasEstimate)
+
   return (
     <div className="flex flex-col items-center justify-center py-12 px-6 space-y-6">
       <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
@@ -74,6 +79,15 @@ export function MissionContributeAutoTriggeringView({
           </button>
         )}
       </div>
+
+      {isPreparingStep && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 w-full max-w-md">
+          <p className="text-amber-200/90 text-sm text-center leading-relaxed">
+            One more step after this: you&apos;ll be asked to confirm a transaction in your
+            wallet to complete your contribution.
+          </p>
+        </div>
+      )}
 
       <div className="w-full max-w-md">
         <ProgressBar

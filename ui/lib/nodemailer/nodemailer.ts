@@ -44,5 +44,5 @@ export function getMoonDaoGmailTransport(): Transporter {
 
 export const zeroGMailOptions = {
   from: opEmail,
-  to: emailList,
+  to: emailList.filter((e): e is string => typeof e === 'string' && e.length > 0),
 }

@@ -10,6 +10,8 @@ type AuthorCitizenLinkProps = {
   citizenContract: any
   authorName?: string | null
   compact?: boolean
+  /** When false, skip getOwnedToken/getNFT (show address/ENS only). */
+  enabled?: boolean
 }
 
 export default function AuthorCitizenLink({
@@ -17,6 +19,7 @@ export default function AuthorCitizenLink({
   citizenContract,
   authorName,
   compact = false,
+  enabled = true,
 }: AuthorCitizenLinkProps) {
   const [citizenMeta, setCitizenMeta] = useState<any>(null)
   const { data: ensData } = useENS(authorAddress)
@@ -24,7 +27,7 @@ export default function AuthorCitizenLink({
 
   useEffect(() => {
     async function resolve() {
-      if (!authorAddress || !citizenContract?.address) return
+      if (!enabled || !authorAddress || !citizenContract?.address) return
       try {
         const tokenId = await readContract({
           contract: citizenContract,
@@ -46,7 +49,7 @@ export default function AuthorCitizenLink({
       }
     }
     resolve()
-  }, [authorAddress, citizenContract])
+  }, [authorAddress, citizenContract, enabled])
 
   const displayName = citizenMeta?.name || authorName || null
   const addressLabel = ensData?.name || shortAddress

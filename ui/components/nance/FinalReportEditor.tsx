@@ -382,7 +382,7 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
                     : 'Submit Final Report'
                 }
                 action={handleFormSubmit}
-                isDisabled={buttonsDisabled || isUploadingImage}
+                actionDisabled={buttonsDisabled || isUploadingImage}
               />
               {(buttonsDisabled || isUploadingImage) && getButtonDisabledReason() && (
                 <p className="text-sm text-yellow-400 font-medium">{getButtonDisabledReason()}</p>

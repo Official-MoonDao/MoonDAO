@@ -24,7 +24,8 @@ export default function TimelineScrubber({
   onTogglePlay,
   histogram = [],
 }: TimelineScrubberProps) {
-  const span = Math.max(1, maxYear - minYear)
+  // Inclusive year count: a single-year range (min === max) is one bar, not two.
+  const span = Math.max(0, maxYear - minYear)
   const maxCount = Math.max(1, ...histogram.map((h) => h.count))
 
   return (

@@ -1,23 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useContext, useMemo } from 'react'
 import Link from 'next/link'
-import { readContract } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
+import { CITIZEN_TABLE_NAMES } from 'const/config'
+import { BLOCKED_CITIZENS } from 'const/whitelist'
+import { getRoleLabel } from '@/lib/hats/teamRoles'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { citizenRowToNFT } from '@/lib/tableland/convertRow'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import IPFSRenderer from '../layout/IPFSRenderer'
 
 type TeamMemberProps = {
   address: string
   hatIds: string[]
-  citizenContract: any
   hatsContract: any
+  citizenNft?: any
+  managerHatId?: any
 }
 
 type TeamMembersProps = {
   hatsContract: any
   citizenContract: any
   hats: any[]
+  managerHatId?: any
 }
 
 type Wearer = {
@@ -53,87 +60,32 @@ function TeamMembersLoadingSkeleton({ count = 3 }: { count?: number }) {
 function TeamMember({
   address,
   hatIds,
-  citizenContract,
   hatsContract,
+  citizenNft,
+  managerHatId,
 }: TeamMemberProps) {
-  //Hats Data
   const hatNames = useHatNames(hatsContract, hatIds)
 
-  //Citizen Data
-  const [ownedToken, setOwnedToken] = useState<any>()
-  const [nft, setNft] = useState<any>()
-  const [isLoadingNFT, setIsLoadingNFT] = useState<boolean>(false)
-
-  const [metadata, setMetadata] = useState<any>({
-    name: undefined,
-    description: undefined,
-    image: undefined,
-    attributes: [
-      {
-        trait_type: '',
-        value: '',
-      },
-    ],
-  })
-
-  useEffect(() => {
-    async function getOwnedNFT() {
-      setIsLoadingNFT(true)
-      try {
-        const ownedToken = await readContract({
-          contract: citizenContract,
-          method: 'getOwnedToken' as string,
-          params: [address],
-        })
-        setOwnedToken(ownedToken)
-
-        const nft = await getNFT({
-          contract: citizenContract,
-          tokenId: BigInt(ownedToken.toString()),
-        })
-
-        setNft(nft)
-      } catch (err) {
-        console.warn(`Failed to fetch citizen NFT for ${address}:`, err)
-      }
-      setIsLoadingNFT(false)
-    }
-    if (address && citizenContract) getOwnedNFT()
-  }, [address, citizenContract])
-
-  useEffect(() => {
-    if (isLoadingNFT) {
-      setMetadata(undefined)
-    } else if (
-      nft?.metadata &&
-      nft?.metadata?.name !== 'Failed to load NFT metadata'
-    ) {
-      setMetadata(nft.metadata)
-    } else {
-      setMetadata({
-        name: undefined,
-        description: undefined,
-        image: '/assets/citizen-default.png',
-        attributes: [
-          {
-            trait_type: '',
-            value: '',
-          },
-        ],
-      })
-    }
-  }, [nft, isLoadingNFT])
-
-  // Show skeleton while loading NFT data
-  if (isLoadingNFT) {
-    return <TeamMemberSkeleton />
-  }
-
+  const metadata = citizenNft?.metadata
   const citizenName = metadata?.name || 'Anon'
-  const citizenDescription = metadata?.description || 'This citizen has yet to add a profile'
-  const roles = hatNames?.map((hatName: any) => hatName.name || '...').join(', ') || 'Team Member'
+  const citizenDescription =
+    metadata?.description || 'This citizen has yet to add a profile'
+  // Label roles deterministically: the manager hat is always shown as "Manager"
+  // (via getRoleLabel) even if its IPFS metadata is missing/slow, so managers are
+  // never silently downgraded to a generic member label.
+  const roles =
+    hatNames
+      ?.map((hatName: any) =>
+        getRoleLabel(hatName.hatId, {
+          managerHatId,
+          ipfsName: hatName.name,
+        })
+      )
+      .join(', ') || 'Team Member'
 
-  const link = `/citizen/${metadata?.name ? generatePrettyLinkWithId(metadata.name, metadata?.id || nft?.id) : 'anon'}`
+  const link = metadata?.name
+    ? `/citizen/${generatePrettyLinkWithId(metadata.name, metadata?.id || citizenNft?.id)}`
+    : 'anon'
 
   return (
     <Link href={link} className="block w-full">
@@ -153,9 +105,7 @@ function TeamMember({
             <h3 className="font-bold text-white text-sm mb-1 group-hover:text-slate-200 transition-colors truncate">
               {citizenName}
             </h3>
-            <p className="text-xs text-slate-400 mb-2 truncate">
-              {roles}
-            </p>
+            <p className="text-xs text-slate-400 mb-2 truncate">{roles}</p>
             <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
               {citizenDescription.length > 100
                 ? citizenDescription.slice(0, 100) + '...'
@@ -170,16 +120,68 @@ function TeamMember({
 
 export default function TeamMembers({
   hatsContract,
-  citizenContract,
+  citizenContract: _citizenContract,
   hats,
+  managerHatId,
 }: TeamMembersProps) {
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const wearers = useUniqueHatWearers(hats)
 
-  // Show loading skeletons while wearers data is loading
-  if (!wearers || !wearers?.[0]?.address) {
+  const ownerAddressesKey = useMemo(() => {
+    if (!wearers?.length) return ''
+    return wearers
+      .map((w: Wearer) => w.address?.toLowerCase())
+      .filter(Boolean)
+      .sort()
+      .join(',')
+  }, [wearers])
+
+  const citizenLookupStatement = useMemo(() => {
+    const table = CITIZEN_TABLE_NAMES[chainSlug]
+    if (!table || !ownerAddressesKey) return null
+
+    const addresses = ownerAddressesKey.split(',').filter(Boolean)
+    if (addresses.length === 0) return null
+
+    const inList = addresses.map((a: string) => `'${a}'`).join(',')
+    const blocked = [...BLOCKED_CITIZENS]
+    const blockedClause =
+      blocked.length > 0 ? ` AND id NOT IN (${blocked.join(',')})` : ''
+
+    return `SELECT id, name, description, image, owner FROM ${table} WHERE LOWER(owner) IN (${inList})${blockedClause}`
+  }, [chainSlug, ownerAddressesKey])
+
+  const { data: citizenRows, isLoading: isLoadingCitizens } = useTablelandQuery(
+    citizenLookupStatement,
+    { revalidateOnFocus: false }
+  )
+
+  const citizensByOwner = useMemo(() => {
+    const map = new Map<string, any>()
+    for (const row of citizenRows || []) {
+      if (!row?.owner) continue
+      map.set(String(row.owner).toLowerCase(), citizenRowToNFT(row))
+    }
+    return map
+  }, [citizenRows])
+
+  if (wearers === undefined) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TeamMembersLoadingSkeleton count={hats?.length || 3} />
+      </div>
+    )
+  }
+
+  if (wearers.length === 0) {
+    return null
+  }
+
+  if (isLoadingCitizens && !citizenRows) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TeamMembersLoadingSkeleton count={wearers.length} />
       </div>
     )
   }
@@ -191,8 +193,9 @@ export default function TeamMembers({
           key={`${w.address}-wearer-${i}`}
           hatIds={w.hatIds}
           address={w.address}
-          citizenContract={citizenContract}
           hatsContract={hatsContract}
+          citizenNft={citizensByOwner.get(w.address.toLowerCase())}
+          managerHatId={managerHatId}
         />
       ))}
     </div>

@@ -191,7 +191,11 @@ export async function computeMemberVoteOutcome({
   const memberSnapshot = getMemberVoteVMooneySnapshot(quarter, year)
   let rawVotes: DistributionVote[]
   if (snapshotHasDistributions(memberSnapshot)) {
-    rawVotes = resolveSnapshotDistributions(memberSnapshot!) as DistributionVote[]
+    // Snapshot rows use `distribution`; live Tableland rows use `vote`.
+    // Downstream VoteRow widens both shapes — cast via unknown is intentional.
+    rawVotes = resolveSnapshotDistributions(
+      memberSnapshot!
+    ) as unknown as DistributionVote[]
   } else {
     const voteStatement = `SELECT * FROM ${proposalsTableName} WHERE quarter = ${quarter} AND year = ${year}`
     rawVotes = (await queryTable(chain, voteStatement)) as DistributionVote[]

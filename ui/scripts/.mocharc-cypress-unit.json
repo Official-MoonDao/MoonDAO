@@ -8,6 +8,8 @@
   "spec": [
     "scripts/citizen-onboarding-image.test.ts",
     "scripts/typeform-parse-body.test.ts",
+    "scripts/gift-purchase-validation.test.ts",
+    "scripts/tableland-clean-data.test.ts",
     "cypress/integration/unit/voting.cy.tsx",
     "cypress/integration/unit/vmooney-snapshots.cy.tsx",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
@@ -16,7 +18,14 @@
     "cypress/integration/unit/lunar-atlas-geo.cy.ts",
     "cypress/integration/unit/lunar-atlas-selectors.cy.ts",
     "cypress/integration/unit/lunar-atlas-southpole.cy.ts",
+    "cypress/integration/unit/team-roles.cy.tsx",
+    "cypress/integration/unit/marketplace-usdc-onramp.cy.tsx",
+    "cypress/integration/unit/proposal-ai-review.cy.tsx",
     "cypress/integration/overview-delegate/leaderboard.cy.ts",
-    "cypress/integration/overview-path-vote/tally.cy.ts"
+    "cypress/integration/overview-path-vote/tally.cy.ts",
+    "cypress/integration/lib/deprize/quote.cy.ts",
+    "cypress/integration/lib/deprize/lifecycle.cy.ts",
+    "cypress/integration/lib/deprize/odds-chart.cy.ts",
+    "cypress/integration/lib/deprize/status.cy.ts"
   ]
 }

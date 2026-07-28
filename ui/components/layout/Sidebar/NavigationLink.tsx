@@ -92,8 +92,14 @@ const Dropdown = ({
     <Disclosure
       className="tracking-tighter"
       as="div"
+      // Never auto-open Teams/Projects: those dropdowns run useTeamWearer /
+      // useProjectWearer (and can trigger the on-chain role-hat index scan).
+      // Auto-opening on /projects or /team was enough to freeze the tab on
+      // mobile before the page body finished mounting.
       defaultOpen={
-        isChildrenActive || isTeamsActive || isProjectsActive || item.href === '/join'
+        hasDynamicTeams || hasDynamicProjects
+          ? false
+          : isChildrenActive || item.href === '/join'
       }
       onClick={({ target }: any) => {
         if (item.href && !hasDynamicTeams && !hasDynamicProjects) {
@@ -139,19 +145,27 @@ const Dropdown = ({
           >
             <Disclosure.Panel as="div" className="pl-10">
               {hasDynamicTeams ? (
-                <div onClick={() => setSidebarOpen && setSidebarOpen(false)}>
-                  <TeamsNavDropdown
-                  variant="mobile"
-                  onNavigate={() => setSidebarOpen && setSidebarOpen(false)}
-                  />
-                </div>
+                open ? (
+                  <div onClick={() => setSidebarOpen && setSidebarOpen(false)}>
+                    <TeamsNavDropdown
+                      variant="mobile"
+                      onNavigate={() =>
+                        setSidebarOpen && setSidebarOpen(false)
+                      }
+                    />
+                  </div>
+                ) : null
               ) : hasDynamicProjects ? (
-                <div onClick={() => setSidebarOpen && setSidebarOpen(false)}>
-                  <ProjectsNavDropdown
-                  variant="mobile"
-                  onNavigate={() => setSidebarOpen && setSidebarOpen(false)}
-                  />
-                </div>
+                open ? (
+                  <div onClick={() => setSidebarOpen && setSidebarOpen(false)}>
+                    <ProjectsNavDropdown
+                      variant="mobile"
+                      onNavigate={() =>
+                        setSidebarOpen && setSidebarOpen(false)
+                      }
+                    />
+                  </div>
+                ) : null
               ) : (
                 item.children?.map((subItem: any) => {
                   if (subItem.href) {

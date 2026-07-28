@@ -1,0 +1,88 @@
+[
+  {
+    "type": "function",
+    "name": "bet",
+    "stateMutability": "payable",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256" },
+      { "name": "outcomeIndex", "type": "uint256" },
+      { "name": "outcomeTokenAmount", "type": "uint256" },
+      { "name": "maxCost", "type": "uint256" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "marketOf",
+    "stateMutability": "view",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "setMarket",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256" },
+      { "name": "market", "type": "address" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "registry",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "weth",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "ctf",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "jbTerminal",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "event",
+    "name": "Bet",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256", "indexed": true },
+      { "name": "bettor", "type": "address", "indexed": true },
+      { "name": "outcomeIndex", "type": "uint256", "indexed": false },
+      { "name": "outcomeTokenAmount", "type": "uint256", "indexed": false },
+      { "name": "cost", "type": "uint256", "indexed": false },
+      { "name": "slice", "type": "uint256", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MarketSet",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256", "indexed": true },
+      { "name": "market", "type": "address", "indexed": true }
+    ],
+    "anonymous": false
+  }
+]

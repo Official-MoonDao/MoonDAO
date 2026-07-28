@@ -58,6 +58,7 @@ const defaultProps = {
   duration: '23h 59m',
   deadlinePassed: false,
   refundPeriodPassed: false,
+  refundPeriod: undefined,
   stage: 1,
   token: mockToken,
   poolDeployerAddress: undefined,

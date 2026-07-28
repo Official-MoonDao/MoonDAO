@@ -118,14 +118,15 @@ jobs:
         working-directory: ui
         run: yarn build
 
-  # E2E tests on BrowserStack - split into 3 parallel jobs using cypress-split
+  # E2E on BrowserStack — 2 containers × Chrome-only (see browserstack.json).
+  # Previously 3 jobs × 5 browsers × parallels 5 routinely hit the 40m timeout.
   e2e-tests:
     runs-on: ubuntu-latest
     needs: build
     strategy:
       fail-fast: false
       matrix:
-        containers: [1, 2, 3]
+        containers: [1, 2]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -313,26 +314,56 @@ jobs:
             exit 1
           fi
 
-          # Run tests with BrowserStack local tunnel
-          # Retry on transient BrowserStack API failures (504, connection errors)
+          # Bake Local identifier into browserstack.json so the CLI cannot fall
+          # back to "existing account connection" (env substitution in JSON is
+          # unreliable and caused parallel jobs to share one tunnel).
+          node -e "
+            const fs = require('fs');
+            const cfg = JSON.parse(fs.readFileSync('browserstack.json', 'utf8'));
+            cfg.connection_settings = cfg.connection_settings || {};
+            cfg.connection_settings.local = true;
+            cfg.connection_settings.local_identifier = process.env.BROWSERSTACK_LOCAL_IDENTIFIER;
+            cfg.run_settings = cfg.run_settings || {};
+            cfg.run_settings.build_identifier = process.env.BUILD_NUMBER;
+            fs.writeFileSync('browserstack.json', JSON.stringify(cfg, null, 2));
+            console.log('browserstack local_identifier=', cfg.connection_settings.local_identifier);
+          "
+
+          # Chrome-only matrix finishes well under 20m. Retries were the main
+          # reason CI took forever: 40m timeout × 3 attempts on a 5-browser
+          # matrix that never completed. One retry only for true API flakes.
           echo "Starting BrowserStack Cypress tests..."
-          MAX_RETRIES=3
-          RETRY_DELAY=30
+          MAX_RETRIES=2
+          RETRY_DELAY=20
           TEST_EXIT_CODE=1
+          BS_LOG="../bs-cypress-run.log"
 
           for attempt in $(seq 1 $MAX_RETRIES); do
             echo "--- BrowserStack run attempt $attempt/$MAX_RETRIES ---"
+            : > "$BS_LOG"
 
             set +e
-            BS_OUTPUT=$(timeout 2400 bash -c "
+            # Stream logs (do not buffer in a shell var — that hid progress for 40m).
+            # Capture browserstack exit via a status file because PIPESTATUS is
+            # lost across the timeout/tee pipeline otherwise.
+            BS_STATUS_FILE="../bs-cypress-status"
+            rm -f "$BS_STATUS_FILE"
+            timeout 1200 bash -c "
               export BROWSERSTACK_LOCAL=true
               export BROWSERSTACK_LOCAL_IDENTIFIER=\"${BS_LOCAL_IDENTIFIER}\"
-              browserstack-cypress run --force-upload --verbose 2>&1
-            ")
-            TEST_EXIT_CODE=$?
+              set -o pipefail
+              browserstack-cypress run --force-upload --verbose 2>&1 | tee \"${BS_LOG}\"
+              echo \$? > \"${BS_STATUS_FILE}\"
+            "
+            TIMEOUT_EXIT=$?
+            if [ $TIMEOUT_EXIT -eq 124 ]; then
+              TEST_EXIT_CODE=124
+            elif [ -f "$BS_STATUS_FILE" ]; then
+              TEST_EXIT_CODE=$(cat "$BS_STATUS_FILE")
+            else
+              TEST_EXIT_CODE=$TIMEOUT_EXIT
+            fi
             set -e
-
-            echo "$BS_OUTPUT"
 
             if [ $TEST_EXIT_CODE -eq 0 ]; then
               echo "✓ BrowserStack tests completed successfully"
@@ -340,12 +371,12 @@ jobs:
             fi
 
             if [ $TEST_EXIT_CODE -eq 124 ]; then
-              echo "❌ BrowserStack tests timed out after 40 minutes"
+              echo "❌ BrowserStack tests timed out after 20 minutes"
               break
             fi
 
-            # Check if the failure is a transient BrowserStack API/infra issue
-            if echo "$BS_OUTPUT" | grep -qiE "Gateway Timeout|502 Bad Gateway|503 Service|ECONNRESET|ETIMEDOUT|ECONNREFUSED|Build creation failed|socket hang up|network error|rate limit"; then
+            # Retry only transient BrowserStack API/infra failures — not test failures
+            if grep -qiE "Gateway Timeout|502 Bad Gateway|503 Service|ECONNRESET|ETIMEDOUT|ECONNREFUSED|Build creation failed|socket hang up|network error|rate limit" "$BS_LOG"; then
               if [ $attempt -lt $MAX_RETRIES ]; then
                 WAIT_TIME=$((RETRY_DELAY * attempt))
                 echo "⚠ Transient BrowserStack API error detected. Retrying in ${WAIT_TIME}s..."

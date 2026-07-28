@@ -44,8 +44,14 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     mapping(uint256 => uint256) private _deprizeIdByJBProject;
     mapping(uint256 => mapping(uint256 => bool)) private _isTeam;
 
-    /// @dev Storage gap for future upgrades (50 slots - 4 used = 46).
-    uint256[46] private __gap;
+    /// @dev M5: winning provider's payout destination (set post-settlement). Stored
+    ///      as a standalone mapping rather than a `DePrize` struct field so the
+    ///      `getDePrize` return ABI is unchanged for existing consumers, and so this
+    ///      upgrade only consumes one previously-reserved gap slot.
+    mapping(uint256 => address) private _providerPayoutAddress;
+
+    /// @dev Storage gap for future upgrades (50 slots - 5 used = 45).
+    uint256[45] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -236,8 +242,30 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     }
 
     // ---------------------------------------------------------------------
+    // Prize disbursement (M5)
+    // ---------------------------------------------------------------------
+
+    /// @inheritdoc IDePrizeRegistry
+    function setProviderPayoutAddress(uint256 deprizeId, address provider) external override onlyOwner {
+        if (provider == address(0)) revert ZeroProviderAddress();
+        DePrize storage d = _get(deprizeId);
+        // Only meaningful once a winner is declared and before the prize fully
+        // resolves: SETTLED (pre-M1) or M1_RELEASED (between the two milestones).
+        if (d.state != DePrizeState.SETTLED && d.state != DePrizeState.M1_RELEASED) {
+            revert InvalidState(deprizeId, d.state);
+        }
+        _providerPayoutAddress[deprizeId] = provider;
+        emit ProviderPayoutAddressSet(deprizeId, provider);
+    }
+
+    // ---------------------------------------------------------------------
     // Views
     // ---------------------------------------------------------------------
+
+    /// @inheritdoc IDePrizeRegistry
+    function providerPayoutAddress(uint256 deprizeId) external view override returns (address) {
+        return _providerPayoutAddress[deprizeId];
+    }
 
     /// @inheritdoc IDePrizeRegistry
     function state(uint256 deprizeId) external view override returns (DePrizeState) {

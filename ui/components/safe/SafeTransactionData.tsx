@@ -49,8 +49,8 @@ export default function SafeTransactionData({
     if (isEthTransfer) {
       return (
         <div className="space-y-2">
-          <p className="text-gray-300">Type: ETH Transfer</p>
-          <p className="text-gray-300">
+          <p className="text-slate-300">Type: ETH Transfer</p>
+          <p className="text-slate-300">
             Amount: {ethers.utils.formatEther(transaction.value)} ETH
           </p>
         </div>
@@ -60,8 +60,8 @@ export default function SafeTransactionData({
     if (isRejectionTx) {
       return (
         <div className="space-y-2">
-          <p className="text-gray-300">Type: Transaction Rejection</p>
-          <p className="text-gray-300">Nonce: {transaction.nonce}</p>
+          <p className="text-slate-300">Type: Transaction Rejection</p>
+          <p className="text-slate-300">Nonce: {transaction.nonce}</p>
         </div>
       )
     }
@@ -70,9 +70,9 @@ export default function SafeTransactionData({
       const [newOwner, newThreshold] = transaction.dataDecoded.parameters || []
       return (
         <div className="space-y-2">
-          <p className="text-gray-300">Type: Add Signer</p>
-          <p className="text-gray-300">New Signer: {newOwner?.value}</p>
-          <p className="text-gray-300">New Threshold: {newThreshold?.value}</p>
+          <p className="text-slate-300">Type: Add Signer</p>
+          <p className="text-slate-300">New Signer: {newOwner?.value}</p>
+          <p className="text-slate-300">New Threshold: {newThreshold?.value}</p>
         </div>
       )
     }
@@ -82,11 +82,11 @@ export default function SafeTransactionData({
         transaction.dataDecoded.parameters || []
       return (
         <div className="space-y-2">
-          <p className="text-gray-300">Type: Remove Signer</p>
-          <p className="text-gray-300">
+          <p className="text-slate-300">Type: Remove Signer</p>
+          <p className="text-slate-300">
             Signer to Remove: {ownerToRemove?.value}
           </p>
-          <p className="text-gray-300">New Threshold: {newThreshold?.value}</p>
+          <p className="text-slate-300">New Threshold: {newThreshold?.value}</p>
         </div>
       )
     }
@@ -95,8 +95,8 @@ export default function SafeTransactionData({
       const [newThreshold] = transaction.dataDecoded.parameters || []
       return (
         <div className="space-y-2">
-          <p className="text-gray-300">Type: Change Threshold</p>
-          <p className="text-gray-300">New Threshold: {newThreshold?.value}</p>
+          <p className="text-slate-300">Type: Change Threshold</p>
+          <p className="text-slate-300">New Threshold: {newThreshold?.value}</p>
         </div>
       )
     }
@@ -119,10 +119,10 @@ export default function SafeTransactionData({
 
       return (
         <div className="space-y-2">
-          <p className="text-gray-300">Type: Token Transfer</p>
-          <p className="text-gray-300">Token: {tokenSymbol}</p>
-          <p className="text-gray-300">To: {recipient}</p>
-          <p className="text-gray-300">
+          <p className="text-slate-300">Type: Token Transfer</p>
+          <p className="text-slate-300">Token: {tokenSymbol}</p>
+          <p className="text-slate-300">To: {recipient}</p>
+          <p className="text-slate-300">
             Amount:{' '}
             {ethers.utils.formatUnits(value || '0', tokenDecimals || 18)}
           </p>
@@ -133,13 +133,13 @@ export default function SafeTransactionData({
     // For other transaction types, show the raw data
     return (
       <div className="space-y-2">
-        <p className="text-gray-300">
+        <p className="text-slate-300">
           Method: {transaction.dataDecoded?.method || 'Unknown'}
         </p>
         {transaction.dataDecoded?.parameters && (
           <div className="mt-2">
-            <p className="text-gray-300">Parameters:</p>
-            <pre className="text-xs text-gray-300 whitespace-pre-wrap mt-1">
+            <p className="text-slate-300">Parameters:</p>
+            <pre className="text-xs text-slate-300 whitespace-pre-wrap mt-1">
               {JSON.stringify(transaction.dataDecoded.parameters, null, 2)}
             </pre>
           </div>
@@ -149,17 +149,24 @@ export default function SafeTransactionData({
   }
 
   return (
-    <div className="mb-4">
+    <div className="mb-3">
       <button
         onClick={onToggle}
-        className="text-sm text-gray-400 hover:text-gray-300 flex items-center gap-2"
+        className="text-sm text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-colors"
         data-testid={`toggle-data-${transaction.safeTxHash}`}
       >
-        {expanded ? '▼' : '▶'} Show Transaction Details
+        <span
+          className={`inline-block transition-transform duration-200 text-[10px] ${
+            expanded ? 'rotate-90' : ''
+          }`}
+        >
+          ▶
+        </span>
+        Show Transaction Details
       </button>
       {expanded && (
         <div
-          className="mt-2 p-3 bg-gray-800/50 rounded-lg overflow-x-auto"
+          className="mt-2 p-3 bg-black/30 border border-white/10 rounded-xl overflow-x-auto"
           data-testid={`transaction-data-${transaction.safeTxHash}`}
         >
           {renderTransactionDetails()}
