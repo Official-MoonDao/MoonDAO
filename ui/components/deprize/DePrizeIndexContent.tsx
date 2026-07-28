@@ -1,10 +1,11 @@
 import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
+import { partitionDePrizeIndexByRace } from '@/lib/deprize/competitions'
 import {
   DePrizeState,
   DEPRIZE_STATE_META,
@@ -439,6 +440,22 @@ export default function DePrizeIndexContent() {
   const stillResolving = count !== undefined && resolvedCount < count
   const activeCount = activeTab === 'live' ? liveCount : closedCount
 
+  // Group by raceLabel when the chain has bindings; otherwise one flat group.
+  // Rows still always mount (to resolve buckets); headings only render when the
+  // active tab has at least one matching id in that group.
+  const raceGroups = useMemo(
+    () => (count ? partitionDePrizeIndexByRace(chainSlug, count) : []),
+    [chainSlug, count],
+  )
+
+  const anyRaceGroupVisible = useMemo(
+    () =>
+      raceGroups.some(
+        (g) => g.raceLabel !== null && g.deprizeIds.some((id) => statusMap[id] === activeTab),
+      ),
+    [raceGroups, statusMap, activeTab],
+  )
+
   const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
 
   const teamContract = useMemo(
@@ -567,18 +584,39 @@ export default function DePrizeIndexContent() {
                 </div>
 
                 {/* Rows: every DePrize mounts (to resolve its bucket) but each
-                    self-hides unless it matches the active tab. */}
-                {Array.from({ length: count }, (_, i) => (
-                  <DePrizeListRow
-                    key={i + 1}
-                    deprizeId={i + 1}
-                    teamContract={teamContract}
-                    chain={chain}
-                    activeTab={activeTab}
-                    onBet={handleBet}
-                    onStatus={handleStatus}
-                  />
-                ))}
+                    self-hides unless it matches the active tab. Grouped by
+                    race when competitions.ts has bindings on this chain. */}
+                {raceGroups.map((group) => {
+                  const groupVisible = group.deprizeIds.some(
+                    (id) => statusMap[id] === activeTab,
+                  )
+                  // Don't label the leftovers when no race section is showing —
+                  // a lone "Other challenges" heading reads as a bug.
+                  const headingVisible =
+                    group.showHeading &&
+                    groupVisible &&
+                    (group.raceLabel !== null || anyRaceGroupVisible)
+                  return (
+                    <Fragment key={group.raceLabel ?? '__other'}>
+                      {headingVisible && (
+                        <h2 className="text-white/80 font-GoodTimes text-sm tracking-wide pt-2">
+                          {group.raceLabel ?? 'Other challenges'}
+                        </h2>
+                      )}
+                      {group.deprizeIds.map((id) => (
+                        <DePrizeListRow
+                          key={id}
+                          deprizeId={id}
+                          teamContract={teamContract}
+                          chain={chain}
+                          activeTab={activeTab}
+                          onBet={handleBet}
+                          onStatus={handleStatus}
+                        />
+                      ))}
+                    </Fragment>
+                  )
+                })}
 
                 {/* Only skeleton when this tab has nothing to show yet. Once any
                     matching card is up, don't append another — remaining ids may

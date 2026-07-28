@@ -8,7 +8,6 @@ import {
   CONDITIONAL_TOKEN_ADDRESSES,
   COLLATERAL_TOKEN_ADDRESSES,
   COLLATERAL_DECIMALS,
-  MAX_OUTCOMES,
   ORACLE_ADDRESS,
   OPERATOR_ADDRESS,
   DEFAULT_CHAIN_V5,
@@ -44,6 +43,10 @@ import type { OddsSample } from '@/components/deprize/OddsHistoryChart'
 const OddsHistoryChart = dynamic(() => import('@/components/deprize/OddsHistoryChart'), {
   ssr: false,
 })
+
+/** Play-harness only — production DePrize UI sizes outcomes from teamIds.length. */
+const PLAY_MAX_OUTCOMES = 3
+const MAX_OUTCOMES = PLAY_MAX_OUTCOMES
 
 // Per-outcome line colors (also used as accents elsewhere if needed).
 const OUTCOME_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ef4444', '#06b6d4']

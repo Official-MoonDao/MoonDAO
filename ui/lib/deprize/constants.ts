@@ -38,6 +38,7 @@ export const GAS_RESERVE_WEI = 10n ** 15n // 0.001 ETH
 export const GAS_RESERVE_ETH = Number(GAS_RESERVE_WEI) / 1e18
 
 // Per-outcome line/accent colors, shared across the chart and team cards.
+// Sized for the largest planned race (4) plus headroom; wraps via `% length`.
 export const OUTCOME_COLORS = [
   '#22c55e',
   '#3b82f6',
@@ -45,6 +46,8 @@ export const OUTCOME_COLORS = [
   '#f59e0b',
   '#ef4444',
   '#06b6d4',
+  '#ec4899',
+  '#84cc16',
 ]
 
 // Odds-history sampling cadence for the live chart.

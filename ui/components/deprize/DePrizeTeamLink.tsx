@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useEffect, useState, type MouseEvent } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useReadContract } from 'thirdweb/react'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
@@ -12,6 +13,12 @@ type DePrizeTeamLinkProps = {
   /** When true, only render name (no avatar). */
   nameOnly?: boolean
   size?: number
+  /** Atlas / external display name — skips NFT name when set with imageOverride. */
+  nameOverride?: string
+  /** Atlas / external logo URI — skips NFT image when set with nameOverride. */
+  imageOverride?: string
+  /** Override link target (e.g. `/moonbase/{projectId}`). Defaults to `/team/{id}`. */
+  hrefOverride?: string
 }
 
 /** Two-letter monogram from a team name (falls back to the numeric id). */
@@ -85,9 +92,14 @@ function TeamAvatar({
   )
 }
 
+function isInternalHref(href: string): boolean {
+  return href.startsWith('/') && !href.startsWith('//')
+}
+
 /**
- * Team identity that navigates to `/team/{id}`. Used anywhere DePrize lists
- * competing providers so the profile is one click away.
+ * Team identity that navigates to `/team/{id}` by default. Optional overrides
+ * let Moon Base Zero feed atlas org name/logo and link to `/moonbase/{projectId}`
+ * for competitors that will never hold a Team NFT.
  */
 export default function DePrizeTeamLink({
   teamId,
@@ -96,23 +108,34 @@ export default function DePrizeTeamLink({
   className = '',
   nameOnly = false,
   size = 28,
+  nameOverride,
+  imageOverride,
+  hrefOverride,
 }: DePrizeTeamLinkProps) {
+  // Only skip the NFT read when neither name nor image would come from it.
+  const identityOverridden = !!nameOverride && !!imageOverride
+
   const { data: teamNFT } = useReadContract(getNFT, {
     contract: teamContract,
     tokenId: BigInt(teamId),
-    queryOptions: { enabled: !!teamContract && teamId > 0n },
+    queryOptions: {
+      enabled: !identityOverridden && !!teamContract && teamId > 0n,
+    },
   })
-  const name = (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
-  const image = (teamNFT as any)?.metadata?.image || ''
-  const href = `/team/${teamId.toString()}`
 
-  return (
-    <a
-      href={href}
-      className={`group inline-flex items-center gap-2 min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 transition-opacity hover:opacity-90 ${className}`}
-      title={`View ${name} profile`}
-      onClick={(e) => e.stopPropagation()}
-    >
+  // `||` (not `??`): an empty metadata name must still fall back to the id,
+  // and an empty override must not blank the row.
+  const name =
+    nameOverride || (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
+  const image = imageOverride || (teamNFT as any)?.metadata?.image || ''
+  const href = hrefOverride || `/team/${teamId.toString()}`
+
+  const linkClassName = `group inline-flex items-center gap-2 min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 transition-opacity hover:opacity-90 ${className}`
+  const title = `View ${name} profile`
+  const onClick = (e: MouseEvent) => e.stopPropagation()
+
+  const body = (
+    <>
       {!nameOnly && (
         <TeamAvatar
           name={name}
@@ -125,6 +148,20 @@ export default function DePrizeTeamLink({
       <span className="text-sm font-medium truncate underline-offset-2 group-hover:underline text-white/90 group-hover:text-indigo-200">
         {name}
       </span>
+    </>
+  )
+
+  if (isInternalHref(href)) {
+    return (
+      <Link href={href} className={linkClassName} title={title} onClick={onClick}>
+        {body}
+      </Link>
+    )
+  }
+
+  return (
+    <a href={href} className={linkClassName} title={title} onClick={onClick}>
+      {body}
     </a>
   )
 }
