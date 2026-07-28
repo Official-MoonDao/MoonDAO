@@ -24,7 +24,7 @@ export type UseDePrizeGoalOddsResult = {
 
 function deriveGoalMarketStatus(
   registryState: DePrizeState | undefined,
-  publishable: boolean
+  publishable: boolean,
 ): DePrizeGoalMarketStatus {
   // Consent gate: never surface live (or resolved) without publishable roster.
   if (!publishable) return 'planned'
@@ -59,7 +59,7 @@ function deriveGoalMarketStatus(
  */
 export function useDePrizeGoalOdds(
   chain: Chain,
-  sharedGoalId: string | undefined
+  sharedGoalId: string | undefined,
 ): UseDePrizeGoalOddsResult {
   const chainSlug = getChainSlug(chain)
   const deprizeId = findDePrizeIdForGoal(chainSlug, sharedGoalId)
@@ -78,6 +78,8 @@ export function useDePrizeGoalOdds(
   })
 
   const oddsByProjectId = useMemo(() => {
+    // Consent gate: do not expose live LMSR fractions for non-public races.
+    if (!publishable) return undefined
     if (!binding?.outcomes.length || !deprize?.teamIds.length) return undefined
     if (market.outcomes.length !== binding.outcomes.length) return undefined
     return mapOutcomeOddsToProjectIds({
@@ -85,7 +87,7 @@ export function useDePrizeGoalOdds(
       teamIds: deprize.teamIds,
       probabilities: market.outcomes.map((o) => o.probability),
     })
-  }, [binding, deprize?.teamIds, market.outcomes])
+  }, [binding, deprize?.teamIds, market.outcomes, publishable])
 
   const status = deriveGoalMarketStatus(deprize?.state, publishable)
 
