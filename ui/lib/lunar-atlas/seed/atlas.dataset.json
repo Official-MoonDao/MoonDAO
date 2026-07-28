@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-20",
+  "updatedAt": "2026-07-27",
   "organizations": [
     {
       "id": "nasa",
@@ -180,6 +180,182 @@
           "label": "Westinghouse — NASA-DOE contract for space microreactor",
           "url": "https://info.westinghousenuclear.com/news/westinghouse-awarded-nasa-doe-contract-to-continue-development-of-space-microreactor-concept",
           "retrievedAt": "2026-07-23"
+        }
+      ]
+    },
+    {
+      "id": "firefly",
+      "name": "Firefly Aerospace",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://fireflyspace.com/blue-ghost/",
+      "brandColor": "#FB7185",
+      "summary": "Firefly Aerospace flies the Blue Ghost lunar lander under NASA's CLPS program. Blue Ghost Mission 1 made the first fully successful commercial soft landing on the Moon in March 2025 and operated a full lunar day.",
+      "sources": [
+        {
+          "label": "Firefly Aerospace — Blue Ghost",
+          "url": "https://fireflyspace.com/blue-ghost/",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "astrobotic",
+      "name": "Astrobotic Technology",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.astrobotic.com/lunar-delivery/",
+      "brandColor": "#38BDF8",
+      "summary": "Astrobotic builds the Peregrine and Griffin lunar landers plus CubeRover mobility, delivering payloads to the surface under NASA's CLPS program.",
+      "sources": [
+        {
+          "label": "Astrobotic — Lunar Delivery",
+          "url": "https://www.astrobotic.com/lunar-delivery/",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "ispace",
+      "name": "ispace",
+      "kind": "company",
+      "country": "Japan",
+      "website": "https://ispace-inc.com/missions/",
+      "brandColor": "#C084FC",
+      "summary": "ispace develops the HAKUTO-R and APEX lunar landers and is pursuing a commercial cislunar transport and resource-prospecting business from Japan and the United States.",
+      "sources": [
+        {
+          "label": "ispace — Missions",
+          "url": "https://ispace-inc.com/missions/",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "sierra-space",
+      "name": "Sierra Space",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.sierraspace.com/",
+      "brandColor": "#10B981",
+      "summary": "Sierra Space builds inflatable LIFE habitats and a carbothermal reduction reactor that extracts oxygen from regolith, targeting both pressurized volume and in-situ consumables.",
+      "sources": [
+        {
+          "label": "Sierra Space",
+          "url": "https://www.sierraspace.com/",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "lunar-resources",
+      "name": "Lunar Resources",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.lunarresources.space/",
+      "brandColor": "#F472B6",
+      "summary": "Lunar Resources develops molten regolith electrolysis reactors that split raw regolith into oxygen and structural metals, plus in-situ manufactured power infrastructure.",
+      "sources": [
+        {
+          "label": "Lunar Resources",
+          "url": "https://www.lunarresources.space/",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "lockheed-martin",
+      "name": "Lockheed Martin",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.lockheedmartin.com/en-us/products/lunar.html",
+      "brandColor": "#475569",
+      "summary": "Lockheed Martin builds the Orion crew vehicle, leads one of NASA's three fission surface power design teams, and owns Crescent Space, its lunar communications and navigation venture.",
+      "sources": [
+        {
+          "label": "Lockheed Martin — Lunar",
+          "url": "https://www.lockheedmartin.com/en-us/products/lunar.html",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "thales-alenia-space",
+      "name": "Thales Alenia Space",
+      "kind": "company",
+      "country": "France / Italy",
+      "website": "https://www.thalesaleniaspace.com/",
+      "brandColor": "#6366F1",
+      "summary": "Thales Alenia Space has built a majority of the pressurized volume ever flown on the ISS and is under contract to the Italian Space Agency for the Multi-Purpose Habitat, Italy's surface habitat contribution to Artemis.",
+      "sources": [
+        {
+          "label": "Thales Alenia Space — Multi-Purpose Habitat",
+          "url": "https://www.thalesaleniaspace.com/en/news/thales-alenia-space-signs-contract-italian-space-agency-build-multi-purpose-habitation",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "jaxa",
+      "name": "JAXA",
+      "kind": "agency",
+      "country": "Japan",
+      "website": "https://global.jaxa.jp/projects/exploration/",
+      "brandColor": "#DC2626",
+      "summary": "Japan's space agency is providing the crewed pressurized rover for Artemis, developed with Toyota, in exchange for two Japanese astronaut flights to the Moon under a 2024 agreement with NASA.",
+      "sources": [
+        {
+          "label": "JAXA — International Space Exploration",
+          "url": "https://global.jaxa.jp/projects/exploration/",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "nokia",
+      "name": "Nokia Bell Labs",
+      "kind": "company",
+      "country": "Finland",
+      "website": "https://www.nokia.com/about-us/newsroom/articles/nokia-bell-labs-lunar-network/",
+      "brandColor": "#124191",
+      "summary": "Nokia Bell Labs adapted terrestrial LTE/4G for the lunar surface under a NASA Tipping Point award and flew the first cellular network to the Moon aboard Intuitive Machines' IM-2 in 2025.",
+      "sources": [
+        {
+          "label": "Nokia — Lunar network",
+          "url": "https://www.nokia.com/about-us/newsroom/articles/nokia-bell-labs-lunar-network/",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "esa",
+      "name": "European Space Agency",
+      "kind": "international",
+      "country": "Europe",
+      "website": "https://www.esa.int/Applications/Connectivity_and_Secure_Communications/Moonlight",
+      "brandColor": "#2563EB",
+      "summary": "Through the Moonlight initiative ESA is procuring a shared lunar communications and navigation constellation, with the SSTL-built Lunar Pathfinder relay as its precursor.",
+      "sources": [
+        {
+          "label": "ESA — Moonlight",
+          "url": "https://www.esa.int/Applications/Connectivity_and_Secure_Communications/Moonlight",
+          "retrievedAt": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "crescent-space",
+      "name": "Crescent Space Services",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.crescentspace.com/",
+      "brandColor": "#16A34A",
+      "summary": "Crescent Space, a Lockheed Martin venture founded in 2023, is building Parsec — a commercial lunar communications and navigation service sold to agency and private missions.",
+      "sources": [
+        {
+          "label": "Crescent Space Services",
+          "url": "https://www.crescentspace.com/",
+          "retrievedAt": "2026-07-27"
         }
       ]
     }
@@ -507,7 +683,7 @@
         }
       ],
       "sharedGoalIds": [
-        "shared-isru-power"
+        "shared-fission-power"
       ],
       "rosterStatus": "listed",
       "sources": [
@@ -690,8 +866,9 @@
         }
       ],
       "sharedGoalIds": [
-        "shared-isru-power"
+        "shared-isru-oxygen"
       ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "Blue Origin — Blue Alchemist",
@@ -976,6 +1153,984 @@
         }
       ],
       "visibility": "public"
+    },
+    {
+      "id": "firefly-blue-ghost",
+      "orgId": "firefly",
+      "name": "Blue Ghost",
+      "type": "lander",
+      "summary": "A CLPS-class cargo lander. Blue Ghost Mission 1 touched down in Mare Crisium in March 2025 and operated through a full lunar day — the first commercial lunar landing to fully succeed.",
+      "location": {
+        "lat": -85.8,
+        "lon": 25
+      },
+      "locationPrecision": "approximate",
+      "regionLabel": "Mare Crisium (M1) / lunar far side (M2)",
+      "milestones": [
+        {
+          "id": "bg-m1",
+          "title": "Blue Ghost Mission 1 lands in Mare Crisium",
+          "targetDate": "2025-03",
+          "datePrecision": "month",
+          "status": "achieved",
+          "metrics": [
+            {
+              "label": "NASA payloads delivered",
+              "value": 10,
+              "unit": "payloads"
+            },
+            {
+              "label": "Surface operations",
+              "value": 14,
+              "unit": "days"
+            }
+          ],
+          "sources": [
+            {
+              "label": "NASA — Firefly's Blue Ghost lands on the Moon",
+              "url": "https://www.nasa.gov/news-release/nasa-science-tech-lands-on-moon-aboard-firefly-blue-ghost/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "bg-m2",
+          "title": "Blue Ghost Mission 2 — far side, carrying ESA's Lunar Pathfinder",
+          "targetDate": "2026",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Firefly Aerospace — Blue Ghost",
+              "url": "https://fireflyspace.com/blue-ghost/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "bg-m3",
+          "title": "Blue Ghost Mission 3 — Gruithuisen Domes delivery",
+          "targetDate": "2028",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Firefly Aerospace — Blue Ghost",
+              "url": "https://fireflyspace.com/blue-ghost/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "Firefly Aerospace — Blue Ghost",
+          "url": "https://fireflyspace.com/blue-ghost/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "astrobotic-griffin",
+      "orgId": "astrobotic",
+      "name": "Peregrine & Griffin Landers",
+      "type": "lander",
+      "summary": "Astrobotic's CLPS landers. Peregrine Mission One was lost to a propellant leak hours after its January 2024 launch; the larger Griffin lander now carries Astrolab's FLIP rover to the south pole.",
+      "location": {
+        "lat": -85.2,
+        "lon": -30
+      },
+      "locationPrecision": "approximate",
+      "regionLabel": "Lunar South Pole (Griffin)",
+      "milestones": [
+        {
+          "id": "peregrine-1",
+          "title": "Peregrine Mission One — propellant leak, no landing attempt",
+          "targetDate": "2024-01",
+          "datePrecision": "month",
+          "status": "cancelled",
+          "sources": [
+            {
+              "label": "Astrobotic — Peregrine Mission One updates",
+              "url": "https://www.astrobotic.com/peregrine-mission-one/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "griffin-1",
+          "title": "Griffin Mission One — FLIP rover to the south pole",
+          "targetDate": "2026",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Astrobotic — Lunar Delivery",
+              "url": "https://www.astrobotic.com/lunar-delivery/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "Astrobotic — Lunar Delivery",
+          "url": "https://www.astrobotic.com/lunar-delivery/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "ispace-apex",
+      "orgId": "ispace",
+      "name": "HAKUTO-R & APEX 1.0",
+      "type": "lander",
+      "summary": "ispace's lander line. Two HAKUTO-R landing attempts ended in crashes — an altitude misread in 2023 and a rangefinder failure in 2025 — and the larger APEX 1.0 built by ispace's US arm flies next for Draper under CLPS.",
+      "location": {
+        "lat": -87.4,
+        "lon": 132
+      },
+      "locationPrecision": "approximate",
+      "regionLabel": "Schrödinger basin, lunar far side (APEX 1.0)",
+      "milestones": [
+        {
+          "id": "hakuto-m1",
+          "title": "HAKUTO-R Mission 1 — altitude miscalculation, hard landing",
+          "targetDate": "2023-04",
+          "datePrecision": "month",
+          "status": "cancelled",
+          "sources": [
+            {
+              "label": "ispace — Mission 1 results",
+              "url": "https://ispace-inc.com/missions/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "hakuto-m2",
+          "title": "Mission 2 RESILIENCE — rangefinder failure, hard landing",
+          "targetDate": "2025-06",
+          "datePrecision": "month",
+          "status": "cancelled",
+          "sources": [
+            {
+              "label": "ispace — Mission 2 results",
+              "url": "https://ispace-inc.com/missions/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "apex-m3",
+          "title": "Mission 3 — APEX 1.0 to Schrödinger basin for Draper/CLPS",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "ispace — Missions",
+              "url": "https://ispace-inc.com/missions/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "ispace — Missions",
+          "url": "https://ispace-inc.com/missions/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "im-nova-c",
+      "orgId": "intuitive-machines",
+      "name": "Nova-C Lander",
+      "type": "lander",
+      "summary": "Intuitive Machines' CLPS lander. IM-1 made the first US soft landing since Apollo 17 in February 2024, and IM-2 reached Mons Mouton a year later; both came to rest on their sides.",
+      "location": {
+        "lat": -85.1,
+        "lon": -12
+      },
+      "locationPrecision": "approximate",
+      "regionLabel": "Malapert A (IM-1) / Mons Mouton (IM-2)",
+      "milestones": [
+        {
+          "id": "im-1",
+          "title": "IM-1 Odysseus — first US soft landing since Apollo, tipped at touchdown",
+          "targetDate": "2024-02",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "NASA — Intuitive Machines' Odysseus lands on the Moon",
+              "url": "https://www.nasa.gov/news-release/nasa-tech-demos-land-on-moon-aboard-intuitive-machines-odysseus/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "im-2",
+          "title": "IM-2 Athena — landed near Mons Mouton on its side, mission cut short",
+          "targetDate": "2025-03",
+          "datePrecision": "month",
+          "status": "delayed",
+          "sources": [
+            {
+              "label": "Intuitive Machines — IM-2 mission",
+              "url": "https://www.intuitivemachines.com/im-2",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "im-3",
+          "title": "IM-3 delivery to Reiner Gamma",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Intuitive Machines — Lunar Access",
+              "url": "https://www.intuitivemachines.com/lunaraccess",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "Intuitive Machines — Lunar Access",
+          "url": "https://www.intuitivemachines.com/lunaraccess",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "lockheed-fission-surface-power",
+      "orgId": "lockheed-martin",
+      "name": "Fission Surface Power Reactor",
+      "type": "power",
+      "summary": "Lockheed Martin's 40 kWe surface reactor design, developed with BWXT and Creare under one of NASA's three Fission Surface Power Phase 1 contracts. Fission is the only demonstrated way to carry a base through the 14-day lunar night.",
+      "location": {
+        "lat": -88.6,
+        "lon": 62
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
+      "milestones": [
+        {
+          "id": "lmt-fsp-p1",
+          "title": "NASA Fission Surface Power Phase 1 design contract awarded",
+          "targetDate": "2022-06",
+          "datePrecision": "month",
+          "status": "achieved",
+          "metrics": [
+            {
+              "label": "Design contract value",
+              "value": 5,
+              "unit": "USD millions"
+            },
+            {
+              "label": "Target electrical output",
+              "value": 40,
+              "unit": "kWe"
+            }
+          ],
+          "sources": [
+            {
+              "label": "NASA — NASA, DOE select design concepts for fission surface power",
+              "url": "https://www.nasa.gov/news-release/nasa-doe-select-design-concepts-for-fission-surface-power-system/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "lmt-fsp-flight",
+          "title": "Flight reactor demonstration on the surface",
+          "targetDate": "2030",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Fission Surface Power",
+              "url": "https://www.nasa.gov/tdm/fission-surface-power/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-fission-power"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "NASA — Fission Surface Power",
+          "url": "https://www.nasa.gov/tdm/fission-surface-power/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "ix-fission-surface-power",
+      "orgId": "intuitive-machines",
+      "name": "IX Fission Surface Power Reactor",
+      "type": "power",
+      "summary": "The reactor design from IX, the Intuitive Machines and X-energy joint venture, with Maxar and Boeing — the third of NASA's Fission Surface Power Phase 1 teams. X-energy contributes TRISO fuel heritage.",
+      "location": {
+        "lat": -88.6,
+        "lon": 74
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
+      "milestones": [
+        {
+          "id": "ix-fsp-p1",
+          "title": "NASA Fission Surface Power Phase 1 design contract awarded",
+          "targetDate": "2022-06",
+          "datePrecision": "month",
+          "status": "achieved",
+          "metrics": [
+            {
+              "label": "Design contract value",
+              "value": 5,
+              "unit": "USD millions"
+            },
+            {
+              "label": "Target electrical output",
+              "value": 40,
+              "unit": "kWe"
+            }
+          ],
+          "sources": [
+            {
+              "label": "NASA — NASA, DOE select design concepts for fission surface power",
+              "url": "https://www.nasa.gov/news-release/nasa-doe-select-design-concepts-for-fission-surface-power-system/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "ix-fsp-flight",
+          "title": "Flight reactor demonstration on the surface",
+          "targetDate": "2031",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Fission Surface Power",
+              "url": "https://www.nasa.gov/tdm/fission-surface-power/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-fission-power"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "NASA — Fission Surface Power",
+          "url": "https://www.nasa.gov/tdm/fission-surface-power/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "sierra-space-carbothermal",
+      "orgId": "sierra-space",
+      "name": "Carbothermal Oxygen Reactor",
+      "type": "isru_plant",
+      "summary": "A carbothermal reduction reactor that melts regolith with concentrated heat and pulls oxygen out as carbon monoxide. Sierra Space ran a full-scale unit in a thermal vacuum chamber at NASA Johnson under the agency's Carbothermal Reduction Demonstration.",
+      "location": {
+        "lat": -88.2,
+        "lon": -58
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
+      "milestones": [
+        {
+          "id": "sierra-card",
+          "title": "Full-scale reactor tested in thermal vacuum at NASA Johnson",
+          "targetDate": "2024",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "Sierra Space — oxygen extraction from lunar regolith",
+              "url": "https://www.sierraspace.com/newsroom/press-releases/sierra-space-successfully-demonstrates-oxygen-extraction-from-lunar-regolith/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "sierra-pilot",
+          "title": "Pilot oxygen production plant on the surface",
+          "targetDate": "2030",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Sierra Space",
+              "url": "https://www.sierraspace.com/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-isru-oxygen"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Sierra Space",
+          "url": "https://www.sierraspace.com/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "lunar-resources-mre",
+      "orgId": "lunar-resources",
+      "name": "Molten Regolith Electrolysis",
+      "type": "isru_plant",
+      "summary": "An electrolysis reactor that runs raw molten regolith as its own electrolyte, splitting it into oxygen and structural metals with no consumable reagents — the feedstock path for in-situ manufactured power and structures.",
+      "location": {
+        "lat": -88.2,
+        "lon": -72
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (representative placement — development is Earth-based)",
+      "milestones": [
+        {
+          "id": "lunres-mre-trl",
+          "title": "MRE reactor advanced through vacuum testing",
+          "targetDate": "2025",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "Lunar Resources",
+              "url": "https://www.lunarresources.space/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "lunres-flight",
+          "title": "Flight demonstration of in-situ oxygen and metal production",
+          "targetDate": "2031",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Lunar Resources",
+              "url": "https://www.lunarresources.space/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-isru-oxygen"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Lunar Resources",
+          "url": "https://www.lunarresources.space/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "thales-mph",
+      "orgId": "thales-alenia-space",
+      "name": "Multi-Purpose Habitat (MPH)",
+      "type": "habitat",
+      "summary": "Italy's surface habitat contribution to Artemis, under contract from the Italian Space Agency. A rigid pressurized module with its own power, thermal, and life support, delivered ready to live in and designed to berth to later modules.",
+      "location": {
+        "lat": -89.3,
+        "lon": 12
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole — Artemis Base Camp",
+      "milestones": [
+        {
+          "id": "mph-contract",
+          "title": "ASI contracts Thales Alenia Space for the Multi-Purpose Habitat",
+          "targetDate": "2024",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "Thales Alenia Space — Multi-Purpose Habitat",
+              "url": "https://www.thalesaleniaspace.com/en/news/thales-alenia-space-signs-contract-italian-space-agency-build-multi-purpose-habitation",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "mph-delivery",
+          "title": "MPH delivered to the surface on a human-class lander",
+          "targetDate": "2033",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "metrics": [
+            {
+              "label": "Design life",
+              "value": 10,
+              "unit": "years"
+            },
+            {
+              "label": "Initial crew",
+              "value": 2,
+              "unit": "crew"
+            }
+          ],
+          "sources": [
+            {
+              "label": "NASA — Moon to Mars architecture",
+              "url": "https://www.nasa.gov/moontomarsarchitecture/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-habitat"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Thales Alenia Space — Multi-Purpose Habitat",
+          "url": "https://www.thalesaleniaspace.com/en/news/thales-alenia-space-signs-contract-italian-space-agency-build-multi-purpose-habitation",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "sierra-space-life",
+      "orgId": "sierra-space",
+      "name": "LIFE Habitat",
+      "type": "habitat",
+      "summary": "An expandable softgoods habitat that launches folded and inflates to full volume on site, trading launch mass for pressurized space. Sierra Space has burst-tested full-scale articles well past NASA's required margin.",
+      "location": {
+        "lat": -89.3,
+        "lon": -22
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (concept placement)",
+      "milestones": [
+        {
+          "id": "life-burst",
+          "title": "Full-scale burst test exceeds NASA's recommended margin",
+          "targetDate": "2024",
+          "datePrecision": "year",
+          "status": "achieved",
+          "metrics": [
+            {
+              "label": "Burst pressure reached",
+              "value": 77,
+              "unit": "psi"
+            }
+          ],
+          "sources": [
+            {
+              "label": "Sierra Space — LIFE habitat burst test",
+              "url": "https://www.sierraspace.com/newsroom/press-releases/sierra-space-completes-full-scale-burst-test-of-life-habitat/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "life-lunar",
+          "title": "Lunar surface variant delivered",
+          "targetDate": "2032",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Sierra Space",
+              "url": "https://www.sierraspace.com/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-habitat"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Sierra Space",
+          "url": "https://www.sierraspace.com/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "jaxa-lunar-cruiser",
+      "orgId": "jaxa",
+      "name": "Lunar Cruiser (Pressurized Rover)",
+      "type": "habitat",
+      "summary": "A pressurized rover built with Toyota that doubles as the base's first habitat — two crew living unsuited for about thirty days while driving hundreds of kilometres. Japan provides it under a 2024 agreement that buys two Japanese astronaut flights to the Moon.",
+      "location": {
+        "lat": -89.0,
+        "lon": 30
+      },
+      "locationPrecision": "approximate",
+      "regionLabel": "Lunar South Pole — Artemis operating area",
+      "milestones": [
+        {
+          "id": "cruiser-agreement",
+          "title": "US–Japan agreement: JAXA to provide the pressurized rover",
+          "targetDate": "2024-04",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "NASA — NASA, Japan announce crew rover agreement",
+              "url": "https://www.nasa.gov/news-release/nasa-japan-announce-crew-rover-agreement/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "cruiser-delivery",
+          "title": "Pressurized rover delivered to the surface",
+          "targetDate": "2031",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "metrics": [
+            {
+              "label": "Crew",
+              "value": 2,
+              "unit": "crew"
+            },
+            {
+              "label": "Unsuited endurance",
+              "value": 30,
+              "unit": "days"
+            }
+          ],
+          "sources": [
+            {
+              "label": "JAXA — International Space Exploration",
+              "url": "https://global.jaxa.jp/projects/exploration/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-habitat"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "JAXA — International Space Exploration",
+          "url": "https://global.jaxa.jp/projects/exploration/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "nokia-lunar-lte",
+      "orgId": "nokia",
+      "name": "Lunar Surface Communication System",
+      "type": "comms_pnt",
+      "summary": "Terrestrial LTE/4G hardened for the Moon: a base station on a lander talking to rovers and suits over standard cellular protocols instead of bespoke radio. It powered on during IM-2 in 2025, the first cellular network operated off Earth.",
+      "location": {
+        "lat": -88.9,
+        "lon": 48
+      },
+      "locationPrecision": "approximate",
+      "regionLabel": "Lunar South Pole — Mons Mouton region",
+      "milestones": [
+        {
+          "id": "nokia-tipping-point",
+          "title": "NASA Tipping Point award to put LTE on the Moon",
+          "targetDate": "2020-10",
+          "datePrecision": "month",
+          "status": "achieved",
+          "metrics": [
+            {
+              "label": "Award value",
+              "value": 14.1,
+              "unit": "USD millions"
+            }
+          ],
+          "sources": [
+            {
+              "label": "NASA — NASA funds tipping point technologies",
+              "url": "https://www.nasa.gov/news-release/nasa-funds-demos-of-technologies-for-moon-mars-exploration/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "nokia-im2",
+          "title": "First cellular network operated on the lunar surface",
+          "targetDate": "2025-03",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "Nokia — Lunar network",
+              "url": "https://www.nokia.com/about-us/newsroom/articles/nokia-bell-labs-lunar-network/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "nokia-ops",
+          "title": "Network supporting sustained surface operations",
+          "targetDate": "2029",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Nokia — Lunar network",
+              "url": "https://www.nokia.com/about-us/newsroom/articles/nokia-bell-labs-lunar-network/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-lunar-comms"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Nokia — Lunar network",
+          "url": "https://www.nokia.com/about-us/newsroom/articles/nokia-bell-labs-lunar-network/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "esa-lunar-pathfinder",
+      "orgId": "esa",
+      "name": "Lunar Pathfinder & Moonlight",
+      "type": "comms_pnt",
+      "summary": "ESA's route to a shared lunar utility: the SSTL-built Lunar Pathfinder relay first, then Moonlight, a constellation selling communications and navigation to any mission at the south pole rather than each one flying its own relay.",
+      "location": {
+        "lat": -88.7,
+        "lon": 56
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole — service coverage area",
+      "milestones": [
+        {
+          "id": "pathfinder-contract",
+          "title": "ESA contracts SSTL for the Lunar Pathfinder relay",
+          "targetDate": "2021",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "ESA — Moonlight",
+              "url": "https://www.esa.int/Applications/Connectivity_and_Secure_Communications/Moonlight",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "moonlight-award",
+          "title": "Moonlight constellation contract awarded",
+          "targetDate": "2024",
+          "datePrecision": "year",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "ESA — Moonlight",
+              "url": "https://www.esa.int/Applications/Connectivity_and_Secure_Communications/Moonlight",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "pathfinder-launch",
+          "title": "Lunar Pathfinder launched on Blue Ghost Mission 2",
+          "targetDate": "2026",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "ESA — Moonlight",
+              "url": "https://www.esa.int/Applications/Connectivity_and_Secure_Communications/Moonlight",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "moonlight-service",
+          "title": "Moonlight constellation in service",
+          "targetDate": "2030",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "ESA — Moonlight",
+              "url": "https://www.esa.int/Applications/Connectivity_and_Secure_Communications/Moonlight",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-lunar-comms"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "ESA — Moonlight",
+          "url": "https://www.esa.int/Applications/Connectivity_and_Secure_Communications/Moonlight",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "crescent-parsec",
+      "orgId": "crescent-space",
+      "name": "Parsec",
+      "type": "comms_pnt",
+      "summary": "Lockheed Martin's commercial answer to lunar connectivity: a small constellation sold as a subscription service, so agency and private missions buy comms and navigation the way they buy launch.",
+      "location": {
+        "lat": -88.5,
+        "lon": 66
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole — service coverage area",
+      "milestones": [
+        {
+          "id": "crescent-founded",
+          "title": "Crescent Space founded; Parsec service announced",
+          "targetDate": "2023-07",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "Crescent Space Services",
+              "url": "https://www.crescentspace.com/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "parsec-service",
+          "title": "First Parsec relay nodes in service",
+          "targetDate": "2028",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Crescent Space Services",
+              "url": "https://www.crescentspace.com/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-lunar-comms"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Crescent Space Services",
+          "url": "https://www.crescentspace.com/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "im-near-space-network",
+      "orgId": "intuitive-machines",
+      "name": "Lunar Relay Satellites",
+      "type": "comms_pnt",
+      "summary": "Intuitive Machines holds NASA's Near Space Network Services contract to fly relay satellites carrying Artemis traffic — the commercial replacement for agency-owned relay infrastructure.",
+      "location": {
+        "lat": -88.5,
+        "lon": 40
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole — service coverage area",
+      "milestones": [
+        {
+          "id": "nsns-award",
+          "title": "NASA Near Space Network Services contract awarded",
+          "targetDate": "2024-09",
+          "datePrecision": "month",
+          "status": "achieved",
+          "metrics": [
+            {
+              "label": "Contract ceiling",
+              "value": 4820,
+              "unit": "USD millions"
+            }
+          ],
+          "sources": [
+            {
+              "label": "NASA — NASA awards near space network services contract",
+              "url": "https://www.nasa.gov/news-release/nasa-awards-near-space-network-services-contract/",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "nsns-service",
+          "title": "First relay satellites operational",
+          "targetDate": "2028",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Intuitive Machines — Lunar Data Network",
+              "url": "https://www.intuitivemachines.com/lunardatanetwork",
+              "retrievedAt": "2026-07-27"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-lunar-comms"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Intuitive Machines — Lunar Data Network",
+          "url": "https://www.intuitivemachines.com/lunardatanetwork",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
     }
   ],
   "sharedGoals": [
@@ -1123,12 +2278,13 @@
       "category": "crewed_base"
     },
     {
-      "id": "shared-isru-power",
-      "title": "First sustained lunar power & in-situ resource use",
-      "description": "Continuous surface power and the ability to make oxygen, metals, and solar cells from regolith are prerequisites for a permanent presence. Westinghouse's fission surface power reactor (contracted under NASA's FSP project) and Blue Origin's Blue Alchemist target this from different angles.",
+      "id": "shared-isru-oxygen",
+      "title": "First sustained oxygen and metals from lunar regolith",
+      "description": "Oxygen is most of the mass of a lunar propellant load and all of the mass of a breathable atmosphere, and hauling either from Earth caps how large a base can get. Blue Origin makes solar cells and oxygen by molten regolith electrolysis, Sierra Space pulls oxygen out carbothermally, and Lunar Resources runs molten regolith as its own electrolyte to get metals alongside the oxygen.",
       "projectIds": [
-        "westinghouse-fission-surface-power",
-        "blue-origin-blue-alchemist"
+        "blue-origin-blue-alchemist",
+        "sierra-space-carbothermal",
+        "lunar-resources-mre"
       ],
       "targetWindow": {
         "from": "2028",
@@ -1138,18 +2294,51 @@
         "status": "planned",
         "resolutionAuthority": "senate",
         "impliedOdds": {
-          "westinghouse-fission-surface-power": 0.55,
-          "blue-origin-blue-alchemist": 0.45
+          "blue-origin-blue-alchemist": 0.41,
+          "sierra-space-carbothermal": 0.32,
+          "lunar-resources-mre": 0.27
         }
       },
       "sources": [
         {
-          "label": "NASA — Fission Surface Power",
-          "url": "https://www.nasa.gov/tdm/fission-surface-power/",
-          "retrievedAt": "2026-07-01"
+          "label": "Blue Origin — Blue Alchemist",
+          "url": "https://www.blueorigin.com/news/blue-alchemist-powers-our-lunar-future",
+          "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "Sierra Space",
+          "url": "https://www.sierraspace.com/",
+          "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "Lunar Resources",
+          "url": "https://www.lunarresources.space/",
+          "retrievedAt": "2026-07-27"
         }
       ],
-      "category": "isru_plant"
+      "category": "isru_plant",
+      "criteria": [
+        {
+          "id": "oxygen-rate",
+          "statement": "Produce oxygen from regolith at a sustained rate",
+          "threshold": "≥ 1 kg O₂ per day continuous, ≥ 90% regolith feedstock by mass"
+        },
+        {
+          "id": "vacuum",
+          "statement": "Run the process in a relevant environment",
+          "threshold": "Vacuum and lunar thermal extremes; exact bar frozen at market open"
+        },
+        {
+          "id": "energy",
+          "statement": "Publish energy cost per kilogram of product",
+          "threshold": "kWh per kg O₂, measured end to end including feedstock handling"
+        },
+        {
+          "id": "duration",
+          "statement": "Demonstrate endurance rather than a single batch",
+          "threshold": "Continuous or repeated operation across ≥ 100 hours"
+        }
+      ]
     },
     {
       "id": "shared-lunar-rover",
@@ -1186,6 +2375,202 @@
         }
       ],
       "category": "rover"
+    },
+    {
+      "id": "shared-fission-power",
+      "title": "First operational fission surface power on the Moon",
+      "description": "Nothing else carries a base through the 14-day lunar night. NASA and the Department of Energy funded three 40 kWe reactor designs in 2022 — Lockheed Martin with BWXT and Creare, Westinghouse with Aerojet Rocketdyne, and IX, the Intuitive Machines and X-energy joint venture — and in 2025 directed the program to accelerate toward a 100 kWe reactor launching by 2030. The three teams started from identical contracts, which makes this the closest-run race on the board.",
+      "projectIds": [
+        "westinghouse-fission-surface-power",
+        "lockheed-fission-surface-power",
+        "ix-fission-surface-power"
+      ],
+      "criteria": [
+        {
+          "id": "night-power",
+          "statement": "Deliver continuous electrical power through a full lunar night",
+          "threshold": "≥ 40 kWe for ≥ 354 hours without solar input"
+        },
+        {
+          "id": "autonomy",
+          "statement": "Operate without crew intervention on the surface",
+          "threshold": "Autonomous start-up, load-following, and safe shutdown"
+        },
+        {
+          "id": "endurance",
+          "statement": "Qualify for a decade of surface operation",
+          "threshold": "10-year design life demonstrated by test and analysis"
+        },
+        {
+          "id": "launch-mass",
+          "statement": "Fit a single lander delivery",
+          "threshold": "Mass and envelope within one human-class lander manifest"
+        }
+      ],
+      "targetWindow": {
+        "from": "2028",
+        "to": "2035"
+      },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "lockheed-fission-surface-power": 0.35,
+          "westinghouse-fission-surface-power": 0.34,
+          "ix-fission-surface-power": 0.31
+        }
+      },
+      "sources": [
+        {
+          "label": "NASA — Fission Surface Power",
+          "url": "https://www.nasa.gov/tdm/fission-surface-power/",
+          "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "NASA — NASA, DOE select design concepts for fission surface power",
+          "url": "https://www.nasa.gov/news-release/nasa-doe-select-design-concepts-for-fission-surface-power-system/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "category": "power"
+    },
+    {
+      "id": "shared-habitat",
+      "title": "First pressurized habitat occupied on the lunar surface",
+      "description": "Three different bets on where crews will actually live. Thales Alenia Space is building Italy's rigid Multi-Purpose Habitat for delivery around 2033; Sierra Space argues for inflatables that launch folded and expand on site; and Japan's Lunar Cruiser makes the first habitat a vehicle, keeping two crew unsuited for a month while it drives. Whoever gets there first defines what a lunar home is.",
+      "projectIds": [
+        "thales-mph",
+        "sierra-space-life",
+        "jaxa-lunar-cruiser"
+      ],
+      "location": {
+        "lat": -89.2,
+        "lon": 18
+      },
+      "regionLabel": "Lunar South Pole — Artemis Base Camp",
+      "criteria": [
+        {
+          "id": "occupied",
+          "statement": "House crew on the surface at habitable pressure",
+          "threshold": "≥ 2 crew living unsuited for ≥ 14 consecutive days"
+        },
+        {
+          "id": "eclss",
+          "statement": "Close the loop on air and water well enough for the stay",
+          "threshold": "Life support sustained without resupply for the demonstrated period"
+        },
+        {
+          "id": "night",
+          "statement": "Keep the volume habitable through a lunar night",
+          "threshold": "Thermal and power margin across a full 354-hour night"
+        },
+        {
+          "id": "growth",
+          "statement": "Support expansion rather than standing alone",
+          "threshold": "Berthing or docking interface for a second pressurized element"
+        }
+      ],
+      "targetWindow": {
+        "from": "2030",
+        "to": "2035"
+      },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "thales-mph": 0.38,
+          "jaxa-lunar-cruiser": 0.35,
+          "sierra-space-life": 0.24
+        }
+      },
+      "sources": [
+        {
+          "label": "Thales Alenia Space — Multi-Purpose Habitat",
+          "url": "https://www.thalesaleniaspace.com/en/news/thales-alenia-space-signs-contract-italian-space-agency-build-multi-purpose-habitation",
+          "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "NASA — NASA, Japan announce crew rover agreement",
+          "url": "https://www.nasa.gov/news-release/nasa-japan-announce-crew-rover-agreement/",
+          "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "Sierra Space",
+          "url": "https://www.sierraspace.com/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "category": "habitat"
+    },
+    {
+      "id": "shared-lunar-comms",
+      "title": "First operational lunar communications and navigation service",
+      "description": "Every mission today flies its own radio link back to Earth, which does not scale to a base. Four groups are trying to make connectivity something you buy: Nokia has already run LTE on the surface, Intuitive Machines holds NASA's Near Space Network relay contract, ESA is procuring the Moonlight constellation behind its Lunar Pathfinder relay, and Lockheed's Crescent Space is selling Parsec as a subscription.",
+      "projectIds": [
+        "nokia-lunar-lte",
+        "im-near-space-network",
+        "esa-lunar-pathfinder",
+        "crescent-parsec"
+      ],
+      "location": {
+        "lat": -88.7,
+        "lon": 52
+      },
+      "regionLabel": "Lunar South Pole — service coverage area",
+      "criteria": [
+        {
+          "id": "service",
+          "statement": "Carry a third party's mission traffic, not just the operator's own",
+          "threshold": "≥ 1 external customer mission served operationally"
+        },
+        {
+          "id": "coverage",
+          "statement": "Cover the south-pole operating area including permanent shadow",
+          "threshold": "Published availability over the Artemis exploration zone"
+        },
+        {
+          "id": "pnt",
+          "statement": "Provide position and timing, not only a data link",
+          "threshold": "Surface positioning fix to a published accuracy"
+        },
+        {
+          "id": "interoperable",
+          "statement": "Interoperate under the LunaNet framework",
+          "threshold": "Conformance to NASA/ESA LunaNet interoperability specifications"
+        }
+      ],
+      "targetWindow": {
+        "from": "2026",
+        "to": "2032"
+      },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "nokia-lunar-lte": 0.3,
+          "im-near-space-network": 0.28,
+          "esa-lunar-pathfinder": 0.24,
+          "crescent-parsec": 0.18
+        }
+      },
+      "sources": [
+        {
+          "label": "ESA — Moonlight",
+          "url": "https://www.esa.int/Applications/Connectivity_and_Secure_Communications/Moonlight",
+          "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "Nokia — Lunar network",
+          "url": "https://www.nokia.com/about-us/newsroom/articles/nokia-bell-labs-lunar-network/",
+          "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "NASA — LunaNet interoperability",
+          "url": "https://www.nasa.gov/technology/space-comms/lunanet-interoperability-specification/",
+          "retrievedAt": "2026-07-27"
+        }
+      ],
+      "category": "comms_pnt"
     }
   ]
 }

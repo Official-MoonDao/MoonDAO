@@ -173,8 +173,50 @@ describe('lunar-atlas selectors', () => {
     })
 
     it('falls back to a goal listing a member when no category race exists', () => {
-      const power = trees.find((t) => t.category === 'power')
-      expect(power?.goal?.id).to.equal('shared-isru-power')
+      const orphan = makeProject({
+        id: 'orphan',
+        type: 'power',
+        location: { lat: -89, lon: 0 },
+      })
+      const [tree] = buildTechTrees(
+        [orphan],
+        [
+          {
+            id: 'borrowed',
+            title: 'A goal that lists the member but declares another category',
+            description: '',
+            projectIds: ['orphan'],
+            category: 'isru_plant',
+            sources: [],
+          },
+        ]
+      )
+      expect(tree.goal?.id).to.equal('borrowed')
+    })
+
+    // The seed itself should never need that fallback. A category whose site
+    // borrows another category's race shows the wrong competitors behind its
+    // marker — which is exactly what the power site did while fission surface
+    // power was being scored inside the ISRU goal.
+    it('gives every surface category in the seed its own declared race', () => {
+      for (const tree of trees) {
+        expect(tree.goal, `${tree.category} has no race`).to.not.equal(undefined)
+        expect(tree.goal?.category, `${tree.category} borrowed ${tree.goal?.id}`).to.equal(
+          tree.category
+        )
+      }
+    })
+
+    // Every entrant in a race has to be a member of the site that opens it,
+    // otherwise the panel lists a competitor the globe can never show.
+    it('keeps each race\'s competitors inside its own category', () => {
+      for (const goal of SEED_ATLAS.sharedGoals) {
+        if (!goal.category) continue
+        for (const pid of goal.projectIds) {
+          const p = SEED_ATLAS.projects.find((x) => x.id === pid)
+          expect(p?.type, `${goal.id} -> ${pid}`).to.equal(goal.category)
+        }
+      }
     })
 
     it('anchors a site at its own race region, not a borrowed goal region', () => {

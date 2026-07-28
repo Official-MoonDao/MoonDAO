@@ -8,7 +8,17 @@ import {
 } from '@/lib/lunar-atlas/geo'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import { capOffsetLatLon } from '@/lib/lunar-atlas/southpole'
-import { TIME_STATUS_OPACITY } from '@/lib/lunar-atlas/display'
+import {
+  BASE_PLAN,
+  FALLBACK_RING_M,
+  districtSlots,
+  type Slot,
+} from '@/lib/lunar-atlas/baseplan'
+import {
+  PROJECT_TYPE_LABEL,
+  TIME_STATUS_OPACITY,
+  orgColor,
+} from '@/lib/lunar-atlas/display'
 import {
   atlasYear,
   buildTechTrees,
@@ -17,11 +27,17 @@ import {
   orgById,
   projectById,
   projectStateAtYear,
+  type TechTree,
 } from '@/lib/lunar-atlas/selectors'
 import type { Project, ProjectType, SharedGoal } from '@/lib/lunar-atlas/types'
 import type { GlobeFocus } from '@/components/lunar-atlas/MoonGlobe'
-import type { MarkerStyle } from '@/components/lunar-atlas/MarkerLayer'
-import Legend from '@/components/lunar-atlas/Legend'
+import type {
+  ColonyLayout,
+  MarkerStyle,
+} from '@/components/lunar-atlas/MarkerLayer'
+import { footprintRadiusM } from '@/components/lunar-atlas/ProjectModel'
+import { rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
+import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
 import MoonGlobeLazy from '@/components/lunar-atlas/MoonGlobeLazy'
 import ProjectPanel from '@/components/lunar-atlas/ProjectPanel'
 import SharedGoalPanel from '@/components/lunar-atlas/SharedGoalPanel'
@@ -34,50 +50,49 @@ import Head from '@/components/layout/Head'
 // which the globe's CameraRig frames with its oblique three-quarter
 // DEFAULT_CAM (not a top-down orbit).
 
-// The tech-tree sites are arranged as a compact, zoned settlement on the
-// ridge crest rather than at their (approximate, heavily-overlapping) real
-// coordinates — so the patch reads as one connected moonbase. The base is
-// TRUE TO SCALE: offsets are real meters in the terrain's map frame
-// [+east, +north]. Layout logic: habitat at the hub; landing pads at a blast
-// standoff to the east with their construction crews between; the rover
-// garage out front; ISRU to the west; the reactor set back (safety standoff)
-// to the north-west.
-// Spacing is COMPACT — a ~120 m settlement — so every asset fills real
-// pixels from the ~130 m load-in camera. The camera looks from the south,
-// so the landing pad goes to the BACK (north): the 52 m Starship reads as
-// a backdrop over the small hardware instead of blocking it.
-const BASE_LAYOUT_M: Partial<Record<string, [number, number]>> = {
-  crewed_base: [0, 0],
-  habitat: [0, 0],
-  lander: [-40, 105],
-  construction: [45, 30],
-  rover: [-15, 20],
-  isru_plant: [-45, 12],
-  power: [-55, -25],
+// A surface direction from an offset in meters on the ridge patch.
+function dirAt(eastM: number, northM: number): Vec3 {
+  const ll = capOffsetLatLon(eastM, northM)
+  return latLonToVector3(ll.lat, ll.lon, 1)
 }
-// Fallback ring (meters) for any category not explicitly zoned above.
-const FALLBACK_RING_M = 70
 
-function baseSiteDirections(ids: string[]): Map<string, Vec3> {
-  const m = new Map<string, Vec3>()
+// Where every competitor stands, and where every district's pin goes.
+//
+// Built here, once, and handed to the globe: the models, the beacons, the road
+// network and the camera all read the same table, which is the only way they can
+// agree on where a thing is. Plot positions come from the shared plan in
+// lib/lunar-atlas/baseplan; the footprint radii it packs against come from the
+// model layer, since only it knows how much ground an asset covers.
+function buildColonyLayout(trees: TechTree[]): ColonyLayout {
+  const districts = new Map<ProjectType, Vec3>()
+  const plots = new Map<string, { dir: Vec3; slot: Slot }>()
   let fallbackIdx = 0
-  const nUnmapped = ids.filter((id) => !BASE_LAYOUT_M[id]).length
-  ids.forEach((id) => {
-    let eastM: number
-    let northM: number
-    const zoned = BASE_LAYOUT_M[id]
-    if (zoned) {
-      ;[eastM, northM] = zoned
-    } else {
+  const nUnmapped = trees.filter((t) => !BASE_PLAN[t.category]).length
+
+  for (const tree of trees) {
+    let plan = BASE_PLAN[tree.category]
+    if (!plan) {
+      // A category the plan doesn't zone gets a plot on a wide outer ring, so a
+      // race added to the dataset appears somewhere sane rather than at the
+      // origin on top of the core.
       const a = (fallbackIdx / Math.max(nUnmapped, 1)) * Math.PI * 2
-      eastM = Math.cos(a) * FALLBACK_RING_M
-      northM = Math.sin(a) * FALLBACK_RING_M
+      plan = {
+        east: Math.cos(a) * FALLBACK_RING_M,
+        north: Math.sin(a) * FALLBACK_RING_M,
+        turn: 0,
+      }
       fallbackIdx++
     }
-    const ll = capOffsetLatLon(eastM, northM)
-    m.set(id, latLonToVector3(ll.lat, ll.lon, 1))
-  })
-  return m
+    districts.set(tree.category, dirAt(plan.east, plan.north))
+    const slots = districtSlots(
+      plan,
+      tree.projects.map((p) => ({ id: p.id, radiusM: footprintRadiusM(p) }))
+    )
+    for (const [id, slot] of slots) {
+      plots.set(id, { dir: dirAt(slot.east, slot.north), slot })
+    }
+  }
+  return { districts, plots }
 }
 
 export default function MoonBaseZeroIndex() {
@@ -99,8 +114,11 @@ export default function MoonBaseZeroIndex() {
   const [hoveredCategory, setHoveredCategory] = useState<ProjectType | null>(
     null
   )
+  // Organizations are the one remaining filter. Project TYPE used to be another,
+  // but a race is a type — "the fission power race" and "projects of type power"
+  // select the same hardware — so the race list below replaced it rather than
+  // sitting beside it offering the same cut twice.
   const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([])
-  const [selectedTypes, setSelectedTypes] = useState<ProjectType[]>([])
 
   const yearRange = useMemo(() => datasetYearRange(dataset), [dataset])
   const [year, setYear] = useState(yearRange.max)
@@ -159,32 +177,66 @@ export default function MoonBaseZeroIndex() {
     () =>
       filterProjects(dataset.projects, {
         orgIds: selectedOrgIds.length ? selectedOrgIds : undefined,
-        types: selectedTypes.length ? selectedTypes : undefined,
       }),
-    [dataset.projects, selectedOrgIds, selectedTypes]
+    [dataset.projects, selectedOrgIds]
   )
 
-  // One surface site per capability category (post-filter, so legend filters
-  // hide whole trees when their members are filtered out).
+  // One district per capability category (post-filter, so legend filters hide
+  // whole districts when their members are filtered out).
   const trees = useMemo(
     () => buildTechTrees(filteredProjects, dataset.sharedGoals),
     [filteredProjects, dataset.sharedGoals]
   )
 
-  // Shared site directions so markers, models, and camera focus all agree on
-  // where each tech-tree site sits (keyed by category). A zoned base layout
-  // clusters the sites into one connected settlement instead of piling them
-  // at their overlapping real coordinates.
-  const markerDirs = useMemo(
-    () => baseSiteDirections(trees.map((t) => t.category)),
+  // What actually stands on the ground: a race's declared competitors, and
+  // nothing else. A category can hold projects that are not in its race — the
+  // five CLPS-class cargo landers are all type `lander` but none of them is in
+  // the crewed-landing race, and NASA's LTV is the contract the three rover bids
+  // are competing FOR rather than a competitor in it. Giving those a plot would
+  // put hardware on the map that no race explains and no filter can reach, so
+  // the surface is races only. They keep their dataset entries and their panels.
+  const surfaceTrees = useMemo(
+    () =>
+      trees
+        .map((t) =>
+          t.goal
+            ? {
+                ...t,
+                projects: t.projects.filter((p) =>
+                  t.goal!.projectIds.includes(p.id)
+                ),
+              }
+            : t
+        )
+        .filter((t) => t.projects.length > 0),
     [trees]
   )
 
-  const typesPresent = useMemo(() => {
-    const set = new Set<ProjectType>()
-    dataset.projects.forEach((p) => set.add(p.type))
-    return Array.from(set)
-  }, [dataset.projects])
+  // Shared plot and district positions so markers, models, roads and camera
+  // focus all agree on where each competitor stands. A zoned district layout
+  // gathers the whole field into one connected settlement instead of piling
+  // every project at its overlapping real coordinates.
+  const layout = useMemo(() => buildColonyLayout(surfaceTrees), [surfaceTrees])
+
+  // The race list that drives the panel, ordered biggest field first — the more
+  // companies are chasing a capability, the more of a race it is.
+  const races = useMemo<RaceEntry[]>(
+    () =>
+      [...surfaceTrees]
+        .sort((a, b) => b.projects.length - a.projects.length)
+        .map((tree) => {
+          const leader = rankedMembers(tree)[0]
+          const leaderOrg = leader ? orgById(dataset, leader.orgId) : undefined
+          return {
+            category: tree.category,
+            label: PROJECT_TYPE_LABEL[tree.category],
+            count: tree.projects.length,
+            leaderName: leaderOrg?.name,
+            leaderColor: orgColor(leaderOrg),
+          }
+        }),
+    [surfaceTrees, dataset]
+  )
 
   // Timeline-driven marker styling: future projects ghost, achieved solid,
   // delayed/cancelled flagged. Composes on top of the org/type filter.
@@ -234,16 +286,16 @@ export default function MoonBaseZeroIndex() {
     [dataset, selectedGoal]
   )
 
-  // The direction of a category's site marker on the globe.
-  const siteDir = (category: ProjectType) => markerDirs.get(category)
+  // The direction of a race district's centre on the globe.
+  const siteDir = (category: ProjectType) => layout.districts.get(category)
 
-  // Fly in close and centered on a site. A competitor's race can span
-  // categories (e.g. the "power & ISRU" race lists a power reactor and an
-  // ISRU plant), so we frame the site the user is *viewing* — not the
-  // competitor's own category site — and swap the model in there.
+  // Fly in close and centred on a specific competitor's own plot. Now that
+  // every competitor stands on its own ground this can frame the asset itself
+  // rather than the district — which is the point of picking one out of a list
+  // of four. Falls back to the district, then to the project's real location.
   const flyToProject = (project: Project, siteCategory?: ProjectType | null) => {
     const cat = siteCategory ?? selectedTreeCategory ?? project.type
-    const dir = siteDir(cat)
+    const dir = layout.plots.get(project.id)?.dir ?? siteDir(cat)
     const ll = dir ? vector3ToLatLon(dir) : project.location
     if (!ll) return
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
@@ -344,18 +396,19 @@ export default function MoonBaseZeroIndex() {
       clearSelection()
   }
 
+  // Pressing the open race again closes it, which is what a list of eight rows
+  // wants — otherwise the only way back to the whole colony is to click the
+  // regolith, and nothing says so.
+  const handleToggleRace = (category: ProjectType) => {
+    if (category === selectedTreeCategory) clearSelection()
+    else handleSelectTree(category)
+  }
+
   const toggleOrg = (id: string) =>
     setSelectedOrgIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
-  const toggleType = (t: ProjectType) =>
-    setSelectedTypes((prev) =>
-      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
-    )
-  const clearFilters = () => {
-    setSelectedOrgIds([])
-    setSelectedTypes([])
-  }
+  const clearFilters = () => setSelectedOrgIds([])
 
   return (
     <>
@@ -366,15 +419,16 @@ export default function MoonBaseZeroIndex() {
       <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#03040a]">
         <MoonGlobeLazy
           focus={focus}
-          trees={trees}
+          trees={surfaceTrees}
           organizations={dataset.organizations}
           selectedTreeCategory={selectedTreeCategory}
           selectedProject={selectedProject ?? null}
           hoveredCategory={hoveredCategory}
           onSelectTree={handleSelectTree}
+          onSelectProject={handleSelectProject}
           onHoverTree={setHoveredCategory}
           getProjectStyle={getProjectStyle}
-          markerDirs={markerDirs}
+          layout={layout}
           onBackgroundClick={handleBackgroundClick}
         />
 
@@ -395,12 +449,13 @@ export default function MoonBaseZeroIndex() {
             </div>
 
             <Legend
+              races={races}
+              selectedRace={selectedTreeCategory}
+              onSelectRace={handleToggleRace}
+              onHoverRace={setHoveredCategory}
               organizations={dataset.organizations}
-              typesPresent={typesPresent}
               selectedOrgIds={selectedOrgIds}
-              selectedTypes={selectedTypes}
               onToggleOrg={toggleOrg}
-              onToggleType={toggleType}
               onClear={clearFilters}
               projects={dataset.projects}
             />

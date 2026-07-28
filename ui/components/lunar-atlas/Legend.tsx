@@ -1,117 +1,165 @@
 import { useState } from 'react'
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline'
-import {
-  PROJECT_TYPE_GLYPH,
-  PROJECT_TYPE_LABEL,
-  orgColor,
-} from '@/lib/lunar-atlas/display'
+import { PROJECT_TYPE_GLYPH, orgColor } from '@/lib/lunar-atlas/display'
 import type {
   Organization,
   Project,
   ProjectType,
 } from '@/lib/lunar-atlas/types'
 
+// One row of the race list: a capability race, the size of its field, and who
+// the market currently has in front.
+export type RaceEntry = {
+  category: ProjectType
+  label: string
+  count: number
+  leaderName?: string
+  leaderColor?: string
+}
+
 type LegendProps = {
+  races: RaceEntry[]
+  // The open race — the district at full strength on the surface.
+  selectedRace: ProjectType | null
+  onSelectRace: (category: ProjectType) => void
+  onHoverRace: (category: ProjectType | null) => void
   organizations: Organization[]
-  typesPresent: ProjectType[]
   selectedOrgIds: string[]
-  selectedTypes: ProjectType[]
   onToggleOrg: (id: string) => void
-  onToggleType: (type: ProjectType) => void
   onClear: () => void
   projects: Project[]
 }
 
+// The scene's primary axis is the RACE, not the company. Every capability on the
+// Moon is a field of two to four competitors, and the interesting question is
+// always "who is winning this one" — so the races are the list you land on, and
+// pressing one opens it on the surface as well as in the panel. Organizations
+// are still here, one level down, for when the question is the other way round:
+// everything one company is building.
 export default function Legend({
+  races,
+  selectedRace,
+  onSelectRace,
+  onHoverRace,
   organizations,
-  typesPresent,
   selectedOrgIds,
-  selectedTypes,
   onToggleOrg,
-  onToggleType,
   onClear,
   projects,
 }: LegendProps) {
   const [open, setOpen] = useState(true)
-  const hasFilter = selectedOrgIds.length > 0 || selectedTypes.length > 0
+  const [orgsOpen, setOrgsOpen] = useState(false)
+  const hasFilter = selectedOrgIds.length > 0
 
   const countForOrg = (id: string) => projects.filter((p) => p.orgId === id).length
-  const countForType = (t: ProjectType) => projects.filter((p) => p.type === t).length
 
   return (
-    <div className="pointer-events-auto w-60 rounded-2xl border border-white/10 bg-black/50 backdrop-blur-md">
+    <div className="pointer-events-auto w-64 rounded-2xl border border-white/10 bg-black/50 backdrop-blur-md">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between px-4 py-3 text-left"
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-white">
           <AdjustmentsHorizontalIcon className="h-4 w-4 text-cyan-300" />
-          Filters
+          Capability races
         </span>
         <span className="text-xs text-white/40">{open ? 'Hide' : 'Show'}</span>
       </button>
 
       {open && (
         <div className="space-y-4 px-4 pb-4">
-          <div>
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/40">
-              Organizations
-            </div>
-            <div className="space-y-1">
-              {organizations.map((org) => {
-                const active =
-                  selectedOrgIds.length === 0 || selectedOrgIds.includes(org.id)
-                return (
-                  <button
-                    key={org.id}
-                    onClick={() => onToggleOrg(org.id)}
-                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
-                      active ? 'text-white' : 'text-white/35'
-                    } hover:bg-white/10`}
-                  >
+          <div className="space-y-1">
+            {races.map((race) => {
+              const active = selectedRace === race.category
+              return (
+                <button
+                  key={race.category}
+                  onClick={() => onSelectRace(race.category)}
+                  onMouseEnter={() => onHoverRace(race.category)}
+                  onMouseLeave={() => onHoverRace(null)}
+                  className={`flex w-full items-start gap-2 rounded-lg border px-2 py-1.5 text-left transition ${
+                    active
+                      ? 'border-cyan-300/40 bg-cyan-300/10'
+                      : 'border-transparent hover:bg-white/10'
+                  }`}
+                >
+                  <span className="mt-px shrink-0 text-sm leading-none">
+                    {PROJECT_TYPE_GLYPH[race.category]}
+                  </span>
+                  <span className="min-w-0 flex-1">
                     <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{
-                        backgroundColor: orgColor(org),
-                        boxShadow: active ? `0 0 8px ${orgColor(org)}` : 'none',
-                      }}
-                    />
-                    <span className="truncate">{org.name}</span>
-                    <span className="ml-auto text-xs text-white/30">
-                      {countForOrg(org.id)}
+                      className={`block truncate text-sm ${
+                        active ? 'text-white' : 'text-white/80'
+                      }`}
+                    >
+                      {race.label}
                     </span>
-                  </button>
-                )
-              })}
-            </div>
+                    {race.leaderName && (
+                      <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/40">
+                        <span
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: race.leaderColor }}
+                        />
+                        <span className="truncate">
+                          {race.leaderName} leading
+                        </span>
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-px shrink-0 text-xs text-white/30">
+                    {race.count}
+                  </span>
+                </button>
+              )
+            })}
           </div>
 
-          <div>
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/40">
-              Project type
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {typesPresent.map((t) => {
-                const active =
-                  selectedTypes.length === 0 || selectedTypes.includes(t)
-                return (
-                  <button
-                    key={t}
-                    onClick={() => onToggleType(t)}
-                    title={PROJECT_TYPE_LABEL[t]}
-                    className={`flex items-center gap-1 rounded-md border px-1.5 py-1 text-xs transition ${
-                      active
-                        ? 'border-white/20 bg-white/10 text-white'
-                        : 'border-white/5 text-white/35'
-                    } hover:bg-white/15`}
-                  >
-                    <span>{PROJECT_TYPE_GLYPH[t]}</span>
-                    <span>{PROJECT_TYPE_LABEL[t]}</span>
-                    <span className="text-white/30">{countForType(t)}</span>
-                  </button>
-                )
-              })}
-            </div>
+          <div className="border-t border-white/10 pt-3">
+            <button
+              onClick={() => setOrgsOpen((o) => !o)}
+              className="flex w-full items-center justify-between text-left"
+            >
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
+                Organizations
+              </span>
+              <span className="text-[11px] text-white/30">
+                {selectedOrgIds.length
+                  ? `${selectedOrgIds.length} filtered`
+                  : orgsOpen
+                  ? 'Hide'
+                  : 'Show'}
+              </span>
+            </button>
+
+            {(orgsOpen || selectedOrgIds.length > 0) && (
+              <div className="mt-2 max-h-56 space-y-1 overflow-y-auto pr-1">
+                {organizations.map((org) => {
+                  const active =
+                    selectedOrgIds.length === 0 || selectedOrgIds.includes(org.id)
+                  return (
+                    <button
+                      key={org.id}
+                      onClick={() => onToggleOrg(org.id)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
+                        active ? 'text-white' : 'text-white/35'
+                      } hover:bg-white/10`}
+                    >
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{
+                          backgroundColor: orgColor(org),
+                          boxShadow: active ? `0 0 8px ${orgColor(org)}` : 'none',
+                        }}
+                      />
+                      <span className="truncate">{org.name}</span>
+                      <span className="ml-auto text-xs text-white/30">
+                        {countForOrg(org.id)}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {hasFilter && (

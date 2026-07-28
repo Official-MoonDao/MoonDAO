@@ -1,20 +1,29 @@
-// Tech-tree site layer for the Lunar Atlas globe.
+// Race district layer for Moon Base Zero.
 //
-// The surface shows ONE site per capability category (landers, surface
-// construction, ISRU, …) — a generic installation model plus a beacon pin —
-// rather than one marker per company. Clicking a site opens that tech tree's
-// prediction-market/race view; picking a competitor there swaps the generic
-// model for that company's specific model (e.g. lander site → Blue Moon MK2)
-// and recolors the beacon with the org's brand color. Pins on the far side of
-// the Moon fade out; beacons recede as the camera closes in so the models read.
+// The surface shows EVERY competitor in every capability race, each on its own
+// plot, grouped into one district per race: all three fission bids stand
+// together in the power district, all four comms bids in the comms district.
+// The scene is a prediction market rendered as ground truth, so standing the
+// rivals on the same lot at the same scale is the whole point — you can see the
+// bet rather than read it.
+//
+// Each district carries ONE beacon, at the lot's centre, because 24 pins is not
+// a map, it is a pincushion. Individual assets are still clickable and name
+// themselves on hover; the pin names the race. Pins on the far side of the Moon
+// fade out, and beacons recede as the camera closes in so the models read.
+//
+// Opening a race dims every OTHER district rather than hiding it, so the colony
+// still reads as one settlement while the field you asked about is the only
+// thing at full strength.
 
 import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { PATROL_SPEED_MPS, type Slot } from '@/lib/lunar-atlas/baseplan'
 import { MOON_RADIUS_M, vector3ToLatLon, Vec3 } from '@/lib/lunar-atlas/geo'
 import { PROJECT_TYPE_LABEL, orgColor } from '@/lib/lunar-atlas/display'
-import { M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
+import { M_TO_UNITS, capCenterDirection } from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import type {
@@ -25,36 +34,64 @@ import type {
 import ProjectModel, { gradedDeckRadiusM, projectSizeM } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
-// The competitor a tech-tree site shows by default: the front-runner by market
-// odds, or the sole/first member when the race has no odds yet. This is what
-// makes each site read as "who's currently winning this capability".
-function leadingProject(tree: TechTree): Project | undefined {
-  if (tree.projects.length === 0) return undefined
+// The competitors of a race, best-placed first. Order matters twice over: the
+// front-runner is the one that gets to drive (see PATROL_SPEED_MPS) and the one
+// the district's beacon is named for.
+export function rankedMembers(tree: TechTree): Project[] {
   const odds = tree.goal?.market?.impliedOdds
-  if (odds) {
-    return [...tree.projects].sort(
-      (a, b) => (odds[b.id] ?? -1) - (odds[a.id] ?? -1)
-    )[0]
-  }
-  return tree.projects[0]
+  if (!odds) return tree.projects
+  return [...tree.projects].sort(
+    (a, b) => (odds[b.id] ?? -1) - (odds[a.id] ?? -1)
+  )
 }
 
+// Axis of the map patch, and so of the perimeter road: a lap is a rotation
+// about it. Fixed for the life of the app.
+const CAP_AXIS = new THREE.Vector3(...capCenterDirection()).normalize()
+
+// Seconds-ish for a patrolling vehicle to reach speed, or to come to a stand
+// when its race is opened. A vehicle that stops dead reads as a paused
+// animation; one that rolls to a halt reads as a driver lifting off.
+const PATROL_EASE = 0.03
+
+// How far down a district is taken while a DIFFERENT race is open. Heavy enough
+// that the open race is unmistakably the subject, light enough that the rest of
+// the base is still plainly there — which is the point of dimming rather than
+// hiding.
+const DIM_FACTOR = 0.28
+
 export type MarkerStyle = { opacity: number; visible: boolean }
+
+// Above this a plot is present enough to stand its hardware up; below it the
+// district's beacon marks the ground on its own. The road network reads the
+// same threshold, so a spur is never graded out to a district that is still
+// bare regolith.
+export const MODEL_PRESENCE = 0.5
+
+// Where each competitor stands, and where each district's beacon goes. Built
+// once by the page so the models, the pins and the camera cannot disagree.
+export type ColonyLayout = {
+  // District centre directions, keyed by race category — what the camera flies
+  // to when a race is opened.
+  districts: Map<ProjectType, Vec3>
+  // Per-project plot: its surface direction and its slot in the district.
+  plots: Map<string, { dir: Vec3; slot: Slot }>
+}
 
 type MarkerLayerProps = {
   trees: TechTree[]
   organizations: Organization[]
+  layout: ColonyLayout
+  // The open race. Its district stays at full strength; the others dim.
   selectedTreeCategory?: ProjectType | null
-  // Competitor picked from a race panel — its model replaces the generic
-  // site asset for its category.
+  // Competitor picked from a race panel — its plot is called out by name.
   selectedProject?: Project | null
   hoveredCategory?: ProjectType | null
   onSelectTree?: (category: ProjectType) => void
+  onSelectProject?: (projectId: string) => void
   onHoverTree?: (category: ProjectType | null) => void
-  // Timeline styling per member project; the site aggregates its members.
+  // Timeline styling per member project.
   getProjectStyle?: (project: Project) => MarkerStyle
-  // Declustered site directions keyed by category (shared with the camera).
-  dirMap?: Map<string, Vec3>
   // Displaced terrain radius lookup so pins/models sit on the rendered ground.
   radiusAt?: RadiusAt | null
 }
@@ -62,10 +99,10 @@ type MarkerLayerProps = {
 // Offsets above the local terrain (which the sampler provides per marker),
 // in REAL METERS — the base is true-to-scale on the 16 km ridge patch.
 const SEAT_LIFT = 0.5 * M_TO_UNITS // clears z-fighting with the terrain
-// Pins are sized to the model they mark: the reticle floats just above the
-// asset (a 4.5 m rover gets a ~25 m pin, the 52 m Starship a ~68 m one).
-// One fixed height either buried the reticle inside tall models or dwarfed
-// the small ones.
+// Pins are sized to the district they mark: the reticle floats clear of the
+// tallest thing on the lot (a rover depot gets a ~25 m pin, the landing zone
+// with its 52 m Starship a ~68 m one). One fixed height either buried the
+// reticle inside tall models or dwarfed the small ones.
 const MIN_PIN_HEIGHT_M = 25
 const pinHeightUnits = (modelSizeM: number) =>
   Math.max(MIN_PIN_HEIGHT_M, modelSizeM * 1.3) * M_TO_UNITS
@@ -73,17 +110,18 @@ const pinHeightUnits = (modelSizeM: number) =>
 // scale the old pin was a 1.4 m-thick opaque rod under a 6 m emissive ball —
 // a plastic lollipop the size of a small building, which is what made the
 // markers read as toys next to photoreal hardware. A map marker should be
-// instrument-like, so the beacon is now a thin billboarded reticle on a
-// tether that dissolves toward the ground instead of a solid mast.
+// instrument-like, so the beacon is a thin billboarded reticle on a tether
+// that dissolves toward the ground instead of a solid mast.
 const HEAD_RADIUS = 3.4 * M_TO_UNITS
 const STEM_RADIUS = 0.16 * M_TO_UNITS
 // As the camera closes in, beacons fade so the detailed on-surface models take
-// over (findability markers far, physical builds near). The site drill-in
-// parks the camera ~75-80 m out, so NEAR sits just above that: a beacon still
-// half-opaque at that range hangs over the very model the user clicked to see.
-// The home view sits ~140-225 m out, where beacons stay readable as targets.
-const FADE_NEAR = 90 * M_TO_UNITS
+// over (findability markers far, physical builds near). The district drill-in
+// parks the camera 75-84 m off a beacon, so NEAR sits just above that: one
+// still half-opaque at that range hangs over the very district the user clicked
+// to see.
+const FADE_NEAR = 80 * M_TO_UNITS
 const FADE_FAR = 150 * M_TO_UNITS
+
 // The highest rendered ground within a footprint. Only the padded lander uses
 // this: a rigid pad cannot sink into a slope, so it rests on the high point and
 // its skirt covers the gap on the downhill side. Everything else seats on the
@@ -117,43 +155,46 @@ function footprintSeatRadius(
   return seat
 }
 
-function TechTreeSite({
-  tree,
+// ---------------------------------------------------------------------------
+// One competitor's plot
+// ---------------------------------------------------------------------------
+
+function CompetitorPlot({
+  project,
+  slot,
   dir,
-  color,
-  selected,
-  hovered,
-  style,
-  displayProject,
-  label,
+  accent,
+  opacity,
+  dim,
+  patrolSpeed,
+  raceOpen,
+  called,
   onSelect,
   onHover,
   radiusAt,
 }: {
-  tree: TechTree
+  project: Project
+  slot: Slot
   dir: Vec3
-  color: string
-  selected: boolean
-  hovered: boolean
-  style: MarkerStyle
-  // The project whose model this site renders: the leading company's asset by
-  // default, or a specific competitor once one is picked from the race panel.
-  displayProject: Project
-  label: string
-  onSelect?: (category: ProjectType) => void
-  onHover?: (category: ProjectType | null) => void
+  accent: string
+  opacity: number
+  // 1 while this plot's race is the subject, DIM_FACTOR while another's is.
+  dim: number
+  // Meters per second, if this is the one vehicle in its race that drives.
+  patrolSpeed?: number
+  // Whether this plot's own race is the open one. Names every asset on the lot,
+  // and brings the driving one to a stand so it can be read.
+  raceOpen: boolean
+  // Picked out specifically — hovered, or chosen from the competitor list.
+  called: boolean
+  onSelect?: () => void
+  onHover?: (hovered: boolean) => void
   radiusAt?: RadiusAt | null
 }) {
-  const { camera } = useThree()
   const groupRef = useRef<THREE.Group>(null)
-  const headRef = useRef<THREE.Group>(null)
-  const stemRef = useRef<THREE.Mesh>(null)
-  const ringRef = useRef<THREE.Mesh>(null)
-  const scaleRef = useRef(1)
 
-  const { base, tip, ndir, seatRadius } = useMemo(() => {
+  const { ndir, seatRadius, labelAt } = useMemo(() => {
     const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
-    const sizeM = projectSizeM(displayProject)
     const ll = vector3ToLatLon([d.x, d.y, d.z])
     // A model on a graded deck (a lander's pad, the construction apron) seats
     // on the highest ground under that deck, whose skirt then grades down over
@@ -163,23 +204,154 @@ function TechTreeSite({
     // the "slightly floating" look. Bedding an edge a centimeter into regolith
     // is invisible; hovering is not.
     // Until the height maps decode, fall back to the analytic sphere.
-    const deckR = gradedDeckRadiusM(displayProject)
+    const deckR = gradedDeckRadiusM(project)
     const ground = !radiusAt
       ? GLOBE_RADIUS
       : deckR !== null
       ? footprintSeatRadius(d, radiusAt, deckR)
       : radiusAt(ll.lat, ll.lon)
+    return {
+      ndir: d,
+      seatRadius: ground,
+      // Just clear of the model's own height, so a name never sits inside the
+      // thing it names.
+      labelAt: d
+        .clone()
+        .multiplyScalar(ground + projectSizeM(project) * 1.25 * M_TO_UNITS),
+    }
+  }, [dir, radiusAt, project])
+
+  // Laps of the perimeter road, for the one vehicle in its race that drives
+  // rather than stands (see PATROL_SPEED_MPS).
+  //
+  // The lap is a rigid rotation of the plot about the patch axis, which is what
+  // makes it both cheap and correct: a rotation of the sphere holds the vehicle
+  // at exactly its plot's distance from the core — the road — and carries its
+  // seating and its heading with it, so neither has to be recomputed per frame.
+  const patrol = useMemo(() => {
+    if (!patrolSpeed) return null
+    const radius = Math.hypot(slot.east, slot.north)
+    if (radius < 1) return null
+    // Travel direction at the plot. Rotating a point p about axis n moves it
+    // along n × p, so this is the way a positive rate drives.
+    const along = CAP_AXIS.clone().cross(ndir).normalize()
+    return {
+      rate: patrolSpeed / radius,
+      noseAlong: [along.x, along.y, along.z] as Vec3,
+    }
+  }, [patrolSpeed, ndir, slot.east, slot.north])
+  const lapRef = useRef(0)
+  const throttleRef = useRef(0)
+
+  useFrame((_, delta) => {
+    const g = groupRef.current
+    if (!g || !patrol) return
+    // Roll to a stand when this race is opened, so the vehicle is sitting still
+    // while the user reads about it — and while the drill-in camera, which
+    // frames the district rather than the vehicle, flies in.
+    const throttle = raceOpen ? 0 : 1
+    throttleRef.current +=
+      (throttle - throttleRef.current) * (1 - Math.pow(PATROL_EASE, delta))
+    lapRef.current += patrol.rate * throttleRef.current * delta
+    g.quaternion.setFromAxisAngle(CAP_AXIS, lapRef.current)
+    // Ride the road's rise and fall. Every child is positioned in world space
+    // from the globe centre, so a uniform scale IS a radial offset: the ratio of
+    // ground radii lifts the vehicle by the height difference. The shape
+    // distortion is that same ratio — about a part in a million for a couple of
+    // meters of relief against a 1737 km radius.
+    if (radiusAt) {
+      const p = ndir.clone().applyQuaternion(g.quaternion)
+      const pll = vector3ToLatLon([p.x, p.y, p.z])
+      g.scale.setScalar(radiusAt(pll.lat, pll.lon) / seatRadius)
+    }
+  })
+
+  if (opacity <= MODEL_PRESENCE) return null
+
+  return (
+    <group ref={groupRef}>
+      <ProjectModel
+        project={project}
+        dir={[ndir.x, ndir.y, ndir.z]}
+        accent={accent}
+        turn={THREE.MathUtils.degToRad(slot.turn)}
+        noseAlong={patrol?.noseAlong}
+        dim={dim}
+        onSelect={onSelect}
+        onHover={(id) => onHover?.(Boolean(id))}
+        surfaceRadius={seatRadius}
+      />
+
+      {/* The asset's own name. Shown on hover, and for the whole field while
+          its race is open — which is how you tell three reactors apart. */}
+      {(called || raceOpen) && (
+        <Html
+          position={labelAt}
+          center
+          zIndexRange={[20, 0]}
+          style={{ pointerEvents: 'none' }}
+        >
+          <div
+            className={`whitespace-nowrap rounded border px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight shadow-md backdrop-blur-sm ${
+              called
+                ? 'border-white/25 bg-black/80 text-white'
+                : 'border-white/10 bg-black/55 text-white/70'
+            }`}
+          >
+            {project.name}
+          </div>
+        </Html>
+      )}
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// One district's beacon
+// ---------------------------------------------------------------------------
+
+function DistrictBeacon({
+  dir,
+  color,
+  label,
+  pinModelSizeM,
+  selected,
+  hovered,
+  style,
+  onSelect,
+  onHover,
+  radiusAt,
+}: {
+  dir: Vec3
+  color: string
+  label: string
+  // The tallest model on the lot, so the reticle floats clear of all of them.
+  pinModelSizeM: number
+  selected: boolean
+  hovered: boolean
+  style: MarkerStyle
+  onSelect?: () => void
+  onHover?: (hovered: boolean) => void
+  radiusAt?: RadiusAt | null
+}) {
+  const { camera } = useThree()
+  const groupRef = useRef<THREE.Group>(null)
+  const headRef = useRef<THREE.Group>(null)
+  const stemRef = useRef<THREE.Mesh>(null)
+  const ringRef = useRef<THREE.Mesh>(null)
+  const scaleRef = useRef(1)
+
+  const { base, tip, ndir } = useMemo(() => {
+    const d = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize()
+    const ll = vector3ToLatLon([d.x, d.y, d.z])
+    const ground = radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS
     const seat = ground + SEAT_LIFT
-    const pinH = pinHeightUnits(sizeM)
     return {
       base: d.clone().multiplyScalar(seat),
-      tip: d.clone().multiplyScalar(seat + pinH),
+      tip: d.clone().multiplyScalar(seat + pinHeightUnits(pinModelSizeM)),
       ndir: d,
-      // Models seat on the bare ground height; only the stem/dot take the
-      // small z-fight lift.
-      seatRadius: ground,
     }
-  }, [dir, radiusAt, displayProject])
+  }, [dir, radiusAt, pinModelSizeM])
 
   useFrame((_, delta) => {
     const g = groupRef.current
@@ -222,16 +394,15 @@ function TechTreeSite({
       stemRef.current.visible = beaconOpacity > 0.02
     }
     if (ringRef.current) {
-      // Selection halo is a *locator* for the selected site — useful from
+      // Selection halo is a *locator* for the open district — useful from
       // orbit, but up close (surface view) it would fill the screen and sit
-      // on top of the model, so it fades out with the same proximity ramp as
+      // on top of the models, so it fades out with the same proximity ramp as
       // the beacon dot.
       const haloOpacity = 0.85 * limb * proximity
       ringRef.current.visible = selected && haloOpacity > 0.02
       ringRef.current.lookAt(camera.position)
       const t = performance.now() * 0.003
-      const pulse = 1 + Math.sin(t) * 0.1
-      ringRef.current.scale.setScalar(pulse)
+      ringRef.current.scale.setScalar(1 + Math.sin(t) * 0.1)
       const rmat = ringRef.current.material as THREE.MeshBasicMaterial
       rmat.opacity = haloOpacity
     }
@@ -275,23 +446,8 @@ function TechTreeSite({
   }, [stemLen])
   useEffect(() => () => stemGeo.dispose(), [stemGeo])
 
-  const handleHoverChange = (h: boolean) => onHover?.(h ? tree.category : null)
-
   return (
     <group ref={groupRef}>
-      {/* On-surface 3D model: the leading company's asset by default, or the
-          picked competitor's model once one is selected from the race panel. */}
-      {style.opacity > 0.5 && (
-        <ProjectModel
-          project={displayProject}
-          dir={[ndir.x, ndir.y, ndir.z]}
-          accent={color}
-          onSelect={() => onSelect?.(tree.category)}
-          onHover={(id) => onHover?.(id ? tree.category : null)}
-          surfaceRadius={seatRadius}
-        />
-      )}
-
       {/* Tether — hairline, fading out toward the ground (see stemGeo) */}
       <mesh
         ref={stemRef}
@@ -357,16 +513,16 @@ function TechTreeSite({
         position={tip}
         onClick={(e) => {
           e.stopPropagation()
-          onSelect?.(tree.category)
+          onSelect?.()
         }}
         onPointerOver={(e) => {
           e.stopPropagation()
-          handleHoverChange(true)
+          onHover?.(true)
           document.body.style.cursor = 'pointer'
         }}
         onPointerOut={(e) => {
           e.stopPropagation()
-          handleHoverChange(false)
+          onHover?.(false)
           document.body.style.cursor = 'auto'
         }}
       >
@@ -398,16 +554,37 @@ function TechTreeSite({
   )
 }
 
+// ---------------------------------------------------------------------------
+// A race district: every competitor, plus the one pin that names the race
+// ---------------------------------------------------------------------------
+
+// A district is as visible as its most-visible member at the current timeline
+// year — it appears when the first member program appears. Shared with the road
+// network, which has to appear and fade on exactly the same schedule as the
+// districts it serves.
+export function siteOpacity(
+  tree: TechTree,
+  getProjectStyle?: (project: Project) => MarkerStyle
+) {
+  let opacity = 0
+  for (const p of tree.projects) {
+    const s = getProjectStyle?.(p) ?? { opacity: 1, visible: true }
+    if (s.visible) opacity = Math.max(opacity, s.opacity)
+  }
+  return opacity
+}
+
 export default function MarkerLayer({
   trees,
   organizations,
+  layout,
   selectedTreeCategory,
   selectedProject,
   hoveredCategory,
   onSelectTree,
+  onSelectProject,
   onHoverTree,
   getProjectStyle,
-  dirMap,
   radiusAt,
 }: MarkerLayerProps) {
   const orgMap = useMemo(() => {
@@ -416,66 +593,81 @@ export default function MarkerLayer({
     return m
   }, [organizations])
 
+  const raceOpen = Boolean(selectedTreeCategory)
+
   return (
     <group>
       {trees.map((tree) => {
-        // A site is as visible as its most-visible member at the current
-        // timeline year — it appears when the first member program appears.
-        let opacity = 0
-        for (const p of tree.projects) {
-          const s = getProjectStyle?.(p) ?? { opacity: 1, visible: true }
-          if (s.visible) opacity = Math.max(opacity, s.opacity)
-        }
-        if (opacity <= 0) return null
-        const style: MarkerStyle = { opacity, visible: true }
+        const districtDir = layout.districts.get(tree.category)
+        if (!districtDir) return null
+        const members = rankedMembers(tree)
+        if (!members.length) return null
 
-        const dir = dirMap?.get(tree.category)
-        if (!dir) return null
+        const districtOpacity = siteOpacity(tree, getProjectStyle)
+        if (districtOpacity <= 0) return null
 
-        // A competitor picked from the race panel overrides the default; with
-        // nothing picked, the site shows the *leading* company's asset (top
-        // market odds), not a generic category placeholder. The pick renders
-        // at the *focused* site (which may host a cross-category race), not
-        // the competitor's own type — so selecting one never jumps sites.
-        const picked =
-          selectedProject && selectedTreeCategory === tree.category
-            ? selectedProject
-            : null
-        const shown = picked ?? leadingProject(tree)
-        if (!shown) return null
-        const org = orgMap.get(shown.orgId)
-        const color = orgColor(org)
-        // A race's roster can span categories (e.g. the power race includes
-        // an ISRU plant), so count the goal's competitors, not the tree's
-        // same-type members — the label must match the panel it opens.
-        const count = tree.goal
-          ? tree.goal.projectIds.length
-          : tree.projects.length
-        const label = picked
-          ? picked.name
-          : tree.goal && org
-          ? `${PROJECT_TYPE_LABEL[tree.category]} · ${org.name} leading`
-          : `${PROJECT_TYPE_LABEL[tree.category]} · ${count} ${
-              tree.goal ? 'competitor' : 'project'
-            }${count === 1 ? '' : 's'}`
+        const leader = members[0]
+        const leaderOrg = orgMap.get(leader.orgId)
+        const color = orgColor(leaderOrg)
+        const isOpen = selectedTreeCategory === tree.category
+        const dim = raceOpen && !isOpen ? DIM_FACTOR : 1
+
+        const count = members.length
+        const label =
+          tree.goal && leaderOrg
+            ? `${PROJECT_TYPE_LABEL[tree.category]} · ${leaderOrg.name} leading`
+            : `${PROJECT_TYPE_LABEL[tree.category]} · ${count} ${
+                tree.goal ? 'competitor' : 'project'
+              }${count === 1 ? '' : 's'}`
+
+        // The pin has to clear the tallest thing on the lot, not the average.
+        const tallestM = Math.max(...members.map((p) => projectSizeM(p)))
+        // Only the front-runner drives; its rivals are parked in the depot.
+        const patrolSpeed = PATROL_SPEED_MPS[tree.category]
 
         return (
-          <TechTreeSite
-            key={tree.category}
-            tree={tree}
-            dir={dir}
-            color={color}
-            selected={
-              selectedTreeCategory === tree.category || Boolean(picked)
-            }
-            hovered={hoveredCategory === tree.category}
-            style={style}
-            displayProject={shown}
-            label={label}
-            onSelect={onSelectTree}
-            onHover={onHoverTree}
-            radiusAt={radiusAt}
-          />
+          <group key={tree.category}>
+            {members.map((project, i) => {
+              const plot = layout.plots.get(project.id)
+              if (!plot) return null
+              const style = getProjectStyle?.(project) ?? {
+                opacity: 1,
+                visible: true,
+              }
+              if (!style.visible) return null
+              const org = orgMap.get(project.orgId)
+              return (
+                <CompetitorPlot
+                  key={project.id}
+                  project={project}
+                  slot={plot.slot}
+                  dir={plot.dir}
+                  accent={orgColor(org)}
+                  opacity={style.opacity}
+                  dim={dim}
+                  patrolSpeed={i === 0 ? patrolSpeed : undefined}
+                  raceOpen={isOpen}
+                  called={selectedProject?.id === project.id}
+                  onSelect={() => onSelectProject?.(project.id)}
+                  onHover={(h) => onHoverTree?.(h ? tree.category : null)}
+                  radiusAt={radiusAt}
+                />
+              )
+            })}
+
+            <DistrictBeacon
+              dir={districtDir}
+              color={color}
+              label={label}
+              pinModelSizeM={tallestM}
+              selected={isOpen}
+              hovered={hoveredCategory === tree.category}
+              style={{ opacity: districtOpacity * dim, visible: true }}
+              onSelect={() => onSelectTree?.(tree.category)}
+              onHover={(h) => onHoverTree?.(h ? tree.category : null)}
+              radiusAt={radiusAt}
+            />
+          </group>
         )
       })}
     </group>

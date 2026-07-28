@@ -40,7 +40,12 @@ import type {
   Project,
   ProjectType,
 } from '@/lib/lunar-atlas/types'
-import MarkerLayer, { MarkerStyle } from './MarkerLayer'
+import BaseRoads from './BaseRoads'
+import MarkerLayer, {
+  ColonyLayout,
+  MarkerStyle,
+  siteOpacity,
+} from './MarkerLayer'
 import SouthPoleTerrain from './SouthPoleTerrain'
 import useTerrainSampler, { RadiusAt } from './useTerrainSampler'
 
@@ -59,19 +64,20 @@ export type GlobeFocus = {
 export type MoonGlobeProps = {
   focus?: GlobeFocus
   onReady?: () => void
-  // Tech-tree site layer: one generic installation per capability category.
+  // Race district layer: every competitor in every race, on its own plot.
   trees?: TechTree[]
   organizations?: Organization[]
   selectedTreeCategory?: ProjectType | null
-  // Competitor picked from a race panel — replaces its category's generic
-  // site model with the company-specific one.
+  // Competitor picked from a race panel — its plot is called out by name.
   selectedProject?: Project | null
   hoveredCategory?: ProjectType | null
   onSelectTree?: (category: ProjectType) => void
+  onSelectProject?: (projectId: string) => void
   onHoverTree?: (category: ProjectType | null) => void
   getProjectStyle?: (project: Project) => MarkerStyle
-  // Declustered site directions keyed by category.
-  markerDirs?: Map<string, Vec3>
+  // Plot and district positions, shared with the page so the camera and the
+  // models cannot disagree on where a competitor stands.
+  layout?: ColonyLayout
   // Fired on a genuine click (not a drag-rotation) of the lunar surface or
   // the empty starfield — the page uses it to deselect and zoom back out.
   onBackgroundClick?: () => void
@@ -394,9 +400,10 @@ export default function MoonGlobe({
   selectedProject,
   hoveredCategory,
   onSelectTree,
+  onSelectProject,
   onHoverTree,
   getProjectStyle,
-  markerDirs,
+  layout,
   onBackgroundClick,
   children,
 }: MoonGlobeProps) {
@@ -404,6 +411,19 @@ export default function MoonGlobe({
   // CPU-side copy of the height maps so markers, models, and the camera sit
   // on the terrain the GPU actually renders.
   const radiusAt = useTerrainSampler()
+  // How far along the timeline each site is, so the groundworks arrive with the
+  // hardware rather than lying on an empty plain years early — and so no spur
+  // is graded out to a plot nobody has broken ground on yet.
+  const sitePresence = useMemo(() => {
+    const byCategory = new Map<string, number>()
+    for (const t of trees ?? [])
+      byCategory.set(t.category, siteOpacity(t, getProjectStyle))
+    return byCategory
+  }, [trees, getProjectStyle])
+  const basePresence = useMemo(
+    () => Math.max(0, ...Array.from(sitePresence.values())),
+    [sitePresence]
+  )
   // Auto-drift pauses whenever the user is interacting or a camera
   // transition is in flight.
   const [userInteracting, setUserInteracting] = useState(false)
@@ -481,17 +501,24 @@ export default function MoonGlobe({
 
       <SouthPoleTerrain onReady={onReady} onSurfaceClick={onBackgroundClick} />
 
-      {trees && organizations && (
+      <BaseRoads
+        radiusAt={radiusAt}
+        presence={basePresence}
+        siteOpacity={sitePresence}
+      />
+
+      {trees && organizations && layout && (
         <MarkerLayer
           trees={trees}
           organizations={organizations}
+          layout={layout}
           selectedTreeCategory={selectedTreeCategory}
           selectedProject={selectedProject}
           hoveredCategory={hoveredCategory}
           onSelectTree={onSelectTree}
+          onSelectProject={onSelectProject}
           onHoverTree={onHoverTree}
           getProjectStyle={getProjectStyle}
-          dirMap={markerDirs}
           radiusAt={radiusAt}
         />
       )}

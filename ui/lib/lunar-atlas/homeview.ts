@@ -24,8 +24,18 @@ export function ridgePoint(
   return latLonToVector3(ll.lat, ll.lon, heightToRadius(heightM))
 }
 
-// Standing INSIDE the settlement, not surveying it: the eye is ~130 m from
-// the hub at drone height (~45 m), so every asset fills real pixels at
-// load-in, with the 52 m Starship on the back pad towering as the backdrop.
-export const HOME_TARGET = ridgePoint(0, 15, CAP_CENTER_HEIGHT_M + 22)
-export const HOME_CAM = ridgePoint(70, -90, CAP_CENTER_HEIGHT_M + 45)
+// Standing at the edge of the settlement rather than surveying it from orbit:
+// the eye is ~215 m from the core at drone height (~80 m), looking north-west
+// across it.
+//
+// The colony is 190 m across and 240 m deep now that each race stands its whole
+// field on the ground, and NOT trying to fit all of that in frame is deliberate.
+// Backing off far enough to see the landing zone, the power district and the
+// comms yard at once puts the eye ~400 m out, at which range a 4.5 m rover is a
+// speck and the whole thing reads as a diorama. So the home shot frames the
+// CORE and the near districts — habitat, rovers, construction, comms — with the
+// 52 m Starship towering at the back of the pad road as the backdrop, and the
+// two western districts falling off the left of frame. Opening a race flies to
+// its district, which is how the rest is meant to be reached.
+export const HOME_TARGET = ridgePoint(0, 20, CAP_CENTER_HEIGHT_M + 25)
+export const HOME_CAM = ridgePoint(125, -155, CAP_CENTER_HEIGHT_M + 80)
