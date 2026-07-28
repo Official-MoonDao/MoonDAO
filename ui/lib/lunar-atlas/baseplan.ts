@@ -392,10 +392,17 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // main street (see PATROL) — the only moving things on the base, touring every
   // district rather than circling the core.
   //
-  // Which leaves the depot's own corner lots standing empty, and that is the
-  // right answer rather than a gap: a motor pool with its yard bare is a motor
-  // pool whose fleet is working. The lots and the avenue are still what the
-  // vehicles come home to, and still what the race's beacon is planted on.
+  // Which leaves every COMPETITOR's own corner lot standing empty, and that is
+  // the right answer rather than a gap: a motor pool with its yard bare is a
+  // motor pool whose fleet is working. What stands on the district's own
+  // ground instead is shared, nobody's-competitor infrastructure (see
+  // `RoverDepotYard` in ProjectModel.tsx) — sized to fit INWARD of main
+  // street, in the belt it shares with the ring road's own clearance, rather
+  // than at an outward corner: an outward lot big enough for that structure
+  // would need `reach` far past what this district's own (small, LTV-scale)
+  // competitor roster justifies, which the avenue-overshoot check in
+  // lunar-atlas-baseplan.cy.ts exists specifically to catch. `reach` stays at
+  // the LTV-scale figure below; MarkerLayer places the depot yard itself.
   rover: { ...at(255), turn: 0, reach: 13 },
 
   // HABITAT, south-east (315°). Pressurized modules at human scale, on the near

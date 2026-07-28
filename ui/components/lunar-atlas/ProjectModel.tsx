@@ -1648,6 +1648,347 @@ function ScorchMark({ r = 2.0 }: { r?: number }) {
 }
 
 // ---------------------------------------------------------------------------
+// Rover depot yard — the motor pool's own lot, not a competitor's model
+// ---------------------------------------------------------------------------
+//
+// The rover race's actual hardware never stands here: the whole field drives
+// permanent laps of main street (see PATROL in baseplan.ts), so every
+// competitor's own plot in this district is bare regolith by design — "a
+// motor pool with its yard bare is a motor pool whose fleet is working," per
+// BASE_PLAN.rover's own comment. Left literally empty, though, that reads as
+// a gap in the map rather than as that story, because there is nothing built
+// there to read the absence against. This is the shared fix: a paved apron
+// with marked bays, charging points, and a service canopy — infrastructure
+// nobody's competitor owns.
+//
+// It has to fit INWARD of main street rather than at an outward corner like
+// a real competitor's plot would: `BASE_PLAN.rover.reach` is sized for an
+// LTV-class footprint, and the avenue-overshoot check in
+// lunar-atlas-baseplan.cy.ts exists precisely to catch a reach inflated past
+// what a district's own roster justifies. The belt between the perimeter
+// road and main street is only ~23 m deep once both roads' own setbacks are
+// spent, which is what keeps this yard a compact 13 x 10 m rather than the
+// sprawl an outward corner could otherwise afford — see MarkerLayer's
+// `RoverDepotSite`, which does the actual placement math and picks the exact
+// setback this footprint needs.
+//
+// Two of the three bays are filled, not three, and not zero: a full lot
+// reads as "nobody drives today," an empty one reads as "nothing was ever
+// built here," and two-of-three is the one count that reads as an active
+// yard with most of its fleet out. The parked units are `RoverBody` — the
+// generic, unbranded rover shape kept in this file as the fallback for a
+// future competitor with no custom model yet — painted a flat neutral tone
+// rather than any org's accent, since a spares/support buggy sitting idle at
+// the depot must never read as one team's actual race entry benched here.
+//
+// Authored directly in real meters like every model in this file, but with
+// no PROJECT_SIZE_M/TYPE_SIZE_M entry: it isn't a project, so MarkerLayer
+// anchors it straight off a hand-computed direction with a plain
+// meters-to-scene-units scale instead of going through projectScale's
+// per-project normalization.
+
+const DEPOT_STRIPE = '#e9e7df' // painted bay lines — brighter than any hardware on the lot
+const DEPOT_CURB = '#5f5c53'
+const DEPOT_CANOPY = '#c7cbd2'
+const DEPOT_CANOPY_DARK = '#8b909b'
+// A muted steel-blue, distinct from every org's own accent — the spares
+// buggies' one splash of color, deliberately unaffiliated with any racer.
+const DEPOT_NEUTRAL = '#8b93a0'
+
+export const DEPOT_HALF_W = 6.5
+export const DEPOT_HALF_D = 5.0
+
+// Three bays — standing in for a support/spares unit rather than any one
+// competitor's actual race entry (see the section note above).
+const DEPOT_STALL_W = 3.0
+const DEPOT_STALL_D = 4.0
+const DEPOT_STALL_X = [-3.2, 0, 3.2]
+const DEPOT_STALL_BACK_Z = -4.3
+const DEPOT_STALL_FRONT_Z = DEPOT_STALL_BACK_Z + DEPOT_STALL_D // -0.3
+const DEPOT_STALL_CENTER_Z = (DEPOT_STALL_BACK_Z + DEPOT_STALL_FRONT_Z) / 2
+// Which bays are occupied right now — see the section note on why two, not
+// three or zero.
+const DEPOT_OCCUPIED = [0, 2]
+
+// One painted bay: stripes down both long edges and a stop-line at the back,
+// left open toward the aisle exactly like a real marked space. A hair proud
+// of the apron (see ScorchMark for the same technique) rather than resolved
+// flush with it, which is what keeps a decal from swimming into the pad
+// underneath it as the camera moves.
+function ParkingStall({ x }: { x: number }) {
+  return (
+    <group position={[x, 0.015, 0]}>
+      {[-DEPOT_STALL_W / 2, DEPOT_STALL_W / 2].map((dx) => (
+        <mesh key={dx} position={[dx, 0, DEPOT_STALL_CENTER_Z]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.12, DEPOT_STALL_D]} />
+          <meshStandardMaterial color={DEPOT_STRIPE} roughness={0.85} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0, DEPOT_STALL_BACK_Z]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[DEPOT_STALL_W, 0.12]} />
+        <meshStandardMaterial color={DEPOT_STRIPE} roughness={0.85} />
+      </mesh>
+    </group>
+  )
+}
+
+// A charging point at a bay's mouth — the reason a support buggy would ever
+// be parked nose-in rather than left out on the regolith. The glowing cap
+// takes the district's own accent (the leading org's color, same as its
+// beacon) rather than a fixed color, tying the depot's lights to whichever
+// team the map currently favors without claiming the depot itself as theirs.
+function ChargeBollard({ accent }: { accent: string }) {
+  return (
+    <group>
+      <mesh position={[0, 0.4, 0]}>
+        <cylinderGeometry args={[0.06, 0.07, 0.8, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 0.83, 0]}>
+        <boxGeometry args={[0.16, 0.06, 0.16]} />
+        <meshStandardMaterial color={DARK} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 0.9, 0]}>
+        <sphereGeometry args={[0.045, 10, 10]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.6}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// A yard light, boom cranked out over the aisle rather than run straight up
+// its own pole — the way an actual lot light leans its fixture in over what
+// it's lighting instead of down onto itself.
+function DepotLightMast({ accent }: { accent: string }) {
+  const h = 4.2
+  return (
+    <group>
+      <mesh position={[0, h / 2, 0]}>
+        <cylinderGeometry args={[0.09, 0.12, h, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.45} />
+      </mesh>
+      <group position={[0, h, 0]} rotation={[0, 0, -0.55]}>
+        <mesh position={[0.55, 0, 0]}>
+          <cylinderGeometry args={[0.045, 0.045, 1.1, 8]} />
+          <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.45} />
+        </mesh>
+        <mesh position={[1.05, -0.05, 0]}>
+          <coneGeometry args={[0.16, 0.22, 12]} />
+          <meshStandardMaterial color={DARK} roughness={0.6} />
+        </mesh>
+        <mesh position={[1.05, -0.19, 0]}>
+          <sphereGeometry args={[0.05, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={2.2}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// The one piece of built shelter on the lot: an open-sided canopy over a
+// wheel-service bay, set back in the aisle clear of every stall. The hoist
+// is what tells a carport from a maintenance bay.
+function ServiceCanopy() {
+  const w = 2.8
+  const d = 3.6
+  const postH = 2.4
+  // Clear of the stalls on both axes: past their front line in Z (see
+  // DEPOT_STALL_FRONT_Z) regardless of X, so there is no corner where the
+  // canopy's own footprint and a stall's paint overlap.
+  const cx = 4.3
+  const cz = 2.0
+  const corners: [number, number][] = [
+    [-w / 2, -d / 2],
+    [w / 2, -d / 2],
+    [-w / 2, d / 2],
+    [w / 2, d / 2],
+  ]
+  return (
+    <group position={[cx, 0, cz]}>
+      {corners.map(([dx, dz]) => (
+        <mesh key={`${dx}:${dz}`} position={[dx, postH / 2, dz]}>
+          <cylinderGeometry args={[0.09, 0.09, postH, 10]} />
+          <meshStandardMaterial color={METAL} metalness={0.45} roughness={0.5} />
+        </mesh>
+      ))}
+      {/* Roof, canted a couple degrees the way every open-sided shed on an
+          airless site is — there's nothing to shed, but a dead-flat panel
+          reads as a rendering primitive rather than a built roof. */}
+      <mesh position={[0, postH + 0.12, 0]} rotation={[0.035, 0, 0]}>
+        <boxGeometry args={[w + 0.6, 0.12, d + 0.6]} />
+        <meshStandardMaterial color={DEPOT_CANOPY} metalness={0.3} roughness={0.55} />
+      </mesh>
+      <mesh position={[0, postH + 0.04, 0]} rotation={[0.035, 0, 0]}>
+        <boxGeometry args={[w + 0.5, 0.02, d + 0.5]} />
+        <meshStandardMaterial color={DEPOT_CANOPY_DARK} metalness={0.35} roughness={0.5} />
+      </mesh>
+      {/* Wheel-service hoist: a beam between the front posts, a drop line,
+          and a hook. */}
+      <Strut
+        from={[-w / 2, postH - 0.05, -d / 2 + 0.5]}
+        to={[w / 2, postH - 0.05, -d / 2 + 0.5]}
+        r={0.05}
+      />
+      <Strut
+        from={[0, postH - 0.05, -d / 2 + 0.5]}
+        to={[0, 1.1, -d / 2 + 0.5]}
+        r={0.025}
+        color={DARK}
+      />
+      <mesh position={[0, 1.0, -d / 2 + 0.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.09, 0.02, 8, 16]} />
+        <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// A spares/support buggy standing in a bay, nose out toward the aisle —
+// `RoverBody` reused exactly as its own comment always intended ("parked in
+// the base compound"), just finally given somewhere to stand. Every rover in
+// this file drives down its own local +X, so facing that out of the bay
+// toward the aisle (+Z from the stall's own center) is a yaw of -90°.
+function DepotSupportRover({ x }: { x: number }) {
+  return (
+    <group
+      position={[x, 0, DEPOT_STALL_CENTER_Z]}
+      rotation={[0, -Math.PI / 2, 0]}
+      scale={2.8}
+    >
+      <RoverBody accent={DEPOT_NEUTRAL} />
+    </group>
+  )
+}
+
+// The un-paved counterpart to an occupied bay: a pair of faint wheel ruts
+// running from the empty stall out through the aisle, the visible trace of
+// the unit that left it to go drive its lap. Two strips at roughly an LTV's
+// track gauge, not one wide smear — a single mark reads as a stain, a pair
+// reads as tires.
+function TreadTracks({ x }: { x: number }) {
+  const gauge = 1.3
+  const zFrom = DEPOT_STALL_BACK_Z + 1.2
+  const zTo = DEPOT_HALF_D - 0.3
+  const len = zTo - zFrom
+  const cz = (zFrom + zTo) / 2
+  return (
+    <group position={[x, 0.012, 0]}>
+      {[-gauge / 2, gauge / 2].map((dx) => (
+        <mesh key={dx} position={[dx, 0, cz]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.22, len]} />
+          <meshStandardMaterial
+            color={DEPOT_CURB}
+            roughness={1}
+            transparent
+            opacity={0.55}
+          />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+// Depth and outward reach of the graded fill under the apron — see the note
+// on RoverDepotYard's skirt below.
+const DEPOT_SKIRT_DEPTH = 1.8
+const DEPOT_SKIRT_OUT = 1.0
+
+export function RoverDepotYard({ accent }: { accent: string }) {
+  return (
+    <group>
+      {/* Graded skirt: MarkerLayer seats this yard on the HIGHEST ground
+          under its own footprint (a rigid apron cannot sink into a slope —
+          see footprintSeatRadius), which is what stops the uphill edge
+          burying itself but leaves the downhill edge standing clear of the
+          regolith. This is the same fix the landing pad uses for the same
+          reason (see LandingPad's own comment): a block of fill graded down
+          from the apron's underside, wide enough that its bottom edge is
+          buried rather than hanging in daylight on every slope this ridge
+          actually has. */}
+      <mesh position={[0, -DEPOT_SKIRT_DEPTH / 2 + 0.03, 0]}>
+        <boxGeometry
+          args={[
+            DEPOT_HALF_W * 2 + DEPOT_SKIRT_OUT * 2,
+            DEPOT_SKIRT_DEPTH,
+            DEPOT_HALF_D * 2 + DEPOT_SKIRT_OUT * 2,
+          ]}
+        />
+        <meshStandardMaterial color={PAD_SURFACE} roughness={0.99} />
+      </mesh>
+
+      {/* Apron */}
+      <mesh position={[0, 0.02, 0]}>
+        <boxGeometry args={[DEPOT_HALF_W * 2, 0.04, DEPOT_HALF_D * 2]} />
+        <meshStandardMaterial color={PAD_SURFACE} roughness={0.96} />
+      </mesh>
+
+      {/* Curb — a thin darker border reads the apron as a built, edged
+          surface rather than a patch of unusually flat regolith. */}
+      {(
+        [
+          [DEPOT_HALF_W * 2 + 0.3, 0.18, 0, -DEPOT_HALF_D - 0.06],
+          [DEPOT_HALF_W * 2 + 0.3, 0.18, 0, DEPOT_HALF_D + 0.06],
+          [0.18, DEPOT_HALF_D * 2, -DEPOT_HALF_W - 0.06, 0],
+          [0.18, DEPOT_HALF_D * 2, DEPOT_HALF_W + 0.06, 0],
+        ] as [number, number, number, number][]
+      ).map(([w, d, x, z], i) => (
+        <mesh key={i} position={[x, 0.05, z]}>
+          <boxGeometry args={[w, 0.1, d]} />
+          <meshStandardMaterial color={DEPOT_CURB} roughness={0.9} />
+        </mesh>
+      ))}
+
+      {DEPOT_STALL_X.map((x, i) => {
+        const occupied = DEPOT_OCCUPIED.includes(i)
+        return (
+          <group key={x}>
+            <ParkingStall x={x} />
+            <group position={[x, 0, DEPOT_STALL_FRONT_Z + 0.45]}>
+              <ChargeBollard accent={accent} />
+            </group>
+            {occupied ? <DepotSupportRover x={x} /> : <TreadTracks x={x} />}
+          </group>
+        )
+      })}
+
+      <ServiceCanopy />
+      <group position={[2.9, 0, 3.1]} rotation={[0, 0.5, 0]}>
+        <CableReel />
+      </group>
+      <group position={[5.6, 0, 3.3]} rotation={[0, -0.6, 0]}>
+        <CargoPallet hard seed={41} />
+      </group>
+
+      <group position={[-DEPOT_HALF_W + 0.9, 0, DEPOT_HALF_D - 0.9]}>
+        <DepotLightMast accent={accent} />
+      </group>
+      <group
+        position={[DEPOT_HALF_W - 0.9, 0, DEPOT_HALF_D - 0.9]}
+        rotation={[0, Math.PI, 0]}
+      >
+        <DepotLightMast accent={accent} />
+      </group>
+
+      {/* A mechanic making rounds of the bay rather than standing frozen at
+          one panel — the same PatrollingAstronaut every other staffed site
+          uses, bounded to the canopy end of the lot so its loop never
+          crosses the stalls. */}
+      <PatrollingAstronaut center={[4.3, 2.0]} radius={1.1} seed={42} accent={accent} />
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Solar-thermal ISRU plant
 // ---------------------------------------------------------------------------
 

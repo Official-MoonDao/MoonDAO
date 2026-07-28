@@ -321,6 +321,29 @@ avoid up front and annoying to find later.
   built-in `PAD_SCORCH` core — for hardware that touches down straight on
   graded regolith (`IlrsCargoLander`) rather than getting a full engineered
   pad.
+- **The rover district's own lot is shared infrastructure, not a
+  competitor's model.** `RoverDepotYard` (`ProjectModel.tsx`, right after
+  `ScorchMark`) is a compact 13 x 10 m paved apron with three marked bays,
+  charging bollards, a wheel-service canopy, and yard lights. It exists
+  because the rover race's actual hardware never parks anywhere — the whole
+  field drives permanent laps of main street (see `PATROL` in
+  `baseplan.ts`) — so every competitor's own plot in that district is bare
+  regolith by design, and a literally empty junction reads as a gap rather
+  than as that story. Two of the three bays are filled (not three, not
+  zero — see the section's own comment for why), with `RoverBody` — the
+  generic unbranded rover shape kept as the fallback for a future competitor
+  with no custom model — parked in a flat neutral tone rather than any org's
+  accent, so a depot spare never reads as one team's race entry benched
+  there. It has no `PROJECT_SIZE_M`/`TYPE_SIZE_M` entry (it isn't a
+  project): `MarkerLayer`'s `RoverDepotSite` computes its own position by
+  hand, INWARD of main street rather than on `BASE_PLAN.rover`'s own
+  junction (which sits on top of both the avenue and the loop at once) or at
+  an outward corner (which would need `reach` inflated well past what this
+  district's actual LTV-scale roster justifies — the exact thing
+  `lunar-atlas-baseplan.cy.ts`'s avenue-overshoot check exists to catch).
+  That inward placement is why the yard stays compact: the belt between the
+  perimeter road and main street is only ~23 m deep once both roads' own
+  setbacks are spent.
 
 ### Comment style
 

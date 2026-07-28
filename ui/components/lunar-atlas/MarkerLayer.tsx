@@ -20,7 +20,14 @@ import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { PATROL, type Slot } from '@/lib/lunar-atlas/baseplan'
+import {
+  BASE_PLAN,
+  MAIN_LOOP_M,
+  PATROL,
+  ROAD_HALF_M,
+  SETBACK_M,
+  type Slot,
+} from '@/lib/lunar-atlas/baseplan'
 import {
   MOON_RADIUS_M,
   latLonToVector3,
@@ -40,7 +47,12 @@ import type {
   Project,
   ProjectType,
 } from '@/lib/lunar-atlas/types'
-import ProjectModel, { gradedDeckRadiusM, projectSizeM } from './ProjectModel'
+import ProjectModel, {
+  gradedDeckRadiusM,
+  projectSizeM,
+  RoverDepotYard,
+  SurfaceAnchor,
+} from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
 // The competitors of a race, best-placed first. Order matters because the
@@ -339,6 +351,104 @@ function CompetitorPlot({
         </Html>
       )}
     </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// The rover district's own lot — shared infrastructure, not a competitor
+// ---------------------------------------------------------------------------
+//
+// Every other district's plots are populated by `CompetitorPlot` above, one
+// per project, placed by `districtSlots` with a setback that clears both
+// streets it fronts. The rover race has no plots standing: its whole field
+// drives permanent laps (see PATROL), so `districtDir` itself — the raw
+// junction where the depot avenue crosses main street — has nothing a
+// per-project loop would ever draw there. `RoverDepotYard` (ProjectModel.tsx)
+// is the fix, but it cannot simply stand AT `districtDir`: that point sits
+// ON both roads at once (the avenue's own radial line and the loop's circle
+// both pass through it), which is exactly what put the pad under the pavement
+// the first time this was tried.
+//
+// So this reproduces `districtSlots`' own radial/angular setback by hand
+// rather than calling it, but placed INWARD of main street rather than at an
+// outward corner like a real competitor's plot would be: `districtSlots`
+// always gives a single plot the district's first (outward) corner, which
+// would need `BASE_PLAN.rover.reach` inflated well past what this district's
+// own LTV-scale roster justifies — exactly what the avenue-overshoot check
+// in lunar-atlas-baseplan.cy.ts exists to catch, since `reach` is shared
+// with the real (if never-standing) competitor plots. Sitting inward instead
+// touches neither the avenue's own radial line nor the loop's circle, with
+// no baseplan.ts change at all: same radial setback off main street, same
+// angular swing off the avenue, just measured toward the core instead of
+// away from it. That belt is only ~23 m deep once both roads' own setbacks
+// are spent, which is what keeps `RoverDepotYard` a compact 13 x 10 m.
+const DEPOT_FOOTPRINT_R = 9 // half-diagonal of the yard's 13 x 10 m apron, with room to spare
+
+function RoverDepotSite({
+  accent,
+  dim,
+  opacity,
+  radiusAt,
+}: {
+  accent: string
+  dim: number
+  opacity: number
+  radiusAt?: RadiusAt | null
+}) {
+  const { seat, ndir, noseAlong } = useMemo(() => {
+    const plan = BASE_PLAN.rover!
+    const bearing = Math.atan2(plan.north, plan.east)
+    const front = ROAD_HALF_M + SETBACK_M + DEPOT_FOOTPRINT_R
+    const radius = MAIN_LOOP_M - front
+    const swing = Math.asin(Math.min(1, front / radius))
+    const a = bearing + swing
+
+    const ll = capOffsetLatLon(Math.cos(a) * radius, Math.sin(a) * radius)
+    const d = new THREE.Vector3(
+      ...latLonToVector3(ll.lat, ll.lon, 1)
+    ).normalize()
+    // A rigid 13 x 10 m apron cannot sink into a slope, so — exactly like
+    // the padded lander (see footprintSeatRadius's own comment) — it seats
+    // on the HIGHEST ground under its own footprint rather than the single
+    // point at its center, and RoverDepotYard grades a skirt down from
+    // there to hide whatever the downhill side leaves uncovered.
+    const ground = !radiusAt
+      ? GLOBE_RADIUS
+      : footprintSeatRadius(d, radiusAt, DEPOT_FOOTPRINT_R)
+
+    // A second point at the same radius but zero swing — back on the
+    // avenue's own radial line — so the yard's open (aisle) side faces the
+    // road it is served by rather than an arbitrary camera-relative default.
+    const backLl = capOffsetLatLon(
+      Math.cos(bearing) * radius,
+      Math.sin(bearing) * radius
+    )
+    const backDir = new THREE.Vector3(
+      ...latLonToVector3(backLl.lat, backLl.lon, 1)
+    )
+    const face: Vec3 = backDir.sub(d).normalize().toArray() as Vec3
+
+    return { seat: ground + SEAT_LIFT, ndir: d, noseAlong: face }
+  }, [radiusAt])
+
+  if (opacity <= MODEL_PRESENCE) return null
+
+  return (
+    <SurfaceAnchor
+      dir={[ndir.x, ndir.y, ndir.z]}
+      surfaceRadius={seat}
+      scale={M_TO_UNITS}
+      dim={dim}
+      noseAlong={noseAlong}
+    >
+      {/* RoverDepotYard is authored with its open, aisle-facing side on
+          local +Z (stalls back toward -Z); `noseAlong` steers local +X (see
+          `headingYaw`), so this 90° turn hands it the axis that convention
+          expects without re-authoring the yard itself. */}
+      <group rotation={[0, Math.PI / 2, 0]}>
+        <RoverDepotYard accent={accent} />
+      </group>
+    </SurfaceAnchor>
   )
 }
 
@@ -694,6 +804,15 @@ export default function MarkerLayer({
                 />
               )
             })}
+
+            {tree.category === 'rover' && (
+              <RoverDepotSite
+                accent={color}
+                dim={dim}
+                opacity={districtOpacity}
+                radiusAt={radiusAt}
+              />
+            )}
 
             <DistrictBeacon
               dir={districtDir}
