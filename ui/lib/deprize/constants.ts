@@ -13,6 +13,7 @@ export {
   resolvePayoutVector,
   shouldSurfaceResolution,
   positionRedeemValue,
+  buildSupersededPayouts,
 } from './lifecycle'
 
 // Prize slice: every bet routes 5% (1/20) to the Juicebox prize pool.
@@ -26,8 +27,7 @@ export enum MarketStage {
   Closed = 2,
 }
 
-export const ZERO_BYTES32 =
-  '0x0000000000000000000000000000000000000000000000000000000000000000'
+export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
 
 export const UNIT = 10n ** BigInt(COLLATERAL_DECIMALS)
 export const MAX_UINT256 = (1n << 256n) - 1n
@@ -58,5 +58,4 @@ export const ODDS_POLL_MS = 30000
 // Canonical DePrize Terms & Conditions, published under MoonDAO's Legal docs
 // (same host/pattern as the Website Terms & Privacy Policy). The source draft
 // lives at ui/docs/DEPRIZE_TERMS_AND_CONDITIONS.md until the docs team publishes.
-export const DEPRIZE_TERMS_URL =
-  'https://docs.moondao.com/Legal/DePrize-Terms-and-Conditions'
+export const DEPRIZE_TERMS_URL = 'https://docs.moondao.com/Legal/DePrize-Terms-and-Conditions'

@@ -2,26 +2,19 @@
 // honest consent badges), the draft capability criteria, market structure,
 // and sources. Opened from a shared-goal row in ProjectPanel or by clicking
 // the goal's region marker on the globe.
-
 import { FlagIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import {
   OPEN_FIELD_PROJECT_ID,
   ROSTER_DISCLAIMER,
+  findDePrizeIdForGoal,
   getDePrizeRaceBinding,
   isCompetitorClaimed,
+  isDePrizeGoalMarketBound,
 } from '@/lib/deprize/competitions'
 import { DEPRIZE_TERMS_URL } from '@/lib/deprize/constants'
-import {
-  ROSTER_STATUS_CLASSES,
-  ROSTER_STATUS_LABEL,
-  orgColor,
-} from '@/lib/lunar-atlas/display'
-import type {
-  Organization,
-  Project,
-  SharedGoal,
-} from '@/lib/lunar-atlas/types'
+import { ROSTER_STATUS_CLASSES, ROSTER_STATUS_LABEL, orgColor } from '@/lib/lunar-atlas/display'
+import type { Organization, Project, SharedGoal } from '@/lib/lunar-atlas/types'
 import { MarketPill } from './ProjectPanel'
 import SourceBadge from './SourceBadge'
 
@@ -59,24 +52,23 @@ export default function SharedGoalPanel({
   deprizeId,
   chainSlug,
 }: SharedGoalPanelProps) {
-  const bound = deprizeId !== undefined
+  // A registry id alone is not enough — incomplete race bindings must not
+  // show bound chrome (market CTA / ROSTER_DISCLAIMER). Match the bridge gate.
+  const bound = !!chainSlug && isDePrizeGoalMarketBound(chainSlug, goal.id)
+  const marketDeprizeId = bound ? deprizeId ?? findDePrizeIdForGoal(chainSlug!, goal.id) : undefined
   const binding =
-    bound && chainSlug
-      ? getDePrizeRaceBinding(chainSlug, deprizeId)
+    marketDeprizeId !== undefined && chainSlug
+      ? getDePrizeRaceBinding(chainSlug, marketDeprizeId)
       : undefined
   const anyUnconfirmed = competitors.some(
-    (c) =>
-      c.project.rosterStatus === 'listed' ||
-      c.project.rosterStatus === 'invited'
+    (c) => c.project.rosterStatus === 'listed' || c.project.rosterStatus === 'invited'
   )
   const split = goal.market?.payoutSplit
   const odds = goal.market?.impliedOdds
   const fieldOdds = odds?.[OPEN_FIELD_PROJECT_ID]
   // Highest-odds competitor first; ties and odds-less entries keep seed order.
   const ranked = odds
-    ? [...competitors].sort(
-        (a, b) => (odds[b.project.id] ?? -1) - (odds[a.project.id] ?? -1)
-      )
+    ? [...competitors].sort((a, b) => (odds[b.project.id] ?? -1) - (odds[a.project.id] ?? -1))
     : competitors
 
   // Brand color is withheld only from competitors that are actually outcomes in
@@ -91,8 +83,7 @@ export default function SharedGoalPanel({
   }
 
   const marketStatus = goal.market?.status ?? 'none'
-  const showNoMarketFooter =
-    !bound && (marketStatus === 'none' || marketStatus === 'planned')
+  const showNoMarketFooter = !bound && (marketStatus === 'none' || marketStatus === 'planned')
 
   return (
     <div className="pointer-events-auto flex h-full w-full flex-col overflow-hidden rounded-2xl border border-fuchsia-400/20 bg-[#0a0c14]/95 shadow-2xl backdrop-blur-xl">
@@ -105,22 +96,19 @@ export default function SharedGoalPanel({
               Capability race
             </span>
             <MarketPill status={marketStatus} />
-            {bound && (
+            {marketDeprizeId !== undefined && (
               <Link
-                href={`/deprize/${deprizeId}`}
+                href={`/deprize/${marketDeprizeId}`}
                 className="shrink-0 rounded border border-emerald-400/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-200 transition hover:border-emerald-300/50 hover:bg-emerald-500/20"
               >
                 Back a competitor
               </Link>
             )}
           </div>
-          <h2 className="mt-1 text-lg font-semibold leading-snug text-white">
-            {goal.title}
-          </h2>
+          <h2 className="mt-1 text-lg font-semibold leading-snug text-white">{goal.title}</h2>
           {goal.targetWindow && (
             <div className="mt-1 text-xs text-white/50">
-              Target window: {goal.targetWindow.from ?? '?'} –{' '}
-              {goal.targetWindow.to ?? '?'}
+              Target window: {goal.targetWindow.from ?? '?'} – {goal.targetWindow.to ?? '?'}
             </div>
           )}
         </div>
@@ -168,10 +156,7 @@ export default function SharedGoalPanel({
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{
                           backgroundColor: color,
-                          boxShadow:
-                            color === NEUTRAL_ACCENT
-                              ? undefined
-                              : `0 0 10px ${color}`,
+                          boxShadow: color === NEUTRAL_ACCENT ? undefined : `0 0 10px ${color}`,
                         }}
                       />
                       <span className="min-w-0 flex-1">
@@ -189,7 +174,9 @@ export default function SharedGoalPanel({
                       )}
                       {project.rosterStatus && (
                         <span
-                          className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
+                          className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${
+                            ROSTER_STATUS_CLASSES[project.rosterStatus]
+                          }`}
                           title={ROSTER_STATUS_LABEL[project.rosterStatus]}
                         >
                           {project.rosterStatus}
@@ -244,15 +231,13 @@ export default function SharedGoalPanel({
               </p>
             )}
             {bound ? (
-              <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-                {ROSTER_DISCLAIMER}
-              </p>
+              <p className="mt-2 text-[11px] leading-relaxed text-white/40">{ROSTER_DISCLAIMER}</p>
             ) : (
               anyUnconfirmed && (
                 <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-                  &ldquo;Listed&rdquo; reflects MoonDAO&apos;s curatorial judgment
-                  of credible competitors. It does not imply these organizations
-                  have agreed to participate in any MoonDAO prize.
+                  &ldquo;Listed&rdquo; reflects MoonDAO&apos;s curatorial judgment of credible
+                  competitors. It does not imply these organizations have agreed to participate in
+                  any MoonDAO prize.
                 </p>
               )
             )}
@@ -272,21 +257,16 @@ export default function SharedGoalPanel({
                     {i + 1}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm leading-snug text-white/85">
-                      {c.statement}
-                    </span>
+                    <span className="block text-sm leading-snug text-white/85">{c.statement}</span>
                     {c.threshold && (
-                      <span className="mt-0.5 block text-xs text-white/50">
-                        {c.threshold}
-                      </span>
+                      <span className="mt-0.5 block text-xs text-white/50">{c.threshold}</span>
                     )}
                   </span>
                 </li>
               ))}
             </ol>
             <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-              Draft criteria — the binding spec is frozen and pinned publicly
-              when a market opens.
+              Draft criteria — the binding spec is frozen and pinned publicly when a market opens.
             </p>
           </div>
         )}
@@ -303,17 +283,13 @@ export default function SharedGoalPanel({
                   <div className="text-lg font-semibold text-white">
                     {Math.round(split.capability * 100)}%
                   </div>
-                  <div className="text-xs text-white/50">
-                    Capability demo confirmed
-                  </div>
+                  <div className="text-xs text-white/50">Capability demo confirmed</div>
                 </div>
                 <div className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
                   <div className="text-lg font-semibold text-white">
                     {Math.round(split.flight * 100)}%
                   </div>
-                  <div className="text-xs text-white/50">
-                    Flight / surface milestone
-                  </div>
+                  <div className="text-xs text-white/50">Flight / surface milestone</div>
                 </div>
               </div>
             )}
@@ -341,8 +317,8 @@ export default function SharedGoalPanel({
 
         {showNoMarketFooter ? (
           <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
-            A concept for a future MoonDAO DePrize. No market exists yet; nothing
-            here is an offer, endorsement, or prediction of outcomes.
+            A concept for a future MoonDAO DePrize. No market exists yet; nothing here is an offer,
+            endorsement, or prediction of outcomes.
           </p>
         ) : (
           // A bound race has a market, so the "no market exists yet" wording is

@@ -10,8 +10,12 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
-import { getDePrizeQuestionId } from '@/lib/deprize/competitions'
-import { DePrizeState, MarketStage, UNIT } from '@/lib/deprize/constants'
+import {
+  OPEN_FIELD_TEAM_ID,
+  getDePrizeQuestionId,
+  getDePrizeRaceBinding,
+} from '@/lib/deprize/competitions'
+import { buildSupersededPayouts, DePrizeState, MarketStage, UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { rpcRead } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
@@ -67,6 +71,16 @@ export default function DePrizeAdminPanel({
   const [winnerTeamId, setWinnerTeamId] = useState<string>('')
   const [providerAddress, setProviderAddress] = useState('')
   const [questionId, setQuestionId] = useState(seededQuestionId)
+  // SUPERSEDED lineage resolve: optional real entity (when tip settled via
+  // field sentinel) + this generation's Open Field team id.
+  const [winningEntityTeamId, setWinningEntityTeamId] = useState('')
+  const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
+  const defaultOpenField =
+    raceBinding?.outcomes.find((o) => o.field)?.teamId ??
+    (teamIds.some((id) => id === BigInt(OPEN_FIELD_TEAM_ID)) ? OPEN_FIELD_TEAM_ID : 0)
+  const [openFieldTeamId, setOpenFieldTeamId] = useState(
+    defaultOpenField > 0 ? String(defaultOpenField) : ''
+  )
 
   // Re-seed the editable questionId when navigating between DePrizes.
   useEffect(() => {
@@ -126,8 +140,7 @@ export default function DePrizeAdminPanel({
           method: 'owner' as string,
           params: [],
         })
-        if (!cancelled)
-          setIsRegistryOwner(owner.toLowerCase() === userAddress.toLowerCase())
+        if (!cancelled) setIsRegistryOwner(owner.toLowerCase() === userAddress.toLowerCase())
       } catch {
         if (!cancelled) setIsRegistryOwner(false)
       }
@@ -155,8 +168,7 @@ export default function DePrizeAdminPanel({
           params: [],
         })
         const viaRouter =
-          !!feeRouterAddress &&
-          lmsrOwner.toLowerCase() === feeRouterAddress.toLowerCase()
+          !!feeRouterAddress && lmsrOwner.toLowerCase() === feeRouterAddress.toLowerCase()
         if (cancelled) return
         setRouterOwned(viaRouter)
         if (viaRouter && feeRouter) {
@@ -166,9 +178,7 @@ export default function DePrizeAdminPanel({
             params: [],
           })
           if (!cancelled)
-            setIsMarketController(
-              routerOwner.toLowerCase() === userAddress.toLowerCase()
-            )
+            setIsMarketController(routerOwner.toLowerCase() === userAddress.toLowerCase())
         } else {
           setIsMarketController(lmsrOwner.toLowerCase() === userAddress.toLowerCase())
         }
@@ -209,8 +219,7 @@ export default function DePrizeAdminPanel({
           method: 'conditionIds' as string,
           params: [0n],
         })
-        if (!cancelled)
-          setIsOracle(computed.toLowerCase() === marketConditionId.toLowerCase())
+        if (!cancelled) setIsOracle(computed.toLowerCase() === marketConditionId.toLowerCase())
       } catch {
         if (!cancelled) setIsOracle(false)
       }
@@ -227,16 +236,14 @@ export default function DePrizeAdminPanel({
   if (!userAddress || (!isRegistryOwner && !canSeeMarket)) return null
 
   // Generic write helper with a toast lifecycle.
-  const run = async (
-    contract: any,
-    method: string,
-    params: any[],
-    doneMsg: string
-  ) => {
+  const run = async (contract: any, method: string, params: any[], doneMsg: string) => {
     if (!account || !contract) return
     setBusy(true)
     try {
-      await sendDePrizeTx(account, prepareContractCall({ contract, method: method as string, params }))
+      await sendDePrizeTx(
+        account,
+        prepareContractCall({ contract, method: method as string, params })
+      )
       toast.success(doneMsg, { style: toastStyle })
       onDone()
     } catch (err: any) {
@@ -312,16 +319,84 @@ export default function DePrizeAdminPanel({
     }
   }
 
-  const resolveWinner = (winningIndex: number) =>
-    resolve(
+  const resolveWinner = (winningIndex: number) => {
+    if (state === S.SUPERSEDED) {
+      toast.error(
+        'Superseded generations must resolve via lineage (settling generation → named / Open Field / 1/N).',
+        { style: toastStyle, duration: 8000 }
+      )
+      return
+    }
+    return resolve(
       Array.from({ length: numOutcomes }, (_, i) => (i === winningIndex ? 1n : 0n)),
       `outcome #${winningIndex + 1} wins`
     )
-  const resolveNoWinner = () =>
-    resolve(
+  }
+  const resolveNoWinner = () => {
+    if (state === S.SUPERSEDED) {
+      toast.error(
+        'Superseded generations must resolve via lineage (settling generation → named / Open Field / 1/N).',
+        { style: toastStyle, duration: 8000 }
+      )
+      return
+    }
+    return resolve(
       Array.from({ length: numOutcomes }, () => 1n),
       `no winner — every position refunds 1/${numOutcomes}`
     )
+  }
+
+  // Walk supersededBy on-chain and map the tip onto this roster — same rules
+  // as DePrizeResolve._fillSupersededPayouts.
+  const resolveSuperseded = async () => {
+    if (!registry) {
+      toast.error('Registry unavailable.', { style: toastStyle })
+      return
+    }
+    setBusy(true)
+    try {
+      let tip = deprizeId
+      for (let i = 0; i < 64; i++) {
+        const next = Number(
+          await rpcRead<bigint | number>({
+            contract: registry,
+            method: 'supersededBy' as string,
+            params: [BigInt(tip)],
+          })
+        )
+        if (!next) break
+        tip = next
+      }
+      if (tip === deprizeId) {
+        throw new Error('Lineage unresolved — no settling generation after this id.')
+      }
+      const tipDp = await rpcRead<any>({
+        contract: registry,
+        method: 'getDePrize' as string,
+        params: [BigInt(tip)],
+      })
+      const tipState = Number(tipDp.state) as DePrizeState
+      const tipWinningTeamId = BigInt(tipDp.winningTeamId ?? 0)
+      const entityRaw = winningEntityTeamId.trim()
+      const openRaw = openFieldTeamId.trim()
+      const payouts = buildSupersededPayouts({
+        teamIds,
+        tipState,
+        tipWinningTeamId,
+        winningEntityTeamId: entityRaw ? BigInt(entityRaw) : 0n,
+        openFieldTeamId: openRaw ? BigInt(openRaw) : 0n,
+      })
+      // Drop the busy flag before resolve() re-acquires it.
+      setBusy(false)
+      await resolve(payouts, `lineage from DePrize #${tip}`)
+    } catch (err: any) {
+      toast.error(err?.shortMessage || err?.message || 'Lineage resolve failed.', {
+        style: toastStyle,
+        duration: 10000,
+      })
+      setBusy(false)
+    }
+  }
 
   const isClosed = stage === MarketStage.Closed
 
@@ -351,11 +426,7 @@ export default function DePrizeAdminPanel({
         Admin actions
         {isRegistryOwner ? ' · registry owner' : ''}
         {isOracle ? ' · oracle' : ''}
-        {isMarketController
-          ? routerOwned
-            ? ' · fee-router owner'
-            : ' · market owner'
-          : ''}
+        {isMarketController ? (routerOwned ? ' · fee-router owner' : ' · market owner') : ''}
       </p>
 
       {/* Registry lifecycle (registry owner) */}
@@ -385,7 +456,9 @@ export default function DePrizeAdminPanel({
             )}
             {state === S.LOCKED && (
               <StandardButton
-                onClick={() => run(registry, 'startVote', [BigInt(deprizeId)], 'Winner vote started.')}
+                onClick={() =>
+                  run(registry, 'startVote', [BigInt(deprizeId)], 'Winner vote started.')
+                }
                 disabled={busy}
                 className="rounded-full"
                 backgroundColor="bg-white/10"
@@ -395,7 +468,9 @@ export default function DePrizeAdminPanel({
             )}
             {(state === S.LOCKED || state === S.VOTING) && (
               <StandardButton
-                onClick={() => run(registry, 'settleNoWinner', [BigInt(deprizeId)], 'Settled: no winner.')}
+                onClick={() =>
+                  run(registry, 'settleNoWinner', [BigInt(deprizeId)], 'Settled: no winner.')
+                }
                 disabled={busy}
                 className="rounded-full"
                 backgroundColor="bg-moon-orange"
@@ -424,7 +499,9 @@ export default function DePrizeAdminPanel({
                   Complete M2 (70%)
                 </StandardButton>
                 <StandardButton
-                  onClick={() => run(registry, 'failM2', [BigInt(deprizeId)], 'M2 failed — refunds enabled.')}
+                  onClick={() =>
+                    run(registry, 'failM2', [BigInt(deprizeId)], 'M2 failed — refunds enabled.')
+                  }
                   disabled={busy}
                   className="rounded-full"
                   backgroundColor="bg-moon-orange"
@@ -436,7 +513,12 @@ export default function DePrizeAdminPanel({
             {!cancellationPending && state !== S.NONE && (
               <StandardButton
                 onClick={() =>
-                  run(registry, 'announceCancellation', [BigInt(deprizeId)], 'Cancellation announced (7-day notice).')
+                  run(
+                    registry,
+                    'announceCancellation',
+                    [BigInt(deprizeId)],
+                    'Cancellation announced (7-day notice).'
+                  )
                 }
                 disabled={busy}
                 className="rounded-full"
@@ -572,12 +654,7 @@ export default function DePrizeAdminPanel({
             {routerOwned && feeRouter ? (
               <StandardButton
                 onClick={() =>
-                  run(
-                    feeRouter,
-                    'sweepFees',
-                    [BigInt(deprizeId)],
-                    'Fees swept to the prize pool.'
-                  )
+                  run(feeRouter, 'sweepFees', [BigInt(deprizeId)], 'Fees swept to the prize pool.')
                 }
                 // sweepFees is permissionless but returns 0 when the market
                 // holds no WETH — don't spend gas on a known no-op.
@@ -628,6 +705,45 @@ export default function DePrizeAdminPanel({
               <p className="text-gray-500 text-xs">
                 Already resolved — the payout vector is write-once.
               </p>
+            ) : state === S.SUPERSEDED ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-amber-200/90 text-xs">
+                  This generation is SUPERSEDED — payouts must follow the settling generation (named
+                  slot, else Open Field, else 1/N). Do not submit a one-hot vector by outcome index.
+                </p>
+                <div className="flex flex-wrap items-end gap-2">
+                  <label className="flex flex-col gap-1 text-xs text-gray-400">
+                    Winning entity team id (optional)
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={winningEntityTeamId}
+                      onChange={(e) => setWinningEntityTeamId(e.target.value.trim())}
+                      placeholder="0 = use tip winningTeamId"
+                      className="w-48 px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white text-xs font-mono placeholder-gray-500"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-gray-400">
+                    Open Field team id
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={openFieldTeamId}
+                      onChange={(e) => setOpenFieldTeamId(e.target.value.trim())}
+                      placeholder="0 if none"
+                      className="w-40 px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white text-xs font-mono placeholder-gray-500"
+                    />
+                  </label>
+                  <StandardButton
+                    onClick={resolveSuperseded}
+                    disabled={busy}
+                    className="rounded-full"
+                    backgroundColor="bg-moon-orange"
+                  >
+                    Resolve via lineage
+                  </StandardButton>
+                </div>
+              </div>
             ) : (
               <div className="flex items-center gap-2 flex-wrap">
                 {Array.from({ length: numOutcomes }, (_, i) => (

@@ -18,10 +18,7 @@ export enum DePrizeState {
   SUPERSEDED = 11,
 }
 
-export const DEPRIZE_STATE_META: Record<
-  DePrizeState,
-  { label: string; description: string }
-> = {
+export const DEPRIZE_STATE_META: Record<DePrizeState, { label: string; description: string }> = {
   [DePrizeState.NONE]: {
     label: 'Not registered',
     description: 'This DePrize does not exist yet.',
@@ -134,10 +131,8 @@ export function resolvePayoutVector(
   const resolved = payoutDen !== undefined && payoutDen > 0n
   if (!resolved) return { resolved: false, winningIndex: -1, isRefundVector: false }
   const positive = payoutNums.filter((n) => n > 0n).length
-  const winningIndex =
-    positive === 1 ? payoutNums.findIndex((n) => n > 0n) : -1
-  const isRefundVector =
-    payoutNums.length > 0 && payoutNums.every((n) => n > 0n)
+  const winningIndex = positive === 1 ? payoutNums.findIndex((n) => n > 0n) : -1
+  const isRefundVector = payoutNums.length > 0 && payoutNums.every((n) => n > 0n)
   return { resolved: true, winningIndex, isRefundVector }
 }
 
@@ -176,4 +171,56 @@ export function positionRedeemValue(
 ): bigint {
   if (payoutDenominator <= 0n || balanceWei <= 0n) return 0n
   return (balanceWei * payoutNumerator) / payoutDenominator
+}
+
+/**
+ * Mirror of DePrizeResolve._fillSupersededPayouts — payout construction only.
+ * Caller must already walk `supersededBy` to the tip and pass its state /
+ * winningTeamId. Maps the settling generation onto this roster:
+ *   1. named slot if the winning entity is on the roster;
+ *   2. else open-field slot if `openFieldTeamId` is on the roster;
+ *   3. else 1/N (fieldless legacy generation).
+ * Refund terminals on the tip also yield 1/N.
+ */
+export function buildSupersededPayouts(opts: {
+  teamIds: readonly bigint[]
+  tipState: DePrizeState
+  tipWinningTeamId: bigint
+  /** Real winning entity; 0 falls back to tipWinningTeamId. */
+  winningEntityTeamId?: bigint
+  /** This generation's Open Field team id; 0 means none. */
+  openFieldTeamId?: bigint
+}): bigint[] {
+  const n = opts.teamIds.length
+  if (opts.tipState === DePrizeState.NO_WINNER || opts.tipState === DePrizeState.CANCELLED) {
+    return Array.from({ length: n }, () => 1n)
+  }
+
+  if (
+    opts.tipState !== DePrizeState.SETTLED &&
+    opts.tipState !== DePrizeState.M1_RELEASED &&
+    opts.tipState !== DePrizeState.M2_COMPLETE
+  ) {
+    throw new Error(`Settling generation unresolved (state ${opts.tipState})`)
+  }
+
+  const entity =
+    opts.winningEntityTeamId && opts.winningEntityTeamId !== 0n
+      ? opts.winningEntityTeamId
+      : opts.tipWinningTeamId
+
+  const namedIdx = opts.teamIds.findIndex((id) => id === entity)
+  if (namedIdx >= 0) {
+    return opts.teamIds.map((_, i) => (i === namedIdx ? 1n : 0n))
+  }
+
+  const openField = opts.openFieldTeamId ?? 0n
+  if (openField !== 0n) {
+    const fieldIdx = opts.teamIds.findIndex((id) => id === openField)
+    if (fieldIdx >= 0) {
+      return opts.teamIds.map((_, i) => (i === fieldIdx ? 1n : 0n))
+    }
+  }
+
+  return Array.from({ length: n }, () => 1n)
 }
