@@ -11,6 +11,7 @@ import {
   getDePrizeRaceBinding,
   isCompetitorClaimed,
 } from '@/lib/deprize/competitions'
+import { DEPRIZE_TERMS_URL } from '@/lib/deprize/constants'
 import {
   ROSTER_STATUS_CLASSES,
   ROSTER_STATUS_LABEL,
@@ -78,9 +79,14 @@ export default function SharedGoalPanel({
       )
     : competitors
 
+  // Brand color is withheld only from competitors that are actually outcomes in
+  // the market and have not claimed their listing. A competitor the atlas lists
+  // but the market does not price is not being bet on, so greying it would just
+  // read as a rendering bug.
   const accentFor = (projectId: string, organization?: Organization) => {
     if (!binding) return orgColor(organization)
     const outcome = binding.outcomes.find((o) => o.projectId === projectId)
+    if (!outcome) return orgColor(organization)
     return isCompetitorClaimed(outcome) ? orgColor(organization) : NEUTRAL_ACCENT
   }
 
@@ -333,10 +339,26 @@ export default function SharedGoalPanel({
           </div>
         )}
 
-        {showNoMarketFooter && (
+        {showNoMarketFooter ? (
           <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
             A concept for a future MoonDAO DePrize. No market exists yet; nothing
             here is an offer, endorsement, or prediction of outcomes.
+          </p>
+        ) : (
+          // A bound race has a market, so the "no market exists yet" wording is
+          // wrong — but the not-an-offer disclosure still has to be here.
+          <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
+            Nothing here is an offer, endorsement, or prediction of outcomes. See
+            the{' '}
+            <a
+              href={DEPRIZE_TERMS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-white/20 underline-offset-2 hover:text-white/60"
+            >
+              DePrize Terms &amp; Conditions
+            </a>{' '}
+            before placing a bet.
           </p>
         )}
       </div>

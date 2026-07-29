@@ -196,10 +196,13 @@ export default function MoonBaseZeroIndex() {
   const liveOdds = useDePrizeGoalOdds(chain, selectedGoalId ?? undefined)
   // Depend on the bridge fields, not the result object — the hook returns a
   // fresh object every render and would rebuild trees on every hover/frame.
+  // Pass the dataset array itself, not a copy: mergeLiveMarketInto returns the
+  // same reference when nothing merged, which keeps buildTechTrees and the
+  // colony layout memos from recomputing for unbound races.
   const sharedGoals = useMemo(
     () =>
       mergeLiveMarketInto(
-        [...dataset.sharedGoals],
+        dataset.sharedGoals,
         selectedGoalId ?? undefined,
         liveOdds
       ),
@@ -372,6 +375,14 @@ export default function MoonBaseZeroIndex() {
   }
 
   // Keep ?race= / ?year= in sync with selection without remounting the scene.
+  //
+  // `pathname` must stay whatever route is mounted. `/moonbase/[projectId]`
+  // re-exports this component, but it is still a different page entry, so
+  // rewriting the path to `/moonbase` would be a real navigation — shallow is
+  // ignored across pages — and would tear down and rebuild the whole r3f scene
+  // for anyone who arrived from a competitor deep link. Keeping the dynamic
+  // segment (and its `projectId` query key, which Next interpolates back into
+  // the path) makes every update a same-page shallow replace.
   const replaceMoonbaseQuery = (patch: {
     race?: string | null
     year?: number | null
@@ -380,13 +391,11 @@ export default function MoonBaseZeroIndex() {
     const next: Record<string, string | string[] | undefined> = {
       ...router.query,
     }
-    // Index-route deep links only — drop the dynamic [projectId] segment key.
-    delete next.projectId
     if (patch.race === null) delete next.race
     else if (patch.race !== undefined) next.race = patch.race
     if (patch.year === null) delete next.year
     else if (patch.year !== undefined) next.year = String(patch.year)
-    void router.replace({ pathname: '/moonbase', query: next }, undefined, {
+    void router.replace({ pathname: router.pathname, query: next }, undefined, {
       shallow: true,
     })
   }
