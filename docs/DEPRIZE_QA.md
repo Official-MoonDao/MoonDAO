@@ -22,6 +22,7 @@
 | **DePrize 9** (browser fixture) | id **9**, JB **256**, LMSR `0x6e1a513f3DfB6288836CacdF0a9d3496b411130C`, condition `0x7334d1e6…560d`, payhook `0xec3ba013…7E66`, teams **301/302/303**, oracle = deployer `0x3c5e…E011` |
 | DePrize 9 questionId | `0xab937cdea2250786bf37ee2dd06f244bbeed62159c337927074523844d5759fb` |
 | DePrize 9 race binding (B1) | `sharedGoalId` **shared-fission-power**; outcome index → projectId: **0→westinghouse-fission-surface-power (team 301)**, **1→lockheed-fission-surface-power (team 302)**, **2→ix-fission-surface-power (team 303)** — see `ui/lib/deprize/competitions.ts` |
+| **Open Field Team NFT** (roster-changes) | **Pending mint.** Reserved symbolic id `OPEN_FIELD` / intended Sepolia token id **999**, owned by the admin Safe, metadata name `"Open Field"`, image = neutral field glyph. Once minted, set `OPEN_FIELD_TEAM_ID` in `ui/lib/deprize/competitions.ts` and record the live token id here. Ops: `MoonDAOTeamCreator.createMoonDAOTeam` (same path as `CreateTeam` UI / `script/CreateTestMissionSepolia.s.sol` `_createTeam`). DePrize 9's live roster does **not** include a field slot — reserve the field on every **new** race from here on. |
 
 UI config (`ui/const/config.ts`) wires registry / redeem / mint / fee-router. It does **not** repoint app-wide `MISSION_CREATOR_ADDRESSES` (intentional — avoids fragmenting general launchpad listing). DePrize **9** resolves its LMSR via `mint.marketOf(9)` (no config LMSR fallback needed).
 

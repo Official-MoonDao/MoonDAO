@@ -19,6 +19,15 @@
  * either side writes atlas seed data that conflicts.
  */
 
+/**
+ * Reserved MoonDAOTeam id for the Open Field outcome slot.
+ * Pending ops mint on Sepolia — see docs/DEPRIZE_QA.md. Intended id 999.
+ */
+export const OPEN_FIELD_TEAM_ID = 999
+
+/** Stable projectId key for field outcomes (never rendered as an atlas competitor). */
+export const OPEN_FIELD_PROJECT_ID = '__open-field__'
+
 export type DePrizeRaceOutcome = {
   /** Atlas competitor project id (SharedGoal.projectIds / impliedOdds key). */
   projectId: string
@@ -28,10 +37,15 @@ export type DePrizeRaceOutcome = {
    */
   teamId?: number
   /**
-   * Competitor consent for public markets. Outside sepolia, every outcome must
-   * be consented before the bridge reports status `live`.
+   * Competitor consent for public markets. Outside sepolia, every non-field
+   * outcome must be consented before the bridge reports status `live`.
    */
   consented?: boolean
+  /**
+   * Open Field slot — any qualifying entrant not listed above. Odds land in
+   * `fieldOdds`, never in `oddsByProjectId`.
+   */
+  field?: boolean
 }
 
 export type DePrizeRaceBinding = {
@@ -58,6 +72,10 @@ export type DePrizeCompetition = {
    * `teamId` is the alignment checksum; `consented` gates public markets.
    */
   outcomes?: DePrizeRaceOutcome[]
+  /** Prior generation this entry superseded (off-chain lineage mirror). */
+  supersedes?: number
+  /** Next generation that superseded this entry (off-chain lineage mirror). */
+  supersededBy?: number
 }
 
 export const GENERIC_DEPRIZE_COMPETITION: DePrizeCompetition = {
@@ -178,8 +196,54 @@ function isProductionEnv(): boolean {
   return (globalThis as any)?.process?.env?.NODE_ENV === 'production'
 }
 
-// Memoized reverse index: chainSlug → sharedGoalId → deprizeId.
+// Memoized reverse index: chainSlug → sharedGoalId → live tip deprizeId.
 const goalIndexByChain = new Map<string, Map<string, number>>()
+
+/** The two lineage links a generation can carry. */
+export type DePrizeGenerationLinks = {
+  supersedes?: number
+  supersededBy?: number
+}
+
+/**
+ * Walk `supersededBy` forward to the newest generation.
+ * Tolerates a malformed registry: a cycle stops the walk instead of hanging.
+ */
+export function liveTipOf(
+  generations: Record<number, DePrizeGenerationLinks>,
+  deprizeId: number
+): number {
+  let tip = deprizeId
+  const seen = new Set<number>([tip])
+  for (;;) {
+    const next = generations[tip]?.supersededBy
+    if (next === undefined || !Number.isFinite(next) || seen.has(next)) break
+    seen.add(next)
+    tip = next
+  }
+  return tip
+}
+
+/**
+ * 1-indexed generation number, found by walking `supersedes` backward.
+ * Tolerates a malformed registry: a cycle stops the walk instead of hanging.
+ */
+export function generationNumberOf(
+  generations: Record<number, DePrizeGenerationLinks>,
+  deprizeId: number
+): number {
+  let gen = 1
+  let cur = deprizeId
+  const seen = new Set<number>([cur])
+  for (;;) {
+    const prev = generations[cur]?.supersedes
+    if (prev === undefined || !Number.isFinite(prev) || seen.has(prev)) break
+    seen.add(prev)
+    gen++
+    cur = prev
+  }
+  return gen
+}
 
 function goalIndexForChain(chainSlug: string): Map<string, number> {
   const cached = goalIndexByChain.get(chainSlug)
@@ -190,37 +254,66 @@ function goalIndexForChain(chainSlug: string): Map<string, number> {
   for (const [idStr, comp] of Object.entries(entries)) {
     if (!comp.sharedGoalId) continue
     const deprizeId = Number(idStr)
+    const tip = liveTipOf(entries, deprizeId)
     if (map.has(comp.sharedGoalId)) {
-      const message = `Duplicate DePrize race binding on ${chainSlug}: sharedGoalId "${comp.sharedGoalId}" maps to both #${map.get(comp.sharedGoalId)} and #${deprizeId}`
+      const existingTip = map.get(comp.sharedGoalId)!
+      // Same race lineage (generations share a goal) — keep the live tip.
+      if (existingTip === tip) continue
+      const message = `Duplicate DePrize race binding on ${chainSlug}: sharedGoalId "${comp.sharedGoalId}" maps to both #${existingTip} and #${tip}`
       // Loud in dev/test so the seed error is caught before merge; in
       // production keep the first binding rather than crashing the page.
       if (!isProductionEnv()) throw new Error(message)
       console.error(`[deprize] ${message}`)
       continue
     }
-    map.set(comp.sharedGoalId, deprizeId)
+    map.set(comp.sharedGoalId, tip)
   }
   goalIndexByChain.set(chainSlug, map)
   return map
 }
 
 /**
- * Reverse lookup: Moon Base Zero SharedGoal.id → DePrize id on this chain.
- * Returns undefined when unbound. Throws outside production if the registry
- * maps two DePrize ids to the same goal (built once, then cached).
+ * Walk off-chain `supersededBy` links to the live generation tip.
+ * The live generation is the only one that feeds Moon Base Zero odds.
+ */
+export function resolveLiveDePrizeId(
+  chainSlug: string,
+  deprizeId: number | undefined
+): number | undefined {
+  if (deprizeId === undefined || !Number.isFinite(deprizeId)) return undefined
+  return liveTipOf(DEPRIZE_COMPETITIONS[chainSlug] ?? {}, deprizeId)
+}
+
+/**
+ * Generation number (1-indexed) by walking `supersedes` links backward.
+ */
+export function getDePrizeGenerationNumber(
+  chainSlug: string,
+  deprizeId: number | undefined
+): number {
+  if (deprizeId === undefined || !Number.isFinite(deprizeId)) return 1
+  return generationNumberOf(DEPRIZE_COMPETITIONS[chainSlug] ?? {}, deprizeId)
+}
+
+/**
+ * Reverse lookup: Moon Base Zero SharedGoal.id → live DePrize id on this chain.
+ * When multiple generations share a goal, returns the tip (newest) generation.
+ * Throws outside production if the registry maps two unrelated DePrize ids to
+ * the same goal (built once, then cached).
  */
 export function findDePrizeIdForGoal(
   chainSlug: string,
   sharedGoalId: string | undefined
 ): number | undefined {
   if (!sharedGoalId) return undefined
-  return goalIndexForChain(chainSlug).get(sharedGoalId)
+  const bound = goalIndexForChain(chainSlug).get(sharedGoalId)
+  return resolveLiveDePrizeId(chainSlug, bound)
 }
 
 /**
  * Pure consent check on an outcomes array.
- * Sepolia is always publishable (QA). Elsewhere every outcome must have
- * `consented: true`.
+ * Sepolia is always publishable (QA). Elsewhere every non-field outcome must
+ * have `consented: true`. Field slots are not competitors and are skipped.
  */
 export function areRaceOutcomesPublishable(
   chainSlug: string,
@@ -228,7 +321,16 @@ export function areRaceOutcomesPublishable(
 ): boolean {
   if (!outcomes?.length) return false
   if (chainSlug === 'sepolia') return true
-  return outcomes.every((o) => o.consented === true)
+  const competitors = outcomes.filter((o) => !o.field)
+  if (!competitors.length) return false
+  return competitors.every((o) => o.consented === true)
+}
+
+/** True when this outcome is the Open Field slot. */
+export function isOpenFieldOutcome(
+  outcome: DePrizeRaceOutcome | undefined
+): boolean {
+  return !!outcome?.field
 }
 
 /**

@@ -3,12 +3,16 @@ import {
   areRaceOutcomesPublishable,
   chainHasRaceBindings,
   findDePrizeIdForGoal,
+  generationNumberOf,
   getDePrizeCompetition,
+  getDePrizeGenerationNumber,
   getDePrizeQuestionId,
   getDePrizeRaceBinding,
   isDePrizeGoalMarketPublishable,
   isKnownDePrizeCompetition,
+  liveTipOf,
   partitionDePrizeIndexByRace,
+  resolveLiveDePrizeId,
 } from '@/lib/deprize/competitions'
 
 describe('deprize competitions registry', () => {
@@ -89,6 +93,14 @@ describe('deprize competitions registry', () => {
     expect(areRaceOutcomesPublishable('arbitrum', consented)).to.equal(true)
     expect(areRaceOutcomesPublishable('sepolia', unconsented)).to.equal(true)
     expect(areRaceOutcomesPublishable('arbitrum', undefined)).to.equal(false)
+
+    // Field slots are not competitors — skip them for the consent gate.
+    expect(
+      areRaceOutcomesPublishable('arbitrum', [
+        { projectId: 'a', consented: true },
+        { projectId: '__open-field__', field: true },
+      ])
+    ).to.equal(true)
   })
 
   it('partitions the index by raceLabel and keeps unbound chains flat', () => {
@@ -112,5 +124,49 @@ describe('deprize competitions registry', () => {
     expect(arbitrum).to.deep.equal([
       { raceLabel: null, deprizeIds: [1, 2, 3], showHeading: false },
     ])
+  })
+})
+
+describe('deprize generation lineage', () => {
+  // g1 -> g2 -> g3, the shape a twice-superseded race leaves behind.
+  const chain = {
+    1: { supersededBy: 2 },
+    2: { supersedes: 1, supersededBy: 3 },
+    3: { supersedes: 2 },
+  }
+
+  it('walks every generation forward to the same live tip', () => {
+    expect(liveTipOf(chain, 1)).to.equal(3)
+    expect(liveTipOf(chain, 2)).to.equal(3)
+    expect(liveTipOf(chain, 3)).to.equal(3)
+  })
+
+  it('numbers generations 1-indexed walking backward', () => {
+    expect(generationNumberOf(chain, 1)).to.equal(1)
+    expect(generationNumberOf(chain, 2)).to.equal(2)
+    expect(generationNumberOf(chain, 3)).to.equal(3)
+  })
+
+  it('treats an unlinked or unknown id as a lone first generation', () => {
+    expect(liveTipOf({}, 7)).to.equal(7)
+    expect(generationNumberOf({}, 7)).to.equal(1)
+    expect(liveTipOf({ 7: {} }, 7)).to.equal(7)
+    expect(generationNumberOf({ 7: {} }, 7)).to.equal(1)
+  })
+
+  it('stops at the last distinct generation on a malformed cyclic registry', () => {
+    const cyclic = {
+      1: { supersedes: 2, supersededBy: 2 },
+      2: { supersedes: 1, supersededBy: 1 },
+    }
+    expect(liveTipOf(cyclic, 1)).to.equal(2)
+    expect(generationNumberOf(cyclic, 1)).to.equal(2)
+  })
+
+  it('is a no-op on the real registry, which has no lineage seeded yet', () => {
+    expect(resolveLiveDePrizeId('sepolia', 9)).to.equal(9)
+    expect(getDePrizeGenerationNumber('sepolia', 9)).to.equal(1)
+    expect(resolveLiveDePrizeId('sepolia', undefined)).to.equal(undefined)
+    expect(getDePrizeGenerationNumber('sepolia', undefined)).to.equal(1)
   })
 })

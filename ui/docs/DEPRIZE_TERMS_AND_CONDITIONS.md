@@ -105,6 +105,35 @@ on-chain, the result cannot be reversed, altered, or refunded by MoonDAO, by you
 or by any third party. Redemption is **permissionless** — you (or anyone) can
 redeem a resolved position directly against the CTF contract.
 
+### 5.1 Open Field outcome
+
+Some DePrizes include an **Open Field** outcome slot: a bet that the eventual
+winner is a qualifying entrant **not listed among the named competitors** at
+registration. The objective eligibility criteria for the field are published with
+the DePrize's rules. If the Senate selects a field entrant, MoonDAO's
+administrator Safe settles the market to the Open Field slot and records that
+entrant's payout address **in the same transaction batch** as the winner
+declaration. Backing the field is a bet on an unnamed class of entrants, not on a
+specific company; you accept that uncertainty.
+
+There is **no tradable "None" / "nobody wins" outcome**. If nobody qualifies, the
+DePrize resolves under Section 6 (equal-payout refund), not as a field win.
+
+### 5.2 Generations and an accumulating prize pool
+
+Long-running races may proceed in **generations**. A generation has its own
+outcome roster, CTF condition, and market. The Juicebox prize pool and project
+token are shared across generations and **accumulate** until a winner is paid.
+When a generation is **superseded**, new bets on that generation close, but you
+may still **sell** your position back to its market at the prevailing price. The
+position is **locked only if you choose not to sell**; it is not refunded or
+repriced at supersede. Every generation resolves to the **same real-world winner**
+when the race settles, each from its own market's collateral. Project tokens are
+only a **contingent** claim on the prize pool (realised via Launchpad cashOut in a
+refund-terminal state); on a successful prize payout they do not redeem against
+the pool. A superseded market's price may diverge from the live generation's
+odds — treat it as an exit quote, not the race's official odds.
+
 ## 6. Cancellation, no winner, and the equal-payout refund
 
 A DePrize may end in a **refund-terminal** state — **cancelled**, **no eligible
