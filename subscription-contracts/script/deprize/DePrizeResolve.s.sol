@@ -175,12 +175,12 @@ contract DePrizeResolve is Script, Config {
         }
 
         // Refund terminal on the tip → every older generation also 1/N.
-        // M2_FAILED is refundable in the registry; tip CTF was already reported
-        // at SETTLED, but SUPERSEDED conditions still need an equal-payout report.
+        // M2_FAILED is not a "no winner" tip: failM2 only follows settleWinner,
+        // so winningTeamId remains set and tip CTF was already reported with a
+        // winner vector. Fall through and map that winner onto this roster.
         if (
             tipDp.state == IDePrizeRegistry.DePrizeState.NO_WINNER
                 || tipDp.state == IDePrizeRegistry.DePrizeState.CANCELLED
-                || tipDp.state == IDePrizeRegistry.DePrizeState.M2_FAILED
         ) {
             for (uint256 i = 0; i < payouts.length; i++) {
                 payouts[i] = 1;
