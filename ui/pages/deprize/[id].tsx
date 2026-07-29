@@ -19,9 +19,12 @@ import {
   getDePrizeCompetition,
   getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
+  isCompetitorClaimed,
   isKnownDePrizeCompetition,
   isRaceBindingComplete,
 } from '@/lib/deprize/competitions'
+import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
+import { orgColor } from '@/lib/lunar-atlas/display'
 import {
   DePrizeState,
   DEPRIZE_STATE_META,
@@ -664,6 +667,14 @@ function DePrizeDetailContent() {
               const invested = costBasis[o.index] ?? 0
               const outcomeBinding = raceBinding?.outcomes[o.index]
               const isField = !!outcomeBinding?.field
+              const atlasProject =
+                !isField && outcomeBinding?.projectId
+                  ? projectById(SEED_ATLAS, outcomeBinding.projectId)
+                  : undefined
+              const atlasOrg = atlasProject
+                ? orgById(SEED_ATLAS, atlasProject.orgId)
+                : undefined
+              const claimed = isCompetitorClaimed(outcomeBinding)
               const redeemValueEth =
                 showResolved && o.balanceWei !== undefined
                   ? Number(
@@ -680,7 +691,13 @@ function DePrizeDetailContent() {
                   outcome={o}
                   teamId={teamId}
                   teamContract={teamContract}
-                  color={OUTCOME_COLORS[o.index % OUTCOME_COLORS.length]}
+                  color={
+                    isField
+                      ? OUTCOME_COLORS[o.index % OUTCOME_COLORS.length]
+                      : claimed
+                        ? orgColor(atlasOrg)
+                        : '#9ca3af'
+                  }
                   loading={market.loading}
                   resolved={showResolved}
                   isRefundVector={showRefundVector}
@@ -701,6 +718,9 @@ function DePrizeDetailContent() {
                       ? `/moonbase/${outcomeBinding.projectId}`
                       : undefined
                   }
+                  nameOverride={atlasOrg?.name || atlasProject?.name}
+                  imageOverride={claimed ? atlasOrg?.logoURI : undefined}
+                  unclaimed={!isField && !!outcomeBinding && !claimed}
                 />
               )
             })}

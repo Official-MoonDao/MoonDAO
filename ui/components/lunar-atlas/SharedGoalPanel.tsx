@@ -4,6 +4,13 @@
 // the goal's region marker on the globe.
 
 import { FlagIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
+import {
+  OPEN_FIELD_PROJECT_ID,
+  ROSTER_DISCLAIMER,
+  getDePrizeRaceBinding,
+  isCompetitorClaimed,
+} from '@/lib/deprize/competitions'
 import {
   ROSTER_STATUS_CLASSES,
   ROSTER_STATUS_LABEL,
@@ -27,6 +34,20 @@ type SharedGoalPanelProps = {
   competitors: Competitor[]
   onClose: () => void
   onSelectProject: (id: string) => void
+  /** Bound DePrize id when this race has an on-chain market. */
+  deprizeId?: number
+  /** Chain slug for the binding lookup (branding + disclaimer). */
+  chainSlug?: string
+}
+
+const NEUTRAL_ACCENT = '#9ca3af'
+
+function oddsCaption(status: string | undefined): string {
+  if (status === 'live') return 'Odds are live market-implied probabilities.'
+  if (status === 'resolved') {
+    return 'Final market-implied probabilities from the resolved market.'
+  }
+  return 'Illustrative curator priors — live odds replace these when the prediction market opens.'
 }
 
 export default function SharedGoalPanel({
@@ -34,7 +55,14 @@ export default function SharedGoalPanel({
   competitors,
   onClose,
   onSelectProject,
+  deprizeId,
+  chainSlug,
 }: SharedGoalPanelProps) {
+  const bound = deprizeId !== undefined
+  const binding =
+    bound && chainSlug
+      ? getDePrizeRaceBinding(chainSlug, deprizeId)
+      : undefined
   const anyUnconfirmed = competitors.some(
     (c) =>
       c.project.rosterStatus === 'listed' ||
@@ -42,7 +70,7 @@ export default function SharedGoalPanel({
   )
   const split = goal.market?.payoutSplit
   const odds = goal.market?.impliedOdds
-  const oddsLive = goal.market?.status === 'live'
+  const fieldOdds = odds?.[OPEN_FIELD_PROJECT_ID]
   // Highest-odds competitor first; ties and odds-less entries keep seed order.
   const ranked = odds
     ? [...competitors].sort(
@@ -50,17 +78,35 @@ export default function SharedGoalPanel({
       )
     : competitors
 
+  const accentFor = (projectId: string, organization?: Organization) => {
+    if (!binding) return orgColor(organization)
+    const outcome = binding.outcomes.find((o) => o.projectId === projectId)
+    return isCompetitorClaimed(outcome) ? orgColor(organization) : NEUTRAL_ACCENT
+  }
+
+  const marketStatus = goal.market?.status ?? 'none'
+  const showNoMarketFooter =
+    !bound && (marketStatus === 'none' || marketStatus === 'planned')
+
   return (
     <div className="pointer-events-auto flex h-full w-full flex-col overflow-hidden rounded-2xl border border-fuchsia-400/20 bg-[#0a0c14]/95 shadow-2xl backdrop-blur-xl">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 border-b border-white/10 p-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <FlagIcon className="h-4 w-4 shrink-0 text-fuchsia-300" />
             <span className="text-xs font-medium uppercase tracking-wide text-fuchsia-200/80">
               Capability race
             </span>
-            <MarketPill status={goal.market?.status ?? 'none'} />
+            <MarketPill status={marketStatus} />
+            {bound && (
+              <Link
+                href={`/deprize/${deprizeId}`}
+                className="shrink-0 rounded border border-emerald-400/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-200 transition hover:border-emerald-300/50 hover:bg-emerald-500/20"
+              >
+                Back a competitor
+              </Link>
+            )}
           </div>
           <h2 className="mt-1 text-lg font-semibold leading-snug text-white">
             {goal.title}
@@ -103,7 +149,7 @@ export default function SharedGoalPanel({
             </h3>
             <div className="space-y-2">
               {ranked.map(({ project, organization }) => {
-                const color = orgColor(organization)
+                const color = accentFor(project.id, organization)
                 const p = odds?.[project.id]
                 return (
                   <button
@@ -116,7 +162,10 @@ export default function SharedGoalPanel({
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{
                           backgroundColor: color,
-                          boxShadow: `0 0 10px ${color}`,
+                          boxShadow:
+                            color === NEUTRAL_ACCENT
+                              ? undefined
+                              : `0 0 10px ${color}`,
                         }}
                       />
                       <span className="min-w-0 flex-1">
@@ -155,20 +204,51 @@ export default function SharedGoalPanel({
                   </button>
                 )
               })}
+              {fieldOdds != null && Number.isFinite(fieldOdds) && (
+                <div className="w-full rounded-lg border border-dashed border-white/15 bg-white/[0.03] px-3 py-2.5">
+                  <span className="flex w-full items-center gap-3">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full border border-dashed border-white/40"
+                      style={{ backgroundColor: 'transparent' }}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-white/80">
+                        Other entrants
+                      </span>
+                      <span className="block truncate text-xs text-white/40">
+                        Any qualifying entrant not listed above
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-cyan-200/80">
+                      {Math.round(fieldOdds * 100)}%
+                    </span>
+                  </span>
+                  <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-white/10">
+                    <span
+                      className="block h-full rounded-full bg-white/30"
+                      style={{ width: `${Math.round(fieldOdds * 100)}%` }}
+                    />
+                  </span>
+                </div>
+              )}
             </div>
             {odds && (
               <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-                {oddsLive
-                  ? 'Odds are live market-implied probabilities.'
-                  : 'Illustrative curator priors — live odds replace these when the prediction market opens.'}
+                {oddsCaption(marketStatus)}
               </p>
             )}
-            {anyUnconfirmed && (
+            {bound ? (
               <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-                &ldquo;Listed&rdquo; reflects MoonDAO&apos;s curatorial judgment
-                of credible competitors. It does not imply these organizations
-                have agreed to participate in any MoonDAO prize.
+                {ROSTER_DISCLAIMER}
               </p>
+            ) : (
+              anyUnconfirmed && (
+                <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+                  &ldquo;Listed&rdquo; reflects MoonDAO&apos;s curatorial judgment
+                  of credible competitors. It does not imply these organizations
+                  have agreed to participate in any MoonDAO prize.
+                </p>
+              )
             )}
           </div>
         )}
@@ -253,10 +333,12 @@ export default function SharedGoalPanel({
           </div>
         )}
 
-        <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
-          A concept for a future MoonDAO DePrize. No market exists yet; nothing
-          here is an offer, endorsement, or prediction of outcomes.
-        </p>
+        {showNoMarketFooter && (
+          <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
+            A concept for a future MoonDAO DePrize. No market exists yet; nothing
+            here is an offer, endorsement, or prediction of outcomes.
+          </p>
+        )}
       </div>
     </div>
   )

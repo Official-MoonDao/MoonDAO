@@ -3,12 +3,14 @@
 Phase B2 wires live on-chain DePrize odds into the Moon Base Zero race panels.
 It ships in two waves because the atlas lives on a separate branch.
 
-- **Wave 1** (this document, landed): retire the consent visibility gate in favour
-  of disclosure, add the pure odds merge helper, and point bound competitors at
+- **Wave 1** (landed in #1501): retire the consent visibility gate in favour of
+  disclosure, add the pure odds merge helper, and point bound competitors at
   their atlas pages.
-- **Wave 2** (after the Moon Base Zero PR merges): consume the merge helper in
+- **Wave 2** (this document, stacked on #1405): consume the merge helper in
   `ui/pages/moonbase/index.tsx`, wire the race panel, add atlas competitor
-  identity with claim-gated branding, and add `?race=` deep links.
+  identity with claim-gated branding, and add `?race=` / `?year=` deep links.
+  Interfaces were confirmed stable against the open Moon Base Zero PR, so Wave 2
+  does not wait for that merge.
 
 Part 2 of the original B2 draft — in-flight roster changes — was designed and
 built ahead of schedule. See [DEPRIZE_ROSTER_CHANGES.md](DEPRIZE_ROSTER_CHANGES.md).
@@ -94,13 +96,12 @@ Checked while reviewing Wave 1, so the wiring does not have to rediscover them:
 - **`status === 'live'` already flips the caption** to "Odds are live
   market-implied probabilities," so the merge needs no extra plumbing for that.
 
-## Known Wave 1 → Wave 2 dependency
+## Cross-PR dependency
 
-Bound competitors on `/deprize/{id}` link to `/moonbase/{projectId}`, which **does
-not exist until the Moon Base Zero PR merges**. The only bound race today is
-Sepolia DePrize 9, a testnet QA fixture, so the dead link is not reachable from
-any production race. Do not seed a mainnet race with `projectId`s until the
-`/moonbase/[projectId]` route is live.
+Bound competitors on `/deprize/{id}` link to `/moonbase/{projectId}`. That route
+ships with #1405; this Wave 2 branch is stacked on it so the links resolve in
+combined previews. Do not seed a mainnet race with `projectId`s until both PRs
+are on `main`.
 
 ## The merge point
 
