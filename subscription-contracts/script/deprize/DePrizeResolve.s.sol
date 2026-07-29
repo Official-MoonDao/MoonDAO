@@ -169,14 +169,18 @@ contract DePrizeResolve is Script, Config {
                 && tipDp.state != IDePrizeRegistry.DePrizeState.M2_COMPLETE
                 && tipDp.state != IDePrizeRegistry.DePrizeState.NO_WINNER
                 && tipDp.state != IDePrizeRegistry.DePrizeState.CANCELLED
+                && tipDp.state != IDePrizeRegistry.DePrizeState.M2_FAILED
         ) {
             revert SettlingGenerationUnresolved(tip, tipDp.state);
         }
 
         // Refund terminal on the tip → every older generation also 1/N.
+        // M2_FAILED is refundable in the registry; tip CTF was already reported
+        // at SETTLED, but SUPERSEDED conditions still need an equal-payout report.
         if (
             tipDp.state == IDePrizeRegistry.DePrizeState.NO_WINNER
                 || tipDp.state == IDePrizeRegistry.DePrizeState.CANCELLED
+                || tipDp.state == IDePrizeRegistry.DePrizeState.M2_FAILED
         ) {
             for (uint256 i = 0; i < payouts.length; i++) {
                 payouts[i] = 1;
