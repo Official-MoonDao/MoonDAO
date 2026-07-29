@@ -125,4 +125,9 @@ overstating the named competitors.
 ## Tests
 
 - `yarn test:deprize` — merge helper, binding lookups, lineage, goal-odds mapping
-- `yarn test:cypress-unit` — atlas selectors (Wave 2 only)
+- `yarn test:cypress-unit` — atlas selectors + `lunar-atlas-deprize` binding check
+- `yarn verify:deprize-moonbase` — live Sepolia DePrize 9 → merge into SEED_ATLAS
+  (add `--bet` + `$PRIVATE_KEY` to skew odds and re-assert)
+- `yarn smoke:moonbase-deprize [baseUrl]` — Playwright panel smoke against a local
+  Next server on Sepolia (`NEXT_PUBLIC_CHAIN=testnet`). Uses `?noglobe=1` because
+  headless Chromium cannot create a WebGL context for the R3F globe.

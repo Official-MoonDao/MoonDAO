@@ -26,9 +26,20 @@ function GlobeFallback() {
 export default function MoonGlobeLazy(props: MoonGlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [hasMounted, setHasMounted] = useState(false)
+  // Headless CI / Playwright has no usable WebGL; ?noglobe=1 keeps the
+  // fallback so the race panel and odds bridge can still be smoke-tested.
+  const [skipGlobe, setSkipGlobe] = useState(false)
 
   useEffect(() => {
-    if (hasMounted) return
+    try {
+      setSkipGlobe(new URLSearchParams(window.location.search).has('noglobe'))
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  useEffect(() => {
+    if (hasMounted || skipGlobe) return
     const el = containerRef.current
     if (!el) return
 
@@ -57,11 +68,11 @@ export default function MoonGlobeLazy(props: MoonGlobeProps) {
       observer.disconnect()
       if (mountTimer) clearTimeout(mountTimer)
     }
-  }, [hasMounted])
+  }, [hasMounted, skipGlobe])
 
   return (
     <div ref={containerRef} className="h-full w-full bg-[#03040a]">
-      {hasMounted ? <MoonGlobe {...props} /> : <GlobeFallback />}
+      {hasMounted && !skipGlobe ? <MoonGlobe {...props} /> : <GlobeFallback />}
     </div>
   )
 }
