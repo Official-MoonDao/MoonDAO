@@ -1,6 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Widget } from '@typeform/embed-react'
 import {
+  DEFAULT_TEAM_MULTISIG_SIGNERS,
   DEPLOYED_ORIGIN,
   DISCORD_CITIZEN_ROLE_ID,
   TEAM_ADDRESSES,
@@ -312,6 +313,13 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
         return toast.error('Image upload to IPFS failed. Try a smaller file.')
       }
 
+      // Add MoonDAO stewards as co-signers on the team Safe (the creator is
+      // added as the first owner by the contract). Filter the creator out to
+      // avoid a duplicate-owner revert if a steward is creating the team.
+      const defaultSigners = DEFAULT_TEAM_MULTISIG_SIGNERS.filter(
+        (signer) => signer.toLowerCase() !== address.toLowerCase()
+      )
+
       const transaction = prepareContractCall({
         contract: teamCreatorContract,
         method: 'createMoonDAOTeam' as string,
@@ -335,7 +343,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
             _view: teamData.view,
             formId: escapeSingleQuotes(teamData.formResponseId),
           },
-          [],
+          defaultSigners,
         ],
         value: cost,
       })
@@ -405,7 +413,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
             _view: teamData.view,
             formId: escapeSingleQuotes(teamData.formResponseId || '0000'),
           },
-          [],
+          DEFAULT_TEAM_MULTISIG_SIGNERS.filter(
+            (signer) => signer.toLowerCase() !== address.toLowerCase()
+          ),
         ],
         value: cost,
       })
@@ -671,7 +681,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         <h3 className="font-GoodTimes text-base mb-3 text-white">Treasury</h3>
                         <p className="text-slate-400 text-sm leading-relaxed">
                           A self-custodied multisignature treasury will secure your organization's
-                          assets. You can add more signers later via your Team management portal.
+                          assets. Your wallet plus two MoonDAO stewards are added as co-signers so we
+                          can help you get set up. You can add, remove, or change signers anytime via
+                          your Team management portal.
                         </p>
                       </div>
                       <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
