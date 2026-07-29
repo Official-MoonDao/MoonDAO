@@ -138,11 +138,12 @@ describe('deprize lifecycle derivations', () => {
       }
     })
 
-    it('surfaces when registry is settled / refundable / post-M1', () => {
+    it('surfaces when registry is settled / refundable / post-M1 / superseded', () => {
       for (const registryState of [
         DePrizeState.SETTLED,
         DePrizeState.M1_RELEASED,
         DePrizeState.M2_COMPLETE,
+        DePrizeState.SUPERSEDED,
         DePrizeState.NO_WINNER,
         DePrizeState.CANCELLED,
         DePrizeState.M2_FAILED,

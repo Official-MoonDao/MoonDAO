@@ -159,6 +159,7 @@ export function shouldSurfaceResolution(opts: {
     registryState === DePrizeState.SETTLED ||
     registryState === DePrizeState.M1_RELEASED ||
     registryState === DePrizeState.M2_COMPLETE ||
+    registryState === DePrizeState.SUPERSEDED ||
     isRefundableState(registryState)
   ) {
     return true
