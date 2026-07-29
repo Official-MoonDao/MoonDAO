@@ -19,6 +19,14 @@ type DePrizeTeamLinkProps = {
   imageOverride?: string
   /** Override link target (e.g. `/moonbase/{projectId}`). Defaults to `/team/{id}`. */
   hrefOverride?: string
+  /**
+   * Competitor has not claimed its listing: render the name but never a logo,
+   * so we don't imply endorsement by displaying someone's mark. Forces the
+   * neutral monogram and suppresses both `imageOverride` and the NFT image.
+   * A `nameOverride` alone then counts as complete identity, so we also skip
+   * the doomed NFT read.
+   */
+  unclaimed?: boolean
 }
 
 /** Two-letter monogram from a team name (falls back to the numeric id). */
@@ -111,9 +119,11 @@ export default function DePrizeTeamLink({
   nameOverride,
   imageOverride,
   hrefOverride,
+  unclaimed = false,
 }: DePrizeTeamLinkProps) {
-  // Only skip the NFT read when neither name nor image would come from it.
-  const identityOverridden = !!nameOverride && !!imageOverride
+  // Only skip the NFT read when neither name nor image would come from it. An
+  // unclaimed competitor shows no logo at all, so a name is the whole identity.
+  const identityOverridden = !!nameOverride && (!!imageOverride || unclaimed)
 
   const { data: teamNFT } = useReadContract(getNFT, {
     contract: teamContract,
@@ -127,7 +137,7 @@ export default function DePrizeTeamLink({
   // and an empty override must not blank the row.
   const name =
     nameOverride || (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
-  const image = imageOverride || (teamNFT as any)?.metadata?.image || ''
+  const image = unclaimed ? '' : imageOverride || (teamNFT as any)?.metadata?.image || ''
   const href = hrefOverride || `/team/${teamId.toString()}`
 
   const linkClassName = `group inline-flex items-center gap-2 min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 transition-opacity hover:opacity-90 ${className}`

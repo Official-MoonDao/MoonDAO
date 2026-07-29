@@ -15,10 +15,12 @@ import { getContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import {
+  ROSTER_DISCLAIMER,
   getDePrizeCompetition,
   getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
   isKnownDePrizeCompetition,
+  isRaceBindingComplete,
 } from '@/lib/deprize/competitions'
 import {
   DePrizeState,
@@ -652,6 +654,11 @@ function DePrizeDetailContent() {
         {numOutcomes > 0 && (
           <div className="flex flex-col gap-3">
             <h3 className="title-text-colors text-lg font-GoodTimes">Providers</h3>
+            {isRaceBindingComplete(raceBinding?.outcomes) && (
+              <p className="text-gray-500 text-xs leading-relaxed max-w-3xl">
+                {ROSTER_DISCLAIMER}
+              </p>
+            )}
             {market.outcomes.map((o) => {
               const teamId = deprize?.teamIds[o.index] ?? 0n
               const invested = costBasis[o.index] ?? 0
@@ -689,6 +696,11 @@ function DePrizeDetailContent() {
                   onCashOut={(i) => setExitIndex(i)}
                   isField={isField}
                   withdrawn={!!withdrawnByTeamId[teamId.toString()]}
+                  hrefOverride={
+                    outcomeBinding?.projectId
+                      ? `/moonbase/${outcomeBinding.projectId}`
+                      : undefined
+                  }
                 />
               )
             })}

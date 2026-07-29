@@ -37,8 +37,10 @@ export type DePrizeRaceOutcome = {
    */
   teamId?: number
   /**
-   * Competitor consent for public markets. Outside sepolia, every non-field
-   * outcome must be consented before the bridge reports status `live`.
+   * True once the organization has claimed its listing. Gates BRANDING ONLY
+   * (logo + brand color); it never gates market visibility. See
+   * {@link isCompetitorClaimed}. Distinct from the atlas `RosterStatus`, which
+   * stays editorial metadata for panel copy — do not cross-wire them.
    */
   consented?: boolean
   /**
@@ -69,7 +71,7 @@ export type DePrizeCompetition = {
   raceLabel?: string
   /**
    * CTF outcome index → atlas competitor. Order MUST match registry teamIds.
-   * `teamId` is the alignment checksum; `consented` gates public markets.
+   * `teamId` is the alignment checksum; `consented` gates branding only.
    */
   outcomes?: DePrizeRaceOutcome[]
   /** Prior generation this entry superseded (off-chain lineage mirror). */
@@ -311,19 +313,18 @@ export function findDePrizeIdForGoal(
 }
 
 /**
- * Pure consent check on an outcomes array.
- * Sepolia is always publishable (QA). Elsewhere every non-field outcome must
- * have `consented: true`. Field slots are not competitors and are skipped.
+ * A binding is usable when it names at least one real competitor. This is a
+ * completeness check, NOT a consent check: listing a public company as a market
+ * outcome does not require its permission, and hiding a bound market behind an
+ * all-or-nothing consent flag was stricter than the disclosure it stood in for.
+ * Implied endorsement is handled by the roster disclaimer plus withholding
+ * trademarks until a competitor claims — see {@link isCompetitorClaimed}.
  */
-export function areRaceOutcomesPublishable(
-  chainSlug: string,
+export function isRaceBindingComplete(
   outcomes: readonly DePrizeRaceOutcome[] | undefined
 ): boolean {
   if (!outcomes?.length) return false
-  if (chainSlug === 'sepolia') return true
-  const competitors = outcomes.filter((o) => !o.field)
-  if (!competitors.length) return false
-  return competitors.every((o) => o.consented === true)
+  return outcomes.some((o) => !o.field)
 }
 
 /** True when this outcome is the Open Field slot. */
@@ -334,10 +335,30 @@ export function isOpenFieldOutcome(
 }
 
 /**
- * Consent gate for reporting a race market as live.
- * Unbound goals are not publishable. See {@link areRaceOutcomesPublishable}.
+ * Has this competitor claimed its listing? Gates BRANDING ONLY (logo, brand
+ * color) — never market visibility. Unclaimed competitors still render their
+ * name and link, just with a neutral monogram instead of their mark.
  */
-export function isDePrizeGoalMarketPublishable(
+export function isCompetitorClaimed(
+  outcome: DePrizeRaceOutcome | undefined
+): boolean {
+  return outcome?.consented === true
+}
+
+/**
+ * Shown wherever named competitors appear next to a market. This is the control
+ * that replaced the consent gate, so it must render on any surface that lists
+ * outcomes: the DePrize detail roster and the Moon Base Zero race panel.
+ * Mirrors section 5.3 of the Terms.
+ */
+export const ROSTER_DISCLAIMER =
+  'Competitors are listed at MoonDAO’s editorial discretion. Listing does not mean the organization has entered, endorsed, or is affiliated with this prize. Bets are on outcomes, not on any affiliation.'
+
+/**
+ * True when a race is bound to an on-chain DePrize with a usable roster, so the
+ * bridge may report live odds. Unbound goals keep their curator priors.
+ */
+export function isDePrizeGoalMarketBound(
   chainSlug: string,
   sharedGoalId: string | undefined
 ): boolean {
@@ -345,7 +366,7 @@ export function isDePrizeGoalMarketPublishable(
   const deprizeId = findDePrizeIdForGoal(chainSlug, sharedGoalId)
   if (deprizeId === undefined) return false
   const binding = getDePrizeRaceBinding(chainSlug, deprizeId)
-  return areRaceOutcomesPublishable(chainSlug, binding?.outcomes)
+  return isRaceBindingComplete(binding?.outcomes)
 }
 
 export type DePrizeIndexRaceGroup = {
