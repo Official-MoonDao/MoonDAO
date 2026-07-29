@@ -447,7 +447,6 @@ export const COLLATERAL_TOKEN_ADDRESSES: Index = {
   'arbitrum-sepolia': '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
 }
 export const COLLATERAL_DECIMALS = 18
-export const MAX_OUTCOMES = 3
 
 // M4 close-out stack (DePrizeRedeem helper + DePrizeRegistry). Populate per
 // chain once `script/deprize/DePrizeRedeem.s.sol` / the registry deploy run;
