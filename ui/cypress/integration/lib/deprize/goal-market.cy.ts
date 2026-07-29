@@ -77,6 +77,21 @@ describe('mergeLiveMarket', () => {
     expect(merged.market?.status).to.equal('resolved')
   })
 
+  it('writes resolved status even when odds are empty (closed LMSR)', () => {
+    const g = goal()
+    const merged = mergeLiveMarket(g, {
+      ...liveOdds,
+      status: 'resolved',
+      oddsByProjectId: undefined,
+    })
+    expect(merged.market?.status).to.equal('resolved')
+    // Keep curator priors — blanking them would leave the bars empty.
+    expect(merged.market?.impliedOdds).to.deep.equal(g.market?.impliedOdds)
+    expect(
+      mergeLiveMarket(g, { ...liveOdds, status: 'resolved', oddsByProjectId: {} }).market?.status,
+    ).to.equal('resolved')
+  })
+
   it('synthesizes a market block for a goal that never had one', () => {
     const bare: MergeableGoal = { id: 'shared-fission-power' }
     const merged = mergeLiveMarket(bare, liveOdds)
@@ -122,7 +137,7 @@ describe('mergeLiveMarketInto', () => {
     expect(mergeLiveMarketInto(goals, undefined, liveOdds)).to.equal(goals)
     expect(mergeLiveMarketInto(goals, 'shared-fission-power', undefined)).to.equal(goals)
     expect(
-      mergeLiveMarketInto(goals, 'shared-fission-power', { ...liveOdds, status: 'planned' })
+      mergeLiveMarketInto(goals, 'shared-fission-power', { ...liveOdds, status: 'planned' }),
     ).to.equal(goals)
     expect(mergeLiveMarketInto(goals, 'shared-nonexistent', liveOdds)).to.equal(goals)
   })

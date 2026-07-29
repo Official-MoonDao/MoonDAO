@@ -41,21 +41,41 @@ export type LiveGoalOdds = {
  *
  * Returns the goal untouched when there is nothing trustworthy to show: no bound
  * DePrize, a `planned` bridge status (unbound, superseded, or still loading), or
- * an empty odds map. Curator priors are better than a blank market, so a partial
- * result must never overwrite them.
+ * an empty odds map on a still-`live` race. Curator priors are better than a
+ * blank market, so a partial live result must never overwrite them.
+ *
+ * Resolved races are different: once the LMSR is closed, marginal prices read as
+ * NaN and the odds map is empty, but the panel still needs `status: 'resolved'`
+ * for the pill and caption. In that case keep existing impliedOdds (curator
+ * priors) and only write the status.
  *
  * Open Field mass is carried under {@link OPEN_FIELD_PROJECT_ID} so the rendered
  * bars still sum to ~1 rather than silently overstating the named competitors.
  */
 export function mergeLiveMarket<T extends MergeableGoal>(
   goal: T,
-  live: LiveGoalOdds | undefined
+  live: LiveGoalOdds | undefined,
 ): T {
   if (!live || live.deprizeId === undefined) return goal
   if (live.status === 'planned') return goal
 
   const odds = live.oddsByProjectId
-  if (!odds || Object.keys(odds).length === 0) return goal
+  const hasOdds = !!odds && Object.keys(odds).length > 0
+  // Live with no readable prices: keep priors. Resolved with empty odds still
+  // needs the status written so the UI leaves the "illustrative curator" branch.
+  if (!hasOdds && live.status !== 'resolved') return goal
+
+  const marketBase = goal.market ?? { status: 'planned' as MergeableMarketStatus }
+
+  if (!hasOdds) {
+    return {
+      ...goal,
+      market: {
+        ...marketBase,
+        status: live.status,
+      },
+    }
+  }
 
   const impliedOdds: Record<string, number> = { ...odds }
   if (live.fieldOdds !== undefined && Number.isFinite(live.fieldOdds)) {
@@ -66,7 +86,7 @@ export function mergeLiveMarket<T extends MergeableGoal>(
     ...goal,
     market: {
       // A goal can be bound before a curator ever wrote a market block.
-      ...(goal.market ?? { status: 'planned' as MergeableMarketStatus }),
+      ...marketBase,
       status: live.status,
       impliedOdds,
     },
@@ -85,7 +105,7 @@ export function mergeLiveMarket<T extends MergeableGoal>(
 export function mergeLiveMarketInto<T extends MergeableGoal>(
   goals: T[],
   sharedGoalId: string | undefined,
-  live: LiveGoalOdds | undefined
+  live: LiveGoalOdds | undefined,
 ): T[] {
   if (!sharedGoalId || !live) return goals
   let changed = false

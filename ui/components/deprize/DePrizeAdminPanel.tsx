@@ -78,15 +78,16 @@ export default function DePrizeAdminPanel({
   const defaultOpenField =
     raceBinding?.outcomes.find((o) => o.field)?.teamId ??
     (teamIds.some((id) => id === BigInt(OPEN_FIELD_TEAM_ID)) ? OPEN_FIELD_TEAM_ID : 0)
-  const [openFieldTeamId, setOpenFieldTeamId] = useState(
-    defaultOpenField > 0 ? String(defaultOpenField) : ''
-  )
+  const seededOpenFieldTeamId = defaultOpenField > 0 ? String(defaultOpenField) : ''
+  const [openFieldTeamId, setOpenFieldTeamId] = useState(seededOpenFieldTeamId)
 
-  // Re-seed the editable questionId when navigating between DePrizes.
+  // Re-seed editable resolve fields when navigating between DePrizes.
   useEffect(() => {
     setQuestionId(seededQuestionId)
     setOracleUnlocked(false)
-  }, [seededQuestionId, marketAddress, userAddress])
+    setWinningEntityTeamId('')
+    setOpenFieldTeamId(seededOpenFieldTeamId)
+  }, [seededQuestionId, seededOpenFieldTeamId, marketAddress, userAddress])
 
   useEffect(() => {
     if (isOracle) setOracleUnlocked(true)
