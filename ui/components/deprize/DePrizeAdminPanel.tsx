@@ -15,7 +15,13 @@ import {
   getDePrizeQuestionId,
   getDePrizeRaceBinding,
 } from '@/lib/deprize/competitions'
-import { buildSupersededPayouts, DePrizeState, MarketStage, UNIT } from '@/lib/deprize/constants'
+import {
+  buildSupersededPayouts,
+  DePrizeState,
+  isTerminalState,
+  MarketStage,
+  UNIT,
+} from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { rpcRead } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
@@ -98,21 +104,21 @@ export default function DePrizeAdminPanel({
       registryAddress
         ? getContract({ client, chain, address: registryAddress, abi: DePrizeRegistryABI as any })
         : undefined,
-    [chain, registryAddress]
+    [chain, registryAddress],
   )
   const lmsr = useMemo(
     () =>
       marketAddress
         ? getContract({ client, chain, address: marketAddress, abi: LMSRWithTWAP.abi as any })
         : undefined,
-    [chain, marketAddress]
+    [chain, marketAddress],
   )
   const ctf = useMemo(
     () =>
       ctfAddress
         ? getContract({ client, chain, address: ctfAddress, abi: ConditionalTokensABI as any })
         : undefined,
-    [chain, ctfAddress]
+    [chain, ctfAddress],
   )
   const feeRouter = useMemo(
     () =>
@@ -124,7 +130,7 @@ export default function DePrizeAdminPanel({
             abi: DePrizeFeeRouterABI as any,
           })
         : undefined,
-    [chain, feeRouterAddress]
+    [chain, feeRouterAddress],
   )
 
   // Registry owner — gates lifecycle controls.
@@ -243,7 +249,7 @@ export default function DePrizeAdminPanel({
     try {
       await sendDePrizeTx(
         account,
-        prepareContractCall({ contract, method: method as string, params })
+        prepareContractCall({ contract, method: method as string, params }),
       )
       toast.success(doneMsg, { style: toastStyle })
       onDone()
@@ -259,6 +265,10 @@ export default function DePrizeAdminPanel({
   }
 
   const S = DePrizeState
+  // Mirrors DePrizeFeeRouter.sweepFees: prize pool only when non-terminal
+  // and cancellation is not pending; otherwise treasury (router owner).
+  const sweepToPrizePool = !isTerminalState(state) && !cancellationPending
+  const sweepDestination = sweepToPrizePool ? 'prize pool' : 'treasury'
 
   // Oracle resolution with the same pre-flight as DePrizeResolve.s.sol.
   const resolve = async (payouts: bigint[], label: string) => {
@@ -277,7 +287,7 @@ export default function DePrizeAdminPanel({
       })
       if (computed.toLowerCase() !== marketConditionId.toLowerCase()) {
         throw new Error(
-          `Pre-flight: conditionId mismatch — keccak(yourAddress, questionId, ${numOutcomes}) != the market's condition. Check the question id and that you are the oracle.`
+          `Pre-flight: conditionId mismatch — keccak(yourAddress, questionId, ${numOutcomes}) != the market's condition. Check the question id and that you are the oracle.`,
         )
       }
       const freshDen = await rpcRead<bigint>({
@@ -293,11 +303,11 @@ export default function DePrizeAdminPanel({
           contract: lmsr,
           method: 'stage' as string,
           params: [],
-        })
+        }),
       )
       if (freshStage !== MarketStage.Paused && freshStage !== MarketStage.Closed) {
         throw new Error(
-          'Pre-flight: pause or close the market first — resolving a live market gives away free trades against the known outcome.'
+          'Pre-flight: pause or close the market first — resolving a live market gives away free trades against the known outcome.',
         )
       }
       await sendDePrizeTx(
@@ -306,7 +316,7 @@ export default function DePrizeAdminPanel({
           contract: ctf,
           method: 'reportPayouts' as string,
           params: [questionId, payouts],
-        })
+        }),
       )
       toast.success(`Resolved: ${label}.`, { style: toastStyle })
       onDone()
@@ -324,26 +334,26 @@ export default function DePrizeAdminPanel({
     if (state === S.SUPERSEDED) {
       toast.error(
         'Superseded generations must resolve via lineage (settling generation → named / Open Field / 1/N).',
-        { style: toastStyle, duration: 8000 }
+        { style: toastStyle, duration: 8000 },
       )
       return
     }
     return resolve(
       Array.from({ length: numOutcomes }, (_, i) => (i === winningIndex ? 1n : 0n)),
-      `outcome #${winningIndex + 1} wins`
+      `outcome #${winningIndex + 1} wins`,
     )
   }
   const resolveNoWinner = () => {
     if (state === S.SUPERSEDED) {
       toast.error(
         'Superseded generations must resolve via lineage (settling generation → named / Open Field / 1/N).',
-        { style: toastStyle, duration: 8000 }
+        { style: toastStyle, duration: 8000 },
       )
       return
     }
     return resolve(
       Array.from({ length: numOutcomes }, () => 1n),
-      `no winner — every position refunds 1/${numOutcomes}`
+      `no winner — every position refunds 1/${numOutcomes}`,
     )
   }
 
@@ -363,7 +373,7 @@ export default function DePrizeAdminPanel({
             contract: registry,
             method: 'supersededBy' as string,
             params: [BigInt(tip)],
-          })
+          }),
         )
         if (!next) break
         tip = next
@@ -417,7 +427,7 @@ export default function DePrizeAdminPanel({
           feeRouter,
           'closeMarket',
           [BigInt(deprizeId)],
-          'Market closed via FeeRouter — inventory returned to FeeRouter.'
+          'Market closed via FeeRouter — inventory returned to FeeRouter.',
         )
       : run(lmsr, 'close', [], 'Market closed — inventory returned to owner.')
 
@@ -518,7 +528,7 @@ export default function DePrizeAdminPanel({
                     registry,
                     'announceCancellation',
                     [BigInt(deprizeId)],
-                    'Cancellation announced (7-day notice).'
+                    'Cancellation announced (7-day notice).',
                   )
                 }
                 disabled={busy}
@@ -573,7 +583,7 @@ export default function DePrizeAdminPanel({
                     registry,
                     'settleWinner',
                     [BigInt(deprizeId), BigInt(winnerTeamId)],
-                    'Winner declared.'
+                    'Winner declared.',
                   )
                 }
                 disabled={busy || !/^\d+$/.test(winnerTeamId)}
@@ -601,7 +611,7 @@ export default function DePrizeAdminPanel({
                     registry,
                     'setProviderPayoutAddress',
                     [BigInt(deprizeId), providerAddress],
-                    'Provider payout address set.'
+                    'Provider payout address set.',
                   )
                 }
                 disabled={busy || !/^0x[0-9a-fA-F]{40}$/.test(providerAddress)}
@@ -621,7 +631,7 @@ export default function DePrizeAdminPanel({
           <p className="text-gray-400 text-[11px] mb-2">
             Market unwind
             {routerOwned
-              ? ' (via FeeRouter — pause before resolving; sweep fees into the prize pool)'
+              ? ` (via FeeRouter — pause before resolving; sweep fees into the ${sweepDestination})`
               : ' (direct LMSR — pause before resolving, close + withdraw fees after)'}
             {!isMarketController && isOracle
               ? ' · pause/close requires the fee-router or market owner'
@@ -655,7 +665,12 @@ export default function DePrizeAdminPanel({
             {routerOwned && feeRouter ? (
               <StandardButton
                 onClick={() =>
-                  run(feeRouter, 'sweepFees', [BigInt(deprizeId)], 'Fees swept to the prize pool.')
+                  run(
+                    feeRouter,
+                    'sweepFees',
+                    [BigInt(deprizeId)],
+                    `Fees swept to the ${sweepDestination}.`,
+                  )
                 }
                 // sweepFees is permissionless but returns 0 when the market
                 // holds no WETH — don't spend gas on a known no-op.
@@ -665,7 +680,7 @@ export default function DePrizeAdminPanel({
               >
                 {marketFeesWei !== undefined
                   ? `Sweep fees (${fmt(Number(marketFeesWei) / Number(UNIT), 4)} WETH)`
-                  : 'Sweep fees to prize pool'}
+                  : `Sweep fees to ${sweepDestination}`}
               </StandardButton>
             ) : (
               <StandardButton
