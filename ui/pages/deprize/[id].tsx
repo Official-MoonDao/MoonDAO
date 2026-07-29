@@ -1,6 +1,11 @@
+import DePrizeRegistryABI from 'const/abis/DePrizeRegistry.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import TeamABI from 'const/abis/Team.json'
-import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import {
+  DEPRIZE_MINT_ADDRESSES,
+  DEPRIZE_REGISTRY_ADDRESSES,
+  TEAM_ADDRESSES,
+} from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -9,6 +14,14 @@ import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { getContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
+import {
+  ROSTER_DISCLAIMER,
+  getDePrizeCompetition,
+  getDePrizeGenerationNumber,
+  getDePrizeRaceBinding,
+  isKnownDePrizeCompetition,
+  isRaceBindingComplete,
+} from '@/lib/deprize/competitions'
 import {
   DePrizeState,
   DEPRIZE_STATE_META,
@@ -64,7 +77,9 @@ function StateBadge({
         ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/40'
         : [DePrizeState.CANCELLED, DePrizeState.NO_WINNER, DePrizeState.M2_FAILED].includes(state)
           ? 'bg-red-500/10 text-red-200 border-red-500/30'
-          : 'bg-white/10 text-gray-200 border-white/20'
+          : state === DePrizeState.SUPERSEDED
+            ? 'bg-amber-500/15 text-amber-200 border-amber-500/40'
+            : 'bg-white/10 text-gray-200 border-white/20'
   return (
     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${tone}`}>
       {labelOverride ?? meta?.label ?? 'Unknown'}
@@ -89,6 +104,10 @@ function DePrizeDetailContent() {
   // build-time default — otherwise switching networks never re-queries DePrize.
   const { selectedChain: chain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(chain)
+  const competition = getDePrizeCompetition(chainSlug, deprizeId)
+  const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
+  const generationNumber = getDePrizeGenerationNumber(chainSlug, deprizeId)
+  const knownCompetition = isKnownDePrizeCompetition(chainSlug, deprizeId)
   const account = useActiveAccount()
   const userAddress = account?.address
   const { login } = useLogin()
@@ -100,6 +119,7 @@ function DePrizeDetailContent() {
     refresh: refreshRegistry,
   } = useDePrize(deprizeId, chain)
   const numOutcomes = deprize?.teamIds.length ?? 0
+  const [withdrawnByTeamId, setWithdrawnByTeamId] = useState<Record<string, boolean>>({})
 
   const market = useDePrizeMarket({
     deprizeId,
@@ -131,6 +151,42 @@ function DePrizeDetailContent() {
   const [exitIndex, setExitIndex] = useState<number | null>(null)
 
   const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
+
+  // Disclosure flags: withdrawn competitors stay tradable but are badged.
+  useEffect(() => {
+    const address = DEPRIZE_REGISTRY_ADDRESSES[chainSlug] ?? ''
+    if (!deprize?.teamIds.length || !address || deprizeId === undefined) {
+      setWithdrawnByTeamId({})
+      return
+    }
+    let cancelled = false
+    const registry = getContract({
+      client: deprizeReadClient,
+      chain: readChain,
+      address,
+      abi: DePrizeRegistryABI as any,
+    })
+    ;(async () => {
+      const entries = await Promise.all(
+        deprize.teamIds.map(async (teamId) => {
+          try {
+            const w = await rpcRead<boolean>({
+              contract: registry,
+              method: 'withdrawn' as string,
+              params: [BigInt(deprizeId), teamId],
+            })
+            return [teamId.toString(), !!w] as const
+          } catch {
+            return [teamId.toString(), false] as const
+          }
+        }),
+      )
+      if (!cancelled) setWithdrawnByTeamId(Object.fromEntries(entries))
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [deprize?.teamIds, deprizeId, chainSlug, readChain, refreshNonce])
 
   const teamContract = useMemo(
     () =>
@@ -348,10 +404,17 @@ function DePrizeDetailContent() {
     teamContract,
   )
 
+  const shellTitle =
+    knownCompetition && deprizeId !== undefined
+      ? `DePrize #${deprizeId} — ${competition.title}`
+      : deprizeId !== undefined
+        ? `DePrize #${deprizeId}`
+        : competition.title
+
   // --- Render states ---
   if (!registryConfigured) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <Notice tone="amber">
           The DePrize registry isn&apos;t configured on{' '}
           <span className="font-mono">{chainSlug}</span> yet.
@@ -361,54 +424,63 @@ function DePrizeDetailContent() {
   }
   if (!router.isReady) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <div className="p-8 text-center text-gray-400">Loading DePrize…</div>
       </Shell>
     )
   }
   if (deprizeId === undefined) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <Notice tone="amber">Invalid DePrize id.</Notice>
       </Shell>
     )
   }
   if (error) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <Notice tone="red">Couldn&apos;t load this DePrize: {error}</Notice>
       </Shell>
     )
   }
   if (!deprize || (deprizeId !== undefined && deprize.deprizeId !== deprizeId)) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <div className="p-8 text-center text-gray-400">Loading DePrize…</div>
       </Shell>
     )
   }
   if (deprize.state === DePrizeState.NONE) {
     return (
-      <Shell>
+      <Shell title={shellTitle} description={competition.metaDescription}>
         <Notice tone="amber">DePrize #{deprizeId} does not exist.</Notice>
       </Shell>
     )
   }
 
   return (
-    <Shell>
+    <Shell title={shellTitle} description={competition.metaDescription}>
       <div className="flex flex-col gap-6 w-full max-w-[860px] mx-auto">
         {/* Header */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
-              <h1 className="text-white font-GoodTimes text-lg sm:text-xl">DePrize #{deprizeId}</h1>
+              <h1 className="text-white font-GoodTimes text-lg sm:text-xl">
+                {knownCompetition
+                  ? `DePrize #${deprizeId} — ${competition.title}`
+                  : `DePrize #${deprizeId}`}
+              </h1>
               {deprize && (
                 <StateBadge
                   state={deprize.state}
                   labelOverride={statusLabelOverride}
                   toneOverride={statusLabelOverride ? 'amber' : undefined}
                 />
+              )}
+              {knownCompetition && generationNumber > 1 && (
+                <span className="px-3 py-1 rounded-full text-xs font-medium border bg-white/10 text-gray-200 border-white/20">
+                  Generation {generationNumber}
+                </span>
               )}
             </div>
             <Link
@@ -418,10 +490,40 @@ function DePrizeDetailContent() {
               ← All prizes
             </Link>
           </div>
-          <p className="text-gray-300 text-sm mt-2">
-            Back the provider you think will win the right to fly Frank + a community Candidate to
-            space.
-          </p>
+          <p className="text-gray-300 text-sm mt-2">{competition.tagline}</p>
+          {deprize?.state === DePrizeState.SUPERSEDED && (
+            <p className="text-amber-200/90 text-sm mt-2">
+              This generation was superseded
+              {competition.supersededBy
+                ? ` by DePrize #${competition.supersededBy}`
+                : ''}
+              . New bets are closed; you can still sell your position at the market price. Odds for
+              this race live on the current generation.
+              {competition.supersededBy && (
+                <>
+                  {' '}
+                  <Link
+                    href={`/deprize/${competition.supersededBy}`}
+                    className="underline underline-offset-2 hover:text-amber-100"
+                  >
+                    Open generation {generationNumber + 1}
+                  </Link>
+                </>
+              )}
+            </p>
+          )}
+          {competition.supersedes !== undefined && deprize?.state !== DePrizeState.SUPERSEDED && (
+            <p className="text-gray-500 text-xs mt-2">
+              Continues from{' '}
+              <Link
+                href={`/deprize/${competition.supersedes}`}
+                className="text-indigo-300/90 underline underline-offset-2 hover:text-indigo-200"
+              >
+                generation {generationNumber - 1} (DePrize #{competition.supersedes})
+              </Link>
+              . Legacy positions remain sellable there until the race settles.
+            </p>
+          )}
           {effectiveDescription && (
             <p className="text-gray-500 text-sm mt-1">{effectiveDescription}</p>
           )}
@@ -552,9 +654,16 @@ function DePrizeDetailContent() {
         {numOutcomes > 0 && (
           <div className="flex flex-col gap-3">
             <h3 className="title-text-colors text-lg font-GoodTimes">Providers</h3>
+            {isRaceBindingComplete(raceBinding?.outcomes) && (
+              <p className="text-gray-500 text-xs leading-relaxed max-w-3xl">
+                {ROSTER_DISCLAIMER}
+              </p>
+            )}
             {market.outcomes.map((o) => {
               const teamId = deprize?.teamIds[o.index] ?? 0n
               const invested = costBasis[o.index] ?? 0
+              const outcomeBinding = raceBinding?.outcomes[o.index]
+              const isField = !!outcomeBinding?.field
               const redeemValueEth =
                 showResolved && o.balanceWei !== undefined
                   ? Number(
@@ -585,6 +694,13 @@ function DePrizeDetailContent() {
                   userConnected={!!userAddress}
                   onBet={(i) => setBetIndex(i)}
                   onCashOut={(i) => setExitIndex(i)}
+                  isField={isField}
+                  withdrawn={!!withdrawnByTeamId[teamId.toString()]}
+                  hrefOverride={
+                    outcomeBinding?.projectId
+                      ? `/moonbase/${outcomeBinding.projectId}`
+                      : undefined
+                  }
                 />
               )
             })}
@@ -633,7 +749,11 @@ function DePrizeDetailContent() {
         <BetModal
           deprizeId={deprizeId}
           outcomeIndex={betIndex}
-          teamName={`Team #${betIndex + 1}`}
+          teamName={
+            raceBinding?.outcomes[betIndex]?.field
+              ? 'Open Field'
+              : `Team #${betIndex + 1}`
+          }
           probability={market.outcomes[betIndex]?.probability ?? NaN}
           numOutcomes={numOutcomes}
           mintAddress={mintAddress}
@@ -655,7 +775,11 @@ function DePrizeDetailContent() {
         <ExitPositionModal
           deprizeId={deprizeId}
           outcomeIndex={exitIndex}
-          teamName={`Team #${exitIndex + 1}`}
+          teamName={
+            raceBinding?.outcomes[exitIndex]?.field
+              ? 'Open Field'
+              : `Team #${exitIndex + 1}`
+          }
           balanceWei={market.outcomes[exitIndex]?.balanceWei ?? 0n}
           positionId={market.outcomes[exitIndex]?.positionId ?? 0n}
           numOutcomes={numOutcomes}
@@ -674,13 +798,18 @@ function DePrizeDetailContent() {
 }
 
 // --- Small presentational helpers ---
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children,
+  title,
+  description,
+}: {
+  children: React.ReactNode
+  title: string
+  description: string
+}) {
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head
-        title="DePrize"
-        description="Back a provider to fly Frank White to space, and win if they do."
-      />
+      <Head title={title} description={description} />
       <Container>
         <div className="w-full max-w-[860px] mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
           {children}

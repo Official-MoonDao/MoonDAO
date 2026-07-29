@@ -18,8 +18,11 @@ import "base/Config.sol";
 /// Checks (any failure aborts):
 ///   1. registry state admits a report (SETTLED/M1_RELEASED/M2_COMPLETE ->
 ///      winner vector; NO_WINNER/CANCELLED -> equal-payout vector;
-///      M2_FAILED -> refused, the CTF was already resolved at SETTLED);
-///   2. the winner is one of the DePrize's outcome slots;
+///      SUPERSEDED -> walk lineage to the settling generation and map the
+///      winner onto this generation's roster (named slot, else open-field
+///      slot, else 1/N); M2_FAILED -> refused, the CTF was already resolved
+///      at SETTLED);
+///   2. the winner is one of the DePrize's outcome slots (or field/1N path);
 ///   3. keccak256(oracle, questionId, N) matches the registry's conditionId
 ///      (catches a wrong questionId, wrong oracle, or wrong slot count);
 ///   4. the condition has not already been reported;
@@ -32,7 +35,12 @@ import "base/Config.sol";
 ///   DEPRIZE_REGISTRY=0x<registryProxy> DEPRIZE_ID=1 \
 ///   DEPRIZE_QUESTION_ID=0x... DEPRIZE_ORACLE=0x<safe> \
 ///   DEPRIZE_MARKET=0x<lmsrWithTWAP> \
+///   [DEPRIZE_WINNING_ENTITY=<teamId>] [DEPRIZE_OPEN_FIELD=<teamId>] \
 ///   forge script script/deprize/DePrizeResolve.s.sol --rpc-url $RPC
+///
+/// For SUPERSEDED generations, set DEPRIZE_WINNING_ENTITY to the real winning
+/// MoonDAOTeam id (not the field sentinel) and DEPRIZE_OPEN_FIELD to this
+/// generation's Open Field team id so a field-only winner maps correctly.
 contract DePrizeResolve is Script, Config {
     error WrongState(uint256 deprizeId, IDePrizeRegistry.DePrizeState state);
     error M2FailedCtfAlreadyFinal(uint256 deprizeId);
@@ -41,6 +49,8 @@ contract DePrizeResolve is Script, Config {
     error AlreadyReported(bytes32 conditionId, uint256 payoutDenominator);
     error MarketStillRunning(address market);
     error MarketConditionMismatch(bytes32 marketCondition, bytes32 expected);
+    error LineageUnresolved(uint256 deprizeId);
+    error SettlingGenerationUnresolved(uint256 tipDeprizeId, IDePrizeRegistry.DePrizeState state);
 
     /// @notice Abort if `market` is still tradable or settles a different
     ///         condition than the one about to be resolved.
@@ -53,12 +63,21 @@ contract DePrizeResolve is Script, Config {
 
     /// @notice Pure pre-flight: validates registry/CTF consistency and returns the
     ///         payout vector + `reportPayouts` calldata the oracle Safe must submit.
+    /// @param winningEntityTeamId Real winning MoonDAOTeam id. For non-SUPERSEDED
+    ///        states pass 0 to use `dp.winningTeamId`. For SUPERSEDED, pass the
+    ///        entity that actually won (required when the settling generation
+    ///        recorded a field-sentinel `winningTeamId`).
+    /// @param openFieldTeamId This generation's Open Field team id (0 if none).
+    ///        Used only on the SUPERSEDED path when the winning entity is not
+    ///        on this generation's roster.
     function buildReport(
         IDePrizeRegistry registry,
         IConditionalTokens ctf,
         uint256 deprizeId,
         bytes32 questionId,
-        address oracle
+        address oracle,
+        uint256 winningEntityTeamId,
+        uint256 openFieldTeamId
     ) public view returns (bytes32 conditionId, uint256[] memory payouts, bytes memory callData) {
         IDePrizeRegistry.DePrize memory dp = registry.getDePrize(deprizeId);
         uint256 n = dp.teamIds.length;
@@ -92,6 +111,8 @@ contract DePrizeResolve is Script, Config {
             for (uint256 i = 0; i < n; i++) {
                 payouts[i] = 1;
             }
+        } else if (dp.state == IDePrizeRegistry.DePrizeState.SUPERSEDED) {
+            _fillSupersededPayouts(registry, deprizeId, dp, payouts, winningEntityTeamId, openFieldTeamId);
         } else {
             revert WrongState(deprizeId, dp.state);
         }
@@ -107,6 +128,89 @@ contract DePrizeResolve is Script, Config {
         callData = abi.encodeCall(IConditionalTokens.reportPayouts, (questionId, payouts));
     }
 
+    /// @notice Backward-compatible overload — equivalent to
+    ///         `buildReport(..., winningEntityTeamId=0, openFieldTeamId=0)`.
+    function buildReport(
+        IDePrizeRegistry registry,
+        IConditionalTokens ctf,
+        uint256 deprizeId,
+        bytes32 questionId,
+        address oracle
+    ) public view returns (bytes32 conditionId, uint256[] memory payouts, bytes memory callData) {
+        return buildReport(registry, ctf, deprizeId, questionId, oracle, 0, 0);
+    }
+
+    /// @dev Walk `supersededBy` to the settling generation, resolve the winning
+    ///      entity, then map onto this generation's roster:
+    ///        1. named slot if the entity is on the roster;
+    ///        2. else open-field slot if `openFieldTeamId` is on the roster;
+    ///        3. else 1/N (fieldless legacy generation).
+    function _fillSupersededPayouts(
+        IDePrizeRegistry registry,
+        uint256 deprizeId,
+        IDePrizeRegistry.DePrize memory dp,
+        uint256[] memory payouts,
+        uint256 winningEntityTeamId,
+        uint256 openFieldTeamId
+    ) private view {
+        uint256 tip = deprizeId;
+        // Bound the walk so a corrupt lineage cannot OOG.
+        for (uint256 i = 0; i < 64; i++) {
+            uint256 next = registry.supersededBy(tip);
+            if (next == 0) break;
+            tip = next;
+        }
+        if (tip == deprizeId) revert LineageUnresolved(deprizeId);
+
+        IDePrizeRegistry.DePrize memory tipDp = registry.getDePrize(tip);
+        if (
+            tipDp.state != IDePrizeRegistry.DePrizeState.SETTLED
+                && tipDp.state != IDePrizeRegistry.DePrizeState.M1_RELEASED
+                && tipDp.state != IDePrizeRegistry.DePrizeState.M2_COMPLETE
+                && tipDp.state != IDePrizeRegistry.DePrizeState.NO_WINNER
+                && tipDp.state != IDePrizeRegistry.DePrizeState.CANCELLED
+        ) {
+            revert SettlingGenerationUnresolved(tip, tipDp.state);
+        }
+
+        // Refund terminal on the tip → every older generation also 1/N.
+        if (
+            tipDp.state == IDePrizeRegistry.DePrizeState.NO_WINNER
+                || tipDp.state == IDePrizeRegistry.DePrizeState.CANCELLED
+        ) {
+            for (uint256 i = 0; i < payouts.length; i++) {
+                payouts[i] = 1;
+            }
+            return;
+        }
+
+        // Prefer an explicit entity (runbook records the real winner when the
+        // tip settled via a field sentinel); fall back to the tip's recorded id.
+        uint256 entity = winningEntityTeamId != 0 ? winningEntityTeamId : tipDp.winningTeamId;
+
+        uint256 n = dp.teamIds.length;
+        for (uint256 i = 0; i < n; i++) {
+            if (dp.teamIds[i] == entity) {
+                payouts[i] = 1;
+                return;
+            }
+        }
+
+        if (openFieldTeamId != 0) {
+            for (uint256 i = 0; i < n; i++) {
+                if (dp.teamIds[i] == openFieldTeamId) {
+                    payouts[i] = 1;
+                    return;
+                }
+            }
+        }
+
+        // Fieldless legacy generation — equal payout is the only honest answer.
+        for (uint256 i = 0; i < n; i++) {
+            payouts[i] = 1;
+        }
+    }
+
     function run() external {
         IDePrizeRegistry registry = IDePrizeRegistry(vm.envAddress("DEPRIZE_REGISTRY"));
         IConditionalTokens ctf =
@@ -114,9 +218,11 @@ contract DePrizeResolve is Script, Config {
         uint256 deprizeId = vm.envUint("DEPRIZE_ID");
         bytes32 questionId = vm.envBytes32("DEPRIZE_QUESTION_ID");
         address oracle = vm.envAddress("DEPRIZE_ORACLE");
+        uint256 winningEntity = vm.envOr("DEPRIZE_WINNING_ENTITY", uint256(0));
+        uint256 openField = vm.envOr("DEPRIZE_OPEN_FIELD", uint256(0));
 
         (bytes32 conditionId, uint256[] memory payouts, bytes memory callData) =
-            buildReport(registry, ctf, deprizeId, questionId, oracle);
+            buildReport(registry, ctf, deprizeId, questionId, oracle, winningEntity, openField);
 
         address market = vm.envOr("DEPRIZE_MARKET", address(0));
         if (market != address(0)) {

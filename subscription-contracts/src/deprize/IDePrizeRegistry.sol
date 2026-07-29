@@ -22,7 +22,8 @@ interface IDePrizeRegistry {
         M2_COMPLETE, //   7: flight delivered, 70% released — success terminal
         M2_FAILED, //     8: post-M1 delivery failed — refund terminal
         CANCELLED, //     9: admin-cancelled after notice — refund terminal
-        NO_WINNER //     10: no eligible winner / vote failed — refund terminal
+        NO_WINNER, //    10: no eligible winner / vote failed — refund terminal
+        SUPERSEDED //    11: generation forked; terminal but NOT refundable
     }
 
     /// @notice Immutable-ish configuration + mutable lifecycle data for a DePrize.
@@ -48,6 +49,12 @@ interface IDePrizeRegistry {
     event CancellationAnnounced(uint256 indexed deprizeId, uint256 noticeAt, uint256 executableAt);
     event CancellationAborted(uint256 indexed deprizeId);
     event ProviderPayoutAddressSet(uint256 indexed deprizeId, address indexed provider);
+    /// @dev A DRAFT roster edit, NOT a new registration — indexers must not
+    ///      treat this as creating a DePrize.
+    event TeamsUpdated(uint256 indexed deprizeId, uint256[] teamIds);
+    event TeamWithdrawn(uint256 indexed deprizeId, uint256 indexed teamId);
+    event TeamReinstated(uint256 indexed deprizeId, uint256 indexed teamId);
+    event DePrizeSuperseded(uint256 indexed oldDeprizeId, uint256 indexed newDeprizeId, uint256[] newTeamIds);
 
     // ---------------------------------------------------------------------
     // Errors
@@ -69,6 +76,10 @@ interface IDePrizeRegistry {
     error CancellationNoticeNotElapsed(uint256 deprizeId, uint256 executableAt);
     /// @dev The provider payout address must be non-zero (M5 prize disbursement target).
     error ZeroProviderAddress();
+    /// @dev setSunset while OPEN may only push the deadline later, never earlier.
+    error SunsetNotExtended(uint256 current, uint256 proposed);
+    /// @dev markWithdrawn / unmarkWithdrawn on a team that is not on the roster.
+    error TeamNotOnRoster(uint256 deprizeId, uint256 teamId);
 
     // ---------------------------------------------------------------------
     // Admin: registration & configuration
@@ -86,8 +97,33 @@ interface IDePrizeRegistry {
     /// @notice Set the Gnosis ConditionalTokens condition id. Required before opening.
     function setCondition(uint256 deprizeId, bytes32 ctfConditionId) external;
 
-    /// @notice Update the sunset timestamp while still in DRAFT.
+    /// @notice Update the sunset timestamp. Allowed in DRAFT (any future value) and
+    ///         in OPEN (extend-only — the new sunset must be strictly later than the
+    ///         current one). Shortening while OPEN is forbidden so the deadline cannot
+    ///         be pulled in on bettors.
     function setSunset(uint256 deprizeId, uint256 sunset) external;
+
+    /// @notice Replace the roster while still in DRAFT. Clears and rewrites `_isTeam`.
+    ///         Re-runs every `register` validation (`TooFewTeams`, `ZeroTeamId`,
+    ///         `DuplicateTeam`). Fixes an unrecoverable typo without costing the
+    ///         Juicebox project binding.
+    function setTeams(uint256 deprizeId, uint256[] calldata teamIds) external;
+
+    /// @notice Fork this DePrize onto a new roster while keeping the Juicebox project
+    ///         (and therefore the prize pool + project token) intact. Allowed only from
+    ///         OPEN or LOCKED. Creates a new DRAFT entry, moves this entry to SUPERSEDED
+    ///         (terminal but NOT refundable — cashOut must never open), and rebinds
+    ///         `deprizeIdByJBProject` atomically.
+    function supersede(uint256 oldDeprizeId, uint256[] calldata newTeamIds, uint256 sunset)
+        external
+        returns (uint256 newDeprizeId);
+
+    /// @notice Mark a competitor withdrawn. Disclosure only — does NOT gate `bet`, so
+    ///         holders of that outcome can still exit. Valid in any non-terminal state.
+    function markWithdrawn(uint256 deprizeId, uint256 teamId) external;
+
+    /// @notice Clear a withdrawn mark.
+    function unmarkWithdrawn(uint256 deprizeId, uint256 teamId) external;
 
     // ---------------------------------------------------------------------
     // Admin: lifecycle transitions
@@ -172,4 +208,13 @@ interface IDePrizeRegistry {
 
     /// @notice Total number of registered DePrizes.
     function count() external view returns (uint256);
+
+    /// @notice Whether a competitor has been marked withdrawn (disclosure flag).
+    function withdrawn(uint256 deprizeId, uint256 teamId) external view returns (bool);
+
+    /// @notice The generation that superseded this DePrize (0 if none).
+    function supersededBy(uint256 deprizeId) external view returns (uint256);
+
+    /// @notice The generation this DePrize superseded (0 if this is generation 1).
+    function supersedes(uint256 deprizeId) external view returns (uint256);
 }

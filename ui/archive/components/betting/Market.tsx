@@ -8,7 +8,6 @@ import {
   COLLATERAL_TOKEN_ADDRESSES,
   ORACLE_ADDRESS,
   COLLATERAL_DECIMALS,
-  MAX_OUTCOMES,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { ethers } from 'ethers'
@@ -19,6 +18,9 @@ import { useActiveAccount } from 'thirdweb/react'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Layout from './Layout'
+
+/** Archived betting UI only — not a production DePrize limit. */
+const MAX_OUTCOMES = 3
 
 BigNumber.config({ EXPONENTIAL_AT: 50 })
 
