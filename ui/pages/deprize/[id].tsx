@@ -372,6 +372,25 @@ function DePrizeDetailContent() {
     !region.isError &&
     !tradingHalted &&
     market.stage === MarketStage.Running
+
+  // Moon Base Zero "Back this team" deep-links here with ?outcome=N.
+  useEffect(() => {
+    if (!router.isReady || numOutcomes <= 0) return
+    const raw = router.query.outcome
+    if (typeof raw !== 'string' || !/^\d+$/.test(raw)) return
+    const idx = Number(raw)
+    if (idx < 0 || idx >= numOutcomes) return
+    const el = document.getElementById(`deprize-outcome-${idx}`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (userAddress && bettingAllowed) setBetIndex(idx)
+  }, [
+    router.isReady,
+    router.query.outcome,
+    numOutcomes,
+    userAddress,
+    bettingAllowed,
+  ])
+
   // CTF may already have a payout vector on a still-OPEN/paused test market —
   // only show Refund/WON/claim when the registry lifecycle (or a Closed market)
   // says resolution should surface.
@@ -686,8 +705,8 @@ function DePrizeDetailContent() {
                     ) / Number(UNIT)
                   : undefined
               return (
+                <div id={`deprize-outcome-${o.index}`} key={o.index}>
                 <DePrizeTeamCard
-                  key={o.index}
                   outcome={o}
                   teamId={teamId}
                   teamContract={teamContract}
@@ -722,6 +741,7 @@ function DePrizeDetailContent() {
                   imageOverride={claimed ? atlasOrg?.logoURI : undefined}
                   unclaimed={!isField && !!outcomeBinding && !claimed}
                 />
+                </div>
               )
             })}
           </div>

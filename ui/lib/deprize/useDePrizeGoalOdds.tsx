@@ -16,6 +16,8 @@ export type DePrizeGoalMarketStatus = 'live' | 'resolved' | 'planned'
 
 export type UseDePrizeGoalOddsResult = {
   deprizeId: number | undefined
+  /** Juicebox project id for the prize pool (0 / undefined when unbound). */
+  jbProjectId: number | undefined
   /** Fractions of 1 keyed by atlas projectId. Undefined when unbound / mismatched. */
   oddsByProjectId: Record<string, number> | undefined
   /** Fraction of 1 on the Open Field slot, if any. */
@@ -100,8 +102,12 @@ export function useDePrizeGoalOdds(
 
   const status = deriveGoalMarketStatus(deprize?.state, bound)
 
+  const jbProjectId =
+    deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
+
   return {
     deprizeId,
+    jbProjectId,
     oddsByProjectId: mapped?.oddsByProjectId,
     fieldOdds: mapped?.fieldOdds,
     status,

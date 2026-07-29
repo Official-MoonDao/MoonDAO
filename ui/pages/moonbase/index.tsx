@@ -1,8 +1,11 @@
 import { GlobeAltIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { UNIT } from '@/lib/deprize/constants'
+import { fmtPrizeEth } from '@/lib/deprize/format'
 import { mergeLiveMarketInto } from '@/lib/deprize/goal-market'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -194,6 +197,14 @@ export default function MoonBaseZeroIndex() {
   // Mount one DePrize market — the open race only. Eight concurrent 30s polls
   // on the r3f scene is exactly what the bridge was designed to avoid.
   const liveOdds = useDePrizeGoalOdds(chain, selectedGoalId ?? undefined)
+  const { totalFunding, isLoading: isLoadingPrizePool } = useTotalFunding(
+    liveOdds.jbProjectId,
+    chain
+  )
+  const prizePoolLabel =
+    liveOdds.jbProjectId !== undefined && !isLoadingPrizePool
+      ? `${fmtPrizeEth(Number(totalFunding) / Number(UNIT))} ETH`
+      : undefined
   // Depend on the bridge fields, not the result object — the hook returns a
   // fresh object every render and would rebuild trees on every hover/frame.
   // Pass the dataset array itself, not a copy: mergeLiveMarketInto returns the
@@ -620,6 +631,10 @@ export default function MoonBaseZeroIndex() {
                 onSelectProject={handleSelectProject}
                 deprizeId={liveOdds.deprizeId}
                 chainSlug={chainSlug}
+                prizePoolLabel={prizePoolLabel}
+                prizePoolLoading={
+                  liveOdds.jbProjectId !== undefined && isLoadingPrizePool
+                }
               />
             ) : selectedTree ? (
               <TechTreePanel

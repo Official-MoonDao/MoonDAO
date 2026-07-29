@@ -44,17 +44,36 @@ try {
   })
   ok('race panel opened from ?race=')
 
-  // Market live pill or Back a competitor (bound race on Sepolia)
-  const back = page.getByRole('link', { name: /Back a competitor/i })
+  // Per-team back CTA + see-all (bound race on Sepolia)
+  const backTeam = page.getByRole('link', { name: /Back this team/i }).first()
   try {
-    await back.waitFor({ timeout: 60_000 })
-    ok('Back a competitor link visible')
-    const href = await back.getAttribute('href')
-    if (href === '/deprize/9') ok('link targets /deprize/9', href)
-    else bad('link targets /deprize/9', `href=${href}`)
+    await backTeam.waitFor({ timeout: 60_000 })
+    ok('Back this team link visible')
+    const href = await backTeam.getAttribute('href')
+    if (href && /^\/deprize\/9\?outcome=\d+$/.test(href)) {
+      ok('Back this team targets outcome deep link', href)
+    } else {
+      bad('Back this team targets outcome deep link', `href=${href}`)
+    }
   } catch (e) {
-    bad('Back a competitor link visible', e.message)
-    // Still capture what we have — may be chain mismatch (mainnet default).
+    bad('Back this team link visible', e.message)
+  }
+
+  const seeAll = page.getByRole('link', { name: /See all competitors/i })
+  try {
+    await seeAll.waitFor({ timeout: 10_000 })
+    const href = await seeAll.getAttribute('href')
+    if (href === '/deprize/9') ok('See all competitors → /deprize/9')
+    else bad('See all competitors → /deprize/9', `href=${href}`)
+  } catch (e) {
+    bad('See all competitors link', e.message)
+  }
+
+  try {
+    await page.getByText(/Prize pool:/i).waitFor({ timeout: 30_000 })
+    ok('prize pool shown in panel')
+  } catch (e) {
+    bad('prize pool shown in panel', e.message)
   }
 
   // Live odds caption once the bridge merges
