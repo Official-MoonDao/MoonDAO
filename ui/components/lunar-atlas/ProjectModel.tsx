@@ -1509,7 +1509,7 @@ function CargoPallet({ hard = false, seed = 0 }: { hard?: boolean; seed?: number
 // wound cable and both flanges sharing one rotation so nothing has to be
 // re-derived per mesh. Sunk a hair into the ground at the tire-contact rule
 // every wheeled thing on this map already follows (see the LTV's rockers).
-function CableReel() {
+export function CableReel() {
   const R = 0.42
   const W = 0.34
   const rot: [number, number, number] = [0, 0, Math.PI / 2]
@@ -1648,6 +1648,587 @@ function ScorchMark({ r = 2.0 }: { r?: number }) {
 }
 
 // ---------------------------------------------------------------------------
+// Logistics prop library — reusable, "operational" small clutter
+// ---------------------------------------------------------------------------
+//
+// Everything above this line (CargoPallet, CableReel, TailingsPile,
+// UtilityCart, ScorchMark) is one-off clutter, each authored once for the
+// spot it was needed. This is a small standardized FAMILY instead: every
+// kilogram that reaches the Moon is manifested cargo, so nothing here is a
+// bare box — every prop is either a recognizable logistics unit (a crate
+// family with corner handles and a placard, not one cube reused), something
+// staged for a specific job (spare parts racked beside a wheel, bricks
+// palletized for a pour), or something already doing work (a battery rack
+// mid-charge, a junction box with its runs actually terminating in it).
+//
+// Reused, not redesigned, the same way the earlier clutter pass's props are:
+// each takes a small `seed` for deterministic yaw/variant/color variation so
+// three of the same call don't read as one mesh copy-pasted, and every
+// dimension is real meters like everything else in this file.
+
+const CRATE_GRAY = '#9a9d97' // second hard-case tone — a run of crates in one color reads as one mesh reused
+const STENCIL_DARK = '#2b2c2c'
+const HAZARD = '#d99a2b'
+const BATTERY_CASE = '#3f4550'
+const BATTERY_TRIM = '#232830'
+const CHARGE_GREEN = '#5fe07a' // a battery's own status light — never a team's accent, real hardware included
+const TANK_BODY = '#6d8890'
+const BRICK_COLOR = '#9c9184' // sintered/pressed regolith paver — warmer, more uniform than loose TAILINGS_COLOR spoil
+
+type CrateVariant = 'small' | 'medium' | 'large' | 'case'
+
+const CRATE_DIMS: Record<CrateVariant, [number, number, number]> = {
+  small: [0.5, 0.42, 0.42],
+  medium: [0.85, 0.62, 0.62],
+  large: [1.25, 0.88, 0.85],
+  // A long, low case rather than a cube — antenna sections, drill strings,
+  // and instrument packages all ship in this proportion, not a box.
+  case: [1.55, 0.32, 0.38],
+}
+const CRATE_VARIANTS: CrateVariant[] = ['small', 'medium', 'large', 'case']
+
+// One standardized hard-sided cargo crate, in one of four size/proportion
+// families rather than one cube resized — "use three or four crate sizes
+// rather than one repeated cube" is the whole brief this answers. Corner
+// reinforcement blocks double as the handles a suited crew would actually
+// grab, and the stenciled placard plus hazard-corner stripe are what read as
+// "manifested cargo" instead of a rendering primitive.
+export function CargoCrate({
+  variant = 'medium',
+  seed = 0,
+}: {
+  variant?: CrateVariant
+  seed?: number
+}) {
+  const [w, h, d] = CRATE_DIMS[variant]
+  const body = hash1(seed * 13 + 1) > 0.5 ? CRATE_GRAY : CRATE_WHITE
+  const yaw = hash1(seed * 13 + 2) * Math.PI * 2
+  const corner = Math.min(w, d) * 0.09
+  const corners: [number, number][] = [
+    [-w / 2 + corner / 2, -d / 2 + corner / 2],
+    [w / 2 - corner / 2, -d / 2 + corner / 2],
+    [-w / 2 + corner / 2, d / 2 - corner / 2],
+    [w / 2 - corner / 2, d / 2 - corner / 2],
+  ]
+  return (
+    <group position={[0, h / 2, 0]} rotation={[0, yaw, 0]}>
+      <mesh>
+        <boxGeometry args={[w, h, d]} />
+        <meshStandardMaterial color={body} roughness={0.55} metalness={0.15} />
+      </mesh>
+      {corners.map(([cx, cz], i) => (
+        <mesh key={i} position={[cx, 0, cz]}>
+          <boxGeometry args={[corner, h * 1.02, corner]} />
+          <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.5} />
+        </mesh>
+      ))}
+      <mesh position={[0, h * 0.12, d / 2 + 0.002]}>
+        <planeGeometry args={[w * 0.4, h * 0.22]} />
+        <meshStandardMaterial color={STENCIL_DARK} roughness={0.8} />
+      </mesh>
+      <mesh position={[-w / 2 + corner * 1.4, h / 2 - 0.03, d / 2 + 0.001]}>
+        <planeGeometry args={[corner * 1.6, 0.05]} />
+        <meshStandardMaterial color={HAZARD} roughness={0.7} />
+      </mesh>
+    </group>
+  )
+}
+
+// A small staged cluster of crates — the shape an actual pallet-load takes
+// once broken down for storage, not a grid — cycling all four size families
+// so a run of these across a site never reads as one box repeated.
+export function CrateCluster({
+  count = 4,
+  seed = 0,
+  spread = 1.4,
+}: {
+  count?: number
+  seed?: number
+  spread?: number
+}) {
+  const crates = useMemo(() => {
+    return Array.from({ length: count }, (_, i) => {
+      const k = seed * 31 + i * 7
+      const variant = CRATE_VARIANTS[Math.floor(seed + i) % CRATE_VARIANTS.length]
+      const a = hash1(k + 1) * Math.PI * 2
+      const r = spread * (0.15 + hash1(k + 2) * 0.75)
+      return { variant, x: Math.cos(a) * r, z: Math.sin(a) * r, seed: k }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    })
+  }, [count, seed, spread])
+  return (
+    <group>
+      {crates.map((c, i) => (
+        <group key={i} position={[c.x, 0, c.z]}>
+          <CargoCrate variant={c.variant} seed={c.seed} />
+        </group>
+      ))}
+    </group>
+  )
+}
+
+// A spare wheel racked on edge beside a low parts pallet — cut pipe stock, a
+// flange, and a coiled hose — the inventory an actually-functioning depot
+// keeps beside its bays, rather than one bare wheel dropped on the regolith.
+export function SparePartsPallet({ seed = 0 }: { seed?: number }) {
+  const wheelR = 0.42
+  const wheelW = 0.22
+  const yaw = hash1(seed * 17 + 1) * Math.PI * 2
+  return (
+    <group rotation={[0, yaw, 0]}>
+      <mesh position={[0, 0.05, 0]}>
+        <boxGeometry args={[1.3, 0.1, 0.9]} />
+        <meshStandardMaterial color={METAL} roughness={0.7} metalness={0.4} />
+      </mesh>
+      {/* Spare wheel, racked upright and leaned a couple degrees against a
+          stop rather than lying flat — the way a wheel actually stands when
+          racked rather than staged for fitting. */}
+      <group position={[-0.35, 0.1 + wheelR * 0.97, 0.15]} rotation={[0, 0, 0.12]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[wheelR, wheelR, wheelW, 20]} />
+          <meshStandardMaterial color="#20242c" roughness={0.9} />
+        </mesh>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[wheelR * 0.34, wheelR * 0.34, wheelW * 1.05, 12]} />
+          <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+        </mesh>
+        {Array.from({ length: 6 }, (_, i) => {
+          const a = (i / 6) * Math.PI * 2
+          return (
+            <mesh
+              key={i}
+              position={[Math.cos(a) * wheelR * 0.67, 0, Math.sin(a) * wheelR * 0.67]}
+              rotation={[Math.PI / 2, 0, 0]}
+            >
+              <cylinderGeometry args={[0.025, 0.025, wheelW * 1.02, 6]} />
+              <meshStandardMaterial color={DARK} roughness={0.7} />
+            </mesh>
+          )
+        })}
+      </group>
+      {/* Cut pipe stock: short lengths staged for a run, not one long unused
+          pipe. */}
+      {[0, 1, 2].map((i) => (
+        <mesh key={i} position={[0.28 + i * 0.09, 0.16, -0.25]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.05, 0.05, 0.55, 10]} />
+          <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.4} />
+        </mesh>
+      ))}
+      <mesh position={[0.42, 0.13, 0.28]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.09, 0.025, 8, 16]} />
+        <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.35} />
+      </mesh>
+      <mesh position={[0.05, 0.15, 0.3]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.16, 0.04, 10, 20]} />
+        <meshStandardMaterial color={REEL_CABLE} roughness={0.85} />
+      </mesh>
+    </group>
+  )
+}
+
+// Battery modules racked two-high on their own skid, mid-charge — a swap
+// depot's actual inventory rather than a crate repainted. Each module's
+// status LED is a fixed charge-green rather than any org's accent: a
+// battery's own indicator is never a team's brand color, real hardware
+// included.
+function BatteryStack({ seed = 0 }: { seed?: number }) {
+  const w = 0.5
+  const h = 0.32
+  const d = 0.4
+  const rows = 2
+  const cols = 2
+  const yaw = hash1(seed * 19 + 1) * Math.PI * 2
+  return (
+    <group rotation={[0, yaw, 0]}>
+      <mesh position={[0, 0.05, 0]}>
+        <boxGeometry args={[w * cols + 0.1, 0.1, d + 0.1]} />
+        <meshStandardMaterial color={METAL} roughness={0.7} metalness={0.4} />
+      </mesh>
+      {Array.from({ length: rows }, (_, r) =>
+        Array.from({ length: cols }, (_, c) => {
+          const x = (c - (cols - 1) / 2) * (w + 0.04)
+          const y = 0.1 + r * (h + 0.03) + h / 2
+          const charged = hash1(seed * 19 + r * 3 + c + 5) > 0.25
+          const ledColor = charged ? CHARGE_GREEN : '#8a3a2a'
+          return (
+            <group key={`${r}:${c}`} position={[x, y, 0]}>
+              <mesh>
+                <boxGeometry args={[w, h, d]} />
+                <meshStandardMaterial color={BATTERY_CASE} roughness={0.5} metalness={0.35} />
+              </mesh>
+              <mesh position={[0, 0, d / 2 + 0.002]}>
+                <planeGeometry args={[w * 0.85, h * 0.22]} />
+                <meshStandardMaterial color={BATTERY_TRIM} roughness={0.6} />
+              </mesh>
+              <mesh position={[w * 0.32, h * 0.28, d / 2 + 0.003]}>
+                <circleGeometry args={[0.025, 10]} />
+                <meshStandardMaterial
+                  color={ledColor}
+                  emissive={ledColor}
+                  emissiveIntensity={1.4}
+                  toneMapped={false}
+                />
+              </mesh>
+              <mesh
+                position={[-w * 0.32, -h * 0.3, d / 2 + 0.01]}
+                rotation={[Math.PI / 2, 0, 0]}
+              >
+                <cylinderGeometry args={[0.03, 0.03, 0.03, 10]} />
+                <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.3} />
+              </mesh>
+            </group>
+          )
+        })
+      )}
+      {/* Charging cable off the rack's base, coiled at the foot — feeding
+          the stack rather than one dropped in a vacuum. */}
+      <Strut
+        from={[w * cols * 0.5 + 0.05, 0.1, 0]}
+        to={[w * cols * 0.5 + 0.35, 0.03, 0.1]}
+        r={0.02}
+        color={DARK}
+      />
+    </group>
+  )
+}
+
+// A cubic water/feedstock tank inside its own protective strut frame — the
+// shape resupply tankage actually ships and stands in, not a bare cube on
+// the regolith.
+function FramedTank({ seed = 0 }: { seed?: number }) {
+  const s = 0.9
+  const yaw = hash1(seed * 23 + 1) * Math.PI * 2
+  const half = s / 2
+  const corners: [number, number][] = [
+    [-half, -half],
+    [half, -half],
+    [half, half],
+    [-half, half],
+  ]
+  return (
+    <group position={[0, half + 0.08, 0]} rotation={[0, yaw, 0]}>
+      <mesh>
+        <boxGeometry args={[s * 0.9, s * 0.9, s * 0.9]} />
+        <meshStandardMaterial color={TANK_BODY} roughness={0.4} metalness={0.25} />
+      </mesh>
+      <mesh position={[0, half + 0.04, 0]}>
+        <cylinderGeometry args={[0.05, 0.06, 0.08, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.35} />
+      </mesh>
+      {corners.map(([cx, cz], i) => (
+        <mesh key={i} position={[cx, 0, cz]}>
+          <boxGeometry args={[0.055, s * 1.04, 0.055]} />
+          <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.5} />
+        </mesh>
+      ))}
+      {[-half * 1.02, half * 1.02].map((y) =>
+        corners.map(([cx, cz], i) => {
+          const [nx, nz] = corners[(i + 1) % 4]
+          return (
+            <Strut key={`${y}:${i}`} from={[cx, y, cz]} to={[nx, y, nz]} r={0.03} color={METAL} />
+          )
+        })
+      )}
+    </group>
+  )
+}
+
+// A utility junction box on a short post, cable stubs actually terminating
+// in it from both sides — a junction connects runs, it doesn't just stand
+// there. The hazard band and status LED are what read as "live
+// infrastructure" rather than a mailbox.
+function JunctionBox({ accent = HAZARD }: { accent?: string }) {
+  const postH = 0.55
+  const boxW = 0.34
+  const boxH = 0.4
+  const boxD = 0.22
+  return (
+    <group>
+      <mesh position={[0, postH / 2, 0]}>
+        <cylinderGeometry args={[0.045, 0.05, postH, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.5} />
+      </mesh>
+      <group position={[0, postH + boxH / 2, 0]}>
+        <mesh>
+          <boxGeometry args={[boxW, boxH, boxD]} />
+          <meshStandardMaterial color={BATTERY_CASE} roughness={0.5} metalness={0.3} />
+        </mesh>
+        <mesh position={[0, boxH * 0.32, boxD / 2 + 0.002]}>
+          <planeGeometry args={[boxW * 0.94, 0.035]} />
+          <meshStandardMaterial color={accent} roughness={0.6} />
+        </mesh>
+        <mesh position={[0, -boxH * 0.05, boxD / 2 + 0.003]}>
+          <planeGeometry args={[boxW * 0.7, boxH * 0.5]} />
+          <meshStandardMaterial color={STENCIL_DARK} roughness={0.7} metalness={0.1} />
+        </mesh>
+        <mesh position={[0, boxH * 0.42, boxD / 2 + 0.004]}>
+          <circleGeometry args={[0.02, 10]} />
+          <meshStandardMaterial
+            color={CHARGE_GREEN}
+            emissive={CHARGE_GREEN}
+            emissiveIntensity={1.4}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+      {[-1, 1].map((s) => (
+        <Strut key={s} from={[0, 0.08, 0]} to={[s * 0.5, 0.04, s * 0.15]} r={0.025} color={DARK} />
+      ))}
+    </group>
+  )
+}
+
+// A portable tripod work light — folding legs and a foot-mounted battery
+// pack, the temporary rig an active work site actually runs on. Kept
+// visually distinct from the depot's fixed, cranked-over yard masts
+// (`DepotLightMast`): shorter, three-legged, and clearly meant to be struck
+// and moved rather than planted.
+function WorkLightTower({ on = true }: { on?: boolean }) {
+  const headH = 1.9
+  const legs = [0, 120, 240].map((deg) => (deg * Math.PI) / 180)
+  return (
+    <group>
+      {legs.map((a, i) => (
+        <Strut
+          key={i}
+          from={[0, headH, 0]}
+          to={[Math.cos(a) * 0.55, 0, Math.sin(a) * 0.55]}
+          r={0.025}
+          color={METAL}
+        />
+      ))}
+      <mesh position={[0, 0.06, 0]}>
+        <boxGeometry args={[0.22, 0.12, 0.16]} />
+        <meshStandardMaterial color={DARK} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, headH + 0.08, 0]}>
+        <boxGeometry args={[0.28, 0.16, 0.1]} />
+        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, headH + 0.08, 0.07]} rotation={[Math.PI * 0.42, 0, 0]}>
+        <circleGeometry args={[0.11, 16]} />
+        <meshStandardMaterial
+          color={on ? '#eef2ff' : HULL_DARK}
+          emissive={on ? '#dfe6ff' : '#000000'}
+          emissiveIntensity={on ? 2.2 : 0}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// A towed single-axle cargo trailer, loaded — bigger paired wheels and a
+// raised, unhitched tow tongue distinguish it from `UtilityCart`'s four
+// small casters (which is parked rather than ever meant to be hitched).
+function CargoTrailer({ seed = 0 }: { seed?: number }) {
+  const L = 2.1
+  const W = 1.15
+  const deckY = 0.5
+  const wheelR = 0.3
+  return (
+    <group>
+      <mesh position={[0, deckY, 0]}>
+        <boxGeometry args={[L, 0.08, W]} />
+        <meshStandardMaterial color={METAL} roughness={0.7} metalness={0.3} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[0, deckY + 0.16, s * (W / 2 - 0.02)]}>
+          <boxGeometry args={[L * 0.92, 0.26, 0.03]} />
+          <meshStandardMaterial color={METAL} roughness={0.6} metalness={0.4} />
+        </mesh>
+      ))}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          position={[0, wheelR, s * (W / 2 + 0.06)]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <cylinderGeometry args={[wheelR, wheelR, 0.16, 16]} />
+          <meshStandardMaterial color="#20242c" roughness={0.9} />
+        </mesh>
+      ))}
+      <Strut
+        from={[0, wheelR, -W / 2 - 0.06]}
+        to={[0, wheelR, W / 2 + 0.06]}
+        r={0.04}
+        color={DARK}
+      />
+      {/* Raised tow tongue at the front, unhitched — parked rather than
+          mid-tow. */}
+      <Strut from={[L / 2 - 0.1, deckY, 0]} to={[L / 2 + 0.75, deckY + 0.4, 0]} r={0.035} />
+      <group position={[-0.3, deckY + 0.04, 0]}>
+        <CargoCrate variant="medium" seed={seed} />
+      </group>
+      <group position={[0.45, deckY + 0.04, 0.15]} rotation={[0, 0.5, 0]}>
+        <CargoCrate variant="small" seed={seed + 3} />
+      </group>
+    </group>
+  )
+}
+
+// A pallet stacked with regolith-brick or landing-pad-tile stock — staged
+// paver units, not raw excavation spoil (see `TailingsPile` for that).
+export function BrickPallet({ seed = 0 }: { seed?: number }) {
+  const brickW = 0.42
+  const brickH = 0.09
+  const brickD = 0.28
+  const rows = 5
+  const perRow = 3
+  const yaw = hash1(seed * 29 + 1) * Math.PI * 2
+  return (
+    <group rotation={[0, yaw, 0]}>
+      <mesh position={[0, 0.05, 0]}>
+        <boxGeometry args={[brickW * perRow + 0.1, 0.1, brickD + 0.16]} />
+        <meshStandardMaterial color={METAL} roughness={0.7} metalness={0.4} />
+      </mesh>
+      {Array.from({ length: rows }, (_, r) =>
+        Array.from({ length: perRow }, (_, c) => {
+          const x = (c - (perRow - 1) / 2) * (brickW + 0.01)
+          const y = 0.1 + r * brickH + brickH / 2
+          return (
+            <mesh key={`${r}:${c}`} position={[x, y, 0]}>
+              <boxGeometry args={[brickW * 0.96, brickH * 0.92, brickD]} />
+              <meshStandardMaterial color={BRICK_COLOR} roughness={0.95} />
+            </mesh>
+          )
+        })
+      )}
+      {[-0.14, 0.14].map((dx) => (
+        <mesh key={dx} position={[dx, 0.1 + rows * brickH + 0.01, 0]}>
+          <boxGeometry args={[0.03, 0.02, brickD + 0.1]} />
+          <meshStandardMaterial color={STRAP_DARK} roughness={0.9} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+// A survey tripod with its instrument head — what an active construction or
+// pad-layout site is actually staked out with, not decoration.
+function SurveyTripod({ seed = 0 }: { seed?: number }) {
+  const headH = 1.1
+  const legs = [30, 150, 270].map(
+    (deg) => (deg * Math.PI) / 180 + hash1(seed * 3 + 1) * 0.3
+  )
+  return (
+    <group rotation={[0, hash1(seed * 3 + 2) * Math.PI * 2, 0]}>
+      {legs.map((a, i) => (
+        <Strut
+          key={i}
+          from={[0, headH, 0]}
+          to={[Math.cos(a) * 0.5, 0, Math.sin(a) * 0.5]}
+          r={0.022}
+          color={METAL}
+        />
+      ))}
+      <mesh position={[0, headH + 0.06, 0]}>
+        <cylinderGeometry args={[0.05, 0.06, 0.12, 12]} />
+        <meshStandardMaterial color={DARK} roughness={0.6} />
+      </mesh>
+      <mesh
+        position={[0, headH + 0.15, 0]}
+        rotation={[0, hash1(seed * 3 + 3) * Math.PI * 2, 0]}
+      >
+        <boxGeometry args={[0.1, 0.08, 0.14]} />
+        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, headH + 0.15, 0.08]}>
+        <sphereGeometry args={[0.025, 8, 8]} />
+        <meshStandardMaterial
+          color="#dfe6ff"
+          emissive="#dfe6ff"
+          emissiveIntensity={0.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Base-wide filler — native rock for the open ground between districts
+// ---------------------------------------------------------------------------
+//
+// Everything above this point is manifested cargo or built infrastructure:
+// every prop reads as something that arrived on a lander or got assembled on
+// site. The open regolith BETWEEN districts is neither — it's unclaimed
+// native ground, and on an airless, ungraded body that ground is not
+// perfectly bare. It's strewn with impact ejecta at every scale. `Boulder`/
+// `BoulderCluster` are the one family in this file drawn from that instead
+// of from the colony's own manifest, placed by `InterDistrictFiller` in
+// MarkerLayer.tsx well clear of every district's ground (see
+// `withinDistrictGround` in baseplan.ts) so native rock never reads as
+// clutter dropped in somebody's lot.
+
+const BOULDER_GEO = new THREE.IcosahedronGeometry(1, 0) // 0 subdivisions: angular facets read as fractured rock, not the smoother TAILINGS_LUMP_GEO worked-spoil look
+const BOULDER_COLOR_A = '#7d7972'
+const BOULDER_COLOR_B = '#8f8b82'
+
+// A single weathered boulder: non-uniformly scaled and tipped off-axis so it
+// reads as an irregular fractured rock rather than a squashed sphere, sunk a
+// little into the ground so it sits embedded rather than resting on top of
+// the regolith.
+function Boulder({ size = 1, seed = 0 }: { size?: number; seed?: number }) {
+  const sx = size * (0.75 + hash1(seed * 41 + 1) * 0.5)
+  const sy = size * (0.55 + hash1(seed * 41 + 2) * 0.45)
+  const sz = size * (0.75 + hash1(seed * 41 + 3) * 0.5)
+  const yaw = hash1(seed * 41 + 4) * Math.PI * 2
+  const tilt = (hash1(seed * 41 + 5) - 0.5) * 0.5
+  const bury = sy * 0.32
+  const color = hash1(seed * 41 + 6) > 0.5 ? BOULDER_COLOR_A : BOULDER_COLOR_B
+  return (
+    <mesh
+      geometry={BOULDER_GEO}
+      position={[0, sy - bury, 0]}
+      rotation={[tilt, yaw, tilt * 0.6]}
+      scale={[sx, sy, sz]}
+    >
+      <meshStandardMaterial color={color} roughness={1} flatShading />
+    </mesh>
+  )
+}
+
+// One to three boulders grouped the way ejecta actually lands — one
+// dominant rock with a couple of smaller fragments nearby — rather than
+// evenly sized rocks spaced on a grid, so a field of these reads as scatter
+// rather than as one rock model repeated at a fixed size.
+export function BoulderCluster({
+  seed = 0,
+  size = 1,
+}: {
+  seed?: number
+  size?: number
+}) {
+  const items = useMemo(() => {
+    const extras = Math.floor(hash1(seed * 53 + 1) * 3)
+    const arr = [{ x: 0, z: 0, s: size, k: seed * 53 + 2 }]
+    for (let i = 0; i < extras; i++) {
+      const k = seed * 53 + 10 + i * 4
+      const a = hash1(k + 1) * Math.PI * 2
+      const r = size * (0.85 + hash1(k + 2) * 0.7)
+      arr.push({
+        x: Math.cos(a) * r,
+        z: Math.sin(a) * r,
+        s: size * (0.25 + hash1(k + 3) * 0.35),
+        k: k + 4,
+      })
+    }
+    return arr
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed, size])
+  return (
+    <group>
+      {items.map((it, i) => (
+        <group key={i} position={[it.x, 0, it.z]}>
+          <Boulder size={it.s} seed={it.k} />
+        </group>
+      ))}
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Rover depot yard — the motor pool's own lot, not a competitor's model
 // ---------------------------------------------------------------------------
 //
@@ -1763,9 +2344,23 @@ function ChargeBollard({ accent }: { accent: string }) {
 
 // A yard light, boom cranked out over the aisle rather than run straight up
 // its own pole — the way an actual lot light leans its fixture in over what
-// it's lighting instead of down onto itself.
-function DepotLightMast({ accent }: { accent: string }) {
-  const h = 4.2
+// it's lighting instead of down onto itself. Parameterized (rather than a
+// second component) so the same fixture serves both the depot's own
+// accent-colored yard lights and the neutral roadside `StreetLight` below —
+// a taller pole with a longer boom reaches out over a wider road than a
+// yard aisle needs.
+function DepotLightMast({
+  accent,
+  height = 4.2,
+  boomLen = 1.1,
+}: {
+  accent: string
+  height?: number
+  boomLen?: number
+}) {
+  const h = height
+  const boomOut = boomLen * 0.5
+  const headOut = boomLen * 0.95
   return (
     <group>
       <mesh position={[0, h / 2, 0]}>
@@ -1773,15 +2368,15 @@ function DepotLightMast({ accent }: { accent: string }) {
         <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.45} />
       </mesh>
       <group position={[0, h, 0]} rotation={[0, 0, -0.55]}>
-        <mesh position={[0.55, 0, 0]}>
-          <cylinderGeometry args={[0.045, 0.045, 1.1, 8]} />
+        <mesh position={[boomOut, 0, 0]}>
+          <cylinderGeometry args={[0.045, 0.045, boomLen, 8]} />
           <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.45} />
         </mesh>
-        <mesh position={[1.05, -0.05, 0]}>
+        <mesh position={[headOut, -0.05, 0]}>
           <coneGeometry args={[0.16, 0.22, 12]} />
           <meshStandardMaterial color={DARK} roughness={0.6} />
         </mesh>
-        <mesh position={[1.05, -0.19, 0]}>
+        <mesh position={[headOut, -0.19, 0]}>
           <sphereGeometry args={[0.05, 10, 10]} />
           <meshStandardMaterial
             color={accent}
@@ -1793,6 +2388,19 @@ function DepotLightMast({ accent }: { accent: string }) {
       </group>
     </group>
   )
+}
+
+// A neutral roadside street light — the same leaning-boom fixture as the
+// depot's own yard lights, taller and longer-armed to reach a full haul
+// road rather than a parking aisle, and lit a fixed cool white rather than
+// any org's accent: public lighting along main street belongs to the
+// settlement, not to whichever race happens to be nearest. Placed by
+// `InterDistrictFiller` in MarkerLayer.tsx along both closed loop roads,
+// clear of every district's own ground (see `withinDistrictGround` in
+// baseplan.ts) — the one piece of infrastructure in this file with no
+// district or competitor tied to it at all.
+export function StreetLight() {
+  return <DepotLightMast accent="#eef2ff" height={5.4} boomLen={1.5} />
 }
 
 // The one piece of built shelter on the lot: an open-sided canopy over a
@@ -2254,6 +2862,15 @@ function IsruPlant({ accent }: { accent: string }) {
       </group>
       <group position={[5.4, 0, -2.3]}>
         <CableReel />
+      </group>
+      {/* Product/feedstock tankage, framed rather than a bare cube, plus the
+          utility box its own line actually terminates in — a plant is
+          connected to something, not just staffed. */}
+      <group position={[2.0, 0, -2.9]}>
+        <FramedTank seed={5} />
+      </group>
+      <group position={[3.0, 0, -1.9]} rotation={[0, -0.4, 0]}>
+        <JunctionBox />
       </group>
     </group>
   )
@@ -3097,6 +3714,15 @@ function Power({ accent }: { accent: string }) {
       </group>
       <group position={[9.0, 0, -2.2]} rotation={[0, -1.1, 0]}>
         <CargoPallet hard seed={6} />
+      </group>
+      {/* A battery rack mid-charge and the junction box its own feed
+          terminates in — the storage/distribution side of a power plant,
+          not just the generation half. */}
+      <group position={[-9.2, 0, -3.6]} rotation={[0, 0.9, 0]}>
+        <BatteryStack seed={6} />
+      </group>
+      <group position={[-7.6, 0, -4.3]}>
+        <JunctionBox />
       </group>
     </group>
   )
@@ -5126,6 +5752,16 @@ function ConstructionSite({ accent }: { accent: string }) {
         <group position={[-3.0, 0, -3.2]} rotation={[0, 2.1, 0]}>
           <UtilityCart />
         </group>
+        {/* A survey tripod staking out where the NEXT pour goes, and a
+            pallet of finished tile stock waiting to be laid — an active
+            print job has work staged both behind it (the tripod) and ahead
+            of it (the pallet), not just its own feedstock. */}
+        <group position={[3.4, 0, -3.6]}>
+          <SurveyTripod seed={1} />
+        </group>
+        <group position={[-0.6, 0, -4.4]} rotation={[0, -0.5, 0]}>
+          <BrickPallet seed={1} />
+        </group>
       </group>
     </group>
   )
@@ -5663,6 +6299,15 @@ function CrewedBase({ accent }: { accent: string }) {
       <group position={[-3.4, 0, -8.9]} rotation={[0, -0.3, 0]}>
         <CargoPallet seed={10} />
       </group>
+      {/* The rest of that backlog: a staged crate cluster in mixed sizes
+          rather than one more repeated pallet, plus the junction box the
+          camp's own power/comms runs actually terminate in. */}
+      <group position={[8.4, 0, -6.6]}>
+        <CrateCluster count={4} seed={9} spread={1.6} />
+      </group>
+      <group position={[6.0, 0, -8.0]} rotation={[0, 1.4, 0]}>
+        <JunctionBox />
+      </group>
     </group>
   )
 }
@@ -6097,10 +6742,19 @@ function ILRSBase({ accent }: { accent: string }) {
       <group position={[-6.7, 0, 6.0]} rotation={[0, -1.3, 0]}>
         <IlrsCargoLander />
         <ScorchMark r={2.0} />
+        {/* This lander's own unload: a staged crate cluster rather than the
+            first lander's single pallet, so the station reads as two
+            deliveries in different states of being broken down. */}
+        <group position={[-2.1, 0, 1.1]}>
+          <CrateCluster count={4} seed={11} spread={1.5} />
+        </group>
       </group>
 
       <group position={[-7.4, 0, -3.9]} rotation={[0, 1.1, 0]}>
         <IlrsCommsTower />
+        <group position={[1.8, 0, -0.6]}>
+          <JunctionBox />
+        </group>
       </group>
 
       <group position={[3.0, 0, 7.9]} rotation={[0, -0.35, 0]}>
@@ -7490,6 +8144,12 @@ function Habitat({ accent }: { accent: string }) {
       <group position={[MPH_LOCK_X + 2.3, 0, MPH_LOCK_R + 1.2]} rotation={[0, -0.8, 0]}>
         <CargoPallet seed={7} />
       </group>
+      {/* A framed water tank standing off the hull's own rail, clear of the
+          patrol loop and the ramp — a crewed module needs somewhere its
+          water actually lives, not just a resupply pallet. */}
+      <group position={[MPH_AFT - 1.6, 0, -(MPH_R + 1.6)]}>
+        <FramedTank seed={7} />
+      </group>
     </group>
   )
 }
@@ -8327,6 +8987,15 @@ function CommsPnt({ accent }: { accent: string }) {
       <group position={[-2.0, 0, 3.2]} rotation={[0, 1.4, 0]}>
         <CargoPallet hard seed={8} />
       </group>
+      {/* A long equipment case for spare antenna elements — the shape
+          instrument/antenna shipments actually take, not another cube — and
+          the junction box the shelter's own feed terminates in. */}
+      <group position={[3.4, 0, 2.6]} rotation={[0, 0.3, 0]}>
+        <CargoCrate variant="case" seed={8} />
+      </group>
+      <group position={[-4.0, 0, 0.6]}>
+        <JunctionBox />
+      </group>
     </group>
   )
 }
@@ -8995,6 +9664,7 @@ export function SurfaceAnchor({
   noseAlong,
   dim = 1,
   castShadows = true,
+  interactive = true,
   onClick,
   onHoverChange,
   children,
@@ -9023,6 +9693,11 @@ export function SurfaceAnchor({
   // stations inside, one 402 m out. Half a constellation casting shadows and
   // half not is worse than none of it doing so.
   castShadows?: boolean
+  // False for base-wide scenery with nothing to select — a boulder, a
+  // street light — so it never raycasts a pointer cursor or swallows a
+  // click meant for the ground/Moon mesh behind it. Every competitor's own
+  // model leaves this at the default so it stays a click/hover target.
+  interactive?: boolean
   onClick?: () => void
   onHoverChange?: (hovered: boolean) => void
   children: ReactNode
@@ -9098,22 +9773,34 @@ export function SurfaceAnchor({
       position={position}
       quaternion={quaternion}
       scale={scale}
-      onClick={(e) => {
-        // Stop here so the Moon mesh behind the model doesn't also receive
-        // the click and immediately deselect.
-        e.stopPropagation()
-        if (e.delta <= CLICK_DRAG_TOLERANCE_PX) onClick?.()
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation()
-        onHoverChange?.(true)
-        document.body.style.cursor = 'pointer'
-      }}
-      onPointerOut={(e) => {
-        e.stopPropagation()
-        onHoverChange?.(false)
-        document.body.style.cursor = 'auto'
-      }}
+      onClick={
+        interactive
+          ? (e) => {
+              // Stop here so the Moon mesh behind the model doesn't also
+              // receive the click and immediately deselect.
+              e.stopPropagation()
+              if (e.delta <= CLICK_DRAG_TOLERANCE_PX) onClick?.()
+            }
+          : undefined
+      }
+      onPointerOver={
+        interactive
+          ? (e) => {
+              e.stopPropagation()
+              onHoverChange?.(true)
+              document.body.style.cursor = 'pointer'
+            }
+          : undefined
+      }
+      onPointerOut={
+        interactive
+          ? (e) => {
+              e.stopPropagation()
+              onHoverChange?.(false)
+              document.body.style.cursor = 'auto'
+            }
+          : undefined
+      }
     >
       {children}
     </group>

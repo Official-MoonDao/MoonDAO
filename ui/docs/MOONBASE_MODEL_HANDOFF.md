@@ -321,6 +321,27 @@ avoid up front and annoying to find later.
   built-in `PAD_SCORCH` core — for hardware that touches down straight on
   graded regolith (`IlrsCargoLander`) rather than getting a full engineered
   pad.
+- **A standardized logistics prop family, for "operational" rather than
+  "decorative" clutter.** `CargoCrate`/`CrateCluster`, `SparePartsPallet`,
+  `BatteryStack`, `FramedTank`, `JunctionBox`, `WorkLightTower`,
+  `CargoTrailer`, and `BrickPallet` (`ProjectModel.tsx`, right after
+  `ScorchMark`, before `RoverDepotYard`) are a second, larger clutter family
+  alongside the first — the difference is that every one of these reads as a
+  *recognizable logistics unit* rather than a resized box: `CargoCrate` comes
+  in four real size/proportion families (small/medium/large/a long
+  antenna-or-drill case) rather than one cube rescaled, each with corner
+  handle blocks and a stenciled placard; `SparePartsPallet` racks an actual
+  wheel beside cut pipe stock and a coiled hose rather than dropping a bare
+  wheel on the regolith; `BatteryStack`'s status LEDs are a fixed
+  charge-green rather than any org's accent, because a battery's own
+  indicator is never a team's brand color. All of them take a small `seed`
+  for deterministic yaw/variant/color variation, all are authored in real
+  meters like the first clutter family, and a couple of each have already
+  been hand-placed into the generic models (`IsruPlant`, `Power`, `Habitat`,
+  `CommsPnt`, `ConstructionSite`, `CrewedBase`, `ILRSBase`) as a first taste
+  — the fuller per-district logistics/maintenance/utility treatments this
+  family exists for (a real cargo yard, a real maintenance bay, a utility
+  ring around the habitats) are each their own follow-up pass, not done yet.
 - **The rover district's own lot is shared infrastructure, not a
   competitor's model.** `RoverDepotYard` (`ProjectModel.tsx`, right after
   `ScorchMark`) is a compact 13 x 10 m paved apron with three marked bays,
@@ -344,6 +365,59 @@ avoid up front and annoying to find later.
   That inward placement is why the yard stays compact: the belt between the
   perimeter road and main street is only ~23 m deep once both roads' own
   setbacks are spent.
+- **The ground between districts is filled by one base-wide layer, not by
+  any one district's model.** `InterDistrictFiller` (`MarkerLayer.tsx`,
+  right after `RoverDepotSite`) renders once for the whole colony rather
+  than per-district — it's the fix for the fact that most of the plan by
+  *area* is neither a district nor a road, and that open regolith is most
+  of what the camera sees on approach. It places three things:
+  - a scattered boulder field (`Boulder`/`BoulderCluster` in
+    `ProjectModel.tsx`, right after `SurveyTripod`, before
+    `RoverDepotYard`) — native rock, not manifested cargo, so it belongs on
+    unclaimed ground in a way none of the logistics props do — spread
+    anywhere on open ground as a fixed-resolution polar grid with a low
+    keep-rate (reads as scatter, not a filled ring);
+  - street lights (`StreetLight`, a neutral-colored wrapper around the
+    depot's own `DepotLightMast`, now parameterized by height/boom length
+    so one fixture serves both) along both closed loop roads;
+  - staged cargo along both loops' shoulders — `CrateCluster`,
+    `CableReel` (paired with a small `CargoCrate`), `SparePartsPallet`, and
+    `BrickPallet`, all exported from the logistics prop library
+    specifically for this — because a crate stack or a cable reel reads as
+    something a hauler dropped off, so unlike the boulders this one stays
+    close to a road on purpose rather than scattering anywhere.
+
+  All three are kept off every district's own ground by
+  `withinDistrictGround` (`baseplan.ts`, right after `BASE_PLAN`), which is
+  read straight off each district's own bearing/centre/reach rather than
+  hand-tuned per district, and is deliberately generous: it doesn't know a
+  district's live roster, only the widest plausible spread its `reach`
+  allows, so a competitor added later can never find a rock, a lamp post,
+  or a crate sitting on its future lot. The street lights and the roadside
+  cargo are both placed by walking each loop in fine angular steps and
+  dropping something once enough *open* road has accumulated since the
+  last one — an evenly-spaced-station approach was tried first for the
+  lights and aliased badly (7 districts against 7 evenly-spaced ring-road
+  stations left only one light standing, by coincidence of matching
+  spacing), which the walk-and-accumulate approach doesn't have, since a
+  district's wedge only delays the next placement instead of deleting a
+  whole station. The cargo additionally rolls a keep-probability at each
+  eligible slot regardless of whether it renders anything, which is what
+  keeps its spacing organic (some slots come up bare) rather than every
+  eligible slot filling on a metronome. None of the three are dimmed when a
+  race is opened (`SurfaceAnchor`'s `dim` is left at its default of 1): all
+  belong to the settlement, not to whichever district happens to be
+  nearest.
+- **Base-wide filler is explicitly non-interactive.** `SurfaceAnchor` always
+  used to wire up `onClick`/`onPointerOver`/`onPointerOut` unconditionally,
+  which meant even a boulder or a street light — passed no `onClick` at all
+  — still swallowed the pointer and switched the cursor to a hand on hover,
+  since the handlers were attached whether or not they had anything to call.
+  `SurfaceAnchor` now takes an `interactive` flag (default `true`, so every
+  competitor's own model is unaffected); `InterDistrictFiller` sets it
+  `false` on all three of the layers above, so scenery with nothing to
+  select never raycasts a cursor change or eats a click meant for the
+  ground behind it.
 
 ### Comment style
 

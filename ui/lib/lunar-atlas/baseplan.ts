@@ -410,6 +410,69 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   habitat: { ...at(315), turn: 10, reach: 19 },
 }
 
+// Every "on-street" district's bearing, own centre radius, and reach — the
+// same fields districtSlots itself keys off — read straight from BASE_PLAN
+// rather than duplicated, so a district that moves or grows can never leave
+// this stale. Excludes the core (`front: 'lot'`), which has no bearing.
+const DISTRICT_ZONES = Object.values(BASE_PLAN)
+  .filter((p): p is SitePlan => !!p && p.front !== 'lot')
+  .map((p) => ({
+    bearing: districtBearingDeg(p),
+    centre: Math.hypot(p.east, p.north),
+    reach: p.reach ?? 20,
+    // The landing zone's flanking pads sit much further off their own
+    // avenue's centerline than a corner lot's swing ever does (see
+    // `front: 'flank'`), so it gets a wider angular margin than everyone
+    // else rather than the others all being padded out to match one district.
+    wide: p.front === 'flank',
+  }))
+
+function angularDeltaDeg(a: number, b: number): number {
+  return Math.abs(((a - b + 540) % 360) - 180)
+}
+
+// True if a point (given as a bearing and a radius from the ridge center) can
+// plausibly stand on some district's OWN ground, inward or outward of its
+// centre (a district with two or more competitors gets an inward corner lot
+// too — see districtSlots' CORNERS order), with a caller-supplied angular
+// margin plus a fixed radial one.
+//
+// This is deliberately conservative rather than exact: it doesn't know how
+// many competitors a race currently has, only the widest plausible spread
+// its own `reach` allows for, so anything checked against it can never
+// spawn on top of a competitor's plot no matter how a roster changes. Used
+// to keep base-wide filler (a boulder field, roadside lighting) off every
+// district's ground without that filler needing to know the live roster.
+export function withinDistrictGround(
+  radiusM: number,
+  bearingDeg: number,
+  angularMarginDeg: number
+): boolean {
+  for (const z of DISTRICT_ZONES) {
+    const half = angularMarginDeg + (z.wide ? 4 : 0)
+    if (angularDeltaDeg(bearingDeg, z.bearing) > half) continue
+    // Starts right at the ring road rather than nearer the district itself:
+    // every avenue runs the district's whole bearing from the ring road out
+    // (see `avenue()`), so anything sprinkled along that bearing between the
+    // ring and the junction would otherwise land on the road, not just
+    // between the ring and where a district's own reach begins.
+    const rMin = RING_RADIUS_M - 6
+    const rMax = z.centre + z.reach + AVENUE_TAIL_M + 8
+    if (radiusM >= rMin && radiusM <= rMax) return true
+  }
+  return false
+}
+
+// True if a radius sits on (or within a windrow's width of) either of the
+// two closed loop roads — the one check base-wide filler needs that has
+// nothing to do with any one district.
+export function onLoopRoad(radiusM: number): boolean {
+  return (
+    Math.abs(radiusM - RING_RADIUS_M) < ROAD_HALF_M + 2 ||
+    Math.abs(radiusM - MAIN_LOOP_M) < ROAD_HALF_M + 2
+  )
+}
+
 // Races whose hardware is UNDER WAY: the road the field drives and how fast, in
 // meters per second. Absent means the race stands on its lots.
 //

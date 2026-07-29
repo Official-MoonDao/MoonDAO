@@ -23,9 +23,12 @@ import * as THREE from 'three'
 import {
   BASE_PLAN,
   MAIN_LOOP_M,
+  onLoopRoad,
   PATROL,
+  RING_RADIUS_M,
   ROAD_HALF_M,
   SETBACK_M,
+  withinDistrictGround,
   type Slot,
 } from '@/lib/lunar-atlas/baseplan'
 import {
@@ -48,9 +51,16 @@ import type {
   ProjectType,
 } from '@/lib/lunar-atlas/types'
 import ProjectModel, {
+  BoulderCluster,
+  BrickPallet,
+  CableReel,
+  CargoCrate,
+  CrateCluster,
   gradedDeckRadiusM,
   projectSizeM,
   RoverDepotYard,
+  SparePartsPallet,
+  StreetLight,
   SurfaceAnchor,
 } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
@@ -453,6 +463,244 @@ function RoverDepotSite({
 }
 
 // ---------------------------------------------------------------------------
+// Base-wide filler — the open ground between districts
+// ---------------------------------------------------------------------------
+//
+// Everything above is either a competitor's plot or the depot's own shared
+// yard — one per district. This is the one layer that renders ONCE for the
+// whole base rather than per-district, because most of the plan by area is
+// neither a district nor a road: it's the open regolith between avenues, and
+// the two closed loops stitching the districts together. Left bare, that is
+// most of what the camera actually sees on approach.
+//
+// A boulder field fills the open ground — native rock, not manifested cargo,
+// so it belongs on unclaimed regolith in a way none of the logistics props in
+// ProjectModel.tsx do — and street lights line both loop roads. Both are kept
+// off every district's own ground by `withinDistrictGround` (baseplan.ts),
+// which is deliberately generous rather than exact: it doesn't know any
+// district's live roster, only the widest plausible spread its `reach`
+// allows, so nothing here can ever end up sitting on a competitor's plot no
+// matter how a roster changes. Neither is dimmed when a race is opened (see
+// SurfaceAnchor's own `dim`, left at its default): this belongs to the
+// settlement, not to whichever district happens to be nearest.
+
+function hash1(n: number): number {
+  const s = Math.sin(n * 127.1) * 43758.5453
+  return s - Math.floor(s)
+}
+
+// The annulus a boulder can land in: just past the ring road's own clearance
+// out to a bit beyond the landing zone's own reach (the single furthest any
+// district goes — see `wide` in baseplan.ts' DISTRICT_ZONES). Sampled as a
+// polar grid with per-cell jitter and a low keep-rate, which is what makes a
+// grid read as scatter instead of a filled ring.
+const BOULDER_MIN_R = RING_RADIUS_M + 5
+const BOULDER_MAX_R = 165
+const BOULDER_RADIAL_BANDS = 7
+const BOULDER_ANGULAR_STEPS = 30
+const BOULDER_KEEP_FRACTION = 0.34
+
+// A post every ~40 m along a loop, just outside its windrow — close enough
+// together to actually read as street lighting, far enough apart that a
+// closed loop doesn't need dozens of them.
+const STREET_LIGHT_SPACING_M = 40
+
+// Staged cargo along the shoulders of both loop roads — the manifested-cargo
+// counterpart to the boulder field, for stretches of road with nothing to
+// look at otherwise. Unlike the boulders (native rock, scattered anywhere on
+// open ground) this stays close to a road on purpose: a crate stack or a
+// cable reel reads as something a hauler dropped off, which only makes
+// sense sitting where a hauler could actually reach it.
+const ROADSIDE_SPACING_M = 30
+const ROADSIDE_KEEP_PROB = 0.75
+type RoadsideKind = 'crates' | 'cablereel' | 'parts' | 'bricks'
+
+function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
+  const boulders = useMemo(() => {
+    const out: { dir: Vec3; seat: number; size: number; seed: number }[] = []
+    for (let ri = 0; ri < BOULDER_RADIAL_BANDS; ri++) {
+      for (let ai = 0; ai < BOULDER_ANGULAR_STEPS; ai++) {
+        const k = ri * 977 + ai * 31 + 1
+        if (hash1(k) > BOULDER_KEEP_FRACTION) continue
+        const rFrac = (ri + 0.15 + hash1(k + 1) * 0.7) / BOULDER_RADIAL_BANDS
+        const r = BOULDER_MIN_R + rFrac * (BOULDER_MAX_R - BOULDER_MIN_R)
+        const bearing = ((ai + hash1(k + 2)) / BOULDER_ANGULAR_STEPS) * 360
+        if (onLoopRoad(r) || withinDistrictGround(r, bearing, 20)) continue
+        const a = (bearing * Math.PI) / 180
+        const ll = capOffsetLatLon(Math.cos(a) * r, Math.sin(a) * r)
+        const dir = latLonToVector3(ll.lat, ll.lon, 1)
+        const seat = radiusAt
+          ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
+          : GLOBE_RADIUS + SEAT_LIFT
+        out.push({ dir, seat, size: 0.3 + hash1(k + 3) * 1.4, seed: k })
+      }
+    }
+    return out
+  }, [radiusAt])
+
+  const lights = useMemo(() => {
+    const out: { dir: Vec3; seat: number; noseAlong: Vec3 }[] = []
+    // A fine angular step (every ~1-3 m of arc on these radii) walked all the
+    // way round each loop, placing a light once STREET_LIGHT_SPACING_M has
+    // accumulated since the last one and skipping any candidate over a
+    // district's own ground. A fixed COUNT of evenly-spaced stations was
+    // tried first and aliased badly: with 7 districts on the ring road and 7
+    // evenly-spaced stations, nearly every station landed within a wedge by
+    // coincidence and only one light survived. Walking and accumulating arc
+    // length instead means a wedge just delays the next light rather than
+    // deleting a whole station, so the loop is never left with a long dark
+    // stretch merely because a station's angle happened to land badly.
+    const STEP_DEG = 2
+    for (const r of [RING_RADIUS_M, MAIN_LOOP_M]) {
+      const postR = r + ROAD_HALF_M + 1.4
+      let lastPlacedDeg: number | null = null
+      for (let deg = 0; deg < 360; deg += STEP_DEG) {
+        // A narrower margin than the boulders': a thin post just needs to
+        // clear a district's own ground, not stand well back from it, so
+        // lights still line the road right up to each district's junction.
+        if (withinDistrictGround(postR, deg, 11)) continue
+        if (lastPlacedDeg !== null) {
+          const arcSinceM = ((deg - lastPlacedDeg) * Math.PI * r) / 180
+          if (arcSinceM < STREET_LIGHT_SPACING_M) continue
+        }
+        lastPlacedDeg = deg
+
+        const a = (deg * Math.PI) / 180
+        const ll = capOffsetLatLon(Math.cos(a) * postR, Math.sin(a) * postR)
+        const d = new THREE.Vector3(
+          ...latLonToVector3(ll.lat, ll.lon, 1)
+        ).normalize()
+        const seat = radiusAt
+          ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
+          : GLOBE_RADIUS + SEAT_LIFT
+        // The boom leans toward the road's own centerline (radius r), not
+        // toward the ridge center generally — for the ring road that's the
+        // same thing, but for main street it keeps every light's fixture
+        // facing the pavement it actually lights rather than the core.
+        const innerLl = capOffsetLatLon(Math.cos(a) * r, Math.sin(a) * r)
+        const innerDir = new THREE.Vector3(
+          ...latLonToVector3(innerLl.lat, innerLl.lon, 1)
+        )
+        const noseAlong = innerDir.sub(d).normalize().toArray() as Vec3
+        out.push({ dir: [d.x, d.y, d.z] as Vec3, seat, noseAlong })
+      }
+    }
+    return out
+  }, [radiusAt])
+
+  const roadsideCargo = useMemo(() => {
+    const out: {
+      dir: Vec3
+      seat: number
+      kind: RoadsideKind
+      seed: number
+      yaw: number
+    }[] = []
+    const STEP_DEG = 2
+    for (const r of [RING_RADIUS_M, MAIN_LOOP_M]) {
+      let lastSlotDeg: number | null = null
+      for (let deg = 0; deg < 360; deg += STEP_DEG) {
+        if (lastSlotDeg !== null) {
+          const arcSinceM = ((deg - lastSlotDeg) * Math.PI * r) / 180
+          if (arcSinceM < ROADSIDE_SPACING_M) continue
+        }
+        // Alternate shoulders rather than always the outward side, so a
+        // loop's inner and outer edges both pick up traffic. Offset starts
+        // further out than the street lights' own fixed band (r + ROAD_HALF_M
+        // + 1.4) so a crate cluster can never land close enough to clip one.
+        const side = hash1(r + deg * 3 + 1) > 0.5 ? 1 : -1
+        const postR = r + side * (ROAD_HALF_M + 3.2 + hash1(r + deg * 3 + 2) * 3)
+        if (onLoopRoad(postR) || withinDistrictGround(postR, deg, 8)) continue
+        // Advance the walk past this slot regardless of whether it renders
+        // anything below — that's what keeps the spacing organic (some
+        // slots come up empty) rather than every eligible slot filling.
+        lastSlotDeg = deg
+        const k = Math.round(r) * 4001 + deg * 13 + 7
+        if (hash1(k) > ROADSIDE_KEEP_PROB) continue
+
+        const roll = hash1(k + 1)
+        const kind: RoadsideKind =
+          roll < 0.4
+            ? 'crates'
+            : roll < 0.65
+            ? 'cablereel'
+            : roll < 0.85
+            ? 'parts'
+            : 'bricks'
+        const a = (deg * Math.PI) / 180
+        const ll = capOffsetLatLon(Math.cos(a) * postR, Math.sin(a) * postR)
+        const dir = latLonToVector3(ll.lat, ll.lon, 1)
+        const seat = radiusAt
+          ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
+          : GLOBE_RADIUS + SEAT_LIFT
+        out.push({ dir, seat, kind, seed: k, yaw: hash1(k + 2) * Math.PI * 2 })
+      }
+    }
+    return out
+  }, [radiusAt])
+
+  return (
+    <group>
+      {boulders.map((b, i) => (
+        <SurfaceAnchor
+          key={`boulder:${i}`}
+          dir={b.dir}
+          surfaceRadius={b.seat}
+          scale={M_TO_UNITS}
+          castShadows={false}
+          interactive={false}
+        >
+          <BoulderCluster seed={b.seed} size={b.size} />
+        </SurfaceAnchor>
+      ))}
+      {lights.map((l, i) => (
+        <SurfaceAnchor
+          key={`light:${i}`}
+          dir={l.dir}
+          surfaceRadius={l.seat}
+          scale={M_TO_UNITS}
+          noseAlong={l.noseAlong}
+          castShadows={false}
+          interactive={false}
+        >
+          <StreetLight />
+        </SurfaceAnchor>
+      ))}
+      {roadsideCargo.map((c, i) => (
+        <SurfaceAnchor
+          key={`cargo:${i}`}
+          dir={c.dir}
+          surfaceRadius={c.seat}
+          scale={M_TO_UNITS}
+          castShadows={false}
+          interactive={false}
+        >
+          <group rotation={[0, c.yaw, 0]}>
+            {c.kind === 'crates' && (
+              <CrateCluster
+                seed={c.seed}
+                count={2 + Math.floor(hash1(c.seed + 50) * 3)}
+                spread={1.6}
+              />
+            )}
+            {c.kind === 'cablereel' && (
+              <group>
+                <CableReel />
+                <group position={[0.85, 0, 0.35]} rotation={[0, 0.6, 0]}>
+                  <CargoCrate variant="small" seed={c.seed + 1} />
+                </group>
+              </group>
+            )}
+            {c.kind === 'parts' && <SparePartsPallet seed={c.seed} />}
+            {c.kind === 'bricks' && <BrickPallet seed={c.seed} />}
+          </group>
+        </SurfaceAnchor>
+      ))}
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // One district's beacon
 // ---------------------------------------------------------------------------
 
@@ -829,6 +1077,8 @@ export default function MarkerLayer({
           </group>
         )
       })}
+
+      <InterDistrictFiller radiusAt={radiusAt} />
     </group>
   )
 }
