@@ -15,8 +15,20 @@ type SignStatus = 'idle' | 'submitting' | 'success' | 'error'
 type EligibleAction = 'noop' | 'set' | 'clear'
 type ActiveAction = 'noop' | 'activate' | 'deactivate'
 
-function tryParseJson(value: string): unknown | null {
-  if (!value?.trim()) return null
+// Tableland / client project rows sometimes deliver JSON columns already
+// parsed as objects. Textareas need a string, so stringify when needed.
+function asEditableJsonString(value: unknown): string {
+  if (value == null || value === '') return ''
+  if (typeof value === 'string') return value
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return ''
+  }
+}
+
+function tryParseJson(value: string): unknown | undefined | null {
+  if (typeof value !== 'string' || !value.trim()) return null
   try {
     return JSON.parse(value)
   } catch {
@@ -25,11 +37,15 @@ function tryParseJson(value: string): unknown | null {
 }
 
 export default function AddToRetroactivesModal({ project, onClose, onSuccess }: Props) {
-  const [finalReportLink, setFinalReportLink] = useState(project.finalReportLink || '')
-  const [rewardDistribution, setRewardDistribution] = useState(
-    project.rewardDistribution || ''
+  const [finalReportLink, setFinalReportLink] = useState(
+    typeof project.finalReportLink === 'string' ? project.finalReportLink : ''
   )
-  const [upfrontPayments, setUpfrontPayments] = useState(project.upfrontPayments || '')
+  const [rewardDistribution, setRewardDistribution] = useState(() =>
+    asEditableJsonString(project.rewardDistribution)
+  )
+  const [upfrontPayments, setUpfrontPayments] = useState(() =>
+    asEditableJsonString(project.upfrontPayments)
+  )
   // Default: if the project isn't yet eligible, propose adding it; if it
   // already is, propose no change (the operator can flip to "clear" to
   // retire it from the closed cycle's cohort).
