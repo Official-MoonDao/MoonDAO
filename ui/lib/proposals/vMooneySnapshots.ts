@@ -263,14 +263,17 @@ export const MEMBER_VOTE_VMOONEY_SNAPSHOTS: Record<string, VMooneySnapshot> = {
       '0xf2befa4b9489c1ef75e069d16a6f829f71b4b988': { '114': 10, '119': 10, '122': 25, '123': 30, '126': 25 },
     },
   },
-  // Q3 2026 member vote (snapshot moment 2026-07-21 07:00:00 UTC).
+  // Q3 2026 member vote (snapshot moment 2026-07-21 00:00:00 UTC).
+  // Must match production `vote.ts` / `computeMemberVoteOutcome` close
+  // (`getThirdThursdayOfQuarterTimestamp` + 5 days on a UTC host), not
+  // a Pacific-local script run which yields 07:00 UTC the same day.
   // Captured via `yarn --prefix ui snapshot:vmooney --kind=member
   // --quarter=3 --year=2026` (historical balanceOfAt). Funded set at
   // close preview: MDP-260, 265, 259, 262, 258 ($17,452 / $18,232.50 cap).
   '2026-Q3': {
     quarter: 3,
     year: 2026,
-    voteCloseTimestamp: 1784617200,
+    voteCloseTimestamp: 1784592000,
     snapshotTakenAt: 1785439568,
     method: 'historical',
     blockAtClose: {
