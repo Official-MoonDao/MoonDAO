@@ -600,7 +600,7 @@ function ProjectRow({
               outcomeRow.approved ? 'text-emerald-400' : 'text-gray-500'
             }`}
           >
-            {outcomeRow.approved ? 'Approved' : 'Failed'}
+            {outcomeRow.approved ? 'Approved' : 'Not Approved'}
           </p>
         </div>
         <div className="ml-1 sm:ml-2 shrink-0">
