@@ -267,6 +267,8 @@ export const MEMBER_VOTE_VMOONEY_SNAPSHOTS: Record<string, VMooneySnapshot> = {
   // Must match production `vote.ts` / `computeMemberVoteOutcome` close
   // (`getThirdThursdayOfQuarterTimestamp` + 5 days on a UTC host), not
   // a Pacific-local script run which yields 07:00 UTC the same day.
+  // `blockAtClose` matches RETRO_VMOONEY_SNAPSHOTS['2026-Q2'] (same
+  // Unix close → same per-chain heights), not the 07:00 capture.
   // Captured via `yarn --prefix ui snapshot:vmooney --kind=member
   // --quarter=3 --year=2026` (historical balanceOfAt). Funded set at
   // close preview: MDP-260, 265, 259, 262, 258 ($17,452 / $18,232.50 cap).
@@ -277,10 +279,10 @@ export const MEMBER_VOTE_VMOONEY_SNAPSHOTS: Record<string, VMooneySnapshot> = {
     snapshotTakenAt: 1785439568,
     method: 'historical',
     blockAtClose: {
-      arbitrum: 25579459,
-      ethereum: 25579459,
-      polygon: 90608135,
-      base: 48913926,
+      arbitrum: 25577369,
+      ethereum: 25577369,
+      polygon: 90591335,
+      base: 48901326,
     },
     vMOONEY: {
       '0x04877685e94e0694944d08a43d021e5768b595f0': 235575.61595949368,
