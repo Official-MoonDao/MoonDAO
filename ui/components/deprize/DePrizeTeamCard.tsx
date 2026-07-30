@@ -24,7 +24,33 @@ type DePrizeTeamCardProps = {
   userConnected: boolean
   onBet: (index: number) => void
   onCashOut: (index: number) => void
+  /** Open Field slot — render overrides + tooltip instead of a Team NFT. */
+  isField?: boolean
+  /** Disclosure: competitor marked withdrawn on-chain. Slot stays tradable. */
+  withdrawn?: boolean
+  /**
+   * Link target for a bound competitor (e.g. `/moonbase/{projectId}`), for
+   * organizations that will never hold a Team NFT. Ignored for field slots,
+   * which keep their own target. Defaults to `/team/{id}`.
+   */
+  hrefOverride?: string
+  /** Atlas org display name, for competitors with no Team NFT. */
+  nameOverride?: string
+  /** Atlas org logo. Suppressed when `unclaimed`. */
+  imageOverride?: string
+  /**
+   * Competitor has not claimed its listing: show the name but no logo, so the
+   * listing never reads as an endorsement. See ROSTER_DISCLAIMER.
+   */
+  unclaimed?: boolean
 }
+
+/** Dashed-circle mark for the Open Field slot, which has no Team NFT. */
+const FIELD_AVATAR =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#1e293b"/><circle cx="20" cy="20" r="10" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3"/></svg>`
+  )
 
 function PnlSuffix({ pnl }: { pnl: number | undefined }) {
   if (pnl === undefined) return null
@@ -54,6 +80,12 @@ export default function DePrizeTeamCard({
   userConnected,
   onBet,
   onCashOut,
+  isField = false,
+  withdrawn = false,
+  hrefOverride,
+  nameOverride,
+  imageOverride,
+  unclaimed = false,
 }: DePrizeTeamCardProps) {
   const holding = Number.isFinite(outcome.balance) && outcome.balance > 0
   const realizedValue = resolved ? redeemValueEth : sellQuoteEth
@@ -116,7 +148,26 @@ export default function DePrizeTeamCard({
             color={color}
             size={40}
             className="text-base font-semibold text-white hover:text-indigo-200"
+            nameOverride={isField ? 'Open Field' : nameOverride}
+            imageOverride={isField ? FIELD_AVATAR : imageOverride}
+            hrefOverride={isField ? '/deprize#open-field' : hrefOverride}
+            // The field slot is not an organization, so its own placeholder mark
+            // must survive the unclaimed logo suppression.
+            unclaimed={!isField && unclaimed}
           />
+          {isField && (
+            <p
+              className="text-xs text-gray-400 pl-12"
+              title="Pays if any qualifying entrant not listed above is selected as the winner. The Senate names the entity; the admin Safe records the payout address in the same settlement batch."
+            >
+              Any qualifying entrant not listed above
+            </p>
+          )}
+          {withdrawn && !isField && (
+            <p className="text-xs text-amber-400/90 pl-12">
+              Withdrawn — you can still sell your position
+            </p>
+          )}
           {showWinSubtitle && (
             // Align under the team name (avatar 40px + gap-2 8px).
             <p className="text-xs text-gray-500 pl-12">
@@ -134,7 +185,7 @@ export default function DePrizeTeamCard({
             disabled={busy || !userConnected}
             className="rounded-xl shadow-purple-500/10"
           >
-            Back this team
+            {isField ? 'Back the field' : 'Back this team'}
           </StandardButton>
         )}
       </div>

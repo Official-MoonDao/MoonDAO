@@ -115,11 +115,48 @@ It returns the registry state-advance calldata plus either a plain-ETH provider 
 4. **M2 (delivered):** run with `DEPRIZE_MILESTONE=M2` (same `DEPRIZE_PRIZE_WEI`) → submit Tx 1 (70% → provider) then Tx 2 (`completeM2`).
 5. **M2 (failed / 18-month deadline):** run with `DEPRIZE_MILESTONE=REFUND` → submit `addToBalanceOf` of the 70% back into the JB project first, then `failM2` to enable refunds. `$OVERVIEW` cashOut is now live via the existing JB UI.
 
+### Field-winner settlement (Open Field slot)
+
+When the Senate names a winner who is **not** on the named roster, settle via the
+Open Field team id — **never** as two separate transactions:
+
+1. Publish the Senate vote naming the winning entity and its payout Safe.
+2. One Safe batch:
+   - `registry.settleWinner(id, OPEN_FIELD_TEAM_ID)`
+   - `registry.setProviderPayoutAddress(id, winnerSafe)`
+3. Halt the LMSR (`pauseMarket` / `closeMarket`), then `DePrizeResolve` + `reportPayouts`.
+4. Continue with M1/M2 disbursement to `winnerSafe` as usual.
+
+### Generational supersede (roster refresh, same prize pool)
+
+Announce publicly, then one ordered Safe batch. **Leave the old LMSR Running** so
+holders can keep selling; do not pause or close it at the fork.
+
+1. `feeRouter.sweepFees(oldId)` — must be first while the entry is still non-terminal,
+   so residual trade fees land in the prize pool rather than the treasury.
+2. `registry.supersede(oldId, newTeamIds, newSunset)` — returns `newId` in `DRAFT`,
+   moves `oldId` to `SUPERSEDED` (terminal, **not** refundable), rebinds the JB project.
+3. Provision the new generation: `prepareCondition` → deploy/fund LMSR →
+   `setCondition(newId, …)` → `open(newId)` → `mint.setMarket` + `feeRouter.setMarket`
+   → transfer LMSR ownership to the FeeRouter.
+
+**Roster rule:** carry every still-active competitor, plus new entrants, plus a
+fresh Open Field slot. Only drop a competitor who is verifiably ineligible to win.
+
+**While the race continues:** periodically sweep legacy-market sell fees into the
+prize pool manually (`sweepFees` on a terminal entry routes to treasury by default).
+
+**At final settlement:** pause/close **every** generation's LMSR (including
+superseded ones — `DePrizeResolve` aborts on a Running market), settle the live
+generation, then resolve each superseded condition via
+`DePrizeResolve` with `DEPRIZE_WINNING_ENTITY=<real team id>` and
+`DEPRIZE_OPEN_FIELD=<this generation's field team id>` so lineage maps correctly.
+
 ---
 
 ## Tests
 
-`forge test --match-contract 'DePrizeRegistryTest|DePrizeDisburseTest'` — **51 registry + 13 disbursement tests passing** (whole deprize suite: 150 passing).
+`forge test --match-contract 'DePrizeRegistryTest|DePrizeDisburseTest'` — **51 registry + 13 disbursement tests passing** (whole deprize suite: 204 passing).
 
 - **Registry (`setProviderPayoutAddress`):** set at `SETTLED` and `M1_RELEASED`, update between milestones, zero-address revert, wrong-state reverts (pre-settle `OPEN`, post `M2_COMPLETE`), `onlyOwner`, `UnknownDePrize`, default-zero view.
 - **`DePrizeDisburse.buildDisbursement`:** M1 = 30% → provider + `releaseM1`; M2 = 70% → provider + `completeM2`; REFUND = 70% → JB `addToBalanceOf` + `failM2`; exact split on an indivisible prize (M1 + M2 == snapshot); guards (`WrongState` per milestone, `ProviderNotSet`, `ZeroPrize`, `UnknownMilestone`, `UnknownDePrize`); tag constants match.

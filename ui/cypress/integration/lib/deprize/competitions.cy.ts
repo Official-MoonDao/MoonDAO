@@ -1,14 +1,19 @@
 import {
   GENERIC_DEPRIZE_COMPETITION,
-  areRaceOutcomesPublishable,
   chainHasRaceBindings,
   findDePrizeIdForGoal,
+  generationNumberOf,
   getDePrizeCompetition,
+  getDePrizeGenerationNumber,
   getDePrizeQuestionId,
   getDePrizeRaceBinding,
-  isDePrizeGoalMarketPublishable,
+  isCompetitorClaimed,
+  isDePrizeGoalMarketBound,
   isKnownDePrizeCompetition,
+  isRaceBindingComplete,
+  liveTipOf,
   partitionDePrizeIndexByRace,
+  resolveLiveDePrizeId,
 } from '@/lib/deprize/competitions'
 
 describe('deprize competitions registry', () => {
@@ -71,24 +76,40 @@ describe('deprize competitions registry', () => {
     expect(findDePrizeIdForGoal('sepolia', undefined)).to.equal(undefined)
   })
 
-  it('publishes the Sepolia fixture and refuses unbound / unconsented non-Sepolia', () => {
-    expect(isDePrizeGoalMarketPublishable('sepolia', 'shared-fission-power')).to.equal(true)
-    expect(isDePrizeGoalMarketPublishable('sepolia', 'shared-landing-pads')).to.equal(false)
-    expect(isDePrizeGoalMarketPublishable('arbitrum', 'shared-fission-power')).to.equal(false)
+  it('reports a bound race regardless of consent, and unbound goals as unbound', () => {
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-fission-power')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-landing-pads')).to.equal(false)
+    // Arbitrum has no binding at all, so there is no market to report.
+    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-fission-power')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('sepolia', undefined)).to.equal(false)
+  })
 
-    // Pure consent helper: non-Sepolia requires every outcome consented.
-    const unconsented = [
-      { projectId: 'a', consented: true },
-      { projectId: 'b' },
-    ]
-    const consented = [
-      { projectId: 'a', consented: true },
-      { projectId: 'b', consented: true },
-    ]
-    expect(areRaceOutcomesPublishable('arbitrum', unconsented)).to.equal(false)
-    expect(areRaceOutcomesPublishable('arbitrum', consented)).to.equal(true)
-    expect(areRaceOutcomesPublishable('sepolia', unconsented)).to.equal(true)
-    expect(areRaceOutcomesPublishable('arbitrum', undefined)).to.equal(false)
+  it('treats binding completeness as chain-agnostic and independent of consent', () => {
+    // Consent is no longer a visibility gate: an unconsented roster is publishable.
+    expect(
+      isRaceBindingComplete([{ projectId: 'a', consented: true }, { projectId: 'b' }])
+    ).to.equal(true)
+    expect(isRaceBindingComplete([{ projectId: 'a' }, { projectId: 'b' }])).to.equal(true)
+    expect(isRaceBindingComplete(undefined)).to.equal(false)
+    expect(isRaceBindingComplete([])).to.equal(false)
+
+    // A field-only roster names nobody, so there is nothing to price.
+    expect(
+      isRaceBindingComplete([{ projectId: '__open-field__', field: true }])
+    ).to.equal(false)
+    expect(
+      isRaceBindingComplete([
+        { projectId: 'a' },
+        { projectId: '__open-field__', field: true },
+      ])
+    ).to.equal(true)
+  })
+
+  it('gates branding on claim status without touching visibility', () => {
+    expect(isCompetitorClaimed({ projectId: 'a', consented: true })).to.equal(true)
+    expect(isCompetitorClaimed({ projectId: 'a' })).to.equal(false)
+    expect(isCompetitorClaimed({ projectId: 'a', consented: false })).to.equal(false)
+    expect(isCompetitorClaimed(undefined)).to.equal(false)
   })
 
   it('partitions the index by raceLabel and keeps unbound chains flat', () => {
@@ -112,5 +133,49 @@ describe('deprize competitions registry', () => {
     expect(arbitrum).to.deep.equal([
       { raceLabel: null, deprizeIds: [1, 2, 3], showHeading: false },
     ])
+  })
+})
+
+describe('deprize generation lineage', () => {
+  // g1 -> g2 -> g3, the shape a twice-superseded race leaves behind.
+  const chain = {
+    1: { supersededBy: 2 },
+    2: { supersedes: 1, supersededBy: 3 },
+    3: { supersedes: 2 },
+  }
+
+  it('walks every generation forward to the same live tip', () => {
+    expect(liveTipOf(chain, 1)).to.equal(3)
+    expect(liveTipOf(chain, 2)).to.equal(3)
+    expect(liveTipOf(chain, 3)).to.equal(3)
+  })
+
+  it('numbers generations 1-indexed walking backward', () => {
+    expect(generationNumberOf(chain, 1)).to.equal(1)
+    expect(generationNumberOf(chain, 2)).to.equal(2)
+    expect(generationNumberOf(chain, 3)).to.equal(3)
+  })
+
+  it('treats an unlinked or unknown id as a lone first generation', () => {
+    expect(liveTipOf({}, 7)).to.equal(7)
+    expect(generationNumberOf({}, 7)).to.equal(1)
+    expect(liveTipOf({ 7: {} }, 7)).to.equal(7)
+    expect(generationNumberOf({ 7: {} }, 7)).to.equal(1)
+  })
+
+  it('stops at the last distinct generation on a malformed cyclic registry', () => {
+    const cyclic = {
+      1: { supersedes: 2, supersededBy: 2 },
+      2: { supersedes: 1, supersededBy: 1 },
+    }
+    expect(liveTipOf(cyclic, 1)).to.equal(2)
+    expect(generationNumberOf(cyclic, 1)).to.equal(2)
+  })
+
+  it('is a no-op on the real registry, which has no lineage seeded yet', () => {
+    expect(resolveLiveDePrizeId('sepolia', 9)).to.equal(9)
+    expect(getDePrizeGenerationNumber('sepolia', 9)).to.equal(1)
+    expect(resolveLiveDePrizeId('sepolia', undefined)).to.equal(undefined)
+    expect(getDePrizeGenerationNumber('sepolia', undefined)).to.equal(1)
   })
 })

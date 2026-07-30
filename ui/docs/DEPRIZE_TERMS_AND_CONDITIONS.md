@@ -105,6 +105,58 @@ on-chain, the result cannot be reversed, altered, or refunded by MoonDAO, by you
 or by any third party. Redemption is **permissionless** — you (or anyone) can
 redeem a resolved position directly against the CTF contract.
 
+### 5.1 Open Field outcome
+
+Some DePrizes include an **Open Field** outcome slot: a bet that the eventual
+winner is a qualifying entrant **not listed among the named competitors** at
+registration. The objective eligibility criteria for the field are published with
+the DePrize's rules. If the Senate selects a field entrant, MoonDAO's
+administrator Safe settles the market to the Open Field slot and records that
+entrant's payout address **in the same transaction batch** as the winner
+declaration. Backing the field is a bet on an unnamed class of entrants, not on a
+specific company; you accept that uncertainty.
+
+There is **no tradable "None" / "nobody wins" outcome**. If nobody qualifies, the
+DePrize resolves under Section 6 (equal-payout refund), not as a field win.
+
+### 5.2 Generations and an accumulating prize pool
+
+Long-running races may proceed in **generations**. A generation has its own
+outcome roster, CTF condition, and market. The Juicebox prize pool and project
+token are shared across generations and **accumulate** until a winner is paid.
+When a generation is **superseded**, new bets on that generation close, but you
+may still **sell** your position back to its market at the prevailing price. The
+position is **locked only if you choose not to sell**; it is not refunded or
+repriced at supersede. Every generation resolves to the **same real-world winner**
+when the race settles, each from its own market's collateral. Project tokens are
+only a **contingent** claim on the prize pool (realised via Launchpad cashOut in a
+refund-terminal state); on a successful prize payout they do not redeem against
+the pool. A superseded market's price may diverge from the live generation's
+odds — treat it as an exit quote, not the race's official odds.
+
+### 5.3 Named competitors and no endorsement
+
+Competitors are named at **MoonDAO's editorial discretion**, based on publicly
+available information about who is credibly pursuing the capability. Being listed
+as an outcome **does not mean** the organization has entered the DePrize,
+registered, agreed to participate, endorsed MoonDAO, or is affiliated with,
+sponsored by, or partnered with MoonDAO or this prize in any way. No listed
+organization is required to do anything, and none receives an entry obligation by
+being named.
+
+Your bet is on an **outcome** — whether that organization achieves the capability
+first as judged under Section 5 — and **not** on any affiliation, partnership, or
+endorsement. Organization names and marks are the property of their respective
+owners and are used only to identify the subject of an outcome (nominative use).
+Logos and brand styling are shown **only** for competitors that have claimed their
+listing; unclaimed competitors are displayed with a neutral placeholder mark.
+
+If you are an organization named in a DePrize and want your listing corrected,
+rebranded, or removed from future generations, contact MoonDAO using Section 15.
+An entrant who is verifiably ineligible to win may be dropped from the next
+generation's roster under Section 5.2; a live generation's outcome set cannot be
+edited.
+
 ## 6. Cancellation, no winner, and the equal-payout refund
 
 A DePrize may end in a **refund-terminal** state — **cancelled**, **no eligible

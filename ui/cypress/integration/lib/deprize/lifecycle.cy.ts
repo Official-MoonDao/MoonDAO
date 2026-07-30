@@ -28,32 +28,34 @@ describe('deprize lifecycle derivations', () => {
         DePrizeState.M2_FAILED,
         DePrizeState.CANCELLED,
         DePrizeState.NO_WINNER,
+        DePrizeState.SUPERSEDED,
       ]) {
         expect(deriveDePrizeFlags(s, 0n).bettingOpen, `state ${s}`).to.equal(false)
       }
     })
 
-    it('refundable terminals are exactly CANCELLED / NO_WINNER / M2_FAILED', () => {
+    it('refundable terminals are exactly CANCELLED / NO_WINNER / M2_FAILED (not SUPERSEDED)', () => {
       const refundable = [
         DePrizeState.CANCELLED,
         DePrizeState.NO_WINNER,
         DePrizeState.M2_FAILED,
       ]
-      for (let s = 0; s <= 10; s++) {
+      for (let s = 0; s <= 11; s++) {
         const expected = refundable.includes(s)
         expect(deriveDePrizeFlags(s, 0n).isRefundable, `state ${s}`).to.equal(expected)
         expect(isRefundableState(s), `helper state ${s}`).to.equal(expected)
       }
     })
 
-    it('terminal states are the refundables plus M2_COMPLETE', () => {
+    it('terminal states are the refundables plus M2_COMPLETE and SUPERSEDED', () => {
       const terminal = [
         DePrizeState.M2_COMPLETE,
         DePrizeState.M2_FAILED,
         DePrizeState.CANCELLED,
         DePrizeState.NO_WINNER,
+        DePrizeState.SUPERSEDED,
       ]
-      for (let s = 0; s <= 10; s++) {
+      for (let s = 0; s <= 11; s++) {
         const expected = terminal.includes(s)
         expect(deriveDePrizeFlags(s, 0n).isTerminal, `state ${s}`).to.equal(expected)
         expect(isTerminalState(s), `helper state ${s}`).to.equal(expected)
@@ -66,7 +68,7 @@ describe('deprize lifecycle derivations', () => {
     })
 
     it('has display metadata for every state', () => {
-      for (let s = 0; s <= 10; s++) {
+      for (let s = 0; s <= 11; s++) {
         const meta = DEPRIZE_STATE_META[s as DePrizeState]
         expect(meta, `state ${s}`).to.not.equal(undefined)
         expect(meta.label.length).to.be.greaterThan(0)
@@ -136,11 +138,12 @@ describe('deprize lifecycle derivations', () => {
       }
     })
 
-    it('surfaces when registry is settled / refundable / post-M1', () => {
+    it('surfaces when registry is settled / refundable / post-M1 / superseded', () => {
       for (const registryState of [
         DePrizeState.SETTLED,
         DePrizeState.M1_RELEASED,
         DePrizeState.M2_COMPLETE,
+        DePrizeState.SUPERSEDED,
         DePrizeState.NO_WINNER,
         DePrizeState.CANCELLED,
         DePrizeState.M2_FAILED,

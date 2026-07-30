@@ -15,6 +15,7 @@ export enum DePrizeState {
   M2_FAILED = 8,
   CANCELLED = 9,
   NO_WINNER = 10,
+  SUPERSEDED = 11,
 }
 
 export const DEPRIZE_STATE_META: Record<
@@ -65,6 +66,11 @@ export const DEPRIZE_STATE_META: Record<
     label: 'No winner',
     description: 'No eligible winner was declared. Refunds are available.',
   },
+  [DePrizeState.SUPERSEDED]: {
+    label: 'Superseded',
+    description:
+      'This generation was forked into a newer roster. New bets are closed; you can still sell your position. The prize pool continues on the next generation.',
+  },
 }
 
 export const REFUNDABLE_STATES: ReadonlySet<DePrizeState> = new Set([
@@ -78,6 +84,7 @@ export const TERMINAL_STATES: ReadonlySet<DePrizeState> = new Set([
   DePrizeState.M2_FAILED,
   DePrizeState.CANCELLED,
   DePrizeState.NO_WINNER,
+  DePrizeState.SUPERSEDED,
 ])
 
 export const isRefundableState = (s: DePrizeState | undefined) =>
@@ -152,6 +159,7 @@ export function shouldSurfaceResolution(opts: {
     registryState === DePrizeState.SETTLED ||
     registryState === DePrizeState.M1_RELEASED ||
     registryState === DePrizeState.M2_COMPLETE ||
+    registryState === DePrizeState.SUPERSEDED ||
     isRefundableState(registryState)
   ) {
     return true

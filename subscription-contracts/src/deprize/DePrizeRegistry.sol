@@ -50,8 +50,17 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     ///      upgrade only consumes one previously-reserved gap slot.
     mapping(uint256 => address) private _providerPayoutAddress;
 
-    /// @dev Storage gap for future upgrades (50 slots - 5 used = 45).
-    uint256[45] private __gap;
+    /// @dev Disclosure flag: competitor marked withdrawn. Does NOT gate betting —
+    ///      holders must still be able to exit. Consumes one gap slot.
+    mapping(uint256 => mapping(uint256 => bool)) private _withdrawn;
+
+    /// @dev Generation lineage. `supersededBy[old] = new` and `supersedes[new] = old`.
+    ///      Two gap slots. Walk `supersededBy` forward to find the live generation.
+    mapping(uint256 => uint256) private _supersededBy;
+    mapping(uint256 => uint256) private _supersedes;
+
+    /// @dev Storage gap for future upgrades (50 slots - 8 used = 42).
+    uint256[42] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -113,10 +122,114 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
 
     /// @inheritdoc IDePrizeRegistry
     function setSunset(uint256 deprizeId, uint256 sunset) external override onlyOwner {
-        DePrize storage d = _requireDraft(deprizeId);
+        DePrize storage d = _get(deprizeId);
         if (sunset <= block.timestamp) revert InvalidSunset();
+        if (d.state == DePrizeState.DRAFT) {
+            // Any future sunset is fine in DRAFT.
+        } else if (d.state == DePrizeState.OPEN) {
+            // Extend-only: cannot pull the deadline in on bettors.
+            if (sunset <= d.sunset) revert SunsetNotExtended(d.sunset, sunset);
+        } else {
+            revert InvalidState(deprizeId, d.state);
+        }
         d.sunset = sunset;
         emit SunsetUpdated(deprizeId, sunset);
+    }
+
+    /// @inheritdoc IDePrizeRegistry
+    function setTeams(uint256 deprizeId, uint256[] calldata teamIds_) external override onlyOwner {
+        DePrize storage d = _requireDraft(deprizeId);
+        if (teamIds_.length < 2) revert TooFewTeams(teamIds_.length);
+
+        // Clear-then-write: stale _isTeam entries would otherwise survive and
+        // let settleWinner accept a team that is no longer on the roster.
+        uint256 oldLen = d.teamIds.length;
+        for (uint256 i = 0; i < oldLen; i++) {
+            _isTeam[deprizeId][d.teamIds[i]] = false;
+            // A withdrawn mark on a removed team is meaningless; clear it too.
+            _withdrawn[deprizeId][d.teamIds[i]] = false;
+        }
+        delete d.teamIds;
+
+        for (uint256 i = 0; i < teamIds_.length; i++) {
+            uint256 teamId = teamIds_[i];
+            if (teamId == 0) revert ZeroTeamId();
+            if (_isTeam[deprizeId][teamId]) revert DuplicateTeam(teamId);
+            _isTeam[deprizeId][teamId] = true;
+            d.teamIds.push(teamId);
+        }
+
+        emit TeamsUpdated(deprizeId, teamIds_);
+    }
+
+    /// @inheritdoc IDePrizeRegistry
+    function supersede(uint256 oldDeprizeId, uint256[] calldata newTeamIds, uint256 sunset)
+        external
+        override
+        onlyOwner
+        returns (uint256 newDeprizeId)
+    {
+        DePrize storage old = _get(oldDeprizeId);
+        if (old.state != DePrizeState.OPEN && old.state != DePrizeState.LOCKED) {
+            revert InvalidState(oldDeprizeId, old.state);
+        }
+        if (newTeamIds.length < 2) revert TooFewTeams(newTeamIds.length);
+        if (sunset <= block.timestamp) revert InvalidSunset();
+
+        // Abort any pending cancellation so the notice doesn't linger on a
+        // SUPERSEDED entry (betting is already closed by the terminal state).
+        if (old.cancellationNoticeAt != 0) {
+            old.cancellationNoticeAt = 0;
+            emit CancellationAborted(oldDeprizeId);
+        }
+
+        uint256 jbProjectId = old.jbProjectId;
+
+        // Create the new generation in DRAFT, reusing the Juicebox project.
+        newDeprizeId = _nextId++;
+        DePrize storage neu = _deprizes[newDeprizeId];
+        neu.jbProjectId = jbProjectId;
+        neu.sunset = sunset;
+        neu.state = DePrizeState.DRAFT;
+
+        for (uint256 i = 0; i < newTeamIds.length; i++) {
+            uint256 teamId = newTeamIds[i];
+            if (teamId == 0) revert ZeroTeamId();
+            if (_isTeam[newDeprizeId][teamId]) revert DuplicateTeam(teamId);
+            _isTeam[newDeprizeId][teamId] = true;
+            neu.teamIds.push(teamId);
+        }
+
+        // Lineage + rebind. Order matters for the cashOut hazard: the old entry
+        // must be SUPERSEDED (terminal, not refundable) BEFORE the JB mapping
+        // points at the new DRAFT, so the pay hook never sees a refundable
+        // DePrize on a funded project.
+        _supersededBy[oldDeprizeId] = newDeprizeId;
+        _supersedes[newDeprizeId] = oldDeprizeId;
+        _setState(oldDeprizeId, old, DePrizeState.SUPERSEDED);
+        _deprizeIdByJBProject[jbProjectId] = newDeprizeId;
+
+        emit DePrizeRegistered(newDeprizeId, jbProjectId, newTeamIds, sunset);
+        emit StateChanged(newDeprizeId, DePrizeState.NONE, DePrizeState.DRAFT);
+        emit DePrizeSuperseded(oldDeprizeId, newDeprizeId, newTeamIds);
+    }
+
+    /// @inheritdoc IDePrizeRegistry
+    function markWithdrawn(uint256 deprizeId, uint256 teamId) external override onlyOwner {
+        DePrize storage d = _get(deprizeId);
+        if (_isTerminalState(d.state)) revert InvalidState(deprizeId, d.state);
+        if (!_isTeam[deprizeId][teamId]) revert TeamNotOnRoster(deprizeId, teamId);
+        _withdrawn[deprizeId][teamId] = true;
+        emit TeamWithdrawn(deprizeId, teamId);
+    }
+
+    /// @inheritdoc IDePrizeRegistry
+    function unmarkWithdrawn(uint256 deprizeId, uint256 teamId) external override onlyOwner {
+        DePrize storage d = _get(deprizeId);
+        if (_isTerminalState(d.state)) revert InvalidState(deprizeId, d.state);
+        if (!_isTeam[deprizeId][teamId]) revert TeamNotOnRoster(deprizeId, teamId);
+        _withdrawn[deprizeId][teamId] = false;
+        emit TeamReinstated(deprizeId, teamId);
     }
 
     // ---------------------------------------------------------------------
@@ -324,6 +437,21 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
         return _nextId - 1;
     }
 
+    /// @inheritdoc IDePrizeRegistry
+    function withdrawn(uint256 deprizeId, uint256 teamId) external view override returns (bool) {
+        return _withdrawn[deprizeId][teamId];
+    }
+
+    /// @inheritdoc IDePrizeRegistry
+    function supersededBy(uint256 deprizeId) external view override returns (uint256) {
+        return _supersededBy[deprizeId];
+    }
+
+    /// @inheritdoc IDePrizeRegistry
+    function supersedes(uint256 deprizeId) external view override returns (uint256) {
+        return _supersedes[deprizeId];
+    }
+
     // ---------------------------------------------------------------------
     // Internal helpers
     // ---------------------------------------------------------------------
@@ -349,7 +477,9 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     }
 
     function _isTerminalState(DePrizeState s) private pure returns (bool) {
+        // SUPERSEDED is terminal (stops bets / fee routing to prize pool) but
+        // deliberately NOT refundable — see isRefundable.
         return s == DePrizeState.M2_COMPLETE || s == DePrizeState.M2_FAILED || s == DePrizeState.CANCELLED
-            || s == DePrizeState.NO_WINNER;
+            || s == DePrizeState.NO_WINNER || s == DePrizeState.SUPERSEDED;
     }
 }

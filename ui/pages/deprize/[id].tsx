@@ -1,6 +1,11 @@
+import DePrizeRegistryABI from 'const/abis/DePrizeRegistry.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import TeamABI from 'const/abis/Team.json'
-import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import {
+  DEPRIZE_MINT_ADDRESSES,
+  DEPRIZE_REGISTRY_ADDRESSES,
+  TEAM_ADDRESSES,
+} from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -10,8 +15,12 @@ import { getContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import {
+  ROSTER_DISCLAIMER,
   getDePrizeCompetition,
+  getDePrizeGenerationNumber,
+  getDePrizeRaceBinding,
   isKnownDePrizeCompetition,
+  isRaceBindingComplete,
 } from '@/lib/deprize/competitions'
 import {
   DePrizeState,
@@ -68,7 +77,9 @@ function StateBadge({
         ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/40'
         : [DePrizeState.CANCELLED, DePrizeState.NO_WINNER, DePrizeState.M2_FAILED].includes(state)
           ? 'bg-red-500/10 text-red-200 border-red-500/30'
-          : 'bg-white/10 text-gray-200 border-white/20'
+          : state === DePrizeState.SUPERSEDED
+            ? 'bg-amber-500/15 text-amber-200 border-amber-500/40'
+            : 'bg-white/10 text-gray-200 border-white/20'
   return (
     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${tone}`}>
       {labelOverride ?? meta?.label ?? 'Unknown'}
@@ -94,6 +105,8 @@ function DePrizeDetailContent() {
   const { selectedChain: chain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(chain)
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
+  const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
+  const generationNumber = getDePrizeGenerationNumber(chainSlug, deprizeId)
   const knownCompetition = isKnownDePrizeCompetition(chainSlug, deprizeId)
   const account = useActiveAccount()
   const userAddress = account?.address
@@ -106,6 +119,7 @@ function DePrizeDetailContent() {
     refresh: refreshRegistry,
   } = useDePrize(deprizeId, chain)
   const numOutcomes = deprize?.teamIds.length ?? 0
+  const [withdrawnByTeamId, setWithdrawnByTeamId] = useState<Record<string, boolean>>({})
 
   const market = useDePrizeMarket({
     deprizeId,
@@ -137,6 +151,42 @@ function DePrizeDetailContent() {
   const [exitIndex, setExitIndex] = useState<number | null>(null)
 
   const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
+
+  // Disclosure flags: withdrawn competitors stay tradable but are badged.
+  useEffect(() => {
+    const address = DEPRIZE_REGISTRY_ADDRESSES[chainSlug] ?? ''
+    if (!deprize?.teamIds.length || !address || deprizeId === undefined) {
+      setWithdrawnByTeamId({})
+      return
+    }
+    let cancelled = false
+    const registry = getContract({
+      client: deprizeReadClient,
+      chain: readChain,
+      address,
+      abi: DePrizeRegistryABI as any,
+    })
+    ;(async () => {
+      const entries = await Promise.all(
+        deprize.teamIds.map(async (teamId) => {
+          try {
+            const w = await rpcRead<boolean>({
+              contract: registry,
+              method: 'withdrawn' as string,
+              params: [BigInt(deprizeId), teamId],
+            })
+            return [teamId.toString(), !!w] as const
+          } catch {
+            return [teamId.toString(), false] as const
+          }
+        }),
+      )
+      if (!cancelled) setWithdrawnByTeamId(Object.fromEntries(entries))
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [deprize?.teamIds, deprizeId, chainSlug, readChain, refreshNonce])
 
   const teamContract = useMemo(
     () =>
@@ -427,6 +477,11 @@ function DePrizeDetailContent() {
                   toneOverride={statusLabelOverride ? 'amber' : undefined}
                 />
               )}
+              {knownCompetition && generationNumber > 1 && (
+                <span className="px-3 py-1 rounded-full text-xs font-medium border bg-white/10 text-gray-200 border-white/20">
+                  Generation {generationNumber}
+                </span>
+              )}
             </div>
             <Link
               href="/deprize"
@@ -436,6 +491,39 @@ function DePrizeDetailContent() {
             </Link>
           </div>
           <p className="text-gray-300 text-sm mt-2">{competition.tagline}</p>
+          {deprize?.state === DePrizeState.SUPERSEDED && (
+            <p className="text-amber-200/90 text-sm mt-2">
+              This generation was superseded
+              {competition.supersededBy
+                ? ` by DePrize #${competition.supersededBy}`
+                : ''}
+              . New bets are closed; you can still sell your position at the market price. Odds for
+              this race live on the current generation.
+              {competition.supersededBy && (
+                <>
+                  {' '}
+                  <Link
+                    href={`/deprize/${competition.supersededBy}`}
+                    className="underline underline-offset-2 hover:text-amber-100"
+                  >
+                    Open generation {generationNumber + 1}
+                  </Link>
+                </>
+              )}
+            </p>
+          )}
+          {competition.supersedes !== undefined && deprize?.state !== DePrizeState.SUPERSEDED && (
+            <p className="text-gray-500 text-xs mt-2">
+              Continues from{' '}
+              <Link
+                href={`/deprize/${competition.supersedes}`}
+                className="text-indigo-300/90 underline underline-offset-2 hover:text-indigo-200"
+              >
+                generation {generationNumber - 1} (DePrize #{competition.supersedes})
+              </Link>
+              . Legacy positions remain sellable there until the race settles.
+            </p>
+          )}
           {effectiveDescription && (
             <p className="text-gray-500 text-sm mt-1">{effectiveDescription}</p>
           )}
@@ -566,9 +654,16 @@ function DePrizeDetailContent() {
         {numOutcomes > 0 && (
           <div className="flex flex-col gap-3">
             <h3 className="title-text-colors text-lg font-GoodTimes">Providers</h3>
+            {isRaceBindingComplete(raceBinding?.outcomes) && (
+              <p className="text-gray-500 text-xs leading-relaxed max-w-3xl">
+                {ROSTER_DISCLAIMER}
+              </p>
+            )}
             {market.outcomes.map((o) => {
               const teamId = deprize?.teamIds[o.index] ?? 0n
               const invested = costBasis[o.index] ?? 0
+              const outcomeBinding = raceBinding?.outcomes[o.index]
+              const isField = !!outcomeBinding?.field
               const redeemValueEth =
                 showResolved && o.balanceWei !== undefined
                   ? Number(
@@ -599,6 +694,13 @@ function DePrizeDetailContent() {
                   userConnected={!!userAddress}
                   onBet={(i) => setBetIndex(i)}
                   onCashOut={(i) => setExitIndex(i)}
+                  isField={isField}
+                  withdrawn={!!withdrawnByTeamId[teamId.toString()]}
+                  hrefOverride={
+                    outcomeBinding?.projectId
+                      ? `/moonbase/${outcomeBinding.projectId}`
+                      : undefined
+                  }
                 />
               )
             })}
@@ -647,7 +749,11 @@ function DePrizeDetailContent() {
         <BetModal
           deprizeId={deprizeId}
           outcomeIndex={betIndex}
-          teamName={`Team #${betIndex + 1}`}
+          teamName={
+            raceBinding?.outcomes[betIndex]?.field
+              ? 'Open Field'
+              : `Team #${betIndex + 1}`
+          }
           probability={market.outcomes[betIndex]?.probability ?? NaN}
           numOutcomes={numOutcomes}
           mintAddress={mintAddress}
@@ -669,7 +775,11 @@ function DePrizeDetailContent() {
         <ExitPositionModal
           deprizeId={deprizeId}
           outcomeIndex={exitIndex}
-          teamName={`Team #${exitIndex + 1}`}
+          teamName={
+            raceBinding?.outcomes[exitIndex]?.field
+              ? 'Open Field'
+              : `Team #${exitIndex + 1}`
+          }
           balanceWei={market.outcomes[exitIndex]?.balanceWei ?? 0n}
           positionId={market.outcomes[exitIndex]?.positionId ?? 0n}
           numOutcomes={numOutcomes}
