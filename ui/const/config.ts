@@ -767,7 +767,11 @@ export interface ProjectCycleConfig {
 }
 
 export const PROJECT_CYCLE: ProjectCycleConfig = {
-  phase: 'senate',
+  // Deploy-time fallback after Q3 Member Vote + Q2 Retro wrap-up.
+  // Live phase is flipped to idle via Operator Panel → Wrap Up Cycle
+  // (Upstash KV override); this keeps post-redeploy UI consistent if
+  // the override is cleared.
+  phase: 'idle',
   quarter: 3,
   year: 2026,
   memberVoteSubmissionsOpen: false,
