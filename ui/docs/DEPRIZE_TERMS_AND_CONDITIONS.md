@@ -134,6 +134,29 @@ refund-terminal state); on a successful prize payout they do not redeem against
 the pool. A superseded market's price may diverge from the live generation's
 odds — treat it as an exit quote, not the race's official odds.
 
+### 5.3 Named competitors and no endorsement
+
+Competitors are named at **MoonDAO's editorial discretion**, based on publicly
+available information about who is credibly pursuing the capability. Being listed
+as an outcome **does not mean** the organization has entered the DePrize,
+registered, agreed to participate, endorsed MoonDAO, or is affiliated with,
+sponsored by, or partnered with MoonDAO or this prize in any way. No listed
+organization is required to do anything, and none receives an entry obligation by
+being named.
+
+Your bet is on an **outcome** — whether that organization achieves the capability
+first as judged under Section 5 — and **not** on any affiliation, partnership, or
+endorsement. Organization names and marks are the property of their respective
+owners and are used only to identify the subject of an outcome (nominative use).
+Logos and brand styling are shown **only** for competitors that have claimed their
+listing; unclaimed competitors are displayed with a neutral placeholder mark.
+
+If you are an organization named in a DePrize and want your listing corrected,
+rebranded, or removed from future generations, contact MoonDAO using Section 15.
+An entrant who is verifiably ineligible to win may be dropped from the next
+generation's roster under Section 5.2; a live generation's outcome set cannot be
+edited.
+
 ## 6. Cancellation, no winner, and the equal-payout refund
 
 A DePrize may end in a **refund-terminal** state — **cancelled**, **no eligible

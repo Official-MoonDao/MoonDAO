@@ -1,6 +1,5 @@
 import {
   GENERIC_DEPRIZE_COMPETITION,
-  areRaceOutcomesPublishable,
   chainHasRaceBindings,
   findDePrizeIdForGoal,
   generationNumberOf,
@@ -8,8 +7,10 @@ import {
   getDePrizeGenerationNumber,
   getDePrizeQuestionId,
   getDePrizeRaceBinding,
-  isDePrizeGoalMarketPublishable,
+  isCompetitorClaimed,
+  isDePrizeGoalMarketBound,
   isKnownDePrizeCompetition,
+  isRaceBindingComplete,
   liveTipOf,
   partitionDePrizeIndexByRace,
   resolveLiveDePrizeId,
@@ -75,32 +76,40 @@ describe('deprize competitions registry', () => {
     expect(findDePrizeIdForGoal('sepolia', undefined)).to.equal(undefined)
   })
 
-  it('publishes the Sepolia fixture and refuses unbound / unconsented non-Sepolia', () => {
-    expect(isDePrizeGoalMarketPublishable('sepolia', 'shared-fission-power')).to.equal(true)
-    expect(isDePrizeGoalMarketPublishable('sepolia', 'shared-landing-pads')).to.equal(false)
-    expect(isDePrizeGoalMarketPublishable('arbitrum', 'shared-fission-power')).to.equal(false)
+  it('reports a bound race regardless of consent, and unbound goals as unbound', () => {
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-fission-power')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-landing-pads')).to.equal(false)
+    // Arbitrum has no binding at all, so there is no market to report.
+    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-fission-power')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('sepolia', undefined)).to.equal(false)
+  })
 
-    // Pure consent helper: non-Sepolia requires every outcome consented.
-    const unconsented = [
-      { projectId: 'a', consented: true },
-      { projectId: 'b' },
-    ]
-    const consented = [
-      { projectId: 'a', consented: true },
-      { projectId: 'b', consented: true },
-    ]
-    expect(areRaceOutcomesPublishable('arbitrum', unconsented)).to.equal(false)
-    expect(areRaceOutcomesPublishable('arbitrum', consented)).to.equal(true)
-    expect(areRaceOutcomesPublishable('sepolia', unconsented)).to.equal(true)
-    expect(areRaceOutcomesPublishable('arbitrum', undefined)).to.equal(false)
-
-    // Field slots are not competitors — skip them for the consent gate.
+  it('treats binding completeness as chain-agnostic and independent of consent', () => {
+    // Consent is no longer a visibility gate: an unconsented roster is publishable.
     expect(
-      areRaceOutcomesPublishable('arbitrum', [
-        { projectId: 'a', consented: true },
+      isRaceBindingComplete([{ projectId: 'a', consented: true }, { projectId: 'b' }])
+    ).to.equal(true)
+    expect(isRaceBindingComplete([{ projectId: 'a' }, { projectId: 'b' }])).to.equal(true)
+    expect(isRaceBindingComplete(undefined)).to.equal(false)
+    expect(isRaceBindingComplete([])).to.equal(false)
+
+    // A field-only roster names nobody, so there is nothing to price.
+    expect(
+      isRaceBindingComplete([{ projectId: '__open-field__', field: true }])
+    ).to.equal(false)
+    expect(
+      isRaceBindingComplete([
+        { projectId: 'a' },
         { projectId: '__open-field__', field: true },
       ])
     ).to.equal(true)
+  })
+
+  it('gates branding on claim status without touching visibility', () => {
+    expect(isCompetitorClaimed({ projectId: 'a', consented: true })).to.equal(true)
+    expect(isCompetitorClaimed({ projectId: 'a' })).to.equal(false)
+    expect(isCompetitorClaimed({ projectId: 'a', consented: false })).to.equal(false)
+    expect(isCompetitorClaimed(undefined)).to.equal(false)
   })
 
   it('partitions the index by raceLabel and keeps unbound chains flat', () => {
