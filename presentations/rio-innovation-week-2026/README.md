@@ -8,7 +8,7 @@ Pablo Moncada-Larrotiz's ~8-minute opening remarks slot.
 - [`dist/MoonDAO_Rio_Innovation_Week.pptx`](dist/MoonDAO_Rio_Innovation_Week.pptx)
 - [`dist/MoonDAO_Rio_Innovation_Week.pdf`](dist/MoonDAO_Rio_Innovation_Week.pdf)
 
-## What's in the deck (12 slides)
+## What's in the deck (13 slides)
 
 1. Title
 2. About the speaker — Pablo Moncada-Larrotiz
@@ -18,10 +18,11 @@ Pablo Moncada-Larrotiz's ~8-minute opening remarks slot.
 6. Section divider — "Go to Space with Frank White"
 7. Who is Frank White
 8. Fly to Space with Frank White (funding progress + candidate-selection process)
-9. DePrize — the prediction-market funding mechanism
-10. Lunar Atlas — mapping (and wagering on) the lunar economy
-11. Why this matters for emerging space nations
-12. Contact / call to action
+9. DePrize — the prediction-market funding mechanism, with a worked payout example
+10. Moonbase Zero — the real, live capability-race board (`/moonbase` in `ui/`)
+11. Case study — surviving the 14-day lunar night (the fission-power capability race, with the physics/math behind it)
+12. Why this matters for emerging space nations
+13. Contact / call to action
 
 Speaker notes with suggested per-slide timing (targeting ~8 minutes total) are embedded
 in the PPTX — open the Notes pane in PowerPoint/Keynote/Google Slides to see them.
@@ -32,8 +33,16 @@ All facts, figures, and quotes (mission statement, fundraising numbers, timeline
 milestones, DePrize mechanics, Frank White bio, Pablo's bio) were pulled from the
 MoonDAO codebase (`ui/`, `docs/DEPRIZE.md`, `.cursor/plans/`) and MoonDAO's own public
 sites (`moondao.com`, `docs.moondao.com`) — not invented. Where a figure is
-approximate/time-sensitive (e.g. ETH-denominated goals), the deck uses "~" or "≈" to
-match the source docs' own hedging.
+approximate/time-sensitive, the deck uses "~" or "≈" to match the source docs' own
+hedging.
+
+The Moonbase Zero slides (10–11) are pulled directly from the real, implemented
+`/moonbase` feature in `ui/` (`ui/pages/moonbase/`, `ui/lib/lunar-atlas/`,
+`ui/lib/lunar-atlas/seed/atlas.dataset.json`) — the capability-race list, competitor
+names/odds, the fission-surface-power criteria, and the underlying NASA sourcing are
+all read from that dataset, not recreated from a screenshot. The slides are laid out
+in the deck's own institutional style rather than mimicking the app's in-product dark
+UI chrome, to stay visually consistent with the rest of the presentation.
 
 ## Images
 
