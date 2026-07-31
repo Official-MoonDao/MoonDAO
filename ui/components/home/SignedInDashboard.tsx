@@ -23,6 +23,7 @@ import {
   PencilSquareIcon,
   ExclamationTriangleIcon,
   XMarkIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
@@ -92,6 +93,7 @@ import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardActiveProjects from '../project/DashboardActiveProjects'
 import DashboardQuests from './DashboardQuests'
+import DiscordAnnouncements from './DiscordAnnouncements'
 import RecentActivity from './RecentActivity'
 import { useClaimableQuestsCount } from '@/lib/xp/useClaimableQuestsCount'
 import LazyEarth from '@/components/globe/LazyEarth'
@@ -962,6 +964,21 @@ export default function SignedInDashboard({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Live from Discord — surfaces the community's active conversation */}
+        <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 mt-6">
+          <SectionHeader
+            title="Live from Discord"
+            subtitle="Recent announcements from the MoonDAO community"
+            icon={<ChatBubbleLeftRightIcon className="w-6 h-6 text-indigo-400" />}
+            actions={
+              <SubtleButton color="indigo" link="https://moondao.com/discord">
+                Join the conversation
+              </SubtleButton>
+            }
+          />
+          <DiscordAnnouncements maxItems={5} />
         </div>
 
         {/* Launchpad Feature - Featured Mission */}
