@@ -50,6 +50,8 @@ New accessors alongside the existing ones (all pure, all mocha-testable):
 - `getDePrizeRaceBinding(chainSlug, deprizeId)` — returns `{ sharedGoalId, raceLabel, outcomes }` or `undefined`.
 - `findDePrizeIdForGoal(chainSlug, sharedGoalId)` — the reverse index the hook needs. Build it as a memoized map, and have it throw in dev if one chain maps two DePrize ids to the same goal.
 - `isDePrizeGoalMarketPublishable(chainSlug, sharedGoalId)` — the consent gate (item 5).
+  **Superseded in Phase B2** by `isDePrizeGoalMarketBound`; see
+  [DEPRIZE_PHASE_B2.md](DEPRIZE_PHASE_B2.md).
 
 Deliberate choice: consent lives here as `outcomes[].consented`, not read from the atlas `Project.rosterStatus`. `rosterStatus` isn't importable on `main`, and the binding is the right source of truth for a legal gate anyway — it sits next to the chain id and the questionId it's gating.
 
@@ -80,6 +82,11 @@ Two behaviors B2 depends on: it mounts **one** market (B2 item 2 fetches only th
 One gotcha: the component uses a bare `<a>`. An internal `hrefOverride` like `/moonbase/{projectId}` will trip the `next/link` ESLint rule that already failed a Vercel build in Phase A — use `Link` for internal hrefs.
 
 ### 5. Consent gate
+
+> **Superseded in Phase B2.** Consent was replaced by a disclaimer-first model:
+> markets on bound races are visible, and `consented` now gates branding (logo,
+> brand color) only. See [DEPRIZE_PHASE_B2.md](DEPRIZE_PHASE_B2.md). The rest of
+> this section records the original B1 reasoning.
 
 `isDePrizeGoalMarketPublishable` returns false outside `sepolia` unless every entry in `outcomes` has `consented: true`. All 8 atlas races currently carry `rosterStatus: 'listed'`, which is curatorial judgment and not agreement — this is the only item in B1/B2 with real legal exposure, so it ships in the same PR as the binding it protects, not later.
 

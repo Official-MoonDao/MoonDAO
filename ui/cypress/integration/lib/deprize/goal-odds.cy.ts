@@ -14,9 +14,12 @@ describe('mapOutcomeOddsToProjectIds', () => {
       probabilities: [34, 35, 31],
     })
     expect(mapped).to.deep.equal({
-      'westinghouse-fission-surface-power': 0.34,
-      'lockheed-fission-surface-power': 0.35,
-      'ix-fission-surface-power': 0.31,
+      oddsByProjectId: {
+        'westinghouse-fission-surface-power': 0.34,
+        'lockheed-fission-surface-power': 0.35,
+        'ix-fission-surface-power': 0.31,
+      },
+      fieldOdds: undefined,
     })
   })
 
@@ -57,8 +60,11 @@ describe('mapOutcomeOddsToProjectIds', () => {
       probabilities: [34, NaN, 31],
     })
     expect(mapped).to.deep.equal({
-      'westinghouse-fission-surface-power': 0.34,
-      'ix-fission-surface-power': 0.31,
+      oddsByProjectId: {
+        'westinghouse-fission-surface-power': 0.34,
+        'ix-fission-surface-power': 0.31,
+      },
+      fieldOdds: undefined,
     })
   })
 
@@ -83,7 +89,10 @@ describe('mapOutcomeOddsToProjectIds', () => {
       teamIds: [1n, 2n],
       probabilities: [60, 40],
     })
-    expect(mapped).to.deep.equal({ a: 0.6, b: 0.4 })
+    expect(mapped).to.deep.equal({
+      oddsByProjectId: { a: 0.6, b: 0.4 },
+      fieldOdds: undefined,
+    })
   })
 
   it('returns undefined for an empty outcomes array', () => {
@@ -94,5 +103,24 @@ describe('mapOutcomeOddsToProjectIds', () => {
         probabilities: [],
       })
     ).to.equal(undefined)
+  })
+
+  it('routes field slots into fieldOdds and never into oddsByProjectId', () => {
+    const mapped = mapOutcomeOddsToProjectIds({
+      outcomes: [
+        { projectId: 'westinghouse-fission-surface-power', teamId: 301 },
+        { projectId: 'lockheed-fission-surface-power', teamId: 302 },
+        { projectId: '__open-field__', teamId: 999, field: true },
+      ],
+      teamIds: [301n, 302n, 999n],
+      probabilities: [40, 45, 15],
+    })
+    expect(mapped).to.deep.equal({
+      oddsByProjectId: {
+        'westinghouse-fission-surface-power': 0.4,
+        'lockheed-fission-surface-power': 0.45,
+      },
+      fieldOdds: 0.15,
+    })
   })
 })

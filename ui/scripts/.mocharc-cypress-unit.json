@@ -15,6 +15,7 @@
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
     "cypress/integration/unit/member-vote-tally.cy.tsx",
     "cypress/integration/unit/lunar-atlas-baseplan.cy.ts",
+    "cypress/integration/unit/lunar-atlas-deprize.cy.ts",
     "cypress/integration/unit/lunar-atlas-geo.cy.ts",
     "cypress/integration/unit/lunar-atlas-selectors.cy.ts",
     "cypress/integration/unit/lunar-atlas-southpole.cy.ts",

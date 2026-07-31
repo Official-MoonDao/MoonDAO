@@ -1,6 +1,7 @@
 import {
   DePrizeState,
   DEPRIZE_STATE_META,
+  buildSupersededPayouts,
   deriveDePrizeFlags,
   isRefundableState,
   shouldSurfaceResolution,
@@ -28,32 +29,30 @@ describe('deprize lifecycle derivations', () => {
         DePrizeState.M2_FAILED,
         DePrizeState.CANCELLED,
         DePrizeState.NO_WINNER,
+        DePrizeState.SUPERSEDED,
       ]) {
         expect(deriveDePrizeFlags(s, 0n).bettingOpen, `state ${s}`).to.equal(false)
       }
     })
 
-    it('refundable terminals are exactly CANCELLED / NO_WINNER / M2_FAILED', () => {
-      const refundable = [
-        DePrizeState.CANCELLED,
-        DePrizeState.NO_WINNER,
-        DePrizeState.M2_FAILED,
-      ]
-      for (let s = 0; s <= 10; s++) {
+    it('refundable terminals are exactly CANCELLED / NO_WINNER / M2_FAILED (not SUPERSEDED)', () => {
+      const refundable = [DePrizeState.CANCELLED, DePrizeState.NO_WINNER, DePrizeState.M2_FAILED]
+      for (let s = 0; s <= 11; s++) {
         const expected = refundable.includes(s)
         expect(deriveDePrizeFlags(s, 0n).isRefundable, `state ${s}`).to.equal(expected)
         expect(isRefundableState(s), `helper state ${s}`).to.equal(expected)
       }
     })
 
-    it('terminal states are the refundables plus M2_COMPLETE', () => {
+    it('terminal states are the refundables plus M2_COMPLETE and SUPERSEDED', () => {
       const terminal = [
         DePrizeState.M2_COMPLETE,
         DePrizeState.M2_FAILED,
         DePrizeState.CANCELLED,
         DePrizeState.NO_WINNER,
+        DePrizeState.SUPERSEDED,
       ]
-      for (let s = 0; s <= 10; s++) {
+      for (let s = 0; s <= 11; s++) {
         const expected = terminal.includes(s)
         expect(deriveDePrizeFlags(s, 0n).isTerminal, `state ${s}`).to.equal(expected)
         expect(isTerminalState(s), `helper state ${s}`).to.equal(expected)
@@ -66,7 +65,7 @@ describe('deprize lifecycle derivations', () => {
     })
 
     it('has display metadata for every state', () => {
-      for (let s = 0; s <= 10; s++) {
+      for (let s = 0; s <= 11; s++) {
         const meta = DEPRIZE_STATE_META[s as DePrizeState]
         expect(meta, `state ${s}`).to.not.equal(undefined)
         expect(meta.label.length).to.be.greaterThan(0)
@@ -115,23 +114,19 @@ describe('deprize lifecycle derivations', () => {
           ctfResolved: true,
           registryState: DePrizeState.OPEN,
           marketClosed: false,
-        }),
+        })
       ).to.equal(false)
     })
 
     it('ignores CTF resolution in DRAFT / LOCKED / VOTING unless market is Closed', () => {
-      for (const registryState of [
-        DePrizeState.DRAFT,
-        DePrizeState.LOCKED,
-        DePrizeState.VOTING,
-      ]) {
+      for (const registryState of [DePrizeState.DRAFT, DePrizeState.LOCKED, DePrizeState.VOTING]) {
         expect(
           shouldSurfaceResolution({
             ctfResolved: true,
             registryState,
             marketClosed: false,
           }),
-          `state ${registryState}`,
+          `state ${registryState}`
         ).to.equal(false)
       }
     })
@@ -151,7 +146,7 @@ describe('deprize lifecycle derivations', () => {
             registryState,
             marketClosed: false,
           }),
-          `state ${registryState}`,
+          `state ${registryState}`
         ).to.equal(true)
       }
     })
@@ -162,7 +157,7 @@ describe('deprize lifecycle derivations', () => {
           ctfResolved: true,
           registryState: DePrizeState.OPEN,
           marketClosed: true,
-        }),
+        })
       ).to.equal(true)
     })
 
@@ -172,8 +167,69 @@ describe('deprize lifecycle derivations', () => {
           ctfResolved: false,
           registryState: DePrizeState.SETTLED,
           marketClosed: true,
-        }),
+        })
       ).to.equal(false)
+    })
+  })
+
+  describe('buildSupersededPayouts (DePrizeResolve lineage mirror)', () => {
+    const FIELD = 999n
+    const roster = [301n, 302n, 303n, FIELD]
+
+    it('pays the named slot when the entity is on this roster', () => {
+      expect(
+        buildSupersededPayouts({
+          teamIds: roster,
+          tipState: DePrizeState.SETTLED,
+          tipWinningTeamId: 301n,
+          openFieldTeamId: FIELD,
+        })
+      ).to.deep.equal([1n, 0n, 0n, 0n])
+    })
+
+    it('pays Open Field when the tip winner is not on this roster', () => {
+      expect(
+        buildSupersededPayouts({
+          teamIds: roster,
+          tipState: DePrizeState.SETTLED,
+          tipWinningTeamId: 401n,
+          winningEntityTeamId: 401n,
+          openFieldTeamId: FIELD,
+        })
+      ).to.deep.equal([0n, 0n, 0n, 1n])
+    })
+
+    it('falls back to 1/N when fieldless and entity missing', () => {
+      expect(
+        buildSupersededPayouts({
+          teamIds: [301n, 302n, 303n],
+          tipState: DePrizeState.M2_COMPLETE,
+          tipWinningTeamId: 401n,
+          openFieldTeamId: 0n,
+        })
+      ).to.deep.equal([1n, 1n, 1n])
+    })
+
+    it('mirrors tip refund terminals as equal payout', () => {
+      expect(
+        buildSupersededPayouts({
+          teamIds: roster,
+          tipState: DePrizeState.NO_WINNER,
+          tipWinningTeamId: 0n,
+          openFieldTeamId: FIELD,
+        })
+      ).to.deep.equal([1n, 1n, 1n, 1n])
+    })
+
+    it('rejects an unsettled tip', () => {
+      expect(() =>
+        buildSupersededPayouts({
+          teamIds: roster,
+          tipState: DePrizeState.OPEN,
+          tipWinningTeamId: 301n,
+          openFieldTeamId: FIELD,
+        })
+      ).to.throw(/unresolved/i)
     })
   })
 

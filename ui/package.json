@@ -24,6 +24,8 @@
     "test:overview-path-vote": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-cypress-unit.json --spec cypress/integration/overview-path-vote/tally.cy.ts",
     "test:deprize": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-deprize-unit.json",
     "verify:deprize-reads": "node scripts/verify-deprize-reads.mjs",
+    "verify:deprize-moonbase": "tsx --tsconfig tsconfig.json scripts/verify-deprize-moonbase-sepolia.ts",
+    "smoke:moonbase-deprize": "node scripts/smoke-moonbase-deprize.mjs",
     "snapshot:vmooney": "node scripts/snapshot-vmooney.mjs",
     "snapshot:path-vote": "ts-node -r tsconfig-paths/register scripts/snapshot-path-vote.ts",
     "test:cypress-unit": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-cypress-unit.json",

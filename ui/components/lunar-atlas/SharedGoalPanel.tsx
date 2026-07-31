@@ -4,6 +4,17 @@
 // the goal's region marker on the globe.
 
 import { FlagIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
+import type { MouseEvent } from 'react'
+import {
+  OPEN_FIELD_PROJECT_ID,
+  ROSTER_DISCLAIMER,
+  findDePrizeIdForGoal,
+  getDePrizeRaceBinding,
+  isCompetitorClaimed,
+  isDePrizeGoalMarketBound,
+} from '@/lib/deprize/competitions'
+import { DEPRIZE_TERMS_URL } from '@/lib/deprize/constants'
 import {
   ROSTER_STATUS_CLASSES,
   ROSTER_STATUS_LABEL,
@@ -27,6 +38,27 @@ type SharedGoalPanelProps = {
   competitors: Competitor[]
   onClose: () => void
   onSelectProject: (id: string) => void
+  /** Bound DePrize id when this race has an on-chain market. */
+  deprizeId?: number
+  /** Chain slug for the binding lookup (branding + disclaimer). */
+  chainSlug?: string
+  /** Formatted prize-pool total, e.g. "0.042 ETH". */
+  prizePoolLabel?: string
+  prizePoolLoading?: boolean
+}
+
+const NEUTRAL_ACCENT = '#9ca3af'
+
+function oddsCaption(status: string | undefined): string {
+  if (status === 'live') return 'Odds are live market-implied probabilities.'
+  if (status === 'resolved') {
+    return 'Final market-implied probabilities from the resolved market.'
+  }
+  return 'Illustrative curator priors — live odds replace these when the prediction market opens.'
+}
+
+function stopRowNav(e: MouseEvent) {
+  e.stopPropagation()
 }
 
 export default function SharedGoalPanel({
@@ -34,7 +66,21 @@ export default function SharedGoalPanel({
   competitors,
   onClose,
   onSelectProject,
+  deprizeId,
+  chainSlug,
+  prizePoolLabel,
+  prizePoolLoading = false,
 }: SharedGoalPanelProps) {
+  // A registry id alone is not enough — incomplete race bindings must not
+  // show bound chrome (market CTA / ROSTER_DISCLAIMER). Match the bridge gate.
+  const bound = !!chainSlug && isDePrizeGoalMarketBound(chainSlug, goal.id)
+  const marketDeprizeId = bound
+    ? deprizeId ?? findDePrizeIdForGoal(chainSlug!, goal.id)
+    : undefined
+  const binding =
+    marketDeprizeId !== undefined && chainSlug
+      ? getDePrizeRaceBinding(chainSlug, marketDeprizeId)
+      : undefined
   const anyUnconfirmed = competitors.some(
     (c) =>
       c.project.rosterStatus === 'listed' ||
@@ -42,7 +88,7 @@ export default function SharedGoalPanel({
   )
   const split = goal.market?.payoutSplit
   const odds = goal.market?.impliedOdds
-  const oddsLive = goal.market?.status === 'live'
+  const fieldOdds = odds?.[OPEN_FIELD_PROJECT_ID]
   // Highest-odds competitor first; ties and odds-less entries keep seed order.
   const ranked = odds
     ? [...competitors].sort(
@@ -50,27 +96,62 @@ export default function SharedGoalPanel({
       )
     : competitors
 
+  const outcomeIndexFor = (projectId: string): number | undefined => {
+    if (!binding) return undefined
+    const i = binding.outcomes.findIndex(
+      (o) => !o.field && o.projectId === projectId
+    )
+    return i >= 0 ? i : undefined
+  }
+
+  // Brand color is withheld only from competitors that are actually outcomes in
+  // the market and have not claimed their listing. A competitor the atlas lists
+  // but the market does not price is not being bet on, so greying it would just
+  // read as a rendering bug.
+  const accentFor = (projectId: string, organization?: Organization) => {
+    if (!binding) return orgColor(organization)
+    const outcome = binding.outcomes.find((o) => o.projectId === projectId)
+    if (!outcome) return orgColor(organization)
+    return isCompetitorClaimed(outcome) ? orgColor(organization) : NEUTRAL_ACCENT
+  }
+
+  const marketStatus = goal.market?.status ?? 'none'
+  const showNoMarketFooter =
+    !bound && (marketStatus === 'none' || marketStatus === 'planned')
+  const fieldOutcomeIndex =
+    binding?.outcomes.findIndex((o) => o.field) ?? -1
+
   return (
     <div className="pointer-events-auto flex h-full w-full flex-col overflow-hidden rounded-2xl border border-fuchsia-400/20 bg-[#0a0c14]/95 shadow-2xl backdrop-blur-xl">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 border-b border-white/10 p-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <FlagIcon className="h-4 w-4 shrink-0 text-fuchsia-300" />
             <span className="text-xs font-medium uppercase tracking-wide text-fuchsia-200/80">
               Capability race
             </span>
-            <MarketPill status={goal.market?.status ?? 'none'} />
+            <MarketPill status={marketStatus} />
           </div>
           <h2 className="mt-1 text-lg font-semibold leading-snug text-white">
             {goal.title}
           </h2>
-          {goal.targetWindow && (
-            <div className="mt-1 text-xs text-white/50">
-              Target window: {goal.targetWindow.from ?? '?'} –{' '}
-              {goal.targetWindow.to ?? '?'}
-            </div>
-          )}
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50">
+            {goal.targetWindow && (
+              <span>
+                Target window: {goal.targetWindow.from ?? '?'} –{' '}
+                {goal.targetWindow.to ?? '?'}
+              </span>
+            )}
+            {bound && (
+              <span className="tabular-nums text-emerald-200/90">
+                Prize pool:{' '}
+                {prizePoolLoading
+                  ? '…'
+                  : prizePoolLabel ?? '—'}
+              </span>
+            )}
+          </div>
         </div>
         <button
           onClick={onClose}
@@ -103,72 +184,145 @@ export default function SharedGoalPanel({
             </h3>
             <div className="space-y-2">
               {ranked.map(({ project, organization }) => {
-                const color = orgColor(organization)
+                const color = accentFor(project.id, organization)
                 const p = odds?.[project.id]
+                const outcomeIndex = outcomeIndexFor(project.id)
+                const canBack =
+                  marketDeprizeId !== undefined && outcomeIndex !== undefined
                 return (
-                  <button
+                  <div
                     key={project.id}
-                    onClick={() => onSelectProject(project.id)}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-left transition hover:border-cyan-400/40 hover:bg-white/10"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 transition hover:border-cyan-400/40 hover:bg-white/10"
                   >
-                    <span className="flex w-full items-center gap-3">
-                      <span
-                        className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{
-                          backgroundColor: color,
-                          boxShadow: `0 0 10px ${color}`,
-                        }}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-white">
-                          {project.name}
-                        </span>
-                        <span className="block truncate text-xs text-white/50">
-                          {organization?.name ?? project.orgId}
-                        </span>
-                      </span>
-                      {p != null && (
-                        <span className="shrink-0 text-sm font-semibold tabular-nums text-cyan-200">
-                          {Math.round(p * 100)}%
-                        </span>
-                      )}
-                      {project.rosterStatus && (
+                    <button
+                      type="button"
+                      onClick={() => onSelectProject(project.id)}
+                      className="w-full text-left"
+                    >
+                      <span className="flex w-full items-center gap-3">
                         <span
-                          className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
-                          title={ROSTER_STATUS_LABEL[project.rosterStatus]}
-                        >
-                          {project.rosterStatus}
-                        </span>
-                      )}
-                    </span>
-                    {p != null && (
-                      <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-white/10">
-                        <span
-                          className="block h-full rounded-full"
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
                           style={{
-                            width: `${Math.round(p * 100)}%`,
                             backgroundColor: color,
+                            boxShadow:
+                              color === NEUTRAL_ACCENT
+                                ? undefined
+                                : `0 0 10px ${color}`,
                           }}
                         />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-white">
+                            {project.name}
+                          </span>
+                          <span className="block truncate text-xs text-white/50">
+                            {organization?.name ?? project.orgId}
+                          </span>
+                        </span>
+                        {p != null && (
+                          <span className="shrink-0 text-sm font-semibold tabular-nums text-cyan-200">
+                            {Math.round(p * 100)}%
+                          </span>
+                        )}
+                        {project.rosterStatus && (
+                          <span
+                            className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
+                            title={ROSTER_STATUS_LABEL[project.rosterStatus]}
+                          >
+                            {project.rosterStatus}
+                          </span>
+                        )}
                       </span>
+                      {p != null && (
+                        <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-white/10">
+                          <span
+                            className="block h-full rounded-full"
+                            style={{
+                              width: `${Math.round(p * 100)}%`,
+                              backgroundColor: color,
+                            }}
+                          />
+                        </span>
+                      )}
+                    </button>
+                    {canBack && (
+                      <div className="mt-2.5 flex justify-end">
+                        <Link
+                          href={`/deprize/${marketDeprizeId}?outcome=${outcomeIndex}`}
+                          onClick={stopRowNav}
+                          className="rounded border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-200 transition hover:border-emerald-300/50 hover:bg-emerald-500/20"
+                        >
+                          Back this team
+                        </Link>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 )
               })}
+              {fieldOdds != null && Number.isFinite(fieldOdds) && (
+                <div className="w-full rounded-lg border border-dashed border-white/15 bg-white/[0.03] px-3 py-2.5">
+                  <span className="flex w-full items-center gap-3">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full border border-dashed border-white/40"
+                      style={{ backgroundColor: 'transparent' }}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-white/80">
+                        Other entrants
+                      </span>
+                      <span className="block truncate text-xs text-white/40">
+                        Any qualifying entrant not listed above
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-cyan-200/80">
+                      {Math.round(fieldOdds * 100)}%
+                    </span>
+                  </span>
+                  <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-white/10">
+                    <span
+                      className="block h-full rounded-full bg-white/30"
+                      style={{ width: `${Math.round(fieldOdds * 100)}%` }}
+                    />
+                  </span>
+                  {marketDeprizeId !== undefined && fieldOutcomeIndex >= 0 && (
+                    <div className="mt-2.5 flex justify-end">
+                      <Link
+                        href={`/deprize/${marketDeprizeId}?outcome=${fieldOutcomeIndex}`}
+                        className="rounded border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-200 transition hover:border-emerald-300/50 hover:bg-emerald-500/20"
+                      >
+                        Back the field
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            {marketDeprizeId !== undefined && (
+              <Link
+                href={`/deprize/${marketDeprizeId}`}
+                className="mt-3 flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-white/85 transition hover:border-fuchsia-400/40 hover:bg-white/10 hover:text-white"
+              >
+                See all competitors
+              </Link>
+            )}
+
             {odds && (
               <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-                {oddsLive
-                  ? 'Odds are live market-implied probabilities.'
-                  : 'Illustrative curator priors — live odds replace these when the prediction market opens.'}
+                {oddsCaption(marketStatus)}
               </p>
             )}
-            {anyUnconfirmed && (
+            {bound ? (
               <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-                &ldquo;Listed&rdquo; reflects MoonDAO&apos;s curatorial judgment
-                of credible competitors. It does not imply these organizations
-                have agreed to participate in any MoonDAO prize.
+                {ROSTER_DISCLAIMER}
               </p>
+            ) : (
+              anyUnconfirmed && (
+                <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+                  &ldquo;Listed&rdquo; reflects MoonDAO&apos;s curatorial judgment
+                  of credible competitors. It does not imply these organizations
+                  have agreed to participate in any MoonDAO prize.
+                </p>
+              )
             )}
           </div>
         )}
@@ -253,10 +407,26 @@ export default function SharedGoalPanel({
           </div>
         )}
 
-        <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
-          A concept for a future MoonDAO DePrize. No market exists yet; nothing
-          here is an offer, endorsement, or prediction of outcomes.
-        </p>
+        {showNoMarketFooter ? (
+          <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
+            A concept for a future MoonDAO DePrize. No market exists yet; nothing
+            here is an offer, endorsement, or prediction of outcomes.
+          </p>
+        ) : (
+          <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
+            Nothing here is an offer, endorsement, or prediction of outcomes. See
+            the{' '}
+            <a
+              href={DEPRIZE_TERMS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-white/20 underline-offset-2 hover:text-white/60"
+            >
+              DePrize Terms &amp; Conditions
+            </a>{' '}
+            before placing a bet.
+          </p>
+        )}
       </div>
     </div>
   )

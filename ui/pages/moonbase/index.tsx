@@ -1,9 +1,16 @@
 import { GlobeAltIcon } from '@heroicons/react/24/outline'
 import type { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { isPublicProductionHost } from 'const/flags'
+import { UNIT } from '@/lib/deprize/constants'
+import { fmtPrizeEth } from '@/lib/deprize/format'
+import { mergeLiveMarketInto } from '@/lib/deprize/goal-market'
+import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import {
   latLonToVector3,
   MOON_RADIUS_M,
@@ -32,6 +39,7 @@ import {
   orgById,
   projectById,
   projectStateAtYear,
+  sharedGoalById,
   type TechTree,
 } from '@/lib/lunar-atlas/selectors'
 import type { Project, ProjectType, SharedGoal } from '@/lib/lunar-atlas/types'
@@ -127,6 +135,8 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
 export default function MoonBaseZeroIndex() {
   const router = useRouter()
   const dataset = SEED_ATLAS
+  const { selectedChain: chain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(chain)
 
   const [focus, setFocus] = useState<GlobeFocus>(null)
   // Selection is layered: a tech-tree site (category) opens the race/market
@@ -211,11 +221,46 @@ export default function MoonBaseZeroIndex() {
     [dataset.projects, selectedOrgIds]
   )
 
+  // Mount one DePrize market — the open race only. Eight concurrent 30s polls
+  // on the r3f scene is exactly what the bridge was designed to avoid.
+  const liveOdds = useDePrizeGoalOdds(chain, selectedGoalId ?? undefined)
+  const { totalFunding, isLoading: isLoadingPrizePool } = useTotalFunding(
+    liveOdds.jbProjectId,
+    chain
+  )
+  const prizePoolLabel =
+    liveOdds.jbProjectId !== undefined && !isLoadingPrizePool
+      ? `${fmtPrizeEth(Number(totalFunding) / Number(UNIT))} ETH`
+      : undefined
+  // Depend on the bridge fields, not the result object — the hook returns a
+  // fresh object every render and would rebuild trees on every hover/frame.
+  // Pass the dataset array itself, not a copy: mergeLiveMarketInto returns the
+  // same reference when nothing merged, which keeps buildTechTrees and the
+  // colony layout memos from recomputing for unbound races.
+  const sharedGoals = useMemo(
+    () =>
+      mergeLiveMarketInto(
+        dataset.sharedGoals,
+        selectedGoalId ?? undefined,
+        liveOdds
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional field deps
+    [
+      dataset.sharedGoals,
+      selectedGoalId,
+      liveOdds.deprizeId,
+      liveOdds.status,
+      liveOdds.fieldOdds,
+      liveOdds.oddsByProjectId,
+    ]
+  )
+
   // One district per capability category (post-filter, so legend filters hide
-  // whole districts when their members are filtered out).
+  // whole districts when their members are filtered out). Live odds for the
+  // open race flow in via sharedGoals so rankedMembers / Legend inherit them.
   const trees = useMemo(
-    () => buildTechTrees(filteredProjects, dataset.sharedGoals),
-    [filteredProjects, dataset.sharedGoals]
+    () => buildTechTrees(filteredProjects, sharedGoals),
+    [filteredProjects, sharedGoals]
   )
 
   // What actually stands on the ground: a race's declared competitors, and
@@ -288,15 +333,15 @@ export default function MoonBaseZeroIndex() {
   const selectedSharedGoals = useMemo(
     () =>
       selectedProject
-        ? dataset.sharedGoals.filter((g) =>
+        ? sharedGoals.filter((g) =>
             selectedProject.sharedGoalIds.includes(g.id)
           )
         : [],
-    [dataset.sharedGoals, selectedProject]
+    [sharedGoals, selectedProject]
   )
 
   const selectedGoal: SharedGoal | undefined = selectedGoalId
-    ? dataset.sharedGoals.find((g) => g.id === selectedGoalId)
+    ? sharedGoals.find((g) => g.id === selectedGoalId)
     : undefined
   // A tree selection without a race goal renders the plain tech-tree panel —
   // but once a competitor is picked, the project panel takes over even though
@@ -377,6 +422,32 @@ export default function MoonBaseZeroIndex() {
     if (p) flyToProject(p, site)
   }
 
+  // Keep ?race= / ?year= in sync with selection without remounting the scene.
+  //
+  // `pathname` must stay whatever route is mounted. `/moonbase/[projectId]`
+  // re-exports this component, but it is still a different page entry, so
+  // rewriting the path to `/moonbase` would be a real navigation — shallow is
+  // ignored across pages — and would tear down and rebuild the whole r3f scene
+  // for anyone who arrived from a competitor deep link. Keeping the dynamic
+  // segment (and its `projectId` query key, which Next interpolates back into
+  // the path) makes every update a same-page shallow replace.
+  const replaceMoonbaseQuery = (patch: {
+    race?: string | null
+    year?: number | null
+  }) => {
+    if (!router.isReady) return
+    const next: Record<string, string | string[] | undefined> = {
+      ...router.query,
+    }
+    if (patch.race === null) delete next.race
+    else if (patch.race !== undefined) next.race = patch.race
+    if (patch.year === null) delete next.year
+    else if (patch.year !== undefined) next.year = String(patch.year)
+    void router.replace({ pathname: router.pathname, query: next }, undefined, {
+      shallow: true,
+    })
+  }
+
   // Honor `/moonbase/[projectId]` deep links once the router has the param.
   useEffect(() => {
     if (!router.isReady) return
@@ -388,6 +459,32 @@ export default function MoonBaseZeroIndex() {
     // enough for a one-shot open on navigation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, router.query.projectId])
+
+  // Honor ?race= / ?year= on the index route.
+  useEffect(() => {
+    if (!router.isReady) return
+    const race =
+      typeof router.query.race === 'string' ? router.query.race : undefined
+    if (race && sharedGoalById(dataset, race) && race !== selectedGoalId) {
+      handleSelectSharedGoal(race, { skipUrl: true })
+    }
+    const yearRaw =
+      typeof router.query.year === 'string' ? router.query.year : undefined
+    if (yearRaw) {
+      const y = Number.parseInt(yearRaw, 10)
+      if (
+        Number.isFinite(y) &&
+        y >= yearRange.min &&
+        y <= yearRange.max &&
+        y !== year
+      ) {
+        setYear(y)
+        setPlaying(false)
+      }
+    }
+    // One-shot open from the URL; selection handlers write the URL themselves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.race, router.query.year])
 
   // Return from a competitor's project panel to the race/tree list it was
   // opened from.
@@ -419,11 +516,18 @@ export default function MoonBaseZeroIndex() {
     setSelectedGoalId(tree.goal?.id ?? null)
     setSelectedTreeCategory(category)
     flyToSite(category)
+    replaceMoonbaseQuery({
+      race: tree.goal?.id ?? null,
+      year,
+    })
   }
 
-  // Opening a goal directly (from a ProjectPanel link or a race zone ring)
+  // Opening a goal directly (from a ProjectPanel link, race zone, or ?race=)
   // also highlights its category's site when it has one.
-  const handleSelectSharedGoal = (goalId: string) => {
+  const handleSelectSharedGoal = (
+    goalId: string,
+    opts?: { skipUrl?: boolean }
+  ) => {
     if (goalId === selectedGoalId && !selectedProjectId) return
     const g = dataset.sharedGoals.find((x) => x.id === goalId)
     setSelectedProjectId(null)
@@ -439,6 +543,7 @@ export default function MoonBaseZeroIndex() {
         distanceRadii: 200 / MOON_RADIUS_M,
       })
     }
+    if (!opts?.skipUrl) replaceMoonbaseQuery({ race: goalId, year })
   }
 
   // Backing out of a selection returns to the South Pole overview (home),
@@ -449,6 +554,7 @@ export default function MoonBaseZeroIndex() {
     setSelectedTreeCategory(null)
     setRaceReturn(null)
     setFocus(null)
+    replaceMoonbaseQuery({ race: null, year })
   }
 
   // Clicking the lunar surface or empty space backs out of whichever panel
@@ -536,6 +642,10 @@ export default function MoonBaseZeroIndex() {
               onChange={(y) => {
                 setYear(y)
                 setPlaying(false)
+                replaceMoonbaseQuery({
+                  race: selectedGoalId,
+                  year: y,
+                })
               }}
               playing={playing}
               onTogglePlay={() => setPlaying((p) => !p)}
@@ -556,6 +666,12 @@ export default function MoonBaseZeroIndex() {
                 competitors={goalCompetitors}
                 onClose={clearSelection}
                 onSelectProject={handleSelectProject}
+                deprizeId={liveOdds.deprizeId}
+                chainSlug={chainSlug}
+                prizePoolLabel={prizePoolLabel}
+                prizePoolLoading={
+                  liveOdds.jbProjectId !== undefined && isLoadingPrizePool
+                }
               />
             ) : selectedTree ? (
               <TechTreePanel
