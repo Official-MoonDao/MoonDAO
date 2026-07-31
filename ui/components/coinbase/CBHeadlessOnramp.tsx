@@ -608,11 +608,21 @@ export function CBHeadlessOnramp({
                 ? 'Press the Google Pay button above to complete your purchase securely with Coinbase.'
                 : 'Scan the QR code above with your iPhone to complete your purchase securely with Apple Pay.'}
           </p>
-          {/* Desktop users without an iPhone can't scan the Apple Pay QR — offer
-              the hosted Coinbase flow (account / card / bank) as an alternative. */}
-          {!nativeApplePay && !useGooglePay && onUseAccountFlow && (
+          {/* Not everyone has Apple/Google Pay set up (or an iPhone to scan the
+              QR with) — always offer the hosted Coinbase flow (guest
+              debit/credit card checkout or an existing account) as a way out.
+              Previously this only showed on desktop browsers without native
+              Apple/Google Pay, which left Safari and Android users with no
+              visible alternative at all. */}
+          {onUseAccountFlow && (
             <div className="pt-1 text-center">
-              <p className="text-gray-500 text-xs mb-2">No iPhone to scan with?</p>
+              <p className="text-gray-500 text-xs mb-2">
+                {nativeApplePay
+                  ? "Apple Pay not set up on this device?"
+                  : useGooglePay
+                    ? 'Google Pay not set up on this device?'
+                    : 'No iPhone to scan with?'}
+              </p>
               <button
                 type="button"
                 disabled={accountFlowLoading}
@@ -628,7 +638,7 @@ export function CBHeadlessOnramp({
               >
                 {accountFlowLoading
                   ? 'Opening Coinbase…'
-                  : 'Pay with a Coinbase account or card instead'}
+                  : 'Pay with a debit/credit card or Coinbase account instead'}
               </button>
             </div>
           )}
@@ -812,6 +822,33 @@ export function CBHeadlessOnramp({
             effectiveEthAmount <= 0
           }
         />
+
+        {/* Surfaced here too (not just after a failed attempt) so users who
+            already know they don't have Apple/Google Pay set up don't have to
+            verify phone/email and agree to terms first just to find an
+            alternative. Still Coinbase — guest card checkout or an existing
+            account — never MoonPay, which requires an SSN for US persons. */}
+        {onUseAccountFlow && (
+          <div className="text-center">
+            <button
+              type="button"
+              disabled={accountFlowLoading}
+              onClick={async () => {
+                setAccountFlowLoading(true)
+                try {
+                  await onUseAccountFlow()
+                } finally {
+                  setAccountFlowLoading(false)
+                }
+              }}
+              className="text-xs font-semibold text-blue-300 hover:text-blue-200 underline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {accountFlowLoading
+                ? 'Opening Coinbase…'
+                : `Don't have ${payLabel} set up? Pay with a debit/credit card or Coinbase account instead`}
+            </button>
+          </div>
+        )}
 
         {/* Secured footer */}
         <div className="bg-black/10 rounded-lg p-4 border border-white/5">

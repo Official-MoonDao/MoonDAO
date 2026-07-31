@@ -154,8 +154,11 @@ export function FundOnramp({
 
   // Rendered just beneath the embedded provider's "Fund Wallet" header so the
   // user picks how to pay after they see what they're funding. US users only
-  // get Coinbase (Apple/Google Pay), so we don't surface MoonPay or a provider
-  // toggle for them — just an informational line.
+  // get Coinbase (Apple/Google Pay) — MoonPay's KYC requires an SSN for US
+  // persons, which we intentionally never ask for anywhere in the app — so we
+  // don't surface MoonPay or a provider toggle for them, just an informational
+  // line. The Coinbase-hosted guest/account fallback (card, no SSN needed
+  // under its guest-checkout limit) is surfaced inside CBHeadlessOnramp.
   const providerSelector = isUS ? (
     <div
       data-testid="onramp-provider-select"
