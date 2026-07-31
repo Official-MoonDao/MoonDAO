@@ -229,9 +229,11 @@ contract DePrizeSeedRace is Script, Config {
         MoonDAOTeamCreator.HatURIs memory hatURIs =
             MoonDAOTeamCreator.HatURIs({adminHatURI: "", managerHatURI: "", memberHatURI: ""});
         // Coverage build strips optional profile fields via 0001-struct.patch
-        // (see CreateTestMissionSepolia.s.sol) — assign only fields present in
-        // both the full and patched struct.
+        // (see CreateTestMissionSepolia.s.sol). This Sepolia seed script is run
+        // against the unpatched struct so `name` is set; _view/formId are the
+        // only other fields we touch (rest stay default empty).
         MoonDAOTeamCreator.TeamMetadata memory metadata;
+        metadata.name = name;
         metadata._view = "";
         metadata.formId = "";
 
