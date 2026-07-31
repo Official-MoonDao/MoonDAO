@@ -4,7 +4,9 @@ Presentation deck for the **"Deep Space and the Lunar Economy"** panel (GRU, Moo
 UNOOSA), moderated by Dr. Paolo Gessini for the Brazilian Space Agency (AEB). Built for
 Pablo Moncada-Larrotiz's ~8-minute opening remarks slot.
 
-**Final file:** [`dist/MoonDAO_Rio_Innovation_Week.pptx`](dist/MoonDAO_Rio_Innovation_Week.pptx)
+**Final files:**
+- [`dist/MoonDAO_Rio_Innovation_Week.pptx`](dist/MoonDAO_Rio_Innovation_Week.pptx)
+- [`dist/MoonDAO_Rio_Innovation_Week.pdf`](dist/MoonDAO_Rio_Innovation_Week.pdf)
 
 ## What's in the deck (12 slides)
 
