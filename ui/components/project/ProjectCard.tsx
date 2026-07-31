@@ -12,13 +12,11 @@ import { useRouter } from 'next/router'
 import React, { useContext, memo, useState, useMemo, useEffect, useRef } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import { useSubHats } from '@/lib/hats/useSubHats'
-import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
 import { useLivePhase } from '@/lib/operator/useLivePhase'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
-import useProjectData, { Project } from '@/lib/project/useProjectData'
+import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -28,7 +26,6 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
 import { SenateVoteButtons, SenatorsStatus } from '@/components/project/SenateVote'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
 import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
 
@@ -167,7 +164,6 @@ const ProjectCardContent = memo(
     distribute,
     userContributed,
     userHasVotingPower,
-    isMembershipDataLoading,
     isVotingPeriod,
     active,
     isExpanded,
@@ -380,16 +376,7 @@ const ProjectCardContent = memo(
               </div>
             ) : userContributed ? (
               <div className="flex flex-col items-start sm:items-end flex-shrink-0">
-                <p className="text-gray-400">
-                  {isMembershipDataLoading ? 'Checking...' : 'Contributed'}
-                </p>
-                {isMembershipDataLoading && (
-                  <LoadingSpinner
-                    width="w-4"
-                    height="h-4"
-                    className="text-gray-400 border-gray-400 border-t-transparent mt-1"
-                  />
-                )}
+                <p className="text-gray-400">Contributed</p>
               </div>
             ) : (
               <div className="flex-shrink-0">
@@ -449,8 +436,8 @@ ProjectCardContent.displayName = 'ProjectCardContent'
 
 export default function ProjectCard({
   project,
-  projectContract,
-  hatsContract,
+  projectContract: _projectContract,
+  hatsContract: _hatsContract,
   distribute,
   distribution,
   handleDistributionChange,
@@ -478,9 +465,6 @@ export default function ProjectCard({
   // (showing allocation steppers) and render `Budget: $undefined`.
   const loadHeavy = isVisible || isExpanded || !!distribute || isSenateVote
 
-  const { adminHatId } = useProjectData(projectContract, hatsContract, project, {
-    enabled: loadHeavy,
-  })
   const { authenticated } = usePrivy()
 
   const { selectedChain } = useContext(ChainContextV5)
@@ -490,58 +474,27 @@ export default function ProjectCard({
     abi: CitizenABI as any,
     chain: selectedChain,
   })
-  const hats = useSubHats(
-    selectedChain,
-    adminHatId,
-    loadHeavy && !!project?.eligible
-  )
-  const wearers = useUniqueHatWearers(hats)
 
-  // Improved contributor detection with both hat-based and rewardDistribution-based checks
+  // Only final-report reward recipients count as contributors for the
+  // distribute UI. Hat wearers / multisig signers are team operators, not
+  // reward recipients — matching `zeroOutDistributionForContributors` in
+  // lib/utils/rewards.ts, which also keys solely off rewardDistribution.
   const userContributed = useMemo(() => {
-    if (!address || !project || !authenticated) return false
-
-    let isContributor = false
-    if (wearers && address) {
-      wearers.forEach((wearer: { address: string }) => {
-        if (address.toLowerCase() === wearer['address'].toLowerCase()) {
-          isContributor = true
-        }
-      })
+    if (!address || !project || !authenticated || !project.rewardDistribution) {
+      return false
     }
-
-    let rewardDistributionContribution = false
-    if (project.rewardDistribution) {
-      try {
-        const contributors: { [key: string]: number } = normalizeJsonString(
-          project.rewardDistribution
-        )
-        rewardDistributionContribution = Object.keys(contributors).some(
-          (contributor) => contributor.toLowerCase() === address.toLowerCase()
-        )
-      } catch (error) {
-        console.error('Error parsing rewardDistribution:', error)
-      }
+    try {
+      const contributors: { [key: string]: number } = normalizeJsonString(
+        project.rewardDistribution
+      )
+      return Object.keys(contributors).some(
+        (contributor) => contributor.toLowerCase() === address.toLowerCase()
+      )
+    } catch (error) {
+      console.error('Error parsing rewardDistribution:', error)
+      return false
     }
-
-    return isContributor || rewardDistributionContribution
-  }, [wearers, address, project])
-
-  const isMembershipDataLoading = useMemo(() => {
-    if (!loadHeavy) return false
-    // Still loading if we have an adminHatId but no hats or wearers data yet
-    const hatDataLoading = !!(adminHatId && (!hats || !wearers))
-
-    const contributionCheckLoading =
-      distribute &&
-      address &&
-      project &&
-      !project.rewardDistribution && // No rewardDistribution data
-      adminHatId && // Has adminHatId (so should have hat data)
-      !wearers // But no wearers data yet
-
-    return hatDataLoading || contributionCheckLoading
-  }, [loadHeavy, adminHatId, hats, wearers, distribute, address, project])
+  }, [address, authenticated, project])
 
   if (!project) return null
 
@@ -582,7 +535,6 @@ export default function ProjectCard({
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
           userHasVotingPower={userHasVotingPower}
-          isMembershipDataLoading={isMembershipDataLoading}
           isVotingPeriod={isVotingPeriod}
           active={active}
           isExpanded={false}
@@ -605,7 +557,6 @@ export default function ProjectCard({
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
           userHasVotingPower={userHasVotingPower}
-          isMembershipDataLoading={isMembershipDataLoading}
           isVotingPeriod={isVotingPeriod}
           active={active}
           isExpanded={isExpanded}

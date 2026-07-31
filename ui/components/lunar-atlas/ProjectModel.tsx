@@ -2506,33 +2506,484 @@ function TreadTracks({ x }: { x: number }) {
   )
 }
 
-// Depth and outward reach of the graded fill under the apron — see the note
-// on RoverDepotYard's skirt below.
-const DEPOT_SKIRT_DEPTH = 1.8
-const DEPOT_SKIRT_OUT = 1.0
+// A recharge/propellant station — the depot's answer to a terrestrial gas
+// station, sized for LTV-class hardware rather than cars. Two islands under
+// one canopy, larger than `ServiceCanopy` (that one shelters a single
+// wheel-hoist; this is the yard's primary built structure) so the two never
+// compete for which one reads as the depot's main feature. Each island's
+// pump head is deliberately ambiguous between a high-current connector and
+// a cryogenic nozzle — a future competitor's hardware could plausibly be
+// either — fed from a pair of upright tanks at one end via visible piping,
+// so the station reads as actually supplied rather than a prop with nothing
+// behind it.
+const GAS_CANOPY = '#d6d9de'
+const GAS_CANOPY_DARK = '#888e9a'
+const GAS_ISLAND = '#5f5c53' // matches DEPOT_CURB — a raised island is poured the same as a curb
+const GAS_TANK_BODY = '#b9bdc3'
+const GAS_TANK_BAND = '#c0402e' // hazard band — pressurized/cryogenic contents
+
+// One pump: a post with a display readout, a nozzle racked in its holster on
+// a coiled hose, standing on a raised island rather than flush with the
+// apron — the one thing that unmistakably reads as "pump" rather than
+// "bollard" is the hose actually running somewhere.
+function GasPumpIsland({ x, accent }: { x: number; accent: string }) {
+  const islandW = 0.7
+  const islandD = 1.3
+  const postH = 1.05
+  return (
+    <group position={[x, 0, 0]}>
+      <mesh position={[0, 0.06, 0]}>
+        <boxGeometry args={[islandW, 0.12, islandD]} />
+        <meshStandardMaterial color={GAS_ISLAND} roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.12 + postH / 2, 0]}>
+        <boxGeometry args={[0.28, postH, 0.22]} />
+        <meshStandardMaterial color={METAL} metalness={0.4} roughness={0.5} />
+      </mesh>
+      {/* Readout — a glowing panel rather than literal digits, same
+          shorthand as a beacon's own reticle: legible as instrumentation at
+          the distance this scene is ever viewed from. */}
+      <mesh position={[0, 0.12 + postH * 0.72, 0.112]}>
+        <planeGeometry args={[0.16, 0.1]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.6}
+          toneMapped={false}
+        />
+      </mesh>
+      {/* Nozzle holster + coiled hose, racked rather than lying loose — the
+          detail that tells a pump from a charging bollard. */}
+      <mesh position={[0.16, 0.12 + postH * 0.4, 0.1]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.09, 0.028, 8, 16]} />
+        <meshStandardMaterial color={REEL_CABLE} roughness={0.85} />
+      </mesh>
+      <mesh
+        position={[0.16, 0.12 + postH * 0.22, 0.1]}
+        rotation={[0, 0, Math.PI / 2]}
+      >
+        <cylinderGeometry args={[0.03, 0.035, 0.16, 8]} />
+        <meshStandardMaterial color={DARK} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 0.12 + postH + 0.02, 0]}>
+        <sphereGeometry args={[0.045, 10, 10]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.4}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The canopy overhead — wider and taller than `ServiceCanopy`'s wheel-hoist
+// shed, with recessed under-canopy lighting rather than one bare roof, since
+// this is meant to read as the depot's principal built structure.
+function GasStationCanopy() {
+  const w = 3.4
+  const d = 2.8
+  const postH = 2.6
+  const corners: [number, number][] = [
+    [-w / 2, -d / 2],
+    [w / 2, -d / 2],
+    [-w / 2, d / 2],
+    [w / 2, d / 2],
+  ]
+  return (
+    <group>
+      {corners.map(([dx, dz]) => (
+        <mesh key={`${dx}:${dz}`} position={[dx, postH / 2, dz]}>
+          <cylinderGeometry args={[0.1, 0.1, postH, 10]} />
+          <meshStandardMaterial color={METAL} metalness={0.45} roughness={0.5} />
+        </mesh>
+      ))}
+      <mesh position={[0, postH + 0.12, 0]}>
+        <boxGeometry args={[w + 0.6, 0.14, d + 0.6]} />
+        <meshStandardMaterial color={GAS_CANOPY} metalness={0.3} roughness={0.5} />
+      </mesh>
+      <mesh position={[0, postH + 0.03, 0]}>
+        <boxGeometry args={[w + 0.5, 0.02, d + 0.5]} />
+        <meshStandardMaterial color={GAS_CANOPY_DARK} metalness={0.35} roughness={0.5} />
+      </mesh>
+      {/* Recessed lighting: a row of small emissive rectangles set into the
+          underside rather than one bare panel — what actually illuminates a
+          canopy's own islands after dark. */}
+      {[-1, 1].map((s) =>
+        [-0.9, 0.9].map((dz) => (
+          <mesh
+            key={`${s}:${dz}`}
+            position={[s * 1.1, postH - 0.02, dz]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <planeGeometry args={[0.4, 0.14]} />
+            <meshStandardMaterial
+              color="#eef2ff"
+              emissive="#dfe6ff"
+              emissiveIntensity={1.2}
+              toneMapped={false}
+            />
+          </mesh>
+        ))
+      )}
+    </group>
+  )
+}
+
+// An upright resupply tank, banded for pressurized/cryogenic contents and
+// standing on short legs rather than resting flush — a fitting real
+// pump-station tankage would keep off bare regolith to inspect its own
+// underside.
+function PropellantTank({ x, z }: { x: number; z: number }) {
+  const r = 0.26
+  const h = 1.5
+  return (
+    <group position={[x, 0, z]}>
+      {[-1, 1].map((s) =>
+        [-1, 1].map((t) => (
+          <mesh
+            key={`${s}:${t}`}
+            position={[s * r * 0.7, 0.09, t * r * 0.7]}
+          >
+            <cylinderGeometry args={[0.02, 0.02, 0.18, 6]} />
+            <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.4} />
+          </mesh>
+        ))
+      )}
+      <mesh position={[0, 0.18 + h / 2, 0]}>
+        <cylinderGeometry args={[r, r, h, 18]} />
+        <meshStandardMaterial color={GAS_TANK_BODY} metalness={0.3} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 0.18 + h * 0.62, 0]}>
+        <cylinderGeometry args={[r * 1.01, r * 1.01, h * 0.16, 18]} />
+        <meshStandardMaterial color={GAS_TANK_BAND} roughness={0.6} />
+      </mesh>
+      {/* Domed cap, its equator flush with the cylinder's own top rim rather
+          than floating above it. */}
+      <mesh position={[0, 0.18 + h, 0]}>
+        <sphereGeometry args={[r, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={GAS_TANK_BODY} metalness={0.3} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 0.18 + h + r + 0.05, 0]}>
+        <cylinderGeometry args={[0.04, 0.045, 0.1, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.4} />
+      </mesh>
+      {/* Pressure gauge, face-out toward the aisle. */}
+      <mesh position={[0, 0.18 + h * 0.75, r + 0.005]} rotation={[0, 0, 0]}>
+        <circleGeometry args={[0.045, 14]} />
+        <meshStandardMaterial color={DARK} roughness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+// A pylon sign at the station's approach corner — the one piece of signage
+// on the whole lot, an emissive panel rather than legible text (see
+// `GasPumpIsland`'s own readout for the same shorthand), lit the district's
+// accent so it reads as the same infrastructure the charge bollards and
+// yard lights already tie to whichever team the map currently favors. Faces
+// stay on local ±Z with no extra rotation, since the station itself is
+// authored front-on-+Z (see `RoverGasStation`) and a pylon at the front
+// corner is meant to read from the avenue the whole lot fronts.
+function StationSign({ accent }: { accent: string }) {
+  const h = 2.8
+  return (
+    <group>
+      <mesh position={[0, h / 2, 0]}>
+        <cylinderGeometry args={[0.06, 0.07, h, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.45} />
+      </mesh>
+      <mesh position={[0, h + 0.26, 0]}>
+        <boxGeometry args={[0.06, 0.52, 0.72]} />
+        <meshStandardMaterial color={DARK} roughness={0.6} />
+      </mesh>
+      <mesh position={[0.032, h + 0.26, 0]}>
+        <planeGeometry args={[0.46, 0.44]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh position={[-0.032, h + 0.26, 0]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[0.46, 0.44]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// A short reflective corner bollard — the plain safety marking a forecourt's
+// own approach corners get, distinct from `ChargeBollard`'s glowing accent
+// cap (that one marks a bay's charge point; this just marks apron geometry
+// at night).
+function CornerBollard() {
+  return (
+    <group>
+      <mesh position={[0, 0.28, 0]}>
+        <cylinderGeometry args={[0.055, 0.065, 0.56, 10]} />
+        <meshStandardMaterial color="#c0402e" roughness={0.55} />
+      </mesh>
+      <mesh position={[0, 0.4, 0]}>
+        <cylinderGeometry args={[0.058, 0.058, 0.06, 10]} />
+        <meshStandardMaterial color="#eef2ff" roughness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+// The attendant's booth — a small pressurized enclosure rather than an open
+// kiosk (nothing on an airless site is unsealed), with a window, a door
+// outline, and a stub antenna, standing at the back corner clear of both
+// islands. What tells this forecourt apart from a bare pair of pumps: a
+// real gas station's whole reason to have staff on site.
+function AttendantBooth() {
+  const w = 1.6
+  const d = 1.6
+  const wallH = 2.0
+  return (
+    <group>
+      <mesh position={[0, wallH / 2, 0]}>
+        <boxGeometry args={[w, wallH, d]} />
+        <meshStandardMaterial color="#d8dadd" roughness={0.6} />
+      </mesh>
+      {/* Roof, canted like every open-air shed on this base. */}
+      <mesh position={[0, wallH + 0.08, 0]} rotation={[0.04, 0, 0.03]}>
+        <boxGeometry args={[w + 0.3, 0.14, d + 0.3]} />
+        <meshStandardMaterial color={GAS_CANOPY_DARK} metalness={0.3} roughness={0.5} />
+      </mesh>
+      {/* Window, facing the forecourt (+Z). */}
+      <mesh position={[0, wallH * 0.62, d / 2 + 0.01]}>
+        <planeGeometry args={[0.9, 0.55]} />
+        <meshStandardMaterial
+          color="#dfe6ff"
+          emissive="#aebdf2"
+          emissiveIntensity={0.5}
+          roughness={0.25}
+          metalness={0.1}
+        />
+      </mesh>
+      <mesh position={[0, wallH * 0.62, d / 2 + 0.015]}>
+        <boxGeometry args={[0.94, 0.6, 0.02]} />
+        <meshStandardMaterial color={DARK} roughness={0.6} wireframe />
+      </mesh>
+      {/* Door, on the side facing the booth's own approach path. */}
+      <mesh position={[w / 2 + 0.005, 0.85, 0]}>
+        <boxGeometry args={[0.03, 1.7, 0.7]} />
+        <meshStandardMaterial color={GAS_CANOPY_DARK} metalness={0.3} roughness={0.55} />
+      </mesh>
+      {/* Stub antenna. */}
+      <mesh position={[-w / 2 + 0.2, wallH + 0.2, -d / 2 + 0.2]}>
+        <cylinderGeometry args={[0.015, 0.02, 0.7, 8]} />
+        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.4} />
+      </mesh>
+      <mesh position={[-w / 2 + 0.2, wallH + 0.56, -d / 2 + 0.2]}>
+        <sphereGeometry args={[0.03, 8, 8]} />
+        <meshStandardMaterial
+          color="#eef2ff"
+          emissive="#eef2ff"
+          emissiveIntensity={1}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// A short dashed lane running along Z, guiding the eye (there is no traffic
+// AI to guide) from the forecourt's own entrance in toward a pump island —
+// the one detail that makes an apron read as a place vehicles actually
+// approach in a line rather than park wherever.
+function LaneDashes({ x, zFrom, zTo }: { x: number; zFrom: number; zTo: number }) {
+  const dashLen = 0.5
+  const gap = 0.4
+  const dashes: number[] = []
+  for (let z = zFrom; z < zTo; z += dashLen + gap) dashes.push(z + dashLen / 2)
+  return (
+    <group position={[x, 0.014, 0]}>
+      {dashes.map((z, i) => (
+        <mesh key={i} position={[0, 0, z]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.14, dashLen]} />
+          <meshStandardMaterial color={DEPOT_STRIPE} roughness={0.85} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+// A stepped, outward-flaring skirt of graded fill under a rigid apron — the
+// same fix `LandingPad`'s own cone-frustum skirt exists for (see its
+// comment there), adapted for a rectangular footprint. A single
+// vertical-walled box reads as a slab standing PROUD of the ground the
+// instant the seat point (the highest ground under the footprint — see
+// `footprintSeatRadius`) sits above the surrounding regolith on any side,
+// which on this ridge's terrain was often enough to make the whole apron
+// look like it was floating on a plinth rather than resting on it.
+// Terracing it instead — each course a little lower and a little wider than
+// the one above, the same "coursed" language `LandingPad`'s own build-up
+// uses — means there is no single hard vertical edge for a slope mismatch
+// to expose: whichever course the true ground surface actually intersects,
+// everything below it is already buried and everything above it reads as a
+// deliberate stepped foundation rather than a hovering box. Four courses
+// reach 3.6 m down and flare 2.8 m out from the apron's own edge, roughly
+// double the straight box this replaced on both counts.
+function TerracedSkirt({
+  halfW,
+  halfD,
+  steps = 4,
+  stepDepth = 0.9,
+  stepOut = 0.7,
+}: {
+  halfW: number
+  halfD: number
+  steps?: number
+  stepDepth?: number
+  stepOut?: number
+}) {
+  return (
+    <group>
+      {Array.from({ length: steps }, (_, i) => {
+        const w = (halfW + stepOut * (i + 1)) * 2
+        const d = (halfD + stepOut * (i + 1)) * 2
+        // A hair taller than the nominal spacing, so consecutive courses
+        // overlap slightly rather than leaving a seam between them.
+        const h = stepDepth + 0.06
+        const y = 0.03 - stepDepth * (i + 0.5)
+        return (
+          <mesh key={i} position={[0, y, 0]}>
+            <boxGeometry args={[w, h, d]} />
+            <meshStandardMaterial color={PAD_SURFACE} roughness={0.99} />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// Half-extents of the station's own forecourt apron, in meters — exported so
+// MarkerLayer's `RoverGasStationSite` can compute the same footprint radius
+// and setback the depot yard's own site function uses.
+export const GAS_STATION_HALF_W = 5.0
+export const GAS_STATION_HALF_D = 4.4
+
+// ---------------------------------------------------------------------------
+// Rover gas/recharge station — a second, freestanding piece of shared rover
+// infrastructure, not a room tacked onto `RoverDepotYard`
+// ---------------------------------------------------------------------------
+//
+// The depot yard is a parking apron; this is what refuels or recharges a
+// unit before or after that, and a real forecourt is its own lot with its
+// own frontage, not a corner of somebody else's — the reason `MarkerLayer`
+// stands this on the OPPOSITE side of the depot avenue from
+// `RoverDepotYard` (see `RoverGasStationSite`), so the two face each other
+// across the one straight road they both front rather than sharing a single
+// footprint. Same authoring convention as the depot yard: real meters, open
+// (forecourt) side on local +Z, no `PROJECT_SIZE_M` entry since this isn't a
+// competitor's model.
+export function RoverGasStation({ accent }: { accent: string }) {
+  // Tank positions, back-left, clear of the canopy's own roof (X down to
+  // -2.4) by 1.2 m and of the apron's own edge (X = -4.8) by ~1 m.
+  const tankA: [number, number] = [-3.6, -1.9]
+  const tankB: [number, number] = [-3.6, -0.6]
+  return (
+    <group>
+      {/* Terraced skirt — see `TerracedSkirt`'s own comment on why a rigid
+          apron needs one graded down rather than resting on a hard edge. */}
+      <TerracedSkirt halfW={GAS_STATION_HALF_W} halfD={GAS_STATION_HALF_D} />
+
+      {/* Apron */}
+      <mesh position={[0, 0.02, 0]}>
+        <boxGeometry args={[GAS_STATION_HALF_W * 2, 0.04, GAS_STATION_HALF_D * 2]} />
+        <meshStandardMaterial color={PAD_SURFACE} roughness={0.96} />
+      </mesh>
+
+      {/* Curb */}
+      {(
+        [
+          [GAS_STATION_HALF_W * 2 + 0.3, 0.18, 0, -GAS_STATION_HALF_D - 0.06],
+          [GAS_STATION_HALF_W * 2 + 0.3, 0.18, 0, GAS_STATION_HALF_D + 0.06],
+          [0.18, GAS_STATION_HALF_D * 2, -GAS_STATION_HALF_W - 0.06, 0],
+          [0.18, GAS_STATION_HALF_D * 2, GAS_STATION_HALF_W + 0.06, 0],
+        ] as [number, number, number, number][]
+      ).map(([w, d, x, z], i) => (
+        <mesh key={i} position={[x, 0.05, z]}>
+          <boxGeometry args={[w, 0.1, d]} />
+          <meshStandardMaterial color={DEPOT_CURB} roughness={0.9} />
+        </mesh>
+      ))}
+
+      {/* Canopy over its two islands, set back slightly from the forecourt's
+          own entrance so the approach lanes have somewhere to run. */}
+      <group position={[0, 0, -0.4]}>
+        <GasStationCanopy />
+        <GasPumpIsland x={-1.05} accent={accent} />
+        <GasPumpIsland x={1.05} accent={accent} />
+      </group>
+
+      {/* Approach lanes, from the apron's own front edge in to each island. */}
+      <LaneDashes x={-1.05} zFrom={0.4} zTo={GAS_STATION_HALF_D - 0.3} />
+      <LaneDashes x={1.05} zFrom={0.4} zTo={GAS_STATION_HALF_D - 0.3} />
+
+      {/* Tanks feeding the islands by visible piping. */}
+      <PropellantTank x={tankA[0]} z={tankA[1]} />
+      <PropellantTank x={tankB[0]} z={tankB[1]} />
+      <Strut from={[tankA[0], 0.3, tankA[1]]} to={[-1.05, 0.15, -0.9]} r={0.03} />
+      <Strut from={[tankB[0], 0.3, tankB[1]]} to={[1.05, 0.15, -0.9]} r={0.03} />
+
+      {/* Attendant's booth, back-right, and a little supply clutter beside
+          it — the reel and crate reused straight from the shared prop
+          library rather than one-off geometry. Set well clear of the
+          canopy's own roof corner (X to 2.4, Z to -2.4). */}
+      <group position={[3.8, 0, -3.2]} rotation={[0, Math.PI, 0]}>
+        <AttendantBooth />
+      </group>
+      <group position={[3.5, 0, -1.3]} rotation={[0, 0.4, 0]}>
+        <CableReel />
+      </group>
+      <group position={[1.9, 0, -3.7]} rotation={[0, -0.5, 0]}>
+        <CargoCrate variant="small" seed={71} />
+      </group>
+
+      {/* Pylon sign at the front-left corner, facing the forecourt's own
+          entrance. */}
+      <group position={[-3.6, 0, 3.3]}>
+        <StationSign accent={accent} />
+      </group>
+
+      {/* Corner bollards marking the entrance. */}
+      <group position={[-4.3, 0, 3.7]}>
+        <CornerBollard />
+      </group>
+      <group position={[4.3, 0, 3.7]}>
+        <CornerBollard />
+      </group>
+
+      {/* The attendant on shift, patrolling a loop bounded to the booth end
+          of the forecourt — the same PatrollingAstronaut convention as
+          every other staffed site, with its own seed so it never
+          synchronizes with RoverDepotYard's own mechanic. */}
+      <PatrollingAstronaut center={[2.6, -2.0]} radius={1.0} seed={77} accent={accent} />
+    </group>
+  )
+}
 
 export function RoverDepotYard({ accent }: { accent: string }) {
   return (
     <group>
-      {/* Graded skirt: MarkerLayer seats this yard on the HIGHEST ground
+      {/* Terraced skirt: MarkerLayer seats this yard on the HIGHEST ground
           under its own footprint (a rigid apron cannot sink into a slope —
           see footprintSeatRadius), which is what stops the uphill edge
           burying itself but leaves the downhill edge standing clear of the
-          regolith. This is the same fix the landing pad uses for the same
-          reason (see LandingPad's own comment): a block of fill graded down
-          from the apron's underside, wide enough that its bottom edge is
-          buried rather than hanging in daylight on every slope this ridge
-          actually has. */}
-      <mesh position={[0, -DEPOT_SKIRT_DEPTH / 2 + 0.03, 0]}>
-        <boxGeometry
-          args={[
-            DEPOT_HALF_W * 2 + DEPOT_SKIRT_OUT * 2,
-            DEPOT_SKIRT_DEPTH,
-            DEPOT_HALF_D * 2 + DEPOT_SKIRT_OUT * 2,
-          ]}
-        />
-        <meshStandardMaterial color={PAD_SURFACE} roughness={0.99} />
-      </mesh>
+          regolith. See `TerracedSkirt`'s own comment for why this is
+          stepped and flared rather than a single vertical-walled block. */}
+      <TerracedSkirt halfW={DEPOT_HALF_W} halfD={DEPOT_HALF_D} />
 
       {/* Apron */}
       <mesh position={[0, 0.02, 0]}>

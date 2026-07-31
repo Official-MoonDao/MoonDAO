@@ -365,6 +365,69 @@ avoid up front and annoying to find later.
   That inward placement is why the yard stays compact: the belt between the
   perimeter road and main street is only ~23 m deep once both roads' own
   setbacks are spent.
+- **A driving competitor is framed where it IS on the road — the camera comes
+  to the rover, the rover never comes to the camera.** Because the fleet laps
+  main street rather than parking (see `PATROL`), a rover's real position is
+  never its own bare corner lot (`dir`) and isn't even a fixed road point: it's
+  wherever the lap has carried it. `CompetitorPlot`'s `useFrame` publishes that
+  live surface direction every frame into `LIVE_PATROL_DIR`
+  (`MarkerLayer.tsx`, keyed by project id), and the page's `flyToProject` reads
+  it so picking a rover from the list zooms straight to it on the road. Opening
+  the race rolls the fleet to a stand *in place* (throttle eased to zero) so
+  the vehicles sit still while the camera flies in — it deliberately does NOT
+  roll them back to any start line, which read as a teleport. The fallbacks, in
+  order, are the rover's road *start* position (`standDir`, precomputed into the
+  shared `ColonyLayout.plots` table by `buildColonyLayout` for the one frame
+  before the model has published anything) and then the plot itself for
+  anything that doesn't drive.
+- **The rover district's gas/recharge station is its own freestanding site,
+  not a corner of the depot yard.** `RoverGasStation` (`ProjectModel.tsx`,
+  defined just above `RoverDepotYard`) is a second 10 x 8.8 m paved
+  forecourt with its own apron, curb, and terraced skirt (same techniques as
+  `RoverDepotYard`'s own — see the `TerracedSkirt` house rule below), placed
+  by `RoverGasStationSite`
+  (`MarkerLayer.tsx`, right after `RoverDepotSite`) on the OPPOSITE side of
+  the depot avenue from the depot yard: same radial setback off main street
+  and the same angular-swing-off-the-avenue technique `RoverDepotSite` uses,
+  just the other sign (`bearing - swing` instead of `+ swing`) and its own
+  (smaller) footprint radius, so the two stand roughly 32 m apart, facing
+  each other across the one straight avenue they both front rather than
+  crowding one lot. The forecourt itself is a canopy on four posts (bigger
+  than `ServiceCanopy`'s single wheel-hoist shed, since this is meant to
+  read as its own site's principal structure) over two `GasPumpIsland`s,
+  each with a glowing readout panel and a nozzle racked on a coiled hose
+  (deliberately ambiguous between a high-current connector and a cryogenic
+  nozzle, since a future competitor's hardware could plausibly be either),
+  fed by a pair of `PropellantTank`s via visible piping (`Strut`), a
+  `StationSign` pylon taller than the canopy, painted approach lanes
+  (`LaneDashes`) leading a vehicle in from the forecourt's own entrance, an
+  `AttendantBooth` with a window/door/antenna at the back corner (staff is
+  what tells a forecourt apart from a bare pair of pumps), a little supply
+  clutter beside it from the shared prop library (`CableReel`, `CargoCrate`),
+  two `CornerBollard`s marking the entrance, and its own `PatrollingAstronaut`
+  (a different seed than the depot's own mechanic, so the two never
+  synchronize). Every fixture's bounding box was checked by hand against
+  every other one and against the apron edges before this was called done,
+  the same discipline `RoverDepotYard`'s own tight footprint already
+  demanded.
+- **A rigid apron's own skirt has to be terraced and flared, not a straight
+  vertical-walled block, or it reads as a floating slab.** Both
+  `RoverDepotYard` and `RoverGasStation` seat on the HIGHEST ground under
+  their own footprint (`footprintSeatRadius` in `MarkerLayer.tsx` — a rigid
+  apron cannot sink into a slope), which on this ridge's terrain is often
+  enough above the surrounding regolith that a single hard-edged box of fill
+  under the apron left a visible gap or a plainly man-made vertical wall on
+  the downhill side — the whole pad read as hovering on a plinth rather than
+  resting on the ground. `TerracedSkirt` (`ProjectModel.tsx`, shared by both)
+  fixes this the same way `LandingPad`'s own cone-frustum skirt already
+  does for a circular footprint (see its comment), adapted for a rectangle:
+  four stacked courses, each a little lower and a little wider than the one
+  above, reaching 3.6 m down and 2.8 m out from the apron's own edge —
+  roughly double the straight box this replaced on both counts. There is no
+  longer a single hard vertical edge for a slope mismatch to expose;
+  whichever course the true ground actually intersects, everything below it
+  is already buried and everything above it reads as a deliberate stepped
+  foundation.
 - **The ground between districts is filled by one base-wide layer, not by
   any one district's model.** `InterDistrictFiller` (`MarkerLayer.tsx`,
   right after `RoverDepotSite`) renders once for the whole colony rather

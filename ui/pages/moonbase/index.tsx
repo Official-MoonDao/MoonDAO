@@ -1,6 +1,8 @@
 import { GlobeAltIcon } from '@heroicons/react/24/outline'
+import type { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { isPublicProductionHost } from 'const/flags'
 import { UNIT } from '@/lib/deprize/constants'
 import { fmtPrizeEth } from '@/lib/deprize/format'
 import { mergeLiveMarketInto } from '@/lib/deprize/goal-market'
@@ -19,6 +21,7 @@ import { capOffsetLatLon } from '@/lib/lunar-atlas/southpole'
 import {
   BASE_PLAN,
   FALLBACK_RING_M,
+  PATROL,
   districtSlots,
   type Slot,
 } from '@/lib/lunar-atlas/baseplan'
@@ -46,7 +49,7 @@ import type {
   MarkerStyle,
 } from '@/components/lunar-atlas/MarkerLayer'
 import { footprintRadiusM } from '@/components/lunar-atlas/ProjectModel'
-import { rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
+import { LIVE_PATROL_DIR, rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
 import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
 import MoonGlobeLazy from '@/components/lunar-atlas/MoonGlobeLazy'
 import ProjectPanel from '@/components/lunar-atlas/ProjectPanel'
@@ -75,7 +78,10 @@ function dirAt(eastM: number, northM: number): Vec3 {
 // model layer, since only it knows how much ground an asset covers.
 function buildColonyLayout(trees: TechTree[]): ColonyLayout {
   const districts = new Map<ProjectType, Vec3>()
-  const plots = new Map<string, { dir: Vec3; slot: Slot }>()
+  const plots = new Map<
+    string,
+    { dir: Vec3; slot: Slot; standDir?: Vec3 }
+  >()
   let fallbackIdx = 0
   const nUnmapped = trees.filter((t) => !BASE_PLAN[t.category]).length
 
@@ -98,8 +104,29 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       plan,
       tree.projects.map((p) => ({ id: p.id, radiusM: footprintRadiusM(p) }))
     )
+    // A race whose hardware DRIVES doesn't stand on its plots — it rests out on
+    // the patrol road, spaced evenly around it by rank (see PATROL and the lap
+    // in MarkerLayer's CompetitorPlot). Precompute that road position here, in
+    // the same shared table the models and the camera both read, so a drill-in
+    // aims at the rover itself rather than at its own empty corner lot. Uses
+    // the identical phase MarkerLayer does — rank index over count — so the two
+    // cannot disagree about where a given rover comes to rest.
+    const patrol = PATROL[tree.category]
+    const rankOf = patrol
+      ? new Map(rankedMembers(tree).map((p, i) => [p.id, i]))
+      : null
     for (const [id, slot] of slots) {
-      plots.set(id, { dir: dirAt(slot.east, slot.north), slot })
+      let standDir: Vec3 | undefined
+      if (patrol && rankOf) {
+        const phase = (rankOf.get(id)! / rankOf.size) * Math.PI * 2
+        const bearing = Math.atan2(slot.north, slot.east) + phase
+        const ll = capOffsetLatLon(
+          Math.cos(bearing) * patrol.radiusM,
+          Math.sin(bearing) * patrol.radiusM
+        )
+        standDir = latLonToVector3(ll.lat, ll.lon, 1)
+      }
+      plots.set(id, { dir: dirAt(slot.east, slot.north), slot, standDir })
     }
   }
   return { districts, plots }
@@ -354,7 +381,17 @@ export default function MoonBaseZeroIndex() {
       return
     }
     const cat = siteCategory ?? selectedTreeCategory ?? project.type
-    const dir = layout.plots.get(project.id)?.dir ?? siteDir(cat)
+    // A driving competitor is out lapping the road, not parked on its plot, so
+    // aim at where it actually is right now (`LIVE_PATROL_DIR`, written each
+    // frame by its model) rather than teleporting to its empty corner lot.
+    // Falls back to its road start (`standDir`) before the first frame, then to
+    // the plot for anything that doesn't drive.
+    const plot = layout.plots.get(project.id)
+    const dir =
+      LIVE_PATROL_DIR.get(project.id) ??
+      plot?.standDir ??
+      plot?.dir ??
+      siteDir(cat)
     const ll = dir ? vector3ToLatLon(dir) : project.location
     if (!ll) return
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
@@ -659,4 +696,22 @@ export default function MoonBaseZeroIndex() {
       </div>
     </>
   )
+}
+
+// Moon Base Zero lives in main but isn't public yet. Hide it on the live
+// production site (moondao.com) while leaving it fully usable everywhere we
+// develop — local, Vercel previews off any branch, staging. The gate is the
+// request host, since our env vars are pulled from prod and can't tell those
+// apart (see const/flags). Runs for both `/moonbase` and `/moonbase/[projectId]`
+// (that route re-exports this).
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const forwarded = req.headers['x-forwarded-host']
+  const host =
+    (Array.isArray(forwarded) ? forwarded[0] : forwarded) ?? req.headers.host
+  if (isPublicProductionHost(host)) {
+    return {
+      redirect: { destination: '/coming-soon?from=moonbase', permanent: false },
+    }
+  }
+  return { props: {} }
 }

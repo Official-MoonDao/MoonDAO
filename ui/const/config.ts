@@ -778,7 +778,11 @@ export interface ProjectCycleConfig {
 }
 
 export const PROJECT_CYCLE: ProjectCycleConfig = {
-  phase: 'senate',
+  // Deploy-time fallback after Q3 Member Vote + Q2 Retro wrap-up.
+  // Live phase is flipped to idle via Operator Panel → Wrap Up Cycle
+  // (Upstash KV override); this keeps post-redeploy UI consistent if
+  // the override is cleared.
+  phase: 'idle',
   quarter: 3,
   year: 2026,
   memberVoteSubmissionsOpen: false,
@@ -852,6 +856,17 @@ export const SUPER_MANAGERS: string[] = [
   '0x679d87d8640e66778c3419d164998e720d7495f6', // pmoncada.eth
   '0xb2d3900807094d4fe47405871b0c8adb58e10d42', // ryand2d.eth
   '0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da', // miguel.eth
+]
+
+// MoonDAO steward wallets added as co-signers on every new team's Safe (in
+// addition to the team lead/creator). The MoonDAOTeamCreator contract passes the
+// members array straight through as the Safe owners and uses a majority
+// threshold, so lead + Ryan + Pablo yields a 2/3 Safe: the two stewards can help
+// teams that are new to multisigs get set up (mint manager/member hats) without
+// needing the lead online. Checksummed for Safe owner setup.
+export const DEFAULT_TEAM_MULTISIG_SIGNERS: string[] = [
+  '0xB2d3900807094D4Fe47405871B0C8AdB58E10D42', // ryand2d.eth
+  '0x679d87D8640e66778c3419D164998E720D7495f6', // pmoncada.eth
 ]
 
 // Hard-coded allowlist of wallet addresses that can use the operator panel

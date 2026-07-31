@@ -56,9 +56,12 @@ import ProjectModel, {
   CableReel,
   CargoCrate,
   CrateCluster,
+  GAS_STATION_HALF_D,
+  GAS_STATION_HALF_W,
   gradedDeckRadiusM,
   projectSizeM,
   RoverDepotYard,
+  RoverGasStation,
   SparePartsPallet,
   StreetLight,
   SurfaceAnchor,
@@ -84,6 +87,15 @@ const CAP_AXIS = new THREE.Vector3(...capCenterDirection()).normalize()
 // animation; one that rolls to a halt reads as a driver lifting off.
 const PATROL_EASE = 0.03
 
+// Live surface direction of each DRIVING competitor, keyed by project id and
+// rewritten every frame by its `CompetitorPlot`. A rover laps the road, so
+// where it actually is at any instant is runtime state, not something the
+// static layout table can know — the camera reads this when a rover is picked
+// from the list so it zooms to the vehicle where it stands on the road, rather
+// than teleporting it (or the camera) to its empty plot. Module-level because
+// it's a per-frame side channel, not part of the render tree's prop data.
+export const LIVE_PATROL_DIR = new Map<string, Vec3>()
+
 // How far down a district is taken while a DIFFERENT race is open. Heavy enough
 // that the open race is unmistakably the subject, light enough that the rest of
 // the base is still plainly there — which is the point of dimming rather than
@@ -106,7 +118,11 @@ export type ColonyLayout = {
   // to when a race is opened.
   districts: Map<ProjectType, Vec3>
   // Per-project plot: its surface direction and its slot in the district.
-  plots: Map<string, { dir: Vec3; slot: Slot }>
+  // `standDir` is set only for a competitor whose race DRIVES (see PATROL): the
+  // road position it rests at, out on the patrol loop rather than on `dir` (its
+  // own plot). The model stands here and the camera aims here, off one shared
+  // value, so the two cannot land in different places.
+  plots: Map<string, { dir: Vec3; slot: Slot; standDir?: Vec3 }>
 }
 
 type MarkerLayerProps = {
@@ -194,6 +210,7 @@ function CompetitorPlot({
   project,
   slot,
   dir,
+  standDir,
   accent,
   opacity,
   dim,
@@ -208,6 +225,10 @@ function CompetitorPlot({
   project: Project
   slot: Slot
   dir: Vec3
+  // The road position a DRIVING competitor rests at, precomputed in the shared
+  // layout so the model and the camera agree (see ColonyLayout). Absent for a
+  // competitor that stands on its own plot, in which case `dir` is used.
+  standDir?: Vec3
   accent: string
   opacity: number
   // 1 while this plot's race is the subject, DIM_FACTOR while another's is.
@@ -235,7 +256,11 @@ function CompetitorPlot({
   // that drives starts OUT ON THE ROAD it laps rather than parked in its yard,
   // spaced from its rivals by `phase` around that road so the whole depot can be
   // out at once without one machine standing inside another.
-  const standDir = useMemo(() => {
+  const standAt = useMemo(() => {
+    // The shared layout already worked this out for a driving competitor; fall
+    // back to computing it here only if it wasn't handed down, and to the plot
+    // itself for anything that isn't driving.
+    if (standDir) return standDir
     if (!patrol) return dir
     const bearing = Math.atan2(slot.north, slot.east) + (patrolPhase ?? 0)
     const ll = capOffsetLatLon(
@@ -243,13 +268,13 @@ function CompetitorPlot({
       Math.sin(bearing) * patrol.radiusM
     )
     return latLonToVector3(ll.lat, ll.lon, 1)
-  }, [dir, patrol, patrolPhase, slot.east, slot.north])
+  }, [standDir, dir, patrol, patrolPhase, slot.east, slot.north])
 
   const { ndir, seatRadius, labelAt } = useMemo(() => {
     const d = new THREE.Vector3(
-      standDir[0],
-      standDir[1],
-      standDir[2]
+      standAt[0],
+      standAt[1],
+      standAt[2]
     ).normalize()
     const ll = vector3ToLatLon([d.x, d.y, d.z])
     // A model on a graded deck (a lander's pad, the construction apron) seats
@@ -275,7 +300,7 @@ function CompetitorPlot({
         .clone()
         .multiplyScalar(ground + projectSizeM(project) * 1.25 * M_TO_UNITS),
     }
-  }, [standDir, radiusAt, project])
+  }, [standAt, radiusAt, project])
 
   // Laps of main street, for a race whose hardware drives rather than stands
   // (see PATROL).
@@ -304,25 +329,39 @@ function CompetitorPlot({
   useFrame((_, delta) => {
     const g = groupRef.current
     if (!g || !lap) return
-    // Roll to a stand when this race is opened, so the vehicles are sitting still
-    // while the user reads about it — and while the drill-in camera, which
-    // frames the district rather than the vehicle, flies in.
+    // Roll to a stand where it IS when this race is opened — the vehicle sits
+    // still while the user reads about it, but stays put on the road rather than
+    // teleporting back to a start line. The camera comes to the vehicle instead
+    // (see LIVE_PATROL_DIR, published below, and the page's flyToProject).
     const throttle = raceOpen ? 0 : 1
     throttleRef.current +=
       (throttle - throttleRef.current) * (1 - Math.pow(PATROL_EASE, delta))
     lapRef.current += lap.rate * throttleRef.current * delta
     g.quaternion.setFromAxisAngle(CAP_AXIS, lapRef.current)
-    // Ride the road's rise and fall. Every child is positioned in world space
-    // from the globe centre, so a uniform scale IS a radial offset: the ratio of
-    // ground radii lifts the vehicle by the height difference. The shape
-    // distortion is that same ratio — about a part in a million for a couple of
-    // meters of relief against a 1737 km radius.
+    // Where the vehicle actually is this frame — its start direction carried
+    // round the lap. Published so a drill-in can find it on the road, and
+    // reused just below to ride the road's rise and fall.
+    const p = ndir.clone().applyQuaternion(g.quaternion)
+    LIVE_PATROL_DIR.set(project.id, [p.x, p.y, p.z])
+    // Every child is positioned in world space from the globe centre, so a
+    // uniform scale IS a radial offset: the ratio of ground radii lifts the
+    // vehicle by the height difference. The shape distortion is that same ratio
+    // — about a part in a million for a couple of meters of relief against a
+    // 1737 km radius.
     if (radiusAt) {
-      const p = ndir.clone().applyQuaternion(g.quaternion)
       const pll = vector3ToLatLon([p.x, p.y, p.z])
       g.scale.setScalar(radiusAt(pll.lat, pll.lon) / seatRadius)
     }
   })
+
+  // Drop the live position when this vehicle leaves the scene (filtered out by
+  // the timeline, say), so a drill-in can never chase a stale spot.
+  useEffect(() => {
+    const id = project.id
+    return () => {
+      LIVE_PATROL_DIR.delete(id)
+    }
+  }, [project.id])
 
   if (opacity <= MODEL_PRESENCE) return null
 
@@ -457,6 +496,83 @@ function RoverDepotSite({
           expects without re-authoring the yard itself. */}
       <group rotation={[0, Math.PI / 2, 0]}>
         <RoverDepotYard accent={accent} />
+      </group>
+    </SurfaceAnchor>
+  )
+}
+
+// Half-diagonal of the gas station's own 10 x 8.8 m forecourt apron (see
+// `GAS_STATION_HALF_W`/`GAS_STATION_HALF_D`), with room to spare — the same
+// role `DEPOT_FOOTPRINT_R` plays for the yard above.
+const GAS_STATION_FOOTPRINT_R = Math.hypot(GAS_STATION_HALF_W, GAS_STATION_HALF_D) + 0.6
+
+// The rover district's recharge/propellant station: a second, freestanding
+// piece of shared infrastructure, sited on the OPPOSITE side of the depot
+// avenue from `RoverDepotSite` — same radial setback off main street, same
+// angular swing off the avenue, just the other sign, so the two face each
+// other across the one straight road they both front rather than crowding
+// one footprint. This is the "different structure, across the street" the
+// depot's own corner never had room for.
+function RoverGasStationSite({
+  accent,
+  dim,
+  opacity,
+  radiusAt,
+}: {
+  accent: string
+  dim: number
+  opacity: number
+  radiusAt?: RadiusAt | null
+}) {
+  const { seat, ndir, noseAlong } = useMemo(() => {
+    const plan = BASE_PLAN.rover!
+    const bearing = Math.atan2(plan.north, plan.east)
+    const front = ROAD_HALF_M + SETBACK_M + GAS_STATION_FOOTPRINT_R
+    const radius = MAIN_LOOP_M - front
+    const swing = Math.asin(Math.min(1, front / radius))
+    // The depot itself takes `bearing + swing` (see RoverDepotSite); this
+    // stands at `bearing - swing` — the mirror image across the avenue's own
+    // radial line, at whatever radius ITS OWN (smaller) footprint needs.
+    const a = bearing - swing
+
+    const ll = capOffsetLatLon(Math.cos(a) * radius, Math.sin(a) * radius)
+    const d = new THREE.Vector3(
+      ...latLonToVector3(ll.lat, ll.lon, 1)
+    ).normalize()
+    const ground = !radiusAt
+      ? GLOBE_RADIUS
+      : footprintSeatRadius(d, radiusAt, GAS_STATION_FOOTPRINT_R)
+
+    // Face back toward the avenue's own radial line, same technique as
+    // RoverDepotSite — which, since the two sit on opposite sides of that
+    // line, points this station's own forecourt entrance at the depot yard
+    // across the road rather than out into open regolith.
+    const backLl = capOffsetLatLon(
+      Math.cos(bearing) * radius,
+      Math.sin(bearing) * radius
+    )
+    const backDir = new THREE.Vector3(
+      ...latLonToVector3(backLl.lat, backLl.lon, 1)
+    )
+    const face: Vec3 = backDir.sub(d).normalize().toArray() as Vec3
+
+    return { seat: ground + SEAT_LIFT, ndir: d, noseAlong: face }
+  }, [radiusAt])
+
+  if (opacity <= MODEL_PRESENCE) return null
+
+  return (
+    <SurfaceAnchor
+      dir={[ndir.x, ndir.y, ndir.z]}
+      surfaceRadius={seat}
+      scale={M_TO_UNITS}
+      dim={dim}
+      noseAlong={noseAlong}
+    >
+      {/* Same authoring convention as RoverDepotYard: forecourt entrance on
+          local +Z, so the same 90° turn hands it the noseAlong axis. */}
+      <group rotation={[0, Math.PI / 2, 0]}>
+        <RoverGasStation accent={accent} />
       </group>
     </SurfaceAnchor>
   )
@@ -1039,6 +1155,7 @@ export default function MarkerLayer({
                   project={project}
                   slot={plot.slot}
                   dir={plot.dir}
+                  standDir={plot.standDir}
                   accent={orgColor(org)}
                   opacity={style.opacity}
                   dim={dim}
@@ -1054,12 +1171,20 @@ export default function MarkerLayer({
             })}
 
             {tree.category === 'rover' && (
-              <RoverDepotSite
-                accent={color}
-                dim={dim}
-                opacity={districtOpacity}
-                radiusAt={radiusAt}
-              />
+              <>
+                <RoverDepotSite
+                  accent={color}
+                  dim={dim}
+                  opacity={districtOpacity}
+                  radiusAt={radiusAt}
+                />
+                <RoverGasStationSite
+                  accent={color}
+                  dim={dim}
+                  opacity={districtOpacity}
+                  radiusAt={radiusAt}
+                />
+              </>
             )}
 
             <DistrictBeacon

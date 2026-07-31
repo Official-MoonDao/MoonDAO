@@ -115,6 +115,9 @@ and click Advance again — already-closed MDPs are skipped.
 
 ## 4. Close Member Vote (on-chain tally)
 
+> **Q3 2026 / Q2 Retro close:** use the concrete click-path in
+> [`Q3_2026_CYCLE_CLOSE_CHECKLIST.md`](./Q3_2026_CYCLE_CLOSE_CHECKLIST.md).
+
 When the Member Vote window should end (typically ~5 days after the third
 Thursday):
 

@@ -298,59 +298,61 @@ async function handler(req: any, res: any) {
       giftLink = `${origin}/citizen?invite=${token}`
     }
 
-    const teamRows = await queryTable(
-      DEFAULT_CHAIN_V5,
-      `SELECT * FROM ${TEAM_TABLE_NAMES[chainSlug]} WHERE id = '${teamTokenId}'`
-    )
-    const team: any = teamRows?.[0]
-
-    // Get team form IDs (same as in hasAccessToResponse.ts)
-    const teamFormIds = [
-      process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
-      process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string,
-    ].filter(Boolean)
-
-    // Fetch team typeform response from multiple form IDs
-    let teamTypeformData = null
-    if (team?.formId && typeof team.formId === 'string') {
-      teamTypeformData = await fetchResponseFromFormIds(
-        teamFormIds,
-        team.formId
-      )
-    }
-
+    // Best-effort lookup of the vendor's notification email. Any failure here
+    // (Tableland hiccup, Typeform down/rate-limited, missing formId, etc.)
+    // must NOT crash the request or block the buyer's receipt below — it just
+    // means we fall back to notifying ops instead of the vendor directly.
     let teamTypeformEmail = null
-    if (teamTypeformData && teamTypeformData.items?.length > 0) {
-      const teamTypeformResponse = teamTypeformData.items[0]
-      // Look for email in different possible field structures
-      teamTypeformEmail =
-        teamTypeformResponse.answers?.find(
-          (answer: any) =>
-            answer.field?.type === 'email' || answer.type === 'email'
-        )?.email || teamTypeformResponse.answers?.email
+    try {
+      const teamRows = await queryTable(
+        DEFAULT_CHAIN_V5,
+        `SELECT * FROM ${TEAM_TABLE_NAMES[chainSlug]} WHERE id = '${teamTokenId}'`
+      )
+      const team: any = teamRows?.[0]
+
+      // Get team form IDs (same as in hasAccessToResponse.ts)
+      const teamFormIds = [
+        process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
+        process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string,
+      ].filter(Boolean)
+
+      // Fetch team typeform response from multiple form IDs
+      let teamTypeformData = null
+      if (team?.formId && typeof team.formId === 'string') {
+        teamTypeformData = await fetchResponseFromFormIds(
+          teamFormIds,
+          team.formId
+        )
+      }
+
+      if (teamTypeformData && teamTypeformData.items?.length > 0) {
+        const teamTypeformResponse = teamTypeformData.items[0]
+        // Look for email in different possible field structures
+        teamTypeformEmail =
+          teamTypeformResponse.answers?.find(
+            (answer: any) =>
+              answer.field?.type === 'email' || answer.type === 'email'
+          )?.email || teamTypeformResponse.answers?.email
+      }
+    } catch (err: any) {
+      console.log('Error looking up vendor email for marketplace purchase:', err)
     }
 
-    // For gift purchases the critical deliverable is the buyer's gift link, so
-    // a missing vendor email shouldn't block the purchase. For normal listings
-    // the vendor email is required to fulfill the order.
-    if (!teamTypeformEmail && !isGift) {
-      return failAndRelease(400, 'No team email found')
-    }
+    // A missing vendor email must never block the buyer's receipt — the
+    // on-chain transfer already happened and is irreversible by this point.
+    // If we couldn't resolve the vendor's Typeform email, fall back to
+    // notifying MoonDAO ops so a human can follow up with the vendor manually
+    // instead of the purchase going unnoticed entirely.
+    const vendorNotifyEmail = teamTypeformEmail || opEmail
 
     // Inject the server-generated gift link into the buyer's email payload.
     const buyerEmailData = giftLink
       ? JSON.stringify({ ...JSON.parse(data), giftLink })
       : data
 
+    // Send the buyer's receipt first since it's the critical deliverable for
+    // every purchase (the gift link, if any, is embedded in it above).
     try {
-      if (teamTypeformEmail) {
-        await getMoonDaoGmailTransport().sendMail({
-          from: opEmail,
-          to: teamTypeformEmail,
-          ...generateVendorEmailContent(data),
-          subject: 'MoonDAO | Marketplace Purchase',
-        })
-      }
       await getMoonDaoGmailTransport().sendMail({
         from: opEmail,
         to: email,
@@ -358,20 +360,37 @@ async function handler(req: any, res: any) {
         subject: 'MoonDAO | Marketplace Purchase',
         bcc: [opEmail],
       })
-      return res.status(200).json({ success: true, giftLink })
     } catch (err: any) {
-      console.log(err)
+      console.log('Failed to send buyer confirmation email:', err)
       // The gift link is already generated and returned to the buyer in the
       // modal, so a failed confirmation email shouldn't fail the purchase.
       if (isGift && giftLink) {
         return res.status(200).json({ success: true, giftLink })
       }
-      // Remove transaction from used set if email failed, allowing retry
-      usedTransactions.delete(txHash)
-      return res.status(400).json({
-        message: err.message,
-      })
+      // Release the tx hash so a legitimate buyer can retry (e.g. transient
+      // Gmail error) without the replay-attack guard blocking them.
+      return failAndRelease(
+        500,
+        'Payment received, but we could not send your confirmation email. Please contact support with your transaction hash.'
+      )
     }
+
+    // Notify the vendor (or ops as a fallback). The buyer already has their
+    // receipt at this point, so this failing shouldn't fail the request.
+    try {
+      await getMoonDaoGmailTransport().sendMail({
+        from: opEmail,
+        to: vendorNotifyEmail,
+        ...generateVendorEmailContent(data),
+        subject: teamTypeformEmail
+          ? 'MoonDAO | Marketplace Purchase'
+          : 'MoonDAO | Marketplace Purchase (vendor email not found, please forward)',
+      })
+    } catch (err: any) {
+      console.log('Failed to send vendor notification email:', err)
+    }
+
+    return res.status(200).json({ success: true, giftLink })
   } else {
     res.status(405).send({ message: 'Method not allowed' })
   }
