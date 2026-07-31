@@ -89,6 +89,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/dashboard',
     '/bridge',
     '/roadmap',
+    '/moonbase',
+    '/moonbase/[projectId]',
   ]
 
   const isFullscreen = fullscreenPaths.includes(router.pathname)
