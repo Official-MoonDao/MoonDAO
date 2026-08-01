@@ -134,11 +134,12 @@ def slide_02():
     rw = SLIDE_W - MARGIN - rx
     bullets = [
         ("Founder of MoonDAO. ", "First elected Executive Lead, since 2021."),
-        ("Career: Waymo, YouTube, STEL. ", "Software engineer at Google, then biotech."),
         ("Core contributor, ConstitutionDAO. ", "Helped raise $47M in days for the U.S. Constitution."),
-        ("University of Michigan. ", "CS, Mechanical Engineering & Business."),
+        ("Google: Waymo & YouTube. ", "Software engineer on self-driving perception at Waymo, and VR at YouTube."),
+        ("STEL. ", "Biotech research engineering human tissue."),
+        ("University of Michigan. ", "Computer Science & Mechanical Engineering."),
     ]
-    add_bullets(s, rx, Inches(1.85), rw, Inches(3.2), bullets, size=Pt(15), gap=Pt(16))
+    add_bullets(s, rx, Inches(1.7), rw, Inches(3.5), bullets, size=Pt(14), gap=Pt(12))
 
     card(s, rx, Inches(5.55), rw, Inches(1.05), fill=BG_PANEL, shadow=False, radius=0.1)
     add_text(s, rx + Inches(0.32), Inches(5.7), rw - Inches(0.64), Inches(0.8),
@@ -314,7 +315,7 @@ def slide_06():
               "MoonDAO community member \u2014 to finally see Earth from space.",
               size=Pt(15.5), color=RGBColor(0xE6, 0xE9, 0xF5), align=PP_ALIGN.CENTER, font=FONT)
 
-    footer_light(s, 6)
+    footer_light(s, 11)
     return s
 
 
@@ -331,7 +332,7 @@ def footer_light(s, page_no):
 def slide_07():
     s = new_slide()
     set_bg(s, WHITE)
-    header(s, "The Next Opportunity", "Who Is Frank White", 7, LOGO)
+    header(s, "The Next Opportunity", "Who Is Frank White", 12, LOGO)
 
     lx, lw = MARGIN, Inches(3.9)
     badge = I.circle_badge('reference/frank_white_real_photo.png', size=700)
@@ -366,7 +367,7 @@ def slide_07():
               "that we share one planet, one atmosphere, one destiny \u2014 the Overview Effect.\u201d",
               size=Pt(12.5), color=NAVY_DARK, italic=True, font=FONT)
 
-    footer(s, 7, TOTAL_SLIDES)
+    footer(s, 12, TOTAL_SLIDES)
     return s
 
 
@@ -374,7 +375,7 @@ def slide_07():
 def slide_08():
     s = new_slide()
     set_bg(s, WHITE)
-    header(s, "The Next Opportunity", "Fly to Space with Frank White", 8, LOGO)
+    header(s, "The Next Opportunity", "Fly to Space with Frank White", 13, LOGO)
 
     # Three equal columns for a more symmetrical composition.
     gap = Inches(0.35)
@@ -452,7 +453,7 @@ def slide_08():
               "$100+ grants free citizenship \u2014 and a shot at flying alongside Frank.",
               size=Pt(12.5), color=NAVY_DARK, italic=True, font=FONT, anchor=MSO_ANCHOR.MIDDLE)
 
-    footer(s, 8, TOTAL_SLIDES)
+    footer(s, 13, TOTAL_SLIDES)
     return s
 
 
@@ -460,7 +461,7 @@ def slide_08():
 def slide_09():
     s = new_slide()
     set_bg(s, WHITE)
-    header(s, "Funding Innovation", "DePrize: A Prediction Market for Space Delivery", 9, LOGO,
+    header(s, "Funding Innovation", "DePrize: A Prediction Market for Space Delivery", 6, LOGO,
             title_size=Pt(24))
 
     # Mechanism — three equal steps.
@@ -538,7 +539,7 @@ def slide_09():
               "net gain + 50 $OVERVIEW,\nfunded by other bettors",
               size=Pt(10.5), color=TEXT_GRAY, align=PP_ALIGN.CENTER, font=FONT)
 
-    footer(s, 9, TOTAL_SLIDES)
+    footer(s, 6, TOTAL_SLIDES)
     return s
 
 
@@ -546,7 +547,7 @@ def slide_09():
 def slide_10():
     s = new_slide()
     set_bg(s, WHITE)
-    header(s, "Funding Innovation", "Surviving the 354-Hour Lunar Night", 10, LOGO,
+    header(s, "Funding Innovation", "Surviving the 354-Hour Lunar Night", 7, LOGO,
             title_size=Pt(26))
 
     cols = [
@@ -601,7 +602,7 @@ def slide_10():
               "Power Program; NASA HLS Lunar Thermal Analysis Guidebook.",
               size=Pt(8), color=TEXT_MUTE, italic=True, font=FONT)
 
-    footer(s, 10, TOTAL_SLIDES)
+    footer(s, 7, TOTAL_SLIDES)
     return s
 
 
@@ -620,44 +621,38 @@ def slide_11():
     mark_w = mark_h * (620 / 650)
     add_picture(s, WHITE_MARK, SLIDE_W - MARGIN - mark_w, Inches(0.4), mark_w, mark_h)
 
-    # The real, live Moonbase Zero screenshot — captured directly from a running
-    # instance of ui/pages/moonbase/index.tsx (see README for how this was done).
+    # Two equal-size live screenshots, top- and bottom-aligned.
     RATIO = (1300, 946)
-    shot = I.rounded_rect_mask('moonbase_real/moonbase_main.png', RATIO, radius_frac=0.025)
-    sh = Inches(4.55)
-    sw = Emu(int(sh * RATIO[0] / RATIO[1]))
-    sx = MARGIN
+    gap = Inches(0.28)
+    sw = evenly_spaced(2, CONTENT_W, gap)
+    sh = Emu(int(sw * RATIO[1] / RATIO[0]))
     sy = Inches(1.3)
+    sx = MARGIN
+    shot = I.rounded_rect_mask('moonbase_real/moonbase_main.png', RATIO, radius_frac=0.025)
+    detail = I.rounded_rect_mask('moonbase_real/moonbase_lander_detail.png', RATIO, radius_frac=0.025)
     add_picture(s, shot, sx, sy, sw, sh)
+    add_picture(s, detail, sx + sw + gap, sy, sw, sh)
 
-    add_rect(s, sx, sy + sh + Inches(0.14), Inches(1.95), Inches(0.38),
+    add_rect(s, sx, sy + sh + Inches(0.16), Inches(1.95), Inches(0.36),
               fill=ORANGE, shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-    add_text(s, sx, sy + sh + Inches(0.14), Inches(1.95), Inches(0.38),
+    add_text(s, sx, sy + sh + Inches(0.16), Inches(1.95), Inches(0.36),
               "IN DEVELOPMENT", size=Pt(10), color=WHITE, bold=True, align=PP_ALIGN.CENTER,
               font=FONT_HEAD, anchor=MSO_ANCHOR.MIDDLE)
-    add_text(s, sx + Inches(2.15), sy + sh + Inches(0.14), Inches(3), Inches(0.38),
+    add_text(s, sx + Inches(2.15), sy + sh + Inches(0.16), Inches(3), Inches(0.36),
               "moondao.com/moonbase", size=Pt(11), color=RGBColor(0xC7, 0xCC, 0xE4), font=FONT,
               anchor=MSO_ANCHOR.MIDDLE)
-
-    # Secondary real screenshot — a capability-race detail panel, opened live.
-    dw = SLIDE_W - MARGIN - (sx + sw + Inches(0.35))
-    dh = Emu(int(dw * RATIO[1] / RATIO[0]))
-    dx = sx + sw + Inches(0.35)
-    dy = sy
-    detail = I.rounded_rect_mask('moonbase_real/moonbase_lander_detail.png', RATIO, radius_frac=0.025)
-    add_picture(s, detail, dx, dy, dw, dh)
-    add_text(s, dx, dy + dh + Inches(0.12), dw, Inches(0.3),
+    add_text(s, sx + sw + gap, sy + sh + Inches(0.16), sw, Inches(0.36),
               "Click a race to see live competitors, criteria, and sources",
               size=Pt(10.5), color=RGBColor(0xC7, 0xCC, 0xE4), italic=True, font=FONT,
-              align=PP_ALIGN.CENTER)
+              align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
 
-    add_text(s, MARGIN, Inches(6.6), SLIDE_W - 2 * MARGIN, Inches(0.35),
+    add_text(s, MARGIN, Inches(6.55), CONTENT_W, Inches(0.35),
               "A true-to-scale 3D site on the Shackleton connecting ridge \u2014 8 capability races, "
               "24 real competitors, all publicly sourced.",
               size=Pt(10.5), color=RGBColor(0x9A, 0xA1, 0xBF), italic=True, font=FONT,
               align=PP_ALIGN.CENTER)
 
-    footer_light(s, 11)
+    footer_light(s, 8)
     return s
 
 
@@ -665,7 +660,7 @@ def slide_11():
 def slide_12():
     s = new_slide()
     set_bg(s, WHITE)
-    header(s, "The Bigger Picture", "A Level Playing Field for the Next Space Age", 12, LOGO,
+    header(s, "The Bigger Picture", "A Level Playing Field for the Next Space Age", 9, LOGO,
             title_size=Pt(27))
 
     lx, lw = MARGIN, Inches(7.1)
@@ -701,7 +696,7 @@ def slide_12():
         cx = MARGIN + i * (card_w + gap)
         stat_card(s, cx, y0, card_w, ch, num, label, accent=[NAVY, ORANGE, RED][i])
 
-    footer(s, 12, TOTAL_SLIDES)
+    footer(s, 9, TOTAL_SLIDES)
     return s
 
 
@@ -736,7 +731,7 @@ def slide_13():
               size=Pt(11), color=RGBColor(0x9A, 0xA1, 0xBF), italic=True, font=FONT,
               align=PP_ALIGN.CENTER)
 
-    footer_light(s, 13)
+    footer_light(s, 10)
     return s
 
 
@@ -800,42 +795,43 @@ def slide_14():
 NOTES = {
     1: "[~20s] Quick intro — who you are and why MoonDAO is on this panel. Don't linger, the "
        "content does the introducing.",
-    2: "[~30s] One or two sentences max — the room can read the bullets. Land on the ConstitutionDAO "
-       "line, it's the most relatable proof point for a non-crypto audience.",
+    2: "[~30s] One or two sentences max — the room can read the bullets. Land on ConstitutionDAO "
+       "before Google; it's the most relatable proof point for a non-crypto audience.",
     3: "[~40s] Define MoonDAO in one breath before the stats: an onchain community funding and "
        "governing space access. Let the four numbers do the heavy lifting.",
     4: "[~45s] Walk left to right once, quickly. Slow down only on 2022 (first astronaut) and "
        "2025 (constitution on the Moon) — those are the two moments that make people lean in.",
     5: "[~40s] Don't read every card. Group them verbally: 'flight access, funding, training, "
        "network, governance, and the roadmap that ties it together.'",
-    6: "[~10s] Let this breathe — pause on the title before moving to Frank White. This is the "
-       "pivot from 'here's who we are' to 'here's the live opportunity.'",
-    7: "[~45s] Frank is the emotional core of this section — 40 years, 50+ astronauts, coined the "
-       "term, and has never flown himself. That irony is the hook.",
-    8: "[~40s] Point at the QR code directly — invite the room to scan right now while you talk. "
-       "These are real, live candidates on the board; anyone can enter and climb it.",
-    9: "[~50s] Walk the 3-step mechanism fast, name the 8 verticals as one group ('comms, "
+    6: "[~50s] Walk the 3-step mechanism fast, name the 8 verticals as one group ('comms, "
        "construction, habitat, ISRU, power, rover, crewed base, lander'), then slow down for the "
        "worked math — the +1.32 ETH number is the one that lands. Frame it as a new financing "
        "primitive, not 'crypto betting.'",
-    10: "[~55s] This is the technical-depth moment. Walk physics \u2192 extremes \u2192 math in order, "
+    7: "[~55s] This is the technical-depth moment. Walk physics \u2192 extremes \u2192 math in order, "
         "landing on '120 tons of batteries vs. a 15-ton lander.' It shows MoonDAO understands the "
         "engineering, not just the funding mechanics.",
-    11: "[~35s] This is the real, live product — say so explicitly. Point out the second screenshot "
+    8: "[~35s] This is the real, live product — say so explicitly. Point out the second screenshot "
         "shows an actual capability race opened live, with real competitors and sources.",
-    12: "[~40s] This is the slide that answers the panel's brief directly — make it personal to "
+    9: "[~40s] This is the slide that answers the panel's brief directly — make it personal to "
         "whoever's in the room, not just the named institutions.",
-    13: "[~15s] Quick, human beat before the close — real people, real names, behind the "
-        "onchain numbers. Don't over-explain, let the faces land.",
+    10: "[~15s] Quick, human beat — real people, real names, behind the onchain numbers. "
+         "Don't over-explain, let the faces land.",
+    11: "[~10s] Let this breathe — pause on the title before moving to Frank White. This is the "
+         "pivot from 'here's how we fund & build' to 'here's the live opportunity.'",
+    12: "[~45s] Frank is the emotional core of this section — 40 years, 50+ astronauts, coined the "
+         "term, and has never flown himself. That irony is the hook.",
+    13: "[~40s] Point at the QR code directly — invite the room to scan right now while you talk. "
+         "These are real, live candidates on the board; anyone can enter and climb it.",
     14: "[~20s] Point at the QR code — invite people to scan and join MoonDAO before you leave the "
-        "stage. Contact info stays up during Q&A.",
+         "stage. Contact info stays up during Q&A.",
 }
 
 
 # ------------------------------------------------------------------ build --
-for i, fn in enumerate([slide_01, slide_02, slide_03, slide_04, slide_05, slide_06,
-                          slide_07, slide_08, slide_09, slide_10, slide_11, slide_12,
-                          slide_13, slide_14], start=1):
+# Order: intro → DePrize/sim → network/citizens → Frank White → close
+for i, fn in enumerate([slide_01, slide_02, slide_03, slide_04, slide_05,
+                          slide_09, slide_10, slide_11, slide_12, slide_13,
+                          slide_06, slide_07, slide_08, slide_14], start=1):
     slide = fn()
     note = NOTES.get(i)
     if note:
