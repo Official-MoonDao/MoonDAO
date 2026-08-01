@@ -291,6 +291,15 @@ def logo_lockup_white(slide, mark_path, l, t, height, mark_ratio=620 / 650):
     return tb
 
 
+def add_qr_frame(slide, qr_path, l, t, size, pad=Inches(0.16), frame_fill=WHITE, line=LINE_GRAY):
+    """A QR code inset in a small padded card. Returns (frame_w, frame_h)."""
+    frame_size = size + pad * 2
+    add_rect(slide, l, t, frame_size, frame_size, fill=frame_fill, line=line, line_w=Pt(1),
+              shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.12, shadow=True)
+    slide.shapes.add_picture(qr_path, l + pad, t + pad, width=size, height=size)
+    return frame_size, frame_size
+
+
 def add_donut_chart(slide, l, t, w, h, categories, values, colors, hole_size=65):
     chart_data = CategoryChartData()
     chart_data.categories = categories

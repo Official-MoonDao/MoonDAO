@@ -17,9 +17,14 @@ def _src(name):
     return os.path.join(ASSETS, name)
 
 
+def _flat(name):
+    """Flatten a (possibly nested) asset name into a safe cache-file stem."""
+    return os.path.splitext(name)[0].replace(os.sep, '_').replace('/', '_')
+
+
 def crop_to_ratio(name, ratio_w, ratio_h, focus=('center', 'center'), out_name=None):
     """Center/edge-crop an image to an exact width:height ratio. Returns cache path."""
-    out_name = out_name or f"{os.path.splitext(name)[0]}_r{ratio_w}x{ratio_h}.png"
+    out_name = out_name or f"{_flat(name)}_r{ratio_w}x{ratio_h}.png"
     out_path = os.path.join(CACHE, out_name)
     if os.path.exists(out_path):
         return out_path
@@ -53,7 +58,7 @@ def crop_to_ratio(name, ratio_w, ratio_h, focus=('center', 'center'), out_name=N
 
 def circle_badge(name, size=800, border_color=None, border_px=0, out_name=None):
     """Square-crop + circular-mask an image into a transparent-background PNG badge."""
-    out_name = out_name or f"{os.path.splitext(name)[0]}_circle.png"
+    out_name = out_name or f"{_flat(name)}_circle.png"
     out_path = os.path.join(CACHE, out_name)
     if os.path.exists(out_path):
         return out_path
@@ -91,7 +96,7 @@ def darken(name, factor=0.45, ratio=None, out_name=None):
         src_path = crop_to_ratio(name, *ratio)
     else:
         src_path = _src(name)
-    out_name = out_name or f"{os.path.splitext(name)[0]}_dark.png"
+    out_name = out_name or f"{_flat(name)}_dark.png"
     out_path = os.path.join(CACHE, out_name)
     if os.path.exists(out_path):
         return out_path
@@ -105,7 +110,7 @@ def darken(name, factor=0.45, ratio=None, out_name=None):
 def rounded_rect_mask(name, ratio, radius_frac=0.05, out_name=None):
     """Crop to ratio and apply rounded-rect alpha mask (transparent PNG)."""
     path = crop_to_ratio(name, *ratio)
-    out_name = out_name or f"{os.path.splitext(name)[0]}_rounded.png"
+    out_name = out_name or f"{_flat(name)}_rounded.png"
     out_path = os.path.join(CACHE, out_name)
     if os.path.exists(out_path):
         return out_path
