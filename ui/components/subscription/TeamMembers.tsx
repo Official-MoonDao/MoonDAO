@@ -5,6 +5,9 @@ import { BLOCKED_CITIZENS } from 'const/whitelist'
 import { getRoleLabel } from '@/lib/hats/teamRoles'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
+import useTeamRoleRegistry, {
+  REGISTRY_ROLE,
+} from '@/lib/team/useTeamRoleRegistry'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { citizenRowToNFT } from '@/lib/tableland/convertRow'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
@@ -18,6 +21,7 @@ type TeamMemberProps = {
   hatsContract: any
   citizenNft?: any
   managerHatId?: any
+  roleLabelOverride?: string
 }
 
 type TeamMembersProps = {
@@ -25,11 +29,16 @@ type TeamMembersProps = {
   citizenContract: any
   hats: any[]
   managerHatId?: any
+  // Optional: when provided, registry-based teams resolve membership from the
+  // on-chain role registry instead of the hats subgraph.
+  teamContract?: any
+  teamId?: string | number
 }
 
 type Wearer = {
   address: string
   hatIds: string[]
+  roleLabel?: string
 }
 
 function TeamMemberSkeleton() {
@@ -63,6 +72,7 @@ function TeamMember({
   hatsContract,
   citizenNft,
   managerHatId,
+  roleLabelOverride,
 }: TeamMemberProps) {
   const hatNames = useHatNames(hatsContract, hatIds)
 
@@ -72,8 +82,10 @@ function TeamMember({
     metadata?.description || 'This citizen has yet to add a profile'
   // Label roles deterministically: the manager hat is always shown as "Manager"
   // (via getRoleLabel) even if its IPFS metadata is missing/slow, so managers are
-  // never silently downgraded to a generic member label.
+  // never silently downgraded to a generic member label. Registry-based teams
+  // pass an explicit role label since they have no hats.
   const roles =
+    roleLabelOverride ||
     hatNames
       ?.map((hatName: any) =>
         getRoleLabel(hatName.hatId, {
@@ -81,7 +93,8 @@ function TeamMember({
           ipfsName: hatName.name,
         })
       )
-      .join(', ') || 'Team Member'
+      .join(', ') ||
+    'Team Member'
 
   const link = metadata?.name
     ? `/citizen/${generatePrettyLinkWithId(metadata.name, metadata?.id || citizenNft?.id)}`
@@ -123,10 +136,28 @@ export default function TeamMembers({
   citizenContract: _citizenContract,
   hats,
   managerHatId,
+  teamContract,
+  teamId,
 }: TeamMembersProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
-  const wearers = useUniqueHatWearers(hats)
+  const hatWearers = useUniqueHatWearers(hats)
+  const { registryBased, members: registryMembers } = useTeamRoleRegistry(
+    teamContract,
+    teamId as any
+  )
+
+  // Registry-based teams resolve membership from the registry; legacy teams use hats.
+  const wearers: Wearer[] | undefined = useMemo(() => {
+    if (registryBased) {
+      return registryMembers.map((m) => ({
+        address: m.address,
+        hatIds: [],
+        roleLabel: m.role >= REGISTRY_ROLE.MANAGER ? 'Manager' : 'Member',
+      }))
+    }
+    return hatWearers
+  }, [registryBased, registryMembers, hatWearers])
 
   const ownerAddressesKey = useMemo(() => {
     if (!wearers?.length) return ''
@@ -196,6 +227,7 @@ export default function TeamMembers({
           hatsContract={hatsContract}
           citizenNft={citizensByOwner.get(w.address.toLowerCase())}
           managerHatId={managerHatId}
+          roleLabelOverride={w.roleLabel}
         />
       ))}
     </div>

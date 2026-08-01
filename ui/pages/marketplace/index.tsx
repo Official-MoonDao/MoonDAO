@@ -12,6 +12,8 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
+import getProjectActiveMap from '@/lib/project/getProjectActiveMap'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -324,10 +326,18 @@ export async function getStaticProps() {
       }
     }
 
+    // Project-teams (projects that are teams under the hood) are gated by the
+    // ProjectV2 `active` flag rather than subscription expiry.
+    const projectActiveByTeamId = await getProjectActiveMap(chain, chainSlug)
+
     // Keep a listing when its team is unexpired. If the expiration could not be
     // resolved (null, e.g. rate limited), fail open and keep the listing so a
     // transient RPC issue never wipes out the entire marketplace.
     const validListings = allListings.filter((listing: any) => {
+      const projectActive = projectActiveByTeamId.get(String(listing.teamId))
+      if (projectActive !== undefined) {
+        return projectActive === PROJECT_ACTIVE
+      }
       const expiration = teamExpirations.get(listing.teamId)
       return expiration === null || expiration === undefined || expiration > now
     })
