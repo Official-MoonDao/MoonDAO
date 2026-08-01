@@ -10,18 +10,23 @@ Pablo Moncada-Larrotiz's ~8-minute opening remarks slot.
 
 ## What's in the deck (13 slides)
 
-1. Title
+1. Title — real launch photo of Coby Cotton (MoonDAO's first astronaut) on the right panel
 2. About the speaker — Pablo Moncada-Larrotiz
 3. What is MoonDAO (mission + headline stats)
 4. Our story — milestones timeline, 2021–2025
 5. Core initiatives
 6. Section divider — "Go to Space with Frank White"
-7. Who is Frank White
-8. Fly to Space with Frank White — funding progress + **QR code** to contribute (`moondao.com/mission/4`)
-9. Fly with Frank — **live leaderboard** (real top candidates, photos, $OVERVIEW totals) + **QR code** to back a candidate (`moondao.com/overview-vote`)
-10. DePrize — the prediction-market mechanism, illustrated with a real capability race (fission surface power, 354-hour lunar night)
-11. Moonbase Zero — a full-bleed visualization of the real `/moonbase` capability-race board
-12. Why this matters for emerging space nations
+7. Who is Frank White — real photo of Frank + real "The Overview Effect" book cover
+8. Fly to Space with Frank White — funding progress, top-3 leaderboard, and **one QR code**
+   covering both actions (`moondao.com/overview-vote`)
+9. DePrize — the prediction-market mechanism (3-step) plus a worked math example of an
+   actual bet, as its own dedicated slide
+10. Technical deep dive — surviving the 354-hour lunar night (physics, thermal extremes,
+    and the battery-mass math that rules out solar/batteries alone)
+11. Moonbase Zero — two **real screenshots captured live from the running app**
+    (`/moonbase`), not a mockup or illustration
+12. Why this matters for emerging space nations — includes the real Space Acceleration
+    Network graphic
 13. Contact / call to action + **QR code** to join MoonDAO (`moondao.com/join`)
 
 Speaker notes with suggested per-slide timing (targeting ~8 minutes total) are embedded
@@ -34,12 +39,15 @@ encode the intended URL) by `build/generate_deck.py`'s companion assets in `asse
 
 | File | Links to | Used on |
 |---|---|---|
-| `qr_support_frank.png` | `moondao.com/mission/4` | Slide 8 |
-| `qr_leaderboard.png` | `moondao.com/overview-vote` | Slide 9 |
+| `qr_leaderboard.png` | `moondao.com/overview-vote` | Slide 8 |
 | `qr_join_moondao.png` | `moondao.com/join` | Slide 13 |
 
-All three target URLs were checked live (HTTP 200) before generating the codes. Rerun
-the check with:
+(`qr_support_frank.png` is still generated for `moondao.com/mission/4` but isn't placed
+on a slide now that slides 8–9 have been combined into a single QR.)
+
+Each QR has the MoonDAO icon composited into its center (generated at error-correction
+level H specifically so a small centered logo doesn't break scanning) and is re-verified
+by decoding it back with OpenCV after the logo is added. Rerun the check with:
 
 ```bash
 python3 -c "
@@ -56,7 +64,7 @@ for f, url in [
 
 ## Leaderboard data
 
-Slide 9's "Fly with Frank" leaderboard and candidate photos were pulled live from
+Slide 8's candidate leaderboard and photos were pulled live from
 `moondao.com/overview-vote`'s `$OVERVIEW` delegation leaderboard (same data source as
 `ui/pages/overview-vote.tsx` / `ui/lib/overview-delegate/fetchLeaderboard.ts`) at build
 time. Since this leaderboard changes as people back candidates, re-pull it before
@@ -71,25 +79,39 @@ sites (`moondao.com`, `docs.moondao.com`) — not invented. Where a figure is
 approximate/time-sensitive, the deck uses "~" or "≈" to match the source docs' own
 hedging.
 
-Slides 10–11 (DePrize / Moonbase Zero) are pulled directly from the real, implemented
-`/moonbase` feature in `ui/` (`ui/pages/moonbase/`, `ui/lib/lunar-atlas/`,
-`ui/lib/lunar-atlas/seed/atlas.dataset.json`) — the capability-race list, competitor
-names/odds, the fission-surface-power criteria, and the underlying NASA sourcing are
-all read from that dataset. Rendering the actual live page for a literal screenshot
-would require real `NEXT_PUBLIC_THIRDWEB_CLIENT_ID` / `NEXT_PUBLIC_PRIVY_APP_ID`
-secrets this environment doesn't have (confirmed by running `yarn install` + `next dev`
-locally); slide 11 instead uses a generated illustrative 3D moonbase render as the
-background, with the real capability-race data overlaid in a HUD card styled after the
-in-app legend.
+Slide 9 (DePrize) and slide 10 (surviving the lunar night) are pulled directly from the
+real, implemented `/moonbase` feature in `ui/` (`ui/pages/moonbase/`,
+`ui/lib/lunar-atlas/`, `ui/lib/lunar-atlas/seed/atlas.dataset.json`) plus outside
+research — the capability-race list, competitor names/odds, and the fission-surface-power
+criteria (40 kWe, 354-hour night) come from that dataset; the physics/thermal figures on
+slide 10 (tidal-locking mechanics, ±°C extremes, battery-mass math) are sourced from NASA
+references (see the citation line on that slide) and worked out independently for the
+deck.
+
+Slide 11 (Moonbase Zero) uses two **real screenshots captured live from a running
+instance of the app** — `ui/pages/moonbase/index.tsx` was started locally
+(`yarn dev` in `ui/`, with placeholder `NEXT_PUBLIC_THIRDWEB_CLIENT_ID` /
+`NEXT_PUBLIC_PRIVY_APP_ID` env vars so the client-side SDKs initialize without real
+secrets), opened in a real browser window on the VM's display, and captured with
+`import` (ImageMagick) after interacting with the page (clicking into a capability race
+to open its detail panel). The raw captures and the crop/processing steps live in
+`assets/moonbase_real/` — nothing on that slide is a mockup or AI render.
 
 ## Images
 
-Most photos/graphics are pulled from MoonDAO's own repo (`ui/public/`) or MoonDAO's
-public citizen NFT profile images (IPFS) — no third-party/stock imagery. See `assets/`
-for the source files used. The one exception is `assets/moonbase_zero_render.png`
-(slide 11's background), which is an AI-generated illustrative lunar-base render used
-as a stand-in since the real `/moonbase` 3D scene couldn't be rendered in this
-environment (see above) — the data overlaid on top of it is real.
+Photos/graphics come from three places, all real (no stock imagery, nothing invented):
+
+1. **MoonDAO's own repo** (`ui/public/`) and MoonDAO's public citizen NFT profile images
+   (IPFS) — team/astronaut photos, the logo, the leaderboard avatars.
+2. **Live captures of the running app** — the two Moonbase Zero screenshots on slide 11
+   (see above), saved in `assets/moonbase_real/`.
+3. **The reference deck the user supplied** (`MoonDAO 101 PPT_design_improvements.pptx`)
+   — several of its embedded graphics were extracted and reused directly, saved in
+   `assets/reference/`: Coby Cotton's real Blue Origin NS-22 launch photo (slide 1), a
+   real photo of Frank White with an Earth graphic (slide 7, cropped from the "Send Frank
+   to Space" campaign graphic), the real "The Overview Effect" book cover (slide 7), a
+   fresh Earth-sunrise photo (slide 6 background), and MoonDAO's official Space
+   Acceleration Network diagram (slide 12).
 
 ## Rebuilding the deck
 

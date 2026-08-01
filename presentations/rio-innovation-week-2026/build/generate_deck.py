@@ -58,12 +58,19 @@ def slide_01():
     add_picture(s, moon_img, panel_x, 0, panel_w, SLIDE_H)
     add_rect(s, panel_x, 0, Inches(0.06), SLIDE_H, fill=ORANGE)
 
-    # Pablo circular headshot inside the panel
-    badge = I.circle_badge('pablo_headshot.png', size=700, border_color=(255, 255, 255, 255), border_px=14)
-    bd = Inches(2.3)
-    add_picture(s, badge, panel_x + (panel_w - bd) / 2, Inches(4.55), bd, bd)
-    add_text(s, panel_x + Inches(0.2), Inches(6.95), panel_w - Inches(0.4), Inches(0.4),
-              "Space Acceleration Network", size=Pt(11), color=WHITE, align=PP_ALIGN.CENTER, font=FONT)
+    # A real MoonDAO launch photo, framed as an inset card on the moon backdrop.
+    launch = I.rounded_rect_mask('reference/coby_launch_suit.png', (16, 9), radius_frac=0.05)
+    lw_img = panel_w - Inches(0.7)
+    lh_img = Emu(int(lw_img * 9 / 16))
+    lx_img = panel_x + (panel_w - lw_img) / 2
+    ly_img = Inches(4.35)
+    add_picture(s, launch, lx_img, ly_img, lw_img, lh_img)
+    add_text(s, panel_x + Inches(0.2), ly_img + lh_img + Inches(0.14), panel_w - Inches(0.4), Inches(0.35),
+              "Coby Cotton \u2014 Blue Origin NS-22", size=Pt(11), color=WHITE, bold=True,
+              align=PP_ALIGN.CENTER, font=FONT_HEAD)
+    add_text(s, panel_x + Inches(0.2), ly_img + lh_img + Inches(0.44), panel_w - Inches(0.4), Inches(0.3),
+              "MoonDAO's first crowdfunded astronaut", size=Pt(9.5), color=RGBColor(0xC7, 0xCC, 0xE4),
+              align=PP_ALIGN.CENTER, font=FONT)
 
     lw = Inches(3.1)
     lh = lw * (345 / 1233)
@@ -294,7 +301,7 @@ def slide_05():
 def slide_06():
     s = new_slide()
     set_bg(s, NAVY_DARK)
-    bg = I.darken('earthrise.jpg', factor=0.32, ratio=(SLIDE_W.inches, SLIDE_H.inches))
+    bg = I.darken('reference/earth_sunrise.jpeg', factor=0.42, ratio=(SLIDE_W.inches, SLIDE_H.inches))
     add_picture(s, bg, 0, 0, SLIDE_W, SLIDE_H)
     add_rect(s, 0, 0, SLIDE_W, Inches(0.09), fill=ORANGE)
 
@@ -329,7 +336,7 @@ def slide_07():
     header(s, "The Next Opportunity", "Who Is Frank White", 7, LOGO)
 
     lx, lw = MARGIN, Inches(3.9)
-    badge = I.circle_badge('frank_white_citizen.png', size=700)
+    badge = I.circle_badge('reference/frank_white_real_photo.png', size=700)
     bd = Inches(2.3)
     add_picture(s, badge, lx + (lw - bd) / 2, Inches(1.7), bd, bd)
     add_text(s, lx, Inches(4.15), lw, Inches(0.4), "Frank White", size=Pt(16),
@@ -337,11 +344,12 @@ def slide_07():
     add_text(s, lx, Inches(4.5), lw, Inches(0.4), "Author, \u201cThe Overview Effect\u201d",
               size=Pt(12), color=TEXT_GRAY, align=PP_ALIGN.CENTER, font=FONT)
 
-    er = I.rounded_rect_mask('earthrise.jpg', (12, 5), radius_frac=0.06)
-    er_h = lw * 5 / 12
-    add_picture(s, er, lx, Inches(4.95), lw, er_h)
-    add_text(s, lx, Inches(4.95) + er_h + Inches(0.04), lw, Inches(0.3),
-              "\u201cEarthrise,\u201d Apollo 8, 1968", size=Pt(9), color=TEXT_MUTE,
+    book = I.rounded_rect_mask('reference/overview_effect_book.jpg', (2, 3), radius_frac=0.03)
+    book_h = Inches(1.95)
+    book_w = Emu(int(book_h * 2 / 3))
+    add_picture(s, book, lx + (lw - book_w) / 2, Inches(4.95), book_w, book_h)
+    add_text(s, lx, Inches(4.95) + book_h + Inches(0.06), lw, Inches(0.3),
+              "\u201cThe Overview Effect,\u201d 4th ed.", size=Pt(9), color=TEXT_MUTE,
               align=PP_ALIGN.CENTER, font=FONT)
 
     rx = Inches(5.15)
@@ -371,29 +379,66 @@ def slide_08():
     set_bg(s, WHITE)
     header(s, "The Next Opportunity", "Fly to Space with Frank White", 8, LOGO)
 
-    lx, lw = MARGIN, Inches(6.3)
+    # Left — funding progress.
+    lx, lw = MARGIN, Inches(3.6)
     raised, goal = 172, 250
     pct = round(raised / goal * 100)
-    add_donut_chart(s, lx + Inches(1.0), Inches(2.0), Inches(3.6), Inches(3.2),
+    add_donut_chart(s, lx + Inches(0.5), Inches(1.7), Inches(2.6), Inches(2.3),
                       ["Raised", "Remaining"], [raised, goal - raised],
-                      [ORANGE, LINE_GRAY], hole_size=68)
-    add_text(s, lx + Inches(1.0), Inches(3.15), Inches(3.6), Inches(0.9), f"{pct}%\nfunded",
-              size=Pt(22), color=NAVY_DARK, bold=True, align=PP_ALIGN.CENTER, font=FONT_HEAD)
-    add_text(s, lx, Inches(5.35), lw, Inches(0.45), f"${raised}K of ${goal}K",
-              size=Pt(18), color=NAVY_DARK, bold=True, align=PP_ALIGN.CENTER, font=FONT_HEAD)
-    add_text(s, lx, Inches(5.82), lw, Inches(0.4), "157 contributors \u2014 goal secures a seat",
-              size=Pt(12.5), color=TEXT_GRAY, align=PP_ALIGN.CENTER, font=FONT)
+                      [ORANGE, LINE_GRAY], hole_size=66)
+    add_text(s, lx + Inches(0.5), Inches(2.5), Inches(2.6), Inches(0.7), f"{pct}%\nfunded",
+              size=Pt(17), color=NAVY_DARK, bold=True, align=PP_ALIGN.CENTER, font=FONT_HEAD)
+    add_text(s, lx, Inches(4.15), lw, Inches(0.4), f"${raised}K of ${goal}K",
+              size=Pt(16), color=NAVY_DARK, bold=True, align=PP_ALIGN.CENTER, font=FONT_HEAD)
+    add_text(s, lx, Inches(4.55), lw, Inches(0.55), "157 contributors\ngoal secures a seat",
+              size=Pt(11), color=TEXT_GRAY, align=PP_ALIGN.CENTER, font=FONT)
 
-    # QR — scan to support Frank and enter the selection process.
-    rx = Inches(7.9)
-    qr_size = Inches(2.15)
-    qr_path = os.path.join(QR, 'qr_support_frank.png')
-    fw, fh = add_qr_frame(s, qr_path, rx, Inches(2.15), qr_size)
-    add_text(s, rx - Inches(0.3), Inches(2.15) + fh + Inches(0.16), fw + Inches(0.6), Inches(0.4),
-              "Scan to Support Frank", size=Pt(14), color=NAVY_DARK, bold=True,
+    # Middle — top 3 candidates, compact.
+    mx = Inches(4.6)
+    mw = Inches(4.6)
+    add_text(s, mx, Inches(1.6), mw, Inches(0.35),
+              "Top candidates \u2014 25 advance to Round 2", size=Pt(13), color=NAVY_DARK,
+              bold=True, font=FONT_HEAD)
+    leaderboard = [
+        (1, 'Andrew "Titan" Parris', 2083, os.path.join(LB, 'citizen_7_parris.png'), ORANGE),
+        (2, 'Citizen #180', 680, None, NAVY),
+        (3, 'Jas', 652, os.path.join(LB, 'citizen_184_jas.png'), BLUE),
+    ]
+    ry = Inches(2.15)
+    row_h = Inches(0.95)
+    pd = Inches(0.62)
+    for rank, name, amt, photo, color in leaderboard:
+        add_text(s, mx, ry + Inches(0.14), Inches(0.35), Inches(0.35), f"{rank}",
+                  size=Pt(15), color=TEXT_MUTE, bold=True, font=FONT_HEAD)
+        if photo:
+            badge = I.circle_badge(os.path.relpath(photo, ASSETS), size=300)
+            add_picture(s, badge, mx + Inches(0.4), ry + Inches(0.06), pd, pd)
+        else:
+            add_rect(s, mx + Inches(0.4), ry + Inches(0.06), pd, pd, fill=BG_PANEL, shape_type=MSO_SHAPE.OVAL)
+        add_text(s, mx + Inches(1.15), ry + Inches(0.02), Inches(2.2), Inches(0.28),
+                  name, size=Pt(12.5), color=NAVY_DARK, bold=True, font=FONT_HEAD)
+        bar_max = Inches(2.2)
+        add_rect(s, mx + Inches(1.15), ry + Inches(0.34), bar_max, Inches(0.13), fill=BG_PANEL,
+                  shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+        add_rect(s, mx + Inches(1.15), ry + Inches(0.34), Emu(int(bar_max * (amt / 2083))), Inches(0.13),
+                  fill=color, shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+        add_text(s, mx + Inches(1.15), ry + Inches(0.52), Inches(2.2), Inches(0.24),
+                  f"{amt:,} $OVERVIEW", size=Pt(9.5), color=TEXT_GRAY, font=FONT)
+        ry += row_h
+    add_text(s, mx, ry + Inches(0.05), mw, Inches(0.3),
+              "Any Citizen can enter and climb the board.", size=Pt(10), color=TEXT_MUTE,
+              italic=True, font=FONT)
+
+    # Right — one QR code covering both actions.
+    rx = Inches(9.75)
+    qr_size = Inches(2.05)
+    qr_path = os.path.join(QR, 'qr_leaderboard.png')
+    fw, fh = add_qr_frame(s, qr_path, rx, Inches(2.0), qr_size)
+    add_text(s, rx - Inches(0.35), Inches(2.0) + fh + Inches(0.16), fw + Inches(0.7), Inches(0.6),
+              "Support Frank &\nBack a Candidate", size=Pt(13), color=NAVY_DARK, bold=True,
               align=PP_ALIGN.CENTER, font=FONT_HEAD)
-    add_text(s, rx - Inches(0.3), Inches(2.15) + fh + Inches(0.56), fw + Inches(0.6), Inches(0.3),
-              "moondao.com/mission/4", size=Pt(10.5), color=TEXT_MUTE,
+    add_text(s, rx - Inches(0.35), Inches(2.0) + fh + Inches(0.72), fw + Inches(0.7), Inches(0.3),
+              "moondao.com/overview-vote", size=Pt(9.5), color=TEXT_MUTE,
               align=PP_ALIGN.CENTER, font=FONT)
 
     add_rect(s, MARGIN, Inches(6.35), SLIDE_W - 2 * MARGIN, Inches(0.55), fill=BG_PANEL,
@@ -410,67 +455,70 @@ def slide_08():
 def slide_09():
     s = new_slide()
     set_bg(s, WHITE)
-    header(s, "The Next Opportunity", "Fly with Frank \u2014 Leaderboard", 9, LOGO)
+    header(s, "Funding Innovation", "DePrize: A Prediction Market for Space Delivery", 9, LOGO,
+            title_size=Pt(25))
 
-    add_text(s, MARGIN, Inches(1.55), Inches(7.5), Inches(0.4),
-              "Top 25 $OVERVIEW backers advance to Round 2",
-              size=Pt(14.5), color=NAVY_DARK, bold=True, font=FONT_HEAD)
-
-    leaderboard = [
-        (1, 'Andrew "Titan" Parris', 2083, 6, os.path.join(LB, 'citizen_7_parris.png')),
-        (2, 'Citizen #180', 680, 1, None),
-        (3, 'Jas', 652, 5, os.path.join(LB, 'citizen_184_jas.png')),
-        (4, 'austin3wilson', 614, 2, os.path.join(LB, 'citizen_55_austin.png')),
-        (5, 'Anastasia Stepanova', 541, 3, os.path.join(LB, 'citizen_9_anastasia.png')),
+    # Mechanism — three steps, short and graphical.
+    steps = [
+        ("01", "Back a Team", "Wager ETH on who delivers first", NAVY),
+        ("02", "Live Odds", "Every bet grows the shared prize", BLUE),
+        ("03", "Winner Delivers", "Community declares winner; backers get paid", ORANGE),
     ]
-    max_amt = leaderboard[0][2]
-    lx = MARGIN
-    lw = Inches(7.3)
-    ry = Inches(2.15)
-    row_h = Inches(0.82)
-    for rank, name, amt, backers, photo in leaderboard:
-        add_text(s, lx, ry + Inches(0.12), Inches(0.4), Inches(0.4), f"{rank}",
-                  size=Pt(16), color=TEXT_MUTE, bold=True, font=FONT_HEAD)
-        pd = Inches(0.56)
-        py_ = ry + Inches(0.06)
-        if photo:
-            badge = I.circle_badge(os.path.relpath(photo, ASSETS), size=300)
-            add_picture(s, badge, lx + Inches(0.45), py_, pd, pd)
-        else:
-            add_rect(s, lx + Inches(0.45), py_, pd, pd, fill=BG_PANEL,
-                      shape_type=MSO_SHAPE.OVAL)
-        add_text(s, lx + Inches(1.15), ry + Inches(0.02), Inches(2.7), Inches(0.3),
-                  name, size=Pt(13), color=NAVY_DARK, bold=True, font=FONT_HEAD)
-        bar_w = Inches(2.7)
-        bar_max = lw - Inches(1.15) - Inches(1.5)
-        bfill = Emu(int(bar_max * (amt / max_amt)))
-        add_rect(s, lx + Inches(1.15), ry + Inches(0.36), bar_max, Inches(0.14), fill=BG_PANEL,
-                  shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-        add_rect(s, lx + Inches(1.15), ry + Inches(0.36), bfill, Inches(0.14),
-                  fill=[ORANGE, NAVY, BLUE, RED, NAVY][rank - 1], shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-        add_text(s, lx + lw - Inches(1.5), ry - Inches(0.02), Inches(1.5), Inches(0.3),
-                  f"{amt:,} $OVERVIEW", size=Pt(11), color=NAVY_DARK, bold=True,
-                  align=PP_ALIGN.RIGHT, font=FONT_HEAD)
-        add_text(s, lx + lw - Inches(1.5), ry + Inches(0.53), Inches(1.5), Inches(0.24),
-                  f"{backers} backer{'s' if backers != 1 else ''}", size=Pt(9.5), color=TEXT_MUTE,
-                  align=PP_ALIGN.RIGHT, font=FONT)
-        ry += row_h
+    gap = Inches(0.35)
+    cw = (SLIDE_W - 2 * MARGIN - gap * 2) / 3
+    y0 = Inches(1.65)
+    ch = Inches(1.75)
+    for i, (num, title, desc, accent) in enumerate(steps):
+        cx = MARGIN + i * (cw + gap)
+        add_rect(s, cx, y0, cw, ch, fill=BG_LIGHT, line=LINE_GRAY, line_w=Pt(1),
+                  shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.1, shadow=True)
+        section_number_badge(s, cx + Inches(0.28), y0 + Inches(0.28), num[-1], accent=accent, d=Inches(0.55))
+        add_text(s, cx + Inches(0.28), y0 + Inches(1.0), cw - Inches(0.56), Inches(0.4),
+                  title, size=Pt(16), color=NAVY_DARK, bold=True, font=FONT_HEAD)
+        add_text(s, cx + Inches(0.28), y0 + Inches(1.38), cw - Inches(0.56), Inches(0.35),
+                  desc, size=Pt(10.5), color=TEXT_GRAY, font=FONT)
+        if i < 2:
+            ax = cx + cw + gap / 2
+            arrow = s.shapes.add_shape(MSO_SHAPE.CHEVRON, ax - Inches(0.14), y0 + ch / 2 - Inches(0.14),
+                                         Inches(0.28), Inches(0.28))
+            arrow.fill.solid()
+            arrow.fill.fore_color.rgb = TEXT_MUTE
+            arrow.line.fill.background()
+            arrow.shadow.inherit = False
 
-    add_text(s, lx, ry + Inches(0.05), lw, Inches(0.4),
-              "Any Citizen can enter \u2014 rally backers to climb the board.",
-              size=Pt(11), color=TEXT_MUTE, italic=True, font=FONT)
+    # Worked example — the actual parimutuel math behind one bet.
+    my0 = Inches(3.85)
+    mh = Inches(2.35)
+    add_rect(s, MARGIN, my0, SLIDE_W - 2 * MARGIN, mh, fill=BG_PANEL, line=LINE_GRAY, line_w=Pt(1),
+              shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.06)
+    add_text(s, MARGIN + Inches(0.4), my0 + Inches(0.28), Inches(3), Inches(0.35),
+              "THE MATH, WORKED", size=Pt(12.5), color=ORANGE, bold=True, font=FONT_HEAD)
 
-    # QR — view the live leaderboard and back a candidate.
-    rx = Inches(9.55)
-    qr_size = Inches(2.0)
-    qr_path = os.path.join(QR, 'qr_leaderboard.png')
-    fw, fh = add_qr_frame(s, qr_path, rx, Inches(2.3), qr_size)
-    add_text(s, rx - Inches(0.3), Inches(2.3) + fh + Inches(0.16), fw + Inches(0.6), Inches(0.4),
-              "Back a Candidate", size=Pt(13.5), color=NAVY_DARK, bold=True,
-              align=PP_ALIGN.CENTER, font=FONT_HEAD)
-    add_text(s, rx - Inches(0.3), Inches(2.3) + fh + Inches(0.55), fw + Inches(0.6), Inches(0.3),
-              "moondao.com/overview-vote", size=Pt(10), color=TEXT_MUTE,
-              align=PP_ALIGN.CENTER, font=FONT)
+    steps_math = [
+        "Bet 1 ETH on a provider priced at 40% odds",
+        "5% (0.05 ETH) \u2192 prize pool  \u00b7  95% (0.95 ETH) \u2192 market, at $0.40/share = 2.375 shares",
+        "Less the 1% LMSR trade fee \u2192 \u2248 2.35 shares held",
+        "If that provider wins: shares redeem 1:1 for ETH \u2192 \u2248 2.32 ETH back",
+    ]
+    ty = my0 + Inches(0.72)
+    for line in steps_math:
+        add_text(s, MARGIN + Inches(0.4), ty, Inches(8.3), Inches(0.32), f"\u2192  {line}",
+                  size=Pt(12.5), color=TEXT_DARK, font=FONT)
+        ty += Inches(0.34)
+
+    divider_x = MARGIN + Inches(9.15)
+    add_line(s, divider_x, my0 + Inches(0.35), 0, mh - Inches(0.7), color=LINE_GRAY, weight=Pt(1))
+    rmx = divider_x + Inches(0.35)
+    rmw = SLIDE_W - MARGIN - rmx
+    add_text(s, rmx, my0 + Inches(0.55), rmw, Inches(0.75), "+1.32 ETH", size=Pt(30),
+              color=ORANGE, bold=True, align=PP_ALIGN.CENTER, font=FONT_HEAD)
+    add_text(s, rmx, my0 + Inches(1.35), rmw, Inches(0.75),
+              "net gain, plus 50 $OVERVIEW \u2014 funded by bettors who backed other providers",
+              size=Pt(10.5), color=TEXT_GRAY, align=PP_ALIGN.CENTER, font=FONT)
+
+    add_text(s, MARGIN, Inches(6.35), SLIDE_W - 2 * MARGIN, Inches(0.4),
+              "Illustrative worked example from MoonDAO's DePrize design \u2014 actual payouts depend on live odds when a bet is placed.",
+              size=Pt(10), color=TEXT_MUTE, italic=True, font=FONT, align=PP_ALIGN.CENTER)
 
     footer(s, 9, TOTAL_SLIDES)
     return s
@@ -480,79 +528,62 @@ def slide_09():
 def slide_10():
     s = new_slide()
     set_bg(s, WHITE)
-    header(s, "Funding Innovation", "DePrize: Betting to Fund the Mission", 10, LOGO)
+    header(s, "Funding Innovation", "Surviving the 354-Hour Lunar Night", 10, LOGO,
+            title_size=Pt(26))
 
-    # Mechanism — three short steps, icons over paragraphs.
-    steps = [
-        ("01", "Back a Team", NAVY),
-        ("02", "Live Odds", BLUE),
-        ("03", "Winner Delivers", ORANGE),
+    cols = [
+        ("THE PHYSICS", "354 hrs", "of total darkness, every cycle", NAVY, [
+            "The Moon is tidally locked: one rotation = one 29.5-day orbit",
+            "\u2192 sunrise to sunrise (\u201clunar day\u201d) = 29.5 Earth days",
+            "\u2192 continuous night \u2248 14.75 days = 354 hours",
+            "No atmosphere \u2192 no convection \u2014 heat only radiates away",
+        ]),
+        ("THE EXTREMES", "257\u00b0C", "swing between sun and shadow", RED, [
+            "South Pole sunlit ground: up to 54\u00b0C (130\u00b0F)",
+            "Nearby permanent shadow: as low as \u2212203\u00b0C (\u2212334\u00b0F)",
+            "Colder than anywhere ever recorded on Earth",
+            "Regolith insulates the subsurface, but can't power a base",
+        ]),
+        ("THE MATH", "120 tons", "of batteries \u2014 for one night", ORANGE, [
+            "40 kWe load \u00d7 354 hrs \u2248 14,160 kWh needed",
+            "At Tesla Powerwall density (13.5 kWh / 114 kg):",
+            "\u2192 \u2248 1,050 units \u2248 120 metric tons of batteries",
+            "NASA's whole heavy-lander budget: 15 tons, total",
+        ]),
     ]
-    gap = Inches(0.35)
+    gap = Inches(0.3)
     cw = (SLIDE_W - 2 * MARGIN - gap * 2) / 3
-    y0 = Inches(1.55)
-    ch = Inches(1.15)
-    for i, (num, title, accent) in enumerate(steps):
+    y0 = Inches(1.6)
+    ch = Inches(4.35)
+    for i, (label, stat, sub, accent, lines) in enumerate(cols):
         cx = MARGIN + i * (cw + gap)
         add_rect(s, cx, y0, cw, ch, fill=BG_LIGHT, line=LINE_GRAY, line_w=Pt(1),
-                  shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.12, shadow=True)
-        section_number_badge(s, cx + Inches(0.22), y0 + Inches(0.3), num[-1], accent=accent, d=Inches(0.55))
-        add_text(s, cx + Inches(0.95), y0, cw - Inches(1.1), ch, title,
-                  size=Pt(15.5), color=NAVY_DARK, bold=True, font=FONT_HEAD, anchor=MSO_ANCHOR.MIDDLE)
-        if i < 2:
-            ax = cx + cw + gap / 2
-            arrow = s.shapes.add_shape(MSO_SHAPE.CHEVRON, ax - Inches(0.13), y0 + ch / 2 - Inches(0.13),
-                                         Inches(0.26), Inches(0.26))
-            arrow.fill.solid()
-            arrow.fill.fore_color.rgb = TEXT_MUTE
-            arrow.line.fill.background()
-            arrow.shadow.inherit = False
-    add_text(s, MARGIN, y0 + ch + Inches(0.12), SLIDE_W - 2 * MARGIN, Inches(0.3),
-              "Bet on a provider \u2192 odds update live, growing the prize \u2192 the community pays out the winner.",
-              size=Pt(11), color=TEXT_GRAY, italic=True, align=PP_ALIGN.CENTER, font=FONT)
+                  shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.06, shadow=True)
+        add_rect(s, cx, y0, cw, Inches(0.08), fill=accent, shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+        add_text(s, cx + Inches(0.26), y0 + Inches(0.22), cw - Inches(0.52), Inches(0.3),
+                  label, size=Pt(10.5), color=accent, bold=True, font=FONT_HEAD)
+        add_text(s, cx + Inches(0.26), y0 + Inches(0.55), cw - Inches(0.52), Inches(0.6),
+                  stat, size=Pt(27), color=NAVY_DARK, bold=True, font=FONT_HEAD)
+        add_text(s, cx + Inches(0.26), y0 + Inches(1.15), cw - Inches(0.52), Inches(0.45),
+                  sub, size=Pt(10), color=TEXT_GRAY, italic=True, font=FONT)
+        add_line(s, cx + Inches(0.26), y0 + Inches(1.68), cw - Inches(0.52), 0, color=LINE_GRAY, weight=Pt(0.75))
+        ly = y0 + Inches(1.86)
+        for line in lines:
+            add_text(s, cx + Inches(0.26), ly, cw - Inches(0.52), Inches(0.6), f"\u2022  {line}",
+                      size=Pt(9.5), color=TEXT_DARK, font=FONT)
+            ly += Inches(0.62)
 
-    # A real race the mechanism could apply to — pulled from Moonbase Zero.
-    my0 = Inches(3.35)
-    mh = Inches(3.25)
-    add_rect(s, MARGIN, my0, SLIDE_W - 2 * MARGIN, mh, fill=NAVY_DARK,
-              shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.05, shadow=True)
-    pad = Inches(0.4)
-    lcw = Inches(4.6)
-    add_text(s, MARGIN + pad, my0 + Inches(0.32), lcw, Inches(0.3),
-              "A REAL RACE ON MOONBASE ZERO", size=Pt(10.5), color=ORANGE_LT, bold=True, font=FONT_HEAD)
-    add_text(s, MARGIN + pad, my0 + Inches(0.68), lcw, Inches(0.9),
-              "First Fission Power\non the Moon", size=Pt(21), color=WHITE, bold=True, font=FONT_HEAD)
-    add_text(s, MARGIN + pad, my0 + Inches(1.68), lcw, Inches(0.5),
-              "354-hour lunar night", size=Pt(28), color=ORANGE, bold=True, font=FONT_HEAD)
-    add_text(s, MARGIN + pad, my0 + Inches(2.22), lcw, Inches(0.75),
-              "No sunlight for two straight weeks \u2014 the reason NASA is funding three "
-              "competing reactors instead of solar panels.",
-              size=Pt(11), color=RGBColor(0xC7, 0xCC, 0xE4), font=FONT)
+    add_rect(s, MARGIN, Inches(6.15), SLIDE_W - 2 * MARGIN, Inches(0.72), fill=NAVY_DARK,
+              shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.15)
+    add_text(s, MARGIN + Inches(0.35), Inches(6.15), SLIDE_W - 2 * MARGIN - Inches(0.7), Inches(0.72),
+              "THE ANSWER \u2014 a 40 kWe fission reactor, shielding, and radiators fit the same 15-ton "
+              "lander and run for a 10-year design life. NASA calls this civil-space shortfall #1.",
+              size=Pt(11.5), color=WHITE, italic=True, font=FONT, anchor=MSO_ANCHOR.MIDDLE)
 
-    rcx = MARGIN + pad + lcw + Inches(0.4)
-    rcw = SLIDE_W - MARGIN - pad - rcx
-    add_text(s, rcx, my0 + Inches(0.32), rcw, Inches(0.3),
-              "WHO'S LEADING", size=Pt(10.5), color=ORANGE_LT, bold=True, font=FONT_HEAD)
-    competitors = [
-        ("Lockheed Martin", 0.35, ORANGE),
-        ("Westinghouse", 0.34, RGBColor(0xE8, 0xC4, 0x5A)),
-        ("Intuitive Machines", 0.31, RGBColor(0xE0, 0x6B, 0x3A)),
-    ]
-    cy = my0 + Inches(0.78)
-    for name, pct, color in competitors:
-        add_text(s, rcx, cy, rcw - Inches(0.6), Inches(0.28),
-                  name, size=Pt(13), color=WHITE, bold=True, font=FONT_HEAD)
-        add_text(s, rcx + rcw - Inches(0.6), cy, Inches(0.6), Inches(0.28),
-                  f"{int(pct*100)}%", size=Pt(13), color=color, bold=True, align=PP_ALIGN.RIGHT, font=FONT_HEAD)
-        bar_y = cy + Inches(0.32)
-        add_rect(s, rcx, bar_y, rcw, Inches(0.12), fill=RGBColor(0x2E, 0x37, 0x5C),
-                  shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-        add_rect(s, rcx, bar_y, Emu(int(rcw * pct)), Inches(0.12), fill=color,
-                  shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-        cy += Inches(0.72)
-    add_text(s, rcx, cy + Inches(0.08), rcw, Inches(0.3),
-              "Curator priors \u2014 live odds once the market opens.", size=Pt(8.5),
-              color=RGBColor(0x8A, 0x90, 0xB0), italic=True, font=FONT)
+    add_text(s, MARGIN, Inches(6.95), SLIDE_W - 2 * MARGIN, Inches(0.3),
+              "Sources: NASA \u2014 The Harsh Environment of the Lunar South Pole; NASA Fission Surface "
+              "Power Program; NASA HLS Lunar Thermal Analysis Guidebook.",
+              size=Pt(8), color=TEXT_MUTE, italic=True, font=FONT)
 
     footer(s, 10, TOTAL_SLIDES)
     return s
@@ -562,66 +593,53 @@ def slide_10():
 def slide_11():
     s = new_slide()
     set_bg(s, NAVY_DARK)
-
-    bg = I.darken('moonbase_zero_render.png', factor=0.62, ratio=(SLIDE_W.inches, SLIDE_H.inches))
-    add_picture(s, bg, 0, 0, SLIDE_W, SLIDE_H)
     add_rect(s, 0, 0, SLIDE_W, Inches(0.09), fill=ORANGE)
 
-    # Top-left HUD card — mirrors the real in-app overlay copy.
-    card_w = Inches(4.5)
-    add_rect(s, Inches(0.5), Inches(0.5), card_w, Inches(1.35), fill=RGBColor(0x08, 0x0A, 0x16),
-              shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.12)
-    add_text(s, Inches(0.75), Inches(0.66), card_w - Inches(0.5), Inches(0.35),
-              "MOONBASE ZERO", size=Pt(14), color=WHITE, bold=True, font=FONT_HEAD)
-    add_text(s, Inches(0.75), Inches(1.02), card_w - Inches(0.5), Inches(0.72),
-              "A true-to-scale base on the Shackleton ridge \u2014 every serious "
-              "program is racing here.",
-              size=Pt(10.5), color=RGBColor(0xC7, 0xCC, 0xE4), font=FONT)
+    add_text(s, MARGIN, Inches(0.32), Inches(10), Inches(0.3),
+              "FUNDING INNOVATION", size=Pt(12.5), color=ORANGE, bold=True, font=FONT_HEAD)
+    add_text(s, MARGIN, Inches(0.6), Inches(9), Inches(0.5),
+              "Moonbase Zero", size=Pt(26), color=WHITE, bold=True, font=FONT_HEAD)
+    WHITE_MARK = os.path.join(ASSETS, 'moondao_mark_white.png')
+    mark_h = Inches(0.55)
+    mark_w = mark_h * (620 / 650)
+    add_picture(s, WHITE_MARK, SLIDE_W - MARGIN - mark_w, Inches(0.4), mark_w, mark_h)
 
-    # Right HUD card — the real capability-race board.
-    rw = Inches(3.85)
-    rx = SLIDE_W - Inches(0.5) - rw
-    races = [
-        ("Comms / PNT", "Nokia Bell Labs"),
-        ("Surface construction", "ICON"),
-        ("Habitat", "Thales Alenia Space"),
-        ("ISRU plant", "Blue Origin"),
-        ("Power", "Lockheed Martin"),
-        ("Rover", "Intuitive Machines"),
-        ("Crewed base", "NASA"),
-        ("Lander", "SpaceX"),
-    ]
-    row_h = Inches(0.44)
-    rh = Inches(0.55) + row_h * len(races) + Inches(0.15)
-    add_rect(s, rx, Inches(0.5), rw, rh, fill=RGBColor(0x08, 0x0A, 0x16),
-              shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.08)
-    add_text(s, rx + Inches(0.28), Inches(0.64), rw - Inches(0.56), Inches(0.3),
-              "CAPABILITY RACES", size=Pt(10.5), color=ORANGE_LT, bold=True, font=FONT_HEAD)
-    ry = Inches(1.05)
-    colors = [NAVY, ORANGE, BLUE, RED, NAVY, ORANGE, BLUE, RED]
-    for i, (name, leader) in enumerate(races):
-        dot = Inches(0.08)
-        dot_shp = s.shapes.add_shape(MSO_SHAPE.OVAL, rx + Inches(0.28), ry + Inches(0.08), dot, dot)
-        dot_shp.fill.solid()
-        dot_shp.fill.fore_color.rgb = colors[i]
-        dot_shp.line.fill.background()
-        dot_shp.shadow.inherit = False
-        add_text(s, rx + Inches(0.46), ry, rw - Inches(0.7), Inches(0.24),
-                  name, size=Pt(10.5), color=WHITE, bold=True, font=FONT_HEAD)
-        add_text(s, rx + Inches(0.46), ry + Inches(0.21), rw - Inches(0.7), Inches(0.2),
-                  leader, size=Pt(8.5), color=RGBColor(0x9A, 0xA1, 0xBF), font=FONT)
-        ry += row_h
+    # The real, live Moonbase Zero screenshot — captured directly from a running
+    # instance of ui/pages/moonbase/index.tsx (see README for how this was done).
+    RATIO = (1300, 946)
+    shot = I.rounded_rect_mask('moonbase_real/moonbase_main.png', RATIO, radius_frac=0.025)
+    sh = Inches(4.55)
+    sw = Emu(int(sh * RATIO[0] / RATIO[1]))
+    sx = MARGIN
+    sy = Inches(1.3)
+    add_picture(s, shot, sx, sy, sw, sh)
 
-    # Bottom badge.
-    badge_w = Inches(2.0)
-    add_rect(s, Inches(0.5), SLIDE_H - Inches(1.0), badge_w, Inches(0.42),
+    add_rect(s, sx, sy + sh + Inches(0.14), Inches(1.95), Inches(0.38),
               fill=ORANGE, shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-    add_text(s, Inches(0.5), SLIDE_H - Inches(1.0), badge_w, Inches(0.42),
+    add_text(s, sx, sy + sh + Inches(0.14), Inches(1.95), Inches(0.38),
               "IN DEVELOPMENT", size=Pt(10), color=WHITE, bold=True, align=PP_ALIGN.CENTER,
               font=FONT_HEAD, anchor=MSO_ANCHOR.MIDDLE)
-    add_text(s, Inches(0.5) + badge_w + Inches(0.2), SLIDE_H - Inches(1.0), Inches(3), Inches(0.42),
-              "moondao.com/moonbase", size=Pt(10.5), color=RGBColor(0xC7, 0xCC, 0xE4), font=FONT,
+    add_text(s, sx + Inches(2.15), sy + sh + Inches(0.14), Inches(3), Inches(0.38),
+              "moondao.com/moonbase", size=Pt(11), color=RGBColor(0xC7, 0xCC, 0xE4), font=FONT,
               anchor=MSO_ANCHOR.MIDDLE)
+
+    # Secondary real screenshot — a capability-race detail panel, opened live.
+    dw = SLIDE_W - MARGIN - (sx + sw + Inches(0.35))
+    dh = Emu(int(dw * RATIO[1] / RATIO[0]))
+    dx = sx + sw + Inches(0.35)
+    dy = sy
+    detail = I.rounded_rect_mask('moonbase_real/moonbase_lander_detail.png', RATIO, radius_frac=0.025)
+    add_picture(s, detail, dx, dy, dw, dh)
+    add_text(s, dx, dy + dh + Inches(0.12), dw, Inches(0.3),
+              "Click a race to see live competitors, criteria, and sources",
+              size=Pt(10.5), color=RGBColor(0xC7, 0xCC, 0xE4), italic=True, font=FONT,
+              align=PP_ALIGN.CENTER)
+
+    add_text(s, MARGIN, Inches(6.6), SLIDE_W - 2 * MARGIN, Inches(0.35),
+              "A true-to-scale 3D site on the Shackleton connecting ridge \u2014 8 capability races, "
+              "24 real competitors, all publicly sourced.",
+              size=Pt(10.5), color=RGBColor(0x9A, 0xA1, 0xBF), italic=True, font=FONT,
+              align=PP_ALIGN.CENTER)
 
     footer_light(s, 11)
     return s
@@ -634,16 +652,28 @@ def slide_12():
     header(s, "The Bigger Picture", "A Level Playing Field for the Next Space Age", 12, LOGO,
             title_size=Pt(27))
 
-    add_text(s, MARGIN, Inches(1.7), Inches(12.2), Inches(0.65),
+    lx, lw = MARGIN, Inches(7.1)
+    add_text(s, lx, Inches(1.7), lw, Inches(0.85),
               "Deep space used to require a national agency \u2014 or a billionaire.",
               size=Pt(18), color=NAVY_DARK, bold=True, font=FONT_HEAD)
 
     bullets = [
         ("Permissionless. ", "Any country, company, or individual can fund and compete."),
         ("Already global. ", "25+ countries in the Space Acceleration Network."),
-        ("An open invitation. ", "To Brazil's AEB, GRU, and space ecosystem \u2014 join in."),
+        ("An open invitation. ", "To anyone in this room \u2014 and your own ecosystem back home."),
     ]
-    add_bullets(s, MARGIN, Inches(2.6), Inches(12.2), Inches(2.6), bullets, size=Pt(17), gap=Pt(20))
+    add_bullets(s, lx, Inches(2.7), lw, Inches(2.6), bullets, size=Pt(16.5), gap=Pt(20))
+
+    # The real Space Acceleration Network graphic.
+    san = I.rounded_rect_mask('reference/space_acceleration_network.png', (2252, 603), radius_frac=0.04)
+    rw_img = SLIDE_W - MARGIN - (lx + lw + Inches(0.4))
+    rh_img = Emu(int(rw_img * 603 / 2252))
+    rx_img = lx + lw + Inches(0.4)
+    ry_img = Inches(2.9)
+    add_picture(s, san, rx_img, ry_img, rw_img, rh_img)
+    add_text(s, rx_img, ry_img + rh_img + Inches(0.1), rw_img, Inches(0.3),
+              "The Space Acceleration Network", size=Pt(9.5), color=TEXT_MUTE,
+              align=PP_ALIGN.CENTER, font=FONT)
 
     stats = [
         ("25+", "Countries in the\nSpace Acceleration Network"),
@@ -654,8 +684,8 @@ def slide_12():
     gap = Inches(0.35)
     total_w = card_w * 3 + gap * 2
     x0 = (SLIDE_W - total_w) / 2
-    y0 = Inches(5.65)
-    ch = Inches(1.2)
+    y0 = Inches(5.75)
+    ch = Inches(1.15)
     for i, (num, label) in enumerate(stats):
         cx = x0 + i * (card_w + gap)
         stat_card(s, cx, y0, card_w, ch, num, label, accent=[NAVY, ORANGE, RED][i])
@@ -736,17 +766,17 @@ NOTES = {
        "pivot from 'here's who we are' to 'here's the live opportunity.'",
     7: "[~45s] Frank is the emotional core of this section — 40 years, 50+ astronauts, coined the "
        "term, and has never flown himself. That irony is the hook.",
-    8: "[~30s] Point at the QR code directly — invite the room to scan right now while you talk. "
-       "$100+ gets citizenship and a shot at flying.",
-    9: "[~40s] These are real, live candidates — say so explicitly. Point out anyone can enter and "
-       "climb the board with community backing. QR code lets people back a candidate on the spot.",
-    10: "[~45s] Walk the 3-step mechanism fast, then spend the time on the real fission-power race — "
-        "354-hour lunar night is the number that lands. It shows MoonDAO understands the engineering, "
-        "not just the funding mechanics.",
-    11: "[~35s] Name it clearly as Moonbase Zero, in development — a true-to-scale site model with a "
-        "real, sourced capability-race board. Let the visual do the work.",
-    12: "[~40s] This is the slide that answers the panel's brief directly — bring it back to Brazil, "
-        "AEB, and GRU explicitly if the moderator hasn't already framed it.",
+    8: "[~40s] Point at the QR code directly — invite the room to scan right now while you talk. "
+       "These are real, live candidates on the board; anyone can enter and climb it.",
+    9: "[~50s] Walk the 3-step mechanism fast, then slow down for the worked math — the +1.32 ETH "
+       "number is the one that lands. Frame it as a new financing primitive, not 'crypto betting.'",
+    10: "[~55s] This is the technical-depth moment. Walk physics \u2192 extremes \u2192 math in order, "
+        "landing on '120 tons of batteries vs. a 15-ton lander.' It shows MoonDAO understands the "
+        "engineering, not just the funding mechanics.",
+    11: "[~35s] This is the real, live product — say so explicitly. Point out the second screenshot "
+        "shows an actual capability race opened live, with real competitors and sources.",
+    12: "[~40s] This is the slide that answers the panel's brief directly — make it personal to "
+        "whoever's in the room, not just the named institutions.",
     13: "[~20s] Point at the QR code — invite people to scan and join MoonDAO before you leave the "
         "stage. Contact info stays up during Q&A.",
 }
