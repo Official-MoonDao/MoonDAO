@@ -116,6 +116,16 @@ Photos/graphics come from four places, all real (no stock imagery, nothing inven
 4. **flagcdn.com** — the Brazil flag on slide 1's title panel (a standard, freely
    redistributable national-flag asset; not AI-generated or a photo of anyone).
 
+## Typography
+
+The deck uses a two-font system (embedded into the PDF export):
+
+- **Montserrat** — titles, kickers, numbers, page counters
+- **Source Sans 3** — body copy, captions, footers
+
+Both are free fonts; install them locally if you want WYSIWYG editing of the
+PPTX. LibreOffice embeds them correctly when converting to PDF.
+
 ## Rebuilding the deck
 
 ```bash

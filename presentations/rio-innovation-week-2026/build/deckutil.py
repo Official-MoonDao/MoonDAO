@@ -1,8 +1,10 @@
 """Shared drawing helpers for the MoonDAO / Rio Innovation Week deck.
 
-Design system: neutral, institutional. White/light-gray canvas, MoonDAO's own
-brand navy / orange / red used sparingly as accents, one sans-serif family
-throughout, consistent header + footer treatment, generous whitespace.
+Design system: institutional, calm, precise.
+- Typography: Montserrat for titles / kickers / numbers; Source Sans 3 for body.
+- Palette: MoonDAO navy / orange / red used sparingly as accents on a white canvas.
+- Geometry: one consistent margin, one header band, one footer band; cards share
+  a single radius and a single soft shadow.
 """
 from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
@@ -10,31 +12,37 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.oxml.ns import qn
 from pptx.chart.data import CategoryChartData
-from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
-import copy
+from pptx.enum.chart import XL_CHART_TYPE
 
 # ---------------------------------------------------------------- palette --
-NAVY_DARK = RGBColor(0x1A, 0x22, 0x4A)
-NAVY = RGBColor(0x22, 0x35, 0x7A)
+NAVY_DARK = RGBColor(0x14, 0x1B, 0x3A)
+NAVY = RGBColor(0x1E, 0x2F, 0x6B)
 BLUE = RGBColor(0x2B, 0x4C, 0x9B)
 ORANGE = RGBColor(0xE8, 0x8B, 0x1F)
 ORANGE_LT = RGBColor(0xF6, 0xB9, 0x62)
 RED = RGBColor(0xA3, 0x2E, 0x35)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
-BG_LIGHT = RGBColor(0xF6, 0xF7, 0xFB)
+BG_LIGHT = RGBColor(0xF7, 0xF8, 0xFC)
 BG_PANEL = RGBColor(0xEE, 0xF0, 0xF7)
-LINE_GRAY = RGBColor(0xDD, 0xE1, 0xEC)
-TEXT_DARK = RGBColor(0x20, 0x24, 0x33)
-TEXT_GRAY = RGBColor(0x5B, 0x62, 0x78)
+LINE_GRAY = RGBColor(0xE0, 0xE4, 0xEF)
+TEXT_DARK = RGBColor(0x1A, 0x1E, 0x2C)
+TEXT_GRAY = RGBColor(0x55, 0x5C, 0x72)
 TEXT_MUTE = RGBColor(0x8A, 0x90, 0xA3)
 
-FONT = "Calibri"
-FONT_HEAD = "Calibri"
+# Montserrat for display / titles; Source Sans 3 for readable body.
+FONT = "Source Sans 3"
+FONT_HEAD = "Montserrat"
 
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
 
-MARGIN = Inches(0.55)
+# One consistent horizontal / vertical margin for every content slide.
+MARGIN = Inches(0.65)
+# Content area sits between the header rule and the footer.
+CONTENT_TOP = Inches(1.55)
+CONTENT_BOTTOM = Inches(6.85)
+CONTENT_H = CONTENT_BOTTOM - CONTENT_TOP
+CONTENT_W = SLIDE_W - 2 * MARGIN
 
 
 def set_bg(slide, color=WHITE):
@@ -64,11 +72,12 @@ def add_rect(slide, l, t, w, h, fill=None, line=None, line_w=Pt(0.75),
     if shadow:
         el = shp._element.spPr
         effectLst = el.makeelement(qn('a:effectLst'), {})
+        # Softer, tighter shadow — less "cardy", more refined.
         outerShdw = el.makeelement(qn('a:outerShdw'), {
-            'blurRad': '90000', 'dist': '38000', 'dir': '5400000', 'rotWithShape': '0'
+            'blurRad': '70000', 'dist': '28000', 'dir': '5400000', 'rotWithShape': '0'
         })
-        clr = el.makeelement(qn('a:srgbClr'), {'val': '1A224A'})
-        alpha = el.makeelement(qn('a:alpha'), {'val': '18000'})
+        clr = el.makeelement(qn('a:srgbClr'), {'val': '141B3A'})
+        alpha = el.makeelement(qn('a:alpha'), {'val': '14000'})
         clr.append(alpha)
         outerShdw.append(clr)
         effectLst.append(outerShdw)
@@ -154,7 +163,7 @@ def add_rich(slide, l, t, w, h, runs_spec, align=PP_ALIGN.LEFT, anchor=MSO_ANCHO
 
 def add_bullets(slide, l, t, w, h, items, size=Pt(15), color=TEXT_DARK, font=FONT,
                  bullet_color=ORANGE, gap=Pt(10), bold_lead=None, anchor=MSO_ANCHOR.TOP,
-                 marker='—', spacing=1.15):
+                 marker='—', spacing=1.2):
     """items: list[str] or list[(lead_bold_str, rest_str)]"""
     tb = slide.shapes.add_textbox(l, t, w, h)
     tf = tb.text_frame
@@ -175,7 +184,7 @@ def add_bullets(slide, l, t, w, h, items, size=Pt(15), color=TEXT_DARK, font=FON
         r0.text = f"{marker}  "
         r0.font.size = size
         r0.font.bold = True
-        r0.font.name = font
+        r0.font.name = FONT_HEAD
         r0.font.color.rgb = bullet_color
         if isinstance(item, tuple):
             lead, rest = item
@@ -183,14 +192,14 @@ def add_bullets(slide, l, t, w, h, items, size=Pt(15), color=TEXT_DARK, font=FON
             r1.text = lead
             r1.font.size = size
             r1.font.bold = True
-            r1.font.name = font
+            r1.font.name = FONT_HEAD
             r1.font.color.rgb = color
             r2 = p.add_run()
             r2.text = rest
             r2.font.size = size
             r2.font.bold = False
             r2.font.name = font
-            r2.font.color.rgb = color
+            r2.font.color.rgb = TEXT_GRAY
         else:
             r1 = p.add_run()
             r1.text = item
@@ -208,40 +217,59 @@ def add_picture(slide, path, l, t, w, h):
 PAGE_TITLES = {}
 
 
-def header(slide, kicker, title, page_no, logo_path, title_size=Pt(30)):
+def header(slide, kicker, title, page_no, logo_path, title_size=Pt(28)):
     """Consistent top masthead: thin accent rule, small kicker, bold title, logo top-right."""
-    add_rect(slide, 0, 0, SLIDE_W, Inches(0.09), fill=NAVY)
-    add_text(slide, MARGIN, Inches(0.34), Inches(9.6), Inches(0.3), kicker.upper(),
-              size=Pt(12.5), color=ORANGE, bold=True, font=FONT_HEAD)
-    add_text(slide, MARGIN, Inches(0.62), Inches(9.8), Inches(0.7), title,
+    add_rect(slide, 0, 0, SLIDE_W, Inches(0.08), fill=NAVY_DARK)
+    add_text(slide, MARGIN, Inches(0.28), Inches(9.6), Inches(0.28), kicker.upper(),
+              size=Pt(11), color=ORANGE, bold=True, font=FONT_HEAD)
+    add_text(slide, MARGIN, Inches(0.55), Inches(9.8), Inches(0.65), title,
               size=title_size, color=NAVY_DARK, bold=True, font=FONT_HEAD)
-    # logo, top right, fixed height
-    lw = Inches(1.55)
+    lw = Inches(1.45)
     lh = lw * (345 / 1233)
-    slide.shapes.add_picture(logo_path, SLIDE_W - MARGIN - lw, Inches(0.42), width=lw, height=lh)
-    add_line(slide, MARGIN, Inches(1.28), SLIDE_W - 2 * MARGIN, 0, color=LINE_GRAY, weight=Pt(1))
+    slide.shapes.add_picture(logo_path, SLIDE_W - MARGIN - lw, Inches(0.38), width=lw, height=lh)
+    add_line(slide, MARGIN, Inches(1.28), SLIDE_W - 2 * MARGIN, 0, color=LINE_GRAY, weight=Pt(0.75))
     PAGE_TITLES[page_no] = title
 
 
 def footer(slide, page_no, total=12):
-    add_text(slide, MARGIN, SLIDE_H - Inches(0.42), Inches(6), Inches(0.3),
-              "MoonDAO  |  Deep Space and the Lunar Economy  |  2nd Space Industry Workshop Brazil",
+    add_line(slide, MARGIN, SLIDE_H - Inches(0.52), SLIDE_W - 2 * MARGIN, 0,
+              color=LINE_GRAY, weight=Pt(0.75))
+    add_text(slide, MARGIN, SLIDE_H - Inches(0.42), Inches(9.5), Inches(0.28),
+              "MoonDAO  ·  Deep Space and the Lunar Economy  ·  2nd Space Industry Workshop Brazil",
               size=Pt(9), color=TEXT_MUTE, font=FONT)
-    add_text(slide, SLIDE_W - MARGIN - Inches(1.2), SLIDE_H - Inches(0.42), Inches(1.2), Inches(0.3),
-              f"{page_no:02d} / {total}", size=Pt(9), color=TEXT_MUTE, font=FONT, align=PP_ALIGN.RIGHT)
+    add_text(slide, SLIDE_W - MARGIN - Inches(1.3), SLIDE_H - Inches(0.42), Inches(1.3), Inches(0.28),
+              f"{page_no:02d}  /  {total}", size=Pt(9), color=TEXT_MUTE, font=FONT_HEAD,
+              align=PP_ALIGN.RIGHT)
+
+
+def card(slide, l, t, w, h, fill=WHITE, line=LINE_GRAY, radius=0.08, shadow=True):
+    """Standard content card — one shared style for the whole deck."""
+    return add_rect(slide, l, t, w, h, fill=fill, line=line, line_w=Pt(0.75),
+                     shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=radius, shadow=shadow)
+
+
+def accent_bar(slide, l, t, w, accent=ORANGE, h=Inches(0.07)):
+    """Thin colored accent strip across the top of a card."""
+    return add_rect(slide, l, t, w, h, fill=accent,
+                     shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
+
+
+def accent_rail(slide, l, t, h, accent=NAVY, w=Inches(0.06)):
+    """Thin colored accent rail down the left of a card."""
+    return add_rect(slide, l, t, w, h, fill=accent,
+                     shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
 
 
 def stat_card(slide, l, t, w, h, number, label, accent=NAVY):
-    add_rect(slide, l, t, w, h, fill=WHITE, line=LINE_GRAY, line_w=Pt(1),
-              shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.09, shadow=True)
-    add_rect(slide, l, t, Inches(0.07), h, fill=accent, shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.5)
-    add_text(slide, l + Inches(0.22), t + Inches(0.14), w - Inches(0.4), h - Inches(0.7), number,
-              size=Pt(28), color=NAVY_DARK, bold=True, font=FONT_HEAD)
-    add_text(slide, l + Inches(0.22), t + h - Inches(0.52), w - Inches(0.4), Inches(0.45), label,
-              size=Pt(11.5), color=TEXT_GRAY, font=FONT)
+    card(slide, l, t, w, h)
+    accent_rail(slide, l, t, h, accent=accent)
+    add_text(slide, l + Inches(0.28), t + Inches(0.18), w - Inches(0.5), Inches(0.55), number,
+              size=Pt(26), color=NAVY_DARK, bold=True, font=FONT_HEAD)
+    add_text(slide, l + Inches(0.28), t + h - Inches(0.55), w - Inches(0.5), Inches(0.42), label,
+              size=Pt(11), color=TEXT_GRAY, font=FONT)
 
 
-def section_number_badge(slide, l, t, text, accent=ORANGE, d=Inches(0.5)):
+def section_number_badge(slide, l, t, text, accent=ORANGE, d=Inches(0.48)):
     shp = slide.shapes.add_shape(MSO_SHAPE.OVAL, l, t, d, d)
     shp.fill.solid()
     shp.fill.fore_color.rgb = accent
@@ -252,11 +280,12 @@ def section_number_badge(slide, l, t, text, accent=ORANGE, d=Inches(0.5)):
     tf.margin_right = 0
     tf.margin_top = 0
     tf.margin_bottom = 0
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
     p = tf.paragraphs[0]
     p.alignment = PP_ALIGN.CENTER
     r = p.add_run()
     r.text = text
-    r.font.size = Pt(16)
+    r.font.size = Pt(15)
     r.font.bold = True
     r.font.name = FONT_HEAD
     r.font.color.rgb = WHITE
@@ -278,29 +307,33 @@ def logo_lockup_white(slide, mark_path, l, t, height, mark_ratio=620 / 650):
     p.alignment = PP_ALIGN.LEFT
     r1 = p.add_run()
     r1.text = "MOON"
-    r1.font.size = Pt(26)
+    r1.font.size = Pt(24)
     r1.font.bold = True
     r1.font.name = FONT_HEAD
     r1.font.color.rgb = WHITE
     r2 = p.add_run()
     r2.text = "DAO"
-    r2.font.size = Pt(13)
+    r2.font.size = Pt(12)
     r2.font.bold = True
     r2.font.name = FONT_HEAD
     r2.font.color.rgb = WHITE
     return tb
 
 
-def add_qr_frame(slide, qr_path, l, t, size, pad=Inches(0.16), frame_fill=WHITE, line=LINE_GRAY):
+def add_qr_frame(slide, qr_path, l, t, size, pad=Inches(0.18), frame_fill=WHITE, line=LINE_GRAY):
     """A QR code inset in a small padded card. Returns (frame_w, frame_h)."""
     frame_size = size + pad * 2
-    add_rect(slide, l, t, frame_size, frame_size, fill=frame_fill, line=line, line_w=Pt(1),
-              shape_type=MSO_SHAPE.ROUNDED_RECTANGLE, radius=0.12, shadow=True)
+    card(slide, l, t, frame_size, frame_size, fill=frame_fill, line=line, radius=0.1)
     slide.shapes.add_picture(qr_path, l + pad, t + pad, width=size, height=size)
     return frame_size, frame_size
 
 
-def add_donut_chart(slide, l, t, w, h, categories, values, colors, hole_size=65):
+def evenly_spaced(n, total, gap):
+    """Return the width of n equal columns that fill `total` with `gap` between them."""
+    return (total - gap * (n - 1)) / n
+
+
+def add_donut_chart(slide, l, t, w, h, categories, values, colors, hole_size=68):
     chart_data = CategoryChartData()
     chart_data.categories = categories
     chart_data.add_series('Series 1', values)
@@ -320,5 +353,5 @@ def add_donut_chart(slide, l, t, w, h, categories, values, colors, hole_size=65)
         pt.format.fill.solid()
         pt.format.fill.fore_color.rgb = colors[i % len(colors)]
         pt.format.line.color.rgb = WHITE
-        pt.format.line.width = Pt(2)
+        pt.format.line.width = Pt(2.5)
     return gframe
