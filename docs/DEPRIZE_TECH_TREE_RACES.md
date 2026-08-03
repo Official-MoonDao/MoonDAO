@@ -78,12 +78,22 @@ For every DePrize 10–16, confirmed on-chain:
   DePrize 15: all 5 outcomes read ~20.0%), confirming a freshly-initialized,
   untraded market
 
-Not yet done (needs a browser / real bets, same as the Phase B2 Wave 2
-verification pattern in `ui/scripts/smoke-moonbase-deprize.mjs`):
+**Real bet placed (2026-08-03).** DePrize 10 (crewed-lander), outcome 0
+(SpaceX), 0.006 ETH via `yarn verify:deprize-bet` (new script, generic over
+DePrize id / outcome index — unlike `verify-deprize-moonbase-sepolia.ts`,
+which is specifically the fission-race merge proof):
+
+- tx [`0x87a10f28…`](https://sepolia.etherscan.io/tx/0x87a10f28cb24b52434b929fc64058bc88734f53faec28e3558eeb9471ef89b4e), block 11413543
+- odds before: SpaceX 33.33%, Blue Origin 33.33%, Open Field 33.33%
+- odds after: SpaceX **66.52%**, Blue Origin 16.74%, Open Field 16.74%
+
+Confirms the LMSR responds correctly on a tech-tree race, not just the
+already-proven fission fixture.
+
+Not yet done (needs a browser, same as the Phase B2 Wave 2 verification
+pattern in `ui/scripts/smoke-moonbase-deprize.mjs`):
 
 - Visual confirmation of each race's panel on `/moonbase?race=<sharedGoalId>`
-- A real bet on one of the new markets to confirm odds move (mirroring the
-  fission-race `--bet` proof in `ui/scripts/verify-deprize-moonbase-sepolia.ts`)
 
 ## Budget note
 
