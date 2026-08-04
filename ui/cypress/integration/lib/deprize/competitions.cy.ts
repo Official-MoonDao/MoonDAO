@@ -71,14 +71,18 @@ describe('deprize competitions registry', () => {
 
   it('reverse-looks up the DePrize id for a bound goal (hit and miss)', () => {
     expect(findDePrizeIdForGoal('sepolia', 'shared-fission-power')).to.equal(9)
-    expect(findDePrizeIdForGoal('sepolia', 'shared-landing-pads')).to.equal(undefined)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-landing-pads')).to.equal(15)
+    // Every atlas shared goal is bound on Sepolia now — use a goal id that
+    // does not exist anywhere in the atlas for the genuine miss case.
+    expect(findDePrizeIdForGoal('sepolia', 'shared-nonexistent-goal')).to.equal(undefined)
     expect(findDePrizeIdForGoal('arbitrum', 'shared-fission-power')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', undefined)).to.equal(undefined)
   })
 
   it('reports a bound race regardless of consent, and unbound goals as unbound', () => {
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-fission-power')).to.equal(true)
-    expect(isDePrizeGoalMarketBound('sepolia', 'shared-landing-pads')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-landing-pads')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-nonexistent-goal')).to.equal(false)
     // Arbitrum has no binding at all, so there is no market to report.
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-fission-power')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', undefined)).to.equal(false)
@@ -122,12 +126,18 @@ describe('deprize competitions registry', () => {
       deprizeIds: [9],
       showHeading: true,
     })
+    // DePrize 10 (crewed-lander) is bound too — its own group, in id order.
+    expect(sepolia[1]).to.deep.equal({
+      raceLabel: 'Crewed lunar landing',
+      deprizeIds: [10],
+      showHeading: true,
+    })
     const other = sepolia.find((g) => g.raceLabel === null)
     expect(other).to.not.equal(undefined)
     expect(other!.showHeading).to.equal(true)
     expect(other!.deprizeIds).to.include(1)
-    expect(other!.deprizeIds).to.include(10)
     expect(other!.deprizeIds).to.not.include(9)
+    expect(other!.deprizeIds).to.not.include(10)
 
     const arbitrum = partitionDePrizeIndexByRace('arbitrum', 3)
     expect(arbitrum).to.deep.equal([

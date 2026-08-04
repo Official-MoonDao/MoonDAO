@@ -20,10 +20,11 @@
  */
 
 /**
- * Reserved MoonDAOTeam id for the Open Field outcome slot.
- * Pending ops mint on Sepolia — see docs/DEPRIZE_QA.md. Intended id 999.
+ * Shared MoonDAOTeam id for the Open Field outcome slot. Minted once
+ * (DePrizeSeedRace.s.sol, race 1) and reused across every Sepolia race
+ * seeded since — see docs/DEPRIZE_QA.md and DEPRIZE_TECH_TREE_RACES.md.
  */
-export const OPEN_FIELD_TEAM_ID = 999
+export const OPEN_FIELD_TEAM_ID = 24
 
 /** Stable projectId key for field outcomes (never rendered as an atlas competitor). */
 export const OPEN_FIELD_PROJECT_ID = '__open-field__'
@@ -118,6 +119,139 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
           projectId: 'ix-fission-surface-power',
           teamId: 303,
         },
+      ],
+    },
+
+    // ---------------------------------------------------------------------
+    // Tech-tree races 2/8-8/8, seeded via DePrizeSeedRace.s.sol. Oracle at
+    // prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011
+    // (same as DePrize 9). Every roster ends with the shared Open Field NFT
+    // (id 24). See docs/DEPRIZE_TECH_TREE_RACES.md for addresses/txs.
+    // ---------------------------------------------------------------------
+
+    10: {
+      title: 'Crewed lunar landing',
+      tagline:
+        'Sepolia tech-tree race — first commercial crewed lunar landing. Two Team NFTs + Open Field, live LMSR odds.',
+      metaDescription:
+        'Sepolia DePrize bound to the Moon Base Zero crewed-lander race. Back a competitor and cash out or claim when resolved.',
+      questionId:
+        '0xce411ce707a6298b33620f52d6fe8dc4ee0c597372fe0facac81e448f376fd97',
+      sharedGoalId: 'shared-crewed-lander',
+      raceLabel: 'Crewed lunar landing',
+      outcomes: [
+        { projectId: 'spacex-starship-hls', teamId: 22 },
+        { projectId: 'blue-origin-blue-moon-mk2', teamId: 23 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: OPEN_FIELD_TEAM_ID, field: true },
+      ],
+    },
+
+    11: {
+      title: 'South Pole crewed base',
+      tagline:
+        'Sepolia tech-tree race — first sustained crewed South Pole presence. Two Team NFTs + Open Field, live LMSR odds.',
+      metaDescription:
+        'Sepolia DePrize bound to the Moon Base Zero south-pole-base race. Back a competitor and cash out or claim when resolved.',
+      questionId:
+        '0x150ec02c609584709e1eb951b255d427430ed2a1a45b50c70666b53874c0ca20',
+      sharedGoalId: 'shared-south-pole-base',
+      raceLabel: 'South Pole crewed base',
+      outcomes: [
+        { projectId: 'nasa-artemis-base-camp', teamId: 25 },
+        { projectId: 'ilrs', teamId: 26 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: OPEN_FIELD_TEAM_ID, field: true },
+      ],
+    },
+
+    12: {
+      title: 'ISRU oxygen and metals',
+      tagline:
+        'Sepolia tech-tree race — first sustained oxygen and metals from lunar regolith. Three Team NFTs + Open Field, live LMSR odds.',
+      metaDescription:
+        'Sepolia DePrize bound to the Moon Base Zero ISRU-oxygen race. Back a competitor and cash out or claim when resolved.',
+      questionId:
+        '0xc041d0d3481ed8c76f987ea9bef2f2e94f81f605badedb52500a8e66a3283843',
+      sharedGoalId: 'shared-isru-oxygen',
+      raceLabel: 'ISRU oxygen and metals',
+      outcomes: [
+        { projectId: 'blue-origin-blue-alchemist', teamId: 27 },
+        { projectId: 'sierra-space-carbothermal', teamId: 28 },
+        { projectId: 'lunar-resources-mre', teamId: 29 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: OPEN_FIELD_TEAM_ID, field: true },
+      ],
+    },
+
+    13: {
+      title: 'Crewed lunar rover',
+      tagline:
+        'Sepolia tech-tree race — first crewed lunar terrain vehicle in service. Three Team NFTs + Open Field, live LMSR odds.',
+      metaDescription:
+        'Sepolia DePrize bound to the Moon Base Zero lunar-rover race. Back a competitor and cash out or claim when resolved.',
+      questionId:
+        '0x209345b41eb64143d5de9cfc822ea958587931d0b94674d5a947fc10ebeee535',
+      sharedGoalId: 'shared-lunar-rover',
+      raceLabel: 'Crewed lunar rover',
+      outcomes: [
+        { projectId: 'im-moon-racer', teamId: 30 },
+        { projectId: 'astrolab-flex', teamId: 31 },
+        { projectId: 'lunar-outpost-lunar-dawn', teamId: 32 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: OPEN_FIELD_TEAM_ID, field: true },
+      ],
+    },
+
+    14: {
+      title: 'Lunar surface habitat',
+      tagline:
+        'Sepolia tech-tree race — first pressurized habitat occupied on the lunar surface. Three Team NFTs + Open Field, live LMSR odds.',
+      metaDescription:
+        'Sepolia DePrize bound to the Moon Base Zero habitat race. Back a competitor and cash out or claim when resolved.',
+      questionId:
+        '0x90e01053f7c0cffe0b48dd59e8fcb748b67cae80dd9769ff7cec7d059ad08996',
+      sharedGoalId: 'shared-habitat',
+      raceLabel: 'Lunar surface habitat',
+      outcomes: [
+        { projectId: 'thales-mph', teamId: 33 },
+        { projectId: 'sierra-space-life', teamId: 34 },
+        { projectId: 'jaxa-lunar-cruiser', teamId: 35 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: OPEN_FIELD_TEAM_ID, field: true },
+      ],
+    },
+
+    15: {
+      title: 'Landing pad construction',
+      tagline:
+        'Sepolia tech-tree race — first demonstrated lunar landing-pad construction system. Four Team NFTs + Open Field, live LMSR odds.',
+      metaDescription:
+        'Sepolia DePrize bound to the Moon Base Zero landing-pad race. Back a competitor and cash out or claim when resolved.',
+      questionId:
+        '0xb4269e81b8bd31980ba176a180674937e8dfb8a27b6c783ff78d205efab5d172',
+      sharedGoalId: 'shared-landing-pads',
+      raceLabel: 'Landing pad construction',
+      outcomes: [
+        { projectId: 'icon-project-olympus', teamId: 36 },
+        { projectId: 'redwire-mason', teamId: 37 },
+        { projectId: 'astroport-lunatron', teamId: 38 },
+        { projectId: 'ai-spacefactory-react', teamId: 39 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: OPEN_FIELD_TEAM_ID, field: true },
+      ],
+    },
+
+    16: {
+      title: 'Lunar comms and navigation',
+      tagline:
+        'Sepolia tech-tree race — first operational lunar communications and navigation service. Four Team NFTs + Open Field, live LMSR odds.',
+      metaDescription:
+        'Sepolia DePrize bound to the Moon Base Zero lunar-comms race. Back a competitor and cash out or claim when resolved.',
+      questionId:
+        '0xe6ab30e416fc4073e0b7c3c5fd94defebb01374ce603bdd8671aa25e52daf0bb',
+      sharedGoalId: 'shared-lunar-comms',
+      raceLabel: 'Lunar comms and navigation',
+      outcomes: [
+        { projectId: 'nokia-lunar-lte', teamId: 40 },
+        { projectId: 'im-near-space-network', teamId: 41 },
+        { projectId: 'esa-lunar-pathfinder', teamId: 42 },
+        { projectId: 'crescent-parsec', teamId: 43 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: OPEN_FIELD_TEAM_ID, field: true },
       ],
     },
   },
