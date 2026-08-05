@@ -1,0 +1,832 @@
+import confetti from 'canvas-confetti'
+import VotesTableABI from 'const/abis/Votes.json'
+import {
+  CITIZEN_TABLE_NAMES,
+  OVERVIEW_DELEGATION_VOTE_ID,
+  TABLELAND_ENDPOINT,
+  VOTES_TABLE_ADDRESSES,
+  VOTES_TABLE_NAMES,
+} from 'const/config'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
+import { applyOptimisticUpdate } from '@/lib/overview-delegate/leaderboard'
+import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
+import { arbitrum } from '@/lib/rpc/chains'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
+import IPFSRenderer from '@/components/layout/IPFSRenderer'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+
+type Citizen = {
+  id: string
+  name: string
+  owner: string
+  image?: string
+  displayName: string
+}
+
+type OverviewDelegateProps = {
+  leaderboard: LeaderboardEntry[]
+  tokenAddress: string
+}
+
+export default function OverviewDelegateVote({
+  leaderboard,
+  tokenAddress,
+}: OverviewDelegateProps) {
+  const router = useRouter()
+  const overviewChain = arbitrum
+  const overviewChainSlug = getChainSlug(overviewChain)
+  const account = useActiveAccount()
+  const userAddress = account?.address
+
+  const userBalance = useWatchTokenBalance(overviewChain, tokenAddress)
+
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<Citizen[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasExistingDelegation, setHasExistingDelegation] = useState(false)
+  const [previousDelegation, setPreviousDelegation] = useState<{
+    delegatee: string
+    amount: number
+    citizenName?: string
+    citizenImage?: string
+    citizenId?: string | number
+  } | null>(null)
+  const [displayLeaderboard, setDisplayLeaderboard] = useState(leaderboard)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setDisplayLeaderboard(leaderboard)
+  }, [leaderboard])
+
+  // Overlay the connected user's *live* $OVERVIEW balance onto the leaderboard
+  // entry of the citizen they've delegated to. Without this, when the
+  // server-side balance fetch in `fetchOverviewLeaderboard` either fails or
+  // is served from a stale `getStaticProps` cache (revalidate: 60), we fall
+  // back to the originally-stored delegation amount — which is whatever the
+  // user had when they first backed someone. Users who have since earned
+  // more $OVERVIEW therefore see their delegated total stuck at the old
+  // value until they successfully re-submit.
+  //
+  // We only adjust the entry if the server total looks *stale* relative to
+  // the user's live balance. If the server already knows about the larger
+  // balance (entry total >= live balance), we leave it alone to avoid the
+  // double-count case where server had fresh data and we'd add the delta on
+  // top of an already-correct number.
+  const visibleLeaderboard = useMemo(() => {
+    if (
+      !userAddress ||
+      !previousDelegation ||
+      userBalance == null ||
+      !Number.isFinite(userBalance) ||
+      userBalance <= 0
+    ) {
+      return displayLeaderboard
+    }
+    const targetAddr = previousDelegation.delegatee.toLowerCase()
+    const liveAmount = Math.floor(userBalance)
+    const storedAmount = previousDelegation.amount
+    let touched = false
+    const overlaid = displayLeaderboard.map((entry) => {
+      if (entry.delegateeAddress.toLowerCase() !== targetAddr) return entry
+      // Server total already reflects (at least) the user's current balance —
+      // assume it's fresh and leave it alone. This avoids inflating the
+      // number when ISR happened to revalidate after the user's balance bump.
+      if (entry.totalDelegated >= liveAmount) return entry
+      // Server total < live balance => server is stale (likely fell back to
+      // stored amount). Swap the user's stored portion for the live balance.
+      const userServerContribution = Math.min(
+        entry.totalDelegated,
+        storedAmount
+      )
+      const adjusted =
+        entry.totalDelegated - userServerContribution + liveAmount
+      if (adjusted === entry.totalDelegated) return entry
+      touched = true
+      return { ...entry, totalDelegated: Math.max(0, adjusted) }
+    })
+    if (!touched) return displayLeaderboard
+    return [...overlaid].sort((a, b) => b.totalDelegated - a.totalDelegated)
+  }, [displayLeaderboard, previousDelegation, userBalance, userAddress])
+
+  const votesContract = useContract({
+    address: VOTES_TABLE_ADDRESSES[overviewChainSlug],
+    chain: overviewChain,
+    abi: VotesTableABI.abi as any,
+  })
+
+  const votesTableName = VOTES_TABLE_NAMES[overviewChainSlug]
+
+  useEffect(() => {
+    if (!userAddress || !votesTableName) return
+    const checkExisting = async () => {
+      try {
+        const stmt = `SELECT * FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID} AND address = '${userAddress.toLowerCase()}'`
+        // Use the env-aware Tableland endpoint (testnets vs mainnet). The
+        // hardcoded `tableland.network` URL silently 404s the row on testnet,
+        // which falsely sets `hasExistingDelegation = false` and routes the
+        // submit to `insertIntoTable` — that then reverts due to the
+        // `unique(address, voteId)` constraint and the user gets the generic
+        // "Failed to submit delegation" toast on every re-back.
+        const res = await fetch(
+          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
+        )
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data) && data.length > 0) {
+            setHasExistingDelegation(true)
+            try {
+              const vote =
+                typeof data[0].vote === 'string'
+                  ? JSON.parse(data[0].vote)
+                  : data[0].vote
+              const entries = Object.entries(vote)
+              if (entries.length > 0) {
+                const [delegatee, amount] = entries[0]
+                const delegateeLower = delegatee.toLowerCase()
+
+                const match = leaderboard.find(
+                  (e) => e.delegateeAddress.toLowerCase() === delegateeLower
+                )
+
+                let citizenName: string | undefined
+                let citizenImage: string | undefined
+                let citizenId: string | number | undefined
+
+                if (match) {
+                  citizenName = match.citizenName
+                  citizenImage = match.citizenImage
+                  citizenId = match.citizenId
+                } else {
+                  try {
+                    const citizenTableName =
+                      CITIZEN_TABLE_NAMES[overviewChainSlug]
+                    if (citizenTableName) {
+                      const citizenStmt = `SELECT id, name, image FROM ${citizenTableName} WHERE LOWER(owner) = '${delegateeLower}'`
+                      const citizenRes = await fetch(
+                        `${TABLELAND_ENDPOINT}/api/v1/query?statement=${encodeURIComponent(citizenStmt)}`
+                      )
+                      if (citizenRes.ok) {
+                        const citizenData = await citizenRes.json()
+                        if (
+                          Array.isArray(citizenData) &&
+                          citizenData.length > 0
+                        ) {
+                          citizenName = citizenData[0].name
+                          citizenImage = citizenData[0].image
+                          citizenId = citizenData[0].id
+                        }
+                      }
+                    }
+                  } catch {}
+                }
+
+                setPreviousDelegation({
+                  delegatee: delegateeLower,
+                  amount: Number(amount) || 0,
+                  citizenName,
+                  citizenImage,
+                  citizenId,
+                })
+              }
+            } catch {}
+          } else {
+            setHasExistingDelegation(false)
+          }
+        }
+      } catch {
+        setHasExistingDelegation(false)
+      }
+    }
+    checkExisting()
+  }, [userAddress, votesTableName, leaderboard, overviewChainSlug])
+
+  // Citizen search
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+    setSelectedCitizen(null)
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    searchTimeoutRef.current = setTimeout(async () => {
+      const isNumeric = /^\d+$/.test(value.trim())
+      if (!isNumeric && value.length < 2) {
+        setSearchResults([])
+        setShowDropdown(false)
+        return
+      }
+      if (!value.trim()) {
+        setSearchResults([])
+        setShowDropdown(false)
+        return
+      }
+      setIsSearching(true)
+      try {
+        const res = await fetch(
+          `/api/citizens/search?q=${encodeURIComponent(value)}&chain=arbitrum`
+        )
+        const data = await res.json()
+        if (res.ok) {
+          setSearchResults(data.citizens || [])
+          setShowDropdown(true)
+        } else {
+          setSearchResults([])
+          setShowDropdown(false)
+        }
+      } catch {
+        setSearchResults([])
+        setShowDropdown(false)
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300)
+  }
+
+  const handleCitizenSelect = (citizen: Citizen) => {
+    setSelectedCitizen(citizen)
+    setSearchQuery(citizen.displayName)
+    setShowDropdown(false)
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    }
+  }, [])
+
+  const handleSubmit = async () => {
+    if (!account) return
+    if (!selectedCitizen) {
+      toast.error('Please select a citizen.', { style: toastStyle })
+      return
+    }
+    // Defensive: callers below feed `delegateAmount` straight into the
+    // Tableland mutate calldata, and any non-finite balance (NaN/Infinity —
+    // possible if `useWatchTokenBalance` hasn't resolved yet, or if a wallet
+    // RPC blip leaves the displayValue unparseable) propagates into ethers
+    // v5's `BigNumber.from(NaN)` deep inside the Privy signer, surfacing as
+    // the cryptic "invalid BigNumber string (value=\"NaN\")" toast. Reject
+    // here with copy the user can act on instead of bouncing them to the
+    // generic catch-all.
+    if (
+      userBalance == null ||
+      !Number.isFinite(userBalance) ||
+      userBalance <= 0
+    ) {
+      toast.error(
+        userBalance == null || !Number.isFinite(userBalance)
+          ? 'Your $OVERVIEW balance is still loading. Please wait a moment and try again.'
+          : 'You have no $OVERVIEW tokens to delegate.',
+        { style: toastStyle }
+      )
+      return
+    }
+    // The contract call uses the connected citizen's owner address as the
+    // JSON key. If the search result somehow yielded a malformed/empty owner
+    // we'd write garbage into Tableland (and the leaderboard would never
+    // attribute the vote). Validate up-front so the user gets a clear error.
+    const ownerLower = selectedCitizen.owner?.toLowerCase?.() ?? ''
+    if (!/^0x[a-f0-9]{40}$/.test(ownerLower)) {
+      toast.error('Selected citizen has an invalid wallet address.', {
+        style: toastStyle,
+      })
+      return
+    }
+    if (!votesContract) {
+      toast.error('Voting contract is not ready yet. Please wait a moment and try again.', {
+        style: toastStyle,
+      })
+      return
+    }
+
+    const delegateAmount = Math.floor(userBalance)
+    if (!Number.isFinite(delegateAmount) || delegateAmount <= 0) {
+      toast.error('You do not have enough $OVERVIEW tokens to delegate.', {
+        style: toastStyle,
+      })
+      return
+    }
+    setIsSubmitting(true)
+    const vote = JSON.stringify({ [selectedCitizen.owner]: delegateAmount })
+
+    try {
+      // Re-check existence right before submitting. The initial check from
+      // mount can be stale (race after a previous vote landed, or the user
+      // hopped wallets). Picking the wrong method causes the Tableland mutate
+      // to fail server-side: insertIntoTable on an existing (address,voteId)
+      // pair violates the unique constraint, and updateTableCol when no row
+      // exists silently no-ops. Either way the user sees the generic
+      // "Failed to submit delegation" error.
+      let existsNow = hasExistingDelegation
+      try {
+        const stmt = `SELECT id FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID} AND address = '${userAddress!.toLowerCase()}'`
+        const res = await fetch(
+          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
+        )
+        if (res.ok) {
+          const data = await res.json()
+          existsNow = Array.isArray(data) && data.length > 0
+        }
+      } catch (lookupErr) {
+        console.warn(
+          '[overview-vote] pre-submit existence check failed; falling back to cached value',
+          lookupErr
+        )
+      }
+
+      const method = existsNow ? 'updateTableCol' : 'insertIntoTable'
+      const tx = prepareContractCall({
+        contract: votesContract,
+        method: method as string,
+        params: [OVERVIEW_DELEGATION_VOTE_ID, vote],
+      })
+      const receipt: any = await sendAndConfirmTransaction({ transaction: tx, account })
+      setHasExistingDelegation(true)
+
+      // Fire-and-forget Discord notification via the shared helper, which
+      // handles the Privy Bearer header (the notification API's
+      // `authMiddleware` 401s without it for Privy-only sessions) and the
+      // bounded retry loop for transient network / 5xx blips.
+      void sendOnchainNotification(
+        '/api/overview/leaderboard-notification',
+        {
+          txHash: receipt?.transactionHash,
+          delegateeAddress: selectedCitizen.owner,
+        },
+        { label: 'leaderboard-notification' }
+      )
+
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        shapes: ['circle', 'star'],
+        colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+      })
+      toast.success('Delegation successful! Votes assigned to selected citizen.', { style: toastStyle })
+
+      const updatedLeaderboard = applyOptimisticUpdate(
+        displayLeaderboard,
+        {
+          delegateeAddress: selectedCitizen.owner.toLowerCase(),
+          citizenId: selectedCitizen.id,
+          citizenName: selectedCitizen.name || selectedCitizen.displayName,
+          citizenImage: selectedCitizen.image,
+          amount: delegateAmount,
+        },
+        previousDelegation,
+        hasExistingDelegation
+      )
+      setDisplayLeaderboard(updatedLeaderboard)
+
+      setPreviousDelegation({
+        delegatee: selectedCitizen.owner.toLowerCase(),
+        amount: delegateAmount,
+        citizenName: selectedCitizen.name || selectedCitizen.displayName,
+        citizenImage: selectedCitizen.image,
+        citizenId: selectedCitizen.id,
+      })
+
+      // Poll for real data in background
+      setIsRefreshing(true)
+      const pollForUpdate = async (retries = 5) => {
+        for (let i = 0; i < retries; i++) {
+          await new Promise((r) => setTimeout(r, 4000 + i * 2000))
+          try {
+            await fetch('/api/revalidate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                secret: process.env.NEXT_PUBLIC_REVALIDATE_SECRET,
+                path: '/mission/4',
+              }),
+            })
+            const res = await fetch('/mission/4', {
+              headers: { Accept: 'text/html' },
+            })
+            if (res.ok) {
+              router.replace(router.asPath)
+              break
+            }
+          } catch {}
+        }
+        setIsRefreshing(false)
+      }
+      pollForUpdate()
+    } catch (error: any) {
+      console.error('Error submitting delegation:', error)
+      // Pull a useful message out of whatever shape the error happens to be
+      // in (thirdweb v5 errors, viem-style errors, plain Error, etc.) so the
+      // toast actually tells the user *why* the submit failed instead of
+      // hiding everything behind a generic retry message.
+      const rawMessage: string =
+        error?.shortMessage ||
+        error?.cause?.shortMessage ||
+        error?.cause?.message ||
+        error?.message ||
+        ''
+      const lower = rawMessage.toLowerCase()
+
+      let toastMessage = 'Failed to submit delegation. Please try again.'
+      if (
+        lower.includes('user rejected') ||
+        lower.includes('user denied') ||
+        lower.includes('rejected the request') ||
+        lower.includes('action_rejected')
+      ) {
+        toastMessage = 'Transaction cancelled in your wallet.'
+      } else if (
+        lower.includes('insufficient funds') ||
+        lower.includes('insufficient balance')
+      ) {
+        toastMessage =
+          'Not enough ETH on Arbitrum to cover gas. Add a small amount of ETH to your wallet on Arbitrum and try again.'
+      } else if (
+        lower.includes('chain') &&
+        (lower.includes('mismatch') || lower.includes('switch'))
+      ) {
+        toastMessage =
+          'Wallet is on the wrong network. Please switch to Arbitrum and try again.'
+      } else if (
+        // ethers v5 surface for "BigNumber.from(NaN)" — almost always means
+        // a numeric tx field (gas price / nonce / chain id) was missing or
+        // unparseable from the wallet's RPC response. The user can't fix
+        // the underlying ethers internals, but reconnecting / refreshing
+        // forces a fresh signer + provider hand-shake which clears it.
+        lower.includes('invalid bignumber') ||
+        lower.includes('value="nan"') ||
+        lower.includes("value='nan'")
+      ) {
+        toastMessage =
+          "Your wallet returned an unexpected value. Please refresh the page (or disconnect + reconnect your wallet) and try again."
+      } else if (rawMessage) {
+        toastMessage = `Failed to submit delegation: ${rawMessage.slice(0, 160)}`
+      }
+
+      toast.error(toastMessage, { style: toastStyle, duration: 8000 })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[900px]">
+            {/* Contextual banner when arriving from Overview mission (mission 4) contribution */}
+            {/* Delegation Form */}
+            <div className="relative z-10 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-visible">
+              <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
+                Back a Candidate
+              </h2>
+              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                Pledge your $OVERVIEW balance to your chosen candidate. Your tokens remain securely in your wallet. Only your voting power is recorded. You can only back one candidate, but you can change your vote at any time until the voting period ends or accrue more voting power.
+              </p>
+
+              {/* Balance */}
+              <div className="mb-4 sm:mb-6 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-gray-400 text-xs sm:text-sm">Your $OVERVIEW Balance</p>
+                  <p className="text-white text-xl sm:text-2xl font-semibold">
+                    {userAddress
+                      ? userBalance != null && Number.isFinite(userBalance)
+                        ? userBalance.toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })
+                        : '...'
+                      : 'Connect wallet'}
+                  </p>
+                </div>
+                <Link
+                  href="/mission/4"
+                  className="flex-shrink-0 px-3 sm:px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 hover:text-indigo-200 text-xs sm:text-sm font-medium rounded-lg transition-colors"
+                >
+                  Get $OVERVIEW
+                </Link>
+              </div>
+
+              {/* Current Vote */}
+              {previousDelegation && (
+                <div className="mb-4 sm:mb-6 bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3 sm:p-4">
+                  <p className="text-indigo-300 text-xs sm:text-sm font-medium mb-2">
+                    Your Current Vote
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0">
+                      {previousDelegation.citizenImage ? (
+                        <IPFSRenderer
+                          src={previousDelegation.citizenImage}
+                          alt={previousDelegation.citizenName || 'Citizen'}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                          {previousDelegation.citizenName?.[0]?.toUpperCase() || '?'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {previousDelegation.citizenName ? (
+                        <Link
+                          href={
+                            previousDelegation.citizenId
+                              ? `/citizen/${generatePrettyLinkWithId(previousDelegation.citizenName, String(previousDelegation.citizenId))}`
+                              : '#'
+                          }
+                          className="text-white text-sm sm:text-base font-medium hover:underline truncate block"
+                        >
+                          {previousDelegation.citizenName}
+                        </Link>
+                      ) : (
+                        <p className="text-white text-sm sm:text-base font-medium truncate">
+                          {previousDelegation.delegatee.slice(0, 6)}...{previousDelegation.delegatee.slice(-4)}
+                        </p>
+                      )}
+                      <p className="text-gray-400 text-xs sm:text-sm">
+                        {(userBalance != null && Number.isFinite(userBalance)
+                          ? userBalance
+                          : previousDelegation.amount
+                        ).toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        $OVERVIEW delegated
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Citizen Search */}
+              <div className="mb-4 relative z-10" ref={dropdownRef}>
+                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                  <label className="text-xs sm:text-sm font-medium text-white">
+                    Find a Citizen
+                  </label>
+                  <Link
+                    href="/network"
+                    className="text-xs sm:text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                  >
+                    Browse Directory →
+                  </Link>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    placeholder="Search by name or citizen ID..."
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/20 rounded-xl text-sm sm:text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  {isSearching && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                {showDropdown && searchResults.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {searchResults.map((citizen) => (
+                      <button
+                        key={citizen.id}
+                        onClick={() => handleCitizenSelect(citizen)}
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0"
+                      >
+                        <div className="text-white text-sm sm:text-base font-medium">
+                          {citizen.displayName}
+                        </div>
+                        <div className="text-gray-400 text-xs sm:text-sm truncate">
+                          {citizen.owner}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {showDropdown &&
+                  searchResults.length === 0 &&
+                  searchQuery.trim().length >= 2 &&
+                  !isSearching && (
+                    <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg p-4">
+                      <div className="text-gray-400 text-sm text-center">
+                        No citizens found
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {/* Selected Citizen */}
+              {selectedCitizen && (
+                <div className="mb-4 bg-white/5 border border-white/20 rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-white text-sm sm:text-base font-medium truncate">
+                      {selectedCitizen.displayName}
+                    </div>
+                    <div className="text-gray-400 text-xs sm:text-sm truncate">
+                      {selectedCitizen.owner}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedCitizen(null)
+                      setSearchQuery('')
+                    }}
+                    className="flex-shrink-0 text-gray-400 hover:text-white transition-colors text-xl leading-none"
+                  >
+                    &times;
+                  </button>
+                </div>
+              )}
+
+              {/* Submit */}
+              <PrivyWeb3Button
+                label={isSubmitting ? 'Submitting...' : 'Back This Candidate'}
+                action={handleSubmit}
+                requiredChain={overviewChain}
+                isDisabled={
+                  isSubmitting ||
+                  !selectedCitizen ||
+                  !userBalance ||
+                  userBalance <= 0
+                }
+                className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border-0 disabled:opacity-50"
+              />
+            </div>
+
+            {/* Leaderboard */}
+            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">
+                  Overview Flight Leaderboard
+                </h2>
+                {isRefreshing && (
+                  <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
+                    <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+                    Updating...
+                  </div>
+                )}
+              </div>
+              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+                The 25 citizens with the most $OVERVIEW support advance to Round 2.
+              </p>
+
+              {visibleLeaderboard.length === 0 ? (
+                <p className="text-gray-400 text-center py-6 sm:py-8 text-sm">
+                  No delegations yet. Be the first to back a candidate!
+                </p>
+              ) : (
+                <div className="space-y-2 sm:space-y-3">
+                  {visibleLeaderboard.map((entry, index) => {
+                    const citizenLink = entry.citizenName
+                      ? `/citizen/${generatePrettyLinkWithId(entry.citizenName, entry.citizenId)}`
+                      : `/citizen/${entry.citizenId}`
+                    const isQualifying = index < 25
+                    const isCutoffBoundary = index === 25
+
+                    return (
+                      <div key={entry.delegateeAddress}>
+                        {isCutoffBoundary && (
+                          <div className="flex items-center gap-3 py-3 sm:py-4 my-1">
+                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+                            <span className="text-amber-400/80 text-xs font-medium tracking-wide uppercase whitespace-nowrap">
+                              Round 2 cutoff
+                            </span>
+                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+                          </div>
+                        )}
+                        <div
+                          className={`flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl transition-opacity ${
+                            isQualifying
+                              ? 'bg-black/20 border border-white/10'
+                              : 'bg-black/10 border border-white/5 opacity-90'
+                          }`}
+                        >
+                          <div
+                            className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full font-bold text-xs sm:text-sm ${
+                              isQualifying
+                                ? 'bg-white/10 text-white'
+                                : 'bg-white/5 text-gray-500'
+                            }`}
+                          >
+                            {index + 1}
+                          </div>
+
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0 ${isQualifying ? '' : 'grayscale'}`}>
+                            {entry.citizenImage ? (
+                              <IPFSRenderer
+                                src={entry.citizenImage}
+                                alt={entry.citizenName || 'Citizen'}
+                                width={40}
+                                height={40}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className={`w-full h-full flex items-center justify-center font-bold text-xs sm:text-sm ${
+                                isQualifying
+                                  ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
+                                  : 'bg-gray-700 text-gray-400'
+                              }`}>
+                                {entry.citizenName?.[0]?.toUpperCase() || 'C'}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              href={citizenLink}
+                              className={`text-sm sm:text-base font-medium hover:underline truncate block ${
+                                isQualifying ? 'text-white' : 'text-gray-400'
+                              }`}
+                            >
+                              {entry.citizenName || `Citizen #${entry.citizenId}`}
+                            </Link>
+                            <p className={`text-xs sm:text-sm ${isQualifying ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {entry.delegatorCount} backer
+                              {entry.delegatorCount !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+
+                          <div className="text-right flex-shrink-0">
+                            <p className={`text-sm sm:text-base font-semibold ${
+                              isQualifying ? 'text-white' : 'text-gray-400'
+                            }`}>
+                              {entry.totalDelegated.toLocaleString(undefined, {
+                                maximumFractionDigits: 2,
+                              })}
+                            </p>
+                            <p className={`text-xs sm:text-sm ${isQualifying ? 'text-gray-400' : 'text-gray-500'}`}>
+                              $OVERVIEW
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* CTAs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {/* Get $OVERVIEW CTA */}
+              <Link
+                href="/mission/4"
+                className="group p-4 sm:p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border border-indigo-500/20 hover:border-indigo-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10"
+              >
+                <div className="text-2xl sm:text-3xl mb-3">🚀</div>
+                <h3 className="font-GoodTimes text-white text-sm sm:text-base mb-2">
+                  Get $OVERVIEW Tokens
+                </h3>
+                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                  Contribute to the spaceflight mission. Every contribution grants you $OVERVIEW so you can back a candidate. Contributions over $100 automatically include MoonDAO Citizenship.
+                </p>
+                <span className="inline-block mt-3 text-indigo-400 text-xs sm:text-sm font-medium group-hover:text-indigo-300 transition-colors">
+                  Go to Mission &rarr;
+                </span>
+              </Link>
+
+              {/* Want to Compete CTA */}
+              <Link
+                href="/citizen"
+                className="group p-4 sm:p-6 bg-gradient-to-br from-emerald-900/40 to-teal-900/30 border border-emerald-500/20 hover:border-emerald-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10"
+              >
+                <div className="text-2xl sm:text-3xl mb-3">🌍</div>
+                <h3 className="font-GoodTimes text-white text-sm sm:text-base mb-2">
+                  Want to Compete?
+                </h3>
+                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                  Only MoonDAO Citizens are eligible for the leaderboard. Rally your network to back you and secure your spot in the top 25.
+                </p>
+                <span className="inline-block mt-3 text-emerald-400 text-xs sm:text-sm font-medium group-hover:text-emerald-300 transition-colors">
+                  Become a Citizen &rarr;
+                </span>
+              </Link>
+            </div>
+          </div>
+  )
+}

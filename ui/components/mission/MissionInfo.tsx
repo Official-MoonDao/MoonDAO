@@ -1,3 +1,4 @@
+import { OVERVIEW_TOKEN_ADDRESS } from 'const/config'
 import { getMissionDescription } from 'const/missionMilestones'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -9,7 +10,7 @@ import MissionPayRedeem from './MissionPayRedeem'
 import MissionSocialLinks from './MissionSocialLinks'
 import MissionTimelineChart from './MissionTimelineChart'
 import MissionTokenInfo from './MissionTokenInfo'
-import OverviewLeaderboardPreview from './OverviewLeaderboardPreview'
+import OverviewDelegateVote from './OverviewDelegateVote'
 
 export type MissionInfoTabType =
   | 'activity'
@@ -274,14 +275,11 @@ export default function MissionInfo({
           )}
           {tab === 'leaderboard' && showLeaderboardTab && (
             <div className="w-full mb-8">
-              <MissionInfoHeader
-                title="Fly with Frank Leaderboard"
-                icon="/assets/icon-star-blue.svg"
-              />
-              <OverviewLeaderboardPreview
+              <OverviewDelegateVote
                 leaderboard={
                   (_overviewLeaderboard as LeaderboardEntry[]) ?? []
                 }
+                tokenAddress={OVERVIEW_TOKEN_ADDRESS}
               />
             </div>
           )}
