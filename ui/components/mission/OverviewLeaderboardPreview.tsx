@@ -6,9 +6,6 @@ import IPFSRenderer from '@/components/layout/IPFSRenderer'
 type OverviewLeaderboardPreviewProps = {
   /** Top N entries (already sorted, highest first). */
   leaderboard: LeaderboardEntry[]
-  /** Mission ID to thread through the leaderboard CTA so the destination page
-   *  can render its "back to mission" affordance. */
-  missionId?: string | number
 }
 
 const RANK_BADGE_STYLES = [
@@ -28,20 +25,14 @@ function formatTotal(amount: number): string {
 }
 
 /**
- * Compact $OVERVIEW leaderboard preview surfaced on the mission/4 page.
+ * Compact $OVERVIEW leaderboard preview surfaced on the mission/4 ("Fly with
+ * Frank") leaderboard tab.
  *
- * Shows the top entries with rank, avatar, name, and totals. Always renders
- * a CTA to the full leaderboard so users can vote in one click — even when
- * the list is empty (early in the campaign).
+ * Shows the top entries with rank, avatar, name, and totals.
  */
 export default function OverviewLeaderboardPreview({
   leaderboard,
-  missionId,
 }: OverviewLeaderboardPreviewProps) {
-  const fullLeaderboardHref = `/overview-vote${
-    missionId != null ? `?from=mission&missionId=${missionId}` : ''
-  }`
-
   const hasEntries = leaderboard.length > 0
 
   return (
@@ -63,12 +54,6 @@ export default function OverviewLeaderboardPreview({
             </p>
           </div>
         </div>
-        <Link
-          href={fullLeaderboardHref}
-          className="shrink-0 text-indigo-200 hover:text-white text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
-        >
-          View full leaderboard →
-        </Link>
       </div>
 
       <div className="px-6 md:px-8 pb-6 pt-3">
@@ -148,16 +133,10 @@ export default function OverviewLeaderboardPreview({
           </div>
         )}
 
-        <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="mt-4 sm:mt-5">
           <p className="text-gray-400 text-xs sm:text-sm">
             The 25 citizens with the most $OVERVIEW support advance to Round 2.
           </p>
-          <Link
-            href={fullLeaderboardHref}
-            className="shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs sm:text-sm font-semibold transition-all duration-200 shadow-lg shadow-indigo-500/20"
-          >
-            Back a candidate →
-          </Link>
         </div>
       </div>
     </section>

@@ -181,7 +181,7 @@ export function ExpandedFooter({
   const launchpadLinks = [
     { text: 'Launchpad Explainer', href: '/launch' },
     { text: 'Overview Fundraiser', href: '/mission/4' },
-    { text: 'Fly with Frank Leaderboard', href: '/overview-vote' },
+    { text: 'Fly with Frank Leaderboard', href: '/frank?tab=leaderboard' },
   ]
 
   const learnLinks = [

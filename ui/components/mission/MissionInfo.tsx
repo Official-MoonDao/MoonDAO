@@ -282,7 +282,6 @@ export default function MissionInfo({
                 leaderboard={
                   (_overviewLeaderboard as LeaderboardEntry[]) ?? []
                 }
-                missionId={mission?.id ?? 4}
               />
             </div>
           )}

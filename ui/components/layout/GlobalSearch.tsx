@@ -179,7 +179,7 @@ const searchMappings = [
     ],
     title: 'Fly to Space — Overview Vote',
     description: 'Vote for a citizen to fly to space alongside Frank White using Overview tokens',
-    link: '/overview-vote',
+    link: '/frank?tab=leaderboard',
     category: 'Launchpad',
   },
 
