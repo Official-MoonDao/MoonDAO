@@ -389,6 +389,11 @@ module.exports = withBundleAnalyzer(
             permanent: false,
           },
           {
+            source: '/overview-vote',
+            destination: '/frank?tab=leaderboard',
+            permanent: true,
+          },
+          {
             source: '/overview',
             destination: '/mission/4',
             permanent: false,

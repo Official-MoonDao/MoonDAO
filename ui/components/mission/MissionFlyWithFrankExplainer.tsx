@@ -10,9 +10,6 @@ type MissionFlyWithFrankExplainerProps = {
    *  distinguish "genuinely <25 ranked" from "fetch came back partial",
    *  so we'd risk falsely claiming "fewer than 25 citizens are ranked". */
   rankedCount?: number
-  /** Mission ID used to thread "from" context into the leaderboard CTA so
-   *  the destination page can render its "back to mission" affordance. */
-  missionId?: string | number
 }
 
 const STEPS: {
@@ -53,11 +50,8 @@ function formatThreshold(amount: number): string {
 export default function MissionFlyWithFrankExplainer({
   top25Threshold,
   rankedCount,
-  missionId,
 }: MissionFlyWithFrankExplainerProps) {
-  const leaderboardHref = `/overview-vote${
-    missionId != null ? `?from=mission&missionId=${missionId}` : ''
-  }`
+  const leaderboardHref = '/frank?tab=leaderboard'
 
   const hasThreshold =
     top25Threshold != null && Number.isFinite(top25Threshold) && top25Threshold > 0

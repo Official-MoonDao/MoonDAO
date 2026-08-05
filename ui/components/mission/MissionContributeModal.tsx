@@ -2147,7 +2147,7 @@ export default function MissionContributeModal({
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  href={`/overview-vote?from=mission&missionId=${mission?.id ?? ''}`}
+                  href={`/frank?tab=leaderboard&from=mission&missionId=${mission?.id ?? ''}`}
                   className="flex-1 flex justify-center items-center px-6 py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
                 >
                   Back a Candidate
