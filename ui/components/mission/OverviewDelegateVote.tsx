@@ -412,27 +412,16 @@ export default function OverviewDelegateVote({
         citizenId: selectedCitizen.id,
       })
 
-      // Poll for real data in background
+      // Poll for real data in background. Mission pages use getServerSideProps
+      // (not ISR), so on-demand `/api/revalidate` cannot invalidate them —
+      // soft-refresh the current route so GSSP re-runs after Tableland indexes.
       setIsRefreshing(true)
       const pollForUpdate = async (retries = 5) => {
         for (let i = 0; i < retries; i++) {
           await new Promise((r) => setTimeout(r, 4000 + i * 2000))
           try {
-            await fetch('/api/revalidate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                secret: process.env.NEXT_PUBLIC_REVALIDATE_SECRET,
-                path: '/mission/4',
-              }),
-            })
-            const res = await fetch('/mission/4', {
-              headers: { Accept: 'text/html' },
-            })
-            if (res.ok) {
-              router.replace(router.asPath)
-              break
-            }
+            await router.replace(router.asPath)
+            break
           } catch {}
         }
         setIsRefreshing(false)
