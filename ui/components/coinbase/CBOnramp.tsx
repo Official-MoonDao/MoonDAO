@@ -41,8 +41,10 @@ interface CBOnrampProps {
   embedded?: boolean
   /** Optional content rendered just beneath the "Fund" header */
   headerSlot?: React.ReactNode
-  /** Called when the device doesn't support Apple/Google Pay so the parent
-   *  can fall back to MoonPay automatically. */
+  /** Called when the device doesn't support Apple/Google Pay, or the user
+   *  manually says they don't have it set up, so the parent can fall back to
+   *  MoonPay (Coinbase's guest/debit-card checkout was deprecated, leaving
+   *  MoonPay as the only no-account card option). */
   onUnsupported?: () => void
   /** Region already resolved by a parent (e.g. FundOnramp). When provided,
    *  skips the duplicate /api/coinbase/region request. */
@@ -500,9 +502,10 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   }, [address, selectedChain, asset])
 
   // Hosted Coinbase flow for US users who can't use Apple/Google Pay (e.g.
-  // desktop, no iPhone to scan the QR). Supports signing into an existing
-  // Coinbase account or paying by card/bank. Presets the crypto amount so we
-  // don't depend on the headless quote (which isn't fetched for US users).
+  // desktop, no iPhone to scan the QR). Coinbase's guest/debit-card checkout
+  // was deprecated, so this now requires signing into an existing Coinbase
+  // account. Presets the crypto amount so we don't depend on the headless
+  // quote (which isn't fetched for US users).
   const handleHostedFallback = useCallback(async () => {
     if (!address) return
 
