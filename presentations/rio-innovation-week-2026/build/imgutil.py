@@ -58,7 +58,10 @@ def crop_to_ratio(name, ratio_w, ratio_h, focus=('center', 'center'), out_name=N
 
 def circle_badge(name, size=800, border_color=None, border_px=0, out_name=None):
     """Square-crop + circular-mask an image into a transparent-background PNG badge."""
-    out_name = out_name or f"{_flat(name)}_circle.png"
+    border_tag = ''
+    if border_color and border_px > 0:
+        border_tag = f"_b{border_px}-{'-'.join(str(c) for c in border_color)}"
+    out_name = out_name or f"{_flat(name)}_circle_s{size}{border_tag}.png"
     out_path = os.path.join(CACHE, out_name)
     if os.path.exists(out_path):
         return out_path
@@ -96,7 +99,8 @@ def darken(name, factor=0.45, ratio=None, out_name=None):
         src_path = crop_to_ratio(name, *ratio)
     else:
         src_path = _src(name)
-    out_name = out_name or f"{_flat(name)}_dark.png"
+    ratio_tag = f"_r{ratio[0]}x{ratio[1]}" if ratio else ''
+    out_name = out_name or f"{_flat(name)}_dark_f{factor}{ratio_tag}.png"
     out_path = os.path.join(CACHE, out_name)
     if os.path.exists(out_path):
         return out_path
