@@ -154,11 +154,11 @@ export function FundOnramp({
 
   // Rendered just beneath the embedded provider's "Fund Wallet" header so the
   // user picks how to pay after they see what they're funding. US users only
-  // get Coinbase (Apple/Google Pay) — MoonPay's KYC requires an SSN for US
-  // persons, which we intentionally never ask for anywhere in the app — so we
-  // don't surface MoonPay or a provider toggle for them, just an informational
-  // line. The Coinbase-hosted guest/account fallback (card, no SSN needed
-  // under its guest-checkout limit) is surfaced inside CBHeadlessOnramp.
+  // get Coinbase (Apple/Google Pay) by default — no upfront provider toggle,
+  // just an informational line. Coinbase's guest/debit-card checkout was
+  // deprecated, so anyone who can't use Apple/Google Pay is offered two ways
+  // out inside CBHeadlessOnramp itself: sign into an existing Coinbase
+  // account, or switch to MoonPay (below) for a card without an account.
   const providerSelector = isUS ? (
     <div
       data-testid="onramp-provider-select"
@@ -242,6 +242,7 @@ export function FundOnramp({
           onBeforeNavigate={onCoinbaseBeforeNavigate}
           onHeadlessSuccessInApp={onCoinbaseSuccessInApp}
           redirectUrl={coinbaseRedirectUrl}
+          onUnsupported={() => handleSetProvider('moonpay')}
         />
       )}
     </div>

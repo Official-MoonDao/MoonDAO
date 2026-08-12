@@ -45,11 +45,14 @@ interface CBHeadlessOnrampProps {
    *  screen and hand off to the parent (which polls for the balance and shows
    *  its own action) instead of reloading. Keeps the whole flow on one screen. */
   waitForFundsInApp?: boolean
-  /** Called when the device doesn't support Apple Pay or Google Pay so the
-   *  parent can fall back to MoonPay automatically. */
+  /** Called when the device doesn't support Apple Pay or Google Pay, or when
+   *  the user manually says they don't have it set up, so the parent can fall
+   *  back to MoonPay (Coinbase's guest/debit-card checkout was deprecated, so
+   *  MoonPay is the only no-Coinbase-account card option left). */
   onUnsupported?: () => void
-  /** Launches the hosted Coinbase flow (account / card / bank). Surfaced on the
-   *  QR screen for desktop users who don't have an iPhone to scan with. */
+  /** Launches the hosted Coinbase flow to sign into an existing account.
+   *  Coinbase's guest checkout (card without an account) was deprecated, so
+   *  this path now requires the user to already have a Coinbase account. */
   onUseAccountFlow?: () => void | Promise<void>
 }
 
@@ -608,40 +611,19 @@ export function CBHeadlessOnramp({
                 ? 'Press the Google Pay button above to complete your purchase securely with Coinbase.'
                 : 'Scan the QR code above with your iPhone to complete your purchase securely with Apple Pay.'}
           </p>
-          {/* Not everyone has Apple/Google Pay set up (or an iPhone to scan the
-              QR with) — always offer the hosted Coinbase flow (guest
-              debit/credit card checkout or an existing account) as a way out.
-              Previously this only showed on desktop browsers without native
-              Apple/Google Pay, which left Safari and Android users with no
-              visible alternative at all. */}
-          {onUseAccountFlow && (
-            <div className="pt-1 text-center">
-              <p className="text-gray-500 text-xs mb-2">
-                {nativeApplePay
-                  ? "Apple Pay not set up on this device?"
-                  : useGooglePay
-                    ? 'Google Pay not set up on this device?'
-                    : 'No iPhone to scan with?'}
-              </p>
-              <button
-                type="button"
-                disabled={accountFlowLoading}
-                onClick={async () => {
-                  setAccountFlowLoading(true)
-                  try {
-                    await onUseAccountFlow()
-                  } finally {
-                    setAccountFlowLoading(false)
-                  }
-                }}
-                className="text-sm font-semibold text-blue-300 hover:text-blue-200 underline disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {accountFlowLoading
-                  ? 'Opening Coinbase…'
-                  : 'Pay with a debit/credit card or Coinbase account instead'}
-              </button>
-            </div>
-          )}
+          {/* Coinbase's guest/debit-card checkout was deprecated, so someone
+              without Apple/Google Pay set up (or no iPhone to scan the QR
+              with) has exactly two ways forward: sign into an existing
+              Coinbase account, or use MoonPay instead, which still takes a
+              card without a Coinbase account. */}
+          <FallbackOptions
+            payLabel={payLabel}
+            onUseAccountFlow={onUseAccountFlow}
+            accountFlowLoading={accountFlowLoading}
+            setAccountFlowLoading={setAccountFlowLoading}
+            onUnsupported={onUnsupported}
+            className="pt-1"
+          />
         </div>
       </div>
     )
@@ -826,29 +808,14 @@ export function CBHeadlessOnramp({
         {/* Surfaced here too (not just after a failed attempt) so users who
             already know they don't have Apple/Google Pay set up don't have to
             verify phone/email and agree to terms first just to find an
-            alternative. Still Coinbase — guest card checkout or an existing
-            account — never MoonPay, which requires an SSN for US persons. */}
-        {onUseAccountFlow && (
-          <div className="text-center">
-            <button
-              type="button"
-              disabled={accountFlowLoading}
-              onClick={async () => {
-                setAccountFlowLoading(true)
-                try {
-                  await onUseAccountFlow()
-                } finally {
-                  setAccountFlowLoading(false)
-                }
-              }}
-              className="text-xs font-semibold text-blue-300 hover:text-blue-200 underline disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {accountFlowLoading
-                ? 'Opening Coinbase…'
-                : `Don't have ${payLabel} set up? Pay with a debit/credit card or Coinbase account instead`}
-            </button>
-          </div>
-        )}
+            alternative. */}
+        <FallbackOptions
+          payLabel={payLabel}
+          onUseAccountFlow={onUseAccountFlow}
+          accountFlowLoading={accountFlowLoading}
+          setAccountFlowLoading={setAccountFlowLoading}
+          onUnsupported={onUnsupported}
+        />
 
         {/* Secured footer */}
         <div className="bg-black/10 rounded-lg p-4 border border-white/5">
@@ -862,6 +829,63 @@ export function CBHeadlessOnramp({
             Pay with {payLabel} without leaving this page. Funds typically arrive within a few minutes.
           </p>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Coinbase's guest/debit-card checkout was deprecated — someone who can't use
+ * Apple/Google Pay now has exactly two ways forward: sign into an existing
+ * Coinbase account, or pay by card via MoonPay (no Coinbase account needed).
+ */
+function FallbackOptions({
+  payLabel,
+  onUseAccountFlow,
+  accountFlowLoading,
+  setAccountFlowLoading,
+  onUnsupported,
+  className = '',
+}: {
+  payLabel: string
+  onUseAccountFlow?: () => void | Promise<void>
+  accountFlowLoading: boolean
+  setAccountFlowLoading: (loading: boolean) => void
+  onUnsupported?: () => void
+  className?: string
+}) {
+  if (!onUseAccountFlow && !onUnsupported) return null
+
+  return (
+    <div className={`text-center space-y-2 ${className}`}>
+      <p className="text-gray-500 text-xs">Can&apos;t use {payLabel}?</p>
+      <div className="flex flex-col items-center gap-1.5">
+        {onUseAccountFlow && (
+          <button
+            type="button"
+            disabled={accountFlowLoading}
+            onClick={async () => {
+              setAccountFlowLoading(true)
+              try {
+                await onUseAccountFlow()
+              } finally {
+                setAccountFlowLoading(false)
+              }
+            }}
+            className="text-sm font-semibold text-blue-300 hover:text-blue-200 underline disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {accountFlowLoading ? 'Opening Coinbase…' : 'Use your Coinbase account'}
+          </button>
+        )}
+        {onUnsupported && (
+          <button
+            type="button"
+            onClick={onUnsupported}
+            className="text-sm font-semibold text-blue-300 hover:text-blue-200 underline"
+          >
+            {`Don't have ${payLabel}? Use a debit card on MoonPay`}
+          </button>
+        )}
       </div>
     </div>
   )
