@@ -102,6 +102,9 @@ export default function ExpandableText({
             e.stopPropagation()
             setExpanded((isExpanded) => !isExpanded)
           }}
+          onKeyDown={(e) => {
+            e.stopPropagation()
+          }}
         >
           {expanded ? lessLabel : moreLabel}
         </button>
