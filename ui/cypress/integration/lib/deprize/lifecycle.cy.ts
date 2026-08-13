@@ -229,7 +229,7 @@ describe('deprize lifecycle derivations', () => {
           tipWinningTeamId: 301n,
           openFieldTeamId: FIELD,
         })
-      ).to.throw(/unresolved/i)
+      ).to.throw('unresolved')
     })
   })
 
