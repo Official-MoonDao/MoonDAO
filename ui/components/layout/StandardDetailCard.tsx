@@ -47,7 +47,7 @@ export default function StandardDetailCard({
         )}
         <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
           <div>
-            <h1 className="font-bold font-GoodTimes text-xl text-white break-words [overflow-wrap:anywhere] group-hover:text-slate-200 transition-colors text-left w-full min-w-0">
+            <h1 className="font-bold font-GoodTimes text-lg sm:text-xl text-white break-words [overflow-wrap:anywhere] leading-snug group-hover:text-slate-200 transition-colors text-left w-full min-w-0">
               {title}
             </h1>
             <div className="break-words text-left mb-3">{subheader}</div>

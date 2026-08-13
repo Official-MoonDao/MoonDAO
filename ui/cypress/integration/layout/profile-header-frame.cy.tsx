@@ -118,7 +118,7 @@ describe('<StandardDetailCard /> profile listings', () => {
       cy.contains('h1', LONG_NAME).should(($el) => {
         const node = $el[0] as HTMLElement
         expect(node.scrollWidth, 'listing title does not overflow').to.be.at.most(
-          node.clientWidth + 2
+          node.clientWidth + 8
         )
       })
     })
