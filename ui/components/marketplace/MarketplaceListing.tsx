@@ -68,15 +68,13 @@ export default function MarketplaceListing({
 
   const handleTeamClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    router.push(
-      `/team/${
-        listing.teamName ? generatePrettyLink(listing.teamName) : listing.teamId
-      }`
-    )
+    router.push(`/team/${listing.teamName ? generatePrettyLink(listing.teamName) : listing.teamId}`)
   }
 
   const numericPrice = parseFloat(listing.price.replace(/,/g, ''))
-  const fullPrice = `${truncateTokenValue(numericPrice * 1.1, listing.currency)} ${listing.currency}`
+  const fullPrice = `${truncateTokenValue(numericPrice * 1.1, listing.currency)} ${
+    listing.currency
+  }`
   const displayPrice = citizen
     ? `${truncateTokenValue(listing.price, listing.currency)} ${listing.currency}`
     : fullPrice
@@ -121,10 +119,7 @@ export default function MarketplaceListing({
               {listing.teamName || `Team ${listing.teamId}`}
             </button>
             <div className="mt-1.5">
-              <ExpandableText
-                className="text-sm leading-relaxed text-slate-300/80"
-                lines={2}
-              >
+              <ExpandableText className="text-sm leading-relaxed text-slate-300/80" lines={2}>
                 {listing.description}
               </ExpandableText>
             </div>

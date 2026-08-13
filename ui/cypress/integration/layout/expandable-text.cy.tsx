@@ -2,7 +2,7 @@ import React from 'react'
 import ExpandableText from '../../../components/layout/ExpandableText'
 
 const LONG_TEXT =
-  'Join Loretta Hidalgo Whitesides on an 8-week Hero\'s Journey to help you take on the next level of your life. Level up your leadership, communication, and presence with weekly training, coaching, and community. This program is designed to meet you where you are and take you further than you thought possible.'
+  "Join Loretta Hidalgo Whitesides on an 8-week Hero's Journey to help you take on the next level of your life. Level up your leadership, communication, and presence with weekly training, coaching, and community. This program is designed to meet you where you are and take you further than you thought possible."
 
 describe('<ExpandableText />', () => {
   it('Does not show a Read more control for short text', () => {
@@ -34,9 +34,7 @@ describe('<ExpandableText />', () => {
 
     cy.get('[data-testid="expandable-text"]').should('have.attr', 'data-expanded', 'true')
     cy.get('[data-testid="expandable-text"]').should('not.have.class', 'line-clamp-2')
-    cy.get('[data-testid="expandable-text-toggle"]')
-      .should('have.text', 'Show less')
-      .click()
+    cy.get('[data-testid="expandable-text-toggle"]').should('have.text', 'Show less').click()
 
     cy.get('[data-testid="expandable-text"]').should('have.attr', 'data-expanded', 'false')
     cy.get('[data-testid="expandable-text"]').should('have.class', 'line-clamp-2')
