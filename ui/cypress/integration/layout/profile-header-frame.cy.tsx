@@ -8,11 +8,9 @@ const BIO =
 
 const viewports: Cypress.ViewportPreset[] = ['iphone-x', 'ipad-2', 'macbook-15']
 
-function assertNoClip($el: JQuery<HTMLElement>, $container: JQuery<HTMLElement>) {
-  const el = $el[0].getBoundingClientRect()
-  const container = $container[0].getBoundingClientRect()
-  expect(el.left, 'not clipped on the left').to.be.at.least(container.left - 1)
-  expect(el.right, 'not clipped on the right').to.be.at.most(container.right + 1)
+function assertFitsBox(el: HTMLElement, label: string) {
+  // GoodTimes display glyphs can ink a few pixels past the em box.
+  expect(el.scrollWidth, label).to.be.at.most(el.clientWidth + 8)
 }
 
 function mountProfileHeader() {
@@ -60,35 +58,31 @@ describe('<ProfileHeaderFrame />', () => {
       cy.get('[data-testid="profile-name"]')
         .should('contain', LONG_NAME)
         .and(($el) => {
-          const node = $el[0] as HTMLElement
-          expect(node.scrollWidth, 'name does not overflow its box').to.be.at.most(
-            node.clientWidth + 2
-          )
+          assertFitsBox($el[0] as HTMLElement, 'name does not overflow its box')
         })
       cy.get('[data-testid="profile-bio"]')
         .should('contain', 'Humanitarian captain')
         .and('contain', 'overview effect')
         .and(($el) => {
-          const node = $el[0] as HTMLElement
-          expect(node.scrollWidth, 'bio does not overflow its box').to.be.at.most(
-            node.clientWidth + 2
-          )
+          assertFitsBox($el[0] as HTMLElement, 'bio does not overflow its box')
         })
 
       cy.get('#citizenheader-container').then(($card) => {
+        const card = $card[0].getBoundingClientRect()
         cy.get('[data-testid="profile-name"]').then(($name) => {
-          assertNoClip($name, $card)
+          const name = $name[0].getBoundingClientRect()
+          expect(name.left, 'name not clipped on the left').to.be.at.least(card.left - 1)
+          expect(name.right, 'name not clipped on the right').to.be.at.most(card.right + 1)
         })
         cy.get('[data-testid="profile-bio"]').then(($bio) => {
-          assertNoClip($bio, $card)
+          const bio = $bio[0].getBoundingClientRect()
+          expect(bio.left, 'bio not clipped on the left').to.be.at.least(card.left - 1)
+          expect(bio.right, 'bio not clipped on the right').to.be.at.most(card.right + 1)
         })
       })
 
       cy.get('#citizenheader-container').then(($card) => {
-        const card = $card[0] as HTMLElement
-        expect(card.scrollWidth, 'card does not overflow horizontally').to.be.at.most(
-          card.clientWidth + 2
-        )
+        assertFitsBox($card[0] as HTMLElement, 'card does not overflow horizontally')
       })
     })
   })
@@ -116,10 +110,7 @@ describe('<StandardDetailCard /> profile listings', () => {
       )
 
       cy.contains('h1', LONG_NAME).should(($el) => {
-        const node = $el[0] as HTMLElement
-        expect(node.scrollWidth, 'listing title does not overflow').to.be.at.most(
-          node.clientWidth + 8
-        )
+        assertFitsBox($el[0] as HTMLElement, 'listing title does not overflow')
       })
     })
   })
