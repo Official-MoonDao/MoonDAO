@@ -32,8 +32,8 @@ export default function StandardDetailCard({
 }: StandardDetailCardProps) {
   const router = useRouter()
   const CardContent = (
-    <div className="w-full h-full p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 transition-all duration-300 group hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(37,99,235,0.2),0_0_40px_rgba(147,51,234,0.15)] hover:bg-white/8 hover:border-white/20">
-      <div className="flex flex-row items-start gap-4 w-full h-full">
+    <div className="w-full h-full min-w-0 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 transition-all duration-300 group hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(37,99,235,0.2),0_0_40px_rgba(147,51,234,0.15)] hover:bg-white/8 hover:border-white/20">
+      <div className="flex flex-row items-start gap-4 w-full min-w-0 h-full">
         {image && (
           <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] md:w-[120px] md:h-[120px] flex-shrink-0">
             <AdaptiveImage
@@ -47,11 +47,15 @@ export default function StandardDetailCard({
         )}
         <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
           <div>
-            <h1 className="font-bold font-GoodTimes text-xl text-white break-words group-hover:text-slate-200 transition-colors text-left">
+            <h1 className="font-bold font-GoodTimes text-xl text-white break-words [overflow-wrap:anywhere] group-hover:text-slate-200 transition-colors text-left w-full min-w-0">
               {title}
             </h1>
             <div className="break-words text-left mb-3">{subheader}</div>
-            <p className={`text-sm text-slate-300 leading-relaxed break-words text-left${hideParagraphOnMobile ? ' hidden sm:block' : ''}`}>
+            <p
+              className={`text-sm text-slate-300 leading-relaxed break-words text-left${
+                hideParagraphOnMobile ? ' hidden sm:block' : ''
+              }`}
+            >
               {paragraph && paragraph?.length > 200 ? paragraph.slice(0, 200) + '...' : paragraph}
             </p>
           </div>
@@ -70,7 +74,10 @@ export default function StandardDetailCard({
                   </p>
                   {isCitizen && (
                     <p className="line-through text-xs opacity-70 text-slate-400">
-                      {`${truncateTokenValue(parseFloat(price.replace(/,/g, '')) * 1.1, currency)} ${currency}`}
+                      {`${truncateTokenValue(
+                        parseFloat(price.replace(/,/g, '')) * 1.1,
+                        currency
+                      )} ${currency}`}
                     </p>
                   )}
                 </div>

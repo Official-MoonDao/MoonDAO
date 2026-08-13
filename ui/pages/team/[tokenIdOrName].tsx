@@ -58,10 +58,10 @@ import { resolveTeamIdFromPrettyLink } from '@/lib/team/teamPrettyLinks'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { TwitterIcon } from '@/components/assets'
 import StatsCard from '@/components/dashboard/StatsCard'
 import Address from '@/components/layout/Address'
@@ -70,7 +70,9 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import ProfileHeaderFrame from '@/components/layout/ProfileHeaderFrame'
 import Action from '@/components/subscription/Action'
+import EBRewards from '@/components/subscription/EBRewards'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
 import TeamJobs from '@/components/subscription/TeamJobs'
@@ -81,7 +83,6 @@ import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamMissions from '@/components/subscription/TeamMissions'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
-import EBRewards from '@/components/subscription/EBRewards'
 
 function TeamDetailPageContent({
   tokenId,
@@ -163,14 +164,24 @@ function TeamDetailPageContent({
     chain: selectedChain,
   })
 
-  const fetchActivityData = useMemo(() => ({
-    teamId: tokenId,
-    selectedChain,
-    jobTableContract,
-    marketplaceTableContract,
-    missionTableContract,
-    jbControllerContract,
-  }), [tokenId, selectedChain, jobTableContract, marketplaceTableContract, missionTableContract, jbControllerContract])
+  const fetchActivityData = useMemo(
+    () => ({
+      teamId: tokenId,
+      selectedChain,
+      jobTableContract,
+      marketplaceTableContract,
+      missionTableContract,
+      jbControllerContract,
+    }),
+    [
+      tokenId,
+      selectedChain,
+      jobTableContract,
+      marketplaceTableContract,
+      missionTableContract,
+      jbControllerContract,
+    ]
+  )
 
   const {
     socials,
@@ -208,7 +219,13 @@ function TeamDetailPageContent({
   )
 
   // Only citizens (or team managers / owners / signers) can see team content
-  const canViewContent = !!(citizen || isManager || isTableOperator || isSigner || address === nft.owner)
+  const canViewContent = !!(
+    citizen ||
+    isManager ||
+    isTableOperator ||
+    isSigner ||
+    address === nft.owner
+  )
 
   //Subscription Data
   const { data: expiresAt } = useRead({
@@ -230,173 +247,161 @@ function TeamDetailPageContent({
 
   //Profile Header Section
   const ProfileHeader = (
-    <div id="teamheader-container" className="w-full max-w-[1080px] mx-auto">
-      <div className="w-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 overflow-hidden">
-        <div id="frame-content-container" className="w-full p-6">
-          <div
-            id="frame-content"
-            className="w-full flex flex-col lg:flex-row items-start justify-between gap-6"
-          >
+    <ProfileHeaderFrame
+      id="teamheader-container"
+      image={
+        nft?.metadata?.image ? (
+          <div id="team-image-container" className="relative">
             <div
-              id="profile-description-section"
-              className="flex w-full flex-col lg:flex-row items-center lg:items-stretch gap-6"
+              className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] relative${
+                subIsValid && isManager ? ' group cursor-pointer' : ''
+              }`}
+              onClick={() => {
+                if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
+              }}
             >
-              {nft?.metadata?.image ? (
-                <div id="team-image-container" className="relative flex-shrink-0">
-                  <div
-                    className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] relative${subIsValid && isManager ? ' group cursor-pointer' : ''}`}
-                    onClick={() => {
-                      if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
-                    }}
-                  >
-                    <IPFSRenderer
-                      src={nft?.metadata?.image}
-                      className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
-                      height={250}
-                      width={250}
-                      alt="Team Image"
-                    />
-                    {subIsValid && isManager && (
-                      <div className="absolute inset-0 rounded-2xl bg-black/50 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <CameraIcon width={36} height={36} className="text-white" />
-                        <span className="text-white text-xs font-medium">Edit Photo</span>
-                      </div>
-                    )}
-                  </div>
-                  <div id="star-asset-container" className="absolute -bottom-2 -right-2">
-                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                      <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex flex-col items-center justify-center flex-shrink-0 gap-2${subIsValid && isManager ? ' group cursor-pointer hover:border-slate-400/70 transition-colors' : ''}`}
-                  onClick={() => {
-                    if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
-                  }}
-                >
-                  <div className="text-slate-400 text-6xl">🏢</div>
-                  {subIsValid && isManager && (
-                    <span className="text-slate-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                      Add Photo
-                    </span>
-                  )}
+              <IPFSRenderer
+                src={nft?.metadata?.image}
+                className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
+                height={250}
+                width={250}
+                alt="Team Image"
+              />
+              {subIsValid && isManager && (
+                <div className="absolute inset-0 rounded-2xl bg-black/50 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <CameraIcon width={36} height={36} className="text-white" />
+                  <span className="text-white text-xs font-medium">Edit Photo</span>
                 </div>
               )}
-              <div
-                id="team-name-container"
-                className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]"
-              >
-                <div id="team-name" className="flex flex-col gap-4 w-full">
-                  <div id="team-name-container" className="relative flex flex-col w-full">
-                    {subIsValid && isManager && (
-                      <button
-                        className="absolute top-0 right-0 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
-                        onClick={() => {
-                          if (address === nft?.owner || isManager) setTeamMetadataModalEnabled(true)
-                          else
-                            return toast.error(
-                              'Connect the team admin or multisig wallet to edit.'
-                            )
-                        }}
-                      >
-                        <PencilIcon width={24} height={24} className="text-white" />
-                      </button>
-                    )}
-                    {nft ? (
-                      <h1 className="font-GoodTimes text-white text-2xl lg:text-4xl font-bold mb-3 break-words">
-                        {nft?.metadata?.name}
-                      </h1>
-                    ) : (
-                      <></>
-                    )}
-                    <div id="profile-container">
-                      {nft?.metadata?.description ? (
-                        <p className="text-slate-300 text-base leading-relaxed mb-4">
-                          {nft?.metadata.description || ''}
-                        </p>
-                      ) : (
-                        <></>
-                      )}
-                    </div>
-                  </div>
-
-                  <div
-                    id="interactions-container"
-                    className="flex flex-col sm:flex-row items-start gap-4"
-                  >
-                    {socials && (
-                      <div className="flex gap-3">
-                        {socials.communications && (
-                          <Link
-                            className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2 hover:bg-slate-500/30 transition-colors"
-                            href={socials.communications}
-                            target="_blank"
-                            passHref
-                          >
-                            <ChatBubbleLeftIcon height={20} width={20} className="text-slate-300" />
-                          </Link>
-                        )}
-                        {socials.twitter && (
-                          <Link
-                            className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2 hover:bg-slate-500/30 transition-colors"
-                            href={socials.twitter}
-                            target="_blank"
-                            passHref
-                          >
-                            <TwitterIcon />
-                          </Link>
-                        )}
-                        {socials.website && (
-                          <Link
-                            className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2 hover:bg-slate-500/30 transition-colors"
-                            href={socials.website}
-                            target="_blank"
-                            passHref
-                          >
-                            <GlobeAltIcon height={20} width={20} className="text-slate-300" />
-                          </Link>
-                        )}
-                      </div>
-                    )}
-                    {/*Subscription Extension Container*/}
-                    {isManager || address === nft.owner ? (
-                      <div id="manager-container" className="relative">
-                        {expiresAt && (
-                          <div id="expires-container">
-                            <button
-                              id="extend-sub-button"
-                              onClick={() => setTeamSubscriptionModalEnabled(true)}
-                              className="gradient-2 h-12 px-4 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                            >
-                              Extend Plan
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <></>
-                    )}
-                  </div>
-                  {isManager || address === nft.owner ? (
-                    <p className="opacity-50 mt-2 text-sm">
-                      {'Exp: '}
-                      {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                    </p>
-                  ) : (
-                    <></>
-                  )}
-                  <div className="mt-4">
-                    <Address address={nft.owner} />
-                  </div>
-                </div>
+            </div>
+            <div id="star-asset-container" className="absolute -bottom-2 -right-2">
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
+                <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
               </div>
             </div>
           </div>
+        ) : (
+          <div
+            className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex flex-col items-center justify-center gap-2${
+              subIsValid && isManager
+                ? ' group cursor-pointer hover:border-slate-400/70 transition-colors'
+                : ''
+            }`}
+            onClick={() => {
+              if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
+            }}
+          >
+            <div className="text-slate-400 text-6xl">🏢</div>
+            {subIsValid && isManager && (
+              <span className="text-slate-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                Add Photo
+              </span>
+            )}
+          </div>
+        )
+      }
+    >
+      <div id="team-name" className="flex flex-col gap-4 w-full min-w-0">
+        <div id="team-name-container" className="relative flex flex-col w-full min-w-0">
+          {subIsValid && isManager && (
+            <button
+              className="absolute top-0 right-0 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
+              onClick={() => {
+                if (address === nft?.owner || isManager) setTeamMetadataModalEnabled(true)
+                else return toast.error('Connect the team admin or multisig wallet to edit.')
+              }}
+            >
+              <PencilIcon width={24} height={24} className="text-white" />
+            </button>
+          )}
+          {nft ? (
+            <h1 className="font-GoodTimes text-white text-xl sm:text-2xl lg:text-4xl font-bold mb-3 w-full max-w-full break-words [overflow-wrap:anywhere]">
+              {nft?.metadata?.name}
+            </h1>
+          ) : (
+            <></>
+          )}
+          <div id="profile-container" className="w-full min-w-0">
+            {nft?.metadata?.description ? (
+              <p className="text-slate-300 text-base leading-relaxed mb-4 w-full max-w-full break-words">
+                {nft?.metadata.description || ''}
+              </p>
+            ) : (
+              <></>
+            )}
+          </div>
+        </div>
+
+        <div
+          id="interactions-container"
+          className="flex flex-col sm:flex-row flex-wrap items-start gap-4 w-full min-w-0"
+        >
+          {socials && (
+            <div className="flex flex-wrap gap-3">
+              {socials.communications && (
+                <Link
+                  className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2 hover:bg-slate-500/30 transition-colors"
+                  href={socials.communications}
+                  target="_blank"
+                  passHref
+                >
+                  <ChatBubbleLeftIcon height={20} width={20} className="text-slate-300" />
+                </Link>
+              )}
+              {socials.twitter && (
+                <Link
+                  className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2 hover:bg-slate-500/30 transition-colors"
+                  href={socials.twitter}
+                  target="_blank"
+                  passHref
+                >
+                  <TwitterIcon />
+                </Link>
+              )}
+              {socials.website && (
+                <Link
+                  className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2 hover:bg-slate-500/30 transition-colors"
+                  href={socials.website}
+                  target="_blank"
+                  passHref
+                >
+                  <GlobeAltIcon height={20} width={20} className="text-slate-300" />
+                </Link>
+              )}
+            </div>
+          )}
+          {/*Subscription Extension Container*/}
+          {isManager || address === nft.owner ? (
+            <div id="manager-container" className="relative">
+              {expiresAt && (
+                <div id="expires-container">
+                  <button
+                    id="extend-sub-button"
+                    onClick={() => setTeamSubscriptionModalEnabled(true)}
+                    className="gradient-2 h-12 px-4 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                  >
+                    Extend Plan
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <></>
+          )}
+        </div>
+        {isManager || address === nft.owner ? (
+          <p className="opacity-50 mt-2 text-sm">
+            {'Exp: '}
+            {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+          </p>
+        ) : (
+          <></>
+        )}
+        <div className="mt-4 min-w-0">
+          <Address address={nft.owner} />
         </div>
       </div>
-    </div>
+    </ProfileHeaderFrame>
   )
 
   const teamIcon = '/./assets/icon-team.svg'
@@ -641,34 +646,39 @@ function TeamDetailPageContent({
             </div>
           )}
 
-          {subIsValid && !isDeleted && isManager && EB_TEAM_ID && String(tokenId) === String(EB_TEAM_ID) && (
-            <EBRewards isManager={isManager} teamId={tokenId} />
-          )}
+          {subIsValid &&
+            !isDeleted &&
+            isManager &&
+            EB_TEAM_ID &&
+            String(tokenId) === String(EB_TEAM_ID) && (
+              <EBRewards isManager={isManager} teamId={tokenId} />
+            )}
 
           {/* Subscription expired — only shown to managers/owners who can act on it */}
-          {(!subIsValid || isDeleted) && (isManager || isTableOperator || address === nft.owner) && (
-            <div className="bg-gradient-to-b from-red-900/20 to-red-800/30 rounded-2xl border border-red-600/30 p-6 mb-10">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-GoodTimes text-white mb-2">
-                  {isDeleted ? 'Profile Deleted' : 'Subscription Expired'}
-                </h3>
-                <p className="text-slate-300">
-                  {isDeleted
-                    ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
-                    : `The profile has expired, please connect the owner or admin wallet to renew.`}
-                </p>
-              </div>
+          {(!subIsValid || isDeleted) &&
+            (isManager || isTableOperator || address === nft.owner) && (
+              <div className="bg-gradient-to-b from-red-900/20 to-red-800/30 rounded-2xl border border-red-600/30 p-6 mb-10">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-GoodTimes text-white mb-2">
+                    {isDeleted ? 'Profile Deleted' : 'Subscription Expired'}
+                  </h3>
+                  <p className="text-slate-300">
+                    {isDeleted
+                      ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
+                      : `The profile has expired, please connect the owner or admin wallet to renew.`}
+                  </p>
+                </div>
 
-              <div className="bg-slate-600/20 rounded-xl border border-slate-500/30">
-                <TeamTreasury
-                  isSigner={isSigner}
-                  safeData={safeData}
-                  multisigAddress={nft.owner}
-                  safeOwners={resolvedSafeOwners}
-                />
+                <div className="bg-slate-600/20 rounded-xl border border-slate-500/30">
+                  <TeamTreasury
+                    isSigner={isSigner}
+                    safeData={safeData}
+                    multisigAddress={nft.owner}
+                    safeOwners={resolvedSafeOwners}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       </ContentLayout>
     </Container>

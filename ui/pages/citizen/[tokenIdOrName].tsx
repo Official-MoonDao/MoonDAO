@@ -6,7 +6,6 @@ import {
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
-import { PROJECT_PENDING } from '@/lib/nance/types'
 import { getAccessToken } from '@privy-io/react-auth'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -23,9 +22,9 @@ import {
 import { HATS_ADDRESS } from 'const/config'
 import { BLOCKED_CITIZENS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -36,16 +35,17 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { PROJECT_PENDING } from '@/lib/nance/types'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import { getAttribute } from '@/lib/utils/nft'
@@ -54,18 +54,18 @@ import { Hat } from '@/components/hats/Hat'
 import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
-import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import ProfileHeaderFrame from '@/components/layout/ProfileHeaderFrame'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import Tooltip from '@/components/layout/Tooltip'
 import Action from '@/components/subscription/Action'
 import Card from '@/components/subscription/Card'
 import CitizenActions from '@/components/subscription/CitizenActions'
-import CitizenProjects from '@/components/subscription/CitizenProjects'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
+import CitizenProjects from '@/components/subscription/CitizenProjects'
 import GuestActions from '@/components/subscription/GuestActions'
 import LatestJobs from '@/components/subscription/LatestJobs'
 import OpenVotes from '@/components/subscription/OpenVotes'
@@ -219,9 +219,12 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
     ? `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 10`
     : null
 
-  const { data: listings, isLoading: isListingsQueryLoading } = useTablelandQuery(marketplaceStatement, {
-    revalidateOnFocus: false,
-  })
+  const { data: listings, isLoading: isListingsQueryLoading } = useTablelandQuery(
+    marketplaceStatement,
+    {
+      revalidateOnFocus: false,
+    }
+  )
 
   // If there's no query to run (table name lookup failed with no fallback), stop the skeleton
   useEffect(() => {
@@ -277,170 +280,149 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
   useChainDefault()
 
   const ProfileHeader = (
-    <div id="citizenheader-container" className="w-full max-w-[1080px] mx-auto">
-      <div className="w-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 overflow-hidden">
-        <div id="frame-content-container" className="w-full p-6">
-          <div
-            id="frame-content"
-            className="w-full flex flex-col lg:flex-row items-start justify-between gap-6"
-          >
-            <div
-              id="profile-description-section"
-              className="flex w-full flex-col lg:flex-row items-center lg:items-stretch gap-6"
-            >
-              {nft?.metadata?.image ? (
-                <div id="citizen-image-container" className="relative flex-shrink-0">
-                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
-                    <IPFSRenderer
-                      src={nft?.metadata?.image}
-                      className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
-                      height={250}
-                      width={250}
-                      alt="Citizen Image"
-                    />
-                  </div>
-                  <div id="star-asset-container" className="absolute -bottom-2 -right-2">
-                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                      <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center flex-shrink-0">
-                  <div className="text-slate-400 text-6xl">👤</div>
-                </div>
-              )}
-              <div
-                id="citizen-name-container"
-                className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]"
-              >
-                <div id="team-name" className="flex flex-col gap-4 w-full">
-                  <div id="team-name-container" className="relative flex flex-col w-full">
-                    {subIsValid && isOwner && (
-                      <button
-                        className="absolute top-0 right-0 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
-                        onClick={() => {
-                          if (isOwner) setCitizenMetadataModalEnabled(true)
-                          else
-                            return toast.error(
-                              'Connect the profile owner wallet to edit.'
-                            )
-                        }}
-                      >
-                        <PencilIcon width={24} height={24} className="text-white" />
-                      </button>
-                    )}
-                    {nft ? (
-                      <h1 className="font-GoodTimes text-white text-2xl lg:text-4xl font-bold mb-3 break-words">
-                        {nft?.metadata?.name}
-                      </h1>
-                    ) : (
-                      <></>
-                    )}
-                    <div id="profile-container">
-                      {nft?.metadata?.description ? (
-                        <p className="text-slate-300 text-base leading-relaxed mb-4">
-                          {nft?.metadata.description || ''}
-                        </p>
-                      ) : (
-                        <></>
-                      )}
-                    </div>
-                  </div>
-                    <div
-                      id="interactions-container"
-                      className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4"
-                    >
-                    {(discordLink && !discordLink.includes('/users/undefined')) ||
-                    (socials && (socials.twitter || socials.website || socials.instagram || socials.linkedin)) ? (
-                        <div
-                          id="socials-container"
-                          className="flex flex-wrap items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 min-h-[52px]"
-                        >
-                        {discordLink && !discordLink.includes('/users/undefined') && (
-                          <Link
-                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
-                            href={discordLink}
-                            target="_blank"
-                            passHref
-                          >
-                            <DiscordIcon />
-                          </Link>
-                        )}
-                        {socials.twitter && (
-                          <Link
-                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
-                            href={socials.twitter}
-                            target="_blank"
-                            passHref
-                          >
-                            <TwitterIcon />
-                          </Link>
-                        )}
-                        {socials.instagram && (
-                          <Link
-                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
-                            href={socials.instagram}
-                            target="_blank"
-                            passHref
-                          >
-                            <InstagramIcon />
-                          </Link>
-                        )}
-                        {socials.linkedin && (
-                          <Link
-                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
-                            href={socials.linkedin}
-                            target="_blank"
-                            passHref
-                          >
-                            <LinkedinIcon />
-                          </Link>
-                        )}
-                        {socials.website && (
-                          <Link
-                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
-                            href={socials.website}
-                            target="_blank"
-                            passHref
-                          >
-                            <GlobeAltIcon height={20} width={20} className="text-white" />
-                          </Link>
-                        )}
-                      </div>
-                    ) : null}
-
-                    {citizen || isGuest ? (
-                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 flex items-center h-[52px]">
-                        <Address address={isGuest ? address : nft.owner} />
-                      </div>
-                    ) : (
-                      <></>
-                    )}
-
-                    {location !== '' && citizen && (
-                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 flex items-center gap-2 h-[52px]">
-                        <MapPinIcon
-                          width={20}
-                          height={20}
-                          className="flex-shrink-0 text-slate-300"
-                        />
-                        <Link
-                          className="font-GoodTimes text-white hover:text-slate-200 transition-colors"
-                          href="/map"
-                        >
-                          {location.startsWith('[object') ? '' : location}
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </div>
+    <ProfileHeaderFrame
+      id="citizenheader-container"
+      image={
+        nft?.metadata?.image ? (
+          <div id="citizen-image-container" className="relative">
+            <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+              <IPFSRenderer
+                src={nft?.metadata?.image}
+                className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
+                height={250}
+                width={250}
+                alt="Citizen Image"
+              />
+            </div>
+            <div id="star-asset-container" className="absolute -bottom-2 -right-2">
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
+                <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
               </div>
             </div>
           </div>
+        ) : (
+          <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center">
+            <div className="text-slate-400 text-6xl">👤</div>
+          </div>
+        )
+      }
+    >
+      <div id="citizen-name-container" className="flex flex-col gap-4 w-full min-w-0">
+        <div id="team-name-container" className="relative flex flex-col w-full min-w-0">
+          {subIsValid && isOwner && (
+            <button
+              className="absolute top-0 right-0 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
+              onClick={() => {
+                if (isOwner) setCitizenMetadataModalEnabled(true)
+                else return toast.error('Connect the profile owner wallet to edit.')
+              }}
+            >
+              <PencilIcon width={24} height={24} className="text-white" />
+            </button>
+          )}
+          {nft ? (
+            <h1 className="font-GoodTimes text-white text-xl sm:text-2xl lg:text-4xl font-bold mb-3 w-full max-w-full break-words [overflow-wrap:anywhere]">
+              {nft?.metadata?.name}
+            </h1>
+          ) : (
+            <></>
+          )}
+          <div id="profile-container" className="w-full min-w-0">
+            {nft?.metadata?.description ? (
+              <p className="text-slate-300 text-base leading-relaxed mb-4 w-full max-w-full break-words">
+                {nft?.metadata.description || ''}
+              </p>
+            ) : (
+              <></>
+            )}
+          </div>
+        </div>
+        <div
+          id="interactions-container"
+          className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 w-full min-w-0"
+        >
+          {(discordLink && !discordLink.includes('/users/undefined')) ||
+          (socials &&
+            (socials.twitter || socials.website || socials.instagram || socials.linkedin)) ? (
+            <div
+              id="socials-container"
+              className="flex flex-wrap items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 min-h-[52px]"
+            >
+              {discordLink && !discordLink.includes('/users/undefined') && (
+                <Link
+                  className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
+                  href={discordLink}
+                  target="_blank"
+                  passHref
+                >
+                  <DiscordIcon />
+                </Link>
+              )}
+              {socials.twitter && (
+                <Link
+                  className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
+                  href={socials.twitter}
+                  target="_blank"
+                  passHref
+                >
+                  <TwitterIcon />
+                </Link>
+              )}
+              {socials.instagram && (
+                <Link
+                  className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
+                  href={socials.instagram}
+                  target="_blank"
+                  passHref
+                >
+                  <InstagramIcon />
+                </Link>
+              )}
+              {socials.linkedin && (
+                <Link
+                  className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
+                  href={socials.linkedin}
+                  target="_blank"
+                  passHref
+                >
+                  <LinkedinIcon />
+                </Link>
+              )}
+              {socials.website && (
+                <Link
+                  className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
+                  href={socials.website}
+                  target="_blank"
+                  passHref
+                >
+                  <GlobeAltIcon height={20} width={20} className="text-white" />
+                </Link>
+              )}
+            </div>
+          ) : null}
+
+          {citizen || isGuest ? (
+            <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 flex items-center h-[52px] max-w-full min-w-0">
+              <Address address={isGuest ? address : nft.owner} />
+            </div>
+          ) : (
+            <></>
+          )}
+
+          {location !== '' && citizen && (
+            <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 flex items-center gap-2 h-[52px] max-w-full min-w-0">
+              <MapPinIcon width={20} height={20} className="flex-shrink-0 text-slate-300" />
+              <Link
+                className="font-GoodTimes text-white hover:text-slate-200 transition-colors min-w-0 break-words [overflow-wrap:anywhere]"
+                href="/map"
+              >
+                {location.startsWith('[object') ? '' : location}
+              </Link>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </ProfileHeaderFrame>
   )
 
   return (
@@ -585,29 +567,27 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {Array.from(
-                    new Map(hats.map((hat: any) => [hat.teamId, hat])).values()
-                  ).map((hat: any) => (
-                    <div
-                      key={hat.teamId}
-                      className="bg-slate-600/20 rounded-xl p-3 hover:bg-slate-600/30 transition-colors"
-                    >
-                      <Hat
-                        selectedChain={selectedChain}
-                        hat={hat}
-                        hatsContract={hatsContract}
-                        teamImage
-                        teamContract={teamContract}
-                        compact
-                      />
-                    </div>
-                  ))}
+                  {Array.from(new Map(hats.map((hat: any) => [hat.teamId, hat])).values()).map(
+                    (hat: any) => (
+                      <div
+                        key={hat.teamId}
+                        className="bg-slate-600/20 rounded-xl p-3 hover:bg-slate-600/30 transition-colors"
+                      >
+                        <Hat
+                          selectedChain={selectedChain}
+                          hat={hat}
+                          hatsContract={hatsContract}
+                          teamImage
+                          teamContract={teamContract}
+                          compact
+                        />
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             )}
-            {nft?.owner && (
-              <CitizenProjects ownerAddress={nft.owner} />
-            )}
+            {nft?.owner && <CitizenProjects ownerAddress={nft.owner} />}
             {isOwner && (
               <>
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
@@ -630,7 +610,9 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
                           />
                         ))
                       ) : newListings.length === 0 ? (
-                        <p className="text-slate-400 text-sm py-4">No active listings at the moment.</p>
+                        <p className="text-slate-400 text-sm py-4">
+                          No active listings at the moment.
+                        </p>
                       ) : (
                         newListings.map((listing, i) => (
                           <div key={`team-listing-${i}`} className="flex-shrink-0">
@@ -750,15 +732,9 @@ async function getTeamWearerServerSide(chain: any, teamContract: any, address: a
             teamId = teamIdFromHat
           } else if (teamIdFromAdmin && +teamIdFromAdmin.toString() !== 0) {
             teamId = teamIdFromAdmin
-          } else if (
-            teamIdFromAdminAdmin &&
-            +teamIdFromAdminAdmin.toString() !== 0
-          ) {
+          } else if (teamIdFromAdminAdmin && +teamIdFromAdminAdmin.toString() !== 0) {
             teamId = teamIdFromAdminAdmin
-          } else if (
-            teamIdFromAdminAdminAdmin &&
-            +teamIdFromAdminAdminAdmin.toString() !== 0
-          ) {
+          } else if (teamIdFromAdminAdminAdmin && +teamIdFromAdminAdminAdmin.toString() !== 0) {
             teamId = teamIdFromAdminAdminAdmin
           } else {
             teamId = 0
@@ -838,9 +814,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const statement = `SELECT * FROM ${
-      CITIZEN_TABLE_NAMES[chainSlug]
-    } WHERE id = ${Number(tokenId)} LIMIT 1`
+    const statement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]} WHERE id = ${Number(
+      tokenId
+    )} LIMIT 1`
     const rows = (await queryTable(chain, statement)) as any
     const citizen = rows?.[0]
 
