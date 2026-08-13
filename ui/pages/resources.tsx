@@ -278,6 +278,11 @@ const resourceCategories = [
         name: 'Karman Project',
         url: 'https://www.karmanproject.org/',
         description: 'Educational initiative promoting space exploration and STEM education through innovative programs.'
+      },
+      {
+        name: 'Telecommunications, Satellites, and Space Exploration',
+        url: 'https://www.ooma.com/blog/telecommunications-satellites-and-space-exploration/',
+        description: 'Overview of how satellite technology supports communication, research, and our understanding of Earth and the environment.'
       }
     ]
   },
