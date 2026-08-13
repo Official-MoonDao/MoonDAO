@@ -410,7 +410,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
           )}
 
           {location !== '' && citizen && (
-            <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 flex items-center gap-2 h-[52px] max-w-full min-w-0">
+            <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-2 flex items-center gap-2 min-h-[52px] max-w-full min-w-0">
               <MapPinIcon width={20} height={20} className="flex-shrink-0 text-slate-300" />
               <Link
                 className="font-GoodTimes text-white hover:text-slate-200 transition-colors min-w-0 break-words [overflow-wrap:anywhere]"
