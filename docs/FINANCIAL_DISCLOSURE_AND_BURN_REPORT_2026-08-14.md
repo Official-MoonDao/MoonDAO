@@ -78,8 +78,8 @@ On the constant-cost stack in §5–§7, unrestricted liquid assets cover approx
 | Staked ETH — 96 ETH, not withdrawn (Note 5) | — | 181,119 |
 | **Total recognized net assets** | **327,851** | **524,822** |
 | **Memorandum — not in net assets** | | |
-| MOONEY inventory, ~643.3 million tokens at $0.000145 (Note 6) | 39,225 | 93,148 |
-| **All-in economic interest (informational)** | 367,076 | **617,970** |
+| MOONEY inventory, ~643.3 million tokens at $0.000145 (Note 6) | 93,148 | 93,148 |
+| **All-in economic interest (informational)** | 420,999 | **617,970** |
 
 Official AUM is the figure the website and `aum-onchain.ts` use: eight designated Safes on their home chains, plus the WETH side of the Uniswap V3 position, **excluding MOONEY and excluding staked ETH**.
 
@@ -195,7 +195,7 @@ The HSM signer is a hot operational key, not a treasury.
 
 | Class | USD | % of recognized ($524,822) |
 |---|---:|---:|
-| ETH / WETH — liquid (incl. LP WETH side) | 221,854 | 42.3% |
+| ETH / WETH — liquid (incl. LP WETH side) | 220,854 | 42.1% |
 | ETH — staked (Kiln) | 181,119 | 34.5% |
 | WBTC | 91,048 | 17.3% |
 | Stablecoins (USDC + DAI) | 30,946 | 5.9% |
@@ -203,7 +203,7 @@ The HSM signer is a hot operational key, not a treasury.
 | **Recognized** | **524,822** | **100%** |
 | MOONEY inventory (memorandum) | 93,148 | — |
 
-Concentration: **76.8%** of recognized assets is ETH-beta (liquid ETH + staked ETH). A 20% ETH move is about **±$80,600** on recognized net assets, before any change in the 5% project budget.
+Concentration: **76.6%** of recognized assets is ETH-beta (liquid ETH + staked ETH). A 20% ETH move is about **±$80,400** on recognized net assets, before any change in the 5% project budget.
 
 ---
 
@@ -315,7 +315,7 @@ Stated revenue                         (2,042)
 Net burn — base                        32,461
 ```
 
-At this rate, official AUM is exhausted in the first half of Q3 2027 if prices, revenue, and policy are unchanged.
+At this rate, official AUM is exhausted in the second half of Q2 2027 if prices, revenue, and policy are unchanged.
 
 ### 7.3 Why “constant $24,310 projects” is not internally consistent past a few quarters
 
@@ -434,7 +434,7 @@ Unrestricted liquid assets cover about ten months of the constant net burn. That
 - stated intent to cut toward ~$200,000 gross annual burn as revenue ramps;
 - optional unstaking of 96 ETH;
 - Launchpad / DePrize fees not modeled here;
-- ETH / BTC mark-to-market (76.8% of recognized assets).
+- ETH / BTC mark-to-market (76.6% of recognized assets).
 
 A 30% ETH decline, with costs unchanged, shortens official-AUM runway by roughly two months and immediately cuts the following quarter’s 5% project budget.
 
