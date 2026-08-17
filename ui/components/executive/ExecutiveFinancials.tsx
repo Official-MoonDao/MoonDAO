@@ -5,7 +5,7 @@ import {
   FireIcon,
   WalletIcon,
 } from '@heroicons/react/24/outline'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 
@@ -164,24 +164,33 @@ export default function ExecutiveFinancials() {
   const [data, setData] = useState<FinancialSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const fetchIdRef = useRef(0)
 
   const load = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
     try {
       const res = await fetch('/api/eb/financial-summary', { credentials: 'include' })
       const json = await res.json()
+      if (fetchId !== fetchIdRef.current) return
       if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`)
       setData(json)
     } catch (err: any) {
+      if (fetchId !== fetchIdRef.current) return
       setError(err?.message || 'Could not load financial summary.')
     } finally {
-      setIsLoading(false)
+      if (fetchId === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [])
 
   useEffect(() => {
     load()
+    return () => {
+      fetchIdRef.current += 1
+    }
   }, [load])
 
   if (isLoading && !data) {
