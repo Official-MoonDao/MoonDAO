@@ -61,6 +61,7 @@ const TOKEN_PRICE_IDS = {
   WBTC: { llama: 'coingecko:wrapped-bitcoin', gecko: 'wrapped-bitcoin' },
   SAFE: { llama: 'coingecko:safe', gecko: 'safe' },
   GIV: { llama: 'coingecko:giveth', gecko: 'giveth' },
+  POL: { llama: 'coingecko:polygon-ecosystem-token', gecko: 'polygon-ecosystem-token' },
 }
 
 const STABLECOINS = new Set(['DAI', 'USDC', 'USDT', 'USDTB'])
@@ -174,13 +175,13 @@ function resolveTargetAndPriceLock(args, now = new Date()) {
     }
   }
 
-  const prior = addQuarter(target, -1)
-  const priceLock = quarterStartUtc(prior)
+  const current = getCalendarQuarter(now)
+  const priceLock = quarterStartUtc(current)
   return {
     target,
     priceLock,
     priceLockNote:
-      `first day of Q${prior.quarter} ${prior.year} (00:00 UTC); ` +
+      `first day of Q${current.quarter} ${current.year} (00:00 UTC); ` +
       `Q${target.quarter} ${target.year} has not started yet`,
   }
 }
@@ -270,6 +271,7 @@ async function getHistoricalPrices(priceLock) {
 
 function buildPriceMap(rawPrices) {
   const eth = rawPrices.ETH || 0
+  const pol = rawPrices.POL || 0
   const map = {
     ETH: eth,
     // Safe Client labels native ETH on Arbitrum as AETH.
@@ -283,6 +285,9 @@ function buildPriceMap(rawPrices) {
     WBTC: rawPrices.WBTC || 0,
     SAFE: rawPrices.SAFE || 0,
     GIV: rawPrices.GIV || 0,
+    POL: pol,
+    // Safe Client may still label Polygon native as MATIC.
+    MATIC: pol,
   }
   for (const symbol of STABLECOINS) {
     if (!map[symbol]) map[symbol] = 1
