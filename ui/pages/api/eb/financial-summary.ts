@@ -137,6 +137,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           { label: 'Team subscriptions', annualUSD: teamUSD, txCount: subs.team.txCount },
           { label: 'Liquidity pool fees', annualUSD: defiFeesUSD },
           { label: 'ETH staking yield', annualUSD: stakingUSD },
+          // When the measured streams are all zero the total is the MDP-249
+          // stated figure — include it here so the breakdown sums to annualUSD.
+          ...(!revenueIsMeasured
+            ? [{ label: 'Stated (MDP-249)', annualUSD: STATED_ANNUAL_REVENUE_USD }]
+            : []),
         ],
         source: subs.source,
       },

@@ -230,6 +230,12 @@ export default function ExecutiveFinancials() {
 
   return (
     <div className="flex flex-col gap-6">
+      {error && (
+        <div className="bg-rose-900/20 border border-rose-700/50 rounded-xl p-4 text-rose-200 text-sm">
+          <p className="font-semibold">Could not refresh financial summary</p>
+          <p className="mt-1 text-xs">{error}</p>
+        </div>
+      )}
       {meta.warnings.length > 0 && (
         <div className="bg-amber-900/25 border border-amber-700/50 rounded-xl p-4 text-amber-200 text-sm">
           <p className="font-semibold">Data quality</p>

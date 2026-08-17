@@ -147,9 +147,16 @@ export function runwayExhaustionDate(
 ): Date | null {
   const months = runwayMonths(assetsUSD, netMonthlyBurnUSD)
   if (months === null) return null
+  const wholeMonths = Math.floor(months)
+  const extraDays = Math.round((months - wholeMonths) * 30)
   const out = new Date(from.getTime())
-  out.setUTCMonth(out.getUTCMonth() + Math.floor(months))
-  const dayFraction = months - Math.floor(months)
-  out.setUTCDate(out.getUTCDate() + Math.round(dayFraction * 30))
+  // Pin the day to 1 before adding months so month-end dates (31 Jan) cannot
+  // overflow into the following month (Feb has no 31st → 3 Mar).
+  const startDay = out.getUTCDate()
+  out.setUTCDate(1)
+  out.setUTCMonth(out.getUTCMonth() + wholeMonths)
+  const lastDay = new Date(Date.UTC(out.getUTCFullYear(), out.getUTCMonth() + 1, 0)).getUTCDate()
+  out.setUTCDate(Math.min(startDay, lastDay))
+  if (extraDays) out.setUTCDate(out.getUTCDate() + extraDays)
   return out
 }
