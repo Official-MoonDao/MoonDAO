@@ -1,11 +1,11 @@
 import { ArrowTopRightOnSquareIcon, LinkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { formatDeadlineCountdown, formatPostedAt } from '@/lib/jobs/jobMetadata'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 
 type JobApplyPanelProps = {
-  title: string
   applyUrl?: string
   deadline?: number
   postedAt?: number
@@ -25,7 +25,6 @@ function XIcon({ className }: { className?: string }) {
 }
 
 export default function JobApplyPanel({
-  title,
   applyUrl,
   deadline,
   postedAt,
@@ -35,8 +34,14 @@ export default function JobApplyPanel({
   shareText,
   otherRolesCount,
 }: JobApplyPanelProps) {
-  const currTime = useCurrUnixTime()
-  const countdown = formatDeadlineCountdown(deadline, currTime)
+  const currTime = useCurrUnixTime(60000)
+
+  // The page is served from an ISR cache, so anything relative to "now" would
+  // disagree with the pre-rendered HTML on hydration.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  const countdown = mounted ? formatDeadlineCountdown(deadline, currTime) : null
   const isClosed = countdown === 'Closed'
 
   const xShareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(
@@ -61,7 +66,7 @@ export default function JobApplyPanel({
             {countdown}
           </p>
         )}
-        {postedAt ? (
+        {mounted && postedAt ? (
           <p className="text-xs text-slate-400 mt-1">{formatPostedAt(postedAt, currTime)}</p>
         ) : null}
       </div>

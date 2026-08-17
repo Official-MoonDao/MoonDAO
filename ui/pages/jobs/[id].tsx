@@ -4,7 +4,7 @@ import { DEFAULT_CHAIN_V5, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import {
@@ -76,7 +76,12 @@ export default function JobDetail({ job, metadata, doc, team, relatedJobs }: Job
   const compensation = formatCompensation(doc?.compensation) || metadata.compensation
   const location = formatLocation(doc?.location) || metadata.location
   const commitment = metadata.commitment
-  const countdown = formatDeadlineCountdown(deadline)
+
+  // The page is served from an ISR cache, so a "closes in N days" badge rendered
+  // on the server would disagree with the client on hydration.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const countdown = mounted ? formatDeadlineCountdown(deadline) : null
 
   const jsonLd = buildJobPostingJsonLd({
     job,
@@ -281,7 +286,6 @@ export default function JobDetail({ job, metadata, doc, team, relatedJobs }: Job
 
               <aside className="lg:sticky lg:top-6 w-full">
                 <JobApplyPanel
-                  title={job.title}
                   applyUrl={applyUrl}
                   deadline={deadline}
                   postedAt={job.timestamp}
