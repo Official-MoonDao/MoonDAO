@@ -115,7 +115,12 @@ describe('<ProjectBanner />', () => {
 
     cy.mount(<ProjectBanner />)
 
-    cy.contains('Total Budget').should('not.exist')
-    cy.contains('Max per project').should('not.exist')
+    if (hideBanner) {
+      cy.contains('Total Budget').should('not.exist')
+      cy.contains('Max per project').should('not.exist')
+    } else {
+      cy.contains('Total Budget').should('be.visible')
+      cy.contains('Max per project').should('be.visible')
+    }
   })
 })
