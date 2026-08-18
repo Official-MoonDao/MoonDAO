@@ -154,6 +154,22 @@ async function readMissionUncollected(): Promise<{
   }
 }
 
+// Mission balances move slowly and this walks the whole registry — a Tableland
+// query plus two reads per mission. Memoise like the AUM and subscription
+// helpers so repeated dashboard loads don't re-run the fan-out. Keyed on nothing
+// but time: ETH price only scales the output, so it is applied after the cache.
+let memo: { fetchedAt: number; missions: MissionUncollected[]; warnings: string[] } | null = null
+const MEMO_TTL_MS = 10 * 60 * 1000
+
+async function getMissionsCached() {
+  if (memo && Date.now() - memo.fetchedAt < MEMO_TTL_MS) {
+    return { missions: memo.missions, warnings: memo.warnings }
+  }
+  const result = await readMissionUncollected()
+  memo = { fetchedAt: Date.now(), ...result }
+  return result
+}
+
 /**
  * Uncollected Launchpad fees, plus any DePrize fees accrued but not swept.
  */
@@ -166,7 +182,7 @@ export async function getUncollectedRevenue(
   let summary: LaunchpadUncollectedSummary = summariseLaunchpadUncollected([])
 
   try {
-    const { missions, warnings: readWarnings } = await readMissionUncollected()
+    const { missions, warnings: readWarnings } = await getMissionsCached()
     warnings.push(...readWarnings)
     missionsConsidered = missions.length
     summary = summariseLaunchpadUncollected(missions)
