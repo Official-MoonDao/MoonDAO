@@ -1,5 +1,4 @@
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
-import Image from 'next/image'
 import React from 'react'
 import formatPressDate, { pressYear } from '@/lib/press/formatPressDate'
 import type { CoverageItem } from '@/lib/press/press-data'
@@ -12,21 +11,11 @@ function CoverageCard({ item }: { item: CoverageItem }) {
       rel="noopener noreferrer"
       className="group flex flex-col rounded-xl border border-slate-600/30 bg-gradient-to-b from-slate-700/20 to-slate-800/30 p-5 transition-all duration-200 hover:border-slate-500/50"
     >
-      <div className="flex h-6 items-center justify-between gap-3">
-        {item.logo ? (
-          <Image
-            src={item.logo}
-            alt={item.outlet}
-            width={120}
-            height={24}
-            className="h-5 w-auto max-w-[120px] object-contain object-left opacity-70 brightness-0 invert transition-opacity group-hover:opacity-100"
-          />
-        ) : (
-          <span className="truncate font-RobotoMono text-xs uppercase tracking-[0.2em] text-slate-400">
-            {item.outlet}
-          </span>
-        )}
-        <ArrowTopRightOnSquareIcon className="h-4 w-4 flex-shrink-0 text-slate-500 transition-colors group-hover:text-slate-300" />
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-RobotoMono text-xs uppercase leading-5 tracking-[0.2em] text-slate-400">
+          {item.outlet}
+        </span>
+        <ArrowTopRightOnSquareIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-500 transition-colors group-hover:text-slate-300" />
       </div>
       <h3 className="mt-3 flex-1 font-semibold leading-snug text-white transition-colors group-hover:text-slate-200">
         {item.title}

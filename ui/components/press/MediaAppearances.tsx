@@ -17,7 +17,7 @@ function AppearanceList({ title, appearances }: { title: string; appearances: Me
               className="group flex items-start justify-between gap-3 rounded-xl border border-slate-600/30 bg-gradient-to-b from-slate-700/20 to-slate-800/30 px-4 py-3 transition-all duration-200 hover:border-slate-500/50"
             >
               <div className="min-w-0">
-                <span className="block truncate font-RobotoMono text-xs uppercase tracking-[0.2em] text-slate-400">
+                <span className="block font-RobotoMono text-xs uppercase leading-5 tracking-[0.2em] text-slate-400">
                   {appearance.program}
                 </span>
                 <span className="mt-1 block text-sm text-white transition-colors group-hover:text-slate-200">

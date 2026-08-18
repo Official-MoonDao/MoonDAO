@@ -16,7 +16,6 @@ export type CoverageItem = {
   title: string
   date: PressDate
   url: string
-  logo?: string
 }
 
 export type MediaAppearance = {
@@ -170,7 +169,6 @@ export const MEDIA_COVERAGE: CoverageItem[] = [
       'Cardiologist rockets to the final frontier on Blue Origin suborbital spaceflight, thanks to MoonDAO',
     date: '2024-09-29',
     url: 'https://www.space.com/blue-origin-eiman-jahangir-suborbital-flight-moondao',
-    logo: '/assets/logo-spacedotcom.svg',
   },
   {
     outlet: 'NewsChannel 5 Nashville',
@@ -203,7 +201,6 @@ export const MEDIA_COVERAGE: CoverageItem[] = [
       'Representation matters: Vanderbilt doctor to become first Nashvillian to go to outer space',
     date: '2024-08',
     url: 'https://www.msn.com/en-us/money/other/representation-matters-vanderbilt-doctor-to-become-first-nashvillian-to-go-outer-space/ar-AA1oRGNM',
-    logo: '/assets/logo-msn.svg',
   },
   {
     outlet: 'Space Impulse',
@@ -236,14 +233,12 @@ export const MEDIA_COVERAGE: CoverageItem[] = [
       "Crypto in space? As markets overlap, some see blockchain's potential in growing off-planet economy",
     date: '2023',
     url: 'https://www.houstonchronicle.com/news/houston-texas/space/article/cryptocurrency-blockchain-space-overlap-17753964.php',
-    logo: '/assets/logo-houston-chronicle.svg',
   },
   {
     outlet: 'Forbes',
     title: "The Crypto Community That's Going To The Moon – Literally",
     date: '2022-11-09',
     url: 'https://www.forbes.com/sites/zengernews/2022/11/09/the-crypto-community-thats-going-to-the-moonliterally/',
-    logo: '/assets/logo-forbes.svg',
   },
   {
     outlet: 'CoinDesk',
@@ -262,7 +257,6 @@ export const MEDIA_COVERAGE: CoverageItem[] = [
     title: "Blue Origin launches 6 people on company's 6th space tourism mission",
     date: '2022-08-04',
     url: 'https://www.space.com/blue-origin-ns-22-space-tourist-flight-success',
-    logo: '/assets/logo-spacedotcom.svg',
   },
   {
     outlet: 'Spaceflight Now',
@@ -293,7 +287,6 @@ export const MEDIA_COVERAGE: CoverageItem[] = [
     title: 'Co-founder of Texas-based Dude Perfect is set to go to space',
     date: '2022-08',
     url: 'https://phys.org/news/2022-08-co-founder-texas-based-dude-space.html',
-    logo: '/assets/logo-phys.svg',
   },
   {
     outlet: 'News18',
@@ -306,14 +299,12 @@ export const MEDIA_COVERAGE: CoverageItem[] = [
     title: 'Blue Origin announces crew for 6th suborbital space tourism launch',
     date: '2022-07-23',
     url: 'https://www.space.com/blue-origin-crew-ns-22-announced',
-    logo: '/assets/logo-spacedotcom.svg',
   },
   {
     outlet: 'CNET',
     title: 'MoonDAO Will Pick 2 of the Next Blue Origin Astronauts With the Help of NFTs',
     date: '2022-06-09',
     url: 'https://www.cnet.com/science/space/moondao-will-pick-2-of-the-next-blue-origin-astronauts-with-the-help-of-nfts/',
-    logo: '/assets/logo-cnet.svg',
   },
   {
     outlet: 'HackerNoon',
@@ -326,7 +317,6 @@ export const MEDIA_COVERAGE: CoverageItem[] = [
     title: "Investors in 'MoonDAO' Think They'll Go to Space on a Billionaire's Rocket",
     date: '2022-01-26',
     url: 'https://www.vice.com/en/article/4aw4wj/investors-in-moondao-think-theyll-go-to-space-on-a-billionaires-rocket',
-    logo: '/assets/logo-vice.svg',
   },
 ]
 
