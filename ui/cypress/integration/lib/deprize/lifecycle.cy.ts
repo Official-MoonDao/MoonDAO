@@ -222,6 +222,8 @@ describe('deprize lifecycle derivations', () => {
     })
 
     it('rejects an unsettled tip', () => {
+      // Cypress's .throw() treats a RegExp as the expected thrown *value*,
+      // not a message matcher, so a string substring is the reliable check.
       expect(() =>
         buildSupersededPayouts({
           teamIds: roster,
@@ -229,7 +231,7 @@ describe('deprize lifecycle derivations', () => {
           tipWinningTeamId: 301n,
           openFieldTeamId: FIELD,
         })
-      ).to.throw(/unresolved/i)
+      ).to.throw('unresolved')
     })
   })
 

@@ -13,8 +13,9 @@ import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
+import ExpandableText from '../layout/ExpandableText'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 import BuyTeamListingModal from './BuyTeamListingModal'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
@@ -189,11 +190,13 @@ export default function TeamListing({
           <h4 id="main-header" className="text-white font-semibold text-sm leading-tight line-clamp-2">
             {listing?.title}
           </h4>
-          {listing?.description && (
-            <p className="text-white/40 text-xs leading-relaxed line-clamp-2">
-              {listing.description}
-            </p>
-          )}
+          <ExpandableText
+            className="text-white/40 text-xs leading-relaxed"
+            lines={2}
+            buttonClassName="mt-0.5 text-[11px] font-medium text-white/50 hover:text-white/80 transition-colors"
+          >
+            {listing?.description}
+          </ExpandableText>
 
           {/* Footer: price + actions */}
           <div className="mt-auto pt-2 flex items-center justify-between gap-2">

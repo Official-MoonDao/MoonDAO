@@ -32,6 +32,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { FundOnramp } from '@/components/onramp/FundOnramp'
 import { TeamListing } from '@/components/subscription/TeamListing'
+import ExpandableText from '../layout/ExpandableText'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Input from '../layout/Input'
 import Modal from '../layout/Modal'
@@ -411,10 +412,15 @@ export default function BuyTeamListingModal({
             </div>
           )}
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <h3 className="font-GoodTimes text-base leading-tight text-white">{listing.title}</h3>
-            <p className="text-xs leading-snug text-white/60 line-clamp-2">
+            <h3 className="font-GoodTimes text-base leading-tight text-white break-words">
+              {listing.title}
+            </h3>
+            <ExpandableText
+              className="text-xs leading-snug text-white/60"
+              lines={4}
+            >
               {listing.description}
-            </p>
+            </ExpandableText>
             <div className="mt-auto flex flex-wrap items-center gap-2">
               <p id="listing-price" className="font-GoodTimes text-lg text-white">{`${
                 truncateTokenValue(purchasePrice, listing.currency)
