@@ -26,9 +26,38 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getETHPrice } from '@/lib/etherscan'
 import { getAUMHistoryOnchain } from '@/lib/treasury/aum-onchain'
 import { getCanonicalSubscriptionRevenue } from '@/lib/treasury/canonicalRevenue'
+import { getProgramRevenue } from '@/lib/treasury/programRevenue'
 import { getHistoricalRevenue } from '@/lib/treasury/revenue'
 
 const DAY_MS = 86400000
+
+/**
+ * Value MoonDAO earns or controls that is deliberately absent from the revenue
+ * total. Surfaced so the dashboard can say why a stream someone expects to see
+ * is not adding to the number, rather than leaving them to wonder.
+ */
+const EXCLUDED_FROM_REVENUE = [
+  {
+    label: 'Uniswap v4 FeeHook fees',
+    reason:
+      'Distributed weekly to checked-in vMOONEY holders by the hook itself. The treasury never receives it, so it is a member benefit rather than DAO income.',
+  },
+  {
+    label: 'DePrize 5% bet slice',
+    reason:
+      'Routed to the competition prize pool with the bettor as beneficiary. It funds the prize, not operations. Only the 1% trade fee can reach the treasury.',
+  },
+  {
+    label: 'Launchpad 5% liquidity slice',
+    reason:
+      'Seeds each mission\u2019s Uniswap pool via its pool deployer. MoonDAO-controlled, but protocol-owned liquidity rather than spendable income.',
+  },
+  {
+    label: 'Mission token vesting (17.5%)',
+    reason:
+      'Reserved mission tokens vest to the treasury over four years. Non-cash and unvested, so it cannot fund burn.',
+  },
+]
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -55,14 +84,30 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // than getHistoricalRevenue, whose cached pipeline can silently return $0
     // under Etherscan rate limits. DeFi fees and staking yield have no
     // canonical equivalent, so they come from the revenue pipeline.
-    const subs = await getCanonicalSubscriptionRevenue(now - 365 * DAY_MS, now, ethPrice)
+    const windowStart = now - 365 * DAY_MS
+    const subs = await getCanonicalSubscriptionRevenue(windowStart, now, ethPrice)
+    // Reuses the memoised treasury transaction list the call above warmed.
+    const programs = await getProgramRevenue(windowStart, now, ethPrice)
     const revenueStreams = await getHistoricalRevenue(aum.defiData, 365)
 
     const citizenUSD = subs.citizen.totalUSD
     const teamUSD = subs.team.totalUSD
+    const launchpadUSD = programs.launchpad.totalUSD
+    const deprizeUSD = programs.deprize.totalUSD
     const defiFeesUSD = revenueStreams.defiRevenue
     const stakingUSD = revenueStreams.stakingRevenue
-    const measuredAnnualRevenueUSD = citizenUSD + teamUSD + defiFeesUSD + stakingUSD
+    const measuredAnnualRevenueUSD =
+      citizenUSD + teamUSD + launchpadUSD + deprizeUSD + defiFeesUSD + stakingUSD
+
+    if (programs.unclassified.totalUSD > 0) {
+      warnings.push(
+        `${
+          programs.unclassified.txCount
+        } treasury inflow(s) worth ${programs.unclassified.totalUSD.toFixed(
+          0
+        )} USD came from senders we don't attribute to a revenue stream. See "unattributed inflows" — a new fee route would appear here.`
+      )
+    }
 
     // Fall back to the MDP-249 policy figure only if nothing measured, so the
     // burn model never credits $0 revenue against costs on a failed read.
@@ -132,17 +177,66 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         isMeasured: revenueIsMeasured,
         statedAnnualUSD: STATED_ANNUAL_REVENUE_USD,
         coverageOfGrossBurn: revenueCoverageRatio,
+        // Every stream is listed even at zero, with the reason, so a missing
+        // number reads as "not earning yet" rather than "not measured".
         streams: [
-          { label: 'Citizen subscriptions', annualUSD: citizenUSD, txCount: subs.citizen.txCount },
-          { label: 'Team subscriptions', annualUSD: teamUSD, txCount: subs.team.txCount },
-          { label: 'Liquidity pool fees', annualUSD: defiFeesUSD },
-          { label: 'ETH staking yield', annualUSD: stakingUSD },
+          {
+            label: 'Citizen subscriptions',
+            annualUSD: citizenUSD,
+            txCount: subs.citizen.txCount,
+            available: true,
+            basis: 'ETH from the Citizen NFT contract to the Arbitrum treasury.',
+          },
+          {
+            label: 'Team subscriptions',
+            annualUSD: teamUSD,
+            txCount: subs.team.txCount,
+            available: true,
+            basis: 'ETH from the Team NFT contract to the Arbitrum treasury.',
+          },
+          {
+            label: 'Launchpad fees',
+            annualUSD: launchpadUSD,
+            txCount: programs.launchpad.txCount,
+            available: programs.launchpad.available,
+            basis: programs.launchpad.note,
+          },
+          {
+            label: 'Liquidity pool fees',
+            annualUSD: defiFeesUSD,
+            available: true,
+            basis: "MoonDAO's share of Uniswap pool fees, by its position's share of pool TVL.",
+          },
+          {
+            label: 'DePrize fees',
+            annualUSD: deprizeUSD,
+            txCount: programs.deprize.txCount,
+            available: programs.deprize.available,
+            basis: programs.deprize.note,
+          },
+          {
+            label: 'ETH staking yield',
+            annualUSD: stakingUSD,
+            available: true,
+            basis: 'Beacon-chain validator performance over the trailing year.',
+          },
           // When the measured streams are all zero the total is the MDP-249
           // stated figure — include it here so the breakdown sums to annualUSD.
           ...(!revenueIsMeasured
-            ? [{ label: 'Stated (MDP-249)', annualUSD: STATED_ANNUAL_REVENUE_USD }]
+            ? [
+                {
+                  label: 'Stated (MDP-249)',
+                  annualUSD: STATED_ANNUAL_REVENUE_USD,
+                  available: true,
+                  basis: 'Policy figure used because nothing measured on-chain.',
+                },
+              ]
             : []),
         ],
+        unattributedInflows: programs.unclassified,
+        excluded: EXCLUDED_FROM_REVENUE,
+        methodology:
+          'Realised cash only: ETH that actually reached a MoonDAO treasury in the trailing 365 days, plus LP fees and staking yield. Accrued-but-unpaid fees, non-cash token allocations, and ERC-20 inflows are not included.',
         source: subs.source,
       },
       burn: {

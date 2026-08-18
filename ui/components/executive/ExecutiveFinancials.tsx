@@ -12,7 +12,20 @@ import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 // Shape of GET /api/eb/financial-summary. Kept local to the consumer — the
 // route is the contract, and mirroring it here keeps the fetch typed without
 // exporting server types into the client bundle.
-type Stream = { label: string; annualUSD: number; txCount?: number }
+type Stream = {
+  label: string
+  annualUSD: number
+  txCount?: number
+  available?: boolean
+  basis?: string
+}
+
+type UnattributedInflows = {
+  totalUSD: number
+  txCount: number
+  topSources: { address: string; totalUSD: number; txCount: number }[]
+  note: string
+}
 
 type RunwayScenario = {
   label?: string
@@ -48,6 +61,9 @@ type FinancialSummary = {
     statedAnnualUSD: number
     coverageOfGrossBurn: number
     streams: Stream[]
+    unattributedInflows?: UnattributedInflows
+    excluded?: { label: string; reason: string }[]
+    methodology?: string
   }
   burn: {
     ebCoreMonthlyUSD: number
@@ -133,6 +149,7 @@ function Row({
   share,
   barClass = 'bg-blue-400/70',
   emphasis = false,
+  muted = false,
 }: {
   label: string
   value: string
@@ -140,12 +157,23 @@ function Row({
   share?: number
   barClass?: string
   emphasis?: boolean
+  muted?: boolean
 }) {
   return (
     <div className={emphasis ? 'pt-3 border-t border-slate-700' : ''}>
       <div className="flex justify-between items-baseline gap-3">
         <span className={emphasis ? 'text-white font-semibold' : 'text-slate-300'}>{label}</span>
-        <span className={emphasis ? 'text-white font-semibold' : 'text-slate-100'}>{value}</span>
+        <span
+          className={
+            muted
+              ? 'text-slate-500 text-xs'
+              : emphasis
+              ? 'text-white font-semibold'
+              : 'text-slate-100'
+          }
+        >
+          {value}
+        </span>
       </div>
       {typeof share === 'number' && share > 0 && (
         <div className="mt-1.5 h-1 w-full rounded-full bg-white/5 overflow-hidden">
@@ -354,12 +382,18 @@ export default function ExecutiveFinancials() {
               <Row
                 key={stream.label}
                 label={stream.label}
-                value={usd(stream.annualUSD)}
-                note={
-                  typeof stream.txCount === 'number'
-                    ? `${stream.txCount} payments in the trailing year`
-                    : undefined
-                }
+                value={stream.available === false ? 'Not live' : usd(stream.annualUSD)}
+                muted={stream.available === false}
+                note={[
+                  typeof stream.txCount === 'number' && stream.available !== false
+                    ? `${stream.txCount} payment${
+                        stream.txCount === 1 ? '' : 's'
+                      } in the trailing year`
+                    : null,
+                  stream.basis,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
                 share={stream.annualUSD / maxStream}
                 barClass="bg-sky-400/70"
               />
@@ -384,7 +418,51 @@ export default function ExecutiveFinancials() {
                 {usd(revenue.statedAnnualUSD)} policy figure.
               </p>
             )}
+            {revenue.methodology && (
+              <p className="mt-3 text-[11px] text-slate-500 leading-relaxed">
+                <span className="text-slate-400">How this is measured:</span> {revenue.methodology}
+              </p>
+            )}
           </div>
+
+          {revenue.unattributedInflows && revenue.unattributedInflows.txCount > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <h3 className="text-amber-300 text-xs font-semibold mb-1">
+                Unattributed inflows — {usd(revenue.unattributedInflows.totalUSD)} across{' '}
+                {revenue.unattributedInflows.txCount} transfer
+                {revenue.unattributedInflows.txCount === 1 ? '' : 's'}
+              </h3>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                {revenue.unattributedInflows.note}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {revenue.unattributedInflows.topSources.map((s) => (
+                  <li key={s.address} className="flex justify-between gap-3 text-[11px]">
+                    <span className="font-mono text-slate-400 truncate">{s.address}</span>
+                    <span className="text-slate-300 shrink-0">
+                      {usd(s.totalUSD)} · {s.txCount}×
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {revenue.excluded && revenue.excluded.length > 0 && (
+            <details className="mt-4 pt-4 border-t border-slate-700">
+              <summary className="text-xs text-slate-400 cursor-pointer hover:text-white">
+                Deliberately excluded from revenue ({revenue.excluded.length})
+              </summary>
+              <ul className="mt-3 space-y-2">
+                {revenue.excluded.map((item) => (
+                  <li key={item.label} className="text-[11px] leading-relaxed">
+                    <span className="text-slate-300">{item.label}</span>
+                    <span className="text-slate-500"> — {item.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       </div>
 
