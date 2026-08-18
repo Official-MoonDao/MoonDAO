@@ -1,8 +1,9 @@
 # Plan: Bringing MoonDAO Documentation Into the App
 
-Status: proposal. Decision 3 in §8 has since been answered — see
-[§9, Revision: dropping Obsidian](#9-revision-dropping-obsidian), which supersedes the
-recommendation in §6.
+Status: implemented on `cursor/plan-native-docs-embedding-97ab` (Phases 1–4).
+Phase 5 (retire `docs.moondao.com`) cannot be done from this repo — see
+`DOCUMENTATION_EMBEDDING_VERIFICATION.md`.
+Decision 3 in §8 was answered in [§9](#9-revision-dropping-obsidian).
 Scope: how `docs.moondao.com` (Quartz + Obsidian) relates to the `ui/` Next.js app.
 
 ---

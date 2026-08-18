@@ -318,6 +318,16 @@ const searchMappings = [
   },
   {
     keywords: [
+      'documentation', 'docs', 'wiki', 'handbook', 'knowledge base', 'obsidian',
+      'quartz', 'native docs',
+    ],
+    title: 'Documentation',
+    description: 'MoonDAO documentation — governance, legal, onboarding, and reference',
+    link: '/docs',
+    category: 'Learn',
+  },
+  {
+    keywords: [
       'project system', 'project docs', 'project documentation', 'how projects work',
       'project guide', 'project lifecycle', 'project incentives', 'project tracking',
     ],
@@ -390,8 +400,30 @@ function fuzzyMatch(query: string, text: string): number {
   return matches / totalWords
 }
 
+type DocsSearchHit = {
+  title: string
+  slug: string
+  href: string
+  description: string
+  headings: string[]
+  body: string
+  category: string
+}
+
+function scoreDocsEntry(query: string, entry: DocsSearchHit): number {
+  const q = query.toLowerCase()
+  const title = entry.title.toLowerCase()
+  if (title === q) return 1
+  if (title.startsWith(q)) return 0.9
+  if (title.includes(q)) return 0.7
+  if (entry.headings.some((heading) => heading.toLowerCase().includes(q))) return 0.5
+  if (entry.description.toLowerCase().includes(q)) return 0.4
+  if (entry.body.toLowerCase().includes(q)) return 0.28
+  return 0
+}
+
 // Enhanced search function
-function searchMappingsFunction(query: string) {
+function searchMappingsFunction(query: string, docsIndex: DocsSearchHit[] = []) {
   if (!query.trim()) return []
   
   const results = searchMappings
@@ -406,11 +438,21 @@ function searchMappingsFunction(query: string) {
       
       return { ...mapping, score: totalScore }
     })
-    .filter(result => result.score > 0.2) // Lowered threshold for better coverage
+    .filter(result => result.score > 0.2)
+
+  const docsHits = docsIndex
+    .map((entry) => ({
+      title: entry.title,
+      description: entry.description,
+      link: entry.href,
+      category: 'Docs',
+      score: scoreDocsEntry(query, entry),
+    }))
+    .filter((result) => result.score > 0.27)
+
+  return [...results, ...docsHits]
     .sort((a, b) => b.score - a.score)
-    .slice(0, 6) // Show more results
-  
-  return results
+    .slice(0, 8)
 }
 
 export default function GlobalSearch() {
@@ -421,6 +463,7 @@ export default function GlobalSearch() {
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [isNavbarVisible, setIsNavbarVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
+  const [docsIndex, setDocsIndex] = useState<DocsSearchHit[]>([])
   const router = useRouter()
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -452,8 +495,23 @@ export default function GlobalSearch() {
   }, [lastScrollY])
 
   useEffect(() => {
+    let cancelled = false
+    fetch('/docs-search-index.json')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) setDocsIndex(data)
+      })
+      .catch(() => {
+        if (!cancelled) setDocsIndex([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     if (query.trim()) {
-      const searchResults = searchMappingsFunction(query)
+      const searchResults = searchMappingsFunction(query, docsIndex)
       setResults(searchResults)
       setIsOpen(searchResults.length > 0)
     } else {
@@ -461,7 +519,7 @@ export default function GlobalSearch() {
       setIsOpen(false)
     }
     setSelectedIndex(-1)
-  }, [query])
+  }, [query, docsIndex])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

@@ -189,6 +189,7 @@ export function ExpandedFooter({
     { text: 'Town Hall', href: '/townhall' },
     { text: 'Roadmap', href: '/roadmap' },
     { text: 'About', href: '/about' },
+    { text: 'Documentation', href: '/docs' },
     { text: 'Resources', href: '/resources' },
     { text: 'Constitution', href: '/constitution' },
   ]
@@ -296,12 +297,7 @@ export function ExpandedFooter({
                 ))}
               </div>
               <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-gray-400 mb-4">
-                <Link
-                  href="https://docs.moondao.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
-                >
+                <Link href="/docs" className="hover:text-white transition-colors">
                   Documentation
                 </Link>
                 <span className="text-gray-600">•</span>

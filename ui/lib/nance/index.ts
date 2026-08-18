@@ -176,7 +176,7 @@ export const TEMPLATE = getProposalTemplate()
 export const FINAL_REPORT_TEMPLATE = `
 *The title of the project will be included at the top of the file."
 
-*\\*Please read [Projects System v6: Completion](https://docs.moondao.com/Projects/Project-System#completion) before submitting to understand the process of submitting a project final report. When ready, download this doc as a markdown file (File \\> Download \\> Markdown (.md)) and then upload and submit it at [https://moondao.com/report](https://moondao.com/report)*
+*\\*Please read [Projects System v6: Completion](/docs/Projects/Project-System#completion) before submitting to understand the process of submitting a project final report. When ready, download this doc as a markdown file (File \\> Download \\> Markdown (.md)) and then upload and submit it at [https://moondao.com/report](https://moondao.com/report)*
 
 ## Original Proposal
 

@@ -1083,7 +1083,7 @@ export default function CreateMission({
                         I HAVE READ AND ACCEPTED THE{' '}
                         <Link
                           className="text-blue-500 hover:underline"
-                          href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"
+                          href="/terms-of-service"
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -1092,7 +1092,7 @@ export default function CreateMission({
                         AND THE{' '}
                         <Link
                           className="text-blue-500 hover:underline"
-                          href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
+                          href="/privacy-policy"
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -1112,7 +1112,7 @@ export default function CreateMission({
                           EXPECTATION, AND I ACCEPT ALL{' '}
                           <Link
                             className="text-blue-500 hover:underline"
-                            href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+                            href="/docs/Launchpad/Launchpad-Disclaimer"
                             target="_blank"
                             rel="noreferrer"
                           >

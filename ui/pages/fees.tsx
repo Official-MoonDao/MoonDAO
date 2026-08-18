@@ -836,7 +836,7 @@ export default function Fees() {
                       <span>Distribution runs every Thursday at 1pm Pacific</span>
                     </div>
                     <Link
-                      href="https://docs.moondao.com"
+                      href="/docs"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 transition-colors"

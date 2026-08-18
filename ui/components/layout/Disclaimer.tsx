@@ -31,7 +31,7 @@ export default function Disclaimer({ isCentered = false }: DisclaimerProps) {
             <Link
               id="FAQ-link"
               className="hover:opacity-[100%]"
-              href="https://docs.moondao.com/About/FAQ"
+              href="/docs/About/FAQ"
               target="_blank"
             >
               FAQ
@@ -40,7 +40,7 @@ export default function Disclaimer({ isCentered = false }: DisclaimerProps) {
           . Always ensure you are interacting with an{' '}
           <TokenLink
             label="official token address"
-            href="https://docs.moondao.com/Governance/Governance-Tokens"
+            href="/docs/Governance/Governance-Tokens"
           />
           :{' '}
           <TokenLink

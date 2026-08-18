@@ -1,0 +1,17 @@
+{
+  "repo": "Official-MoonDao/documentation",
+  "commit": "ff058cf866e0053c60d25f2ab4b2e018118f5243",
+  "importedAt": "2026-08-18T23:46:22.189Z",
+  "fileCount": 72,
+  "rewrite": {
+    "unresolvedWikilinks": [
+      "Outbound SOP",
+      "@Voter",
+      "@TreasurySigner"
+    ],
+    "convertedWikilinks": 37,
+    "convertedMdLinks": 69,
+    "convertedImages": 4
+  },
+  "note": "One-time import. Unpublished MoonDAO/media-files (~59MB of research PDFs) was not imported. See docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md."
+}

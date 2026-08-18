@@ -1,0 +1,62 @@
+---
+tags: docs/contracts
+id: contracts
+title: Contracts
+description: MoonDAO deployed contract addresses.
+keywords: [Contracts, Addresses, Deployed]
+sidebar_position: 9
+---
+# MoonDAO Contract Addresses
+
+## Tokens
+
+| Contract | Ethereum | Arbitrum | Base | Polygon | Sepolia |
+| -------- | -------- | -------- | ---- | ------- | ------- |
+| MOONEY Token | `0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395` | `0x1Fa56414549BdccBB09916f61f0A5827f779a85c` | `0x6585a54A98fADA893904EB8A9E9CDFb927bddf39` | 0x74ac7664abb1c8fa152d41bb60e311a663a41c7e | `0x85A3C597F43B0cCE657793Cf31b05DF6969FBD2C` |
+| vMOONEY Token | `0xCc71C80d803381FD6Ee984FAff408f8501DB1740` | `0xB255c74F8576f18357cE6184DA033c6d93C71899` | `0x7f8f1B45c3FD6Be4F467520Fc1Cf030d5CaBAcF5` | 0xe2d1BFef0A642B717d294711356b468ccE68BEa6 | `0xA4F6A4B135b9AF7909442A7a3bF7797b61e609b1` |
+
+## Citizens
+
+| Contract | Ethereum | Arbitrum | Base | Sepolia | Arbitrum Sepolia |
+| -------- | -------- | -------- | ---- | ------- | ---------------- |
+| Citizen | - | `0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002` | - | `0x48A0E8B6A86a05aeA3C544B7A9916F6FaFb88d8a` | `0x853d6B4BA61115810330c7837FDD24D61CBab855` |
+| Citizen Table | - | `0x0Eb1dF01b34cEDAFB3148f07D013793b557470d1` | - | `0xbddE39D8b7098c9Dfb86b1fA91f7746f3Ff4dAcC` | `0xfF3F124D91D6eD6A47e1066473a78AaEde4c2fbe` |
+| Citizen Whitelist | - | `0xd594DBF360D666c94615Fb186AF3cB1018Be1616` | - | `0x63A4EBd450e4A291b73f18D08ac755a009d5Bb56` | `0x0c7dfCC2B97fAAFD852cEaf62B0CD02BdEa4774A` |
+| Citizen Discountlist | - | `0x755D48e6C3744B723bd0326C57F99A92a3Ca3287` | - | `0x4d6CE01C1ebae5771D8411474fEf69af2d4CdfFa` | `0xef813421ea5e6bc8d8Ad09E08912149C4b115EcB` |
+| Citizen Row Controller | - | `0x614a00807b1e589E17b5dD2F805906e529Ae686e` | - | `0x80620708C104633Ca9Ae6cbCb0768F66d9b13E25` | `0x18A0f907575b0387CcFEaa40e694FF1E83Fe5F18` |
+| Citizen Cross-Chain Mint | `0xDc07FbCcF7Dd55014C8A2a605C671d01137B4937` | - | `0xe5709Bc44427DCEF81fF2F718DFc6A032fD23bbF` | - | `0xF4f865fA947376f47C74ffD05dd59763c0824bAD` |
+
+## Teams
+
+| Contract | Arbitrum | Sepolia |
+| -------- | -------- | ------- |
+| Team | `0xAB2C354eC32880C143e87418f80ACc06334Ff55F` | `0x21d2C4bEBd1AEb830277F8548Ae30F505551f961` |
+| Team Creator | `0x40C44A32e92358B3407629B1a69225b1858Bc5fe` | `0x1eafC528435e49Af2b3E970A12Ab2Dddb929bAc1` |
+| Team Table | `0x36A57e45A1F8e378AA3e35bD8799bBfB5b4C00b3` | `0x6227dBa1e0AbBf6bdc5855327D2293012b91cfeB` |
+| Team Whitelist | `0x203ca831edec28b7657A022b8aFe5d28b6BE6Eda` | `0xBB22b6bfb410e62BC103CA6cAcc342bEe42117aA` |
+| Team Discountlist | `0x96E054924258E51d8e3b3aB8A6A27920f6cE53ee` | `0x1e638C6120d7eF07e0978b68e22CD80bf5E70986` |
+
+## Projects
+
+| Contract | Arbitrum | Sepolia | Arbitrum Sepolia |
+| -------- | -------- | ------- | ---------------- |
+| Project | `0xCb31829B312923C7502766ef4f36948A7A64cD6A` | `0x19124F594c3BbCb82078b157e526B278C8E9EfFc` | `0xDC35Dc4F7610678B0389157522734b79ea464101` |
+| Project Creator | `0x2486149B23447c37932471eA6dF091267ebca953` | `0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D` | `0xde26EcE3C1Ec58057348e3a7B28359c8cDfae56A` |
+| Project Table | `0x83755AF34867a3513ddCE921E9cAd28f0828CDdB` | `0x17729AFF287d9873F5610c029A5Db814e428e97a` | `0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E` |
+
+## Other Infrastructure
+
+| Contract | Arbitrum | Sepolia | Arbitrum Sepolia |
+| -------- | -------- | ------- | ---------------- |
+| Jobs Table | `0x94e225DDe1b3E5f861222ca2055739BA12730bd4` | `0x948a3c9057780002286f7e3Dd22699d13b4Ff76d` | `0x97F9F6DC65b57af7E0B0CB32E5E3153af14E3332` |
+| Marketplace Table | `0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E` | `0x46025c3b96B01d551274Ba7AdC6057FD15E0923b` | `0xE632A675C305F0aF36b1514e924BE99DC1AB9884` |
+| Distribution Table | `0xabD8D3693439A72393220d87aee159952261Ad1f` | `0x5217A95F335cd026c877Eb5C1B0Ae6C82945178D` | `0x9f0496702Df4889C17b7c6Ef88c74ee0dF14998e` |
+| Competitor Table | - | `0x9057Fff69e8b016a214C4f894430F71dad50b42c` | `0x18200Aec1FE277bbA7cA3cBfecF822F099807fFd` |
+| LMSR with TWAP | - | `0x0087fCc0aF33B00a9AF2f98Eb6788Ffb72bC1C51` | `0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe` |
+| Conditional Token | - | `0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8` | `0xa0B1b14515C26acb193cb45Be5508A8A46109a27` |
+| Collateral Token | - | `0x8cfF28F922AeEe80d3a0663e735681469F7374c6` | `0xA441f20115c868dc66bC1977E1c17D4B9A0189c7` |
+| Voting Escrow Depositor | `0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0` | - | - |
+
+## Notes
+
+* `-` indicates that the contract is not deployed on that network

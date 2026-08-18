@@ -15,8 +15,8 @@ const cspHeaderBase = `
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    connect-src 'self' blob: https://auth.privy.io https://*.privy.systems https://*.moonpay.com https://*.meld.io https://*.thirdweb.com https://*.nance.app https://*.walletconnect.com wss://*.walletconnect.com https://www.walletlink.org wss://*.walletlink.org https://*.safe.global https://*.ipfscdn.io https://*.ensideas.com https://*.amazonaws.com https://apple.com https://google.com https://www.apple.com https://www.google.com https://pay.google.com https://*.snapshot.org https://testnets.tableland.network https://tableland.network https://*.coinbase.com https://*.cb-device-intelligence.com https://*.browser-intake-datadoghq.eu https://ipfs.io https://cloudflare-ipfs.com/* https://*.etherscan.io https://*.vimeo.com https://*.uniswap.org https://*.layerzero-scan.com https://docs.google.com https://docs.moondao.com https://*.layerzero-scan.com https://*.juicebox.money https://rpc2.base.org https://rpc2.arbitrum.org https://rpc2.sepolia.org https://rpc2.mainnet.org https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://google-analytics.com https://*.google-analytics.com https://*.infura.io https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com https://nance-ts-production.up.railway.app https://bendystraw.xyz https://*.bendystraw.xyz https://rpc.ankr.com https://cloudflare-eth.com https://ethereum.publicnode.com https://eth.llamarpc.com https://1rpc.io https://arb1.arbitrum.io https://mainnet.base.org https://rpc.sepolia.org https://sepolia.optimism.io;
-    frame-src 'self' https://*.youtube.com https://youtu.be/ https://*.privy.io https://*.privy.systems https://*.moonpay.com https://*.meld.io https://*.moondao.com https://*.typeform.com https://*.snapshot.org https://*.coinbase.com https://*.cb-device-intelligence.com https://pay.google.com https://*.google.com https://moondao.ck.page https://moondao.kit.com https://*.vimeo.com https://docs.google.com https://docs.moondao.com https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
+    connect-src 'self' blob: https://auth.privy.io https://*.privy.systems https://*.moonpay.com https://*.meld.io https://*.thirdweb.com https://*.nance.app https://*.walletconnect.com wss://*.walletconnect.com https://www.walletlink.org wss://*.walletlink.org https://*.safe.global https://*.ipfscdn.io https://*.ensideas.com https://*.amazonaws.com https://apple.com https://google.com https://www.apple.com https://www.google.com https://pay.google.com https://*.snapshot.org https://testnets.tableland.network https://tableland.network https://*.coinbase.com https://*.cb-device-intelligence.com https://*.browser-intake-datadoghq.eu https://ipfs.io https://cloudflare-ipfs.com/* https://*.etherscan.io https://*.vimeo.com https://*.uniswap.org https://*.layerzero-scan.com https://docs.google.com https://*.layerzero-scan.com https://*.juicebox.money https://rpc2.base.org https://rpc2.arbitrum.org https://rpc2.sepolia.org https://rpc2.mainnet.org https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://google-analytics.com https://*.google-analytics.com https://*.infura.io https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com https://nance-ts-production.up.railway.app https://bendystraw.xyz https://*.bendystraw.xyz https://rpc.ankr.com https://cloudflare-eth.com https://ethereum.publicnode.com https://eth.llamarpc.com https://1rpc.io https://arb1.arbitrum.io https://mainnet.base.org https://rpc.sepolia.org https://sepolia.optimism.io;
+    frame-src 'self' https://*.youtube.com https://youtu.be/ https://*.privy.io https://*.privy.systems https://*.moonpay.com https://*.meld.io https://*.moondao.com https://*.typeform.com https://*.snapshot.org https://*.coinbase.com https://*.cb-device-intelligence.com https://pay.google.com https://*.google.com https://moondao.ck.page https://moondao.kit.com https://*.vimeo.com https://docs.google.com https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
     upgrade-insecure-requests;
     worker-src 'self' blob:;
 `
@@ -117,9 +117,64 @@ module.exports = withBundleAnalyzer(
             destination: 'https://moondao.com/:path*',
             permanent: true,
           },
+          // Legacy pre-Quartz /docs/* short paths. Canonical pages are served
+          // by pages/docs/[[...slug]].tsx — do NOT redirect /docs itself.
+          // /docs/website-terms-and-conditions and /docs/privacy-policy are
+          // native alias slugs from vault frontmatter (no redirect).
           {
-            source: '/docs',
-            destination: 'https://docs.moondao.com/',
+            source: '/docs/introduction',
+            destination: '/docs',
+            permanent: true,
+          },
+          {
+            source: '/docs/token',
+            destination: '/docs/Governance/Governance-Tokens',
+            permanent: true,
+          },
+          {
+            source: '/docs/launch-path',
+            destination: '/docs',
+            permanent: true,
+          },
+          {
+            source: '/docs/team',
+            destination: '/docs/About/Team',
+            permanent: true,
+          },
+          {
+            source: '/docs/contribute',
+            destination: '/docs/Onboarding/Contribute',
+            permanent: true,
+          },
+          {
+            source: '/docs/project-guidelines',
+            destination: '/docs/Projects/Project-System',
+            permanent: true,
+          },
+          {
+            source: '/docs/ticket-to-space-sweepstakes-rules',
+            destination: '/docs/Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
+            permanent: true,
+          },
+          {
+            source: '/docs/ticket-to-space-NFT-FAQs',
+            destination: '/docs/Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
+            permanent: true,
+          },
+          {
+            source: '/docs/dispute-notice',
+            destination: '/docs/Legal/Ticket-to-Space-NFT/Dispute-Notice',
+            permanent: true,
+          },
+          {
+            source: '/docs/nft-owner-agreement',
+            destination: '/docs/Legal/Ticket-to-Space-NFT/Ticket-to-Space-NFT-Owner-Agreement',
+            permanent: true,
+          },
+          {
+            source: '/docs/sweepstakes-and-securities-disclaimer',
+            destination:
+              '/docs/Legal/Ticket-to-Space-NFT/Sweepstakes-and-Securities-Disclaimer',
             permanent: true,
           },
           {
@@ -130,75 +185,6 @@ module.exports = withBundleAnalyzer(
           {
             source: '/lunar-atlas/:path*',
             destination: '/moonbase/:path*',
-            permanent: true,
-          },
-          {
-            source: '/docs/introduction',
-            destination: 'https://docs.moondao.com/',
-            permanent: true,
-          },
-          {
-            source: '/docs/token',
-            destination: 'https://docs.moondao.com/Governance/Governance-Tokens',
-            permanent: true,
-          },
-          {
-            source: '/docs/launch-path',
-            destination: 'https://docs.moondao.com/launch-path',
-            permanent: true,
-          },
-          {
-            source: '/docs/team',
-            destination: 'https://docs.moondao.com/About/Team',
-            permanent: true,
-          },
-          {
-            source: '/docs/contribute',
-            destination: 'https://docs.moondao.com/Onboarding/Contribute',
-            permanent: true,
-          },
-          {
-            source: '/docs/project-guidelines',
-            destination: 'https://docs.moondao.com/Projects/Project-System',
-            permanent: true,
-          },
-          {
-            source: '/docs/ticket-to-space-sweepstakes-rules',
-            destination:
-              'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
-            permanent: true,
-          },
-          {
-            source: '/docs/ticket-to-space-NFT-FAQs',
-            destination:
-              'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
-            permanent: true,
-          },
-          {
-            source: '/docs/dispute-notice',
-            destination: 'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Dispute-Notice',
-            permanent: true,
-          },
-          {
-            source: '/docs/nft-owner-agreement',
-            destination:
-              'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Ticket-to-Space-NFT-Owner-Agreement',
-            permanent: true,
-          },
-          {
-            source: '/docs/website-terms-and-conditions',
-            destination: 'https://docs.moondao.com/Legal/Website-Terms-and-Conditions',
-            permanent: true,
-          },
-          {
-            source: '/docs/sweepstakes-and-securities-disclaimer',
-            destination:
-              'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Sweepstakes-and-Securities-Disclaimer',
-            permanent: true,
-          },
-          {
-            source: '/docs/privacy-policy',
-            destination: 'https://docs.moondao.com/Legal/Website-Privacy-Policy',
             permanent: true,
           },
           {

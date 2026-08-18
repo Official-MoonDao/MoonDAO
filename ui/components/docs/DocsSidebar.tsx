@@ -1,0 +1,80 @@
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import type { DocsNavNode } from '@/lib/docs/types'
+
+function Node({ node, current }: { node: DocsNavNode; current: string }) {
+  const isCurrent = current === node.slug || current === node.slug.replace(/\/index$/, '')
+  const childActive = node.children.some(
+    (child) =>
+      current === child.slug ||
+      current.startsWith(child.slug.replace(/\/index$/, '') + '/') ||
+      current === child.slug.replace(/\/index$/, '')
+  )
+  const open = isCurrent || childActive
+
+  if (node.children.length === 0) {
+    return (
+      <li>
+        <Link
+          href={node.href}
+          className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
+            isCurrent
+              ? 'bg-white/10 text-white'
+              : 'text-white/60 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          {node.label}
+        </Link>
+      </li>
+    )
+  }
+
+  return (
+    <li>
+      <details open={open} className="group">
+        <summary className="flex items-center justify-between cursor-pointer px-3 py-1.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 list-none">
+          <Link
+            href={node.href}
+            onClick={(e) => e.stopPropagation()}
+            className={isCurrent ? 'text-white font-medium' : ''}
+          >
+            {node.label}
+          </Link>
+          <span className="text-white/30 text-xs group-open:rotate-90 transition-transform">▸</span>
+        </summary>
+        <ul className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-1">
+          {node.children.map((child) => (
+            <Node key={child.slug} node={child} current={current} />
+          ))}
+        </ul>
+      </details>
+    </li>
+  )
+}
+
+export default function DocsSidebar({
+  tree,
+  currentSlug,
+}: {
+  tree: DocsNavNode[]
+  currentSlug: string
+}) {
+  const router = useRouter()
+  const current = currentSlug || (Array.isArray(router.query.slug) ? router.query.slug.join('/') : 'index')
+
+  return (
+    <nav aria-label="Documentation" className="text-sm">
+      <Link
+        href="/docs"
+        className="font-GoodTimes text-xs uppercase tracking-wider text-white/40 hover:text-white/70 px-3 mb-3 block"
+      >
+        Documentation
+      </Link>
+      <ul className="space-y-0.5">
+        {tree.map((node) => (
+          <Node key={node.slug} node={node} current={current} />
+        ))}
+      </ul>
+    </nav>
+  )
+}
