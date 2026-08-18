@@ -16,8 +16,8 @@ kept out of this document.
 |---|---|
 | Title | Social Media Manager — X & Instagram |
 | Category (`tag`) | Marketing |
-| Summary (`description`, ≤280 chars) | MoonDAO has put two civilians in space, funded 75+ space R&D projects, and landed a constitution on the Moon. Our X and Instagram don't show it yet. Own both channels, ≤10 hrs/week, remote. $3,000–$4,500/month. |
-| Compensation | $3,000–$4,500 / month (fiat and/or $MOONEY) |
+| Summary (`description`, ≤280 chars) | MoonDAO has put two civilians in space, funded 75+ space R&D projects, and landed a constitution on the Moon. Our X and Instagram don't show it yet. Own both channels, ≤10 hrs/week, remote. $2,000–$2,800/month. |
+| Compensation | $2,000–$2,800 / month (fiat and/or $MOONEY) |
 | Commitment | Part-time contractor · ≤10 hrs/week |
 | Location | Remote, any timezone with reliable coverage of US/EU X activity windows |
 | Seniority | Senior / specialist |
@@ -94,9 +94,8 @@ reality; you do not run them.
 ### What we are looking for
 
 - **Documented growth you personally drove.** Accounts you have run, with before/after numbers,
-  engagement data, and specific posts that moved metrics. Screenshots and links.
-- **An existing audience or a demonstrated ability to reach one** in space, crypto, or an
-  adjacent technical community. We are not the right place to build your first following.
+  engagement data, and specific posts that moved metrics. Screenshots and links. This is the
+  requirement we weight most heavily.
 - **Real lunar and commercial space literacy.** You should be able to name the current landers,
   human spaceflight providers, habitat efforts, and the actual technical and policy bottlenecks
   — and tell signal from noise in that sector.
@@ -107,9 +106,13 @@ reality; you do not run them.
   engineer, a researcher, and a curious newcomer all understand, without hype.
 - **Async self-direction.** There is no marketing team above you assigning work.
 
-Nice to have, not required: video editing and motion graphics, design tooling, experience with
-a nonprofit or public-goods org, prior space-industry work, or a track record growing a
-technical or decentralized project's audience.
+Nice to have, not required: an established personal audience in space, crypto or an adjacent
+technical community; video editing and motion graphics; design tooling; experience with a
+nonprofit or public-goods org; prior space-industry work; or a track record growing a technical
+or decentralized project's audience.
+
+You do not need a large following of your own. We care that you have grown *an* account and can
+show the numbers.
 
 ### What success looks like
 
@@ -125,12 +128,17 @@ We judge results, not hours logged or posts shipped.
 
 ### Compensation
 
-**$3,000–$4,500 per month** for ≤10 hours per week, paid in fiat and/or $MOONEY as you prefer.
-Where you land in the range depends on the growth you have documented and the reach you bring.
+**$2,000–$2,800 per month** for ≤10 hours per week, paid in fiat and/or $MOONEY as you prefer.
+Where you land in the range depends on the growth you have documented.
 
-This is a part-time contractor engagement, not full-time employment and not an equity-heavy
-role. Final compensation is confirmed in MoonDAO's next Executive Branch budgeting cycle
-following the interview period, and the range above is what we are budgeting against.
+We start with a **paid one-month trial** at a pro-rated rate for a defined slice of real work, so
+we are both deciding on actual output rather than promises. There is also room to structure part
+of the monthly rate as a performance component against targets we agree in week one, if you would
+rather have upside than a flat retainer.
+
+This is a part-time contractor engagement, not full-time employment and not an equity-heavy role.
+Final compensation is confirmed in MoonDAO's next Executive Branch budgeting cycle following the
+interview period, and the range above is what we are budgeting against.
 
 The engagement is reviewed on results. Strong performance is the path to a larger scope and a
 higher rate; we would rather raise a great contributor than quietly extend an underperforming
@@ -141,7 +149,8 @@ one.
 Send a package with:
 
 1. **Links to accounts or pages you have managed**, with specific growth and engagement metrics.
-2. **Your personal X and Instagram handles** and current follower counts.
+2. **Your personal X and Instagram handles.** Size is not a filter — we want to see how you write
+   when it is your own name on it.
 3. **2–3 examples of content you produced that drove results**, with the numbers.
 4. **A short note (max 300 words)** on why you are the right person to communicate MoonDAO's
    work in a lunar and commercial space context, and what you would prioritize in your first 30
@@ -208,7 +217,7 @@ Changed:
 5. **States the compensation range.** "Discussed with shortlisted candidates" costs us
    applications from exactly the specialists we want, who screen out unpriced roles, and it sits
    badly next to a fully public treasury. See the companion comp doc for the reasoning behind
-   $3,000–$4,500.
+   $2,000–$2,800 and for why an earlier draft's $3,000–$4,500 was too high.
 6. **Adds a paid trial.** The role's central requirement is proven output, so the highest-signal
    step available is paying for a small piece of real work and judging that. It also protects the
    candidate from doing spec work for free.
@@ -220,3 +229,11 @@ Changed:
 9. **Tightened throughout.** Roughly 7,600 characters down to something a candidate reads in one
    pass, with scannable lists instead of dense paragraphs — which is also a small demonstration
    of the skill we are hiring for.
+10. **Moved "existing personal following" from a requirement to a nice-to-have.** This is the one
+    change that alters what we are asking for, so it is the one to push back on if you disagree.
+    Reach and execution are two different purchases; bundling them is what pushes the rate toward
+    $4,000/month for work that otherwise clears at $2,000–$2,500. Keeping "documented growth you
+    personally drove" as the hard filter preserves the quality bar — it is also the requirement
+    that actually predicts performance — while widening the pool at a defensible rate. If we want
+    the requirement back, the comp doc's number is $2,800–$3,200 and amplification is better
+    bought per campaign anyway.
