@@ -96,8 +96,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const deprizeUSD = programs.deprize.totalUSD
     const defiFeesUSD = revenueStreams.defiRevenue
     const stakingUSD = revenueStreams.stakingRevenue
-    const measuredAnnualRevenueUSD =
-      citizenUSD + teamUSD + launchpadUSD + deprizeUSD + defiFeesUSD + stakingUSD
+    const cashMeasuredUSD = citizenUSD + teamUSD + launchpadUSD + deprizeUSD
+    const accruedMeasuredUSD = defiFeesUSD + stakingUSD
+    const measuredAnnualRevenueUSD = cashMeasuredUSD + accruedMeasuredUSD
 
     if (programs.unclassified.totalUSD > 0) {
       warnings.push(
@@ -120,10 +121,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const annualRevenueUSD = revenueIsMeasured
       ? measuredAnnualRevenueUSD
       : STATED_ANNUAL_REVENUE_USD
+    const cashAnnualUSD = revenueIsMeasured ? cashMeasuredUSD : STATED_ANNUAL_REVENUE_USD
+    const accruedAnnualUSD = revenueIsMeasured ? accruedMeasuredUSD : 0
 
+    // Only cash can offset operating cost. Accrued LP fees and staking yield
+    // stay inside those positions and raise AUM instead of funding burn.
     const burn = computeBurnModel({
       quarterlyProjectBudgetUSD: PROJECT_CYCLE.budgetUSD,
-      annualRevenueUSD,
+      annualRevenueUSD: cashAnnualUSD,
     })
 
     // Official AUM excludes staked ETH (restricted — it cannot pay invoices).
@@ -145,7 +150,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Revenue as a share of gross cost — the single number that says how far
     // the DAO is from covering its own operations.
     const revenueCoverageRatio =
-      burn.annual.grossUSD > 0 ? annualRevenueUSD / burn.annual.grossUSD : 0
+      burn.annual.grossUSD > 0 ? cashAnnualUSD / burn.annual.grossUSD : 0
 
     res.setHeader('Cache-Control', 'private, no-store')
 
@@ -245,10 +250,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // Only cash actually reaching a Safe can pay salaries. Accrued yield
         // raises AUM instead, so the two are reported separately rather than
         // blended into one number that overstates spendable income.
-        cashAnnualUSD: revenueIsMeasured
-          ? citizenUSD + teamUSD + launchpadUSD + deprizeUSD
-          : STATED_ANNUAL_REVENUE_USD,
-        accruedAnnualUSD: revenueIsMeasured ? defiFeesUSD + stakingUSD : 0,
+        cashAnnualUSD,
+        accruedAnnualUSD,
         unattributedInflows: programs.unclassified,
         excluded: EXCLUDED_FROM_REVENUE,
         methodology:
