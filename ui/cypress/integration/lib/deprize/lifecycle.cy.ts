@@ -222,6 +222,11 @@ describe('deprize lifecycle derivations', () => {
     })
 
     it('rejects an unsettled tip', () => {
+      // Match on a substring rather than a regex: chai decides how to treat this
+      // argument with `errorLike instanceof RegExp`, which is false under Cypress
+      // because the spec's regex is created in the AUT frame while chai comes
+      // from the runner frame. A cross-realm regex is then misread as an expected
+      // error object and the assertion fails. `typeof === 'string'` is realm-safe.
       expect(() =>
         buildSupersededPayouts({
           teamIds: roster,
@@ -229,7 +234,7 @@ describe('deprize lifecycle derivations', () => {
           tipWinningTeamId: 301n,
           openFieldTeamId: FIELD,
         })
-      ).to.throw(/unresolved/i)
+      ).to.throw('unresolved')
     })
   })
 
