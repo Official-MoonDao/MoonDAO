@@ -308,6 +308,7 @@ export default function TeamJobModal({
   const [isLoading, setIsLoading] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
   const [isLoadingPosting, setIsLoadingPosting] = useState(false)
+  const [postingLoadFailed, setPostingLoadFailed] = useState(false)
 
   const existingMetadata = parseJobMetadata(job?.metadata)
 
@@ -352,9 +353,14 @@ export default function TeamJobModal({
     if (!edit || !existingMetadata.cid) return
     let cancelled = false
     setIsLoadingPosting(true)
+    setPostingLoadFailed(false)
     fetchJobPostingDoc(existingMetadata.cid)
       .then((doc) => {
-        if (cancelled || !doc) return
+        if (cancelled) return
+        if (!doc) {
+          setPostingLoadFailed(true)
+          return
+        }
         setForm((prev) => ({
           ...prev,
           body: doc.body || prev.body,
@@ -441,7 +447,7 @@ export default function TeamJobModal({
         notes: form.compNotes,
         display:
           toNumber(form.compMin) === undefined && toNumber(form.compMax) === undefined
-            ? form.compDisplay || existingMetadata.compensation
+            ? form.compDisplay
             : undefined,
       },
       applicationDeadline: deadline,
@@ -460,20 +466,7 @@ export default function TeamJobModal({
       toast.error('Could not save the full description. Posting the summary and key details only.')
     }
 
-    const envelope = buildJobMetadata(doc, cid)
-
-    // Keep card facts from the previous envelope when this save didn't produce
-    // new ones (legacy rows, or a v1 listing whose IPFS body failed to load).
-    if (edit) {
-      if (!envelope.compensation && existingMetadata.compensation) {
-        envelope.compensation = existingMetadata.compensation
-        if (envelope.paid === undefined) {
-          envelope.paid = existingMetadata.paid ?? true
-        }
-      }
-    }
-
-    return serializeJobMetadata(envelope)
+    return serializeJobMetadata(buildJobMetadata(doc, cid))
   }
 
   /** `JobInserted(uint256 indexed id, uint256 indexed teamId)` from the job table contract. */
@@ -535,6 +528,17 @@ export default function TeamJobModal({
 
           if (endTime === 0 || endTime < daysFromNowTimestamp(1)) {
             return toast.error('Please set an expiration date.')
+          }
+
+          // Saving before the stored posting is in the form would replace the
+          // long-form description with whatever the fields happen to hold.
+          if (isLoadingPosting) {
+            return toast.error('Still loading the saved description. Try again in a moment.')
+          }
+          if (postingLoadFailed) {
+            return toast.error(
+              'The saved description could not be loaded, so saving now would erase it. Please reopen this form and try again.'
+            )
           }
 
           if (!account) return
@@ -819,6 +823,23 @@ export default function TeamJobModal({
                   formatNumbers={false}
                 />
               </Field>
+              <Field
+                id="job-comp-display-input"
+                label="Compensation (free text)"
+                hint="Used only when the range above is empty. Clear it to remove compensation."
+              >
+                <Input
+                  id="job-comp-display-input"
+                  type="text"
+                  placeholder="Bounty, negotiable"
+                  variant="dark"
+                  className="w-full text-white"
+                  maxWidth="max-w-full"
+                  value={form.compDisplay}
+                  onChange={(e) => update({ compDisplay: e.target.value })}
+                  formatNumbers={false}
+                />
+              </Field>
             </div>
             <ListField
               id="job-comp-notes-input"
@@ -945,13 +966,21 @@ export default function TeamJobModal({
           {isLoadingPosting && (
             <p className="text-xs text-slate-400">Loading the saved description…</p>
           )}
+
+          {postingLoadFailed && (
+            <p id="job-posting-load-error" className="text-xs text-red-400">
+              {`The saved description couldn't be loaded from IPFS. Saving now would erase it — please close and reopen this form.`}
+            </p>
+          )}
         </div>
 
         <PrivyWeb3Button
           requiredChain={DEFAULT_CHAIN_V5}
           label={edit ? 'Edit Job' : 'Add Job'}
           type="submit"
-          isDisabled={!teamContract || !jobTableContract || isLoading}
+          isDisabled={
+            !teamContract || !jobTableContract || isLoading || isLoadingPosting || postingLoadFailed
+          }
           action={() => {}}
           className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${
             !isValid ? 'opacity-50 cursor-not-allowed' : ''
