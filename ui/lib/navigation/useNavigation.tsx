@@ -102,6 +102,7 @@ export default function useNavigation(citizen: any) {
         href: '/info',
         children: [
           { name: 'News', href: '/news' },
+          { name: 'Press', href: '/press' },
           { name: 'Town Hall', href: '/townhall' },
           { name: 'Roadmap', href: '/roadmap' },
           { name: 'About', href: '/about' },
