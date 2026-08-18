@@ -54,7 +54,7 @@ export default function Legend({
   const countForOrg = (id: string) => projects.filter((p) => p.orgId === id).length
 
   return (
-    <div className="pointer-events-auto w-64 rounded-2xl border border-white/10 bg-black/50 backdrop-blur-md">
+    <div className="pointer-events-auto w-full sm:w-64 rounded-2xl border border-white/10 bg-black/50 backdrop-blur-md">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between px-4 py-3 text-left"

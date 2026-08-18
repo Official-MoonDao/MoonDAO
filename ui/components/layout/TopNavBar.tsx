@@ -84,20 +84,20 @@ const TopNavBar = ({
       <nav className={`fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl border-b border-white/20 shadow-2xl transition-transform duration-300 ease-in-out ${
         isVisible ? 'translate-y-0' : '-translate-y-full'
       }`}>
-      <div className="max-w-full mx-auto px-2 lg:px-4 xl:px-6">
+      <div className="max-w-full mx-auto px-2 lg:px-3 xl:px-4 2xl:px-6">
         <div className="flex items-center justify-between h-16 lg:h-18 min-w-0">
           <NavLink
             href="/"
-            className="flex-shrink-0 ml-2 md:ml-4 mr-4 lg:mr-6 xl:mr-8 cursor-pointer"
+            className="flex-shrink-0 ml-2 md:ml-4 mr-3 lg:mr-4 xl:mr-5 2xl:mr-8 cursor-pointer"
           >
             <div className="flex items-center">
-              <div className="w-24 md:w-28 lg:w-32 xl:w-36 hover:scale-105 transition-transform duration-200">
+              <div className="w-24 md:w-28 lg:w-28 xl:w-32 2xl:w-36 hover:scale-105 transition-transform duration-200">
                 <LogoSidebar />
               </div>
             </div>
           </NavLink>
 
-          <div className="hidden lg:flex items-center gap-1 xl:gap-2 flex-1 justify-center max-w-[1024px] mx-auto">
+          <div className="hidden lg:flex items-center gap-0.5 xl:gap-1 2xl:gap-2 flex-1 justify-center max-w-[1024px] mx-auto">
             {navigation.map((item, i) => {
               if (!item) return null
               const hasDropdown = item.children || item.dynamicChildren
@@ -139,27 +139,27 @@ const TopNavBar = ({
                         }
                       }}
                       title={item.href ? 'Single click: open menu. Double click: go to page.' : 'Click to open menu'}
-                      className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg w-full text-left cursor-pointer
+                      className={`flex items-center px-1.5 xl:px-2 2xl:px-3 py-2 text-[13px] 2xl:text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg w-full text-left cursor-pointer
                         border
                         ${isActive
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-white/30'
                           : 'text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20 border-transparent'
                         }`}
                     >
-                      <item.icon className="w-4 h-4 mr-2" />
+                      <item.icon className="w-4 h-4 mr-1 2xl:mr-2" />
                       {t(item.name)}
                       <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform duration-200 ${openDropdown === item.name ? 'rotate-180' : ''}`} />
                     </button>
                   ) : (
                     <NavLink
                       href={item.href}
-                      className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg cursor-pointer border border-transparent hover:border-white/20 ${
+                      className={`flex items-center px-1.5 xl:px-2 2xl:px-3 py-2 text-[13px] 2xl:text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg cursor-pointer border border-transparent hover:border-white/20 ${
                         isActive
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-white/30'
                           : 'text-gray-300 hover:text-white hover:bg-white/10'
                       }`}
                     >
-                      <item.icon className="w-4 h-4 mr-2" />
+                      <item.icon className="w-4 h-4 mr-1 2xl:mr-2" />
                       {t(item.name)}
                     </NavLink>
                   )}
@@ -231,20 +231,20 @@ const TopNavBar = ({
             })}
           </div>
 
-          <div className="flex items-center space-x-2 lg:space-x-3 xl:space-x-4 flex-shrink-0">
-            <div className="flex items-center space-x-4 lg:space-x-6">
-              <div className="max-w-[200px] overflow-hidden scale-90 lg:scale-100 xl:scale-105 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
+          <div className="flex items-center space-x-1 xl:space-x-2 2xl:space-x-4 flex-shrink-0">
+            <div className="flex items-center space-x-2 xl:space-x-3 2xl:space-x-6">
+              <div className="max-w-[160px] 2xl:max-w-[200px] overflow-hidden scale-100 2xl:scale-105 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[160px] 2xl:[&>button]:max-w-[200px]">
                 <PrivyConnectWallet
                   type="desktop"
                   citizenContract={citizenContract}
                 />
               </div>
-              <div className="scale-90 lg:scale-100 xl:scale-105 flex-shrink-0 flex items-center justify-center">
+              <div className="scale-100 2xl:scale-105 flex-shrink-0 flex items-center justify-center">
                 <CitizenProfileLink />
               </div>
             </div>
             
-            <div className="scale-90 lg:scale-100 xl:scale-105">
+            <div className="scale-100 2xl:scale-105">
               <LanguageChange />
             </div>
           </div>

@@ -789,7 +789,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
             createPortal(
               <div
                 id="privy-connect-wallet-dropdown"
-                className="fixed top-20 right-4 w-[360px] text-sm rounded-xl animate-fadeIn p-6 flex flex-col bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
+                className="fixed top-20 left-4 right-4 w-auto sm:left-auto sm:w-[360px] text-sm rounded-xl animate-fadeIn p-6 flex flex-col bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
               >
                 {sendModalEnabled && (
                   <SendModal
