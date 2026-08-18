@@ -233,7 +233,7 @@ const TopNavBar = ({
 
           <div className="flex items-center space-x-1 xl:space-x-2 2xl:space-x-4 flex-shrink-0">
             <div className="flex items-center space-x-2 xl:space-x-3 2xl:space-x-6">
-              <div className="max-w-[160px] 2xl:max-w-[200px] overflow-hidden scale-100 2xl:scale-105 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[160px] 2xl:[&>button]:max-w-[200px]">
+              <div className="max-w-[180px] 2xl:max-w-[200px] overflow-hidden scale-100 2xl:scale-105 min-w-0 flex-shrink-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap">
                 <PrivyConnectWallet
                   type="desktop"
                   citizenContract={citizenContract}
