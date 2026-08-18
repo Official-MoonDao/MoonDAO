@@ -5,6 +5,7 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import AdaptiveImage from '@/components/layout/AdaptiveImage'
+import ExpandableText from '@/components/layout/ExpandableText'
 import BuyTeamListingModal from '@/components/subscription/BuyTeamListingModal'
 import { TeamListing } from '@/components/subscription/TeamListing'
 
@@ -67,15 +68,13 @@ export default function MarketplaceListing({
 
   const handleTeamClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    router.push(
-      `/team/${
-        listing.teamName ? generatePrettyLink(listing.teamName) : listing.teamId
-      }`
-    )
+    router.push(`/team/${listing.teamName ? generatePrettyLink(listing.teamName) : listing.teamId}`)
   }
 
   const numericPrice = parseFloat(listing.price.replace(/,/g, ''))
-  const fullPrice = `${truncateTokenValue(numericPrice * 1.1, listing.currency)} ${listing.currency}`
+  const fullPrice = `${truncateTokenValue(numericPrice * 1.1, listing.currency)} ${
+    listing.currency
+  }`
   const displayPrice = citizen
     ? `${truncateTokenValue(listing.price, listing.currency)} ${listing.currency}`
     : fullPrice
@@ -119,9 +118,11 @@ export default function MarketplaceListing({
             >
               {listing.teamName || `Team ${listing.teamId}`}
             </button>
-            <p className="mt-1.5 text-sm leading-relaxed text-slate-300/80 break-words line-clamp-2">
-              {listing.description}
-            </p>
+            <div className="mt-1.5">
+              <ExpandableText className="text-sm leading-relaxed text-slate-300/80" lines={2}>
+                {listing.description}
+              </ExpandableText>
+            </div>
             <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
               <p className="font-GoodTimes text-base text-white">{displayPrice}</p>
               {citizen ? (

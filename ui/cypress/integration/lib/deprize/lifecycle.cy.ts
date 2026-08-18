@@ -222,10 +222,8 @@ describe('deprize lifecycle derivations', () => {
     })
 
     it('rejects an unsettled tip', () => {
-      // Substring matcher, not a regex: chai runs in the Cypress runner's realm
-      // and does `errorLike instanceof RegExp` to tell a message matcher from an
-      // error constructor. A regex literal built in the spec's iframe fails that
-      // check, so chai would compare it as a constructor and never match.
+      // Cypress's .throw() treats a RegExp as the expected thrown *value*,
+      // not a message matcher, so a string substring is the reliable check.
       expect(() =>
         buildSupersededPayouts({
           teamIds: roster,

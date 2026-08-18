@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { useMemo } from 'react'
 import { useAnnouncements } from '@/lib/dashboard/hooks/useAnnouncements'
 import { renderDiscordMessageContent } from '@/lib/discord/formatDiscordMessage'
+import ExpandableText from '@/components/layout/ExpandableText'
 
 function relativeTime(iso: string): string {
   const ms = new Date(iso).getTime()
@@ -95,9 +96,14 @@ export default function DiscordAnnouncements({
                   {relativeTime(message.timestamp)}
                 </span>
               </div>
-              <p className="text-white/70 text-sm leading-relaxed mt-0.5 line-clamp-4 whitespace-pre-line">
-                {renderDiscordMessageContent(message.content, message.mentions)}
-              </p>
+              <div className="mt-0.5">
+                <ExpandableText
+                  className="text-white/70 text-sm leading-relaxed whitespace-pre-line"
+                  lines={4}
+                >
+                  {renderDiscordMessageContent(message.content, message.mentions)}
+                </ExpandableText>
+              </div>
             </div>
           </div>
         )
