@@ -56,14 +56,15 @@ const CHAINS: Record<string, ChainCfg> = {
   optimism: { chainId: 10,    cgPlatform: 'optimistic-ethereum', cgNativeId: 'ethereum',       llamaChain: 'optimism', nativeSymbol: 'ETH' },
 }
 
-interface SafeCfg {
+export interface SafeCfg {
   name: string
   address: string
   chain: keyof typeof CHAINS
 }
 
-// Mirrors MOONDAO_SAFES in ui/lib/coinstats/index.ts
-const SAFES: SafeCfg[] = [
+// Official AUM set: these eight Safes on their home chains, plus the
+// non-MOONEY side of the Uniswap V3 positions those Safes hold.
+export const COUNTED_SAFES: SafeCfg[] = [
   { name: 'ETH Treasury',        chain: 'ethereum', address: '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9' },
   { name: 'Arbitrum Treasury',   chain: 'arbitrum', address: '0xAF26a002d716508b7e375f1f620338442F5470c0' },
   { name: 'Polygon Treasury',    chain: 'polygon',  address: '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a' },
@@ -961,7 +962,7 @@ async function _getAUMHistoryOnchainImpl(
 
   // 1. Per-safe historical reconstruction (in series — gentle on rate limits).
   const safeResults: { safe: SafeCfg; result: SafeHistory }[] = []
-  for (const safe of SAFES) {
+  for (const safe of COUNTED_SAFES) {
     try {
       const result = await processSafe(safe, startMs, endMs, dates)
       safeResults.push({ safe, result })
@@ -977,7 +978,7 @@ async function _getAUMHistoryOnchainImpl(
   // 2. Build a symbol -> USD price map from ALL safes' Safe API snapshots.
   //    Used to value Uniswap V3 LP token amounts.
   const priceBySymbol = new Map<string, number>()
-  for (const safe of SAFES) {
+  for (const safe of COUNTED_SAFES) {
     try {
       const bals = await fetchSafeBalances(
         CHAINS[safe.chain].chainId,
@@ -1025,7 +1026,7 @@ async function _getAUMHistoryOnchainImpl(
     priceBySymbol
   )
   // Polygon Treasury holds the MOONEY/WPOL pool position
-  const polygonSafe = SAFES.find((s) => s.name === 'Polygon Treasury')!
+  const polygonSafe = COUNTED_SAFES.find((s) => s.name === 'Polygon Treasury')!
   const lpPolygon = await discoverUniV3Positions(
     'polygon',
     polygonSafe.address,

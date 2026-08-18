@@ -140,6 +140,28 @@ function shortAddr(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
 }
 
+const EXPLORER: Record<string, { label: string; tx: (address: string) => string }> = {
+  ethereum: { label: 'Etherscan', tx: (a) => `https://etherscan.io/address/${a}` },
+  arbitrum: { label: 'Arbiscan', tx: (a) => `https://arbiscan.io/address/${a}` },
+  polygon: { label: 'Polygonscan', tx: (a) => `https://polygonscan.com/address/${a}` },
+  base: { label: 'Basescan', tx: (a) => `https://basescan.org/address/${a}` },
+  optimism: { label: 'Optimism', tx: (a) => `https://optimistic.etherscan.io/address/${a}` },
+}
+
+const SAFE_CHAIN: Record<string, string> = {
+  ethereum: 'eth',
+  arbitrum: 'arb1',
+  polygon: 'matic',
+  base: 'base',
+  optimism: 'oeth',
+}
+
+function safeUrl(chain: string, address: string) {
+  const prefix = SAFE_CHAIN[chain]
+  if (!prefix) return null
+  return `https://app.safe.global/home?safe=${prefix}:${address}`
+}
+
 function holdingLabel(row: AssetClass) {
   if (row.amount != null && row.unit) {
     return `${row.amount.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${row.unit}`
@@ -307,7 +329,7 @@ export default function ExecutiveFinancials() {
 
   const grossMonthly = burn.grossMonthlyUSD
   const maxStream = Math.max(...revenue.streams.map((s) => s.annualUSD), 1)
-  const wallets = (assets.wallets || []).filter((w) => w.usd >= 1)
+  const wallets = assets.wallets || []
   const lpNote =
     assets.defiLpUSD > 0 ? `${usd(assets.defiLpUSD)} in Uniswap LP (non-MOONEY side)` : undefined
 
@@ -376,42 +398,89 @@ export default function ExecutiveFinancials() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-          <div>
-            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-3">By asset</h3>
-            <div className="space-y-3 text-sm">
-              {(assets.breakdown || []).map((row) => (
-                <Row
-                  key={row.label}
-                  label={`${row.label}${
-                    row.amount != null && row.unit ? ` · ${holdingLabel(row)}` : ''
-                  }`}
-                  value={usd(row.usd)}
-                  share={assets.liquidUSD > 0 ? row.usd / assets.liquidUSD : 0}
-                  barClass={ASSET_BAR[row.label] || 'bg-slate-400/70'}
-                />
-              ))}
-            </div>
-          </div>
-          <div>
-            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-3">Wallets</h3>
-            <div className="space-y-2 text-sm">
-              {wallets.map((w) => (
-                <div key={`${w.chain}:${w.address}`} className="flex justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-slate-300 truncate">{w.name}</p>
-                    <p className="text-[11px] text-slate-500 font-mono">
-                      {w.chain} · {shortAddr(w.address)}
-                    </p>
-                  </div>
-                  <span className="text-slate-100 shrink-0">{usd(w.usd)}</span>
-                </div>
-              ))}
-            </div>
+        <div className="mb-6">
+          <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-3">By asset</h3>
+          <div className="space-y-3 text-sm max-w-xl">
+            {(assets.breakdown || []).map((row) => (
+              <Row
+                key={row.label}
+                label={`${row.label}${
+                  row.amount != null && row.unit ? ` · ${holdingLabel(row)}` : ''
+                }`}
+                value={usd(row.usd)}
+                share={assets.liquidUSD > 0 ? row.usd / assets.liquidUSD : 0}
+                barClass={ASSET_BAR[row.label] || 'bg-slate-400/70'}
+              />
+            ))}
           </div>
         </div>
 
         <AUMChart data={assets.history} height={280} isLoading={isLoading} />
+
+        <div className="mt-6 pt-6 border-t border-slate-700">
+          <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">
+            Counted wallets
+          </h3>
+          <p className="text-[11px] text-slate-500 mb-3">
+            Official AUM is these eight Safes on their home chains
+            {assets.defiLpUSD > 0
+              ? `, plus ${usd(assets.defiLpUSD)} Uniswap V3 LP (non-MOONEY side) held by the ETH and Polygon treasuries`
+              : ''}
+            . MOONEY is excluded.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead>
+                <tr className="text-slate-400 text-[11px] uppercase tracking-wider">
+                  <th className="text-left font-normal pb-2">Wallet</th>
+                  <th className="text-left font-normal pb-2">Chain</th>
+                  <th className="text-left font-normal pb-2">Address</th>
+                  <th className="text-right font-normal pb-2">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {wallets.map((w) => {
+                  const explorer = EXPLORER[w.chain]
+                  const safe = safeUrl(w.chain, w.address)
+                  return (
+                    <tr key={`${w.chain}:${w.address}`} className="border-t border-slate-700/60">
+                      <td className="py-2.5 text-slate-200">{w.name}</td>
+                      <td className="py-2.5 text-slate-400 capitalize">{w.chain}</td>
+                      <td className="py-2.5 font-mono text-[11px] text-slate-400">
+                        {explorer ? (
+                          <a
+                            href={explorer.tx(w.address)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:text-white"
+                          >
+                            {w.address}
+                          </a>
+                        ) : (
+                          w.address
+                        )}
+                        {safe && (
+                          <>
+                            {' · '}
+                            <a
+                              href={safe}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="hover:text-white"
+                            >
+                              Safe
+                            </a>
+                          </>
+                        )}
+                      </td>
+                      <td className="py-2.5 text-right text-slate-100">{usd(w.usd)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

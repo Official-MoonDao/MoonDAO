@@ -25,7 +25,7 @@ import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getETHPrice } from '@/lib/etherscan'
 import { aggregateHoldings } from '@/lib/treasury/assetBreakdown'
-import { getAUMHistoryOnchain } from '@/lib/treasury/aum-onchain'
+import { COUNTED_SAFES, getAUMHistoryOnchain } from '@/lib/treasury/aum-onchain'
 import { getCanonicalSubscriptionRevenue } from '@/lib/treasury/canonicalRevenue'
 import { getProgramRevenue } from '@/lib/treasury/programRevenue'
 import { getHistoricalRevenue } from '@/lib/treasury/revenue'
@@ -144,6 +144,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const liquidUSD = aum.aum
     const breakdown = aggregateHoldings(aum.holdings)
+    // Always list the official Safe set, even if a read came back $0, so the
+    // dashboard shows every wallet that is in the AUM perimeter.
+    const walletByKey = new Map(
+      (aum.wallets || []).map((w) => [`${w.chain}:${w.address.toLowerCase()}`, w])
+    )
+    const wallets = COUNTED_SAFES.map((safe) => {
+      const hit = walletByKey.get(`${safe.chain}:${safe.address.toLowerCase()}`)
+      return {
+        name: safe.name,
+        address: safe.address,
+        chain: safe.chain,
+        usd: hit?.usd ?? 0,
+      }
+    })
 
     const scenario = (assetsUSD: number, netMonthlyUSD: number) => {
       const months = runwayMonths(assetsUSD, netMonthlyUSD)
@@ -177,7 +191,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         liquidUSD,
         defiLpUSD: aum.defiData.balance,
         breakdown,
-        wallets: aum.wallets,
+        wallets,
         history: aum.aumHistory,
       },
       revenue: {
