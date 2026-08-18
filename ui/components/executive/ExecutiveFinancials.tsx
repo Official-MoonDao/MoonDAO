@@ -17,6 +17,8 @@ type Stream = {
   annualUSD: number
   txCount?: number
   available?: boolean
+  /** False for income that accrues inside a position rather than reaching a Safe. */
+  cash?: boolean
   basis?: string
 }
 
@@ -61,6 +63,8 @@ type FinancialSummary = {
     statedAnnualUSD: number
     coverageOfGrossBurn: number
     streams: Stream[]
+    cashAnnualUSD?: number
+    accruedAnnualUSD?: number
     unattributedInflows?: UnattributedInflows
     excluded?: { label: string; reason: string }[]
     methodology?: string
@@ -385,6 +389,7 @@ export default function ExecutiveFinancials() {
                 value={stream.available === false ? 'Not live' : usd(stream.annualUSD)}
                 muted={stream.available === false}
                 note={[
+                  stream.cash === false ? 'Accrued, not cash' : null,
                   typeof stream.txCount === 'number' && stream.available !== false
                     ? `${stream.txCount} payment${
                         stream.txCount === 1 ? '' : 's'
@@ -395,9 +400,23 @@ export default function ExecutiveFinancials() {
                   .filter(Boolean)
                   .join(' · ')}
                 share={stream.annualUSD / maxStream}
-                barClass="bg-sky-400/70"
+                barClass={stream.cash === false ? 'bg-slate-400/50' : 'bg-sky-400/70'}
               />
             ))}
+            {typeof revenue.cashAnnualUSD === 'number' && (
+              <Row
+                label="Cash into the treasury"
+                value={usd(revenue.cashAnnualUSD)}
+                note="The part that can actually pay salaries"
+              />
+            )}
+            {typeof revenue.accruedAnnualUSD === 'number' && revenue.accruedAnnualUSD > 0 && (
+              <Row
+                label="Accrued (raises AUM)"
+                value={usd(revenue.accruedAnnualUSD)}
+                note="Earned inside LP and validator positions, not withdrawn"
+              />
+            )}
             <Row label="Total (trailing year)" value={usd(revenue.annualUSD)} emphasis />
           </div>
           <div className="mt-5 pt-4 border-t border-slate-700">

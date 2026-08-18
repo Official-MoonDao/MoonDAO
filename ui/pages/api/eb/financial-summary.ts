@@ -185,6 +185,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             annualUSD: citizenUSD,
             txCount: subs.citizen.txCount,
             available: true,
+            cash: true,
             basis: 'ETH from the Citizen NFT contract to the Arbitrum treasury.',
           },
           {
@@ -192,6 +193,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             annualUSD: teamUSD,
             txCount: subs.team.txCount,
             available: true,
+            cash: true,
             basis: 'ETH from the Team NFT contract to the Arbitrum treasury.',
           },
           {
@@ -199,26 +201,32 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             annualUSD: launchpadUSD,
             txCount: programs.launchpad.txCount,
             available: programs.launchpad.available,
+            cash: true,
             basis: programs.launchpad.note,
           },
           {
             label: 'Liquidity pool fees',
             annualUSD: defiFeesUSD,
             available: true,
-            basis: "MoonDAO's share of Uniswap pool fees, by its position's share of pool TVL.",
+            cash: false,
+            basis:
+              "MoonDAO's share of Uniswap pool fees, by its position's share of pool TVL. Accrues inside the LP position — it raises AUM and is not withdrawn to the Safe.",
           },
           {
             label: 'DePrize fees',
             annualUSD: deprizeUSD,
             txCount: programs.deprize.txCount,
             available: programs.deprize.available,
+            cash: true,
             basis: programs.deprize.note,
           },
           {
             label: 'ETH staking yield',
             annualUSD: stakingUSD,
             available: true,
-            basis: 'Beacon-chain validator performance over the trailing year.',
+            cash: false,
+            basis:
+              'Beacon-chain validator performance over the trailing year. Accrues with the validators and cannot pay an invoice until they are exited.',
           },
           // When the measured streams are all zero the total is the MDP-249
           // stated figure — include it here so the breakdown sums to annualUSD.
@@ -228,15 +236,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                   label: 'Stated (MDP-249)',
                   annualUSD: STATED_ANNUAL_REVENUE_USD,
                   available: true,
+                  cash: true,
                   basis: 'Policy figure used because nothing measured on-chain.',
                 },
               ]
             : []),
         ],
+        // Only cash actually reaching a Safe can pay salaries. Accrued yield
+        // raises AUM instead, so the two are reported separately rather than
+        // blended into one number that overstates spendable income.
+        cashAnnualUSD: revenueIsMeasured
+          ? citizenUSD + teamUSD + launchpadUSD + deprizeUSD
+          : STATED_ANNUAL_REVENUE_USD,
+        accruedAnnualUSD: revenueIsMeasured ? defiFeesUSD + stakingUSD : 0,
         unattributedInflows: programs.unclassified,
         excluded: EXCLUDED_FROM_REVENUE,
         methodology:
-          'Realised cash only: ETH that actually reached a MoonDAO treasury in the trailing 365 days, plus LP fees and staking yield. Accrued-but-unpaid fees, non-cash token allocations, and ERC-20 inflows are not included.',
+          'Trailing 365 days. Cash streams are ETH that actually reached the Arbitrum treasury, matched by the sending contract. Accrued streams (LP fees, staking yield) are earned but stay inside the position, so they raise AUM rather than funding burn. ERC-20 inflows and revenue paid to non-treasury addresses are not counted.',
         source: subs.source,
       },
       burn: {
