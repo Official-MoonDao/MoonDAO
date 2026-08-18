@@ -447,13 +447,17 @@ export function getApplicationDeadline(
 }
 
 /**
- * Whole calendar days between now and a deadline. Deadlines come from date
- * inputs (UTC midnight), so comparing day indexes rather than elapsed seconds
- * keeps "closes today" from reading as "closes tomorrow" late in the day.
+ * Whole local calendar days between now and a deadline. Authors pick a calendar
+ * date (stored as local midnight), so comparing local day indexes rather than
+ * UTC day numbers keeps the badge aligned with the date input in every timezone.
  */
 export function daysUntil(timestamp?: number, now = Math.floor(Date.now() / 1000)): number | null {
   if (!timestamp || timestamp <= 0) return null
-  return Math.floor(timestamp / 86400) - Math.floor(now / 86400)
+  const localDayIndex = (unix: number) => {
+    const date = new Date(unix * 1000)
+    return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000
+  }
+  return localDayIndex(timestamp) - localDayIndex(now)
 }
 
 export function formatDeadlineCountdown(

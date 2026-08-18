@@ -41,6 +41,7 @@ type JobDetailProps = {
   doc: JobPostingDoc | null
   team: { id: number; name: string; image: string } | null
   relatedJobs: JobType[]
+  otherRolesCount: number
 }
 
 function Badge({ children }: { children: React.ReactNode }) {
@@ -51,7 +52,14 @@ function Badge({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default function JobDetail({ job, metadata, doc, team, relatedJobs }: JobDetailProps) {
+export default function JobDetail({
+  job,
+  metadata,
+  doc,
+  team,
+  relatedJobs,
+  otherRolesCount,
+}: JobDetailProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
@@ -293,7 +301,7 @@ export default function JobDetail({ job, metadata, doc, team, relatedJobs }: Job
                   teamHref={teamHref}
                   shareUrl={shareUrl}
                   shareText={`${job.title}${team?.name ? ` at ${team.name}` : ' at MoonDAO'}`}
-                  otherRolesCount={relatedJobs.length}
+                  otherRolesCount={otherRolesCount}
                 />
 
                 {!citizen && (
@@ -375,14 +383,21 @@ export const getStaticProps: GetStaticProps<JobDetailProps> = async ({ params })
 
     // Everything below is best-effort: a slow gateway or degraded RPC should
     // narrow the page, not 500 it.
-    const [doc, team, relatedJobs] = await Promise.all([
+    const [doc, team, related] = await Promise.all([
       fetchJobPostingDoc(metadata.cid),
       loadTeamSummary(chain, job.teamId),
-      fetchRelatedJobs(chain, job).catch(() => [] as JobType[]),
+      fetchRelatedJobs(chain, job).catch(() => ({ jobs: [] as JobType[], otherCount: 0 })),
     ])
 
     return {
-      props: { job, metadata, doc, team, relatedJobs },
+      props: {
+        job,
+        metadata,
+        doc,
+        team,
+        relatedJobs: related.jobs,
+        otherRolesCount: related.otherCount,
+      },
       revalidate: 60,
     }
   } catch (error) {

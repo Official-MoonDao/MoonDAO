@@ -97,7 +97,7 @@ export async function fetchRelatedJobs(
   job: Job,
   limit = 4,
   now = Math.floor(Date.now() / 1000)
-): Promise<Job[]> {
+): Promise<{ jobs: Job[]; otherCount: number }> {
   const tableName = await getJobsTableName(chain)
   const statement = `SELECT * FROM ${tableName} WHERE id != ${job.id} AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
   const jobs: Job[] = (await queryTable(chain, statement)) || []
@@ -107,5 +107,6 @@ export async function fetchRelatedJobs(
   const score = (candidate: Job) =>
     (candidate.teamId === job.teamId ? 2 : 0) + (job.tag && candidate.tag === job.tag ? 1 : 0)
 
-  return active.sort((a, b) => score(b) - score(a)).slice(0, limit)
+  const ranked = active.sort((a, b) => score(b) - score(a))
+  return { jobs: ranked.slice(0, limit), otherCount: ranked.length }
 }

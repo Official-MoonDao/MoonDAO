@@ -61,6 +61,8 @@ type JobFormState = {
   compPeriod: string
   compPaidIn: string
   compNotes: string
+  /** Legacy / envelope display string; used when min/max are empty. */
+  compDisplay: string
   skills: string
   responsibilities: string
   requirements: string
@@ -92,6 +94,7 @@ const EMPTY_FORM: JobFormState = {
   compPeriod: 'month',
   compPaidIn: '',
   compNotes: '',
+  compDisplay: '',
   skills: '',
   responsibilities: '',
   requirements: '',
@@ -130,14 +133,20 @@ function toNumber(value: string): number | undefined {
 
 function dateToUnix(value: string): number | undefined {
   if (!value) return undefined
-  const date = new Date(value)
+  const [year, month, day] = value.split('-').map(Number)
+  if (!year || !month || !day) return undefined
+  const date = new Date(year, month - 1, day)
   if (Number.isNaN(date.getTime())) return undefined
-  return Math.floor((date.getTime() + date.getTimezoneOffset() * 60 * 1000) / 1000)
+  return Math.floor(date.getTime() / 1000)
 }
 
 function unixToDate(timestamp?: number): string {
   if (!timestamp || timestamp <= 0) return ''
-  return new Date(timestamp * 1000).toISOString().split('T')[0]
+  const date = new Date(timestamp * 1000)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 /** `Label | detail` per line, so multi-part lists stay editable as plain text. */
@@ -302,6 +311,8 @@ export default function TeamJobModal({
           commitmentType: existingMetadata.commitmentType || '',
           hoursPerWeek: existingMetadata.hoursPerWeek ? String(existingMetadata.hoursPerWeek) : '',
           locationType: existingMetadata.locationType || '',
+          region: existingMetadata.locationType ? '' : existingMetadata.location || '',
+          compDisplay: existingMetadata.compensation || '',
           skills: (existingMetadata.skills || []).join(', '),
         }
       : EMPTY_FORM
@@ -361,6 +372,7 @@ export default function TeamJobModal({
           compPeriod: doc.compensation?.period || prev.compPeriod,
           compPaidIn: doc.compensation?.paidIn || prev.compPaidIn,
           compNotes: doc.compensation?.notes || prev.compNotes,
+          compDisplay: doc.compensation?.display || prev.compDisplay,
         }))
       })
       .finally(() => {
@@ -405,7 +417,7 @@ export default function TeamJobModal({
       },
       location: {
         type: (form.locationType || undefined) as JobLocationType | undefined,
-        region: form.region,
+        region: form.region || (!form.locationType ? existingMetadata.location : undefined),
         timezones: form.timezones,
       },
       compensation: {
@@ -415,6 +427,10 @@ export default function TeamJobModal({
         period: (form.compPeriod || undefined) as JobCompensationPeriod | undefined,
         paidIn: form.compPaidIn,
         notes: form.compNotes,
+        display:
+          toNumber(form.compMin) === undefined && toNumber(form.compMax) === undefined
+            ? form.compDisplay || existingMetadata.compensation
+            : undefined,
       },
       applicationDeadline: deadline,
     })
@@ -432,7 +448,27 @@ export default function TeamJobModal({
       toast.error('Could not save the full description. Posting the summary and key details only.')
     }
 
-    return serializeJobMetadata(buildJobMetadata(doc, cid))
+    const envelope = buildJobMetadata(doc, cid)
+
+    // Keep card facts from the previous envelope when this save didn't produce
+    // new ones (legacy rows, or a v1 listing whose IPFS body failed to load).
+    if (edit) {
+      if (!envelope.compensation && existingMetadata.compensation) {
+        envelope.compensation = existingMetadata.compensation
+        if (envelope.paid === undefined) {
+          envelope.paid = existingMetadata.paid ?? true
+        }
+      }
+      const locationTypeUnchanged =
+        (form.locationType || undefined) === existingMetadata.locationType
+      if (existingMetadata.location && !form.region && locationTypeUnchanged) {
+        envelope.location = existingMetadata.location
+      } else if (!envelope.location && existingMetadata.location) {
+        envelope.location = existingMetadata.location
+      }
+    }
+
+    return serializeJobMetadata(envelope)
   }
 
   /** `JobInserted(uint256 indexed id, uint256 indexed teamId)` from the job table contract. */
