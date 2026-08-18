@@ -41,12 +41,30 @@ contract MyScript is Script, Config {
             POSITION_MANAGERS[block.chainid]
         );
 
+        // AUDIT[plan 3.1]: optional ownership handoff. Default leaves the
+        // deployer as owner so they can still call createMission (onlyOwner OR
+        // team manager). Set DEPRIZE_TRANSFER_OWNERSHIP=true AFTER the mission
+        // exists, or create the mission from the Safe once it owns the creator.
+        address nextOwner = vm.envOr("DEPRIZE_OWNER", address(0));
+        if (vm.envOr("DEPRIZE_TRANSFER_OWNERSHIP", false)) {
+            require(nextOwner != address(0), "DEPRIZE_OWNER required to transfer");
+            missionCreator.transferOwnership(nextOwner);
+        }
+
         vm.stopBroadcast();
 
         console.log("New MissionCreator deployed:", address(missionCreator));
-        console.log("Next steps (call from MissionTable owner):");
-        console.log("  MissionTable.setMissionCreator(%s)", address(missionCreator));
-        console.log("  MissionTable.transferOwnership(0x31CDb419E4A7998367627faa24cEe15941795827)");
+        if (nextOwner != address(0) && vm.envOr("DEPRIZE_TRANSFER_OWNERSHIP", false)) {
+            console.log("  ownership transferred to:", nextOwner);
+        } else {
+            console.log("  owner is deployer; transfer later via DEPRIZE_TRANSFER_OWNERSHIP");
+        }
+        console.log("AUDIT[plan 3.1]: this creator is NOT yet the app-wide Arbitrum creator.");
+        console.log("  Production MissionCreator (listings):", MISSION_CREATOR_ADDRESSES[block.chainid]);
+        console.log("  Wiring this into MissionTable.setMissionCreator makes ALL future");
+        console.log("  missions registry-aware. Leave unset to keep this DePrize-only");
+        console.log("  (mission will not appear in the main launchpad list).");
+        console.log("Next: script/deprize/CreateDePrizeMission.s.sol with MISSION_CREATOR=this");
         console.log("MissionTable address:", MISSION_TABLE_ADDRESSES[block.chainid]);
     }
 }

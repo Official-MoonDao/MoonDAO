@@ -92,6 +92,8 @@ function StateBadge({
 
 export default function DePrizeDetailPage() {
   const { selectedChain } = useContext(ChainContextV5)
+  // AUDIT[plan Phase 6.3]: keep the coming-soon gate until Phase 5 verify is
+  // green and DEPRIZE_* arbitrum addresses are filled in const/config.ts.
   if (getChainSlug(selectedChain) === 'arbitrum') {
     return <DePrizeComingSoon />
   }

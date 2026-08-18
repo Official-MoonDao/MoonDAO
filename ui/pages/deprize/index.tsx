@@ -6,6 +6,9 @@ import DePrizeIndexContent from '@/components/deprize/DePrizeIndexContent'
 
 export default function DePrizeIndexPage() {
   const { selectedChain } = useContext(ChainContextV5)
+  // AUDIT[plan Phase 6.3]: do NOT remove this gate until
+  // DEPRIZE_REGISTRY_ADDRESSES.arbitrum (and mint/redeem/fee-router) are
+  // populated after Phase 5 verify. Flipping it early shows an empty/broken list.
   if (getChainSlug(selectedChain) === 'arbitrum') {
     return <DePrizeComingSoon />
   }

@@ -181,3 +181,35 @@ Phase 0 decisions
 ```
 
 Phase 1 and the Phase 0 decisions can proceed in parallel. Everything from Phase 2 onward is strictly sequential.
+
+---
+
+## Implementation status (this PR)
+
+Search the tree for `AUDIT[plan …]` to review each item against this document.
+
+| Plan item | Status | Where |
+|---|---|---|
+| 1.1 Registry deploy script | **Done** | `subscription-contracts/script/deprize/DePrizeRegistry.s.sol` |
+| 1.2 Committed Truffle config | **Done** | `prediction/truffle-config.js` (`.gitignore` still ignores `truffle.js` so this file is the one that counts) |
+| 1.3 Pre-flight assertions | **Done** | `Config.requireDePrizeCollateral`; Mint/Redeem/FeeRouter scripts call it. Reverts on 42161 until CTF is filled. |
+| 1.4 M4 fork rehearsal | **Partial** | `ArbitrumWethPreflight` (Phase 2 WETH check). Full `DePrizeM4ForkTest` still needs Phase 2 CTF + factory — cannot run yet. |
+| 1.5 Config / UI addresses | **Partial** | Arbitrum WETH filled. CTF / factory / LMSR / DEPRIZE_* left **empty on purpose** (tests assert this). Ledger: [`DEPRIZE_ARBITRUM_ADDRESSES.md`](./DEPRIZE_ARBITRUM_ADDRESSES.md). |
+| Phase 2 deploy CTF+factory | **Operator** | Scripted via `prediction/README.md`. Not broadcast by this PR. |
+| Phase 3.1–3.2 MissionCreator + mission | **Scripted** | `MissionCreator.s.sol` (ownership + 3.1 warning) + `CreateDePrizeMission.s.sol`. |
+| Phase 3.3–3.6 0.8 stack | **Scripted** | Existing Mint/Redeem/FeeRouter scripts + new Registry script. |
+| Phase 4 market | **Operator** | migration 08; `overwrite: false` on CTF deploy. |
+| Phase 5 wire | **Scripted** | `DePrizeWire.s.sol` (dry-run default; latch isolated). |
+| Phase 5 verify | **Scripted** | `DePrizeVerify.s.sol` — launch gate. |
+| Phase 6.2 chain-index oracle | **Done** | `ORACLE_ADDRESSES` / `OPERATOR_ADDRESSES` in `ui/const/config.ts`. Scalars remain Sepolia play-harness. |
+| Phase 6.3 remove coming-soon | **Intentionally not done** | Gate kept; `AUDIT[plan Phase 6.3]` comments on both pages. |
+| Phase 6.4 publish Terms | **Not this repo** | docs.moondao.com still 404. Draft: `ui/docs/DEPRIZE_TERMS_AND_CONDITIONS.md`. |
+| Phase 7 smoke | **Operator** | After addresses exist. |
+
+### Reviewer checklist
+
+1. Confirm `CONDITIONAL_TOKENS_ADDRESSES[ARBITRUM]` is still `address(0)` — a non-zero invented address is a launch bug.
+2. Confirm `DePrizeVerify` checks match the Phase 5 verify list in this doc (OPEN, bettingOpen, both `setMarket`s, `feeRouter` pointer, LMSR owner/stage/fee, unresolved condition, payhook latch + stage 1).
+3. Confirm `DePrizeWire` cannot broadcast `setDePrizeRegistry` unless `DEPRIZE_WIRE_PAYHOOK=true` **and** the hook is still unset.
+4. Confirm coming-soon is still the Arbitrum `/deprize` experience.
+5. Confirm migration 02 uses `overwrite: false`.

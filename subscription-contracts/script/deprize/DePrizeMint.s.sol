@@ -25,10 +25,9 @@ contract DeployDePrizeMint is Script, Config {
         address owner = vm.envOr("DEPRIZE_OWNER", vm.addr(deployerPrivateKey));
         address registry = vm.envAddress("DEPRIZE_REGISTRY");
 
-        address weth = WETH_ADDRESSES[block.chainid];
-        address ctf = CONDITIONAL_TOKENS_ADDRESSES[block.chainid];
-        require(weth != address(0), "WETH not configured for chain");
-        require(ctf != address(0), "ConditionalTokens not configured for chain");
+        // AUDIT[plan 1.3]: chain-id in the revert so a 42161 run cannot
+        // accidentally deploy against address(0) WETH/CTF.
+        (address weth, address ctf) = requireDePrizeCollateral(block.chainid);
 
         vm.startBroadcast(deployerPrivateKey);
 
