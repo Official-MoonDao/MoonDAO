@@ -3,6 +3,7 @@
 **Status:** Draft for discussion
 **Last updated:** 2026-08-18
 **Related:** [`DEPRIZE.md`](./DEPRIZE.md) (mechanism), [`DEPRIZE_ROSTER_CHANGES.md`](./DEPRIZE_ROSTER_CHANGES.md) (roster/generations), [`.cursor/plans/moondao_lunar_simulator_08e60e6b.plan.md`](../.cursor/plans/moondao_lunar_simulator_08e60e6b.plan.md) (Lunar Atlas / shared goals)
+**Launch plans:** [`DEPRIZE_GTM_SURVIVE_THE_NIGHT.md`](./DEPRIZE_GTM_SURVIVE_THE_NIGHT.md) (P1), [`DEPRIZE_GTM_SIX_SECONDS_LATE.md`](./DEPRIZE_GTM_SIX_SECONDS_LATE.md) (P9)
 
 ---
 
@@ -374,6 +375,8 @@ The reasoning:
 **If chamber access cannot be brokered at all**, switch to **P9 "Six Seconds Late"**. It scores highest overall, has by far the deepest ready-made roster (240+ registered rover teams across URC and ERC this year alone), costs competitors nothing to enter, needs no vacuum hardware, and is the most natural live-betting product of the ten. Its only weakness is that it advances operations rather than hardware — which matters less for a first outing whose real job is to prove the mechanism works and draw a crowd.
 
 **Do not run first:** P6 (ESA is actively running a construction challenge), P5 (most expensive to enter, thinnest roster), P8 (real engineering value, no spectacle).
+
+Launch plans for both P1 and P9 are worked out in [`DEPRIZE_GTM_SURVIVE_THE_NIGHT.md`](./DEPRIZE_GTM_SURVIVE_THE_NIGHT.md) and [`DEPRIZE_GTM_SIX_SECONDS_LATE.md`](./DEPRIZE_GTM_SIX_SECONDS_LATE.md).
 
 ### 5.1 Ideas considered and cut
 
