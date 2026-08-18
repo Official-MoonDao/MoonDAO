@@ -29,6 +29,21 @@ type UnattributedInflows = {
   note: string
 }
 
+type Uncollected = {
+  receivableUSD: number
+  contingentUSD: number
+  lines: {
+    label: string
+    kind: 'receivable' | 'contingent'
+    eth: number
+    usd: number
+    detail: string
+    available: boolean
+  }[]
+  missionsConsidered: number
+  note: string
+}
+
 type RunwayScenario = {
   label?: string
   assetsUSD: number
@@ -66,6 +81,7 @@ type FinancialSummary = {
     cashAnnualUSD?: number
     accruedAnnualUSD?: number
     unattributedInflows?: UnattributedInflows
+    uncollected?: Uncollected | null
     excluded?: { label: string; reason: string }[]
     methodology?: string
   }
@@ -484,6 +500,45 @@ export default function ExecutiveFinancials() {
           )}
         </div>
       </div>
+
+      {revenue.uncollected && (
+        <div className={PANEL}>
+          <h2 className="font-GoodTimes text-white text-sm mb-1">Uncollected revenue</h2>
+          <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
+            {revenue.uncollected.note}
+          </p>
+          <div className="space-y-3 text-sm">
+            {revenue.uncollected.lines.map((line) => (
+              <Row
+                key={line.label}
+                label={line.label}
+                value={line.available ? usd(line.usd) : 'Not live'}
+                muted={!line.available}
+                note={`${line.kind === 'receivable' ? 'Earned' : 'Contingent'} · ${line.detail}`}
+              />
+            ))}
+            <Row
+              label="Receivable — earned, awaiting collection"
+              value={usd(revenue.uncollected.receivableUSD)}
+              emphasis
+            />
+            <Row
+              label="Contingent — depends on missions closing"
+              value={usd(revenue.uncollected.contingentUSD)}
+              note={`Across ${revenue.uncollected.missionsConsidered} mission(s) with an on-chain balance`}
+            />
+          </div>
+          {revenue.uncollected.receivableUSD > 0 && burn.netMonthlyUSD > 0 && (
+            <p className="mt-4 text-[11px] text-slate-500 leading-relaxed">
+              Collecting the receivable balance would cover roughly{' '}
+              <span className="text-slate-300">
+                {(revenue.uncollected.receivableUSD / burn.netMonthlyUSD).toFixed(1)} month(s)
+              </span>{' '}
+              of net burn. Runway above does not assume it.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className={PANEL}>
         <h2 className="font-GoodTimes text-white text-sm mb-4">Runway scenarios</h2>

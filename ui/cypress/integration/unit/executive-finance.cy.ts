@@ -14,6 +14,7 @@ import {
   runwayMonths,
 } from 'const/executiveFinance'
 import { ProgramSourceConfig, classifyTreasuryInflows } from '@/lib/treasury/programRevenue'
+import { MISSION_STAGE, summariseLaunchpadUncollected } from '@/lib/treasury/launchpadPipeline'
 
 describe('executiveFinance', () => {
   describe('computeBurnModel', () => {
@@ -181,5 +182,80 @@ describe('classifyTreasuryInflows', () => {
     const out = classifyTreasuryInflows([tx(STRANGER, 2)], sources)
     expect(out.buckets.launchpad.totalETH).to.equal(0)
     expect(out.unclassified.totalETH).to.equal(2)
+  })
+})
+
+describe('summariseLaunchpadUncollected', () => {
+  const mission = (missionId: number, stage: number, undistributedETH: number) => ({
+    missionId,
+    projectId: missionId + 100,
+    stage,
+    undistributedETH,
+  })
+
+  it('treats a funded mission as earned and one still raising as contingent', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(1, MISSION_STAGE.GOAL_MET, 100), mission(2, MISSION_STAGE.RAISING, 40)],
+      0.025
+    )
+
+    expect(out.receivableETH).to.equal(2.5)
+    expect(out.contingentETH).to.equal(1)
+    expect(out.receivableMissions).to.equal(1)
+    expect(out.contingentMissions).to.equal(1)
+    expect(out.forfeitedETH).to.equal(0)
+  })
+
+  it('books nothing for refunding missions and reports them as forfeited', () => {
+    const out = summariseLaunchpadUncollected(
+      [
+        mission(1, MISSION_STAGE.REFUNDING, 100),
+        mission(2, MISSION_STAGE.REFUND_WINDOW_PASSED, 100),
+      ],
+      0.025
+    )
+
+    expect(out.receivableETH).to.equal(0)
+    expect(out.contingentETH).to.equal(0)
+    expect(out.forfeitedETH).to.equal(5)
+    expect(out.refundingMissions).to.equal(2)
+  })
+
+  it('treats an unrecognised stage as unearned rather than assuming collection', () => {
+    const out = summariseLaunchpadUncollected([mission(1, 99, 100)], 0.025)
+    expect(out.receivableETH).to.equal(0)
+    expect(out.contingentETH).to.equal(2.5)
+  })
+
+  it('skips missions holding nothing', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(1, MISSION_STAGE.GOAL_MET, 0), mission(2, MISSION_STAGE.RAISING, -5)],
+      0.025
+    )
+    expect(out.receivableETH).to.equal(0)
+    expect(out.contingentETH).to.equal(0)
+    expect(out.receivableMissions).to.equal(0)
+    expect(out.contingentMissions).to.equal(0)
+  })
+
+  it('sums several funded missions at the configured fee rate', () => {
+    const out = summariseLaunchpadUncollected(
+      [
+        mission(1, MISSION_STAGE.GOAL_MET, 200),
+        mission(2, MISSION_STAGE.GOAL_MET, 300),
+        mission(3, MISSION_STAGE.RAISING, 100),
+      ],
+      0.025
+    )
+    expect(out.receivableETH).to.equal(12.5)
+    expect(out.contingentETH).to.equal(2.5)
+    expect(out.receivableMissions).to.equal(2)
+  })
+
+  it('returns an empty summary for no missions', () => {
+    const out = summariseLaunchpadUncollected([])
+    expect(out.receivableETH).to.equal(0)
+    expect(out.contingentETH).to.equal(0)
+    expect(out.forfeitedETH).to.equal(0)
   })
 })

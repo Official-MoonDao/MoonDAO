@@ -28,6 +28,7 @@ import { getAUMHistoryOnchain } from '@/lib/treasury/aum-onchain'
 import { getCanonicalSubscriptionRevenue } from '@/lib/treasury/canonicalRevenue'
 import { getProgramRevenue } from '@/lib/treasury/programRevenue'
 import { getHistoricalRevenue } from '@/lib/treasury/revenue'
+import { getUncollectedRevenue } from '@/lib/treasury/uncollectedRevenue'
 
 const DAY_MS = 86400000
 
@@ -89,6 +90,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Reuses the memoised treasury transaction list the call above warmed.
     const programs = await getProgramRevenue(windowStart, now, ethPrice)
     const revenueStreams = await getHistoricalRevenue(aum.defiData, 365)
+
+    // Fees we have a claim on but have not received. Never folded into revenue
+    // or runway — a failure here should cost us the section, not the endpoint.
+    let uncollected = null
+    try {
+      uncollected = await getUncollectedRevenue(ethPrice)
+      warnings.push(...uncollected.warnings)
+    } catch (err: any) {
+      warnings.push(`Uncollected revenue unavailable: ${err?.message || 'read failed'}`)
+    }
 
     const citizenUSD = subs.citizen.totalUSD
     const teamUSD = subs.team.totalUSD
@@ -253,6 +264,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         cashAnnualUSD,
         accruedAnnualUSD,
         unattributedInflows: programs.unclassified,
+        uncollected,
         excluded: EXCLUDED_FROM_REVENUE,
         methodology:
           'Trailing 365 days. Cash streams are ETH that actually reached the Arbitrum treasury, matched by the sending contract. Accrued streams (LP fees, staking yield) are earned but stay inside the position, so they raise AUM rather than funding burn. ERC-20 inflows and revenue paid to non-treasury addresses are not counted.',
