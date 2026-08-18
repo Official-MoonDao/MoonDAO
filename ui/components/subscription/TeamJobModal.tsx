@@ -23,6 +23,7 @@ import {
   JobPostingDoc,
   MAX_SUMMARY_CHARS,
   buildJobMetadata,
+  locationTypeLabel,
   normalizeJobPostingDoc,
   parseJobMetadata,
   serializeJobMetadata,
@@ -162,6 +163,17 @@ function fromPairs(items: any[] | undefined, keys: [string, string]): string {
   return items
     .map((item) => (item[keys[1]] ? `${item[keys[0]]} | ${item[keys[1]]}` : item[keys[0]]))
     .join('\n')
+}
+
+/** Inverse of `formatLocation`: region from an envelope card string. */
+function regionFromEnvelope(location?: string, locationType?: JobLocationType): string {
+  if (!location) return ''
+  if (!locationType) return location
+  const label = locationTypeLabel(locationType)
+  if (!label) return location
+  if (location === label) return ''
+  const prefix = `${label} · `
+  return location.startsWith(prefix) ? location.slice(prefix.length) : location
 }
 
 function Select({
@@ -311,7 +323,7 @@ export default function TeamJobModal({
           commitmentType: existingMetadata.commitmentType || '',
           hoursPerWeek: existingMetadata.hoursPerWeek ? String(existingMetadata.hoursPerWeek) : '',
           locationType: existingMetadata.locationType || '',
-          region: existingMetadata.locationType ? '' : existingMetadata.location || '',
+          region: regionFromEnvelope(existingMetadata.location, existingMetadata.locationType),
           compDisplay: existingMetadata.compensation || '',
           skills: (existingMetadata.skills || []).join(', '),
         }
@@ -417,7 +429,7 @@ export default function TeamJobModal({
       },
       location: {
         type: (form.locationType || undefined) as JobLocationType | undefined,
-        region: form.region || (!form.locationType ? existingMetadata.location : undefined),
+        region: form.region,
         timezones: form.timezones,
       },
       compensation: {
@@ -458,13 +470,6 @@ export default function TeamJobModal({
         if (envelope.paid === undefined) {
           envelope.paid = existingMetadata.paid ?? true
         }
-      }
-      const locationTypeUnchanged =
-        (form.locationType || undefined) === existingMetadata.locationType
-      if (existingMetadata.location && !form.region && locationTypeUnchanged) {
-        envelope.location = existingMetadata.location
-      } else if (!envelope.location && existingMetadata.location) {
-        envelope.location = existingMetadata.location
       }
     }
 
