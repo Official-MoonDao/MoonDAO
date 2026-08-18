@@ -4,6 +4,7 @@
 **Prize:** P1 in [`DEPRIZE_FIRST_PRIZE_CANDIDATES.md`](./DEPRIZE_FIRST_PRIZE_CANDIDATES.md)
 **Shape:** 12-month arc, hardware competition, one climactic 354-hour event
 **Companion plan:** [`DEPRIZE_GTM_SIX_SECONDS_LATE.md`](./DEPRIZE_GTM_SIX_SECONDS_LATE.md)
+**Outreach list:** [`deprize-survive-the-night-outreach.csv`](./deprize-survive-the-night-outreach.csv) — 60 named groups, ranked
 **Last updated:** 2026-08-18
 
 ---

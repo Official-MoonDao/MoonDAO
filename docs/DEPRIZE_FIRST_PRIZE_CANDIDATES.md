@@ -4,6 +4,7 @@
 **Last updated:** 2026-08-18
 **Related:** [`DEPRIZE.md`](./DEPRIZE.md) (mechanism), [`DEPRIZE_ROSTER_CHANGES.md`](./DEPRIZE_ROSTER_CHANGES.md) (roster/generations), [`.cursor/plans/moondao_lunar_simulator_08e60e6b.plan.md`](../.cursor/plans/moondao_lunar_simulator_08e60e6b.plan.md) (Lunar Atlas / shared goals)
 **Launch plans:** [`DEPRIZE_GTM_SURVIVE_THE_NIGHT.md`](./DEPRIZE_GTM_SURVIVE_THE_NIGHT.md) (P1), [`DEPRIZE_GTM_SIX_SECONDS_LATE.md`](./DEPRIZE_GTM_SIX_SECONDS_LATE.md) (P9)
+**P1 outreach list:** [`deprize-survive-the-night-outreach.csv`](./deprize-survive-the-night-outreach.csv)
 
 ---
 
