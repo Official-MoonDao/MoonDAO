@@ -9,15 +9,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 
-// Shape of GET /api/eb/financial-summary. Kept local to the consumer — the
-// route is the contract, and mirroring it here keeps the fetch typed without
-// exporting server types into the client bundle.
 type Stream = {
   label: string
   annualUSD: number
   txCount?: number
   available?: boolean
-  /** False for income that accrues inside a position rather than reaching a Safe. */
   cash?: boolean
   basis?: string
 }
@@ -37,6 +33,9 @@ type Uncollected = {
     kind: 'receivable' | 'contingent'
     eth: number
     usd: number
+    raisedETH?: number
+    raisedUSD?: number
+    pledgedUSD?: number
     detail: string
     available: boolean
   }[]
@@ -52,6 +51,20 @@ type RunwayScenario = {
   exhaustionDate: string | null
 }
 
+type AssetClass = {
+  label: string
+  amount: number | null
+  unit: string | null
+  usd: number
+}
+
+type Wallet = {
+  name: string
+  address: string
+  chain: string
+  usd: number
+}
+
 type FinancialSummary = {
   meta: {
     calculatedAt: string
@@ -61,14 +74,9 @@ type FinancialSummary = {
   }
   assets: {
     liquidUSD: number
-    stakedEth: {
-      ethStaked: number
-      activeValidators: number
-      usd: number
-      note: string
-    }
     defiLpUSD: number
-    totalRecognizedUSD: number
+    breakdown: AssetClass[]
+    wallets: Wallet[]
     history: { timestamp: number; value: number }[]
   }
   revenue: {
@@ -127,7 +135,26 @@ function months(value: number | null) {
   return `${value.toFixed(1)} months`
 }
 
+function shortAddr(address: string) {
+  if (!address || address.length < 10) return address
+  return `${address.slice(0, 6)}…${address.slice(-4)}`
+}
+
+function holdingLabel(row: AssetClass) {
+  if (row.amount != null && row.unit) {
+    return `${row.amount.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${row.unit}`
+  }
+  return row.label
+}
+
 const PANEL = 'bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-xl'
+
+const ASSET_BAR: Record<string, string> = {
+  ETH: 'bg-indigo-400/80',
+  BTC: 'bg-amber-400/80',
+  Stablecoins: 'bg-emerald-400/80',
+  POL: 'bg-violet-400/70',
+}
 
 function MetricTile({
   icon,
@@ -161,7 +188,6 @@ function MetricTile({
   )
 }
 
-/** Labelled amount row with an optional proportional bar. */
 function Row({
   label,
   value,
@@ -270,9 +296,6 @@ export default function ExecutiveFinancials() {
 
   const { assets, revenue, burn, runway, meta } = data
   const primaryMonths = runway.primary.months
-
-  // Runway is the headline risk metric, so it gets a colour: under 6 months is
-  // critical, under 12 is worth flagging.
   const runwayTone =
     primaryMonths === null
       ? 'positive'
@@ -284,6 +307,9 @@ export default function ExecutiveFinancials() {
 
   const grossMonthly = burn.grossMonthlyUSD
   const maxStream = Math.max(...revenue.streams.map((s) => s.annualUSD), 1)
+  const wallets = (assets.wallets || []).filter((w) => w.usd >= 1)
+  const lpNote =
+    assets.defiLpUSD > 0 ? `${usd(assets.defiLpUSD)} in Uniswap LP (non-MOONEY side)` : undefined
 
   return (
     <div className="flex flex-col gap-6">
@@ -307,17 +333,15 @@ export default function ExecutiveFinancials() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <MetricTile
           icon={<WalletIcon className="w-4 h-4" />}
-          label="Liquid assets"
+          label="Assets"
           value={usd(assets.liquidUSD)}
-          sub={`${usd(assets.totalRecognizedUSD)} including ${assets.stakedEth.ethStaked.toFixed(
-            0
-          )} staked ETH`}
+          sub={lpNote}
         />
         <MetricTile
           icon={<FireIcon className="w-4 h-4" />}
           label="Net burn / month"
           value={usd(burn.netMonthlyUSD)}
-          sub={`${usd(grossMonthly)} gross less ${usd(burn.revenueMonthlyUSD)} revenue`}
+          sub={`${usd(grossMonthly)} gross less ${usd(burn.revenueMonthlyUSD)} cash revenue`}
         />
         <MetricTile
           icon={<ClockIcon className="w-4 h-4" />}
@@ -326,23 +350,21 @@ export default function ExecutiveFinancials() {
           tone={runwayTone as any}
           sub={
             runway.primary.exhaustionDate
-              ? `Liquid assets exhausted ${runway.primary.exhaustionDate} at constant burn`
+              ? `Exhausted ${runway.primary.exhaustionDate} at constant burn`
               : 'Revenue covers approved costs'
           }
         />
         <MetricTile
           icon={<BanknotesIcon className="w-4 h-4" />}
           label="Revenue (trailing year)"
-          value={usd(revenue.annualUSD)}
-          sub={`Covers ${(revenue.coverageOfGrossBurn * 100).toFixed(1)}% of gross cost${
-            revenue.isMeasured ? '' : ' — stated figure, not measured'
-          }`}
+          value={usd(revenue.cashAnnualUSD ?? revenue.annualUSD)}
+          sub={`Covers ${(revenue.coverageOfGrossBurn * 100).toFixed(1)}% of gross cost`}
         />
       </div>
 
       <div className={PANEL}>
-        <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
-          <h2 className="font-GoodTimes text-white text-sm">Assets under management</h2>
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+          <h2 className="font-GoodTimes text-white text-sm">Assets</h2>
           <button
             type="button"
             onClick={load}
@@ -353,12 +375,48 @@ export default function ExecutiveFinancials() {
             Refresh
           </button>
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+          <div>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-3">By asset</h3>
+            <div className="space-y-3 text-sm">
+              {(assets.breakdown || []).map((row) => (
+                <Row
+                  key={row.label}
+                  label={`${row.label}${
+                    row.amount != null && row.unit ? ` · ${holdingLabel(row)}` : ''
+                  }`}
+                  value={usd(row.usd)}
+                  share={assets.liquidUSD > 0 ? row.usd / assets.liquidUSD : 0}
+                  barClass={ASSET_BAR[row.label] || 'bg-slate-400/70'}
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-3">Wallets</h3>
+            <div className="space-y-2 text-sm">
+              {wallets.map((w) => (
+                <div key={`${w.chain}:${w.address}`} className="flex justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-slate-300 truncate">{w.name}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">
+                      {w.chain} · {shortAddr(w.address)}
+                    </p>
+                  </div>
+                  <span className="text-slate-100 shrink-0">{usd(w.usd)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <AUMChart data={assets.history} height={280} isLoading={isLoading} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className={PANEL}>
-          <h2 className="font-GoodTimes text-white text-sm mb-4">Monthly cost stack</h2>
+          <h2 className="font-GoodTimes text-white text-sm mb-4">Monthly cost</h2>
           <div className="space-y-3 text-sm">
             {burn.ebCoreLines.map((line) => (
               <Row
@@ -371,32 +429,29 @@ export default function ExecutiveFinancials() {
               />
             ))}
             <Row
-              label={`Projects system (Q${burn.projectsBasis.quarter} ${burn.projectsBasis.year})`}
+              label={`Projects (Q${burn.projectsBasis.quarter} ${burn.projectsBasis.year})`}
               value={usd(burn.projectsMonthlyUSD)}
-              note={`${usd(burn.projectsBasis.quarterlyBudgetUSD)} per quarter — ${
-                burn.projectsBasis.note
-              }`}
+              note={`${usd(burn.projectsBasis.quarterlyBudgetUSD)} this quarter`}
               share={burn.projectsMonthlyUSD / grossMonthly}
               barClass="bg-emerald-400/70"
             />
             <Row label="Gross burn" value={usd(grossMonthly)} emphasis />
-            <Row label="Revenue credit" value={`(${usd(burn.revenueMonthlyUSD)})`} />
+            <Row label="Cash revenue" value={`(${usd(burn.revenueMonthlyUSD)})`} />
             <Row label="Net burn" value={usd(burn.netMonthlyUSD)} emphasis />
             <Row
-              label="If all at-risk bonuses pay"
+              label="If all bonuses pay"
               value={usd(burn.netMonthlyWithBonusesUSD)}
               note={`Adds the ${usd(burn.ebBonusMonthlyUSD)} monthly milestone pool`}
             />
           </div>
           <p className="mt-4 text-[11px] text-slate-500 leading-relaxed">
-            Executive Branch lines are MDP-{burn.ebBudgetSource.mdp} ({burn.ebBudgetSource.title},{' '}
-            {burn.ebBudgetSource.termMonths}-month term). Annualized: {usd(burn.annual.grossUSD)}{' '}
-            gross, {usd(burn.annual.netUSD)} net.
+            MDP-{burn.ebBudgetSource.mdp} · {usd(burn.annual.grossUSD)} gross /{' '}
+            {usd(burn.annual.netUSD)} net annualized.
           </p>
         </div>
 
         <div className={PANEL}>
-          <h2 className="font-GoodTimes text-white text-sm mb-4">Revenue by stream</h2>
+          <h2 className="font-GoodTimes text-white text-sm mb-4">Revenue</h2>
           <div className="space-y-3 text-sm">
             {revenue.streams.map((stream) => (
               <Row
@@ -405,13 +460,10 @@ export default function ExecutiveFinancials() {
                 value={stream.available === false ? 'Not live' : usd(stream.annualUSD)}
                 muted={stream.available === false}
                 note={[
-                  stream.cash === false ? 'Accrued, not cash' : null,
+                  stream.cash === false ? 'Accrued in the LP, not cash' : null,
                   typeof stream.txCount === 'number' && stream.available !== false
-                    ? `${stream.txCount} payment${
-                        stream.txCount === 1 ? '' : 's'
-                      } in the trailing year`
+                    ? `${stream.txCount} payment${stream.txCount === 1 ? '' : 's'}`
                     : null,
-                  stream.basis,
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -419,84 +471,43 @@ export default function ExecutiveFinancials() {
                 barClass={stream.cash === false ? 'bg-slate-400/50' : 'bg-sky-400/70'}
               />
             ))}
-            {typeof revenue.cashAnnualUSD === 'number' && (
-              <Row
-                label="Cash into the treasury"
-                value={usd(revenue.cashAnnualUSD)}
-                note="The part that can actually pay salaries"
-              />
-            )}
-            {typeof revenue.accruedAnnualUSD === 'number' && revenue.accruedAnnualUSD > 0 && (
-              <Row
-                label="Accrued (raises AUM)"
-                value={usd(revenue.accruedAnnualUSD)}
-                note="Earned inside LP and validator positions, not withdrawn"
-              />
-            )}
-            <Row label="Total (trailing year)" value={usd(revenue.annualUSD)} emphasis />
+            <Row
+              label="Cash into the treasury"
+              value={usd(revenue.cashAnnualUSD ?? revenue.annualUSD)}
+              emphasis
+            />
           </div>
-          <div className="mt-5 pt-4 border-t border-slate-700">
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Revenue covers{' '}
-              <span className="text-white font-semibold">
-                {(revenue.coverageOfGrossBurn * 100).toFixed(1)}%
-              </span>{' '}
-              of gross operating cost. Closing the gap needs roughly{' '}
-              <span className="text-white font-semibold">
-                {usd(Math.max(0, burn.annual.grossUSD - revenue.annualUSD))}
-              </span>{' '}
-              of additional annual revenue, or an equivalent cost reduction.
+          <p className="mt-5 pt-4 border-t border-slate-700 text-xs text-slate-400 leading-relaxed">
+            Cash covers{' '}
+            <span className="text-white font-semibold">
+              {(revenue.coverageOfGrossBurn * 100).toFixed(1)}%
+            </span>{' '}
+            of gross cost. Gap to break-even:{' '}
+            <span className="text-white font-semibold">
+              {usd(Math.max(0, burn.annual.grossUSD - (revenue.cashAnnualUSD ?? revenue.annualUSD)))}
+            </span>
+            /year.
+          </p>
+          {!revenue.isMeasured && (
+            <p className="mt-2 text-[11px] text-amber-300/80">
+              Nothing measured on-chain — showing the stated {usd(revenue.statedAnnualUSD)} figure.
             </p>
-            {!revenue.isMeasured && (
-              <p className="mt-2 text-[11px] text-amber-300/80">
-                No on-chain revenue measured for this window — showing the stated{' '}
-                {usd(revenue.statedAnnualUSD)} policy figure.
-              </p>
-            )}
-            {revenue.methodology && (
-              <p className="mt-3 text-[11px] text-slate-500 leading-relaxed">
-                <span className="text-slate-400">How this is measured:</span> {revenue.methodology}
-              </p>
-            )}
-          </div>
+          )}
 
           {revenue.unattributedInflows && revenue.unattributedInflows.txCount > 0 && (
             <div className="mt-4 pt-4 border-t border-slate-700">
               <h3 className="text-amber-300 text-xs font-semibold mb-1">
-                Unattributed inflows — {usd(revenue.unattributedInflows.totalUSD)} across{' '}
-                {revenue.unattributedInflows.txCount} transfer
-                {revenue.unattributedInflows.txCount === 1 ? '' : 's'}
+                Unattributed inflows — {usd(revenue.unattributedInflows.totalUSD)}
               </h3>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                {revenue.unattributedInflows.note}
-              </p>
               <ul className="mt-2 space-y-1">
                 {revenue.unattributedInflows.topSources.map((s) => (
                   <li key={s.address} className="flex justify-between gap-3 text-[11px]">
-                    <span className="font-mono text-slate-400 truncate">{s.address}</span>
-                    <span className="text-slate-300 shrink-0">
-                      {usd(s.totalUSD)} · {s.txCount}×
-                    </span>
+                    <span className="font-mono text-slate-400 truncate">{shortAddr(s.address)}</span>
+                    <span className="text-slate-300 shrink-0">{usd(s.totalUSD)}</span>
                   </li>
                 ))}
               </ul>
             </div>
-          )}
-
-          {revenue.excluded && revenue.excluded.length > 0 && (
-            <details className="mt-4 pt-4 border-t border-slate-700">
-              <summary className="text-xs text-slate-400 cursor-pointer hover:text-white">
-                Deliberately excluded from revenue ({revenue.excluded.length})
-              </summary>
-              <ul className="mt-3 space-y-2">
-                {revenue.excluded.map((item) => (
-                  <li key={item.label} className="text-[11px] leading-relaxed">
-                    <span className="text-slate-300">{item.label}</span>
-                    <span className="text-slate-500"> — {item.reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
           )}
         </div>
       </div>
@@ -514,34 +525,30 @@ export default function ExecutiveFinancials() {
                 label={line.label}
                 value={line.available ? usd(line.usd) : 'Not live'}
                 muted={!line.available}
-                note={`${line.kind === 'receivable' ? 'Earned' : 'Contingent'} · ${line.detail}`}
+                note={
+                  typeof line.raisedUSD === 'number'
+                    ? `${line.kind === 'receivable' ? 'Earned' : 'Contingent'} · ${
+                        line.detail
+                      }`
+                    : `${line.kind === 'receivable' ? 'Earned' : 'Contingent'} · ${line.detail}`
+                }
               />
             ))}
             <Row
-              label="Receivable — earned, awaiting collection"
+              label="Receivable"
               value={usd(revenue.uncollected.receivableUSD)}
               emphasis
             />
             <Row
-              label="Contingent — depends on missions closing"
+              label="Contingent"
               value={usd(revenue.uncollected.contingentUSD)}
-              note={`Across ${revenue.uncollected.missionsConsidered} mission(s) with an on-chain balance`}
             />
           </div>
-          {revenue.uncollected.receivableUSD > 0 && burn.netMonthlyUSD > 0 && (
-            <p className="mt-4 text-[11px] text-slate-500 leading-relaxed">
-              Collecting the receivable balance would cover roughly{' '}
-              <span className="text-slate-300">
-                {(revenue.uncollected.receivableUSD / burn.netMonthlyUSD).toFixed(1)} month(s)
-              </span>{' '}
-              of net burn. Runway above does not assume it.
-            </p>
-          )}
         </div>
       )}
 
       <div className={PANEL}>
-        <h2 className="font-GoodTimes text-white text-sm mb-4">Runway scenarios</h2>
+        <h2 className="font-GoodTimes text-white text-sm mb-4">Runway</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[520px]">
             <thead>
@@ -566,18 +573,11 @@ export default function ExecutiveFinancials() {
             </tbody>
           </table>
         </div>
-        <p className="mt-4 text-[11px] text-slate-500 leading-relaxed">
-          Staked ETH ({assets.stakedEth.ethStaked.toFixed(0)} ETH across{' '}
-          {assets.stakedEth.activeValidators} validators, {usd(assets.stakedEth.usd)}) is excluded
-          from liquid assets. {assets.stakedEth.note} Exiting it also shrinks the base the projects
-          budget is drawn from.
-        </p>
       </div>
 
       <p className="text-[11px] text-slate-500 leading-relaxed">
-        {meta.basis} ETH at {usd(meta.ethPriceUSD, { decimals: 2 })}. Read{' '}
-        {new Date(meta.calculatedAt).toLocaleString()}. Balances move continuously; this is a
-        point-in-time view, not an audited statement.
+        ETH at {usd(meta.ethPriceUSD, { decimals: 2 })}. Read{' '}
+        {new Date(meta.calculatedAt).toLocaleString()}. Point-in-time, not an audited statement.
       </p>
     </div>
   )

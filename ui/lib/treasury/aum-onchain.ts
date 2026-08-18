@@ -12,7 +12,10 @@
  *   - Uniswap V3 NFT positions on Ethereum + Polygon (only DeFi MoonDAO holds)
  *
  * NOT included in AUM (matches original):
- *   - Native staked ETH validators (96 ETH). Tracked separately in `stakedEth`.
+ *   - MOONEY balances (governance token, excluded throughout).
+ *   - Staked ETH is gone: the Kiln validators exited in 2025 and the ETH
+ *     returned to the Ethereum treasury on 15 June 2026. It is already in
+ *     the ETH Treasury Safe balance. Do not add it again.
  */
 
 import { LineChartData } from '@/components/layout/LineChart'
@@ -22,12 +25,7 @@ import { LineChartData } from '@/components/layout/LineChart'
 const ETHERSCAN_API = 'https://api.etherscan.io/v2/api'
 const ETHERSCAN_KEY = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || ''
 
-// MoonDAO custom staking contract (for the side-metric only).
-const STAKING_CONTRACT = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
-const STAKING_INITIAL_BLOCK = 21839730
-const ETH_PER_VALIDATOR = 32
-
-// MoonDAO main treasury (only safe that holds the staking + LP NFTs).
+// MoonDAO main treasury (holds the Uniswap V3 LP NFTs).
 const MOONDAO_TREASURY = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
 
 const SAFE_HEADERS: Record<string, string> = {
@@ -440,11 +438,18 @@ function priceForDate(
 
 // ── Per-safe historical USD reconstruction ────────────────────────────────────
 
+interface TokenHolding {
+  symbol: string
+  amount: number
+  usd: number
+}
+
 interface SafeHistory {
   /** Current total USD across all (non-excluded) tokens in this safe. */
   current: number
   /** date('YYYY-MM-DD') -> total USD on that day. */
   daily: Map<string, number>
+  holdings: TokenHolding[]
 }
 
 /**
@@ -469,7 +474,7 @@ async function processSafe(
     console.warn(
       `[AUM] Safe API failed for ${safe.name} — returning 0 (distorts averages!)`
     )
-    return { current: 0, daily: new Map(dates.map((d) => [d, 0])) }
+    return { current: 0, daily: new Map(dates.map((d) => [d, 0])), holdings: [] }
   }
 
   // Walk safe items, build per-token snapshot.
@@ -590,7 +595,13 @@ async function processSafe(
     }
   }
 
-  return { current: currentTotal, daily }
+  const holdings: TokenHolding[] = snaps.map((snap) => ({
+    symbol: snap.symbol,
+    amount: Number(snap.currentRaw) / 10 ** snap.decimals,
+    usd: snap.currentUsd,
+  }))
+
+  return { current: currentTotal, daily, holdings }
 }
 
 // ── Uniswap V3 LP NFT positions (the only DeFi MoonDAO holds) ─────────────────
@@ -832,56 +843,15 @@ function lpInvestmentValueUsd(p: UniV3LpPosition): number {
   return v0 + v1
 }
 
-// ── Staked ETH side metric (NOT counted in AUM, matches original) ─────────────
-
-async function getActiveStakedEth(): Promise<{
-  activeCount: number
-  ethStaked: number
-}> {
-  if (!ETHERSCAN_KEY) return { activeCount: 0, ethStaked: 0 }
-  try {
-    const depositSig = keccak256(
-      toUtf8Bytes('Deposit(address,address,bytes,bytes)')
-    )
-    const treasuryTopic =
-      '0x' + MOONDAO_TREASURY.slice(2).toLowerCase().padStart(64, '0')
-    const url =
-      `${ETHERSCAN_API}?chainid=1&module=logs&action=getLogs` +
-      `&address=${STAKING_CONTRACT}&topic0=${depositSig}` +
-      `&topic2=${treasuryTopic}&topic0_2_opr=and` +
-      `&fromBlock=${STAKING_INITIAL_BLOCK}&toBlock=latest&apikey=${ETHERSCAN_KEY}`
-    const resp = await fetchJson(url, { method: 'GET', host: 'etherscan' })
-    const logs = Array.isArray(resp?.result) ? resp.result : []
-    const pubKeys: string[] = []
-    for (const log of logs) {
-      const d = (log.data as string).replace(/^0x/, '')
-      // skip 2 offsets (64 chars each), then read pubkey length + bytes
-      const lenOffset = 128
-      const len = parseInt(d.slice(lenOffset, lenOffset + 64), 16)
-      if (!Number.isFinite(len) || len <= 0 || len > 200) continue
-      pubKeys.push('0x' + d.slice(lenOffset + 64, lenOffset + 64 + len * 2))
-    }
-    if (pubKeys.length === 0) return { activeCount: 0, ethStaked: 0 }
-
-    const withdrawnSel = keccak256(
-      toUtf8Bytes('getWithdrawnFromPublicKeyRoot(bytes32)')
-    ).slice(0, 10)
-    let active = 0
-    for (const pk of pubKeys) {
-      const root = keccak256(pk)
-      const callData = withdrawnSel + root.slice(2)
-      const r = await ethCall(1, STAKING_CONTRACT, callData)
-      const isWithdrawn = parseInt(r || '0x0', 16) === 1
-      if (!isWithdrawn) active++
-    }
-    return {
-      activeCount: active,
-      ethStaked: active * ETH_PER_VALIDATOR,
-    }
-  } catch (err) {
-    console.warn('[AUM] getActiveStakedEth failed:', err)
-    return { activeCount: 0, ethStaked: 0 }
+function lpHoldings(p: UniV3LpPosition): TokenHolding[] {
+  const out: TokenHolding[] = []
+  if (!EXCLUDED_SYMBOLS.has(p.symbol0) && p.amount0 > 0) {
+    out.push({ symbol: p.symbol0, amount: p.amount0, usd: p.amount0 * p.price0Usd })
   }
+  if (!EXCLUDED_SYMBOLS.has(p.symbol1) && p.amount1 > 0) {
+    out.push({ symbol: p.symbol1, amount: p.amount1, usd: p.amount1 * p.price1Usd })
+  }
+  return out
 }
 
 // ── Public entry point ────────────────────────────────────────────────────────
@@ -909,16 +879,25 @@ interface DefiData {
   protocols: DefiProtocol[]
 }
 
+export interface TreasuryWallet {
+  name: string
+  address: string
+  chain: string
+  usd: number
+}
+
+export interface TreasuryHolding {
+  symbol: string
+  amount: number
+  usd: number
+}
+
 interface AumResult {
   aumHistory: LineChartData[]
   aum: number
   defiData: DefiData
-  /** Side metric: staked ETH (not counted in AUM, matches CoinStats semantics). */
-  stakedEth: {
-    activeCount: number
-    ethStaked: number
-    currentUsd: number
-  }
+  holdings: TreasuryHolding[]
+  wallets: TreasuryWallet[]
 }
 
 /**
@@ -963,7 +942,8 @@ async function _getAUMHistoryOnchainImpl(
     aumHistory: [],
     aum: 0,
     defiData: { balance: 0, firstPoolCreationTimestamp: 0, protocols: [] },
-    stakedEth: { activeCount: 0, ethStaked: 0, currentUsd: 0 },
+    holdings: [],
+    wallets: [],
   }
   if (!ETHERSCAN_KEY) {
     console.error('NEXT_PUBLIC_ETHERSCAN_API_KEY is required')
@@ -989,7 +969,7 @@ async function _getAUMHistoryOnchainImpl(
       console.error(`[AUM] processSafe failed for ${safe.name}:`, err)
       safeResults.push({
         safe,
-        result: { current: 0, daily: new Map(dates.map((d) => [d, 0])) },
+        result: { current: 0, daily: new Map(dates.map((d) => [d, 0])), holdings: [] },
       })
     }
   }
@@ -1112,13 +1092,21 @@ async function _getAUMHistoryOnchainImpl(
     })
   }
 
-  // 6. Side metric: staked ETH (NOT included in `aum`).
-  const stakedInfo = await getActiveStakedEth()
-  const ethPriceMap = await fetchNativePriceHistory('ethereum', startMs, endMs)
-  const lastDate = dates[dates.length - 1]
-  const ethPxNow =
-    priceBySymbol.get('ETH') ?? priceForDate(ethPriceMap, lastDate, 0)
-  const stakedCurrentUsd = stakedInfo.ethStaked * ethPxNow
+  // 6. Current holdings: Safe tokens plus the non-MOONEY side of each LP.
+  const holdings: TreasuryHolding[] = []
+  for (const { result } of safeResults) {
+    holdings.push(...result.holdings)
+  }
+  for (const p of allLp) {
+    holdings.push(...lpHoldings(p))
+  }
+
+  const wallets: TreasuryWallet[] = safeResults.map(({ safe, result }) => ({
+    name: safe.name,
+    address: safe.address,
+    chain: String(safe.chain),
+    usd: result.current,
+  }))
 
   // 7. Build the chart-friendly history (timestamps in seconds).
   const aumHistory: LineChartData[] = dates.map((date) => ({
@@ -1139,12 +1127,7 @@ async function _getAUMHistoryOnchainImpl(
         `  + ${p.amount1.toFixed(4)} ${p.symbol1} ($${(p.amount1 * p.price1Usd).toFixed(2)})`
     )
   }
-  console.log(`  TOTAL AUM (excl. staked ETH): $${currentTotal.toFixed(2)}`)
-  console.log(
-    `  [side metric] Staked ETH: ${stakedInfo.activeCount} validators ` +
-      `× ${ETH_PER_VALIDATOR} = ${stakedInfo.ethStaked} ETH ` +
-      `× $${ethPxNow.toFixed(2)} = $${stakedCurrentUsd.toFixed(2)}`
-  )
+  console.log(`  TOTAL AUM: $${currentTotal.toFixed(2)}`)
   console.log(
     `[AUM On-chain] History: ${dates[0]} → ${dates[dates.length - 1]} (${dates.length} days)`
   )
@@ -1153,11 +1136,8 @@ async function _getAUMHistoryOnchainImpl(
     aumHistory,
     aum: currentTotal,
     defiData: { balance: defiBalance, firstPoolCreationTimestamp, protocols },
-    stakedEth: {
-      activeCount: stakedInfo.activeCount,
-      ethStaked: stakedInfo.ethStaked,
-      currentUsd: stakedCurrentUsd,
-    },
+    holdings,
+    wallets,
   }
 }
 

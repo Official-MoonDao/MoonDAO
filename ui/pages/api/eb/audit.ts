@@ -130,7 +130,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             valueUSD: inv.value.USD,
           }))
         ),
-        stakedEthSideMetric: aum.stakedEth,
+        holdings: aum.holdings,
+        wallets: aum.wallets,
       },
       currentQuarter: {
         averageUSD: curAvg,

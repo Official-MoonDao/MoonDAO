@@ -13,8 +13,14 @@ import {
   runwayExhaustionDate,
   runwayMonths,
 } from 'const/executiveFinance'
+import { aggregateHoldings } from '@/lib/treasury/assetBreakdown'
 import { ProgramSourceConfig, classifyTreasuryInflows } from '@/lib/treasury/programRevenue'
-import { MISSION_STAGE, summariseLaunchpadUncollected } from '@/lib/treasury/launchpadPipeline'
+import {
+  FRANK_MISSION_ID,
+  MISSION_STAGE,
+  effectiveMissionStage,
+  summariseLaunchpadUncollected,
+} from '@/lib/treasury/launchpadPipeline'
 
 describe('executiveFinance', () => {
   describe('computeBurnModel', () => {
@@ -186,11 +192,17 @@ describe('classifyTreasuryInflows', () => {
 })
 
 describe('summariseLaunchpadUncollected', () => {
-  const mission = (missionId: number, stage: number, undistributedETH: number) => ({
+  const mission = (
+    missionId: number,
+    stage: number,
+    undistributedETH: number,
+    name?: string
+  ) => ({
     missionId,
     projectId: missionId + 100,
     stage,
     undistributedETH,
+    name,
   })
 
   it('treats a funded mission as earned and one still raising as contingent', () => {
@@ -257,5 +269,62 @@ describe('summariseLaunchpadUncollected', () => {
     expect(out.receivableETH).to.equal(0)
     expect(out.contingentETH).to.equal(0)
     expect(out.forfeitedETH).to.equal(0)
+    expect(out.missions).to.deep.equal([])
+  })
+
+  it('lists Frank by name with the ETH raised so far, not just the fee', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(FRANK_MISSION_ID, MISSION_STAGE.RAISING, 80, 'Go to Space with Frank White')],
+      0.025
+    )
+    expect(out.missions).to.have.length(1)
+    expect(out.missions[0].name).to.equal('Go to Space with Frank White')
+    expect(out.missions[0].raisedETH).to.equal(80)
+    expect(out.missions[0].feeETH).to.equal(2)
+    expect(out.missions[0].kind).to.equal('contingent')
+    expect(out.contingentETH).to.equal(2)
+  })
+
+  it('does not forfeit Frank when MissionCreator still reports the first-round refund stage', () => {
+    const stale = {
+      missionId: FRANK_MISSION_ID,
+      projectId: 40,
+      stage: MISSION_STAGE.REFUND_WINDOW_PASSED,
+      undistributedETH: 80,
+    }
+    expect(effectiveMissionStage(stale)).to.equal(MISSION_STAGE.RAISING)
+    const out = summariseLaunchpadUncollected([stale], 0.025)
+    expect(out.contingentETH).to.equal(2)
+    expect(out.forfeitedETH).to.equal(0)
+    expect(out.missions[0].kind).to.equal('contingent')
+  })
+})
+
+describe('aggregateHoldings', () => {
+  it('rolls WETH into ETH and WBTC into BTC, and groups stables', () => {
+    const out = aggregateHoldings([
+      { symbol: 'ETH', amount: 10, usd: 20000 },
+      { symbol: 'WETH', amount: 2, usd: 4000 },
+      { symbol: 'WBTC', amount: 0.5, usd: 30000 },
+      { symbol: 'USDC', amount: 1000, usd: 1000 },
+      { symbol: 'DAI', amount: 500, usd: 500 },
+    ])
+
+    expect(out.map((r) => r.label)).to.deep.equal(['ETH', 'BTC', 'Stablecoins'])
+    expect(out[0].amount).to.equal(12)
+    expect(out[0].usd).to.equal(24000)
+    expect(out[1].amount).to.equal(0.5)
+    expect(out[1].usd).to.equal(30000)
+    expect(out[2].usd).to.equal(1500)
+    expect(out[2].amount).to.equal(null)
+  })
+
+  it('drops dust and keeps other tokens as their own rows', () => {
+    const out = aggregateHoldings([
+      { symbol: 'ETH', amount: 1, usd: 2000 },
+      { symbol: 'DUST', amount: 1, usd: 0.4 },
+      { symbol: 'LINK', amount: 10, usd: 150 },
+    ])
+    expect(out.map((r) => r.label)).to.deep.equal(['ETH', 'LINK'])
   })
 })

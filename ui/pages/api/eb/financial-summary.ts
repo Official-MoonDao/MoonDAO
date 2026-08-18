@@ -24,6 +24,7 @@ import { isOperator } from 'middleware/isOperator'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getETHPrice } from '@/lib/etherscan'
+import { aggregateHoldings } from '@/lib/treasury/assetBreakdown'
 import { getAUMHistoryOnchain } from '@/lib/treasury/aum-onchain'
 import { getCanonicalSubscriptionRevenue } from '@/lib/treasury/canonicalRevenue'
 import { getProgramRevenue } from '@/lib/treasury/programRevenue'
@@ -83,8 +84,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     // Subscription revenue comes from the canonical on-chain helper rather
     // than getHistoricalRevenue, whose cached pipeline can silently return $0
-    // under Etherscan rate limits. DeFi fees and staking yield have no
-    // canonical equivalent, so they come from the revenue pipeline.
+    // under Etherscan rate limits. LP fees have no canonical equivalent, so
+    // they come from the revenue pipeline.
     const windowStart = now - 365 * DAY_MS
     const subs = await getCanonicalSubscriptionRevenue(windowStart, now, ethPrice)
     // Reuses the memoised treasury transaction list the call above warmed.
@@ -106,9 +107,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const launchpadUSD = programs.launchpad.totalUSD
     const deprizeUSD = programs.deprize.totalUSD
     const defiFeesUSD = revenueStreams.defiRevenue
-    const stakingUSD = revenueStreams.stakingRevenue
     const cashMeasuredUSD = citizenUSD + teamUSD + launchpadUSD + deprizeUSD
-    const accruedMeasuredUSD = defiFeesUSD + stakingUSD
+    const accruedMeasuredUSD = defiFeesUSD
     const measuredAnnualRevenueUSD = cashMeasuredUSD + accruedMeasuredUSD
 
     if (programs.unclassified.totalUSD > 0) {
@@ -135,17 +135,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const cashAnnualUSD = revenueIsMeasured ? cashMeasuredUSD : STATED_ANNUAL_REVENUE_USD
     const accruedAnnualUSD = revenueIsMeasured ? accruedMeasuredUSD : 0
 
-    // Only cash can offset operating cost. Accrued LP fees and staking yield
-    // stay inside those positions and raise AUM instead of funding burn.
+    // Only cash can offset operating cost. Accrued LP fees stay inside the
+    // pool and raise AUM instead of funding burn.
     const burn = computeBurnModel({
       quarterlyProjectBudgetUSD: PROJECT_CYCLE.budgetUSD,
       annualRevenueUSD: cashAnnualUSD,
     })
 
-    // Official AUM excludes staked ETH (restricted — it cannot pay invoices).
-    // Both bases are reported because the difference is material to runway.
     const liquidUSD = aum.aum
-    const withStakedUSD = aum.aum + aum.stakedEth.currentUsd
+    const breakdown = aggregateHoldings(aum.holdings)
 
     const scenario = (assetsUSD: number, netMonthlyUSD: number) => {
       const months = runwayMonths(assetsUSD, netMonthlyUSD)
@@ -174,17 +172,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         warnings,
       },
       assets: {
-        // Official AUM policy: eight designated Safes on their home chains
-        // plus the WETH side of the Uniswap V3 position, excluding MOONEY.
+        // Official AUM: eight designated Safes on their home chains plus the
+        // non-MOONEY side of the Uniswap V3 position. MOONEY is excluded.
         liquidUSD,
-        stakedEth: {
-          ethStaked: aum.stakedEth.ethStaked,
-          activeValidators: aum.stakedEth.activeCount,
-          usd: aum.stakedEth.currentUsd,
-          note: 'Restricted — excluded from official AUM until validators are exited.',
-        },
         defiLpUSD: aum.defiData.balance,
-        totalRecognizedUSD: withStakedUSD,
+        breakdown,
+        wallets: aum.wallets,
         history: aum.aumHistory,
       },
       revenue: {
@@ -236,14 +229,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             cash: true,
             basis: programs.deprize.note,
           },
-          {
-            label: 'ETH staking yield',
-            annualUSD: stakingUSD,
-            available: true,
-            cash: false,
-            basis:
-              'Beacon-chain validator performance over the trailing year. Accrues with the validators and cannot pay an invoice until they are exited.',
-          },
           // When the measured streams are all zero the total is the MDP-249
           // stated figure — include it here so the breakdown sums to annualUSD.
           ...(!revenueIsMeasured
@@ -267,7 +252,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         uncollected,
         excluded: EXCLUDED_FROM_REVENUE,
         methodology:
-          'Trailing 365 days. Cash streams are ETH that actually reached the Arbitrum treasury, matched by the sending contract. Accrued streams (LP fees, staking yield) are earned but stay inside the position, so they raise AUM rather than funding burn. ERC-20 inflows and revenue paid to non-treasury addresses are not counted.',
+          'Trailing 365 days. Cash is ETH that reached the Arbitrum treasury, matched by the sending contract. LP fees accrue inside the pool and raise AUM rather than funding burn.',
         source: subs.source,
       },
       burn: {
@@ -285,20 +270,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         primary: scenario(liquidUSD, burn.netMonthlyUSD),
         scenarios: [
           {
-            label: 'Liquid assets, base burn',
+            label: 'Base burn',
             ...scenario(liquidUSD, burn.netMonthlyUSD),
           },
           {
-            label: 'Liquid assets, bonuses paid',
+            label: 'If all bonuses pay',
             ...scenario(liquidUSD, burn.netMonthlyWithBonusesUSD),
-          },
-          {
-            label: 'Liquid + staked ETH, base burn',
-            ...scenario(withStakedUSD, burn.netMonthlyUSD),
-          },
-          {
-            label: 'Liquid + staked ETH, bonuses paid',
-            ...scenario(withStakedUSD, burn.netMonthlyWithBonusesUSD),
           },
         ],
       },
