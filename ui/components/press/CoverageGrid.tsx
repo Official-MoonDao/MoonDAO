@@ -28,7 +28,9 @@ function CoverageCard({ item }: { item: CoverageItem }) {
 }
 
 export default function CoverageGrid({ coverage }: { coverage: CoverageItem[] }) {
-  const years = Array.from(new Set(coverage.map((item) => pressYear(item.date))))
+  const years = Array.from(new Set(coverage.map((item) => pressYear(item.date)))).sort(
+    (a, b) => Number(b) - Number(a)
+  )
 
   return (
     <div className="flex flex-col gap-8">
