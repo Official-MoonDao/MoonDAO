@@ -1,6 +1,8 @@
 # Plan: Bringing MoonDAO Documentation Into the App
 
-Status: proposal, awaiting decisions in [§8](#8-decisions-needed-before-phase-1).
+Status: proposal. Decision 3 in §8 has since been answered — see
+[§9, Revision: dropping Obsidian](#9-revision-dropping-obsidian), which supersedes the
+recommendation in §6.
 Scope: how `docs.moondao.com` (Quartz + Obsidian) relates to the `ui/` Next.js app.
 
 ---
@@ -435,3 +437,144 @@ Independent of everything below; mergeable on its own.
    Codespaces flow, Option 6 should be pulled forward ahead of Phase 4.
 6. **Publish latency tolerance.** If "a doc edit must be live in under a minute without an app
    deploy" is a hard requirement, add Option 4's ISR in Phase 2 rather than deferring it.
+
+---
+
+## 9. Revision: dropping Obsidian
+
+Decision 3 above was answered: the Obsidian vault was adopted in the hope that it would draw
+non-engineering contributors, and it hasn't. The recommendation in §6 was weighted heavily toward
+preserving that workflow, so it changes. This section supersedes it.
+
+### 9.1 The contribution data supports the premise
+
+527 commits over the documentation repo's life, from effectively five people (identities merged
+across their multiple git addresses):
+
+| Author | Commits |
+|---|---|
+| Mitchie | 144 |
+| name.get / colinmfoster4723 | 123 |
+| Philip Linden | 110 |
+| ryand2d | 84 |
+| pmoncada | 58 |
+| everyone else (incl. 2 bot commits) | 8 |
+
+Those five account for 98% of all commits. All 100 of the most recent merged PRs came from that
+same set of accounts. Activity is also declining sharply — 89 commits in 2023, 332 in 2024, 86 in
+2025, 20 so far in 2026 — and several of the 2026 commits are build repairs rather than content.
+
+There is no drive-by contributor population to protect. The premise holds.
+
+### 9.2 "Obsidian" is four separable things
+
+Worth untangling before deciding what to drop, because they carry very different costs:
+
+1. **Obsidian the editor.** A markdown editor. Nobody is obliged to use it, and dropping it costs
+   literally nothing — it leaves no trace in the repo. Any per-seat licence or Sync subscription
+   goes away with it.
+2. **The Obsidian dialect in the content.** Wikilinks, transclusions, callouts. This is the part
+   with actual consequences, discussed below.
+3. **Quartz, the static site generator.** Independent of Obsidian; it just happens to speak the
+   dialect. Dropping it is the §5 Option 2/3 work.
+4. **The separate repository and GitHub Pages host.** Also independent, and the thing that makes
+   the two sides awkward to move between in the first place.
+
+You can drop any of these without dropping the others. Dropping (1) is free. The question is
+really about (2), (3), and (4).
+
+### 9.3 What is genuinely lost
+
+**Rename safety.** The largest real loss. `[[Project System]]` resolves by note name, and Obsidian
+rewrites every reference when a file is renamed. With plain relative links, a rename silently
+breaks every inbound link. 69 wikilinks across 28 files depend on this today.
+
+This one converts into a *gain*, though: a build-time link checker that fails CI on an unresolved
+link is strictly stronger than what exists now. `[[Outbound SOP]]` is already broken in the vault
+and nothing catches it.
+
+**Transclusion / single-sourcing.** 26 embeds, of which roughly 23 inline glossary definitions and
+member bios into other pages — the Constitution shows the definition of "Senate" inline rather than
+linking out. Drop transclusion and you either duplicate that prose (and let it drift) or convert
+the embeds to links (and change the reading experience). Keeping it in our own renderer is a small
+remark plugin, so this is cheap to preserve if we want it.
+
+**Alias redirects.** 20 files declare `aliases:`, and Quartz emits redirect pages for each. Drop
+them without a replacement redirect map and those URLs 404.
+
+**Auto-generated tag and folder pages.** Part of why Quartz emits 117 pages from 72 files. 53 files
+carry tags across 15 distinct tag values. Those index URLs die unless rebuilt or redirected.
+
+**Backlinks.** The "what links here" panel. Nearly free to keep, since the link checker needs the
+same link graph anyway.
+
+**Graph view.** Genuinely lost unless rebuilt. On a 72-page corpus with 69 links it's decorative —
+recommend dropping it and not looking back.
+
+**Hover popovers.** Nice; reimplementable later against the search index.
+
+**Full-text search and RSS.** Quartz gives both free. Search becomes a gain, since replacing it
+unifies documentation with `GlobalSearch`. RSS would need a subscriber check before dropping — the
+app's `next-sitemap` already covers the sitemap half.
+
+**Somewhere to keep unpublished material.** The repo's README describes it as holding
+"documentation, planning, project notes, and other reference material", and `MoonDAO/media-files/`
+holds **59 MB** of research PDFs and images outside the published `docs/` tree (`docs/_media-files/`
+is only 1.1 MB). That 59 MB should not follow the docs into the app repo. It needs a destination
+before the vault repo is retired. The six files in `MoonDAO/templates/` are Obsidian authoring
+templates, already excluded from the build by `ignorePatterns`, and can simply be dropped.
+
+**Blast-radius separation.** Today a bad doc PR cannot break the app build and vice versa. Merged,
+a documentation typo runs the app's full CI and a broken app build blocks documentation publishing.
+Mitigate with path-filtered CI.
+
+### 9.4 What is gained
+
+**The Quartz upgrade tax goes away, and it is not hypothetical.** In June 2026 the docs site build
+broke because the workflow tracked Quartz's moving `v5` branch, and it took two emergency commits
+to repair:
+
+> `fix: pin Quartz checkout to v5.0.0 to restore broken build` — *"The upstream jackyzha0/quartz v5
+> branch introduced a breaking change in Head.tsx that imports from '../../.quartz/plugins', a path
+> that does not exist in MoonDAO's site config."*
+
+That fix is also still incomplete. The workflow pins the *checkout* to `v5.0.0` but then runs
+`npm i jackyzha0/quartz`, which installs from the default branch — so the build retains a floating
+upstream dependency and can break again the same way.
+
+**The cross-repo deploy hook disappears.** §5 Option 2's one genuinely new piece of plumbing — a
+Vercel Deploy Hook fired from the documentation repo's workflow — is unnecessary if the content
+lives in this repo. That was the main operational risk in the original recommendation, and this
+decision removes it.
+
+Beyond that: one CI system instead of two, one host, one analytics tag, one place to look, and doc
+changes that ship atomically with the code they describe.
+
+### 9.5 Revised recommendation
+
+Adopt **§5 Option 3** (content in the monorepo) rather than Option 2, and **normalize the Obsidian
+dialect away during migration** instead of supporting it indefinitely.
+
+Concretely, the conversion is a single scripted pass over 72 files:
+
+| Construct | Count | Treatment |
+|---|---|---|
+| Wikilinks | 69 | Convert to relative markdown links, mechanically, once. Add a CI link checker. |
+| Transclusions | 26 | Keep the remark plugin (~23 are glossary/bio single-sourcing), or convert to links — a product call, not a technical one. |
+| Callouts | 4 | Convert to GFM alerts by hand. |
+| `dataview` block | 1 | Generate the glossary table in `loadDocs.ts` from the folder. |
+| `aliases:` | 20 files | Emit a redirect map in `next.config.js`. |
+| `slug:` overrides | 13 files | Honour in the slugifier, as already planned. |
+| Tag pages | 15 tags | Rebuild or redirect — decide before cutover. |
+
+Everything else in the phased plan (§7) stands, with these adjustments:
+
+- **Phase 1** loses `scripts/fetch-docs.mjs` and gains a one-time `scripts/migrate-vault.mjs` that
+  performs the conversion above and writes into `ui/content/docs/`. Preserve history with
+  `git subtree` or a filtered import so authorship survives.
+- **Phase 3** loses the deploy-hook step entirely.
+- **Phase 5** becomes: move the 59 MB of unpublished `media-files/` somewhere durable, then point
+  `docs.moondao.com` at 301s and archive the vault repo.
+- The slug-parity test against the live `contentIndex.json` becomes *more* important, not less,
+  since it will be the only remaining check that the migration preserved every public URL. Capture
+  a copy of that file before the Quartz site is retired.
