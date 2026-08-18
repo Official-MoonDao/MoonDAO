@@ -48,6 +48,7 @@ import {
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
   USD_BUDGET,
+  ANNOUNCE_PROJECT_BUDGET,
 } from 'const/config'
 import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import {
@@ -1228,7 +1229,7 @@ export default function SignedInDashboard({
         <DashboardActiveProjects
           currentProjects={currentProjects}
           usdBudget={USD_BUDGET}
-          showBudget={true}
+          showBudget={ANNOUNCE_PROJECT_BUDGET}
           maxProjects={6}
         />
 

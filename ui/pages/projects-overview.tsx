@@ -1,4 +1,5 @@
 import {
+  ANNOUNCE_PROJECT_BUDGET,
   ARBITRUM_ASSETS_URL,
   POLYGON_ASSETS_URL,
   MAX_BUDGET_USD,
@@ -102,7 +103,7 @@ const ProjectsOverview: React.FC<{
 }> = ({ currentProjects }) => {
   const title = 'MoonDAO Project System'
   const description =
-    "Quarterly grants for lunar-settlement work. See this quarter's max, what we fund, and how to submit a strong proposal."
+    'Quarterly grants for lunar-settlement work. See what we fund and how to submit a strong proposal.'
 
   const { quarter, year } = getRelativeQuarter(0)
   const reduceMotion = useReducedMotion()
@@ -244,16 +245,22 @@ const ProjectsOverview: React.FC<{
           {/* Quarter facts — single strip */}
           <section className="border-y border-white/10 bg-[#050810] px-4 py-12 md:px-8">
             <Reveal>
-              <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-                    Max per project · Q{quarter} {year}
-                  </p>
-                  <p className="mt-2 font-GoodTimes text-4xl text-white md:text-5xl">
-                    ${MAX_BUDGET_USD.toLocaleString()}
-                  </p>
-                  <p className="mt-2 text-sm text-white/45">1/5 of the quarterly project budget</p>
-                </div>
+              <div
+                className={`mx-auto grid max-w-6xl gap-10 ${
+                  ANNOUNCE_PROJECT_BUDGET ? 'md:grid-cols-3' : 'md:grid-cols-2'
+                }`}
+              >
+                {ANNOUNCE_PROJECT_BUDGET && (
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+                      Max per project · Q{quarter} {year}
+                    </p>
+                    <p className="mt-2 font-GoodTimes text-4xl text-white md:text-5xl">
+                      ${MAX_BUDGET_USD.toLocaleString()}
+                    </p>
+                    <p className="mt-2 text-sm text-white/45">1/5 of the quarterly project budget</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">Submit by</p>
                   <p className="mt-2 font-GoodTimes text-2xl text-white md:text-3xl">
@@ -401,14 +408,16 @@ const ProjectsOverview: React.FC<{
                   completed work sit alongside that pool.
                 </p>
                 <div className="mt-10 space-y-8">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">
-                      Stablecoin retro pool
-                    </p>
-                    <p className="mt-2 font-GoodTimes text-4xl text-white">
-                      ${NEXT_QUARTER_BUDGET_USD.toLocaleString()}
-                    </p>
-                  </div>
+                  {ANNOUNCE_PROJECT_BUDGET && (
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+                        Stablecoin retro pool
+                      </p>
+                      <p className="mt-2 font-GoodTimes text-4xl text-white">
+                        ${NEXT_QUARTER_BUDGET_USD.toLocaleString()}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">
                       vMOONEY retro pool
@@ -503,7 +512,7 @@ const ProjectsOverview: React.FC<{
               <DashboardActiveProjects
                 currentProjects={currentProjects}
                 usdBudget={usdBudget}
-                showBudget={true}
+                showBudget={ANNOUNCE_PROJECT_BUDGET}
                 maxProjects={6}
               />
             </div>{' '}
@@ -517,8 +526,8 @@ const ProjectsOverview: React.FC<{
                 Bring a lunar-ready idea
               </h2>
               <p className="mx-auto mt-6 max-w-xl text-lg text-gray-300">
-                Start from the template, keep the ask under ${MAX_BUDGET_USD.toLocaleString()}, cite
-                prior art, and show the lunar bridge.
+                Start from the template, keep the ask under the quarterly max, cite prior art, and
+                show the lunar bridge.
               </p>
               <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <StandardButton

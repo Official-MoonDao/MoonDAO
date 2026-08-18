@@ -778,33 +778,33 @@ export interface ProjectCycleConfig {
 }
 
 export const PROJECT_CYCLE: ProjectCycleConfig = {
-  // Deploy-time fallback after Q3 Member Vote + Q2 Retro wrap-up.
-  // Live phase is flipped to idle via Operator Panel → Wrap Up Cycle
-  // (Upstash KV override); this keeps post-redeploy UI consistent if
-  // the override is cleared.
-  phase: 'idle',
-  quarter: 3,
+  // Q4 2026 Senate Vote. If a leftover Upstash override from Q3 Wrap Up
+  // is still `idle`, clear `moondao:operator:cycle_phase` so this default
+  // takes effect after deploy.
+  phase: 'senate',
+  quarter: 4,
   year: 2026,
   memberVoteSubmissionsOpen: false,
   memberVoteExcludedAddresses: [],
-  // Q3 2026 deadlines.
-  submissionDeadline: 'July 9, 2026',
-  editingDeadline: 'July 14, 2026',
-  votingDate: 'July 16, 2026',
-  // Q3 2026: $24,310 → per-proposal max $4,862 (posted in the Senate review pack).
-  budgetUSD: 24310,
+  // Q4 2026 deadlines (second Thursday / 48h before third Thursday / third Thursday).
+  submissionDeadline: 'October 8, 2026',
+  editingDeadline: 'October 13, 2026',
+  votingDate: 'October 15, 2026',
+  // Q4 2026: $20,029 = 5% of NMA at 2026-07-01 00:00 UTC (ETH $1,569.94).
+  // Per-proposal max $4,006. From `scripts/calculate-budget.mjs`.
+  budgetUSD: 20029,
   retro: {
-    // Q2 2026 retroactives (the cohort paid out this cycle), USDC-paid:
-    //   - $5,629.26 for projects = ($23,409 * 0.9) - $15,438.84 upfront to the
-    //     4 Member-Vote winners (MDP-240 $3,955 + MDP-235 $3,600 +
-    //     MDP-245 $3,233.84 + MDP-237 $4,650).
-    //   - $2,340.90 community circle = 10% of Q2's $23,409 budget (pinned to
-    //     the cohort's own quarter, NOT the current $24,310 budget).
+    // Q3 2026 retroactives (the cohort paid out this cycle), USDC-paid:
+    //   - $4,427 for projects = ($24,310 * 0.9) - $17,452 upfront to the
+    //     5 Member-Vote winners (MDP-260 $4,640 + MDP-265 $1,100 +
+    //     MDP-259 $2,430 + MDP-262 $4,600 + MDP-258 $4,682).
+    //   - $2,431 community circle = 10% of Q3's $24,310 budget (pinned to
+    //     the cohort's own quarter, NOT the current $20,029 budget).
     // The prior ETH cycle (Q1 2026) kept 2.215 ETH here for reference.
     payoutToken: 'USDC',
-    usdBudget: 5629.26,
+    usdBudget: 4427,
     ethBudget: 2.215,
-    communityCirclePrimary: 2340.9,
+    communityCirclePrimary: 2431,
   },
 }
 
@@ -849,6 +849,10 @@ export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
 // Per the docs: "Proposal budgets must be less than or equal to 1/5 of the
 // total quarterly rewards."
 export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)
+
+// Public UI that prints NEXT_QUARTER_BUDGET_USD / MAX_BUDGET_USD. Off until
+// the next-quarter figure is confirmed so we don't advertise a stale pool.
+export const ANNOUNCE_PROJECT_BUDGET = false
 
 // Addresses that have manager-level access on ALL teams (can add jobs and
 // marketplace listings on behalf of any team). Lowercase for comparison.

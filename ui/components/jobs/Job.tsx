@@ -12,6 +12,7 @@ import {
 } from '@/lib/jobs/jobMetadata'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysSinceTimestamp } from '@/lib/utils/timestamp'
+import ExpandableText from '../layout/ExpandableText'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
 import TeamJobModal from '../subscription/TeamJobModal'
@@ -63,7 +64,6 @@ export default function Job({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isActive, setIsActive] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
-
   const [teamNFT, setTeamNFT] = useState<any>()
 
   const currTime = useCurrUnixTime()
@@ -198,9 +198,11 @@ export default function Job({
             {metadata.compensation && <Chip>{metadata.compensation}</Chip>}
           </div>
 
-          <p className="mt-3 text-sm text-slate-300 leading-relaxed line-clamp-3">
-            {job.description}
-          </p>
+          <div className="mt-3 flex-1">
+            <ExpandableText className="text-sm text-slate-300 leading-relaxed" lines={3}>
+              {job.description}
+            </ExpandableText>
+          </div>
 
           <span className="text-xs text-blue-400 group-hover:text-blue-300 mt-3 transition-colors">
             View role and apply →
