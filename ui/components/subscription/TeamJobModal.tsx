@@ -35,7 +35,6 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
-import { bytesOfString } from '@/lib/utils/strings'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import { Job } from '../jobs/Job'
 import Input from '../layout/Input'
@@ -463,6 +462,13 @@ export default function TeamJobModal({
       cid = await pinJobPostingDoc(doc, form.title)
     } catch (error) {
       console.error('Failed to pin job posting document:', error)
+      // On edit the metadata column already points at a stored document. Writing
+      // without that CID orphans the live posting; abort so the author can retry.
+      if (edit) {
+        throw new Error(
+          'Could not save the full description. Please try again so the existing posting is not overwritten.'
+        )
+      }
       toast.error('Could not save the full description. Posting the summary and key details only.')
     }
 
@@ -644,11 +650,7 @@ export default function TeamJobModal({
               className="w-full p-2 rounded-sm bg-black/20 border border-white/10 text-white"
               rows={3}
               value={form.description}
-              maxLength={
-                bytesOfString(form.description) >= MAX_SUMMARY_CHARS
-                  ? form.description.length
-                  : MAX_SUMMARY_CHARS
-              }
+              maxLength={MAX_SUMMARY_CHARS}
               onChange={(e) => update({ description: e.target.value })}
             />
           </Field>

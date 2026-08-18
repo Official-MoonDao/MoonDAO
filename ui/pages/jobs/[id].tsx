@@ -75,14 +75,14 @@ export default function JobDetail({
   })
 
   const deadline = getApplicationDeadline(metadata, job.endTime)
-  const summary = doc?.summary || job.description
-  const applyUrl = doc?.applyUrl || job.contactInfo
+  const summary = posting?.summary || job.description
+  const applyUrl = isGated ? undefined : posting?.applyUrl || job.contactInfo
   const teamHref = team ? `/team/${team.id}` : undefined
   const shareUrl = `${DEPLOYED_ORIGIN}/jobs/${job.id}`
-  const facts = buildJobFacts({ envelope: metadata, doc, deadline })
+  const facts = buildJobFacts({ envelope: metadata, doc: posting, deadline })
 
-  const compensation = formatCompensation(doc?.compensation) || metadata.compensation
-  const location = formatLocation(doc?.location) || metadata.location
+  const compensation = formatCompensation(posting?.compensation) || metadata.compensation
+  const location = formatLocation(posting?.location) || metadata.location
   const commitment = metadata.commitment
 
   // The page is served from an ISR cache, so a "closes in N days" badge rendered
@@ -91,12 +91,14 @@ export default function JobDetail({
   useEffect(() => setMounted(true), [])
   const countdown = mounted ? formatDeadlineCountdown(deadline) : null
 
-  const jsonLd = buildJobPostingJsonLd({
-    job,
-    envelope: metadata,
-    doc,
-    teamName: team?.name,
-  })
+  const jsonLd = isGated
+    ? null
+    : buildJobPostingJsonLd({
+        job,
+        envelope: metadata,
+        doc: posting,
+        teamName: team?.name,
+      })
 
   const titleSection = (
     <div className="pt-2 flex flex-col gap-4">
@@ -136,11 +138,13 @@ export default function JobDetail({
         secondaryTitle={team?.name ? `${team.name} · MoonDAO Jobs` : 'MoonDAO Jobs'}
         description={summary}
       >
-        <script
-          type="application/ld+json"
-          key="job-posting-jsonld"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        {jsonLd && (
+          <script
+            type="application/ld+json"
+            key="job-posting-jsonld"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+        )}
       </Head>
       <Container>
         <ContentLayout
@@ -293,16 +297,18 @@ export default function JobDetail({
               </div>
 
               <aside className="lg:sticky lg:top-6 w-full">
-                <JobApplyPanel
-                  applyUrl={applyUrl}
-                  deadline={deadline}
-                  postedAt={job.timestamp}
-                  teamName={team?.name}
-                  teamHref={teamHref}
-                  shareUrl={shareUrl}
-                  shareText={`${job.title}${team?.name ? ` at ${team.name}` : ' at MoonDAO'}`}
-                  otherRolesCount={otherRolesCount}
-                />
+                {!isGated && (
+                  <JobApplyPanel
+                    applyUrl={applyUrl}
+                    deadline={deadline}
+                    postedAt={job.timestamp}
+                    teamName={team?.name}
+                    teamHref={teamHref}
+                    shareUrl={shareUrl}
+                    shareText={`${job.title}${team?.name ? ` at ${team.name}` : ' at MoonDAO'}`}
+                    otherRolesCount={otherRolesCount}
+                  />
+                )}
 
                 {!citizen && (
                   <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-5">
