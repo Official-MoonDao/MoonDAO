@@ -61,21 +61,31 @@ const ContentLayout: React.FC<ContentProps> = ({
             <div
               id="content-container"
               className={`
-                                flex flex-col h-full relative mx-auto
+                                flex flex-col h-full relative mx-auto w-full min-w-0
                                 ${isCompact ? '' : 'lg:flex-row lg:items-start'} 
                             `}
               style={{ maxWidth }}
             >
               <div
                 id="image-container"
-                className="w-full h-full relative mb-10 z-10"
-                style={centerHeader ? { maxWidth: centerHeaderWidth, marginLeft: 'auto', marginRight: 'auto' } : undefined}
+                className="w-full min-w-0 h-full relative mb-10 z-10"
+                style={
+                  centerHeader
+                    ? { maxWidth: centerHeaderWidth, marginLeft: 'auto', marginRight: 'auto' }
+                    : undefined
+                }
               >
                 {logo ? (
                   <div
                     id="logo"
                     className={`
-                    ${branded ? 'min-h-[200px]' : 'absolute min-h-[350px] min-w-[350px]'} 
+                    ${
+                      branded
+                        ? 'min-h-[200px]'
+                        : `absolute min-h-[350px] ${
+                            isCompact ? 'inset-x-0 min-w-0 max-w-full' : 'min-w-[350px]'
+                          }`
+                    } 
                     ${isCompact ? '' : 'md:min-h-[200px] lg:min-h-[600px] md:min-w-[450px]'}`}
                   >
                     {logo}
@@ -87,7 +97,11 @@ const ContentLayout: React.FC<ContentProps> = ({
                                     ${
                                       branded
                                         ? 'branded min-h-[200px]'
-                                        : 'absolute unbranded min-h-[350px] min-w-[350px]'
+                                        : `absolute unbranded min-h-[350px] ${
+                                            isCompact
+                                              ? 'inset-x-0 min-w-0 max-w-full'
+                                              : 'min-w-[350px]'
+                                          }`
                                     } 
                                     ${
                                       isCompact
@@ -100,11 +114,11 @@ const ContentLayout: React.FC<ContentProps> = ({
               <div
                 id="title-wrapper"
                 className={`
-                                    z-50 w-full overflow-x-hidden pt-0 mt-[-80px]
+                                    z-50 w-full min-w-0 overflow-x-hidden pt-0 mt-[-80px]
                                     ${
                                       isCompact
                                         ? isProfile
-                                          ? 'px-4 sm:px-5 md:px-0'
+                                          ? 'px-2 sm:px-4 md:px-0'
                                           : 'px-2 sm:px-5'
                                         : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5 px-2 sm:px-5'
                                     } 
@@ -121,14 +135,18 @@ const ContentLayout: React.FC<ContentProps> = ({
                 <div
                   id="title-container"
                   className={`
-                                        flex flex-col pb-5 md:pb-0 w-full h-full 
+                                        flex flex-col pb-5 md:pb-0 w-full min-w-0 h-full 
                                         ${isCompact ? '' : 'md:max-w-[700px] lg:max-w-[100%]'}
                                     `}
-                  style={centerHeader ? { maxWidth: centerHeaderWidth, marginLeft: 'auto', marginRight: 'auto' } : undefined}
+                  style={
+                    centerHeader
+                      ? { maxWidth: centerHeaderWidth, marginLeft: 'auto', marginRight: 'auto' }
+                      : undefined
+                  }
                 >
                   <div
                     id="header-element"
-                    className={`block w-full max-w-[1200px] header-responsive leading-[1] font-GoodTimes ${
+                    className={`block w-full min-w-0 max-w-[1200px] header-responsive leading-[1] font-GoodTimes break-words ${
                       isCompact ? 'pt-0' : 'lg:pt-20'
                     }`}
                   >
@@ -148,7 +166,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                                             ${branded ? 'md:mt-2' : 'md:mt-20'}
                                         `}
                     >
-                      <div className="block w-full">{description}</div>
+                      <div className="block w-full min-w-0 max-w-full">{description}</div>
                     </div>
                   )}
                 </div>
@@ -163,9 +181,9 @@ const ContentLayout: React.FC<ContentProps> = ({
           <div
             id="main-section"
             className={`
-                        relative w-full ${
-                          contentwide ? 'max-w-full' : ''
-                        } ${contentwide ? '' : 'mx-auto'} mt-0 
+                        relative w-full ${contentwide ? 'max-w-full' : ''} ${
+              contentwide ? '' : 'mx-auto'
+            } mt-0 
                         ${mainPadding || contentwide ? 'p-0' : 'pb-5'} 
                         ${
                           isCompact && !isProfile
@@ -175,11 +193,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                             : 'mt-0 md:mt-[-200px] lg:mt-[-280px] md:pb-0 '
                         }
                     `}
-            style={
-              contentwide
-                ? { width: '100%', maxWidth: '100%' }
-                : { maxWidth }
-            }
+            style={contentwide ? { width: '100%', maxWidth: '100%' } : { maxWidth }}
           >
             <div
               id="main-section-content-container"
@@ -213,20 +227,14 @@ const ContentLayout: React.FC<ContentProps> = ({
               }
             >
               <div
-                className={`w-full ${
+                className={`w-full min-w-0 ${
                   contentwide || isProfile ? 'overflow-visible' : 'overflow-hidden'
                 }`}
               >
                 <div
                   id="content"
-                  className={`relative z-50 w-full
-                                    ${
-                                      contentwide
-                                        ? 'm-0 p-0'
-                                        : isCompact
-                                        ? ''
-                                        : 'm-5'
-                                    }
+                  className={`relative z-50 w-full min-w-0
+                                    ${contentwide ? 'm-0 p-0' : isCompact ? '' : 'm-5'}
                                 `}
                   style={
                     contentwide
@@ -250,7 +258,11 @@ const ContentLayout: React.FC<ContentProps> = ({
         </section>
       )}
 
-      {preFooter && <section id="preFooter-container-element" className="relative z-10">{preFooter}</section>}
+      {preFooter && (
+        <section id="preFooter-container-element" className="relative z-10">
+          {preFooter}
+        </section>
+      )}
     </div>
   )
 }
