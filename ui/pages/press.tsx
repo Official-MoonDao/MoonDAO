@@ -20,12 +20,14 @@ import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import CoverageGrid from '@/components/press/CoverageGrid'
 import MediaAppearances from '@/components/press/MediaAppearances'
+import PressAbout from '@/components/press/PressAbout'
 import PressKit from '@/components/press/PressKit'
 import PressReleaseList from '@/components/press/PressReleaseList'
 import PressSection from '@/components/press/PressSection'
 import Spokespeople from '@/components/press/Spokespeople'
 
 const sections = [
+  { id: 'about', label: 'About' },
   { id: 'press-releases', label: 'Announcements' },
   { id: 'coverage', label: 'In the news' },
   { id: 'appearances', label: 'Podcasts & video' },
@@ -80,6 +82,14 @@ export default function Press() {
               </nav>
 
               <PressSection
+                id="about"
+                title="About MoonDAO"
+                description="Boilerplate copy and key facts for journalists on deadline. Copy the boilerplate straight into your story."
+              >
+                <PressAbout boilerplate={PRESS_BOILERPLATE} facts={PRESS_FACTS} />
+              </PressSection>
+
+              <PressSection
                 id="press-releases"
                 title="Announcements & press releases"
                 description="Major announcements from MoonDAO. Weekly project updates and governance notices are published to the newsletter."
@@ -117,14 +127,9 @@ export default function Press() {
               <PressSection
                 id="press-kit"
                 title="Press kit"
-                description="Boilerplate copy, key facts, logos, and imagery cleared for editorial use."
+                description="Logos and imagery cleared for editorial use."
               >
-                <PressKit
-                  boilerplate={PRESS_BOILERPLATE}
-                  facts={PRESS_FACTS}
-                  brandAssets={BRAND_ASSETS}
-                  imagery={PRESS_IMAGERY}
-                />
+                <PressKit brandAssets={BRAND_ASSETS} imagery={PRESS_IMAGERY} />
               </PressSection>
 
               <PressSection

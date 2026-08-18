@@ -412,12 +412,6 @@ export const SPOKESPEOPLE: Spokesperson[] = [
     bio: 'A cardiologist and associate professor at Vanderbilt University Medical Center, Dr. Jahangir was selected by MoonDAO through an open sweepstakes and flew aboard Blue Origin New Shepard NS-26 on August 29, 2024, becoming the first Nashvillian in space after applying to NASA twice.',
     image: '/assets/eiman-jahangir.png',
   },
-  {
-    name: 'Coby Cotton',
-    role: "MoonDAO's first astronaut",
-    bio: 'Co-founder of the YouTube sports-entertainment group Dude Perfect, Coby was chosen by MoonDAO token holders to use the first of its two Blue Origin seats. He flew aboard New Shepard NS-22 on August 4, 2022, in the first human spaceflight ever crowdfunded by an online community.',
-    image: '/assets/coby-cotton.png',
-  },
 ]
 
 export const BRAND_ASSETS: BrandAsset[] = [
