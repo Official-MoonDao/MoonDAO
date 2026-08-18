@@ -850,6 +850,10 @@ export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
 // total quarterly rewards."
 export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)
 
+// Public UI that prints NEXT_QUARTER_BUDGET_USD / MAX_BUDGET_USD. Off until
+// the next-quarter figure is confirmed so we don't advertise a stale pool.
+export const ANNOUNCE_PROJECT_BUDGET = false
+
 // Addresses that have manager-level access on ALL teams (can add jobs and
 // marketplace listings on behalf of any team). Lowercase for comparison.
 export const SUPER_MANAGERS: string[] = [

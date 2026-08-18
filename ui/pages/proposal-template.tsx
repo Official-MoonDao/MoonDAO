@@ -1,4 +1,4 @@
-import { MAX_BUDGET_USD } from 'const/config'
+import { ANNOUNCE_PROJECT_BUDGET, MAX_BUDGET_USD } from 'const/config'
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import ReactMarkdown from 'react-markdown'
@@ -53,11 +53,17 @@ export default function ProposalTemplatePage() {
               Copy this markdown into a Google Doc or editor, fill every required section, then
               import it on the propose page. Includes Novelty &amp; Prior Art, Lunar Bridge,
               Community Standing, budget classes, IP, COTS (for hardware), and a pre-submit
-              checklist. Current max ask:{' '}
-              <span className="font-semibold text-white">
-                ${MAX_BUDGET_USD.toLocaleString()}
-              </span>
-              .
+              checklist.
+              {ANNOUNCE_PROJECT_BUDGET && (
+                <>
+                  {' '}
+                  Current max ask:{' '}
+                  <span className="font-semibold text-white">
+                    ${MAX_BUDGET_USD.toLocaleString()}
+                  </span>
+                  .
+                </>
+              )}
             </p>
 
             <div className="mb-8 flex flex-col gap-3 sm:flex-row">

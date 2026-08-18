@@ -1,5 +1,5 @@
 import { NanceProvider } from '@nance/nance-hooks'
-import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5, NEXT_QUARTER_BUDGET_USD, MAX_BUDGET_USD } from 'const/config'
+import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5, NEXT_QUARTER_BUDGET_USD, MAX_BUDGET_USD, ANNOUNCE_PROJECT_BUDGET } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import { GetServerSideProps } from 'next'
@@ -48,27 +48,28 @@ export default function ProposalsPage({ project }: { project: Project }) {
             {/* Main Content Area */}
             <div className="flex flex-col gap-5 md:gap-8 max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
               
-              {/* Budget Info - At the top */}
-              <div className="bg-black/20 rounded-xl p-3 md:p-4 border border-white/10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                  <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
-                    <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Total Quarter Budget</h2>
-                    <RewardAsset
-                      name="USDC"
-                      value={`$${NEXT_QUARTER_BUDGET_USD.toLocaleString()}`}
-                      usdValue={NEXT_QUARTER_BUDGET_USD}
-                    />
-                  </div>
-                  <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
-                    <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Max Project Budget</h2>
-                    <RewardAsset
-                      name="USDC"
-                      value={`$${MAX_BUDGET_USD.toLocaleString()}`}
-                      usdValue={MAX_BUDGET_USD}
-                    />
+              {ANNOUNCE_PROJECT_BUDGET && (
+                <div className="bg-black/20 rounded-xl p-3 md:p-4 border border-white/10">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                    <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
+                      <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Total Quarter Budget</h2>
+                      <RewardAsset
+                        name="USDC"
+                        value={`$${NEXT_QUARTER_BUDGET_USD.toLocaleString()}`}
+                        usdValue={NEXT_QUARTER_BUDGET_USD}
+                      />
+                    </div>
+                    <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
+                      <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Max Project Budget</h2>
+                      <RewardAsset
+                        name="USDC"
+                        value={`$${MAX_BUDGET_USD.toLocaleString()}`}
+                        usdValue={MAX_BUDGET_USD}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Step 1: Get the Template - Most Prominent */}
               <div className="bg-gradient-to-br from-slate-900/80 via-blue-950/40 to-slate-900/80 backdrop-blur-xl border border-blue-500/25 rounded-2xl p-4 md:p-8 shadow-xl">
@@ -80,7 +81,7 @@ export default function ProposalsPage({ project }: { project: Project }) {
                     <h2 className="text-xl md:text-2xl font-bold text-white mb-2">Get the Proposal Template</h2>
                     <p className="text-gray-300">
                       Use the canonical markdown template (novelty &amp; prior art, lunar bridge, budget
-                      classes, IP, checklist). Ask must be ≤ ${MAX_BUDGET_USD.toLocaleString()}.
+                      classes, IP, checklist). Ask must stay within the posted quarterly max.
                     </p>
                   </div>
                 </div>
