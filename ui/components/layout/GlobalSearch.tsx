@@ -289,11 +289,21 @@ const searchMappings = [
   {
     keywords: [
       'news', 'announcements', 'blog', 'articles', 'updates', 'latest news',
-      'recent updates', "what's new", 'press',
+      'recent updates', "what's new",
     ],
     title: 'News',
     description: 'Stay updated with the latest MoonDAO news and announcements',
     link: '/news',
+    category: 'Learn',
+  },
+  {
+    keywords: [
+      'press', 'press kit', 'media', 'media kit', 'press release', 'coverage',
+      'journalist', 'logo', 'brand assets', 'boilerplate', 'in the news', 'interview',
+    ],
+    title: 'Press',
+    description: 'Press releases, media coverage and downloadable press kit assets',
+    link: '/press',
     category: 'Learn',
   },
   {
