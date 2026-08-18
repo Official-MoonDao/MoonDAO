@@ -1,4 +1,4 @@
-# Social Media Manager (X + Instagram) — public posting
+# Social Media Manager (X) — public posting
 
 Ready to paste into the jobs board authoring form. The values under
 [Structured fields](#structured-fields) map 1:1 to the fields in the new form; the
@@ -14,16 +14,16 @@ kept out of this document.
 
 | Field | Value |
 |---|---|
-| Title | Social Media Manager — X & Instagram |
+| Title | Social Media Manager — X (Twitter) |
 | Category (`tag`) | Marketing |
-| Summary (`description`, ≤280 chars) | MoonDAO has put two civilians in space, funded 75+ space R&D projects, and landed a constitution on the Moon. Our X and Instagram don't show it yet. Own both channels, ≤10 hrs/week, remote. $2,000–$2,800/month. |
+| Summary (`description`, ≤280 chars) | MoonDAO has put two civilians in space, funded 75+ space R&D projects, and landed a constitution on the Moon. Our X account doesn't show it. Own @OfficialMoonDAO and grow it. ≤10 hrs/week, remote. $2,000–$2,800/month. |
 | Compensation | $2,000–$2,800 / month (fiat and/or $MOONEY) |
 | Commitment | Part-time contractor · ≤10 hrs/week |
 | Location | Remote, any timezone with reliable coverage of US/EU X activity windows |
 | Seniority | Senior / specialist |
 | Application deadline | 6 weeks from posting |
 | Apply URL | *(set at posting time)* |
-| Skills | X/Twitter growth, Instagram, content strategy, short-form video, analytics, crypto/DAO literacy, commercial space & lunar industry literacy, copywriting |
+| Skills | X/Twitter growth, threads, copywriting, engagement strategy, analytics, short-form video, crypto/DAO literacy, commercial space & lunar industry literacy |
 
 ---
 
@@ -37,43 +37,56 @@ governance. Every dollar and every vote is public and auditable.
 
 Almost nobody knows this.
 
-We have ~38,000 followers on X and a quiet Instagram, and the gap between what we ship and what
-those accounts communicate is the single biggest unforced error in the organization. You would
-own closing it.
+We have ~38,000 followers on X, and the gap between what we ship and what that account
+communicates is the single biggest unforced error in the organization. You would own closing it.
+
+This role is X first and X mostly. X is where the space industry, the crypto-native audience, and
+the researchers and engineers we want to reach actually argue with each other in public, so that
+is where we are putting the effort.
 
 This is not a role where you invent a brand voice for a company with nothing to talk about. The
 material is real, most of it is unpublished, and nobody has told the story properly yet.
 
 ### The starting line
 
-We publish our numbers because you should know exactly what you are inheriting:
+We publish our numbers because you should know exactly what you are inheriting.
+[@OfficialMoonDAO](https://x.com/OfficialMoonDAO) sits at **~38–39k followers** with engagement
+well below what an account that size and that substance should be getting.
 
-| Channel | Handle | Followers today |
-|---|---|---|
-| X | [@OfficialMoonDAO](https://x.com/OfficialMoonDAO) | ~38–39k |
-| Instagram | [@official_moondao](https://www.instagram.com/official_moondao/) | Underdeveloped, effectively a standing start |
+Growth from here is the job. In week one you will audit the account and we will agree on targets
+together — follower growth, engagement rate, and audience quality, plus inbound interest in
+Citizenship, project proposals, and the Launchpad.
 
-Growth from here is the job. In week one you will audit both accounts and we will agree on
-targets together — follower growth, engagement rate, and audience quality, plus inbound interest
-in Citizenship, project proposals, and the Launchpad.
+We also have [@official_moondao](https://www.instagram.com/official_moondao/) on Instagram, which
+is effectively at a standing start. It is a light secondary channel in this role, not a second job
+— see below.
 
 ### What you would own
 
-You own day-to-day execution on X (primary) and Instagram (secondary), capped at 10 hours a week:
+You own day-to-day execution on X, capped at 10 hours a week. Roughly eight of those hours are X:
 
-- **Content strategy and calendar** for both channels, tied to what MoonDAO is actually shipping
-  that week.
-- **Production** — posts, threads, carousels, short-form video, and visuals that explain our
-  work accurately: proposal and funding cycles, human spaceflight campaigns, the Space
+- **The posting cadence.** A consistent rhythm of single posts and threads tied to what MoonDAO is
+  actually shipping that week: proposal and funding cycles, human spaceflight campaigns, the Space
   Acceleration Network and Team Marketplace, lunar settlement and simulation work, governance
   votes, and public-goods funding.
-- **Engagement** — being present in the conversations that matter: lunar and CLPS/Artemis-adjacent
-  work, commercial human spaceflight, habitats and ISRU, and the serious end of crypto and DAO
-  discourse. Amplifying results we can point at, not slogans.
-- **Measurement** — a short monthly report on what worked, what did not, and what changes next.
-- **Accuracy** — $MOONEY is a governance token, our treasury is transparent, our votes are
-  onchain, and our spaceflight and lunar claims are all verifiable. You will represent all of
-  that precisely. No invented milestones, no implied partnerships, no price talk.
+- **The reply game.** On X, distribution comes as much from replies and quote-posts as from your
+  own timeline. You will be present in the conversations that matter — lunar and
+  CLPS/Artemis-adjacent work, commercial human spaceflight, habitats and ISRU, and the serious end
+  of crypto and DAO discourse — representing MoonDAO credibly in other people's threads.
+- **Format judgement.** Knowing when something is a one-liner, when it earns a thread, when it
+  needs a chart or a clip, and when it should not be posted at all. Amplifying results we can
+  point at, not slogans.
+- **Measurement.** A short monthly report from X analytics: what worked, what did not, what
+  changes next.
+- **Accuracy.** $MOONEY is a governance token, our treasury is transparent, our votes are onchain,
+  and our spaceflight and lunar claims are all verifiable. You will represent all of that
+  precisely. No invented milestones, no implied partnerships, no price talk.
+
+**Instagram, lightly.** The remaining couple of hours go to repurposing the strongest X material
+for [@official_moondao](https://www.instagram.com/official_moondao/) — a carousel or a clip a
+week, roughly. We are not asking you to build an Instagram content engine, and we will not judge
+the engagement on X-first work that gets a second life there. If you would rather put all ten
+hours into X in a given week, say so.
 
 Explicitly **not** in scope: Discord moderation, newsletter ownership, community management, or
 running Town Halls. You coordinate lightly with those channels so social stays in sync with
@@ -93,9 +106,13 @@ reality; you do not run them.
 
 ### What we are looking for
 
-- **Documented growth you personally drove.** Accounts you have run, with before/after numbers,
-  engagement data, and specific posts that moved metrics. Screenshots and links. This is the
-  requirement we weight most heavily.
+- **Documented growth you personally drove on X.** An account you have run, with before/after
+  numbers, engagement data, and specific posts that moved metrics. Screenshots and links. This is
+  the requirement we weight most heavily.
+- **X-native craft.** You understand why some posts travel on this platform and others die: hooks,
+  thread structure, when a quote-post beats a reply, timing, and how the algorithm actually
+  rewards conversation. This is a different skill from general social media management and we are
+  hiring for it specifically.
 - **Real lunar and commercial space literacy.** You should be able to name the current landers,
   human spaceflight providers, habitat efforts, and the actual technical and policy bottlenecks
   — and tell signal from noise in that sector.
@@ -107,22 +124,22 @@ reality; you do not run them.
 - **Async self-direction.** There is no marketing team above you assigning work.
 
 Nice to have, not required: an established personal audience in space, crypto or an adjacent
-technical community; video editing and motion graphics; design tooling; experience with a
-nonprofit or public-goods org; prior space-industry work; or a track record growing a technical
-or decentralized project's audience.
+technical community; Instagram experience; video editing and motion graphics; design tooling;
+experience with a nonprofit or public-goods org; prior space-industry work; or a track record
+growing a technical or decentralized project's audience.
 
 You do not need a large following of your own. We care that you have grown *an* account and can
 show the numbers.
 
 ### What success looks like
 
-**First 30 days** — audit both accounts, deliver a channel strategy with agreed targets, and
-ship a consistent posting cadence that accurately reflects current MoonDAO activity.
+**First 30 days** — audit @OfficialMoonDAO, deliver an X strategy with agreed targets, and ship a
+consistent posting cadence that accurately reflects current MoonDAO activity.
 
-**First 90 days** — measurable follower and reach growth on both channels, rising engagement
-from accounts that matter (space professionals, lunar specialists, serious crypto and DAO
-participants, engineers), and a visible improvement in how clearly our actual progress is
-communicated.
+**First 90 days** — measurable follower and reach growth on X, rising engagement from accounts
+that matter (space professionals, lunar specialists, serious crypto and DAO participants,
+engineers), and a visible improvement in how clearly our actual progress is communicated.
+Instagram should be alive and consistent, but X is what we will judge.
 
 We judge results, not hours logged or posts shipped.
 
@@ -148,16 +165,17 @@ one.
 
 Send a package with:
 
-1. **Links to accounts or pages you have managed**, with specific growth and engagement metrics.
-2. **Your personal X and Instagram handles.** Size is not a filter — we want to see how you write
-   when it is your own name on it.
-3. **2–3 examples of content you produced that drove results**, with the numbers.
+1. **The X account(s) you have run**, with specific growth and engagement metrics. Other platforms
+   are welcome as supporting evidence, but we want to see X.
+2. **Your personal X handle.** Size is not a filter — we want to see how you write when it is your
+   own name on it.
+3. **2–3 posts or threads you produced that drove results**, with the numbers.
 4. **A short note (max 300 words)** on why you are the right person to communicate MoonDAO's
-   work in a lunar and commercial space context, and what you would prioritize in your first 30
-   days on X and Instagram.
+   work in a lunar and commercial space context, and what you would prioritize on X in your first
+   30 days.
 
-Optional, and it will get our attention: **one thread or carousel you would actually post for
-MoonDAO in week one**, drafted from our public activity.
+Optional, and it will get our attention: **one thread you would actually post for MoonDAO in week
+one**, drafted from our public activity.
 
 We read for evidence. A package with hard numbers and specific work beats a polished narrative
 without them, every time.
@@ -168,7 +186,7 @@ without them, every time.
 |---|---|
 | Weeks 1–6 | Applications reviewed on a rolling basis; interviews run throughout this window. |
 | Interview | A conversation about your prior results, plus a live read on your space and crypto fluency. |
-| Paid trial | A short paid pilot — a real thread, a real carousel, and an engagement plan — so we are both deciding on actual work rather than promises. |
+| Paid trial | A short paid pilot — a real thread, a week of posts, and an engagement plan for X — so we are both deciding on actual work rather than promises. |
 | Offer | Compensation confirmed in the next Executive Branch budgeting cycle after the interview window. |
 
 We will tell you where you stand at each stage. You will not be left guessing.
@@ -237,3 +255,12 @@ Changed:
     that actually predicts performance — while widening the pool at a defensible rate. If we want
     the requirement back, the comp doc's number is $2,800–$3,200 and amplification is better
     bought per campaign anyway.
+11. **Made it an X role rather than a two-channel role.** The original draft was "X primary +
+    Instagram," which in practice reads as two mandates and splits a ten-hour week in half.
+    Instagram is now explicitly a light secondary — repurposing the strongest X material, roughly
+    a carousel or clip a week — and the requirements, success criteria, application package and
+    paid trial are all X-specific. Two knock-on effects worth knowing: X growth is now a hard
+    requirement rather than a preference, which narrows the pool to people who have actually done
+    it on this platform; and Instagram experience moved to nice-to-have. If Instagram matters more
+    than this implies, it is better funded as its own small engagement than folded into ten hours
+    here.

@@ -1,6 +1,6 @@
 # Jobs Board Upgrade Plan
 
-Written against the Social Media Manager (X/Instagram) listing as the driving example, but
+Written against the Social Media Manager (X) listing as the driving example, but
 designed so every future listing benefits. The short version: today a MoonDAO job is a
 1,024-byte plain-text blurb on a card that has no URL of its own. That is not enough surface
 area to hire for a role like this one, and it is not shareable on the very platform we are

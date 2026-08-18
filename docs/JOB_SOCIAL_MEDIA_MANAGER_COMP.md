@@ -1,4 +1,4 @@
-# Compensation recommendation — Social Media Manager (X + Instagram)
+# Compensation recommendation — Social Media Manager (X)
 
 **Internal.** Not for the public posting. The posting states only the range and that it is
 confirmed in the next Executive Branch budgeting cycle.
@@ -27,7 +27,7 @@ compounding reasons:
 2. **The sanity check was read backwards.** $3,000–$4,500/month at 10 hrs/week implies a
    full-time equivalent of $140k–$200k. That was presented as confirmation. It is the opposite:
    $200k FTE is senior in-house marketing leadership, and this is one operator producing content
-   for two channels ten hours a week. An implied FTE that lands well above what the org pays its
+   for one channel ten hours a week. An implied FTE that lands well above what the org pays its
    engineers is the signal to re-derive the number, not to publish it.
 
 ## What ten hours a week actually buys
@@ -36,15 +36,22 @@ Sizing the work makes the rate obvious. Ten hours is roughly:
 
 | Activity | Hours/week |
 |---|---|
-| Planning and content calendar | ~1 |
-| Content production (threads, carousels, short-form video) | ~4–5 |
-| Engagement, replies, monitoring the relevant conversations | ~3 |
+| Planning and content calendar for X | ~1 |
+| Content production for X (posts, threads, the occasional chart or clip) | ~3–4 |
+| Engagement — replies, quote-posts, monitoring the relevant conversations | ~3 |
 | Measurement and reporting | ~1 |
+| Repurposing the best of it for Instagram | ~1–2 |
 
 That is a thin week. It is an operator with good taste and good context executing a plan — not a
 strategist rebuilding a brand, and not someone managing a content team or a paid-ads budget. The
 $4,000–$8,000/month retainers in the market research cover that fuller scope: multiple channels,
 paid media, a production team, and reporting into a marketing leader.
+
+The posting is now X-first with Instagram as a light repurposing duty rather than a second
+mandate. That does not move the band — it was already priced as one primary channel plus a light
+secondary — but it does mean the band's midpoint is the honest target rather than its top. If
+Instagram later becomes a real second channel with its own content, that is a scope change and a
+separate conversation, not something to absorb inside ten hours.
 
 ## How this is actually contracted
 
