@@ -30,6 +30,32 @@ export function isRouteSafeSlug(slug: string): boolean {
 }
 
 /**
+ * Pre-Quartz `/docs/<short-name>` URLs.
+ *
+ * These used to be `next.config.js` redirects, but a redirect whose source sits
+ * under `/docs/*` conflicts with the `/docs/[...slug]` dynamic route and fails
+ * the Vercel deploy (the identical route under a prefix with no redirects
+ * deploys fine). They are served as real pages instead, which is also better
+ * than a 301 — `DocsPage` still points the canonical tag at the primary slug.
+ * See docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md.
+ */
+export const LEGACY_DOC_ALIASES: Record<string, string> = {
+  introduction: 'index',
+  'launch-path': 'index',
+  token: 'Governance/Governance-Tokens',
+  team: 'About/Team',
+  contribute: 'Onboarding/Contribute',
+  'project-guidelines': 'Projects/Project-System',
+  'ticket-to-space-sweepstakes-rules':
+    'Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
+  'ticket-to-space-NFT-FAQs': 'Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
+  'dispute-notice': 'Legal/Ticket-to-Space-NFT/Dispute-Notice',
+  'nft-owner-agreement': 'Legal/Ticket-to-Space-NFT/Ticket-to-Space-NFT-Owner-Agreement',
+  'sweepstakes-and-securities-disclaimer':
+    'Legal/Ticket-to-Space-NFT/Sweepstakes-and-Securities-Disclaimer',
+}
+
+/**
  * The only two Quartz URLs deliberately not reproduced, because their slugs
  * contained route-unsafe characters. Nothing in the corpus or in Quartz's own
  * link graph pointed at either page.

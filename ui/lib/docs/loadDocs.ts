@@ -3,6 +3,7 @@ import path from 'path'
 import { extractTitle, parseFrontmatter } from './frontmatter'
 import { emptyReport, isTableRow, rewriteDocBody } from './rewrite'
 import {
+  LEGACY_DOC_ALIASES,
   docsHref,
   normalizeAliasSlug,
   noteNameFromFilePath,
@@ -251,6 +252,7 @@ export function allStaticPaths(root?: string): { params: { slug: string[] } }[] 
   }
   for (const folder of corpus.folderSlugs) add(folder)
   for (const tag of corpus.tagSlugs) add(tag)
+  for (const legacy of Object.keys(LEGACY_DOC_ALIASES)) add(legacy)
   return paths
 }
 
@@ -422,6 +424,11 @@ function resolveRequestedSlug(requested: string, corpus: Corpus): { kind: DocsPa
   const normalized = requested.replace(/\/+$/, '') || 'index'
   if (corpus.bySlug.has(normalized)) return { kind: 'doc', slug: normalized }
   if (normalized === 'index') return { kind: 'doc', slug: 'index' }
+
+  const legacy = LEGACY_DOC_ALIASES[normalized]
+  if (legacy && (corpus.bySlug.has(legacy) || legacy === 'index')) {
+    return { kind: 'doc', slug: legacy }
+  }
 
   for (const file of corpus.files) {
     if (file.frontmatter.slug && normalizeAliasSlug(file.frontmatter.slug) === normalized) {

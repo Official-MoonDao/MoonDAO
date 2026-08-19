@@ -122,66 +122,14 @@ module.exports = withBundleAnalyzer(
             destination: 'https://moondao.com/:path*',
             permanent: true,
           },
-          // Legacy pre-Quartz /docs/* short paths. Canonical pages are served
-          // by pages/docs/[[...slug]].tsx — do NOT redirect /docs itself.
-          // /docs/website-terms-and-conditions and /docs/privacy-policy are
-          // native alias slugs from vault frontmatter (no redirect).
-          {
-            source: '/docs/introduction',
-            destination: '/docs',
-            permanent: true,
-          },
-          {
-            source: '/docs/token',
-            destination: '/docs/Governance/Governance-Tokens',
-            permanent: true,
-          },
-          {
-            source: '/docs/launch-path',
-            destination: '/docs',
-            permanent: true,
-          },
-          {
-            source: '/docs/team',
-            destination: '/docs/About/Team',
-            permanent: true,
-          },
-          {
-            source: '/docs/contribute',
-            destination: '/docs/Onboarding/Contribute',
-            permanent: true,
-          },
-          {
-            source: '/docs/project-guidelines',
-            destination: '/docs/Projects/Project-System',
-            permanent: true,
-          },
-          {
-            source: '/docs/ticket-to-space-sweepstakes-rules',
-            destination: '/docs/Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
-            permanent: true,
-          },
-          {
-            source: '/docs/ticket-to-space-NFT-FAQs',
-            destination: '/docs/Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
-            permanent: true,
-          },
-          {
-            source: '/docs/dispute-notice',
-            destination: '/docs/Legal/Ticket-to-Space-NFT/Dispute-Notice',
-            permanent: true,
-          },
-          {
-            source: '/docs/nft-owner-agreement',
-            destination: '/docs/Legal/Ticket-to-Space-NFT/Ticket-to-Space-NFT-Owner-Agreement',
-            permanent: true,
-          },
-          {
-            source: '/docs/sweepstakes-and-securities-disclaimer',
-            destination:
-              '/docs/Legal/Ticket-to-Space-NFT/Sweepstakes-and-Securities-Disclaimer',
-            permanent: true,
-          },
+          // NOTE: there are deliberately no `/docs/*` redirects here. A redirect
+          // whose source sits under /docs/* conflicts with the /docs/[...slug]
+          // dynamic route and fails the Vercel deploy — the identical route
+          // under a prefix with no redirects deploys fine. The legacy
+          // pre-Quartz short paths (/docs/token, /docs/team, …) are served as
+          // real pages via LEGACY_DOC_ALIASES in lib/docs/slug.ts, with the
+          // canonical tag pointing at the primary slug. See
+          // docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md.
           {
             source: '/lunar-atlas',
             destination: '/moonbase',

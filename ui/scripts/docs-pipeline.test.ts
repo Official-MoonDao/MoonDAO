@@ -16,6 +16,7 @@ import { isTableRow, rewriteDocBody } from '../lib/docs/rewrite'
 import { buildSearchIndex } from '../lib/docs/searchIndex'
 import {
   INTENTIONAL_SLUG_CHANGES,
+  LEGACY_DOC_ALIASES,
   docsHref,
   isRouteSafeSlug,
   slugifyFilePath,
@@ -265,6 +266,21 @@ describe('docs link integrity', () => {
       }
     }
     if (empty.length > 0) throw new Error(`Empty doc pages:\n${empty.join('\n')}`)
+  })
+
+  it('serves every legacy /docs short path as a real page', () => {
+    resetDocsCache()
+    const produced = new Set(allProducedSlugs())
+    for (const [legacy, target] of Object.entries(LEGACY_DOC_ALIASES)) {
+      if (!produced.has(target)) {
+        throw new Error(`legacy alias ${legacy} targets missing slug ${target}`)
+      }
+      const page = getDocPage(legacy)
+      if (!page) throw new Error(`legacy path /docs/${legacy} does not resolve`)
+      if (page.slug !== target) {
+        throw new Error(`/docs/${legacy} resolved to ${page.slug}, expected ${target}`)
+      }
+    }
   })
 
   it('resolves every alias and slug override to a real page', () => {
