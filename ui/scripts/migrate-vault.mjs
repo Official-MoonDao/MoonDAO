@@ -17,10 +17,18 @@ const FIXTURE_DEST = path.join(UI_ROOT, 'lib', 'docs', 'fixtures', 'contentIndex
 const DEFAULT_VAULT = '/tmp/docsrepo/MoonDAO/docs'
 const DEFAULT_REPO = '/tmp/docsrepo'
 
+// Keep route-unsafe characters (parentheses, non-ASCII) out of filenames and
+// therefore out of slugs. Spaces survive, including the double space in
+// "Ticket to Zero-G NFT  Sweepstakes Rules.md" that yields Quartz's `--`.
+function sanitizeVaultPath(relPath) {
+  return relPath
+    .split('/')
+    .map((segment) => segment.replace(/[^A-Za-z0-9._@\- ]/g, '').trim())
+    .join('/')
+}
+
 function slugifyFilePath(filePath) {
-  return filePath
-    .replace(/\\/g, '/')
-    .replace(/^\.\//, '')
+  return sanitizeVaultPath(filePath.replace(/\\/g, '/').replace(/^\.\//, ''))
     .replace(/\.md$/i, '')
     .split('/')
     .filter(Boolean)
@@ -298,7 +306,7 @@ for (const rel of rels) {
   let nextBody = body.replace(/```dataview[\s\S]*?```/g, '<!-- docs-glossary-table -->')
   nextBody = rewriteDocBody(nextBody, resolve, report)
   const out = fmBlock ? `${fmBlock}\n${nextBody.replace(/^\n/, '')}\n` : `${nextBody}\n`
-  const destFile = path.join(DEST, rel)
+  const destFile = path.join(DEST, sanitizeVaultPath(rel))
   fs.mkdirSync(path.dirname(destFile), { recursive: true })
   fs.writeFileSync(destFile, out)
 }

@@ -13,7 +13,13 @@ import {
 } from '../lib/docs/loadDocs'
 import { isTableRow, rewriteDocBody } from '../lib/docs/rewrite'
 import { buildSearchIndex } from '../lib/docs/searchIndex'
-import { docsHref, slugifyFilePath, slugifySegment } from '../lib/docs/slug'
+import {
+  INTENTIONAL_SLUG_CHANGES,
+  docsHref,
+  isRouteSafeSlug,
+  slugifyFilePath,
+  slugifySegment,
+} from '../lib/docs/slug'
 
 const FIXTURE = path.join(__dirname, '..', 'lib', 'docs', 'fixtures', 'contentIndex.json')
 
@@ -28,13 +34,13 @@ describe('docs slugifier (Quartz parity)', () => {
     ['About/FAQ.md', 'About/FAQ'],
     ['About/Glossary/@Executive Lead.md', 'About/Glossary/@Executive-Lead'],
     ['About/Glossary/@Alien.md', 'About/Glossary/@Alien'],
-    ['Reference/Glossary (dynamic).md', 'Reference/Glossary-(dynamic)'],
+    ['Reference/Glossary dynamic.md', 'Reference/Glossary-dynamic'],
     ['Reference/Bios/@name.get.md', 'Reference/Bios/@name.get'],
     [
       'Legal/Ticket to Zero-G NFT/Ticket to Zero-G NFT  Sweepstakes Rules.md',
       'Legal/Ticket-to-Zero-G-NFT/Ticket-to-Zero-G-NFT--Sweepstakes-Rules',
     ],
-    ['Reference/Nested Docs/MoonDAO’s Quarterly Rewards.md', 'Reference/Nested-Docs/MoonDAO’s-Quarterly-Rewards'],
+    ['Reference/Nested Docs/MoonDAOs Quarterly Rewards.md', 'Reference/Nested-Docs/MoonDAOs-Quarterly-Rewards'],
     ['index.md', 'index'],
   ]
 
@@ -223,7 +229,7 @@ describe('docs transclusion rendering', () => {
 
   it('generates the dynamic glossary table in place of the dataview block', () => {
     resetDocsCache()
-    const page = getDocPage('Reference/Glossary-(dynamic)')
+    const page = getDocPage('Reference/Glossary-dynamic')
     if (!page) throw new Error('dynamic glossary missing')
     if (page.body.includes('docs-glossary-table')) throw new Error('marker left in body')
     if (!page.body.includes('/docs/About/Glossary/')) throw new Error('no glossary links')
@@ -301,7 +307,7 @@ describe('docs search index', () => {
 })
 
 describe('docs corpus vs Quartz contentIndex', () => {
-  it('produces every slug Quartz published', function () {
+  it('produces every slug Quartz published, bar two documented exceptions', function () {
     if (!fs.existsSync(FIXTURE)) {
       this.skip()
       return
@@ -309,9 +315,36 @@ describe('docs corpus vs Quartz contentIndex', () => {
     resetDocsCache()
     const produced = new Set(allProducedSlugs())
     const fixture = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<string, unknown>
-    const missing = Object.keys(fixture).filter((k) => !produced.has(k))
+    const missing = Object.keys(fixture).filter(
+      (k) => !produced.has(k) && !(k in INTENTIONAL_SLUG_CHANGES)
+    )
     if (missing.length > 0) {
       throw new Error(`Missing Quartz slugs:\n${missing.join('\n')}`)
+    }
+    // The exceptions must still resolve to a real page under their new slug.
+    for (const replacement of Object.values(INTENTIONAL_SLUG_CHANGES)) {
+      if (!produced.has(replacement)) {
+        throw new Error(`replacement slug not produced: ${replacement}`)
+      }
+    }
+  })
+
+  it('emits only route-safe slugs (ASCII, no parentheses)', () => {
+    resetDocsCache()
+    const unsafe = allProducedSlugs().filter((s) => !isRouteSafeSlug(s))
+    if (unsafe.length > 0) {
+      throw new Error(`Route-unsafe slugs would break the Vercel deploy:\n${unsafe.join('\n')}`)
+    }
+  })
+
+  it('emits no route-unsafe content filenames either', () => {
+    resetDocsCache()
+    const corpus = loadCorpus()
+    const unsafe = corpus.files
+      .map((f) => f.filePath)
+      .filter((p) => /[^A-Za-z0-9._@\- /]/.test(p))
+    if (unsafe.length > 0) {
+      throw new Error(`Rename these files (see sanitizeVaultPath):\n${unsafe.join('\n')}`)
     }
   })
 

@@ -43,9 +43,12 @@ record of the 117 public slugs.
 Expected `yarn docs:check` outcome:
 
 - 72 markdown files + generated folder/tag pages = 118 slugs
-- 0 missing vs the 117-key fixture
-- 0 unresolved wikilinks, 0 unresolved relative `.md` links, 0 broken internal `/docs` hrefs
-- one extra slug is OK: `tags` (alias of `tags/index`)
+- 0 unresolved wikilinks, 0 unresolved relative `.md` links, 0 broken internal
+  `/docs` hrefs, 0 route-unsafe slugs
+- 2 "missing" vs the 117-key fixture, both flagged `(intentional → …)` — see
+  [route-safe slugs](#route-safe-slugs-why-two-urls-changed). Any *unflagged*
+  missing slug fails the check.
+- 3 extra slugs are OK: `tags` (alias of `tags/index`) plus the two renamed pages
 
 Link breakage that existed in the vault and was resolved during import, rather than
 propagated (see the import script's report):
@@ -69,6 +72,49 @@ Two of those needed care and have dedicated tests:
   A `[^)]+` URL pattern truncates them and leaks `.md)` as visible text.
 
 ---
+
+## Route-safe slugs: why two URLs changed
+
+The first push of this branch **failed the Vercel deploy** while passing both the
+local build and the GitHub Actions `build` job. Diagnosis:
+
+- GitHub Actions' "Build application" step succeeded, so `next build` was fine.
+- `npx vercel build` (which runs Vercel's own builder locally, and works offline
+  given a stub `.vercel/project.json`) also succeeded — so the failure was in
+  Vercel's **deploy/upload**, not the build.
+- Deployment size was not the cause: `ui/public/` is 257 MB of pre-existing
+  assets, and this change adds 1.3 MB.
+- The only novel thing in the build output was **8 files whose names carried a
+  non-ASCII `’` (U+2019) or parentheses**, from two vault pages.
+
+So slugs are now restricted to `[A-Za-z0-9._@-]` and `/`. `@` is kept — 19 routes
+use it and it is a legal, widely used path character. The two affected pages were
+renamed, dropping the offending characters:
+
+| Quartz URL | New URL |
+|---|---|
+| `Reference/Glossary-(dynamic)` | `Reference/Glossary-dynamic` |
+| `Reference/Nested-Docs/MoonDAO’s-Quarterly-Rewards` | `Reference/Nested-Docs/MoonDAOs-Quarterly-Rewards` |
+
+Nothing linked to either page — not in the corpus, and not in Quartz's own
+`links` graph (checked across all 117 entries). Both are under `Reference/`, which
+the vault README describes as the folder for pages kept out of the nav.
+
+Parentheses matter beyond filenames: they are path-to-regexp metacharacters, so a
+`next.config.js` redirect *source* containing one needs escaping. Avoiding them
+keeps redirects and route patterns straightforward.
+
+Enforcement, so this cannot regress:
+
+- `isRouteSafeSlug` + `INTENTIONAL_SLUG_CHANGES` in `ui/lib/docs/slug.ts`
+- `sanitizeVaultPath` in `slug.ts` and `scripts/migrate-vault.mjs` (so re-running
+  the import reproduces the sanitized filenames)
+- three tests: route-safe slugs, route-safe content filenames, and parity that
+  only tolerates the two documented exceptions
+- `yarn docs:check` exits non-zero on any unsafe slug or any *unflagged* missing slug
+
+**Phase 5 follow-up:** the `docs.moondao.com` → `moondao.com/docs` 301 map must
+special-case these two old URLs.
 
 ## Plan coverage
 
@@ -176,10 +222,12 @@ from `contentIndex.json`. The draft still lives at
 
 ## Invariants a reviewer should re-check
 
-1. **Slug function:** `slugifySegment` is `s.replace(/ /g, '-')`, not `\s+`.
-   The file `Legal/Ticket to Zero-G NFT/Ticket to Zero-G NFT  Sweepstakes Rules.md`
+1. **Slug function:** `slugifySegment` replaces each *single* space with `-`, not
+   `\s+`. The file
+   `Legal/Ticket to Zero-G NFT/Ticket to Zero-G NFT  Sweepstakes Rules.md`
    (two spaces) must produce
    `Legal/Ticket-to-Zero-G-NFT/Ticket-to-Zero-G-NFT--Sweepstakes-Rules`.
+   Note that `sanitizeVaultPath` must therefore **not** collapse double spaces.
 2. **Tag URLs are lowercased.** `Coordinape` → `/docs/tags/coordinape`.
 3. **Comma-separated scalar tags** (`tags: docs/faq, docs/onboarding`) must
    split into two tags, matching Quartz.
@@ -231,7 +279,7 @@ raw `](...md)` link. Re-run that sweep if you touch the pipeline.
 - `/docs/Governance/Constitution` and `/constitution`
 - `/docs/Legal/Website-Privacy-Policy`, `/privacy-policy`, `/docs/privacy-policy`
 - `/docs/About/Glossary` — a single 17-row table, terms linked (not inlined)
-- `/docs/Reference/Glossary-(dynamic)` — generated definition table
+- `/docs/Reference/Glossary-dynamic` — generated definition table
 - `/docs/About/Glossary/@Project-Lead` — "Leader of a MoonDAO project." (recovered
   from Dataview metadata; renders blank on Quartz today)
 - `/docs/tags/docs/glossary` — tag listing

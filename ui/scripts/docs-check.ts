@@ -15,6 +15,7 @@ import {
   loadCorpus,
   resetDocsCache,
 } from '../lib/docs/loadDocs'
+import { INTENTIONAL_SLUG_CHANGES, isRouteSafeSlug } from '../lib/docs/slug'
 
 const FIXTURE = path.join(__dirname, '..', 'lib', 'docs', 'fixtures', 'contentIndex.json')
 
@@ -67,15 +68,26 @@ function main() {
     console.log(`- ${item.filePath}: ${item.href}`)
   }
 
+  const unsafe = [...produced].filter((slug) => !isRouteSafeSlug(slug))
+  console.log(`\n## Route-unsafe slugs (${unsafe.length})`)
+  for (const slug of unsafe) {
+    console.log(`- ${slug}`)
+  }
+
   const missing = fixture.filter((k) => !produced.has(k))
   const extra = [...produced].filter((k) => !fixture.includes(k))
+  const unexpectedMissing = missing.filter((k) => !(k in INTENTIONAL_SLUG_CHANGES))
+
   console.log(`\n## Slug parity vs Quartz contentIndex`)
   console.log(`missing from native (in Quartz, not produced): ${missing.length}`)
-  for (const k of missing) console.log(`  - ${k}`)
+  for (const k of missing) {
+    const replacement = INTENTIONAL_SLUG_CHANGES[k]
+    console.log(`  - ${k}${replacement ? `  (intentional → ${replacement})` : '  ** UNEXPECTED **'}`)
+  }
   console.log(`extra in native (not in Quartz fixture): ${extra.length}`)
   for (const k of extra) console.log(`  - ${k}`)
 
-  if (missing.length > 0 || broken.length > 0) {
+  if (unexpectedMissing.length > 0 || broken.length > 0 || unsafe.length > 0) {
     process.exitCode = 1
   }
 }
