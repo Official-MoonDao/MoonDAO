@@ -96,6 +96,22 @@ module.exports = withBundleAnalyzer(
       // .next/standalone: CI serves the app with `next start`, which does not
       // need it.
       poweredByHeader: false,
+      // The docs catch-all lives at /documentation/* and is surfaced at /docs/*
+      // through this rewrite, so every public URL stays /docs/...
+      //
+      // Why: a dynamic catch-all mounted directly at /docs/* fails the Vercel
+      // deployment for this project, while the identical route under any other
+      // prefix deploys fine. Verified across six deploys — see
+      // docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md. A rewrite keeps the URL
+      // in the address bar, unlike a redirect.
+      async rewrites() {
+        return [
+          {
+            source: '/docs/:path*',
+            destination: '/documentation/:path*',
+          },
+        ]
+      },
       async headers() {
         return [
           {
