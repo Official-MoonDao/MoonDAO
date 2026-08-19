@@ -6,14 +6,13 @@
 <title>MoonDAO — Direction 02 · Swiss Technical</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root {
     --ink: #111214;
     --ink-2: #55585e;
     --ink-3: #8b8f96;
     --hair: #dcdee1;
-    --hair-strong: #111214;
     --paper: #ffffff;
     --signal: #a83c2c;
     --gutter: 40px;
@@ -40,145 +39,80 @@
     text-transform: uppercase;
   }
 
-  /* Page frame with exposed grid columns */
-  .frame { position: relative; max-width: 1360px; margin: 0 auto; padding: 0 var(--gutter); }
+  .frame { position: relative; max-width: 1280px; margin: 0 auto; padding: 0 var(--gutter); }
   .grid-lines {
     position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    max-width: 1360px; margin: 0 auto; padding: 0 var(--gutter);
+    max-width: 1280px; margin: 0 auto; padding: 0 var(--gutter);
     display: grid; grid-template-columns: repeat(12, 1fr);
   }
   .grid-lines span { border-left: 1px solid rgba(17,18,20,0.055); }
   .grid-lines span:last-child { border-right: 1px solid rgba(17,18,20,0.055); }
   .content { position: relative; z-index: 1; }
 
-  /* ---------- Nav ---------- */
   header.bar {
     position: sticky; top: 0; z-index: 40;
     background: rgba(255,255,255,0.92);
     backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--hair-strong);
+    border-bottom: 1px solid var(--ink);
   }
   .bar-inner {
-    max-width: 1360px; margin: 0 auto; padding: 0 var(--gutter);
+    max-width: 1280px; margin: 0 auto; padding: 0 var(--gutter);
     height: 56px; display: flex; align-items: center; justify-content: space-between;
   }
   .mark { font-weight: 600; font-size: 15px; letter-spacing: 0.02em; }
   .mark em { font-style: normal; color: var(--signal); }
-  nav.links { display: flex; gap: 30px; }
+  nav.links { display: flex; gap: 28px; }
   nav.links a { font-size: 13px; color: var(--ink-2); }
   nav.links a:hover { color: var(--ink); }
-  .bar .meta { color: var(--ink-3); }
 
-  /* ---------- Hero ---------- */
-  .hero { padding: 92px 0 0; border-bottom: 1px solid var(--hair-strong); }
-  .hero-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 60px; align-items: end; padding-bottom: 46px; }
+  .hero { padding: 88px 0 0; border-bottom: 1px solid var(--ink); }
+  .hero-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 56px; align-items: end; padding-bottom: 48px; }
   .hero h1 {
     margin: 0;
-    font-size: clamp(40px, 5.6vw, 78px);
+    font-size: clamp(36px, 5.2vw, 68px);
     font-weight: 500;
     line-height: 1.02;
     letter-spacing: -0.032em;
   }
   .hero h1 .light { color: var(--ink-3); }
-  .hero .lede {
-    font-size: 16px; line-height: 1.6; color: var(--ink-2); max-width: 340px;
-  }
-  .doc-id { color: var(--ink-3); margin-bottom: 26px; display: flex; gap: 22px; }
-  .actions { margin-top: 30px; display: flex; gap: 10px; }
+  .hero .lede { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink-2); max-width: 34ch; }
+  .doc-id { color: var(--ink-3); margin-bottom: 22px; }
+  .actions { margin-top: 28px; }
   .btn {
-    display: inline-flex; align-items: center; height: 40px; padding: 0 20px;
-    border: 1px solid var(--hair-strong); background: var(--ink); color: #fff;
+    display: inline-flex; align-items: center; height: 40px; padding: 0 18px;
+    border: 1px solid var(--ink); background: var(--ink); color: #fff;
     font-size: 13px; font-weight: 500;
   }
-  .btn.ghost { background: transparent; color: var(--ink); }
-  .btn:hover { background: var(--signal); border-color: var(--signal); color: #fff; }
+  .btn:hover { background: var(--signal); border-color: var(--signal); }
 
-  /* ---------- Data strip ---------- */
-  .data { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--hair-strong); }
-  .data > div { padding: 26px 0 24px; border-right: 1px solid var(--hair); }
+  .data { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--ink); }
+  .data > div { padding: 28px 0 26px; border-right: 1px solid var(--hair); }
   .data > div:last-child { border-right: 0; }
   .data .k { color: var(--ink-3); }
   .data .v {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 34px; font-weight: 400; letter-spacing: -0.03em; margin-top: 8px;
-    font-variant-numeric: tabular-nums;
+    font-size: 32px; letter-spacing: -0.03em; margin-top: 8px;
   }
 
-  /* ---------- Sections ---------- */
-  section { padding: 86px 0; border-bottom: 1px solid var(--hair); }
-  .sec-head { display: grid; grid-template-columns: 1fr 2fr; gap: 60px; margin-bottom: 46px; }
-  .sec-head .label { color: var(--signal); }
-  .sec-head h2 {
-    margin: 0; font-size: clamp(26px, 2.9vw, 38px); font-weight: 500;
-    letter-spacing: -0.028em; line-height: 1.12;
-  }
-  .sec-head p { margin: 14px 0 0; color: var(--ink-2); font-size: 16px; max-width: 560px; }
-
-  /* Spec rows instead of cards */
-  .rows { border-top: 1px solid var(--hair-strong); }
+  section { padding: 72px 0; }
+  .rows { border-top: 1px solid var(--ink); }
   .row {
-    display: grid; grid-template-columns: 60px 1.1fr 2fr 130px;
-    gap: 30px; align-items: baseline;
-    padding: 22px 0; border-bottom: 1px solid var(--hair);
-    transition: background 0.18s ease;
+    display: grid; grid-template-columns: 88px 1fr; gap: 28px;
+    padding: 20px 0; border-bottom: 1px solid var(--hair); align-items: baseline;
   }
-  .row:hover { background: #fafafa; }
-  .row .num { color: var(--ink-3); }
-  .row h3 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -0.02em; }
-  .row p { margin: 0; color: var(--ink-2); font-size: 15px; line-height: 1.55; }
-  .row .go { color: var(--signal); text-align: right; }
+  .row .yr { color: var(--ink-3); }
+  .row .ev { font-size: 16px; }
 
-  /* ---------- Plate ---------- */
-  .plate { border: 1px solid var(--hair-strong); position: relative; }
-  .plate img { width: 100%; height: 460px; object-fit: contain; display: block; background: #fcfcfb; }
-  .plate-cap {
-    display: flex; justify-content: space-between;
-    padding: 10px 14px; border-top: 1px solid var(--hair-strong); color: var(--ink-3);
-  }
+  .cta { padding: 80px 0 96px; border-top: 1px solid var(--ink); }
+  .cta h2 { margin: 0; font-size: clamp(28px, 3.6vw, 44px); font-weight: 500; letter-spacing: -0.03em; }
 
-  /* ---------- Two column prose ---------- */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
-  .two-col p { margin: 0 0 16px; color: var(--ink-2); font-size: 16px; }
-  .two-col p strong { color: var(--ink); font-weight: 500; }
+  footer { border-top: 1px solid var(--ink); padding: 20px 0 40px; display: flex; justify-content: space-between; color: var(--ink-3); }
 
-  /* ---------- Timeline ruler ---------- */
-  .ruler { border-top: 1px solid var(--hair-strong); margin-top: 8px; }
-  .ruler-row {
-    display: grid; grid-template-columns: 90px 1fr; gap: 30px;
-    padding: 14px 0; border-bottom: 1px solid var(--hair);
-    align-items: baseline;
-  }
-  .ruler-row .yr { color: var(--ink-3); }
-  .ruler-row .ev { font-size: 15px; }
-  .ruler-row.future .ev { color: var(--ink-3); }
-
-  /* ---------- Voices ---------- */
-  .voices { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--hair-strong); }
-  .voices > div { padding: 22px 24px 24px 0; border-bottom: 1px solid var(--hair); border-right: 1px solid var(--hair); }
-  .voices > div:nth-child(3n) { border-right: 0; }
-  .voices .n { font-size: 16px; font-weight: 500; letter-spacing: -0.015em; }
-  .voices .r { margin-top: 3px; color: var(--ink-3); }
-
-  /* ---------- CTA ---------- */
-  .cta { padding: 96px 0 104px; }
-  .cta h2 { margin: 0; font-size: clamp(30px, 4.2vw, 56px); font-weight: 500; letter-spacing: -0.032em; line-height: 1.05; max-width: 780px; }
-  .cta p { margin: 18px 0 0; color: var(--ink-2); max-width: 460px; }
-
-  footer { border-top: 1px solid var(--hair-strong); padding: 34px 0 46px; }
-  .foot { display: grid; grid-template-columns: repeat(5, 1fr); gap: 30px; }
-  .foot h4 { margin: 0 0 12px; font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
-  .foot a { display: block; font-size: 14px; color: var(--ink-2); margin-bottom: 7px; }
-  .foot a:hover { color: var(--ink); }
-  .colophon { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--hair); display: flex; justify-content: space-between; color: var(--ink-3); }
-
-  @media (max-width: 960px) {
-    .grid-lines { display: none; }
-    .hero-grid, .sec-head, .two-col { grid-template-columns: 1fr; gap: 28px; }
-    .data { grid-template-columns: repeat(2, 1fr); }
-    .row { grid-template-columns: 40px 1fr; }
-    .row p, .row .go { display: none; }
-    .voices { grid-template-columns: 1fr; }
-    .foot { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 800px) {
+    .grid-lines, nav.links { display: none; }
+    .hero-grid { grid-template-columns: 1fr; gap: 24px; }
+    .data { grid-template-columns: 1fr; }
+    .data > div { border-right: 0; border-bottom: 1px solid var(--hair); }
   }
 </style>
 </head>
@@ -193,191 +127,50 @@
   <div class="bar-inner">
     <a class="mark" href="#">MOON<em>·</em>DAO</a>
     <nav class="links">
-      <a href="#">Missions</a><a href="#">Network</a><a href="#">Governance</a>
-      <a href="#">Launchpad</a><a href="#">Treasury</a><a href="#">About</a>
+      <a href="#">Missions</a>
+      <a href="#">Governance</a>
+      <a href="#">About</a>
     </nav>
-    <span class="mono meta">Est. 2021 · Open ledger</span>
+    <a class="mono" href="#" style="color:var(--signal)">Join</a>
   </div>
 </header>
 
 <div class="content frame">
 
   <div class="hero">
-    <div class="mono doc-id">
-      <span>Space Acceleration Network</span>
-      <span>Rev. 2026.1</span>
-      <span>Public record</span>
-    </div>
+    <div class="mono doc-id">Public record</div>
     <div class="hero-grid">
-      <h1>
-        We are building<br />
-        the road to the Moon<br />
-        <span class="light">in public.</span>
-      </h1>
+      <h1>A space program.<br /><span class="light">On the record.</span></h1>
       <div>
-        <p class="lede">
-          MoonDAO is an open, member-governed space program. Every proposal,
-          every vote, and every dollar moved is recorded where anyone can
-          check it.
-        </p>
-        <div class="actions">
-          <a class="btn" href="#">Join the network</a>
-          <a class="btn ghost" href="#">Read the record</a>
-        </div>
+        <p class="lede">Members propose. Members vote. Anyone can read the result.</p>
+        <div class="actions"><a class="btn" href="#">Join</a></div>
       </div>
     </div>
   </div>
 
   <div class="data">
-    <div><div class="mono k">Capital raised</div><div class="v">$8.0M</div></div>
-    <div><div class="mono k">Token holders</div><div class="v">12,043</div></div>
-    <div><div class="mono k">Projects funded</div><div class="v">80</div></div>
-    <div><div class="mono k">Crew flown</div><div class="v">02</div></div>
+    <div><div class="mono k">Flown</div><div class="v">2</div></div>
+    <div><div class="mono k">Raised</div><div class="v">$8M</div></div>
+    <div><div class="mono k">Landed</div><div class="v">2025</div></div>
   </div>
 
   <section>
-    <div class="sec-head">
-      <div class="mono label">§ 01 — Programs</div>
-      <div>
-        <h2>Six active programs, each accountable to the same ledger.</h2>
-        <p>Nothing here is a plan. Each line below has already been funded by a
-          member vote and executed in public.</p>
-      </div>
-    </div>
     <div class="rows">
-      <div class="row">
-        <span class="mono num">01</span>
-        <h3>Human spaceflight</h3>
-        <p>First crowdraised astronaut selected by onchain vote; a second everyday person selected by open sweepstakes.</p>
-        <span class="mono go">Our story →</span>
-      </div>
-      <div class="row">
-        <span class="mono num">02</span>
-        <h3>Space R&amp;D funding</h3>
-        <p>$600,000+ allocated across 75 projects through open community governance.</p>
-        <span class="mono go">Proposals →</span>
-      </div>
-      <div class="row">
-        <span class="mono num">03</span>
-        <h3>Astronaut training</h3>
-        <p>Zero-gravity flights and analog missions for the next generation of space travelers.</p>
-        <span class="mono go">Experiences →</span>
-      </div>
-      <div class="row">
-        <span class="mono num">04</span>
-        <h3>Space Acceleration Network</h3>
-        <p>Connects individuals and organizations with funding, tools, and operational support.</p>
-        <span class="mono go">Network →</span>
-      </div>
-      <div class="row">
-        <span class="mono num">05</span>
-        <h3>Lunar constitution</h3>
-        <p>A charter for self-governance, delivered to the lunar surface in early 2025.</p>
-        <span class="mono go">Document →</span>
-      </div>
-      <div class="row">
-        <span class="mono num">06</span>
-        <h3>Open treasury</h3>
-        <p>Every proposal, vote, and treasury movement is public and independently verifiable.</p>
-        <span class="mono go">Treasury →</span>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head">
-      <div class="mono label">§ 02 — Hardware</div>
-      <div>
-        <h2>Funded here. Flown elsewhere. Documented everywhere.</h2>
-        <p>MoonDAO does not build in secret. Mission hardware, budgets, and
-          test results are published as they happen.</p>
-      </div>
-    </div>
-    <div class="plate">
-      <img src="/assets/mockups/lander-studio.webp" alt="Lunar lander, studio documentation" />
-      <div class="mono plate-cap">
-        <span>Fig. 01 — Descent stage, documentation shot</span>
-        <span>Scale 1:12 · Neutral light</span>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head">
-      <div class="mono label">§ 03 — Governance</div>
-      <div>
-        <h2>Members decide. The chain remembers.</h2>
-      </div>
-    </div>
-    <div class="two-col">
-      <div>
-        <p><strong>Everything is proposed by a member.</strong> There is no
-          product team deciding what gets built. A proposal is written, debated
-          in the open, and put to a vote of token holders.</p>
-        <p>Lock $MOONEY to become a voter and co-govern the treasury. Voting
-          weight comes from how long you commit, not how loudly you post.</p>
-      </div>
-      <div>
-        <p><strong>Two people have flown on this system.</strong> Coby Cotton
-          was selected as MoonDAO's first astronaut by onchain vote. Dr. Eiman
-          Jahangir was selected as the second by open sweepstakes.</p>
-        <p>Both selections, and the funds behind them, are auditable line by
-          line. That is the whole point.</p>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head">
-      <div class="mono label">§ 04 — Record</div>
-      <div><h2>What has actually happened.</h2></div>
-    </div>
-    <div class="ruler">
-      <div class="ruler-row"><span class="mono yr">2021</span><span class="ev">MoonDAO founded; $8M raised in the first month</span></div>
-      <div class="ruler-row"><span class="mono yr">2022</span><span class="ev">First crowdraised astronaut selected by onchain vote and flown</span></div>
-      <div class="ruler-row"><span class="mono yr">2023</span><span class="ev">Community project funding program opens; zero-gravity flight completed</span></div>
-      <div class="ruler-row"><span class="mono yr">2024</span><span class="ev">Space Acceleration Network launches; second astronaut flown</span></div>
-      <div class="ruler-row"><span class="mono yr">2025</span><span class="ev">Constitution delivered to the lunar surface; mission launchpad opens</span></div>
-      <div class="ruler-row future"><span class="mono yr">Ahead</span><span class="ev">Settlement design · Off-world manufacturing · Base construction</span></div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head">
-      <div class="mono label">§ 05 — Testimony</div>
-      <div><h2>People who have been there have shown up.</h2></div>
-    </div>
-    <div class="voices">
-      <div><div class="n">Charlie Duke</div><div class="mono r">Apollo 16 Moonwalker</div></div>
-      <div><div class="n">Doug Hurley</div><div class="mono r">NASA &amp; SpaceX Astronaut</div></div>
-      <div><div class="n">Nicole Stott</div><div class="mono r">NASA Astronaut</div></div>
-      <div><div class="n">Robert Zubrin</div><div class="mono r">Founder, The Mars Society</div></div>
-      <div><div class="n">Steve Altemus</div><div class="mono r">CEO, Intuitive Machines</div></div>
-      <div><div class="n">Dr. Phil Metzger</div><div class="mono r">Planetary Physicist</div></div>
+      <div class="row"><span class="mono yr">2021</span><span class="ev">Founded</span></div>
+      <div class="row"><span class="mono yr">2022</span><span class="ev">$8M raised. Coby Cotton flown, selected by vote.</span></div>
+      <div class="row"><span class="mono yr">2024</span><span class="ev">Dr. Eiman Jahangir flown, selected by sweepstakes.</span></div>
+      <div class="row"><span class="mono yr">2025</span><span class="ev">Constitution delivered to the lunar surface.</span></div>
     </div>
   </section>
 
   <div class="cta">
-    <h2>Membership is open. So is the ledger.</h2>
-    <p>Bring a proposal, a skill, or a question. Everything else is documented.</p>
-    <div class="actions">
-      <a class="btn" href="#">Join MoonDAO</a>
-      <a class="btn ghost" href="#">Browse proposals</a>
-    </div>
+    <h2>Membership is open.</h2>
+    <div class="actions"><a class="btn" href="#">Join</a></div>
   </div>
 
   <footer>
-    <div class="foot">
-      <div><h4>Explore</h4><a href="#">Missions</a><a href="#">Launchpad</a><a href="#">Network</a><a href="#">Map</a></div>
-      <div><h4>Govern</h4><a href="#">Proposals</a><a href="#">Treasury</a><a href="#">Constitution</a><a href="#">$MOONEY</a></div>
-      <div><h4>Organization</h4><a href="#">About</a><a href="#">Roadmap</a><a href="#">Press</a><a href="#">Jobs</a></div>
-      <div><h4>Community</h4><a href="#">Discord</a><a href="#">X</a><a href="#">Town halls</a><a href="#">Newsletter</a></div>
-      <div><h4>Legal</h4><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Disclosures</a></div>
-    </div>
-    <div class="mono colophon">
-      <span>© 2026 MoonDAO · Open record</span>
-      <span>Set in IBM Plex · Printed on white</span>
-    </div>
+    <span class="mono">© MoonDAO</span>
+    <span class="mono">Privacy</span>
   </footer>
 
 </div>

@@ -26,7 +26,7 @@
     color: var(--ink);
     font-family: 'Inter', sans-serif;
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.55;
     background-color: var(--paper);
     background-image:
       linear-gradient(var(--grid) 1px, transparent 1px),
@@ -35,23 +35,19 @@
   }
 
   a { color: inherit; text-decoration: none; }
-
   .m {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--ink-3);
+    font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);
   }
-  .m.draft { color: var(--draft); }
 
   .sheet {
-    max-width: 1240px; margin: 0 auto;
-    background: rgba(252,252,250,0.86);
+    max-width: 1160px; margin: 0 auto;
+    background: rgba(252,252,250,0.88);
     border-left: 1px solid var(--hair); border-right: 1px solid var(--hair);
     position: relative;
   }
   .pad { padding: 0 56px; }
 
-  /* corner registration marks */
   .reg { position: absolute; width: 16px; height: 16px; }
   .reg::before, .reg::after { content: ''; position: absolute; background: var(--ink-3); }
   .reg::before { left: 0; top: 7.5px; width: 16px; height: 1px; }
@@ -59,101 +55,60 @@
   .reg.tl { top: 18px; left: 18px; } .reg.tr { top: 18px; right: 18px; }
   .reg.bl { bottom: 18px; left: 18px; } .reg.br { bottom: 18px; right: 18px; }
 
-  /* ---------- Title block / nav ---------- */
   .titleblock {
     display: flex; align-items: center; justify-content: space-between;
-    height: 60px; border-bottom: 1px solid var(--ink);
+    height: 56px; border-bottom: 1px solid var(--ink);
     position: sticky; top: 0; z-index: 30;
     background: rgba(252,252,250,0.94); backdrop-filter: blur(6px);
   }
-  .mark { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; }
-  .mark .dot { width: 9px; height: 9px; border: 1px solid var(--ink); border-radius: 50%; position: relative; }
-  .mark .dot::after { content:''; position: absolute; inset: 1.5px; border-radius: 50%; background: var(--draft); }
-  .titleblock nav { display: flex; gap: 26px; }
+  .mark { font-weight: 600; font-size: 14px; letter-spacing: 0.04em; }
+  .titleblock nav { display: flex; gap: 24px; }
   .titleblock nav a { font-size: 13px; color: var(--ink-2); }
   .titleblock nav a:hover { color: var(--draft); }
+  .titleblock .join { color: var(--draft); font-size: 13px; font-weight: 500; }
 
-  /* ---------- Hero ---------- */
-  .hero { padding: 78px 0 0; position: relative; }
-  .stamp { display: flex; gap: 26px; margin-bottom: 30px; }
+  .hero { padding: 72px 0 0; }
   .hero h1 {
-    margin: 0; font-size: clamp(38px, 5.2vw, 70px); font-weight: 500;
-    line-height: 1.04; letter-spacing: -0.032em; max-width: 15ch;
+    margin: 0; font-size: clamp(34px, 4.8vw, 60px); font-weight: 500;
+    line-height: 1.04; letter-spacing: -0.032em; max-width: 14ch;
   }
   .hero h1 .thin { color: var(--ink-3); font-weight: 400; }
-  .hero-body { display: grid; grid-template-columns: 1.4fr 1fr; gap: 64px; align-items: end; }
-  .hero p { margin: 0; color: var(--ink-2); max-width: 44ch; }
-  .cta-row { margin-top: 26px; display: flex; gap: 10px; }
+  .cta-row { margin-top: 32px; }
   .btn {
     font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-    display: inline-flex; align-items: center; height: 38px; padding: 0 18px;
+    display: inline-flex; align-items: center; height: 38px; padding: 0 16px;
     border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
   }
-  .btn.ghost { background: transparent; color: var(--ink); }
   .btn:hover { background: var(--draft); border-color: var(--draft); color: #fff; }
 
-  /* dimension line */
-  .dim { margin: 54px 0 0; position: relative; height: 34px; }
-  .dim .line { position: absolute; top: 16px; left: 0; right: 0; border-top: 1px solid var(--ink-3); }
-  .dim .tick { position: absolute; top: 8px; width: 1px; height: 17px; background: var(--ink-3); }
-  .dim .tick.l { left: 0; } .dim .tick.r { right: 0; }
-  .dim .val {
-    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-    background: var(--paper); padding: 0 12px;
-  }
-
-  /* ---------- Diagram ---------- */
-  .diagram { padding: 34px 0 74px; display: grid; grid-template-columns: 1fr 320px; gap: 56px; align-items: center; }
+  .diagram { padding: 48px 0 64px; }
   .diagram svg { width: 100%; height: auto; display: block; }
-  .legend > div { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px dotted var(--hair); }
-  .legend .v { color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0; text-transform: none; }
 
-  /* ---------- Sections ---------- */
-  section { padding: 74px 0; border-top: 1px solid var(--hair); }
-  .sec-head { display: grid; grid-template-columns: 160px 1fr; gap: 48px; margin-bottom: 40px; align-items: baseline; }
-  .sec-head h2 { margin: 0; font-size: clamp(24px, 2.8vw, 36px); font-weight: 500; letter-spacing: -0.028em; line-height: 1.14; max-width: 22ch; }
-  .sec-head .desc { margin: 12px 0 0; color: var(--ink-2); max-width: 56ch; }
-
-  .specs { display: grid; grid-template-columns: 160px 1fr; gap: 48px; }
-  .spec-table { border-top: 1px solid var(--ink); }
-  .spec-row {
-    display: grid; grid-template-columns: 46px 220px 1fr;
-    gap: 26px; padding: 18px 0; border-bottom: 1px solid var(--hair); align-items: baseline;
+  .legend {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
   }
-  .spec-row h3 { margin: 0; font-size: 16px; font-weight: 500; letter-spacing: -0.015em; }
-  .spec-row p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
-  .spec-row:hover { background: rgba(31,78,121,0.035); }
-
-  /* ---------- Callout figure ---------- */
-  .figure { border: 1px solid var(--ink); position: relative; background: #fff; }
-  .figure img { width: 100%; height: 420px; object-fit: contain; display: block; }
-  .figure .tag {
-    position: absolute; top: -1px; left: -1px;
-    background: var(--ink); color: var(--paper); padding: 4px 10px;
+  .legend > div { padding: 20px 0; border-right: 1px solid var(--hair); }
+  .legend > div:last-child { border-right: 0; }
+  .legend .v {
+    display: block; margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 22px; letter-spacing: -0.02em;
+    text-transform: none; color: var(--ink);
   }
-  .figure .tag.m { color: var(--paper); }
-  .fig-cap { display: flex; justify-content: space-between; padding: 10px 2px 0; }
 
-  /* ---------- Registry ---------- */
-  .registry { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 56px; }
-  .registry > div { display: flex; justify-content: space-between; align-items: baseline; padding: 13px 0; border-bottom: 1px dotted var(--hair); }
-  .registry .n { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+  .close { padding: 72px 0 88px; }
+  .close h2 { margin: 0; font-size: clamp(26px, 3.4vw, 40px); font-weight: 500; letter-spacing: -0.03em; }
 
-  /* ---------- Close ---------- */
-  .close { padding: 86px 0 96px; border-top: 1px solid var(--ink); }
-  .close h2 { margin: 0; font-size: clamp(28px, 4vw, 52px); font-weight: 500; letter-spacing: -0.03em; line-height: 1.06; max-width: 18ch; }
-  .close p { margin: 18px 0 0; color: var(--ink-2); max-width: 46ch; }
+  footer {
+    border-top: 1px solid var(--hair); padding: 20px 0 36px;
+    display: flex; justify-content: space-between;
+  }
 
-  footer { border-top: 1px solid var(--hair); padding: 30px 0 40px; display: flex; justify-content: space-between; }
-  footer nav { display: flex; gap: 22px; }
-  footer nav a { font-size: 13px; color: var(--ink-2); }
-
-  @media (max-width: 900px) {
+  @media (max-width: 800px) {
     .pad { padding: 0 24px; }
-    .hero-body, .diagram, .sec-head, .specs { grid-template-columns: 1fr; gap: 28px; }
-    .spec-row { grid-template-columns: 40px 1fr; }
-    .spec-row p { display: none; }
-    .registry { grid-template-columns: 1fr; }
+    .titleblock nav { display: none; }
+    .legend { grid-template-columns: 1fr; }
+    .legend > div { border-right: 0; border-bottom: 1px solid var(--hair); }
   }
 </style>
 </head>
@@ -165,162 +120,61 @@
 
   <div class="pad">
     <div class="titleblock">
-      <a class="mark" href="#"><span class="dot"></span>MOONDAO</a>
+      <a class="mark" href="#">MOONDAO</a>
       <nav>
-        <a href="#">Missions</a><a href="#">Network</a><a href="#">Governance</a>
-        <a href="#">Launchpad</a><a href="#">Treasury</a><a href="#">About</a>
+        <a href="#">Missions</a>
+        <a href="#">Governance</a>
+        <a href="#">About</a>
       </nav>
-      <span class="m">Sheet 1 of 1 · Rev 2026.1</span>
+      <a class="join" href="#">Join</a>
     </div>
 
     <div class="hero">
-      <div class="stamp">
-        <span class="m draft">Drawing № MD-001</span>
-        <span class="m">Subject: A lunar settlement</span>
-        <span class="m">Status: In progress</span>
-      </div>
-      <div class="hero-body">
-        <h1>A space program drawn <span class="thin">to the last decimal, in public.</span></h1>
-        <div>
-          <p>
-            MoonDAO is an open, member-governed space program. Every proposal is
-            written down, every vote is counted in the open, and every dollar is
-            traceable to the block it moved in.
-          </p>
-          <div class="cta-row">
-            <a class="btn" href="#">Join the network</a>
-            <a class="btn ghost" href="#">Open the ledger</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="dim">
-        <span class="tick l"></span><span class="line"></span><span class="tick r"></span>
-        <span class="m val">Earth → Moon · 384,400 km · mean</span>
-      </div>
+      <h1>A space program, <span class="thin">drawn in public.</span></h1>
+      <div class="cta-row"><a class="btn" href="#">Join</a></div>
     </div>
 
     <div class="diagram">
-      <svg viewBox="0 0 820 340" role="img" aria-label="Orbital diagram">
+      <svg viewBox="0 0 820 300" role="img" aria-label="Earth to Moon, 2021 to 2025">
         <defs>
           <pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="6" stroke="#1f4e79" stroke-width="0.6" opacity="0.35"/>
           </pattern>
         </defs>
-        <!-- baseline -->
-        <line x1="40" y1="300" x2="780" y2="300" stroke="#949aa3" stroke-width="1"/>
-        <!-- earth -->
-        <circle cx="120" cy="190" r="56" fill="none" stroke="#101318" stroke-width="1.1"/>
-        <circle cx="120" cy="190" r="56" fill="url(#hatch)"/>
-        <line x1="120" y1="246" x2="120" y2="300" stroke="#949aa3" stroke-width="0.8" stroke-dasharray="3 3"/>
-        <text x="120" y="320" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#565d67" letter-spacing="1">EARTH</text>
-        <!-- transfer arc -->
-        <path d="M176 190 C 320 60, 540 60, 690 165" fill="none" stroke="#1f4e79" stroke-width="1.1" stroke-dasharray="5 4"/>
-        <!-- waypoints -->
+        <line x1="40" y1="268" x2="780" y2="268" stroke="#949aa3" stroke-width="1"/>
+        <circle cx="120" cy="170" r="50" fill="url(#hatch)" stroke="#101318" stroke-width="1.1"/>
+        <text x="120" y="288" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#565d67" letter-spacing="1">EARTH</text>
+        <path d="M170 170 C 310 56, 530 56, 678 152" fill="none" stroke="#1f4e79" stroke-width="1.1" stroke-dasharray="5 4"/>
         <g font-family="JetBrains Mono, monospace" font-size="9" fill="#565d67" letter-spacing="1">
-          <circle cx="300" cy="100" r="3" fill="#1f4e79"/><text x="300" y="86" text-anchor="middle">2021 · FOUNDED</text>
-          <circle cx="430" cy="79" r="3" fill="#1f4e79"/><text x="430" y="65" text-anchor="middle">2022 · CREW 1</text>
-          <circle cx="560" cy="97" r="3" fill="#1f4e79"/><text x="560" y="83" text-anchor="middle">2024 · CREW 2</text>
-          <circle cx="655" cy="139" r="3" fill="#1f4e79"/>
-          <line x1="655" y1="136" x2="655" y2="112" stroke="#949aa3" stroke-width="0.8"/>
-          <text x="655" y="104" text-anchor="middle">2025 · CHARTER</text>
+          <circle cx="290" cy="90" r="3" fill="#1f4e79"/>
+          <text x="290" y="76" text-anchor="middle">2021 · FOUNDED</text>
+          <circle cx="420" cy="68" r="3" fill="#1f4e79"/>
+          <text x="420" y="54" text-anchor="middle">2022 · COTTON</text>
+          <circle cx="550" cy="88" r="3" fill="#1f4e79"/>
+          <text x="550" y="74" text-anchor="middle">2024 · JAHANGIR</text>
+          <circle cx="650" cy="128" r="3" fill="#1f4e79"/>
+          <line x1="650" y1="125" x2="650" y2="104" stroke="#949aa3" stroke-width="0.8"/>
+          <text x="650" y="96" text-anchor="middle">2025 · CHARTER</text>
         </g>
-        <!-- moon -->
-        <circle cx="700" cy="190" r="30" fill="none" stroke="#101318" stroke-width="1.1"/>
-        <circle cx="700" cy="190" r="42" fill="none" stroke="#949aa3" stroke-width="0.7" stroke-dasharray="2 4"/>
-        <line x1="700" y1="220" x2="700" y2="300" stroke="#949aa3" stroke-width="0.8" stroke-dasharray="3 3"/>
-        <text x="700" y="320" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#565d67" letter-spacing="1">MOON</text>
-        <!-- annotation -->
-        <line x1="700" y1="148" x2="760" y2="118" stroke="#949aa3" stroke-width="0.8"/>
-        <text x="764" y="115" font-family="JetBrains Mono, monospace" font-size="9" fill="#565d67" letter-spacing="1">TARGET</text>
+        <circle cx="700" cy="170" r="26" fill="none" stroke="#101318" stroke-width="1.1"/>
+        <text x="700" y="288" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#565d67" letter-spacing="1">MOON</text>
       </svg>
-      <div class="legend">
-        <div><span class="m">Capital raised</span><span class="v">$8,000,000</span></div>
-        <div><span class="m">Token holders</span><span class="v">12,043</span></div>
-        <div><span class="m">Projects funded</span><span class="v">80</span></div>
-        <div><span class="m">Grants allocated</span><span class="v">$600,000</span></div>
-        <div><span class="m">Crew flown</span><span class="v">2</span></div>
-        <div><span class="m">Charters landed</span><span class="v">1</span></div>
-      </div>
     </div>
 
-    <section>
-      <div class="sec-head">
-        <span class="m draft">Sheet A · Programs</span>
-        <div>
-          <h2>Six programs, each one specified before it was funded.</h2>
-          <p class="desc">Nothing below is a roadmap item. Each was proposed by a
-            member, approved by vote, and executed against a published budget.</p>
-        </div>
-      </div>
-      <div class="specs">
-        <span class="m">Ref. A.01–A.06</span>
-        <div class="spec-table">
-          <div class="spec-row"><span class="m">A.01</span><h3>Human spaceflight</h3><p>First crowdraised astronaut by onchain vote; second everyday person by open sweepstakes.</p></div>
-          <div class="spec-row"><span class="m">A.02</span><h3>Space R&amp;D funding</h3><p>$600,000+ allocated across 75 research and engineering projects.</p></div>
-          <div class="spec-row"><span class="m">A.03</span><h3>Astronaut training</h3><p>Zero-gravity flights and analog missions for future travelers.</p></div>
-          <div class="spec-row"><span class="m">A.04</span><h3>Acceleration network</h3><p>Funding, tools, and operational support for people and organizations.</p></div>
-          <div class="spec-row"><span class="m">A.05</span><h3>Lunar charter</h3><p>A member-written constitution, delivered to the lunar surface in 2025.</p></div>
-          <div class="spec-row"><span class="m">A.06</span><h3>Open treasury</h3><p>Every proposal, vote, and payment published and independently verifiable.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="sec-head">
-        <span class="m draft">Sheet B · Hardware</span>
-        <div>
-          <h2>Documented on delivery, not on the marketing calendar.</h2>
-        </div>
-      </div>
-      <div class="figure">
-        <span class="tag m">Fig. B.1</span>
-        <img src="/assets/mockups/lander-studio.webp" alt="Descent stage" />
-      </div>
-      <div class="fig-cap">
-        <span class="m">Descent stage · documentation shot · neutral light</span>
-        <span class="m">Scale 1:12</span>
-      </div>
-    </section>
-
-    <section>
-      <div class="sec-head">
-        <span class="m draft">Sheet C · Governance</span>
-        <div>
-          <h2>Authority is granted by lock-up, not by title.</h2>
-          <p class="desc">Lock $MOONEY to become a voter and co-govern the
-            treasury. Voting weight comes from how long you commit. There is no
-            application, no gate, and no discretionary spend.</p>
-        </div>
-      </div>
-      <div class="specs">
-        <span class="m">Crew register</span>
-        <div class="registry">
-          <div><span class="n">Coby Cotton</span><span class="m">Crew 1 · Onchain vote · 2022</span></div>
-          <div><span class="n">Dr. Eiman Jahangir</span><span class="m">Crew 2 · Sweepstakes · 2024</span></div>
-          <div><span class="n">Charlie Duke</span><span class="m">Town hall · Apollo 16</span></div>
-          <div><span class="n">Doug Hurley</span><span class="m">Town hall · NASA / SpaceX</span></div>
-          <div><span class="n">Nicole Stott</span><span class="m">Town hall · NASA</span></div>
-          <div><span class="n">Robert Zubrin</span><span class="m">Town hall · Mars Society</span></div>
-        </div>
-      </div>
-    </section>
+    <div class="legend">
+      <div><span class="m">Flown</span><span class="v">2</span></div>
+      <div><span class="m">Raised</span><span class="v">$8M</span></div>
+      <div><span class="m">Landed</span><span class="v">2025</span></div>
+    </div>
 
     <div class="close">
-      <h2>Bring a proposal. The rest is procedure.</h2>
-      <p>Membership is open to anyone. Every step after that is written down.</p>
-      <div class="cta-row" style="margin-top:28px">
-        <a class="btn" href="#">Join MoonDAO</a>
-        <a class="btn ghost" href="#">Browse proposals</a>
-      </div>
+      <h2>Membership is open.</h2>
+      <div class="cta-row"><a class="btn" href="#">Join</a></div>
     </div>
 
     <footer>
-      <span class="m">© 2026 MoonDAO · Drawn to scale</span>
-      <nav>
-        <a href="#">Proposals</a><a href="#">Treasury</a><a href="#">Constitution</a>
-        <a href="#">Discord</a><a href="#">Press</a><a href="#">Terms</a>
-      </nav>
+      <span class="m">© MoonDAO</span>
+      <span class="m">Privacy</span>
     </footer>
   </div>
 </div>

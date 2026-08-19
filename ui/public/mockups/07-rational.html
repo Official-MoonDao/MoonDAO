@@ -9,13 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --ink: #000000;
+    --ink: #000;
     --ink-2: #4a4a4a;
     --ink-3: #8e8e8e;
     --hair: #cfcfcf;
-    --paper: #ffffff;
+    --paper: #fff;
     --mark: #a32b1c;
-    --rule: 2px solid #000;
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -31,23 +30,19 @@
   }
 
   a { color: inherit; text-decoration: none; }
-
   .tag {
     font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
   }
   .tag.red { color: var(--mark); }
   .tag.grey { color: var(--ink-3); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 36px; }
 
-  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 36px; }
-  .g12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; }
-
-  /* ---------- Header ---------- */
   header {
     position: sticky; top: 0; z-index: 40; background: var(--paper);
-    border-bottom: var(--rule);
+    border-bottom: 2px solid #000;
   }
   .head-in {
-    max-width: 1320px; margin: 0 auto; padding: 0 36px; height: 60px;
+    max-width: 1240px; margin: 0 auto; padding: 0 36px; height: 56px;
     display: flex; align-items: center; justify-content: space-between;
   }
   .wm { font-weight: 600; font-size: 17px; letter-spacing: -0.02em; text-transform: uppercase; }
@@ -55,115 +50,50 @@
   nav.top { display: flex; gap: 0; }
   nav.top a {
     font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
-    padding: 0 16px; border-left: 1px solid var(--hair);
+    padding: 0 14px; border-left: 1px solid var(--hair);
   }
-  nav.top a:last-child { border-right: 1px solid var(--hair); }
+  nav.top a:last-child { border-right: 1px solid var(--hair); color: var(--mark); }
   nav.top a:hover { color: var(--mark); }
 
-  /* ---------- Hero ---------- */
-  .hero { padding: 64px 0 0; }
-  .hero .g12 { align-items: end; }
+  .hero { padding: 56px 0 0; }
   .hero h1 {
-    grid-column: 1 / 9; margin: 0;
-    font-size: clamp(42px, 6.4vw, 96px); font-weight: 600;
+    margin: 0;
+    font-size: clamp(42px, 7vw, 96px); font-weight: 600;
     line-height: 0.94; letter-spacing: -0.045em; text-transform: uppercase;
   }
-  .hero .aside { grid-column: 10 / 13; }
-  .hero .aside p { margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
-  .hero .strap { grid-column: 1 / 13; margin-bottom: 26px; display: flex; justify-content: space-between; }
-  .hero .acts { grid-column: 1 / 13; margin-top: 44px; display: flex; gap: 0; border-top: var(--rule); border-bottom: 1px solid var(--hair); }
-  .hero .acts a {
-    flex: 0 0 auto; padding: 18px 30px 18px 0; font-size: 14px; font-weight: 500;
+
+  .figures { border-top: 2px solid #000; border-bottom: 2px solid #000; margin-top: 56px; }
+  .fig-row { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .fig-row > div { padding: 32px 20px 28px 0; border-right: 1px solid var(--hair); }
+  .fig-row > div:last-child { border-right: 0; }
+  .fig-row .n {
+    font-size: clamp(40px, 5vw, 64px); font-weight: 600; line-height: 0.9; letter-spacing: -0.05em;
   }
-  .hero .acts a:first-child { color: var(--mark); }
+  .fig-row .l { margin-top: 10px; }
 
-  /* ---------- Big numbers ---------- */
-  .figures { border-bottom: var(--rule); }
-  .figures .g12 { padding: 34px 0 30px; }
-  .figures .f { grid-column: span 3; }
-  .figures .n {
-    font-size: clamp(40px, 5vw, 68px); font-weight: 600; line-height: 0.9;
-    letter-spacing: -0.05em; font-variant-numeric: tabular-nums;
-  }
-  .figures .l { margin-top: 12px; }
-
-  /* ---------- Poster block ---------- */
-  .poster { border-bottom: var(--rule); }
-  .poster .g12 { align-items: stretch; }
-  .poster .img { grid-column: 1 / 8; border-right: 1px solid var(--hair); }
-  .poster .img img { width: 100%; height: 520px; object-fit: cover; display: block; }
-  .poster .txt { grid-column: 8 / 13; padding: 40px 0 40px 0; display: flex; flex-direction: column; justify-content: space-between; }
-  .poster h2 { margin: 18px 0 0; font-size: clamp(24px, 2.8vw, 38px); font-weight: 600; letter-spacing: -0.035em; line-height: 1.04; text-transform: uppercase; }
-  .poster p { margin: 20px 0 0; color: var(--ink-2); font-size: 15px; }
-
-  /* ---------- Program index ---------- */
-  .index { padding: 56px 0 0; }
-  .index-head { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 22px; }
-  .index-head h2 { margin: 0; font-size: clamp(22px, 2.4vw, 32px); font-weight: 600; text-transform: uppercase; letter-spacing: -0.03em; }
-  .prog { border-top: var(--rule); }
-  .prog-row {
-    display: grid; grid-template-columns: 92px 1fr 1.4fr 120px; gap: 24px;
-    padding: 22px 0; border-bottom: 1px solid var(--hair); align-items: baseline;
-  }
-  .prog-row .no { font-size: 30px; font-weight: 600; letter-spacing: -0.05em; line-height: 1; color: var(--ink); }
-  .prog-row h3 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.025em; text-transform: uppercase; }
-  .prog-row p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
-  .prog-row .go { text-align: right; color: var(--mark); }
-  .prog-row:hover { background: #f4f4f4; }
-
-  /* ---------- Statement ---------- */
-  .statement { padding: 84px 0; border-top: var(--rule); border-bottom: var(--rule); margin-top: 56px; }
-  .statement h2 {
-    margin: 0; grid-column: 1 / 10;
-    font-size: clamp(28px, 4vw, 58px); font-weight: 600; line-height: 1.02;
-    letter-spacing: -0.042em; text-transform: uppercase;
-  }
-  .statement .note { grid-column: 10 / 13; color: var(--ink-2); font-size: 14.5px; }
-
-  /* ---------- Ledger ---------- */
-  .ledger { padding: 56px 0 0; }
-  .ledger table { width: 100%; border-collapse: collapse; }
-  .ledger th {
-    text-align: left; padding: 0 0 10px; border-bottom: var(--rule);
+  .ledger { padding: 48px 0 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 0 0 10px; border-bottom: 2px solid #000;
     font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
   }
-  .ledger td { padding: 15px 0; border-bottom: 1px solid var(--hair); font-size: 15px; vertical-align: baseline; }
-  .ledger td.y { width: 110px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .ledger td.s { width: 150px; text-align: right; color: var(--ink-3); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
-  .ledger tr:last-child td { color: var(--ink-3); }
+  td { padding: 14px 0; border-bottom: 1px solid var(--hair); font-size: 16px; }
+  td.y { width: 90px; font-weight: 600; }
 
-  /* ---------- Roster ---------- */
-  .roster { padding: 56px 0 0; }
-  .roster-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 24px; border-top: var(--rule); }
-  .roster-grid > div { padding: 18px 0; border-bottom: 1px solid var(--hair); }
-  .roster-grid .n { font-size: 18px; font-weight: 600; letter-spacing: -0.025em; }
-  .roster-grid .r { margin-top: 3px; }
-
-  /* ---------- Close ---------- */
-  .close { margin-top: 72px; background: var(--ink); color: var(--paper); padding: 96px 0; }
-  .close h2 { margin: 0; grid-column: 1 / 9; font-size: clamp(30px, 4.6vw, 66px); font-weight: 600; line-height: 0.98; letter-spacing: -0.045em; text-transform: uppercase; }
-  .close .side { grid-column: 10 / 13; align-self: end; }
-  .close p { margin: 0 0 22px; color: rgba(255,255,255,0.6); font-size: 14.5px; }
-  .close a.b { display: inline-block; background: var(--paper); color: var(--ink); padding: 14px 26px; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .close { margin-top: 64px; background: var(--ink); color: var(--paper); padding: 72px 0; }
+  .close a.b {
+    display: inline-block; background: var(--paper); color: var(--ink);
+    padding: 14px 22px; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  }
   .close a.b:hover { background: var(--mark); color: #fff; }
 
-  footer { padding: 40px 0 52px; }
-  .foot { display: grid; grid-template-columns: repeat(6, 1fr); gap: 24px; }
-  .foot h4 { margin: 0 0 12px; }
-  .foot a { display: block; font-size: 13.5px; color: var(--ink-2); margin-bottom: 6px; }
-  .foot a:hover { color: var(--ink); }
-  .sig { margin-top: 46px; padding-top: 14px; border-top: 1px solid var(--hair); display: flex; justify-content: space-between; }
+  footer { padding: 22px 0 40px; display: flex; justify-content: space-between; }
 
-  @media (max-width: 1000px) {
-    .g12 { grid-template-columns: repeat(6, 1fr); }
-    .hero h1, .hero .aside, .hero .strap, .hero .acts,
-    .statement h2, .statement .note, .close h2, .close .side { grid-column: 1 / -1; }
-    .figures .f { grid-column: span 3; }
-    .poster .img, .poster .txt { grid-column: 1 / -1; border-right: 0; }
-    .prog-row { grid-template-columns: 60px 1fr; }
-    .prog-row p, .prog-row .go { display: none; }
-    .roster-grid, .foot { grid-template-columns: repeat(2, 1fr); }
-    nav.top { display: none; }
+  @media (max-width: 800px) {
+    nav.top a:not(:last-child) { display: none; }
+    .fig-row { grid-template-columns: 1fr; }
+    .fig-row > div { border-right: 0; border-bottom: 1px solid var(--hair); }
+    .close-in { flex-direction: column; }
   }
 </style>
 </head>
@@ -173,85 +103,26 @@
   <div class="head-in">
     <a class="wm" href="#">Moon<span>·</span>DAO</a>
     <nav class="top">
-      <a href="#">Missions</a><a href="#">Network</a><a href="#">Governance</a>
-      <a href="#">Launchpad</a><a href="#">Treasury</a><a href="#">Join</a>
+      <a href="#">Missions</a>
+      <a href="#">Governance</a>
+      <a href="#">About</a>
+      <a href="#">Join</a>
     </nav>
   </div>
 </header>
 
 <section class="hero">
-  <div class="wrap g12">
-    <div class="strap">
-      <span class="tag red">A public space program</span>
-      <span class="tag grey">Founded 2021</span>
-      <span class="tag grey">12,043 members</span>
-      <span class="tag grey">Open ledger</span>
-    </div>
+  <div class="wrap">
     <h1>Fund it.<br />Vote on it.<br />Fly it.</h1>
-    <div class="aside">
-      <p>MoonDAO is a member-governed space program. Eight million dollars
-        raised in the open, two people flown, one charter on the lunar
-        surface — every decision recorded where anyone can audit it.</p>
-    </div>
-    <div class="acts">
-      <a href="#">Join the network →</a>
-      <a href="#">Browse proposals →</a>
-      <a href="#">Open the treasury →</a>
-    </div>
   </div>
 </section>
 
 <section class="figures">
-  <div class="wrap g12">
-    <div class="f"><div class="n">$8M</div><div class="tag grey l">Raised onchain</div></div>
-    <div class="f"><div class="n">12,043</div><div class="tag grey l">Token holders</div></div>
-    <div class="f"><div class="n">80</div><div class="tag grey l">Projects funded</div></div>
-    <div class="f"><div class="n">02</div><div class="tag grey l">Astronauts flown</div></div>
-  </div>
-</section>
-
-<section class="poster">
-  <div class="wrap g12">
-    <div class="img"><img src="/assets/mockups/regolith-macro.webp" alt="Lunar regolith" /></div>
-    <div class="txt">
-      <div>
-        <span class="tag red">The material</span>
-        <h2>Everything we need is already up there.</h2>
-        <p>Regolith is construction material, oxygen, and shielding. The
-          settlement problem is less about what we carry and more about what we
-          learn to use once we arrive.</p>
-      </div>
-      <div>
-        <span class="tag grey">Fig. 01 — Lunar regolith, sample study</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="index">
   <div class="wrap">
-    <div class="index-head">
-      <h2>The programs</h2>
-      <span class="tag grey">Six active · All member-funded</span>
-    </div>
-    <div class="prog">
-      <div class="prog-row"><span class="no">01</span><h3>Human spaceflight</h3><p>First crowdraised astronaut by onchain vote; a second everyday person by open sweepstakes.</p><span class="tag go">Our story</span></div>
-      <div class="prog-row"><span class="no">02</span><h3>R&amp;D funding</h3><p>$600,000+ allocated across seventy-five research and engineering projects.</p><span class="tag go">Proposals</span></div>
-      <div class="prog-row"><span class="no">03</span><h3>Training</h3><p>Zero-gravity flights and analog missions for the next generation of travelers.</p><span class="tag go">Experiences</span></div>
-      <div class="prog-row"><span class="no">04</span><h3>The network</h3><p>Funding, tools, and operational support for people and organizations building in space.</p><span class="tag go">Network</span></div>
-      <div class="prog-row"><span class="no">05</span><h3>The charter</h3><p>A member-written constitution, delivered to the lunar surface in early 2025.</p><span class="tag go">Read it</span></div>
-      <div class="prog-row"><span class="no">06</span><h3>Open treasury</h3><p>Every proposal, vote, and payment published and independently verifiable.</p><span class="tag go">Treasury</span></div>
-    </div>
-  </div>
-</section>
-
-<section class="statement">
-  <div class="wrap g12">
-    <h2>Nobody has to approve you.</h2>
-    <div class="note">
-      <p>Lock $MOONEY to become a voter and co-govern the treasury. Voting
-        weight comes from how long you commit, not from who you know. There is
-        no application and no discretionary spend.</p>
+    <div class="fig-row">
+      <div><div class="n">2</div><div class="tag grey l">Flown</div></div>
+      <div><div class="n">$8M</div><div class="tag grey l">Raised</div></div>
+      <div><div class="n">2025</div><div class="tag grey l">Landed</div></div>
     </div>
   </div>
 </section>
@@ -259,59 +130,26 @@
 <section class="ledger">
   <div class="wrap">
     <table>
-      <thead>
-        <tr><th>Year</th><th>Entry</th><th style="text-align:right">Status</th></tr>
-      </thead>
+      <thead><tr><th>Year</th><th>Record</th></tr></thead>
       <tbody>
-        <tr><td class="y">2021</td><td>Founded; $8M raised in the first month</td><td class="s">Complete</td></tr>
-        <tr><td class="y">2022</td><td>First crowdraised astronaut selected by onchain vote and flown</td><td class="s">Complete</td></tr>
-        <tr><td class="y">2023</td><td>Community project funding opens; zero-gravity flight completed</td><td class="s">Complete</td></tr>
-        <tr><td class="y">2024</td><td>Space Acceleration Network launches; second astronaut flown</td><td class="s">Complete</td></tr>
-        <tr><td class="y">2025</td><td>Constitution delivered to the lunar surface; launchpad opens</td><td class="s">Complete</td></tr>
-        <tr><td class="y">Ahead</td><td>Settlement design · Off-world manufacturing · Base construction</td><td class="s">In progress</td></tr>
+        <tr><td class="y">2022</td><td>Coby Cotton flown. Selected by vote.</td></tr>
+        <tr><td class="y">2024</td><td>Dr. Eiman Jahangir flown. Selected by sweepstakes.</td></tr>
+        <tr><td class="y">2025</td><td>Constitution delivered to the lunar surface.</td></tr>
       </tbody>
     </table>
   </div>
 </section>
 
-<section class="roster">
-  <div class="wrap">
-    <div class="index-head"><h2>In conversation</h2><span class="tag grey">Town halls, 2021–2026</span></div>
-    <div class="roster-grid">
-      <div><div class="n">Charlie Duke</div><div class="tag grey r">Apollo 16 Moonwalker</div></div>
-      <div><div class="n">Doug Hurley</div><div class="tag grey r">NASA &amp; SpaceX Astronaut</div></div>
-      <div><div class="n">Nicole Stott</div><div class="tag grey r">NASA Astronaut</div></div>
-      <div><div class="n">Robert Zubrin</div><div class="tag grey r">Founder, The Mars Society</div></div>
-      <div><div class="n">Steve Altemus</div><div class="tag grey r">CEO, Intuitive Machines</div></div>
-      <div><div class="n">Dr. Phil Metzger</div><div class="tag grey r">Planetary Physicist</div></div>
-    </div>
-  </div>
-</section>
-
 <section class="close">
-  <div class="wrap g12">
-    <h2>Join. Propose. Decide.</h2>
-    <div class="side">
-      <p>Membership is open to anyone. Everything after that is written down.</p>
-      <a class="b" href="#">Become a member</a>
-    </div>
+  <div class="wrap">
+    <a class="b" href="#">Join</a>
   </div>
 </section>
 
 <footer>
-  <div class="wrap">
-    <div class="foot">
-      <div><h4 class="tag grey">Explore</h4><a href="#">Missions</a><a href="#">Launchpad</a><a href="#">Network</a></div>
-      <div><h4 class="tag grey">Govern</h4><a href="#">Proposals</a><a href="#">Treasury</a><a href="#">Constitution</a></div>
-      <div><h4 class="tag grey">Token</h4><a href="#">$MOONEY</a><a href="#">Lock</a><a href="#">Bridge</a></div>
-      <div><h4 class="tag grey">Organization</h4><a href="#">About</a><a href="#">Roadmap</a><a href="#">Press</a></div>
-      <div><h4 class="tag grey">Community</h4><a href="#">Discord</a><a href="#">X</a><a href="#">Town halls</a></div>
-      <div><h4 class="tag grey">Legal</h4><a href="#">Privacy</a><a href="#">Terms</a></div>
-    </div>
-    <div class="sig">
-      <span class="tag grey">© 2026 MoonDAO</span>
-      <span class="tag grey">Set in Archivo</span>
-    </div>
+  <div class="wrap" style="display:flex;justify-content:space-between;width:100%">
+    <span class="tag grey">© MoonDAO</span>
+    <span class="tag grey">Privacy</span>
   </div>
 </footer>
 
