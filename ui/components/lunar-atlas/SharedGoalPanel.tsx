@@ -337,124 +337,110 @@ export default function SharedGoalPanel({
                   bound && resolved && outcomeIndex !== undefined && outcomeIndex === winningIndex
                 const backDisabled =
                   !!userAddress && bound && (!bettingAllowed || tradingHalted)
+                const heldValueEth = bound
+                  ? outcome?.balance
+                  : demoPosition?.qty
                 return (
                   <div
                     key={project.id}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 transition hover:border-cyan-400/40 hover:bg-white/10"
+                    className="relative overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.03] transition-colors hover:border-cyan-400/30"
                   >
-                    <button
-                      type="button"
-                      onClick={() => onSelectProject(project.id)}
-                      className="w-full text-left"
-                    >
-                      <span className="flex w-full items-center gap-3">
+                    {p != null && (
+                      <div
+                        className="pointer-events-none absolute inset-y-0 left-0 opacity-[0.14]"
+                        style={{ width: `${Math.round(p * 100)}%`, background: color }}
+                      />
+                    )}
+                    <div className="relative z-10 flex items-center gap-2.5 px-2.5 py-2">
+                      <button
+                        type="button"
+                        onClick={() => onSelectProject(project.id)}
+                        className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                      >
                         <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          className="h-2 w-2 shrink-0 rounded-full"
                           style={{
                             backgroundColor: color,
                             boxShadow:
-                              color === NEUTRAL_ACCENT
-                                ? undefined
-                                : `0 0 10px ${color}`,
+                              color === NEUTRAL_ACCENT ? undefined : `0 0 6px ${color}`,
                           }}
                         />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-white">
+                          <span className="block truncate text-sm text-white/90">
                             {project.name}
                           </span>
-                          <span className="block truncate text-xs text-white/50">
+                          <span className="block truncate text-[11px] text-white/40">
                             {organization?.name ?? project.orgId}
                           </span>
                         </span>
-                        {p != null && (
-                          <span className="shrink-0 text-sm font-semibold tabular-nums text-cyan-200">
-                            {Math.round(p * 100)}%
-                          </span>
-                        )}
-                        {project.rosterStatus && (
-                          <span
-                            className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
-                            title={ROSTER_STATUS_LABEL[project.rosterStatus]}
-                          >
-                            {project.rosterStatus}
-                          </span>
-                        )}
-                      </span>
-                      {p != null && (
-                        <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-white/10">
-                          <span
-                            className="block h-full rounded-full"
-                            style={{
-                              width: `${Math.round(p * 100)}%`,
-                              backgroundColor: color,
-                            }}
-                          />
+                      </button>
+                      {project.rosterStatus && (
+                        <span
+                          className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
+                          title={ROSTER_STATUS_LABEL[project.rosterStatus]}
+                        >
+                          {project.rosterStatus}
                         </span>
                       )}
-                    </button>
-                    {canBack && (
+                      {holding && (
+                        <span className="shrink-0 text-[10px] font-medium text-moon-green">
+                          {resolved
+                            ? isWinningSlot
+                              ? 'Won'
+                              : isRefundVector
+                                ? 'Refund'
+                                : 'Lost'
+                            : `Holding ${fmt(heldValueEth ?? 0, 3)}`}
+                        </span>
+                      )}
+                      {p != null && (
+                        <span className="w-9 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-200">
+                          {Math.round(p * 100)}%
+                        </span>
+                      )}
+                      {canBack && !resolved && (
+                        <button
+                          type="button"
+                          onClick={() => handleBetClick(project.id, outcomeIndex)}
+                          disabled={backDisabled}
+                          className="shrink-0 rounded-md px-3 py-1 text-xs font-semibold text-white transition-all
+                            bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
+                            disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {userAddress ? 'Buy' : 'Connect'}
+                        </button>
+                      )}
+                      {resolved && bound && redeemValueEth !== undefined && (
+                        <span
+                          className={`shrink-0 text-xs font-semibold tabular-nums ${
+                            isWinningSlot || isRefundVector ? 'text-emerald-300' : 'text-gray-500'
+                          }`}
+                        >
+                          ≈ {fmt(redeemValueEth)} ETH
+                        </span>
+                      )}
+                    </div>
+                    {holding && !resolved && (
                       <div
-                        className="mt-2.5 flex flex-col gap-1.5"
+                        className="relative z-10 flex items-center justify-between gap-2 border-t border-white/[0.06] px-2.5 py-1.5"
                         onMouseDown={stopRowNav}
                       >
-                        {holding && (
-                          <div className="flex items-center justify-between gap-2 rounded border border-white/10 bg-black/20 px-2 py-1.5">
-                            <span className="text-[11px] text-white/50">
-                              {resolved
-                                ? isWinningSlot
-                                  ? 'Won'
-                                  : isRefundVector
-                                    ? 'Refund'
-                                    : 'Lost'
-                                : bound
-                                  ? 'Your position'
-                                  : 'Your position (demo)'}
-                            </span>
-                            <span
-                              className={`text-xs font-semibold tabular-nums ${
-                                resolved && !isWinningSlot && !isRefundVector
-                                  ? 'text-gray-500'
-                                  : 'text-emerald-300'
-                              }`}
-                            >
-                              {bound
-                                ? resolved
-                                  ? redeemValueEth !== undefined
-                                    ? `≈ ${fmt(redeemValueEth)} ETH`
-                                    : '—'
-                                  : `${fmt(outcome!.balance)} ETH if wins`
-                                : `${fmt(demoPosition!.qty)} ETH if wins`}
-                            </span>
-                            {!resolved && (bound ? !tradingHalted : true) && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  bound
-                                    ? setExitIndex(outcomeIndex!)
-                                    : handleDemoExit(project.id, project.name)
-                                }
-                                className="shrink-0 rounded border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-white/80 transition hover:border-indigo-300/50 hover:bg-indigo-500/15"
-                              >
-                                Cash out
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        {!resolved && (
-                          <div className="flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() => handleBetClick(project.id, outcomeIndex)}
-                              disabled={backDisabled}
-                              className="rounded border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-200 transition hover:border-emerald-300/50 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              {userAddress
-                                ? bound
-                                  ? 'Back this team'
-                                  : 'Back this team (demo)'
-                                : 'Connect to back this team'}
-                            </button>
-                          </div>
+                        <span className="text-[11px] text-white/50">
+                          {fmt(heldValueEth ?? 0)} {bound ? 'ETH' : 'demo ETH'} if wins
+                        </span>
+                        {(bound ? !tradingHalted : true) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              bound
+                                ? setExitIndex(outcomeIndex!)
+                                : handleDemoExit(project.id, project.name)
+                            }
+                            className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white
+                              bg-white/5 hover:bg-indigo-500/15 border border-white/10 hover:border-indigo-400/35 transition-all"
+                          >
+                            Cash out
+                          </button>
                         )}
                       </div>
                     )}
@@ -481,80 +467,69 @@ export default function SharedGoalPanel({
                     : undefined
                 const fieldIsWinningSlot = resolved && fieldOutcomeIndex === winningIndex
                 return (
-                  <div className="w-full rounded-lg border border-dashed border-white/15 bg-white/[0.03] px-3 py-2.5">
-                    <span className="flex w-full items-center gap-3">
-                      <span
-                        className="h-2.5 w-2.5 shrink-0 rounded-full border border-dashed border-white/40"
-                        style={{ backgroundColor: 'transparent' }}
-                      />
+                  <div className="relative overflow-hidden rounded-lg border border-dashed border-white/15 bg-white/[0.03]">
+                    <div
+                      className="pointer-events-none absolute inset-y-0 left-0 bg-white/30 opacity-[0.14]"
+                      style={{ width: `${Math.round(fieldOdds * 100)}%` }}
+                    />
+                    <div className="relative z-10 flex items-center gap-2.5 px-2.5 py-2">
+                      <span className="h-2 w-2 shrink-0 rounded-full border border-dashed border-white/40" />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-white/80">
-                          Other entrants
-                        </span>
-                        <span className="block truncate text-xs text-white/40">
+                        <span className="block truncate text-sm text-white/80">Other entrants</span>
+                        <span className="block truncate text-[11px] text-white/40">
                           Any qualifying entrant not listed above
                         </span>
                       </span>
-                      <span className="shrink-0 text-sm font-semibold tabular-nums text-cyan-200/80">
+                      {fieldHolding && (
+                        <span className="shrink-0 text-[10px] font-medium text-moon-green">
+                          {resolved
+                            ? fieldIsWinningSlot
+                              ? 'Won'
+                              : isRefundVector
+                                ? 'Refund'
+                                : 'Lost'
+                            : `Holding ${fmt(fieldOutcome!.balance, 3)}`}
+                        </span>
+                      )}
+                      <span className="w-9 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-300">
                         {Math.round(fieldOdds * 100)}%
                       </span>
-                    </span>
-                    <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-white/10">
-                      <span
-                        className="block h-full rounded-full bg-white/30"
-                        style={{ width: `${Math.round(fieldOdds * 100)}%` }}
-                      />
-                    </span>
-                    {marketDeprizeId !== undefined && fieldOutcomeIndex >= 0 && (
-                      <div className="mt-2.5 flex flex-col gap-1.5">
-                        {fieldHolding && (
-                          <div className="flex items-center justify-between gap-2 rounded border border-white/10 bg-black/20 px-2 py-1.5">
-                            <span className="text-[11px] text-white/50">
-                              {resolved
-                                ? fieldIsWinningSlot
-                                  ? 'Won'
-                                  : isRefundVector
-                                    ? 'Refund'
-                                    : 'Lost'
-                                : 'Your position'}
-                            </span>
-                            <span
-                              className={`text-xs font-semibold tabular-nums ${
-                                resolved && !fieldIsWinningSlot && !isRefundVector
-                                  ? 'text-gray-500'
-                                  : 'text-emerald-300'
-                              }`}
-                            >
-                              {resolved
-                                ? fieldRedeemValueEth !== undefined
-                                  ? `≈ ${fmt(fieldRedeemValueEth)} ETH`
-                                  : '—'
-                                : `${fmt(fieldOutcome!.balance)} ETH if wins`}
-                            </span>
-                            {!resolved && !tradingHalted && (
-                              <button
-                                type="button"
-                                onClick={() => setExitIndex(fieldOutcomeIndex)}
-                                className="shrink-0 rounded border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-white/80 transition hover:border-indigo-300/50 hover:bg-indigo-500/15"
-                              >
-                                Cash out
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        {!resolved && (
-                          <div className="flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleBetClick(OPEN_FIELD_PROJECT_ID, fieldOutcomeIndex)
-                              }
-                              disabled={!!userAddress && (!bettingAllowed || tradingHalted)}
-                              className="rounded border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-200 transition hover:border-emerald-300/50 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              {userAddress ? 'Back the field' : 'Connect to back the field'}
-                            </button>
-                          </div>
+                      {marketDeprizeId !== undefined && fieldOutcomeIndex >= 0 && !resolved && (
+                        <button
+                          type="button"
+                          onClick={() => handleBetClick(OPEN_FIELD_PROJECT_ID, fieldOutcomeIndex)}
+                          disabled={!!userAddress && (!bettingAllowed || tradingHalted)}
+                          className="shrink-0 rounded-md px-3 py-1 text-xs font-semibold text-white transition-all
+                            bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
+                            disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {userAddress ? 'Buy' : 'Connect'}
+                        </button>
+                      )}
+                      {resolved && fieldRedeemValueEth !== undefined && (
+                        <span
+                          className={`shrink-0 text-xs font-semibold tabular-nums ${
+                            fieldIsWinningSlot || isRefundVector ? 'text-emerald-300' : 'text-gray-500'
+                          }`}
+                        >
+                          ≈ {fmt(fieldRedeemValueEth)} ETH
+                        </span>
+                      )}
+                    </div>
+                    {fieldHolding && !resolved && (
+                      <div className="relative z-10 flex items-center justify-between gap-2 border-t border-white/[0.06] px-2.5 py-1.5">
+                        <span className="text-[11px] text-white/50">
+                          {fmt(fieldOutcome!.balance)} ETH if wins
+                        </span>
+                        {!tradingHalted && (
+                          <button
+                            type="button"
+                            onClick={() => setExitIndex(fieldOutcomeIndex)}
+                            className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white
+                              bg-white/5 hover:bg-indigo-500/15 border border-white/10 hover:border-indigo-400/35 transition-all"
+                          >
+                            Cash out
+                          </button>
                         )}
                       </div>
                     )}

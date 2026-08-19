@@ -72,6 +72,19 @@ export default function DePrizeIndexContent() {
     })
   }, [races, search, category])
 
+  // Fission surface power leads the browse grid as the hero race — bigger
+  // card, full odds bar, more visible outcomes. Falls out of the featured
+  // slot (and back into the grid) whenever a search/category filter hides it.
+  const FEATURED_GOAL_ID = 'shared-fission-power'
+  const featuredRace = useMemo(
+    () => filteredRaces.find((r) => r.goal.id === FEATURED_GOAL_ID),
+    [filteredRaces],
+  )
+  const gridRaces = useMemo(
+    () => filteredRaces.filter((r) => r.goal.id !== FEATURED_GOAL_ID),
+    [filteredRaces],
+  )
+
   const positionsCount = useMemo(
     () => Object.values(positionsMap).filter(Boolean).length,
     [positionsMap],
@@ -132,11 +145,11 @@ export default function DePrizeIndexContent() {
           popOverEffect={false}
           isProfile
           centerHeader
-          centerHeaderWidth="760px"
+          centerHeaderWidth="72rem"
           description="Open capability races with live odds. Back the team you think will win — every bet grows the prize pool."
           preFooter={<NoticeFooter />}
         >
-          <div className="flex flex-col gap-4 w-full max-w-[760px] mx-auto">
+          <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
             {bettingBlockedReason && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
                 {bettingBlockedReason}
@@ -144,7 +157,7 @@ export default function DePrizeIndexContent() {
             )}
 
             {/* Search */}
-            <div className="relative">
+            <div className="relative w-full max-w-md">
               <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
               <input
                 type="text"
@@ -222,8 +235,58 @@ export default function DePrizeIndexContent() {
                   Connect Wallet
                 </button>
               </div>
-            ) : (
+            ) : activeTab === 'all' ? (
               <>
+                {featuredRace && (
+                  <RaceMarketCard
+                    key={featuredRace.goal.id}
+                    goal={featuredRace.goal}
+                    competitors={featuredRace.competitors}
+                    chain={chain}
+                    chainSlug={chainSlug}
+                    account={account}
+                    userAddress={userAddress}
+                    spendableEth={spendableEth}
+                    refreshNonce={refreshNonce}
+                    activeTab={activeTab}
+                    bettingBlockedReason={bettingBlockedReason}
+                    onConnectWallet={() => login()}
+                    onHasPosition={handleHasPosition}
+                    onDone={() => setRefreshNonce((n) => n + 1)}
+                    variant="featured"
+                  />
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {gridRaces.map(({ goal, competitors }) => (
+                    <RaceMarketCard
+                      key={goal.id}
+                      goal={goal}
+                      competitors={competitors}
+                      chain={chain}
+                      chainSlug={chainSlug}
+                      account={account}
+                      userAddress={userAddress}
+                      spendableEth={spendableEth}
+                      refreshNonce={refreshNonce}
+                      activeTab={activeTab}
+                      bettingBlockedReason={bettingBlockedReason}
+                      onConnectWallet={() => login()}
+                      onHasPosition={handleHasPosition}
+                      onDone={() => setRefreshNonce((n) => n + 1)}
+                      variant="grid"
+                    />
+                  ))}
+                </div>
+
+                {filteredRaces.length === 0 && (
+                  <div className="p-8 text-center text-gray-400 text-sm">
+                    No races match your search.
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col gap-4 w-full max-w-[760px] mx-auto">
                 {filteredRaces.map(({ goal, competitors }) => (
                   <RaceMarketCard
                     key={goal.id}
@@ -243,17 +306,12 @@ export default function DePrizeIndexContent() {
                   />
                 ))}
 
-                {activeTab === 'all' && filteredRaces.length === 0 && (
-                  <div className="p-8 text-center text-gray-400 text-sm">
-                    No races match your search.
-                  </div>
-                )}
-                {activeTab === 'positions' && positionsCount === 0 && (
+                {positionsCount === 0 && (
                   <div className="p-8 text-center text-gray-400 text-sm">
                     You haven&apos;t backed any teams yet. Pick a race above to place your first bet.
                   </div>
                 )}
-              </>
+              </div>
             )}
 
             <button

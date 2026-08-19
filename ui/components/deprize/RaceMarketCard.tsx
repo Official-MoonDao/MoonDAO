@@ -120,6 +120,8 @@ function OutcomeBetRow({
   )
 }
 
+export type RaceCardVariant = 'list' | 'grid' | 'featured'
+
 export default function RaceMarketCard({
   goal,
   competitors,
@@ -134,6 +136,7 @@ export default function RaceMarketCard({
   onConnectWallet,
   onHasPosition,
   onDone,
+  variant = 'list',
 }: {
   goal: SharedGoal
   competitors: Competitor[]
@@ -149,6 +152,8 @@ export default function RaceMarketCard({
   onConnectWallet: () => void
   onHasPosition: (sharedGoalId: string, has: boolean) => void
   onDone: () => void
+  /** 'list' (default, full-width row) · 'grid' (compact tile) · 'featured' (hero card). */
+  variant?: RaceCardVariant
 }) {
   const bound = isDePrizeGoalMarketBound(chainSlug, goal.id)
   const deprizeId = bound ? findDePrizeIdForGoal(chainSlug, goal.id) : undefined
@@ -280,6 +285,45 @@ export default function RaceMarketCard({
   const betOutcome = realBetIndex !== null ? outcomes.find((o) => o.outcomeIndex === realBetIndex) : undefined
   const demoBetOutcome = demoBetProjectId ? outcomes.find((o) => o.projectId === demoBetProjectId) : undefined
 
+  // Bet/exit modals are identical across variants — rendered once, reused below.
+  const marketModals = (
+    <>
+      {betOutcome && account && live.marketAddress && deprizeId !== undefined && (
+        <BetModal
+          deprizeId={deprizeId}
+          outcomeIndex={betOutcome.outcomeIndex!}
+          teamName={betOutcome.name}
+          probability={betOutcome.probability}
+          numOutcomes={live.numOutcomes}
+          mintAddress={live.mintAddress}
+          marketAddress={live.marketAddress}
+          jbProjectId={live.jbProjectId}
+          chain={chain}
+          account={account}
+          spendableEth={spendableEth}
+          onClose={() => setRealBetIndex(null)}
+          onDone={() => {
+            onDone()
+            setRealBetIndex(null)
+          }}
+        />
+      )}
+      {demoBetOutcome && (
+        <DemoBetModal
+          sharedGoalId={goal.id}
+          projectIds={projectIds}
+          impliedOdds={impliedOdds}
+          projectId={demoBetOutcome.projectId}
+          teamName={demoBetOutcome.name}
+          probability={demoBetOutcome.probability}
+          address={userAddress}
+          onClose={() => setDemoBetProjectId(null)}
+          onDone={onDone}
+        />
+      )}
+    </>
+  )
+
   // --- "My Positions" view: only render if this race is held ---
   if (activeTab === 'positions') {
     if (!hasPosition) return null
@@ -377,6 +421,161 @@ export default function RaceMarketCard({
     )
   }
 
+  // --- Grid view: compact tile for the Polymarket-style browse grid ---
+  if (variant === 'grid') {
+    const gridTop = ranked.slice(0, 3)
+    const gridMore = ranked.length - gridTop.length
+    return (
+      <div className="rounded-xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] hover:border-white/20 transition-colors overflow-hidden shadow-lg flex flex-col h-full">
+        <a
+          href={detailHref}
+          className="p-4 flex items-start gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+        >
+          <div
+            className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ background: `${categoryColor}22`, border: `1px solid ${categoryColor}55`, color: categoryColor }}
+          >
+            <CategoryIcon category={category} className="w-4 h-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-white font-GoodTimes text-sm leading-snug line-clamp-2">{goal.title}</p>
+            <div className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-500">
+              <span className="truncate">{categoryLabel}</span>
+              <StatusPill label={statusLabel} tone={statusTone} />
+            </div>
+          </div>
+        </a>
+
+        <div className="px-4 pb-3 flex flex-col gap-1.5 flex-1">
+          {gridTop.map((o) => {
+            const pct = Number.isFinite(o.probability) ? fmt(o.probability, 0) : undefined
+            return (
+              <div
+                key={o.projectId}
+                className="relative flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1.5 overflow-hidden"
+              >
+                <div
+                  className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
+                  style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
+                />
+                <span className="relative z-10 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: o.color }} />
+                <span className="relative z-10 flex-1 min-w-0 truncate text-xs text-white/90">{o.name}</span>
+                <span className="relative z-10 shrink-0 text-xs font-semibold tabular-nums text-gray-200">
+                  {pct !== undefined ? `${pct}%` : '—'}
+                </span>
+                {bettingEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => handleBet(o)}
+                    className="relative z-10 shrink-0 px-2 py-0.5 rounded-md text-[11px] font-semibold
+                      bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
+                      transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+                  >
+                    Buy
+                  </button>
+                )}
+              </div>
+            )
+          })}
+          {gridMore > 0 && (
+            <a href={detailHref} className="text-gray-500 hover:text-gray-300 text-[11px] mt-0.5 transition-colors">
+              +{gridMore} more
+            </a>
+          )}
+        </div>
+
+        <div className="px-4 py-2.5 border-t border-white/[0.06] text-[11px] text-gray-500 truncate">
+          <span className="text-gray-300 font-semibold tabular-nums">
+            {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
+          </span>{' '}
+          ETH {bound ? 'pool' : 'demo'}
+        </div>
+
+        {marketModals}
+      </div>
+    )
+  }
+
+  // --- Featured view: hero card for the top of the index ---
+  if (variant === 'featured') {
+    const featuredTop = ranked.slice(0, 6)
+    const featuredMore = ranked.length - featuredTop.length
+    return (
+      <div className="rounded-2xl bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-indigo-950/50 backdrop-blur-xl border border-indigo-400/25 shadow-xl overflow-hidden">
+        <div className="p-5 sm:p-7">
+          <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <div
+                className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ background: `${categoryColor}22`, border: `1px solid ${categoryColor}55`, color: categoryColor }}
+              >
+                <CategoryIcon category={category} className="w-6 h-6" />
+              </div>
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-200 mb-1.5">
+                  ★ Featured Race
+                </span>
+                <a
+                  href={detailHref}
+                  className="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
+                >
+                  <p className="text-white font-GoodTimes text-xl sm:text-2xl leading-snug">{goal.title}</p>
+                </a>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
+                  <span>{categoryLabel}</span>
+                  {goal.targetWindow && (
+                    <>
+                      <span className="text-gray-600">·</span>
+                      <span>
+                        {goal.targetWindow.from ?? '?'}–{goal.targetWindow.to ?? '?'}
+                      </span>
+                    </>
+                  )}
+                  <StatusPill label={statusLabel} tone={statusTone} />
+                </div>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
+                {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
+                <span className="text-sm font-medium text-gray-400 ml-1.5">ETH</span>
+              </p>
+              <p className="text-gray-500 text-[10px] uppercase tracking-wide">
+                {bound ? 'prize pool' : 'demo pool'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex w-full h-2 rounded-full overflow-hidden bg-white/5 mb-4">
+            {ranked.map((o) => (
+              <div
+                key={o.projectId}
+                style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
+              />
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            {featuredTop.map((o) => (
+              <OutcomeBetRow key={o.projectId} outcome={o} bettingEnabled={bettingEnabled} onBet={() => handleBet(o)} />
+            ))}
+            {featuredMore > 0 && (
+              <a href={detailHref} className="text-gray-500 hover:text-gray-300 text-xs mt-0.5 transition-colors">
+                +{featuredMore} more · View all →
+              </a>
+            )}
+          </div>
+
+          {bound && marketTradable && bettingBlockedReason && (
+            <p className="mt-2 text-amber-300/80 text-[11px]">{bettingBlockedReason}</p>
+          )}
+        </div>
+
+        {marketModals}
+      </div>
+    )
+  }
+
   // --- Market list view ---
   return (
     <div className="rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] hover:border-white/20 transition-colors overflow-hidden shadow-lg">
@@ -442,39 +641,7 @@ export default function RaceMarketCard({
         </div>
       </div>
 
-      {betOutcome && account && live.marketAddress && deprizeId !== undefined && (
-        <BetModal
-          deprizeId={deprizeId}
-          outcomeIndex={betOutcome.outcomeIndex!}
-          teamName={betOutcome.name}
-          probability={betOutcome.probability}
-          numOutcomes={live.numOutcomes}
-          mintAddress={live.mintAddress}
-          marketAddress={live.marketAddress}
-          jbProjectId={live.jbProjectId}
-          chain={chain}
-          account={account}
-          spendableEth={spendableEth}
-          onClose={() => setRealBetIndex(null)}
-          onDone={() => {
-            onDone()
-            setRealBetIndex(null)
-          }}
-        />
-      )}
-      {demoBetOutcome && (
-        <DemoBetModal
-          sharedGoalId={goal.id}
-          projectIds={projectIds}
-          impliedOdds={impliedOdds}
-          projectId={demoBetOutcome.projectId}
-          teamName={demoBetOutcome.name}
-          probability={demoBetOutcome.probability}
-          address={userAddress}
-          onClose={() => setDemoBetProjectId(null)}
-          onDone={onDone}
-        />
-      )}
+      {marketModals}
     </div>
   )
 }
