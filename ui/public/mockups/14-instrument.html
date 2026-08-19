@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 14 · Instrument</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink: #101214; --dim: #6b7178; --line: #d8dbdf; --paper: #f7f8f6; --needle: #c45c2a; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  a { color: inherit; text-decoration: none; }
+  .m { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+
+  .nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 28px; border-bottom: 1px solid var(--line);
+  }
+  .nav .m { color: var(--ink); }
+
+  .readout {
+    min-height: calc(100vh - 57px);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 48px 28px 64px; max-width: 1200px; margin: 0 auto;
+  }
+  .label { margin-bottom: 12px; }
+  .km {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(56px, 14vw, 168px);
+    font-weight: 400; letter-spacing: -0.06em; line-height: 0.9;
+    font-variant-numeric: tabular-nums;
+  }
+  .km span { color: var(--dim); font-size: 0.28em; letter-spacing: 0.12em; margin-left: 12px; vertical-align: 28%; }
+
+  .needle {
+    margin: 28px 0 48px; height: 2px; background: var(--line); position: relative;
+  }
+  .needle i {
+    position: absolute; top: -5px; left: 72%;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--needle);
+    box-shadow: 0 0 0 4px rgba(196,92,42,0.15);
+  }
+
+  .under { display: grid; grid-template-columns: 1.4fr 1fr; gap: 40px; align-items: end; }
+  .under h1 { margin: 0; font-size: clamp(22px, 2.6vw, 32px); font-weight: 500; letter-spacing: -0.03em; max-width: 18ch; }
+  .under p { margin: 10px 0 0; color: var(--dim); font-size: 15px; max-width: 36ch; }
+  .dial { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--line); }
+  .dial > div { padding: 14px 0; border-right: 1px solid var(--line); }
+  .dial > div:last-child { border-right: 0; }
+  .dial .n { font-family: 'IBM Plex Mono', monospace; font-size: 22px; }
+
+  .join {
+    display: inline-block; margin-top: 22px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    border: 1px solid var(--ink); padding: 10px 14px;
+  }
+  .join:hover { background: var(--ink); color: var(--paper); }
+
+  @media (max-width: 800px) {
+    .under { grid-template-columns: 1fr; }
+    .km { font-size: 64px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <span class="m">MoonDAO · instrument</span>
+  <a class="m" href="#">Join</a>
+</div>
+
+<section class="readout">
+  <div class="m label">Mean distance, Earth to Moon</div>
+  <div class="km">384,400<span>km</span></div>
+  <div class="needle" aria-hidden="true"><i></i></div>
+  <div class="under">
+    <div>
+      <h1>That is the whole problem.</h1>
+      <p>Two people have been to space. A constitution has gone the distance. The rest is still in front of us.</p>
+      <a class="join" href="#">Join</a>
+    </div>
+    <div class="dial">
+      <div><div class="m">Flown</div><div class="n">2</div></div>
+      <div><div class="m">Raised</div><div class="n">$8M</div></div>
+      <div><div class="m">Landed</div><div class="n">2025</div></div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
