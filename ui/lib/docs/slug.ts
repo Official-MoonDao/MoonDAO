@@ -76,15 +76,14 @@ export function docsHref(slug: string): string {
   return `${DOCS_HREF_PREFIX}/${slug}`
 }
 
-/** Join Next.js `[[...slug]]` params into a corpus slug. */
+/**
+ * Join catch-all route params into a corpus slug. The empty case only arises
+ * defensively — `/docs` is served by `pages/docs/index.tsx`, not by the
+ * catch-all.
+ */
 export function slugFromParams(slug: string[] | undefined): string {
   if (!slug || slug.length === 0) return 'index'
   return slug.join('/')
-}
-
-export function paramsFromSlug(slug: string): { slug?: string[] } {
-  if (!slug || slug === 'index') return { slug: [] }
-  return { slug: slug.split('/') }
 }
 
 /**

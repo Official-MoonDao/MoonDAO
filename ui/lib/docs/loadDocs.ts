@@ -219,9 +219,17 @@ export function allProducedSlugs(root?: string): string[] {
   return [...slugs].sort()
 }
 
-export function allStaticPaths(root?: string): { params: { slug?: string[] } }[] {
+/**
+ * Paths for the required catch-all `pages/docs/[...slug].tsx`.
+ *
+ * Deliberately excludes the empty-slug case: `/docs` is its own page
+ * (`pages/docs/index.tsx`) because an optional catch-all breaks the Vercel
+ * deploy under this app's i18n config. `/docs/index` is kept, since Quartz
+ * published an `index` slug.
+ */
+export function allStaticPaths(root?: string): { params: { slug: string[] } }[] {
   const corpus = loadCorpus(root)
-  const paths: { params: { slug?: string[] } }[] = [{ params: { slug: [] } }, { params: { slug: ['index'] } }]
+  const paths: { params: { slug: string[] } }[] = [{ params: { slug: ['index'] } }]
   const add = (slug: string) => {
     if (slug === 'index') return
     paths.push({ params: { slug: slug.split('/') } })

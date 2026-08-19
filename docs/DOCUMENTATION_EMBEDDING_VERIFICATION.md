@@ -16,11 +16,19 @@ From `ui/`:
 
 ```
 yarn docs:check          # pages, aliases, link integrity, Quartz slug parity (exits 1 on breakage)
-yarn test:docs           # 33 tests: slugifier, frontmatter, rewrite, transclusion, links, parity
+yarn test:docs           # 41 tests: slugifier, frontmatter, rewrite, transclusion, links, parity
 yarn test:cypress-unit   # 441 pre-existing tests, unaffected by this change
-yarn docs:index          # regenerates public/docs-search-index.json
-yarn build               # prebuild runs docs:index; getStaticPaths bakes every slug
+yarn docs:generate       # regenerates the two committed artifacts (see below)
+yarn build               # no prebuild hook; getStaticPaths bakes every slug
 ```
+
+Two generated files are **committed**: `public/docs-search-index.json` and
+`lib/docs/generated/navTree.json`. They are not built by a `prebuild` hook, so
+`next build` needs no `ts-node` and `next dev` behaves identically. `yarn test:docs`
+fails if either drifts from `content/docs`; run `yarn docs:generate` to refresh.
+
+The nav tree is imported as a module rather than passed through page props — it was
+15 KB of the 18.5 KB `__NEXT_DATA__` on every one of ~200 prerendered pages.
 
 `yarn build` was run to completion: 0 prerender errors, 155 docs HTML files emitted,
 156 `/docs` URLs in `public/sitemap-0.xml`.
@@ -72,6 +80,53 @@ Two of those needed care and have dedicated tests:
   A `[^)]+` URL pattern truncates them and leaks `.md)` as visible text.
 
 ---
+
+## Do not use an optional catch-all (`[[...slug]]`) here
+
+**This is the one thing most likely to be "helpfully" refactored back and break
+the deploy.** The docs route must stay a *required* catch-all
+(`pages/docs/[...slug].tsx`) with a separate `pages/docs/index.tsx` for `/docs`.
+
+An optional catch-all `pages/docs/[[...slug]].tsx` builds fine everywhere —
+locally, in the GitHub Actions `build` job, and even under Vercel's own builder
+via `npx vercel build` — but **fails the Vercel deployment**. It almost certainly
+collides with the `i18n` config in `next.config.js`, since Next has to generate
+locale-prefixed variants of both `/docs` and `/docs/:slug*` for the same file.
+
+How this was established (three deploys):
+
+| Branch state | Vercel |
+|---|---|
+| plan docs only, no code | ✅ |
+| full implementation, `[[...slug]]`, ~190 prerendered paths | ❌ |
+| same, but `getStaticPaths` sliced to **1** path | ❌ |
+| same, but `pages/docs/[[...slug]].tsx` **deleted** | ✅ |
+| required `[...slug].tsx` + `index.tsx`, all ~190 paths | ✅ |
+
+The middle two rows are what matter: cutting to a single prerendered page did
+**not** help, so this was never about page count, output size, or payload — and
+deleting only that one file fixed it while all other changes stayed in place
+(content files, the six short routes with their filesystem reads, the
+`next.config.js` redirect rewrite, the CSP edit, `GlobalSearch`, `Head`).
+
+Ruled out along the way, with measurements:
+
+| Suspect | Evidence against |
+|---|---|
+| Build failure | GitHub Actions "Build application" passed; `npx vercel build` passed |
+| Deployment size | 320 MB head vs 321 MB base — `ui/public/` is 257 MB of pre-existing assets |
+| Static upload limit | 284 MB, limit is 1 GB on Pro |
+| Function count | 204 → 480, but Pro allows unlimited |
+| Routes per deployment | 192 → 202, limit is 2048 |
+| Build memory | peak 6.5 GiB base vs 6.9 GiB head — a 0.4 GiB delta |
+| Build time | 45-minute limit; build takes ~4 minutes |
+| Non-ASCII / paren filenames | fixed them; deploy still failed (kept anyway, see below) |
+| `prebuild` + ts-node | removed it; deploy still failed (kept removed, it's simpler) |
+
+Consequence for `allStaticPaths()`: it must **not** emit the empty-slug entry
+(`{ params: { slug: [] } }`), which is invalid for a required catch-all. `/docs`
+comes from `index.tsx`; `/docs/index` stays in the catch-all because Quartz
+published an `index` slug.
 
 ## Route-safe slugs: why two URLs changed
 
@@ -154,7 +209,8 @@ was **not** imported.
 
 | Component | File |
 |---|---|
-| Catch-all | `ui/pages/docs/[[...slug]].tsx` |
+| Docs home (`/docs`) | `ui/pages/docs/index.tsx` |
+| Catch-all | `ui/pages/docs/[...slug].tsx` — **required**, not `[[...slug]]` (see below) |
 | Page shell | `ui/components/docs/DocsPage.tsx` |
 | 3-column layout | `ui/components/docs/DocsLayout.tsx` |
 | Sidebar explorer | `ui/components/docs/DocsSidebar.tsx` |
