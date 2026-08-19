@@ -22,6 +22,7 @@
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5TerminalStore from 'const/abis/JBV5TerminalStore.json'
+import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import {
@@ -31,7 +32,9 @@ import {
   JBV5_DIRECTORY_ADDRESS,
   JBV5_TERMINAL_ADDRESS,
   JBV5_TERMINAL_STORE_ADDRESS,
+  JBV5_TOKENS_ADDRESS,
   JB_NATIVE_TOKEN_ADDRESS,
+  JB_NATIVE_TOKEN_ID,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_NAMES,
 } from 'const/config'
@@ -50,6 +53,7 @@ import {
   KNOWN_MISSION_NAMES,
   LaunchpadUncollectedSummary,
   MissionUncollected,
+  TRACKED_LAUNCHPAD_RAISES,
   summariseLaunchpadUncollected,
 } from './launchpadPipeline'
 import {
@@ -76,11 +80,19 @@ export interface UncollectedLine {
   treasuryUSD?: number
   /** 5% seeding MoonDAO-owned Uniswap liquidity. */
   liquidityUSD?: number
+  /** True when the raise figure is a configured estimate, not a live read. */
+  estimated?: boolean
   detail: string
   available: boolean
 }
 
 export interface UncollectedRevenueResult {
+  /** 7.5% of every tracked raise. The headline projected figure. */
+  projectedUSD: number
+  projectedTreasuryUSD: number
+  projectedLiquidityUSD: number
+  /** Total campaign dollars the projection is applied to. */
+  raisedBaseUSD: number
   receivableUSD: number
   contingentUSD: number
   /** Cash share (2.5%) of receivable + contingent. */
@@ -146,6 +158,27 @@ async function readLivePayHookStage(
   }
 }
 
+/** Recover a tracked raise's Juicebox project id without the registry. */
+async function resolveProjectIdFromToken(tokenAddress: string): Promise<number | null> {
+  try {
+    const jbTokens = getContract({
+      client: serverClient,
+      address: JBV5_TOKENS_ADDRESS,
+      chain: DEFAULT_CHAIN_V5,
+      abi: JBV5Tokens.abi as any,
+    })
+    const projectId = await readContract({
+      contract: jbTokens,
+      method: 'projectIdOf' as string,
+      params: [tokenAddress],
+    })
+    const n = Number(projectId?.toString() ?? NaN)
+    return Number.isFinite(n) && n > 0 ? n : null
+  } catch {
+    return null
+  }
+}
+
 async function readMissionUncollected(): Promise<{
   missions: MissionUncollected[]
   warnings: string[]
@@ -156,16 +189,21 @@ async function readMissionUncollected(): Promise<{
   const tableName = MISSION_TABLE_NAMES[chainSlug]
   const missionCreatorAddress = MISSION_CREATOR_ADDRESSES[chainSlug]
 
-  if (!tableName || !missionCreatorAddress) {
-    warnings.push(`No mission registry configured for ${chainSlug} — Launchpad pipeline omitted.`)
-    return { missions: [], warnings }
-  }
-  if (!process.env.TABLELAND_PRIVATE_KEY) {
-    warnings.push('TABLELAND_PRIVATE_KEY missing — Launchpad pipeline omitted.')
-    return { missions: [], warnings }
+  let rows: any[] = []
+  if (!tableName) {
+    warnings.push(`No mission registry configured for ${chainSlug}.`)
+  } else if (!process.env.TABLELAND_PRIVATE_KEY) {
+    warnings.push('TABLELAND_PRIVATE_KEY missing — only tracked raises are priced.')
+  } else {
+    try {
+      rows = (await queryTable(chain, `SELECT id, projectId FROM ${tableName}`)) || []
+    } catch (err: any) {
+      warnings.push(
+        `Mission registry read failed (${err?.message || 'unknown'}) — only tracked raises are priced.`
+      )
+    }
   }
 
-  const rows: any[] = (await queryTable(chain, `SELECT id, projectId FROM ${tableName}`)) || []
   const allCandidates = rows
     .map((r) => ({ missionId: Number(r.id), projectId: Number(r.projectId) }))
     .filter(
@@ -176,10 +214,29 @@ async function readMissionUncollected(): Promise<{
         !BLOCKED_MISSIONS.has(String(r.missionId))
     )
 
-  // Always price Frank's flight first so a long registry cannot drop it.
-  const pinned = allCandidates.filter((r) => r.missionId === FRANK_MISSION_ID)
-  const rest = allCandidates.filter((r) => r.missionId !== FRANK_MISSION_ID)
-  const candidates = [...pinned, ...rest]
+  // Tracked raises come first and are added even when the registry gave us
+  // nothing, resolving their project id from the mission token if needed.
+  const byMission = new Map(allCandidates.map((c) => [c.missionId, c]))
+  const pinned: { missionId: number; projectId: number }[] = []
+  for (const tracked of TRACKED_LAUNCHPAD_RAISES) {
+    const known = byMission.get(tracked.missionId)
+    if (known) {
+      pinned.push(known)
+      byMission.delete(tracked.missionId)
+      continue
+    }
+    const projectId = tracked.tokenAddress
+      ? await resolveProjectIdFromToken(tracked.tokenAddress)
+      : null
+    if (projectId) {
+      pinned.push({ missionId: tracked.missionId, projectId })
+    } else {
+      warnings.push(
+        `Could not resolve a project id for ${tracked.name} — using the configured estimate.`
+      )
+    }
+  }
+  const candidates = [...pinned, ...byMission.values()]
 
   if (candidates.length > MAX_MISSIONS) {
     warnings.push(
@@ -193,12 +250,14 @@ async function readMissionUncollected(): Promise<{
     chain,
     abi: JBV5TerminalStore.abi as any,
   })
-  const missionCreator = getContract({
-    client: serverClient,
-    address: missionCreatorAddress,
-    chain,
-    abi: MissionCreatorABI.abi as any,
-  })
+  const missionCreator = missionCreatorAddress
+    ? getContract({
+        client: serverClient,
+        address: missionCreatorAddress,
+        chain,
+        abi: MissionCreatorABI.abi as any,
+      })
+    : null
   const jbController = getContract({
     client: serverClient,
     address: JBV5_CONTROLLER_ADDRESS,
@@ -217,19 +276,35 @@ async function readMissionUncollected(): Promise<{
     READ_BATCH,
     async ({ missionId, projectId }): Promise<MissionUncollected | null> => {
       try {
-        const [balance, creatorStage] = await Promise.all([
+        const [balance, usedPayoutLimit, creatorStage] = await Promise.all([
           readContract({
             contract: terminalStore,
             method: 'balanceOf' as string,
             params: [JBV5_TERMINAL_ADDRESS, projectId, JB_NATIVE_TOKEN_ADDRESS],
           }),
+          // Already-distributed payouts. Total raised is this plus the balance,
+          // so a mission that has paid out still shows its full raise.
           readContract({
-            contract: missionCreator,
-            method: 'stage' as string,
-            params: [missionId],
-          }),
+            contract: terminalStore,
+            method: 'usedPayoutLimitOf' as string,
+            params: [
+              JBV5_TERMINAL_ADDRESS,
+              projectId,
+              JB_NATIVE_TOKEN_ADDRESS,
+              2,
+              JB_NATIVE_TOKEN_ID,
+            ],
+          }).catch(() => BigInt(0)),
+          missionCreator
+            ? readContract({
+                contract: missionCreator,
+                method: 'stage' as string,
+                params: [missionId],
+              }).catch(() => BigInt(0))
+            : Promise.resolve(BigInt(0)),
         ])
         const undistributedETH = Number(balance?.toString() ?? 0) / 1e18
+        const distributedETH = Number(usedPayoutLimit?.toString() ?? 0) / 1e18
         let stage = Number(creatorStage?.toString() ?? 0)
 
         // Re-opened missions (Frank) keep ETH in the terminal but the live
@@ -248,6 +323,7 @@ async function readMissionUncollected(): Promise<{
           projectId,
           stage,
           undistributedETH,
+          distributedETH,
           name: KNOWN_MISSION_NAMES[missionId],
         }
       } catch (err: any) {
@@ -303,31 +379,92 @@ export async function getUncollectedRevenue(
   const liquidityPct = (LAUNCHPAD_LIQUIDITY_RATE * 100).toFixed(0)
   const totalPct = (LAUNCHPAD_MOONDAO_RATE * 100).toFixed(1)
 
+  let projectedUSD = 0
+  let projectedTreasuryUSD = 0
+  let projectedLiquidityUSD = 0
+  let raisedBaseUSD = 0
+
+  const priced = new Set<number>()
+
   for (const mission of summary.missions) {
+    priced.add(mission.missionId)
     if (mission.kind === 'forfeited') continue
+
     const pledgedUSD = getMissionOffChainCommittedUsd(mission.missionId)
-    const raisedUSD = mission.raisedETH * ethPriceUSD
+    const onChainRaisedUSD = mission.raisedETH * ethPriceUSD
+    // Off-chain pledges land through the same launchpad splits, so project the
+    // MoonDAO share on the whole campaign, not just the part already on-chain.
+    const raisedUSD = onChainRaisedUSD + pledgedUSD
+    const treasuryUSD = raisedUSD * LAUNCHPAD_TREASURY_FEE_RATE
+    const liquidityUSD = raisedUSD * LAUNCHPAD_LIQUIDITY_RATE
+    const totalUSD = treasuryUSD + liquidityUSD
+
+    projectedUSD += totalUSD
+    projectedTreasuryUSD += treasuryUSD
+    projectedLiquidityUSD += liquidityUSD
+    raisedBaseUSD += raisedUSD
+
     const raisedBits = [
-      `${mission.raisedETH.toFixed(2)} ETH raised (${usdPlain(raisedUSD)})`,
+      `${mission.raisedETH.toFixed(2)} ETH on-chain (${usdPlain(onChainRaisedUSD)})`,
       pledgedUSD > 0 ? `${usdPlain(pledgedUSD)} pledged off-chain` : null,
     ].filter(Boolean)
+
     lines.push({
       label: mission.name,
       kind: mission.kind,
       eth: mission.totalETH,
-      usd: mission.totalETH * ethPriceUSD,
+      usd: totalUSD,
       raisedETH: mission.raisedETH,
       raisedUSD,
       pledgedUSD: pledgedUSD > 0 ? pledgedUSD : undefined,
-      treasuryUSD: mission.treasuryETH * ethPriceUSD,
-      liquidityUSD: mission.liquidityETH * ethPriceUSD,
+      treasuryUSD,
+      liquidityUSD,
       detail:
-        `${raisedBits.join(' + ')} · ${totalPct}% to MoonDAO = ` +
-        `${treasuryPct}% cash (${usdPlain(mission.treasuryETH * ethPriceUSD)}) + ` +
-        `${liquidityPct}% liquidity (${usdPlain(mission.liquidityETH * ethPriceUSD)})` +
+        `${usdPlain(raisedUSD)} raised (${raisedBits.join(' + ')}) · ${totalPct}% to MoonDAO = ` +
+        `${treasuryPct}% cash ${usdPlain(treasuryUSD)} + ` +
+        `${liquidityPct}% liquidity ${usdPlain(liquidityUSD)}` +
         (mission.kind === 'receivable'
           ? '. Earned — splits on the payout call.'
-          : '. Collected only if the mission closes; refunded otherwise.'),
+          : '. Collected if the mission closes; refunded otherwise.'),
+      available: true,
+    })
+  }
+
+  // A tracked raise must never silently vanish because a chain read failed.
+  for (const tracked of TRACKED_LAUNCHPAD_RAISES) {
+    if (priced.has(tracked.missionId)) continue
+    const pledgedUSD = getMissionOffChainCommittedUsd(tracked.missionId)
+    const raisedUSD = (tracked.fallbackOnChainRaisedUSD ?? 0) + pledgedUSD
+    if (!(raisedUSD > 0)) continue
+
+    const treasuryUSD = raisedUSD * LAUNCHPAD_TREASURY_FEE_RATE
+    const liquidityUSD = raisedUSD * LAUNCHPAD_LIQUIDITY_RATE
+    const totalUSD = treasuryUSD + liquidityUSD
+
+    projectedUSD += totalUSD
+    projectedTreasuryUSD += treasuryUSD
+    projectedLiquidityUSD += liquidityUSD
+    raisedBaseUSD += raisedUSD
+
+    warnings.push(
+      `${tracked.name}: live Juicebox read unavailable — projection uses the configured ${usdPlain(
+        raisedUSD
+      )} raised.`
+    )
+    lines.push({
+      label: tracked.name,
+      kind: 'contingent',
+      eth: 0,
+      usd: totalUSD,
+      raisedUSD,
+      pledgedUSD: pledgedUSD > 0 ? pledgedUSD : undefined,
+      treasuryUSD,
+      liquidityUSD,
+      estimated: true,
+      detail:
+        `${usdPlain(raisedUSD)} raised (configured estimate — live read unavailable) · ` +
+        `${totalPct}% to MoonDAO = ${treasuryPct}% cash ${usdPlain(treasuryUSD)} + ` +
+        `${liquidityPct}% liquidity ${usdPlain(liquidityUSD)}.`,
       available: true,
     })
   }
@@ -356,15 +493,17 @@ export async function getUncollectedRevenue(
   const contingentUSD = lines.filter((l) => l.kind === 'contingent').reduce((s, l) => s + l.usd, 0)
 
   return {
+    projectedUSD,
+    projectedTreasuryUSD,
+    projectedLiquidityUSD,
+    raisedBaseUSD,
     receivableUSD,
     contingentUSD,
-    treasuryUSD:
-      (summary.receivableTreasuryETH + summary.contingentTreasuryETH) * ethPriceUSD,
-    liquidityUSD:
-      (summary.receivableLiquidityETH + summary.contingentLiquidityETH) * ethPriceUSD,
+    treasuryUSD: projectedTreasuryUSD,
+    liquidityUSD: projectedLiquidityUSD,
     lines,
     missionsConsidered,
-    note: `Not in revenue or runway. Every launchpad-funded raise routes ${totalPct}% to MoonDAO: ${treasuryPct}% as cash on payout, ${liquidityPct}% as MoonDAO-owned Uniswap liquidity that has to be withdrawn before it can be spent. Receivable is earned and waiting on a payout; contingent depends on the mission closing.`,
+    note: `${totalPct}% of every launchpad-funded raise goes to MoonDAO: ${treasuryPct}% as cash on the payout call, ${liquidityPct}% as MoonDAO-owned Uniswap liquidity that must be withdrawn before it can be spent. Projected, not booked — it is excluded from revenue and from runway.`,
     warnings,
   }
 }

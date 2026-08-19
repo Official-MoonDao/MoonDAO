@@ -18,6 +18,7 @@ import { ProgramSourceConfig, classifyTreasuryInflows } from '@/lib/treasury/pro
 import {
   FRANK_MISSION_ID,
   MISSION_STAGE,
+  TRACKED_LAUNCHPAD_RAISES,
   effectiveMissionStage,
   summariseLaunchpadUncollected,
 } from '@/lib/treasury/launchpadPipeline'
@@ -219,6 +220,40 @@ describe('summariseLaunchpadUncollected', () => {
     expect(out.missions[0].totalETH).to.equal(7.5)
     expect(out.missions[0].treasuryETH).to.equal(2.5)
     expect(out.missions[0].liquidityETH).to.equal(5)
+    expect(out.projectedETH).to.equal(7.5)
+    expect(out.raisedETH).to.equal(100)
+  })
+
+  it('projects on total raised, counting ETH already paid out', () => {
+    const out = summariseLaunchpadUncollected(
+      [
+        {
+          missionId: 7,
+          projectId: 107,
+          stage: MISSION_STAGE.GOAL_MET,
+          undistributedETH: 40,
+          distributedETH: 60,
+        },
+      ],
+      RATES
+    )
+
+    // 7.5% of the full 100 ETH raised is projected...
+    expect(out.raisedETH).to.equal(100)
+    expect(out.projectedETH).to.equal(7.5)
+    // ...but only the 40 ETH still held is outstanding.
+    expect(out.receivableETH).to.equal(3)
+    expect(out.missions[0].collectedETH).to.be.closeTo(4.5, 1e-9)
+  })
+
+  it('keeps a refunding mission out of the projection', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(1, MISSION_STAGE.REFUNDING, 100)],
+      RATES
+    )
+    expect(out.projectedETH).to.equal(0)
+    expect(out.raisedETH).to.equal(0)
+    expect(out.forfeitedETH).to.equal(7.5)
   })
 
   it('defaults to the on-chain launchpad split when no rates are passed', () => {
@@ -310,6 +345,16 @@ describe('summariseLaunchpadUncollected', () => {
     expect(out.missions[0].totalETH).to.equal(6)
     expect(out.missions[0].kind).to.equal('contingent')
     expect(out.contingentETH).to.equal(6)
+    expect(out.projectedETH).to.equal(6)
+  })
+
+  it('always tracks Frank so a failed registry read cannot drop the projection', () => {
+    const frank = TRACKED_LAUNCHPAD_RAISES.find((r) => r.missionId === FRANK_MISSION_ID)
+    expect(frank, 'Frank must be a tracked raise').to.not.equal(undefined)
+    // Needs a token to recover the project id without Tableland, and a floor so
+    // the line degrades to a marked estimate rather than vanishing.
+    expect(frank!.tokenAddress).to.match(/^0x[a-fA-F0-9]{40}$/)
+    expect(frank!.fallbackOnChainRaisedUSD).to.be.greaterThan(0)
   })
 
   it('does not forfeit Frank when MissionCreator still reports the first-round refund stage', () => {

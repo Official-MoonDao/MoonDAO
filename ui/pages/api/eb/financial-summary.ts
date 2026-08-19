@@ -92,14 +92,28 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const programs = await getProgramRevenue(windowStart, now, ethPrice)
     const revenueStreams = await getHistoricalRevenue(aum.defiData, 365)
 
-    // Fees we have a claim on but have not received. Never folded into revenue
-    // or runway — a failure here should cost us the section, not the endpoint.
-    let uncollected = null
+    // Value we have a claim on but have not received. Never folded into revenue
+    // or runway. On failure this still returns a shaped object so the dashboard
+    // reports "unavailable" instead of dropping the section entirely.
+    let uncollected: Awaited<ReturnType<typeof getUncollectedRevenue>> = {
+      projectedUSD: 0,
+      projectedTreasuryUSD: 0,
+      projectedLiquidityUSD: 0,
+      raisedBaseUSD: 0,
+      receivableUSD: 0,
+      contingentUSD: 0,
+      treasuryUSD: 0,
+      liquidityUSD: 0,
+      lines: [],
+      missionsConsidered: 0,
+      note: 'Projected launchpad revenue could not be read on this request.',
+      warnings: [],
+    }
     try {
       uncollected = await getUncollectedRevenue(ethPrice)
       warnings.push(...uncollected.warnings)
     } catch (err: any) {
-      warnings.push(`Uncollected revenue unavailable: ${err?.message || 'read failed'}`)
+      warnings.push(`Projected launchpad revenue unavailable: ${err?.message || 'read failed'}`)
     }
 
     const citizenUSD = subs.citizen.totalUSD

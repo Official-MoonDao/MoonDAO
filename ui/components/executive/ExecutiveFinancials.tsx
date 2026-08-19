@@ -3,6 +3,7 @@ import {
   BanknotesIcon,
   ClockIcon,
   FireIcon,
+  RocketLaunchIcon,
   WalletIcon,
 } from '@heroicons/react/24/outline'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -26,6 +27,10 @@ type UnattributedInflows = {
 }
 
 type Uncollected = {
+  projectedUSD?: number
+  projectedTreasuryUSD?: number
+  projectedLiquidityUSD?: number
+  raisedBaseUSD?: number
   receivableUSD: number
   contingentUSD: number
   treasuryUSD?: number
@@ -40,6 +45,7 @@ type Uncollected = {
     pledgedUSD?: number
     treasuryUSD?: number
     liquidityUSD?: number
+    estimated?: boolean
     detail: string
     available: boolean
   }[]
@@ -334,6 +340,16 @@ export default function ExecutiveFinancials() {
   const grossMonthly = burn.grossMonthlyUSD
   const maxStream = Math.max(...revenue.streams.map((s) => s.annualUSD), 1)
   const wallets = assets.wallets || []
+  const uncollected: Uncollected =
+    revenue.uncollected ?? {
+      receivableUSD: 0,
+      contingentUSD: 0,
+      lines: [],
+      missionsConsidered: 0,
+      note: 'Projected launchpad revenue was not returned by the API.',
+    }
+  const projectedTotal =
+    uncollected.projectedUSD ?? uncollected.receivableUSD + uncollected.contingentUSD
   const lpNote =
     assets.defiLpUSD > 0 ? `${usd(assets.defiLpUSD)} in Uniswap LP (non-MOONEY side)` : undefined
 
@@ -385,6 +401,26 @@ export default function ExecutiveFinancials() {
           label="Revenue (trailing year)"
           value={usd(revenue.cashAnnualUSD ?? revenue.annualUSD)}
           sub={`Covers ${(revenue.coverageOfGrossBurn * 100).toFixed(1)}% of gross cost`}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <MetricTile
+          icon={<RocketLaunchIcon className="w-4 h-4" />}
+          label="Projected launchpad revenue"
+          value={usd(projectedTotal)}
+          tone={projectedTotal > 0 ? 'positive' : 'neutral'}
+          sub={
+            uncollected.raisedBaseUSD
+              ? `7.5% of ${usd(uncollected.raisedBaseUSD)} raised or pledged — not booked`
+              : 'Not booked as revenue or runway'
+          }
+        />
+        <MetricTile
+          icon={<BanknotesIcon className="w-4 h-4" />}
+          label="Revenue + projected"
+          value={usd((revenue.cashAnnualUSD ?? revenue.annualUSD) + projectedTotal)}
+          sub="Trailing-year cash plus everything launchpad raises would route to MoonDAO"
         />
       </div>
 
@@ -585,47 +621,62 @@ export default function ExecutiveFinancials() {
         </div>
       </div>
 
-      {revenue.uncollected && (
-        <div className={PANEL}>
-          <h2 className="font-GoodTimes text-white text-sm mb-1">Uncollected revenue</h2>
-          <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
-            {revenue.uncollected.note}
+      <div className={PANEL}>
+        <h2 className="font-GoodTimes text-white text-sm mb-1">
+          Projected revenue — launchpad raises
+        </h2>
+        <p className="text-[11px] text-slate-500 leading-relaxed mb-4">{uncollected.note}</p>
+
+        {uncollected.lines.length === 0 ? (
+          <p className="text-sm text-amber-300/80">
+            No launchpad raise could be priced on this request. See the data-quality notes above.
           </p>
+        ) : (
           <div className="space-y-3 text-sm">
-            {revenue.uncollected.lines.map((line) => (
+            {uncollected.lines.map((line) => (
               <Row
                 key={line.label}
-                label={line.label}
+                label={`${line.label}${line.estimated ? ' (estimate)' : ''}`}
                 value={line.available ? usd(line.usd) : 'Not live'}
                 muted={!line.available}
                 note={line.detail}
+                share={projectedTotal > 0 ? line.usd / projectedTotal : 0}
+                barClass="bg-fuchsia-400/70"
               />
             ))}
-            <Row
-              label="Receivable — earned, awaiting payout"
-              value={usd(revenue.uncollected.receivableUSD)}
-              emphasis
-            />
-            <Row
-              label="Contingent — needs the mission to close"
-              value={usd(revenue.uncollected.contingentUSD)}
-            />
-            {typeof revenue.uncollected.treasuryUSD === 'number' && (
+            <Row label="Projected to MoonDAO (7.5%)" value={usd(projectedTotal)} emphasis />
+            {typeof uncollected.projectedTreasuryUSD === 'number' && (
               <Row
-                label="Of which cash to the treasury (2.5%)"
-                value={usd(revenue.uncollected.treasuryUSD)}
+                label="Cash to the treasury (2.5%)"
+                value={usd(uncollected.projectedTreasuryUSD)}
               />
             )}
-            {typeof revenue.uncollected.liquidityUSD === 'number' && (
+            {typeof uncollected.projectedLiquidityUSD === 'number' && (
               <Row
-                label="Of which MoonDAO-owned liquidity (5%)"
-                value={usd(revenue.uncollected.liquidityUSD)}
+                label="MoonDAO-owned liquidity (5%)"
+                value={usd(uncollected.projectedLiquidityUSD)}
                 note="Mints a Uniswap position; must be withdrawn before it can be spent"
               />
             )}
+            {typeof uncollected.raisedBaseUSD === 'number' && uncollected.raisedBaseUSD > 0 && (
+              <p className="pt-2 text-[11px] text-slate-500">
+                Applied to {usd(uncollected.raisedBaseUSD)} raised or pledged across{' '}
+                {uncollected.lines.length} campaign
+                {uncollected.lines.length === 1 ? '' : 's'}.
+              </p>
+            )}
+            {projectedTotal > 0 && burn.netMonthlyUSD > 0 && (
+              <p className="text-[11px] text-slate-500">
+                Collecting all of it would cover about{' '}
+                <span className="text-slate-300">
+                  {(projectedTotal / burn.netMonthlyUSD).toFixed(1)} months
+                </span>{' '}
+                of net burn. Runway above does not assume it.
+              </p>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className={PANEL}>
         <h2 className="font-GoodTimes text-white text-sm mb-4">Runway</h2>
