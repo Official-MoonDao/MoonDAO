@@ -9,6 +9,8 @@ import path from 'path'
 import {
   allProducedSlugs,
   getAliasTable,
+  listBrokenDocsHrefs,
+  listUnresolvedMdLinks,
   listUnresolvedWikilinks,
   loadCorpus,
   resetDocsCache,
@@ -53,6 +55,18 @@ function main() {
     console.log(`- ${item.filePath}: [[${item.target}]]`)
   }
 
+  const unresolvedMd: { filePath: string; target: string }[] = listUnresolvedMdLinks()
+  console.log(`\n## Unresolved relative .md links (${unresolvedMd.length})`)
+  for (const item of unresolvedMd) {
+    console.log(`- ${item.filePath}: ${item.target}`)
+  }
+
+  const broken = listBrokenDocsHrefs()
+  console.log(`\n## Broken internal /docs hrefs (${broken.length})`)
+  for (const item of broken) {
+    console.log(`- ${item.filePath}: ${item.href}`)
+  }
+
   const missing = fixture.filter((k) => !produced.has(k))
   const extra = [...produced].filter((k) => !fixture.includes(k))
   console.log(`\n## Slug parity vs Quartz contentIndex`)
@@ -61,7 +75,7 @@ function main() {
   console.log(`extra in native (not in Quartz fixture): ${extra.length}`)
   for (const k of extra) console.log(`  - ${k}`)
 
-  if (missing.length > 0) {
+  if (missing.length > 0 || broken.length > 0) {
     process.exitCode = 1
   }
 }

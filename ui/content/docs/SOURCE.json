@@ -1,7 +1,7 @@
 {
   "repo": "Official-MoonDao/documentation",
   "commit": "ff058cf866e0053c60d25f2ab4b2e018118f5243",
-  "importedAt": "2026-08-18T23:46:22.189Z",
+  "importedAt": "2026-08-19T00:50:16.927Z",
   "fileCount": 72,
   "rewrite": {
     "unresolvedWikilinks": [
@@ -9,8 +9,16 @@
       "@Voter",
       "@TreasurySigner"
     ],
+    "unresolvedMdLinks": [
+      "MoonDAO Legal Entity as a Marshall Island DAO LLC.md",
+      "@Moon Settler.md",
+      "SpaceX.md",
+      "Open Lunar Foundation.md",
+      "Team (dynamic).md"
+    ],
+    "unresolvedDocsHostLinks": [],
     "convertedWikilinks": 37,
-    "convertedMdLinks": 69,
+    "convertedMdLinks": 70,
     "convertedImages": 4
   },
   "note": "One-time import. Unpublished MoonDAO/media-files (~59MB of research PDFs) was not imported. See docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md."

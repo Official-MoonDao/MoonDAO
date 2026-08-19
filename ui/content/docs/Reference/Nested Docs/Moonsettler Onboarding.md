@@ -33,7 +33,7 @@ Depending on your project, a Coordinape circle may be set up for handling reward
 Tell us more about your background and what brought you to MoonDAO in the [#introductions](https://discord.com/channels/914720248140279868/917524355242663977) channel in order to get access to MoonDAO’s governance channels
 
 📖 **Learn more about MoonDAO**
-Be familiar with our processes as laid out in our [constitution](https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution),  [documentation](https://publish.obsidian.md/moondao/MoonDAO/docs/Introduction/), and the [project system](https://publish.obsidian.md/moondao/MoonDAO/docs/Projects) at MoonDAO. Let us know if something is unclear or doesn’t make sense. Those are all living documents and things can become stale from time to time.
+Be familiar with our processes as laid out in our [constitution](/docs/Governance/Constitution),  [documentation](/docs), and the [project system](/docs/Projects/index) at MoonDAO. Let us know if something is unclear or doesn’t make sense. Those are all living documents and things can become stale from time to time.
 
 🏢 **Join the Gather Town and grab a desk**
 Gathertown is where we co-work; Follow [this link](https://app.gather.town/invite?token=2I7BCtkQRMSSoGYkQfxg) to claim your desk!  

@@ -104,7 +104,7 @@ A MoonDAO Member is any individual who holds wallet-bound $vMOONEY in consonance
 
 ### 2.2 Senate
 
-MoonDAO’s Senate is composed of Senators. Proposals are first voted on by the Senate before being presented to the MoonDAO Member House. See section [2.4](/docs/Constitution#24-proposal-process) for more information.
+MoonDAO’s Senate is composed of Senators. Proposals are first voted on by the Senate before being presented to the MoonDAO Member House. See section [2.4](/docs/Governance/Constitution#24-proposal-process) for more information.
 
 #### 2.2.1. Senators
 

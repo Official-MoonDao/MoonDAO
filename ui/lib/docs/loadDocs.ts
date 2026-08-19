@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { extractTitle, parseFrontmatter } from './frontmatter'
-import { rewriteDocBody } from './rewrite'
+import { emptyReport, isTableRow, rewriteDocBody } from './rewrite'
 import {
   docsHref,
   normalizeAliasSlug,
@@ -247,6 +247,18 @@ function resolver(corpus: Corpus) {
         corpus.bySlug.get(slugifyFilePath(trimmed))?.slug
       )
     },
+    resolvePath(path: string): string | undefined {
+      const target = slugifyFilePath(path.trim())
+      if (!target) return undefined
+      if (corpus.bySlug.has(target)) return target
+      const suffix = `/${target}`
+      const matches = corpus.files.filter((f) => f.slug.endsWith(suffix))
+      if (matches.length === 1) return matches[0].slug
+      // A bare folder path (`Projects`) means that folder's index page.
+      const folder = `${target}/index`
+      if (corpus.folderSlugs.includes(folder)) return folder
+      return undefined
+    },
   }
 }
 
@@ -259,21 +271,39 @@ function extractToc(body: string): DocsTocItem[] {
   return toc
 }
 
+/**
+ * Inline `![[Note]]` transclusions.
+ *
+ * Inside a markdown table row an inlined multi-paragraph body would break the
+ * table, so there we emit a link instead. Quartz sidesteps this by deferring
+ * transclusion to client-side JS (the server HTML just says "Transclude of x");
+ * a link degrades better and needs no JS. Outside tables we inline the body,
+ * which is what Obsidian shows.
+ */
 function expandTransclusions(body: string, corpus: Corpus, stack: Set<string>): string {
-  return body.replace(WIKI_TRANSCLUDE_RE, (full, inner: string) => {
-    const target = String(inner).split('|')[0].split('#')[0].trim()
-    if (!target) return full
-    const slug = resolver(corpus).resolve(target)
-    if (!slug) return target
-    if (stack.has(slug)) return ''
-    const file = corpus.bySlug.get(slug)
-    if (!file) return target
-    stack.add(slug)
-    const rewritten = rewriteDocBody(file.body, resolver(corpus))
-    const expanded = expandTransclusions(rewritten, corpus, stack)
-    stack.delete(slug)
-    return expanded.trim()
-  })
+  const res = resolver(corpus)
+  return body
+    .split('\n')
+    .map((line) => {
+      const inTable = isTableRow(line)
+      return line.replace(WIKI_TRANSCLUDE_RE, (full, inner: string) => {
+        const target = String(inner).split('|')[0].split('#')[0].trim()
+        if (!target) return full
+        const slug = res.resolve(target)
+        if (!slug) return target
+        const file = corpus.bySlug.get(slug)
+        if (!file) return target
+        const title = extractTitle(file.filePath, file.frontmatter, file.body)
+        if (inTable) return `[${title}](${docsHref(slug)})`
+        if (stack.has(slug)) return `[${title}](${docsHref(slug)})`
+        stack.add(slug)
+        const rewritten = rewriteDocBody(file.body, res)
+        const expanded = expandTransclusions(rewritten, corpus, stack)
+        stack.delete(slug)
+        return expanded.trim()
+      })
+    })
+    .join('\n')
 }
 
 function buildGlossaryTable(corpus: Corpus): string {
@@ -467,6 +497,42 @@ export function listUnresolvedWikilinks(root?: string): { filePath: string; targ
     }
   }
   return unresolved
+}
+
+/**
+ * Relative `foo.md` links whose target isn't in the corpus. These render as
+ * plain text rather than a dead href, so they're a content smell, not a 404.
+ */
+export function listUnresolvedMdLinks(root?: string): { filePath: string; target: string }[] {
+  const corpus = loadCorpus(root)
+  const res = resolver(corpus)
+  const unresolved: { filePath: string; target: string }[] = []
+  for (const file of corpus.files) {
+    const report = emptyReport()
+    rewriteDocBody(file.body, res, report)
+    for (const target of report.unresolvedMdLinks) {
+      unresolved.push({ filePath: file.filePath, target })
+    }
+  }
+  return unresolved
+}
+
+/** Internal `/docs/...` hrefs that don't correspond to a real page. */
+export function listBrokenDocsHrefs(root?: string): { filePath: string; href: string }[] {
+  const corpus = loadCorpus(root)
+  const valid = new Set(allProducedSlugs(root))
+  const broken: { filePath: string; href: string }[] = []
+  for (const file of corpus.files) {
+    const rewritten = rewriteDocBody(file.body, resolver(corpus))
+    for (const match of rewritten.matchAll(/\]\((\/docs(?:\/[^)#\s]*)?)(?:#[^)\s]*)?\)/g)) {
+      const href = match[1]
+      const slug = href === '/docs' ? 'index' : href.slice('/docs/'.length)
+      if (!valid.has(slug) && !valid.has(`${slug}/index`)) {
+        broken.push({ filePath: file.filePath, href })
+      }
+    }
+  }
+  return broken
 }
 
 export function getAliasTable(root?: string): { slug: string; aliases: string[] }[] {

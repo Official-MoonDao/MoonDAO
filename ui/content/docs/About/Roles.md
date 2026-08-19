@@ -24,7 +24,7 @@ sidebar_position: 7
 - **[@Delegate](/docs/About/Glossary/@Delegate):** Holder of at least 250,000 $vMOONEY, and can officially submit proposals to the [Senate](/docs/About/Glossary/Senate) on behalf of anyone.
 
 ## Contributor Roles
-- **[@Project Contributor](@Moon%20Settler.md):** Currently working within a MoonDAO project.
+- **@Project Contributor:** Currently working within a MoonDAO project.
 - **[@Project Lead](/docs/About/Glossary/@Project-Lead):** Leader of a MoonDAO project.
 - **[@Executive Lead](/docs/About/Glossary/@Executive-Lead):** Leader of MoonDAO.
 - **@TreasurySigner:** Signer on MoonDAO’s Treasury.

@@ -29,7 +29,7 @@ Besides ergonomics, another reason to use automations and templates is the fact 
 **NOTE:** 
 
 </div>
- As an example, compare the contents of [Team (dynamic)](Team%20(dynamic).md) (which depends on Dataview) and [Team](/docs/About/Team) (which is a standalone note). If you view the two in source mode, it'll be more obvious.
+ As an example, compare the contents of Team (dynamic) (which depends on Dataview) and [Team](/docs/About/Team) (which is a standalone note). If you view the two in source mode, it'll be more obvious.
 
 There are two templates that are used to keep member bios organized:
 1. Member Bio → `MoonDAO/templates/moondao-member-template`

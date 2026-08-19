@@ -34,6 +34,12 @@ type WebsiteHeadProps = {
   keywords?: string
   author?: string
   robots?: string
+  /**
+   * Absolute canonical URL. Pass this when several routes serve the same
+   * content (e.g. /faq and /docs/About/FAQ) so they don't compete in search.
+   * Defaults to the current path.
+   */
+  canonical?: string
   children?: any
 }
 
@@ -45,10 +51,11 @@ export default function WebsiteHead({
   keywords,
   author = 'MoonDAO',
   robots = 'index, follow',
+  canonical,
   children,
 }: WebsiteHeadProps) {
   const router = useRouter()
-  const canonicalUrl = `${DEPLOYED_ORIGIN}${router.asPath}`
+  const canonicalUrl = canonical || `${DEPLOYED_ORIGIN}${router.asPath}`
   const ogImage = normalizeOgImageUrl(image)
 
   const truncatedDescription =

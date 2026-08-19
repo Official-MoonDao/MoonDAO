@@ -5,3 +5,5 @@ tags:
 aliases: []
 ---
 
+Leader of a MoonDAO project.
+

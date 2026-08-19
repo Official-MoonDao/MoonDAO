@@ -95,6 +95,8 @@ function ensureVault(explicit) {
 
 function buildResolver(docsDir) {
   const nameToSlug = new Map()
+  const allSlugs = []
+  const folders = new Set()
   const remember = (name, slug) => {
     const key = (name || '').trim().toLowerCase()
     if (key && !nameToSlug.has(key)) nameToSlug.set(key, slug)
@@ -103,6 +105,14 @@ function buildResolver(docsDir) {
     const raw = fs.readFileSync(path.join(docsDir, rel), 'utf8')
     const { frontmatter } = parseFrontmatter(raw)
     const slug = slugifyFilePath(rel)
+    allSlugs.push(slug)
+    const parts = slug.split('/')
+    parts.pop()
+    let acc = ''
+    for (const p of parts) {
+      acc = acc ? `${acc}/${p}` : p
+      folders.add(`${acc}/index`)
+    }
     const note = path.basename(rel, '.md')
     remember(note, slug)
     remember(frontmatter.title, slug)
@@ -112,7 +122,21 @@ function buildResolver(docsDir) {
     for (const alias of frontmatter.aliases) remember(alias, slug)
     if (frontmatter.slug) remember(frontmatter.slug.replace(/^\/+|\/+$/g, ''), slug)
   }
-  return (name) => nameToSlug.get((name || '').trim().toLowerCase())
+  const resolve = (name) => nameToSlug.get((name || '').trim().toLowerCase())
+  resolve.byPath = (p) => {
+    const target = slugifyFilePath((p || '').trim())
+    if (!target) return undefined
+    if (allSlugs.includes(target)) return target
+    const matches = allSlugs.filter((s) => s.endsWith(`/${target}`))
+    if (matches.length === 1) return matches[0]
+    if (folders.has(`${target}/index`)) return `${target}/index`
+    return undefined
+  }
+  return resolve
+}
+
+function docsHref(slug) {
+  return !slug || slug === 'index' ? '/docs' : `/docs/${slug}`
 }
 
 function slugifyHeading(text) {
@@ -123,8 +147,46 @@ function slugifyHeading(text) {
     .replace(/\s+/g, '-')
 }
 
+/**
+ * Some glossary notes carry their whole definition inside an Obsidian Dataview
+ * metadata comment (`%% [Definition:: ...] %%`) and have no visible body, so
+ * they render blank — on Quartz too. Promote the definition to real markdown so
+ * the page and the generated glossary table have content.
+ */
+function promoteDataviewDefinition(body) {
+  const stripped = body.replace(/%%[\s\S]*?%%/g, '').trim()
+  if (stripped) return body
+  const def = body.match(/\[Definition::\s*([^\]]+)\]/)
+  if (!def) return body
+  return `${body}\n\n${def[1].trim()}\n`
+}
+
 function rewriteDocBody(body, resolve, report) {
-  let next = body.replace(/%%[\s\S]*?%%/g, '').replace(/https?:\/\/docs\.moondao\.com\/?/gi, '/docs/')
+  let next = promoteDataviewDefinition(body).replace(/%%[\s\S]*?%%/g, '')
+
+  // Absolute links to either former docs host. Resolve the path against the
+  // corpus rather than pasting it through: many were already 404s upstream
+  // (every publish.obsidian.md link, plus docs.moondao.com/Constitution).
+  next = next.replace(
+    /https?:\/\/(?:docs\.moondao\.com|publish\.obsidian\.md\/moondao\/MoonDAO\/docs)(\/[A-Za-z0-9/+_.%-]*)?/gi,
+    (_full, rawPath) => {
+      const p = (rawPath || '').replace(/^\//, '').replace(/\+/g, ' ').replace(/\/+$/, '')
+      if (!p) return '/docs'
+      const trailing = p.endsWith('.') ? '.' : ''
+      const cleaned = trailing ? p.slice(0, -1) : p
+      const [pathOnly, hash] = cleaned.split('#')
+      const suffix = (hash ? `#${hash}` : '') + trailing
+      const byPath = resolve.byPath(pathOnly)
+      if (byPath) return `${docsHref(byPath)}${suffix}`
+      const direct = resolve(pathOnly)
+      if (direct) return `${docsHref(direct)}${suffix}`
+      const leaf = pathOnly.split('/').pop() || pathOnly
+      const byLeaf = resolve(leaf.replace(/-/g, ' ')) || resolve(leaf)
+      if (byLeaf) return `${docsHref(byLeaf)}${suffix}`
+      report.unresolvedDocsHostLinks.push(pathOnly)
+      return `/docs/${pathOnly.replace(/ /g, '-')}${suffix}`
+    }
+  )
 
   next = next.replace(/^> ?\[!([A-Za-z-]+)\][^\n]*\n((?:>.*\n?)*)/gm, (_full, kind, rest) => {
     const text = rest
@@ -171,11 +233,14 @@ function rewriteDocBody(body, resolve, report) {
       return display
     }
     report.convertedWikilinks += 1
-    const href = heading ? `/docs/${slug}#${slugifyHeading(heading)}` : `/docs/${slug}`
-    return `[${display}](${href})`
+    const base = docsHref(slug)
+    return `[${display}](${heading ? `${base}#${slugifyHeading(heading)}` : base})`
   })
 
-  next = next.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (full, alt, url) => {
+  // Allow one nested paren pair in the URL: `[Team (dynamic)](Team%20(dynamic).md)`.
+  const MD_URL = '(?:[^()\\n]|\\([^()\\n]*\\))*'
+
+  next = next.replace(new RegExp(`!\\[([^\\]]*)\\]\\((${MD_URL})\\)`, 'g'), (full, alt, url) => {
     const trimmed = url.trim()
     if (trimmed.startsWith('http') || trimmed.startsWith('/')) return full
     if (!/\.(png|jpe?g|gif|svg|webp|avif)$/i.test(trimmed)) return full
@@ -183,9 +248,9 @@ function rewriteDocBody(body, resolve, report) {
     return `![${alt}](/docs-media/${trimmed.split('/').pop()})`
   })
 
-  next = next.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (full, text, url) => {
+  next = next.replace(new RegExp(`\\[([^\\]]+)\\]\\((${MD_URL})\\)`, 'g'), (full, text, url) => {
     if (full.startsWith('![')) return full
-    let decoded = url.trim()
+    let decoded = url.trim().replace(/\\(?=[ %])/g, '')
     try {
       decoded = decodeURIComponent(decoded)
     } catch {
@@ -196,11 +261,16 @@ function rewriteDocBody(body, resolve, report) {
     if (!file.toLowerCase().endsWith('.md')) return full
     const name = path.basename(file, '.md')
     const slug = resolve(name)
-    if (!slug) return full
+    if (!slug) {
+      // Dangling relative link (target not in the vault). Keep the label,
+      // drop the href so it can't render as a 404.
+      report.unresolvedMdLinks.push(file)
+      return text
+    }
     report.convertedMdLinks += 1
     const heading = decoded.includes('#') ? decoded.split('#')[1] : ''
-    const href = heading ? `/docs/${slug}#${heading}` : `/docs/${slug}`
-    return `[${text}](${href})`
+    const base = docsHref(slug)
+    return `[${text}](${heading ? `${base}#${heading}` : base})`
   })
 
   return next
@@ -209,7 +279,14 @@ function rewriteDocBody(body, resolve, report) {
 const { docsDir, commit } = ensureVault(process.argv[2])
 console.log(`Vault: ${docsDir} @ ${commit}`)
 const resolve = buildResolver(docsDir)
-const report = { unresolvedWikilinks: [], convertedWikilinks: 0, convertedMdLinks: 0, convertedImages: 0 }
+const report = {
+  unresolvedWikilinks: [],
+  unresolvedMdLinks: [],
+  unresolvedDocsHostLinks: [],
+  convertedWikilinks: 0,
+  convertedMdLinks: 0,
+  convertedImages: 0,
+}
 
 fs.rmSync(DEST, { recursive: true, force: true })
 fs.mkdirSync(DEST, { recursive: true })
@@ -268,6 +345,14 @@ console.log(
 )
 console.log(`Unresolved wikilinks (${report.unresolvedWikilinks.length}):`)
 for (const target of [...new Set(report.unresolvedWikilinks)].sort()) {
+  console.log(`  - ${target}`)
+}
+console.log(`Unresolved relative .md links (${report.unresolvedMdLinks.length}):`)
+for (const target of [...new Set(report.unresolvedMdLinks)].sort()) {
+  console.log(`  - ${target}`)
+}
+console.log(`Unresolved docs.moondao.com paths (${report.unresolvedDocsHostLinks.length}):`)
+for (const target of [...new Set(report.unresolvedDocsHostLinks)].sort()) {
   console.log(`  - ${target}`)
 }
 

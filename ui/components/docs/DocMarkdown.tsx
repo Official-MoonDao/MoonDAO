@@ -6,8 +6,16 @@ import rehypeRaw from 'rehype-raw'
 import rehypeSlug from 'rehype-slug'
 import remarkGfm from 'remark-gfm'
 
-function isInternal(href?: string): boolean {
+const LINK_CLASS =
+  'text-blue-400 hover:text-blue-300 underline transition-colors break-words'
+
+function isRoute(href?: string): boolean {
   return !!href && href.startsWith('/') && !href.startsWith('//')
+}
+
+/** Same-page anchor, including the `#` autolinks rehype adds to headings. */
+function isAnchor(href?: string): boolean {
+  return !!href && href.startsWith('#')
 }
 
 export default function DocMarkdown({ body }: { body: string }) {
@@ -64,12 +72,16 @@ export default function DocMarkdown({ body }: { body: string }) {
             <p className="text-white/90 text-base leading-relaxed mb-4" {...props} />
           ),
           a: ({ node: _n, href, children, ...props }) => {
-            if (isInternal(href)) {
+            if (isAnchor(href)) {
               return (
-                <Link
-                  href={href || '/docs'}
-                  className="text-blue-400 hover:text-blue-300 underline transition-colors break-words"
-                >
+                <a href={href} className={LINK_CLASS} {...props}>
+                  {children}
+                </a>
+              )
+            }
+            if (isRoute(href)) {
+              return (
+                <Link href={href || '/docs'} className={LINK_CLASS}>
                   {children}
                 </Link>
               )
@@ -77,7 +89,7 @@ export default function DocMarkdown({ body }: { body: string }) {
             return (
               <a
                 href={href}
-                className="text-blue-400 hover:text-blue-300 underline transition-colors break-words"
+                className={LINK_CLASS}
                 target="_blank"
                 rel="noopener noreferrer"
                 {...props}

@@ -15,11 +15,25 @@ Vault imported from `Official-MoonDao/documentation` commit
 From `ui/`:
 
 ```
-yarn docs:check          # pages, aliases, unresolved wikilinks, Quartz slug parity
-yarn test:docs           # mocha: slugifier, frontmatter, rewrite, corpus parity
+yarn docs:check          # pages, aliases, link integrity, Quartz slug parity (exits 1 on breakage)
+yarn test:docs           # 33 tests: slugifier, frontmatter, rewrite, transclusion, links, parity
+yarn test:cypress-unit   # 441 pre-existing tests, unaffected by this change
 yarn docs:index          # regenerates public/docs-search-index.json
 yarn build               # prebuild runs docs:index; getStaticPaths bakes every slug
 ```
+
+`yarn build` was run to completion: 0 prerender errors, 155 docs HTML files emitted,
+156 `/docs` URLs in `public/sitemap-0.xml`.
+
+Building locally needs `NEXT_PUBLIC_THIRDWEB_CLIENT_ID` and a **syntactically valid**
+`NEXT_PUBLIC_PRIVY_APP_ID`. Without them every prerendered page in the app fails (`/404`,
+`/500`, `/en/bridge`, …), not just docs — `_app.tsx` constructs both providers at module
+scope. Dummy-but-well-formed values are enough for a build.
+
+`yarn lint` / `next lint` is broken in this environment for unrelated reasons
+(`eslint-config-next` → `jsx-a11y` fails to load on Node 22: "`[[GeneratorState]]` is not
+present on `O`"). It fails identically on an unmodified checkout, and `next build` logs the
+same warning while still succeeding.
 
 Parity fixture: `ui/lib/docs/fixtures/contentIndex.json` (captured from
 `https://docs.moondao.com/static/contentIndex.json` at import time).
@@ -28,15 +42,31 @@ record of the 117 public slugs.
 
 Expected `yarn docs:check` outcome:
 
-- 72 markdown files (vault) + generated folder/tag pages
-- every key in the fixture is produced
+- 72 markdown files + generated folder/tag pages = 118 slugs
+- 0 missing vs the 117-key fixture
+- 0 unresolved wikilinks, 0 unresolved relative `.md` links, 0 broken internal `/docs` hrefs
 - one extra slug is OK: `tags` (alias of `tags/index`)
-- unresolved wikilinks remaining in source, known-broken in the vault:
-  - `[[@Voter]]`
-  - `[[@TreasurySigner]]`
-  - `[[Outbound SOP]]`
 
-Those three are converted to plain text at render time, not 404s.
+Link breakage that existed in the vault and was resolved during import, rather than
+propagated (see the import script's report):
+
+| Kind | Items | Treatment |
+|---|---|---|
+| Dangling wikilinks | `[[@Voter]]`, `[[@TreasurySigner]]`, `[[Outbound SOP]]` | render as plain text, not dead links |
+| Dangling relative `.md` links | `@Moon Settler.md`, `MoonDAO Legal Entity as a Marshall Island DAO LLC.md`, `Open Lunar Foundation.md`, `SpaceX.md`, `Team (dynamic).md` | label kept, href dropped |
+| Wrong absolute link | `docs.moondao.com/Constitution` (a **live 404** today) | repaired to `/docs/Governance/Constitution#24-proposal-process` |
+| Escaped-space link | `Governance\%20Tokens.md` | repaired to `/docs/Governance/Governance-Tokens` |
+| Legacy Obsidian Publish links | 5 × `publish.obsidian.md/moondao/...`, **all currently 404** | repaired to `/docs/...`; includes two legal cross-references from the Ticket to Space Sweepstakes Rules (privacy policy + dispute notice) |
+| Definition only in Dataview metadata | `About/Glossary/@Project-Lead` (blank page on Quartz today) | promoted to real markdown at import |
+
+Two of those needed care and have dedicated tests:
+
+- `Ticket to Space NFT/Dispute Notice` is ambiguous by filename — the vault has a
+  Space *and* a Zero-G `Dispute Notice.md`. Resolution is by unique **path suffix**,
+  so it must land on `Legal/Ticket-to-Space-NFT/Dispute-Notice`. Getting this wrong
+  points a legal document at the wrong sweepstakes.
+- Link targets can contain parentheses (`[Team (dynamic)](Team%20(dynamic).md)`).
+  A `[^)]+` URL pattern truncates them and leaks `.md)` as visible text.
 
 ---
 
@@ -56,14 +86,19 @@ that one-line Quartz config change is still worth doing there.
 
 | Deliverable | Location |
 |---|---|
-| Vault import + conversion | `ui/scripts/migrate-vault.mjs` (run once; output committed). Typed duplicate removed. |
+| Vault import + conversion | `ui/scripts/migrate-vault.mjs` (run once; output committed) |
 | Quartz slugifier | `ui/lib/docs/slug.ts` — each space → `-` (double space → `--`) |
 | Frontmatter | `ui/lib/docs/frontmatter.ts` |
-| Wikilink / image / callout rewrite | `ui/lib/docs/rewrite.ts` (also applied at load time) |
-| Corpus + folder/tag pages + transclusions | `ui/lib/docs/loadDocs.ts` |
+| Wikilink / image / callout / host rewrite | `ui/lib/docs/rewrite.ts` (also applied at load time as a safety net for hand-authored wikilinks) |
+| Corpus + folder/tag pages + transclusions + link checkers | `ui/lib/docs/loadDocs.ts` |
 | Search index builder | `ui/lib/docs/searchIndex.ts`, `ui/scripts/docs-index.ts` |
 | `yarn docs:check` | `ui/scripts/docs-check.ts` |
-| Slug-parity test | `ui/scripts/docs-pipeline.test.ts` |
+| Tests | `ui/scripts/docs-pipeline.test.ts` |
+
+The import script and `lib/docs/rewrite.ts` implement the same conversion twice —
+the script is standalone JS so it can run without `ts-node`. They are kept in sync
+by the fact that re-running the import must be a no-op; if you change one, change
+both and re-run `yarn docs:migrate` (requires a local clone of the vault).
 
 Content lives at `ui/content/docs/` with original vault filenames (spaces, `@`).
 Media at `ui/public/docs-media/`. Unpublished `MoonDAO/media-files/` (~59 MB)
@@ -154,13 +189,40 @@ from `contentIndex.json`. The draft still lives at
    imported from a client bundle except via props. `output: 'standalone'`
    is fine because pages are baked at build time. Vercel root dir must stay
    `ui/` so `process.cwd()` resolves `content/docs`.
-7. Transclusions `![[Note]]` are expanded at load time (glossary table in
-   `About/Glossary.md`). Image transclusions were converted to
-   `/docs-media/...` at import.
-8. Graph view, hover popovers, Quartz RSS, and the 59 MB research dump
-   were intentionally dropped (plan §9.3).
+7. **Transclusions are table-aware.** `![[Note]]` inlines the target's body,
+   *except* inside a markdown table row, where it becomes a link — inlining a
+   multi-paragraph body into a `|` cell destroys the table. `About/Glossary.md`
+   is entirely such a table; it must render **1 table with 17 rows**, matching
+   Quartz. (Quartz avoids the problem differently, by deferring transclusion to
+   client-side JS — its server HTML just reads "Transclude of x".) Image
+   transclusions were converted to `/docs-media/...` at import.
+8. **The Dataview block lives in `Reference/Glossary (dynamic).md`**, not
+   `About/Glossary.md`. It is replaced by a table generated from the
+   `About/Glossary/` folder.
+9. **Anchor links must not be `target="_blank"`.** `DocMarkdown` routes `#foo`
+   to a plain `<a>`, `/foo` to `next/link`, and everything else to a new tab.
+   Getting this wrong makes every `rehype-autolink-headings` heading anchor open
+   a new tab.
+10. **Canonical URLs are deduped.** `DocsPage` sets an explicit canonical of
+    `/docs/<slug>`, so `/faq`, `/docs/About/FAQ`, and alias slugs like
+    `/docs/tts-sweepstakes-rules` don't compete in search. This needed a new
+    `canonical` prop on `components/layout/Head.tsx` (defaults to the current
+    path, so no other page changes behaviour).
+11. **`public/docs-search-index.json` is generated but committed** (so `next dev`,
+    which skips `prebuild`, still has search). A test asserts it matches the
+    content; run `yarn docs:index` if it fails.
+12. Graph view, hover popovers, Quartz RSS, and the 59 MB research dump
+    were intentionally dropped (plan §9.3).
 
 ---
+
+## Whole-corpus assertion
+
+After `yarn build`, all 161 rendered pages (155 docs + the 6 short routes) were
+scanned and none contained: an empty article, a `docs.moondao.com` or
+`publish.obsidian.md` reference, an unexpanded `![[transclusion]]`, an `<iframe>`,
+an anchor link with `target="_blank"`, a leftover `docs-glossary-table` marker, or a
+raw `](...md)` link. Re-run that sweep if you touch the pipeline.
 
 ## Smoke paths to click
 
@@ -168,7 +230,10 @@ from `contentIndex.json`. The draft still lives at
 - `/docs/About/FAQ` and `/faq` — same page
 - `/docs/Governance/Constitution` and `/constitution`
 - `/docs/Legal/Website-Privacy-Policy`, `/privacy-policy`, `/docs/privacy-policy`
-- `/docs/About/Glossary` — inlined glossary transclusions
+- `/docs/About/Glossary` — a single 17-row table, terms linked (not inlined)
+- `/docs/Reference/Glossary-(dynamic)` — generated definition table
+- `/docs/About/Glossary/@Project-Lead` — "Leader of a MoonDAO project." (recovered
+  from Dataview metadata; renders blank on Quartz today)
 - `/docs/tags/docs/glossary` — tag listing
 - `/docs/About` — folder listing
 - Global search icon → query `quadratic` or `constitution`
