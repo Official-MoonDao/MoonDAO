@@ -192,6 +192,8 @@ describe('classifyTreasuryInflows', () => {
 })
 
 describe('summariseLaunchpadUncollected', () => {
+  const RATES = { treasury: 0.025, liquidity: 0.05 }
+
   const mission = (
     missionId: number,
     stage: number,
@@ -205,14 +207,37 @@ describe('summariseLaunchpadUncollected', () => {
     name,
   })
 
+  it('counts the full 7.5% MoonDAO share, split into cash and liquidity', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(1, MISSION_STAGE.GOAL_MET, 100)],
+      RATES
+    )
+
+    expect(out.receivableETH).to.equal(7.5)
+    expect(out.receivableTreasuryETH).to.equal(2.5)
+    expect(out.receivableLiquidityETH).to.equal(5)
+    expect(out.missions[0].totalETH).to.equal(7.5)
+    expect(out.missions[0].treasuryETH).to.equal(2.5)
+    expect(out.missions[0].liquidityETH).to.equal(5)
+  })
+
+  it('defaults to the on-chain launchpad split when no rates are passed', () => {
+    const out = summariseLaunchpadUncollected([mission(1, MISSION_STAGE.GOAL_MET, 100)])
+    expect(out.receivableETH).to.be.closeTo(7.5, 1e-9)
+    expect(out.receivableTreasuryETH).to.be.closeTo(2.5, 1e-9)
+    expect(out.receivableLiquidityETH).to.be.closeTo(5, 1e-9)
+  })
+
   it('treats a funded mission as earned and one still raising as contingent', () => {
     const out = summariseLaunchpadUncollected(
       [mission(1, MISSION_STAGE.GOAL_MET, 100), mission(2, MISSION_STAGE.RAISING, 40)],
-      0.025
+      RATES
     )
 
-    expect(out.receivableETH).to.equal(2.5)
-    expect(out.contingentETH).to.equal(1)
+    expect(out.receivableETH).to.equal(7.5)
+    expect(out.contingentETH).to.equal(3)
+    expect(out.contingentTreasuryETH).to.equal(1)
+    expect(out.contingentLiquidityETH).to.equal(2)
     expect(out.receivableMissions).to.equal(1)
     expect(out.contingentMissions).to.equal(1)
     expect(out.forfeitedETH).to.equal(0)
@@ -224,25 +249,25 @@ describe('summariseLaunchpadUncollected', () => {
         mission(1, MISSION_STAGE.REFUNDING, 100),
         mission(2, MISSION_STAGE.REFUND_WINDOW_PASSED, 100),
       ],
-      0.025
+      RATES
     )
 
     expect(out.receivableETH).to.equal(0)
     expect(out.contingentETH).to.equal(0)
-    expect(out.forfeitedETH).to.equal(5)
+    expect(out.forfeitedETH).to.equal(15)
     expect(out.refundingMissions).to.equal(2)
   })
 
   it('treats an unrecognised stage as unearned rather than assuming collection', () => {
-    const out = summariseLaunchpadUncollected([mission(1, 99, 100)], 0.025)
+    const out = summariseLaunchpadUncollected([mission(1, 99, 100)], RATES)
     expect(out.receivableETH).to.equal(0)
-    expect(out.contingentETH).to.equal(2.5)
+    expect(out.contingentETH).to.equal(7.5)
   })
 
   it('skips missions holding nothing', () => {
     const out = summariseLaunchpadUncollected(
       [mission(1, MISSION_STAGE.GOAL_MET, 0), mission(2, MISSION_STAGE.RAISING, -5)],
-      0.025
+      RATES
     )
     expect(out.receivableETH).to.equal(0)
     expect(out.contingentETH).to.equal(0)
@@ -250,17 +275,17 @@ describe('summariseLaunchpadUncollected', () => {
     expect(out.contingentMissions).to.equal(0)
   })
 
-  it('sums several funded missions at the configured fee rate', () => {
+  it('sums several funded missions at the configured rates', () => {
     const out = summariseLaunchpadUncollected(
       [
         mission(1, MISSION_STAGE.GOAL_MET, 200),
         mission(2, MISSION_STAGE.GOAL_MET, 300),
         mission(3, MISSION_STAGE.RAISING, 100),
       ],
-      0.025
+      RATES
     )
-    expect(out.receivableETH).to.equal(12.5)
-    expect(out.contingentETH).to.equal(2.5)
+    expect(out.receivableETH).to.equal(37.5)
+    expect(out.contingentETH).to.equal(7.5)
     expect(out.receivableMissions).to.equal(2)
   })
 
@@ -272,17 +297,19 @@ describe('summariseLaunchpadUncollected', () => {
     expect(out.missions).to.deep.equal([])
   })
 
-  it('lists Frank by name with the ETH raised so far, not just the fee', () => {
+  it('lists Frank by name with the ETH raised and the full 7.5% claim', () => {
     const out = summariseLaunchpadUncollected(
       [mission(FRANK_MISSION_ID, MISSION_STAGE.RAISING, 80, 'Go to Space with Frank White')],
-      0.025
+      RATES
     )
     expect(out.missions).to.have.length(1)
     expect(out.missions[0].name).to.equal('Go to Space with Frank White')
     expect(out.missions[0].raisedETH).to.equal(80)
-    expect(out.missions[0].feeETH).to.equal(2)
+    expect(out.missions[0].treasuryETH).to.equal(2)
+    expect(out.missions[0].liquidityETH).to.equal(4)
+    expect(out.missions[0].totalETH).to.equal(6)
     expect(out.missions[0].kind).to.equal('contingent')
-    expect(out.contingentETH).to.equal(2)
+    expect(out.contingentETH).to.equal(6)
   })
 
   it('does not forfeit Frank when MissionCreator still reports the first-round refund stage', () => {
@@ -293,8 +320,8 @@ describe('summariseLaunchpadUncollected', () => {
       undistributedETH: 80,
     }
     expect(effectiveMissionStage(stale)).to.equal(MISSION_STAGE.RAISING)
-    const out = summariseLaunchpadUncollected([stale], 0.025)
-    expect(out.contingentETH).to.equal(2)
+    const out = summariseLaunchpadUncollected([stale], RATES)
+    expect(out.contingentETH).to.equal(6)
     expect(out.forfeitedETH).to.equal(0)
     expect(out.missions[0].kind).to.equal('contingent')
   })

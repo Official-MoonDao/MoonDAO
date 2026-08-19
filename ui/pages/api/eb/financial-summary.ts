@@ -52,7 +52,7 @@ const EXCLUDED_FROM_REVENUE = [
   {
     label: 'Launchpad 5% liquidity slice',
     reason:
-      'Seeds each mission\u2019s Uniswap pool via its pool deployer. MoonDAO-controlled, but protocol-owned liquidity rather than spendable income.',
+      'Seeds each mission\u2019s Uniswap pool via its pool deployer. MoonDAO owns the position, so it is counted under uncollected revenue — but it is not cash until the liquidity is withdrawn.',
   },
   {
     label: 'Mission token vesting (17.5%)',

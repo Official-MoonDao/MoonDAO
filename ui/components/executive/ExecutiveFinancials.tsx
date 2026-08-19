@@ -28,6 +28,8 @@ type UnattributedInflows = {
 type Uncollected = {
   receivableUSD: number
   contingentUSD: number
+  treasuryUSD?: number
+  liquidityUSD?: number
   lines: {
     label: string
     kind: 'receivable' | 'contingent'
@@ -36,6 +38,8 @@ type Uncollected = {
     raisedETH?: number
     raisedUSD?: number
     pledgedUSD?: number
+    treasuryUSD?: number
+    liquidityUSD?: number
     detail: string
     available: boolean
   }[]
@@ -594,24 +598,31 @@ export default function ExecutiveFinancials() {
                 label={line.label}
                 value={line.available ? usd(line.usd) : 'Not live'}
                 muted={!line.available}
-                note={
-                  typeof line.raisedUSD === 'number'
-                    ? `${line.kind === 'receivable' ? 'Earned' : 'Contingent'} · ${
-                        line.detail
-                      }`
-                    : `${line.kind === 'receivable' ? 'Earned' : 'Contingent'} · ${line.detail}`
-                }
+                note={line.detail}
               />
             ))}
             <Row
-              label="Receivable"
+              label="Receivable — earned, awaiting payout"
               value={usd(revenue.uncollected.receivableUSD)}
               emphasis
             />
             <Row
-              label="Contingent"
+              label="Contingent — needs the mission to close"
               value={usd(revenue.uncollected.contingentUSD)}
             />
+            {typeof revenue.uncollected.treasuryUSD === 'number' && (
+              <Row
+                label="Of which cash to the treasury (2.5%)"
+                value={usd(revenue.uncollected.treasuryUSD)}
+              />
+            )}
+            {typeof revenue.uncollected.liquidityUSD === 'number' && (
+              <Row
+                label="Of which MoonDAO-owned liquidity (5%)"
+                value={usd(revenue.uncollected.liquidityUSD)}
+                note="Mints a Uniswap position; must be withdrawn before it can be spent"
+              />
+            )}
           </div>
         </div>
       )}

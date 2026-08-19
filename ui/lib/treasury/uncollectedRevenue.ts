@@ -1,11 +1,13 @@
 /**
  * Revenue MoonDAO has a claim on but has not received.
  *
- * The Launchpad fee is the motivating case. MoonDAO's 2.5% is only transferred
- * when a mission owner calls `sendPayoutsOf`, so ETH sitting in a Juicebox
- * terminal represents a fee we will collect later — or never, if the mission
- * refunds. None of it appears in trailing-year revenue, because on-chain nothing
- * has moved yet.
+ * The Launchpad splits are the motivating case. A funded mission routes 7.5% to
+ * MoonDAO — 2.5% cash to the treasury and 5% into a MoonDAO-owned Uniswap
+ * position — but neither moves until the mission owner calls `sendPayoutsOf`. So
+ * ETH sitting in a Juicebox terminal is value we collect later, or never if the
+ * mission refunds. None of it appears in trailing-year revenue, because on-chain
+ * nothing has moved yet. DePrize prize pools pay into launchpad projects too, so
+ * the same 7.5% applies to them.
  *
  * Split the way a financial statement would:
  *   - `receivable` — earned. The mission has met its goal, so the split is
@@ -50,7 +52,11 @@ import {
   MissionUncollected,
   summariseLaunchpadUncollected,
 } from './launchpadPipeline'
-import { LAUNCHPAD_TREASURY_FEE_RATE } from './programRevenue'
+import {
+  LAUNCHPAD_LIQUIDITY_RATE,
+  LAUNCHPAD_MOONDAO_RATE,
+  LAUNCHPAD_TREASURY_FEE_RATE,
+} from './programRevenue'
 
 /** Cap the fan-out so one endpoint can't spray hundreds of RPC reads. */
 const MAX_MISSIONS = 60
@@ -66,6 +72,10 @@ export interface UncollectedLine {
   raisedETH?: number
   raisedUSD?: number
   pledgedUSD?: number
+  /** 2.5% cash split to the treasury. */
+  treasuryUSD?: number
+  /** 5% seeding MoonDAO-owned Uniswap liquidity. */
+  liquidityUSD?: number
   detail: string
   available: boolean
 }
@@ -73,6 +83,10 @@ export interface UncollectedLine {
 export interface UncollectedRevenueResult {
   receivableUSD: number
   contingentUSD: number
+  /** Cash share (2.5%) of receivable + contingent. */
+  treasuryUSD: number
+  /** Liquidity share (5%) of receivable + contingent. */
+  liquidityUSD: number
   lines: UncollectedLine[]
   missionsConsidered: number
   note: string
@@ -285,28 +299,35 @@ export async function getUncollectedRevenue(
     warnings.push(`Launchpad pipeline unavailable: ${err?.message || 'read failed'}`)
   }
 
-  const feePct = (LAUNCHPAD_TREASURY_FEE_RATE * 100).toFixed(1)
+  const treasuryPct = (LAUNCHPAD_TREASURY_FEE_RATE * 100).toFixed(1)
+  const liquidityPct = (LAUNCHPAD_LIQUIDITY_RATE * 100).toFixed(0)
+  const totalPct = (LAUNCHPAD_MOONDAO_RATE * 100).toFixed(1)
 
   for (const mission of summary.missions) {
     if (mission.kind === 'forfeited') continue
     const pledgedUSD = getMissionOffChainCommittedUsd(mission.missionId)
     const raisedUSD = mission.raisedETH * ethPriceUSD
     const raisedBits = [
-      `${mission.raisedETH.toFixed(2)} ETH raised on-chain (${usdPlain(raisedUSD)})`,
+      `${mission.raisedETH.toFixed(2)} ETH raised (${usdPlain(raisedUSD)})`,
       pledgedUSD > 0 ? `${usdPlain(pledgedUSD)} pledged off-chain` : null,
     ].filter(Boolean)
     lines.push({
       label: mission.name,
       kind: mission.kind,
-      eth: mission.feeETH,
-      usd: mission.feeETH * ethPriceUSD,
+      eth: mission.totalETH,
+      usd: mission.totalETH * ethPriceUSD,
       raisedETH: mission.raisedETH,
       raisedUSD,
       pledgedUSD: pledgedUSD > 0 ? pledgedUSD : undefined,
+      treasuryUSD: mission.treasuryETH * ethPriceUSD,
+      liquidityUSD: mission.liquidityETH * ethPriceUSD,
       detail:
-        mission.kind === 'receivable'
-          ? `${raisedBits.join(' + ')}. ${feePct}% treasury fee is earned — collected when payouts are sent.`
-          : `${raisedBits.join(' + ')}. ${feePct}% treasury fee is collected only if the mission closes; refunded otherwise.`,
+        `${raisedBits.join(' + ')} · ${totalPct}% to MoonDAO = ` +
+        `${treasuryPct}% cash (${usdPlain(mission.treasuryETH * ethPriceUSD)}) + ` +
+        `${liquidityPct}% liquidity (${usdPlain(mission.liquidityETH * ethPriceUSD)})` +
+        (mission.kind === 'receivable'
+          ? '. Earned — splits on the payout call.'
+          : '. Collected only if the mission closes; refunded otherwise.'),
       available: true,
     })
   }
@@ -325,7 +346,7 @@ export async function getUncollectedRevenue(
 
   if (summary.forfeitedETH > 0) {
     warnings.push(
-      `${(summary.forfeitedETH * ethPriceUSD).toFixed(0)} USD of fees sit with ${
+      `${usdPlain(summary.forfeitedETH * ethPriceUSD)} sits with ${
         summary.refundingMissions
       } refunding mission(s) and will not be collected.`
     )
@@ -337,9 +358,13 @@ export async function getUncollectedRevenue(
   return {
     receivableUSD,
     contingentUSD,
+    treasuryUSD:
+      (summary.receivableTreasuryETH + summary.contingentTreasuryETH) * ethPriceUSD,
+    liquidityUSD:
+      (summary.receivableLiquidityETH + summary.contingentLiquidityETH) * ethPriceUSD,
     lines,
     missionsConsidered,
-    note: 'Not in revenue or runway. Receivable is earned and waiting on a payout; contingent depends on the mission closing.',
+    note: `Not in revenue or runway. Every launchpad-funded raise routes ${totalPct}% to MoonDAO: ${treasuryPct}% as cash on payout, ${liquidityPct}% as MoonDAO-owned Uniswap liquidity that has to be withdrawn before it can be spent. Receivable is earned and waiting on a payout; contingent depends on the mission closing.`,
     warnings,
   }
 }

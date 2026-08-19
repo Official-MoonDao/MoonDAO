@@ -5,7 +5,22 @@
  * imported and tested without pulling in the thirdweb server client, which
  * builds an RPC client at module load and needs credentials to exist.
  */
-import { LAUNCHPAD_TREASURY_FEE_RATE } from './programRevenue'
+import {
+  LAUNCHPAD_LIQUIDITY_RATE,
+  LAUNCHPAD_TREASURY_FEE_RATE,
+} from './programRevenue'
+
+export interface LaunchpadRates {
+  /** Cash split straight to the treasury on payout. */
+  treasury: number
+  /** Seeds MoonDAO-owned Uniswap liquidity via the mission's PoolDeployer. */
+  liquidity: number
+}
+
+export const LAUNCHPAD_RATES: LaunchpadRates = {
+  treasury: LAUNCHPAD_TREASURY_FEE_RATE,
+  liquidity: LAUNCHPAD_LIQUIDITY_RATE,
+}
 
 /** Mission funding stages, per `LaunchPadPayHook.stage`. */
 export const MISSION_STAGE = {
@@ -40,13 +55,22 @@ export interface LaunchpadMissionLine {
   stage: number
   kind: LaunchpadLineKind
   raisedETH: number
-  feeETH: number
+  /** 2.5% cash split to the treasury. */
+  treasuryETH: number
+  /** 5% seeding MoonDAO-owned Uniswap liquidity. */
+  liquidityETH: number
+  /** Both together — everything the raise routes to MoonDAO. */
+  totalETH: number
 }
 
 export interface LaunchpadUncollectedSummary {
   receivableETH: number
+  receivableTreasuryETH: number
+  receivableLiquidityETH: number
   contingentETH: number
-  /** Fees we will never see because the mission is refunding. */
+  contingentTreasuryETH: number
+  contingentLiquidityETH: number
+  /** Value we will never see because the mission is refunding. */
   forfeitedETH: number
   receivableMissions: number
   contingentMissions: number
@@ -81,19 +105,28 @@ function missionName(mission: MissionUncollected): string {
 }
 
 /**
- * Apply the treasury fee rate to each mission's undistributed balance and split
- * by whether the fee is earned yet:
+ * Value each mission's undistributed balance routes to MoonDAO — the 2.5% cash
+ * split plus the 5% liquidity slice — and bucket it by whether it is earned:
  *   - goal met  → earned, only the payout call is outstanding (receivable)
  *   - raising   → depends on the mission closing successfully (contingent)
  *   - refunding → the money goes back to contributors, so we collect nothing
+ *
+ * The liquidity slice is not cash: it mints a Uniswap position MoonDAO controls,
+ * which has to be withdrawn before it can pay for anything. It is counted here
+ * because it is MoonDAO value the raise creates, and tracked apart from the cash
+ * so nobody mistakes the two.
  */
 export function summariseLaunchpadUncollected(
   missions: MissionUncollected[],
-  feeRate: number = LAUNCHPAD_TREASURY_FEE_RATE
+  rates: LaunchpadRates = LAUNCHPAD_RATES
 ): LaunchpadUncollectedSummary {
   const summary: LaunchpadUncollectedSummary = {
     receivableETH: 0,
+    receivableTreasuryETH: 0,
+    receivableLiquidityETH: 0,
     contingentETH: 0,
+    contingentTreasuryETH: 0,
+    contingentLiquidityETH: 0,
     forfeitedETH: 0,
     receivableMissions: 0,
     contingentMissions: 0,
@@ -103,31 +136,34 @@ export function summariseLaunchpadUncollected(
 
   for (const mission of missions) {
     const raisedETH = Math.max(0, mission.undistributedETH)
-    const fee = raisedETH * feeRate
-    if (!(fee > 0)) continue
+    const treasuryETH = raisedETH * rates.treasury
+    const liquidityETH = raisedETH * rates.liquidity
+    const totalETH = treasuryETH + liquidityETH
+    if (!(totalETH > 0)) continue
 
     const stage = effectiveMissionStage(mission)
     let kind: LaunchpadLineKind = 'contingent'
     switch (stage) {
       case MISSION_STAGE.GOAL_MET:
         kind = 'receivable'
-        summary.receivableETH += fee
+        summary.receivableETH += totalETH
+        summary.receivableTreasuryETH += treasuryETH
+        summary.receivableLiquidityETH += liquidityETH
         summary.receivableMissions += 1
-        break
-      case MISSION_STAGE.RAISING:
-        kind = 'contingent'
-        summary.contingentETH += fee
-        summary.contingentMissions += 1
         break
       case MISSION_STAGE.REFUNDING:
       case MISSION_STAGE.REFUND_WINDOW_PASSED:
         kind = 'forfeited'
-        summary.forfeitedETH += fee
+        summary.forfeitedETH += totalETH
         summary.refundingMissions += 1
         break
+      // Anything else, including an unrecognised stage, is treated as unearned
+      // rather than assumed good.
       default:
         kind = 'contingent'
-        summary.contingentETH += fee
+        summary.contingentETH += totalETH
+        summary.contingentTreasuryETH += treasuryETH
+        summary.contingentLiquidityETH += liquidityETH
         summary.contingentMissions += 1
     }
 
@@ -138,7 +174,9 @@ export function summariseLaunchpadUncollected(
       stage,
       kind,
       raisedETH,
-      feeETH: fee,
+      treasuryETH,
+      liquidityETH,
+      totalETH,
     })
   }
 

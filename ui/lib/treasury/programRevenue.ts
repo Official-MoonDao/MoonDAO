@@ -30,8 +30,19 @@ import {
 } from 'const/config'
 import { fetchTreasuryInternalTxs } from './canonicalRevenue'
 
-/** Share of a successful mission's payout that is split to the treasury. */
+/**
+ * Launchpad payout splits, per `MissionCreator.createMission` split group
+ * 0xEEEe (the on-chain percents are grossed up for the 2.5% Juicebox fee, so
+ * these are the net shares of the amount raised):
+ *   - 2.5% cash to the MoonDAO treasury
+ *   - 5% to the mission's PoolDeployer, seeding MoonDAO-owned Uniswap liquidity
+ *   - 90% to the team multisig
+ */
 export const LAUNCHPAD_TREASURY_FEE_RATE = 0.025
+export const LAUNCHPAD_LIQUIDITY_RATE = 0.05
+/** Everything a funded mission routes to MoonDAO: 2.5% cash + 5% liquidity. */
+export const LAUNCHPAD_MOONDAO_RATE =
+  LAUNCHPAD_TREASURY_FEE_RATE + LAUNCHPAD_LIQUIDITY_RATE
 
 export type StreamKey = 'citizen' | 'team' | 'launchpad' | 'deprize'
 
