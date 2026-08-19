@@ -6,8 +6,12 @@ import type { DocsPageProps } from '@/lib/docs/types'
 export default DocsPage
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  // TEMPORARY BISECT: emit one path instead of ~190 to test whether the Vercel
+  // deploy failure scales with prerendered page count. Revert.
+  const all = allStaticPaths()
+  const paths = process.env.DOCS_BISECT_MINIMAL === '1' ? all.slice(0, 1) : all
   return {
-    paths: allStaticPaths(),
+    paths,
     fallback: false,
   }
 }
