@@ -4,6 +4,7 @@ import path from 'path'
 import { parseFrontmatter } from '../lib/docs/frontmatter'
 import {
   allProducedSlugs,
+  buildNavTree,
   getAliasTable,
   getDocPage,
   listBrokenDocsHrefs,
@@ -278,19 +279,37 @@ describe('docs link integrity', () => {
   })
 })
 
-describe('docs search index', () => {
+describe('docs generated artifacts', () => {
   const INDEX = path.join(__dirname, '..', 'public', 'docs-search-index.json')
+  const NAV = path.join(__dirname, '..', 'lib', 'docs', 'generated', 'navTree.json')
 
-  it('matches the committed content (run `yarn docs:index` if this fails)', function () {
+  it('search index matches the content (run `yarn docs:generate` if this fails)', function () {
     if (!fs.existsSync(INDEX)) {
       this.skip()
       return
     }
     resetDocsCache()
-    const fresh = JSON.stringify(buildSearchIndex())
-    const committed = fs.readFileSync(INDEX, 'utf8')
-    if (fresh !== committed) {
-      throw new Error('public/docs-search-index.json is stale; run `yarn docs:index`')
+    if (JSON.stringify(buildSearchIndex()) !== fs.readFileSync(INDEX, 'utf8')) {
+      throw new Error('public/docs-search-index.json is stale; run `yarn docs:generate`')
+    }
+  })
+
+  it('nav tree matches the content (run `yarn docs:generate` if this fails)', function () {
+    if (!fs.existsSync(NAV)) {
+      this.skip()
+      return
+    }
+    resetDocsCache()
+    if (JSON.stringify(buildNavTree()) !== fs.readFileSync(NAV, 'utf8')) {
+      throw new Error('lib/docs/generated/navTree.json is stale; run `yarn docs:generate`')
+    }
+  })
+
+  it('does not ship the nav tree in page props', () => {
+    resetDocsCache()
+    const page = getDocPage('About/FAQ') as unknown as Record<string, unknown>
+    if (page && 'tree' in page) {
+      throw new Error('page props still carry `tree`; it belongs in the generated module')
     }
   })
 

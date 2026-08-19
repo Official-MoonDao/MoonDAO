@@ -199,6 +199,16 @@ export function loadCorpus(root: string = DEFAULT_DOCS_ROOT): Corpus {
   return corpus
 }
 
+/**
+ * The sidebar tree. Identical on every page, so it is generated once into
+ * `lib/docs/generated/navTree.json` (see scripts/docs-generate.ts) and imported
+ * as a module rather than shipped in each page's props — it was 15 KB of the
+ * 18.5 KB `__NEXT_DATA__` on every one of ~200 prerendered pages.
+ */
+export function buildNavTree(root?: string): DocsNavNode[] {
+  return loadCorpus(root).tree
+}
+
 export function allProducedSlugs(root?: string): string[] {
   const corpus = loadCorpus(root)
   const slugs = new Set<string>()
@@ -467,7 +477,6 @@ export function getDocPage(requestedSlug: string, root?: string): DocsPageProps 
     breadcrumbs: breadcrumbsFor(resolved.slug, corpus),
     toc: extractToc(body),
     backlinks: resolved.kind === 'doc' ? backlinksFor(resolved.slug, corpus) : [],
-    tree: corpus.tree,
   }
 }
 

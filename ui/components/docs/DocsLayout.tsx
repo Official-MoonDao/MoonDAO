@@ -11,7 +11,7 @@ export default function DocsLayout({ page }: { page: DocsPageProps }) {
     <div className="flex w-full min-h-[calc(100vh-4rem)]">
       <aside className="hidden lg:flex flex-col w-72 shrink-0 border-r border-white/10 bg-black/20 px-4 py-6 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
         <DocsSearch />
-        <DocsSidebar tree={page.tree} currentSlug={page.slug} />
+        <DocsSidebar currentSlug={page.slug} />
       </aside>
 
       <div className="flex-1 min-w-0">
@@ -20,7 +20,7 @@ export default function DocsLayout({ page }: { page: DocsPageProps }) {
             <summary className="cursor-pointer text-sm text-white/70">Documentation menu</summary>
             <div className="mt-3">
               <DocsSearch />
-              <DocsSidebar tree={page.tree} currentSlug={page.slug} />
+              <DocsSidebar currentSlug={page.slug} />
             </div>
           </details>
         </div>

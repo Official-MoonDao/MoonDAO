@@ -54,7 +54,6 @@ export type DocsPageProps = {
   breadcrumbs: { title: string; href: string }[]
   toc: DocsTocItem[]
   backlinks: DocsBacklink[]
-  tree: DocsNavNode[]
 }
 
 export type DocsSearchEntry = {
