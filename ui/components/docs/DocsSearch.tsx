@@ -23,7 +23,7 @@ export default function DocsSearch() {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/docs-search-index.json')
+    fetch('/doc-search-index.json')
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (!cancelled) setIndex(data)

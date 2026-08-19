@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const UI_ROOT = path.join(__dirname, '..')
 const DEST = path.join(UI_ROOT, 'content', 'docs')
-const MEDIA_DEST = path.join(UI_ROOT, 'public', 'docs-media')
+const MEDIA_DEST = path.join(UI_ROOT, 'public', 'doc-media')
 const FIXTURE_DEST = path.join(UI_ROOT, 'lib', 'docs', 'fixtures', 'contentIndex.json')
 const DEFAULT_VAULT = '/tmp/docsrepo/MoonDAO/docs'
 const DEFAULT_REPO = '/tmp/docsrepo'
@@ -227,7 +227,7 @@ function rewriteDocBody(body, resolve, report) {
       }
       if (/\.(png|jpe?g|gif|svg|webp|avif)$/i.test(rest)) {
         report.convertedImages += 1
-        return `![](/docs-media/${rest.split('/').pop()})`
+        return `![](/doc-media/${rest.split('/').pop()})`
       }
       return full
     }
@@ -253,7 +253,7 @@ function rewriteDocBody(body, resolve, report) {
     if (trimmed.startsWith('http') || trimmed.startsWith('/')) return full
     if (!/\.(png|jpe?g|gif|svg|webp|avif)$/i.test(trimmed)) return full
     report.convertedImages += 1
-    return `![${alt}](/docs-media/${trimmed.split('/').pop()})`
+    return `![${alt}](/doc-media/${trimmed.split('/').pop()})`
   })
 
   next = next.replace(new RegExp(`\\[([^\\]]+)\\]\\((${MD_URL})\\)`, 'g'), (full, text, url) => {

@@ -106,7 +106,7 @@ function decodeMdUrl(url: string): string {
 
 function mediaHref(name: string): string {
   const file = name.split('/').pop() || name
-  return `/docs-media/${file}`
+  return `/doc-media/${file}`
 }
 
 function rewriteWikilinks(

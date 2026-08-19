@@ -296,7 +296,7 @@ describe('docs link integrity', () => {
 })
 
 describe('docs generated artifacts', () => {
-  const INDEX = path.join(__dirname, '..', 'public', 'docs-search-index.json')
+  const INDEX = path.join(__dirname, '..', 'public', 'doc-search-index.json')
   const NAV = path.join(__dirname, '..', 'lib', 'docs', 'generated', 'navTree.json')
 
   it('search index matches the content (run `yarn docs:generate` if this fails)', function () {
@@ -306,7 +306,7 @@ describe('docs generated artifacts', () => {
     }
     resetDocsCache()
     if (JSON.stringify(buildSearchIndex()) !== fs.readFileSync(INDEX, 'utf8')) {
-      throw new Error('public/docs-search-index.json is stale; run `yarn docs:generate`')
+      throw new Error('public/doc-search-index.json is stale; run `yarn docs:generate`')
     }
   })
 

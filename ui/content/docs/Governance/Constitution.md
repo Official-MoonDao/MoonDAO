@@ -86,11 +86,11 @@ $vMOONEY is found at Ethereum address 0xCc71C80d803381FD6Ee984FAff408f8501DB1740
 
 The only way for an individual to receive $vMOONEY is by locking $MOONEY.  The $MOONEY token must be locked for a period of at least seven days, to at most four years (1460 days). In return, the person locking the token will receive a wallet-bound $vMOONEY linearly proportional to the amount of time until the MOONEY can be unlocked.
 
-![](/docs-media/vMOONEY-Equation-1.3.png)
+![](/doc-media/vMOONEY-Equation-1.3.png)
 
 Each member may only have one wallet registered with MoonDAO to determine their voting power. Members may delegate their voting power to other members. Voting power for each member is determined by the square root $vMOONEY.
 
-![](/docs-media/Voting-Power-Equation-1.3.png)
+![](/doc-media/Voting-Power-Equation-1.3.png)
 
 #### 2.1.1 MOONDAO LLC Membership
 

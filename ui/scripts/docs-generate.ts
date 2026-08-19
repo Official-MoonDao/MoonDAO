@@ -1,6 +1,6 @@
 /**
  * Regenerate the committed docs artifacts:
- *   public/docs-search-index.json  — client-side search corpus
+ *   public/doc-search-index.json  — client-side search corpus
  *   lib/docs/generated/navTree.json — sidebar tree, imported as a module
  *
  *   yarn docs:generate
@@ -14,7 +14,7 @@ import path from 'path'
 import { buildNavTree, loadCorpus, resetDocsCache } from '../lib/docs/loadDocs'
 import { buildSearchIndex } from '../lib/docs/searchIndex'
 
-const SEARCH_INDEX = path.join(__dirname, '..', 'public', 'docs-search-index.json')
+const SEARCH_INDEX = path.join(__dirname, '..', 'public', 'doc-search-index.json')
 const NAV_TREE = path.join(__dirname, '..', 'lib', 'docs', 'generated', 'navTree.json')
 
 function write(dest: string, data: unknown) {
