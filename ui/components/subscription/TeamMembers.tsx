@@ -128,14 +128,21 @@ export default function TeamMembers({
   const chainSlug = getChainSlug(selectedChain)
   const wearers = useUniqueHatWearers(hats)
 
+  // A wearer with no address can't be looked up or linked. Drop those rather
+  // than carrying them into the render, where they used to throw and take the
+  // whole surrounding section down with them via the nearest error boundary.
+  const validWearers = useMemo(
+    () => (Array.isArray(wearers) ? wearers.filter((w: Wearer) => Boolean(w?.address)) : []),
+    [wearers]
+  )
+
   const ownerAddressesKey = useMemo(() => {
-    if (!wearers?.length) return ''
-    return wearers
-      .map((w: Wearer) => w.address?.toLowerCase())
-      .filter(Boolean)
+    if (!validWearers.length) return ''
+    return validWearers
+      .map((w: Wearer) => w.address.toLowerCase())
       .sort()
       .join(',')
-  }, [wearers])
+  }, [validWearers])
 
   const citizenLookupStatement = useMemo(() => {
     const table = CITIZEN_TABLE_NAMES[chainSlug]
@@ -174,21 +181,21 @@ export default function TeamMembers({
     )
   }
 
-  if (wearers.length === 0) {
+  if (validWearers.length === 0) {
     return null
   }
 
   if (isLoadingCitizens && !citizenRows) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TeamMembersLoadingSkeleton count={wearers.length} />
+        <TeamMembersLoadingSkeleton count={validWearers.length} />
       </div>
     )
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {wearers.map((w: Wearer, i: number) => (
+      {validWearers.map((w: Wearer, i: number) => (
         <TeamMember
           key={`${w.address}-wearer-${i}`}
           hatIds={w.hatIds}
