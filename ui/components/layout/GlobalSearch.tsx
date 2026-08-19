@@ -562,11 +562,18 @@ export default function GlobalSearch() {
   }
 
   const handleResultClick = (result: any) => {
-    router.push(result.link)
     setQuery('')
     setIsOpen(false)
     setIsExpanded(false)
     inputRef.current?.blur()
+    // Docs live at /docs/* via a rewrite onto /documentation/[...slug], so the
+    // client router has no matching route and router.push would fall back to a
+    // full load anyway. Navigate directly. See components/docs/DocsLink.tsx.
+    if (typeof result.link === 'string' && result.link.startsWith('/docs')) {
+      window.location.assign(result.link)
+      return
+    }
+    router.push(result.link)
   }
 
   const clearSearch = () => {

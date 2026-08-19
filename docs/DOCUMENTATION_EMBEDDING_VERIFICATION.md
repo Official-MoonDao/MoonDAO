@@ -81,52 +81,84 @@ Two of those needed care and have dedicated tests:
 
 ---
 
-## Do not use an optional catch-all (`[[...slug]]`) here
+## Do not mount the docs catch-all at `/docs/*`
 
-**This is the one thing most likely to be "helpfully" refactored back and break
-the deploy.** The docs route must stay a *required* catch-all
-(`pages/docs/[...slug].tsx`) with a separate `pages/docs/index.tsx` for `/docs`.
+**This is the thing most likely to be "helpfully" refactored and break the
+deploy.** The layout must stay:
 
-An optional catch-all `pages/docs/[[...slug]].tsx` builds fine everywhere —
-locally, in the GitHub Actions `build` job, and even under Vercel's own builder
-via `npx vercel build` — but **fails the Vercel deployment**. It almost certainly
-collides with the `i18n` config in `next.config.js`, since Next has to generate
-locale-prefixed variants of both `/docs` and `/docs/:slug*` for the same file.
+| File | Serves |
+|---|---|
+| `pages/docs/index.tsx` | `/docs` (a plain static page) |
+| `pages/documentation/[...slug].tsx` | everything else, reached via a rewrite |
+| `next.config.js` → `rewrites()` | `/docs/:path*` → `/documentation/:path*` |
 
-How this was established (three deploys):
+A dynamic catch-all mounted **directly** at `pages/docs/[...slug].tsx` builds
+fine everywhere — locally, in the GitHub Actions `build` job, and even under
+Vercel's own builder via `npx vercel build` — but **fails the Vercel
+deployment**. The identical route under any other prefix deploys fine. The
+rewrite keeps every public URL at `/docs/...`, so this is invisible to users.
+
+Established by bisecting on Vercel (each row is one deploy):
 
 | Branch state | Vercel |
 |---|---|
 | plan docs only, no code | ✅ |
-| full implementation, `[[...slug]]`, ~190 prerendered paths | ❌ |
-| same, but `getStaticPaths` sliced to **1** path | ❌ |
-| same, but `pages/docs/[[...slug]].tsx` **deleted** | ✅ |
-| required `[...slug].tsx` + `index.tsx`, all ~190 paths | ✅ |
+| `pages/docs/[[...slug]].tsx`, ~190 prerendered paths | ❌ |
+| same, `getStaticPaths` sliced to **1** path | ❌ |
+| same, but that one file **deleted** | ✅ |
+| required `pages/docs/[...slug].tsx` + `index.tsx` | ❌ |
+| only `pages/docs/index.tsx`, no catch-all | ✅ |
+| catch-all at `/docs`, `output: 'standalone'` removed | ❌ |
+| **identical catch-all at `/kbtest/*`**, `/docs` index kept | ✅ |
+| catch-all at `/docs`, all `/docs/*` redirects removed | ❌ |
+| catch-all at `/docs`, `docs-*` public assets renamed | ❌ |
+| **catch-all at `/documentation/*` + rewrite from `/docs/*`** | ✅ |
 
-The middle two rows are what matter: cutting to a single prerendered page did
-**not** help, so this was never about page count, output size, or payload — and
-deleting only that one file fixed it while all other changes stayed in place
-(content files, the six short routes with their filesystem reads, the
-`next.config.js` redirect rewrite, the CSP edit, `GlobalSearch`, `Head`).
+Read the two bolded rows together: the same file, the same ~190 prerendered
+paths, the same everything — it fails at `/docs/*` and succeeds anywhere else.
+That is what makes this a path-specific routing conflict rather than any of the
+usual suspects.
 
-Ruled out along the way, with measurements:
+Ruled out, each with a measurement or a deploy:
 
 | Suspect | Evidence against |
 |---|---|
 | Build failure | GitHub Actions "Build application" passed; `npx vercel build` passed |
+| Page count / output volume | cutting to **1** prerendered path still failed |
 | Deployment size | 320 MB head vs 321 MB base — `ui/public/` is 257 MB of pre-existing assets |
-| Static upload limit | 284 MB, limit is 1 GB on Pro |
+| Static upload limit | 284 MB against a 1 GB Pro limit |
 | Function count | 204 → 480, but Pro allows unlimited |
 | Routes per deployment | 192 → 202, limit is 2048 |
-| Build memory | peak 6.5 GiB base vs 6.9 GiB head — a 0.4 GiB delta |
-| Build time | 45-minute limit; build takes ~4 minutes |
-| Non-ASCII / paren filenames | fixed them; deploy still failed (kept anyway, see below) |
-| `prebuild` + ts-node | removed it; deploy still failed (kept removed, it's simpler) |
+| Build memory | peak 6.5 GiB base vs 6.9 GiB head |
+| Build time | ~4 minutes against a 45-minute limit |
+| Optional vs required catch-all | both forms failed at `/docs` |
+| `output: 'standalone'` | removed it; still failed (kept removed — Vercel advises against it and nothing consumes `.next/standalone`) |
+| `/docs/*` redirects in `next.config.js` | removed all 11; still failed (kept removed — they are alias pages now) |
+| `docs-*` files under `public/` | renamed to `doc-*`; still failed (kept renamed, the names read better) |
+| Non-ASCII / paren filenames | fixed; still failed (kept — see below) |
+| `prebuild` + ts-node | removed; still failed (kept removed, it is simpler) |
+| A Vercel dashboard redirect for `/docs` | `/docs` returned **200** on a passing preview, so nothing shadows it |
 
-Consequence for `allStaticPaths()`: it must **not** emit the empty-slug entry
-(`{ params: { slug: [] } }`), which is invalid for a required catch-all. `/docs`
-comes from `index.tsx`; `/docs/index` stays in the catch-all because Quartz
-published an `index` slug.
+The underlying cause sits on Vercel's side and is not visible from the repo
+(deploy logs need `vercel inspect`, which needs a token this environment does not
+have). If someone with dashboard access ever finds and clears it, the catch-all
+can move back to `pages/docs/[...slug].tsx` and the rewrite can go away.
+
+### Consequences to preserve
+
+- `allStaticPaths()` must **not** emit the empty-slug entry
+  (`{ params: { slug: [] } }`) — invalid for a required catch-all. `/docs` comes
+  from `index.tsx`; `/docs/index` stays in the catch-all because Quartz published
+  an `index` slug.
+- **Docs links use `components/docs/DocsLink.tsx`, not `next/link`.** Because the
+  public path `/docs/*` is a rewrite onto a different page route, the client
+  router has no route matching `/docs/*`: `next/link` would prefetch a data route
+  that 404s and then hard-navigate anyway. `DocsLink` uses a plain anchor for
+  `/docs*` and `next/link` for every other in-app route. `GlobalSearch` does the
+  same for its docs hits. Net effect: doc→doc navigation is a normal page load;
+  doc→app links still navigate client-side.
+- The `/documentation` prefix must never appear in rendered output. A build-time
+  sweep asserts this across all 172 pages.
 
 ## Route-safe slugs: why two URLs changed
 
@@ -210,7 +242,8 @@ was **not** imported.
 | Component | File |
 |---|---|
 | Docs home (`/docs`) | `ui/pages/docs/index.tsx` |
-| Catch-all | `ui/pages/docs/[...slug].tsx` — **required**, not `[[...slug]]` (see below) |
+| Catch-all | `ui/pages/documentation/[...slug].tsx`, surfaced at `/docs/*` by a rewrite (see above) |
+| Link helper | `ui/components/docs/DocsLink.tsx` |
 | Page shell | `ui/components/docs/DocsPage.tsx` |
 | 3-column layout | `ui/components/docs/DocsLayout.tsx` |
 | Sidebar explorer | `ui/components/docs/DocsSidebar.tsx` |

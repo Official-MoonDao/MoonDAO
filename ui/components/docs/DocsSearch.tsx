@@ -1,6 +1,6 @@
-import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import type { DocsSearchEntry } from '@/lib/docs/types'
+import { navigateToDoc } from './DocsLink'
 
 function scoreEntry(query: string, entry: DocsSearchEntry): number {
   const q = query.toLowerCase()
@@ -16,7 +16,6 @@ function scoreEntry(query: string, entry: DocsSearchEntry): number {
 }
 
 export default function DocsSearch() {
-  const router = useRouter()
   const [query, setQuery] = useState('')
   const [index, setIndex] = useState<DocsSearchEntry[] | null>(null)
   const [open, setOpen] = useState(false)
@@ -65,9 +64,9 @@ export default function DocsSearch() {
               <button
                 type="button"
                 onClick={() => {
-                  router.push(entry.href)
                   setQuery('')
                   setOpen(false)
+                  navigateToDoc(entry.href)
                 }}
                 className="w-full text-left px-3 py-2 hover:bg-white/5"
               >

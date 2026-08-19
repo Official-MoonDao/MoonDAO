@@ -1,10 +1,10 @@
 import { h } from 'hastscript'
-import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeRaw from 'rehype-raw'
 import rehypeSlug from 'rehype-slug'
 import remarkGfm from 'remark-gfm'
+import DocsLink from './DocsLink'
 
 const LINK_CLASS =
   'text-blue-400 hover:text-blue-300 underline transition-colors break-words'
@@ -81,9 +81,9 @@ export default function DocMarkdown({ body }: { body: string }) {
             }
             if (isRoute(href)) {
               return (
-                <Link href={href || '/docs'} className={LINK_CLASS}>
+                <DocsLink href={href || '/docs'} className={LINK_CLASS}>
                   {children}
-                </Link>
+                </DocsLink>
               )
             }
             return (

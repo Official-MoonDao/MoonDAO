@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import DocsLink from './DocsLink'
 import type { DocsBacklink } from '@/lib/docs/types'
 
 export default function DocsBacklinks({ items }: { items: DocsBacklink[] }) {
@@ -11,12 +11,12 @@ export default function DocsBacklinks({ items }: { items: DocsBacklink[] }) {
       <ul className="flex flex-wrap gap-2">
         {items.map((item) => (
           <li key={item.slug}>
-            <Link
+            <DocsLink
               href={item.href}
               className="text-sm px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:border-white/30 transition-colors"
             >
               {item.title}
-            </Link>
+            </DocsLink>
           </li>
         ))}
       </ul>

@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { useRouter } from 'next/router'
+import DocsLink from './DocsLink'
 import navTree from '@/lib/docs/generated/navTree.json'
 import type { DocsNavNode } from '@/lib/docs/types'
 
@@ -20,7 +20,7 @@ function Node({ node, current }: { node: DocsNavNode; current: string }) {
   if (node.children.length === 0) {
     return (
       <li>
-        <Link
+        <DocsLink
           href={node.href}
           className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
             isCurrent
@@ -29,7 +29,7 @@ function Node({ node, current }: { node: DocsNavNode; current: string }) {
           }`}
         >
           {node.label}
-        </Link>
+        </DocsLink>
       </li>
     )
   }
@@ -38,13 +38,13 @@ function Node({ node, current }: { node: DocsNavNode; current: string }) {
     <li>
       <details open={open} className="group">
         <summary className="flex items-center justify-between cursor-pointer px-3 py-1.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 list-none">
-          <Link
+          <DocsLink
             href={node.href}
             onClick={(e) => e.stopPropagation()}
             className={isCurrent ? 'text-white font-medium' : ''}
           >
             {node.label}
-          </Link>
+          </DocsLink>
           <span className="text-white/30 text-xs group-open:rotate-90 transition-transform">▸</span>
         </summary>
         <ul className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-1">
@@ -63,12 +63,12 @@ export default function DocsSidebar({ currentSlug }: { currentSlug: string }) {
 
   return (
     <nav aria-label="Documentation" className="text-sm">
-      <Link
+      <DocsLink
         href="/docs"
         className="font-GoodTimes text-xs uppercase tracking-wider text-white/40 hover:text-white/70 px-3 mb-3 block"
       >
         Documentation
-      </Link>
+      </DocsLink>
       <ul className="space-y-0.5">
         {tree.map((node) => (
           <Node key={node.slug} node={node} current={current} />

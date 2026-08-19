@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import DocsLink from './DocsLink'
 
 export default function DocsBreadcrumbs({
   crumbs,
@@ -13,9 +13,9 @@ export default function DocsBreadcrumbs({
           {i === crumbs.length - 1 ? (
             <span className="text-white/70">{crumb.title}</span>
           ) : (
-            <Link href={crumb.href} className="hover:text-white transition-colors">
+            <DocsLink href={crumb.href} className="hover:text-white transition-colors">
               {crumb.title}
-            </Link>
+            </DocsLink>
           )}
         </span>
       ))}
