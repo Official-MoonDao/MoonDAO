@@ -1257,7 +1257,7 @@ export default function SignedInDashboard({
                 {newestJobs.slice(0, 6).map((job: any) => (
                   <Link
                     key={job.id}
-                    href={job?.contactInfo || '/jobs'}
+                    href={job?.id !== undefined ? `/jobs/${job.id}` : '/jobs'}
                     className="flex items-center gap-3 bg-black/20 hover:bg-black/40 border border-white/5 hover:border-white/10 rounded-xl p-3 transition-all"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">

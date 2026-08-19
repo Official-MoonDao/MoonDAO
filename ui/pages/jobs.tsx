@@ -1,12 +1,16 @@
-import { DEFAULT_CHAIN_V5, JOBS_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
-import Link from 'next/link'
-import { useContext, useEffect, useState } from 'react'
-import { getContract, readContract } from 'thirdweb'
+import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES } from 'const/config'
+import { useContext, useMemo, useState } from 'react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import queryTable from '@/lib/tableland/queryTable'
+import {
+  JOB_COMMITMENT_TYPES,
+  JOB_LOCATION_TYPES,
+  JobMetadataEnvelope,
+  getApplicationDeadline,
+  parseJobMetadata,
+} from '@/lib/jobs/jobMetadata'
+import { fetchActiveJobs } from '@/lib/jobs/jobsTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Job, { Job as JobType } from '../components/jobs/Job'
@@ -14,15 +18,41 @@ import Head from '../components/layout/Head'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
-import Frame from '@/components/layout/Frame'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
-import JobsABI from '../const/abis/JobBoardTable.json'
 import TeamABI from '../const/abis/Team.json'
 
 type JobsProps = {
   jobs: JobType[]
+}
+
+type SortOption = 'newest' | 'closing'
+
+const ALL = 'all'
+
+function FilterChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
+        active
+          ? 'bg-blue-500/20 border-blue-400/40 text-blue-200'
+          : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+      }`}
+    >
+      {label}
+    </button>
+  )
 }
 
 export default function Jobs({ jobs }: JobsProps) {
@@ -30,8 +60,12 @@ export default function Jobs({ jobs }: JobsProps) {
   const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
 
-  const [filteredJobs, setFilteredJobs] = useState<JobType[]>(jobs || [])
   const [input, setInput] = useState('')
+  const [category, setCategory] = useState<string>(ALL)
+  const [commitment, setCommitment] = useState<string>(ALL)
+  const [location, setLocation] = useState<string>(ALL)
+  const [paidOnly, setPaidOnly] = useState(false)
+  const [sort, setSort] = useState<SortOption>('newest')
 
   const teamContract = useContract({
     chain: selectedChain,
@@ -41,21 +75,86 @@ export default function Jobs({ jobs }: JobsProps) {
 
   useChainDefault()
 
-  useEffect(() => {
-    if (jobs && input != '') {
-      setFilteredJobs(
-        jobs.filter((job: JobType) => {
-          return job.title.toLowerCase().includes(input.toLowerCase())
-        })
-      )
-    } else {
-      setFilteredJobs(jobs)
+  const decorated = useMemo(
+    () =>
+      (jobs || []).map((job) => ({
+        job,
+        metadata: parseJobMetadata(job.metadata) as JobMetadataEnvelope,
+      })),
+    [jobs]
+  )
+
+  const categories = useMemo(() => {
+    const tags = new Set<string>()
+    decorated.forEach(({ job }) => {
+      if (job.tag) tags.add(job.tag)
+    })
+    return Array.from(tags).sort()
+  }, [decorated])
+
+  const availableCommitments = useMemo(() => {
+    const types = new Set<string>()
+    decorated.forEach(({ metadata }) => {
+      if (metadata.commitmentType) types.add(metadata.commitmentType)
+    })
+    return JOB_COMMITMENT_TYPES.filter((option) => types.has(option.value))
+  }, [decorated])
+
+  const availableLocations = useMemo(() => {
+    const types = new Set<string>()
+    decorated.forEach(({ metadata }) => {
+      if (metadata.locationType) types.add(metadata.locationType)
+    })
+    return JOB_LOCATION_TYPES.filter((option) => types.has(option.value))
+  }, [decorated])
+
+  const hasPaidRoles = useMemo(
+    () => decorated.some(({ metadata }) => metadata.paid || metadata.compensation),
+    [decorated]
+  )
+
+  const filteredJobs = useMemo(() => {
+    const query = input.trim().toLowerCase()
+
+    const matches = decorated.filter(({ job, metadata }) => {
+      if (query) {
+        const haystack = [job.title, job.description, job.tag, ...(metadata.skills || [])]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+        if (!haystack.includes(query)) return false
+      }
+      if (category !== ALL && job.tag !== category) return false
+      if (commitment !== ALL && metadata.commitmentType !== commitment) return false
+      if (location !== ALL && metadata.locationType !== location) return false
+      if (paidOnly && !(metadata.paid || metadata.compensation)) return false
+      return true
+    })
+
+    if (sort === 'closing') {
+      const far = Number.MAX_SAFE_INTEGER
+      return matches
+        .slice()
+        .sort(
+          (a, b) =>
+            (getApplicationDeadline(a.metadata, a.job.endTime) || far) -
+            (getApplicationDeadline(b.metadata, b.job.endTime) || far)
+        )
+        .map(({ job }) => job)
     }
-  }, [jobs, input])
+
+    return matches
+      .slice()
+      .sort((a, b) => b.job.id - a.job.id)
+      .map(({ job }) => job)
+  }, [decorated, input, category, commitment, location, paidOnly, sort])
+
+  const hasFilters =
+    category !== ALL || commitment !== ALL || location !== ALL || paidOnly || input.trim() !== ''
 
   const descriptionSection = (
-    <div className="pt-2">
-      <p className="text-slate-400 mb-4">
+    <div className="pt-2 flex flex-col gap-4">
+      <p className="text-slate-400">
         Explore opportunities with teams building the future of space exploration
       </p>
       <div className="w-fit max-w-[500px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-1">
@@ -63,8 +162,89 @@ export default function Jobs({ jobs }: JobsProps) {
           input={input}
           setInput={setInput}
           className="w-full flex-grow"
-          placeholder="Search jobs..."
+          placeholder="Search roles, skills, teams..."
         />
+      </div>
+
+      {categories.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          <FilterChip
+            label="All roles"
+            active={category === ALL}
+            onClick={() => setCategory(ALL)}
+          />
+          {categories.map((tag) => (
+            <FilterChip
+              key={tag}
+              label={tag}
+              active={category === tag}
+              onClick={() => setCategory(tag)}
+            />
+          ))}
+        </div>
+      )}
+
+      {(availableCommitments.length > 0 || availableLocations.length > 0 || hasPaidRoles) && (
+        <div className="flex flex-wrap gap-2 items-center">
+          {availableCommitments.map((option) => (
+            <FilterChip
+              key={option.value}
+              label={option.label}
+              active={commitment === option.value}
+              onClick={() => setCommitment(commitment === option.value ? ALL : option.value)}
+            />
+          ))}
+          {availableLocations.map((option) => (
+            <FilterChip
+              key={option.value}
+              label={option.label}
+              active={location === option.value}
+              onClick={() => setLocation(location === option.value ? ALL : option.value)}
+            />
+          ))}
+          {hasPaidRoles && (
+            <FilterChip label="Paid" active={paidOnly} onClick={() => setPaidOnly(!paidOnly)} />
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+        <span>
+          {filteredJobs.length} open role{filteredJobs.length === 1 ? '' : 's'}
+        </span>
+        <div className="flex items-center gap-2">
+          <span>Sort:</span>
+          <button
+            type="button"
+            className={sort === 'newest' ? 'text-blue-300' : 'hover:text-white'}
+            onClick={() => setSort('newest')}
+          >
+            Newest
+          </button>
+          <span aria-hidden="true">·</span>
+          <button
+            type="button"
+            className={sort === 'closing' ? 'text-blue-300' : 'hover:text-white'}
+            onClick={() => setSort('closing')}
+          >
+            Closing soon
+          </button>
+        </div>
+        {hasFilters && (
+          <button
+            type="button"
+            className="text-blue-400 hover:text-blue-300"
+            onClick={() => {
+              setInput('')
+              setCategory(ALL)
+              setCommitment(ALL)
+              setLocation(ALL)
+              setPaidOnly(false)
+            }}
+          >
+            Clear filters
+          </button>
+        )}
       </div>
     </div>
   )
@@ -109,9 +289,12 @@ export default function Jobs({ jobs }: JobsProps) {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-GoodTimes text-white mb-4 drop-shadow-lg">Citizens Only</h3>
+                  <h3 className="text-2xl font-GoodTimes text-white mb-4 drop-shadow-lg">
+                    Citizens Only
+                  </h3>
                   <p className="text-slate-300 mb-6 max-w-md mx-auto drop-shadow-md">
-                    Become a MoonDAO Citizen to access the jobs board and connect with teams building the future of space exploration.
+                    Become a MoonDAO Citizen to access the jobs board and connect with teams
+                    building the future of space exploration.
                   </p>
                   <StandardButton
                     className="gradient-2 hover:opacity-90 transition-opacity"
@@ -129,13 +312,28 @@ export default function Jobs({ jobs }: JobsProps) {
             <div className={citizen ? '' : 'pointer-events-none select-none'}>
               {filteredJobs?.[0] ? (
                 <CardGridContainer>
-                  {filteredJobs.map((job: JobType, i: number) => (
-                    <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
+                  {filteredJobs.map((job: JobType) => (
+                    <Job key={`job-${job.id}`} job={job} showTeam teamContract={teamContract} />
                   ))}
                 </CardGridContainer>
               ) : (
-                <div className="mt-4 w-full h-[400px] flex justify-center items-center">
-                  <p className="">No jobs found.</p>
+                <div className="mt-4 w-full h-[400px] flex flex-col gap-3 justify-center items-center">
+                  <p>No jobs found.</p>
+                  {hasFilters && (
+                    <button
+                      type="button"
+                      className="text-sm text-blue-400 hover:text-blue-300"
+                      onClick={() => {
+                        setInput('')
+                        setCategory(ALL)
+                        setCommitment(ALL)
+                        setLocation(ALL)
+                        setPaidOnly(false)
+                      }}
+                    >
+                      Clear filters
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -148,46 +346,10 @@ export default function Jobs({ jobs }: JobsProps) {
 
 export async function getStaticProps() {
   try {
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
-
-    const now = Math.floor(Date.now() / 1000)
-
-    const jobTableContract = getContract({
-      client: serverClient,
-      address: JOBS_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: JobsABI as any,
-    })
-    const teamContract = getContract({
-      client: serverClient,
-      address: TEAM_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: TeamABI as any,
-    })
-
-    const jobBoardTableName = await readContract({
-      contract: jobTableContract,
-      method: 'getTableName',
-    })
-
-    const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
-
-    const allJobs = await queryTable(chain, statement)
-
-    const validJobs = allJobs?.filter(async (job: any) => {
-      const teamExpiration = await readContract({
-        contract: teamContract,
-        method: 'expiresAt',
-        params: [job.teamId],
-      })
-      return +teamExpiration.toString() > now
-    })
+    const jobs = await fetchActiveJobs(DEFAULT_CHAIN_V5)
 
     return {
-      props: {
-        jobs: validJobs,
-      },
+      props: { jobs },
       revalidate: 60,
     }
   } catch (error) {
