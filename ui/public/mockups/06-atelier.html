@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 06 · Atelier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c1a16;
+    --ink-2: #58534a;
+    --ink-3: #918a7d;
+    --hair: #e2ddd3;
+    --paper: #faf8f4;
+    --paper-2: #f2eee6;
+    --clay: #8a5a44;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 15.5px;
+    line-height: 1.75;
+    letter-spacing: 0.002em;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .display {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 300;
+    font-optical-sizing: auto;
+    letter-spacing: -0.012em;
+    line-height: 1.08;
+  }
+  .cap {
+    font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 500;
+  }
+
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 40px; }
+  .narrow { max-width: 760px; margin: 0 auto; padding: 0 40px; }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(250,248,244,0.9); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--hair);
+  }
+  .nav-in {
+    max-width: 1160px; margin: 0 auto; padding: 0 40px; height: 66px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .wm { font-family: 'Fraunces', serif; font-weight: 400; font-size: 21px; letter-spacing: -0.01em; }
+  .nav-links { display: flex; gap: 30px; }
+  .nav-links a { font-size: 13.5px; color: var(--ink-2); }
+  .nav-links a:hover { color: var(--clay); }
+  .nav .join { font-size: 13.5px; color: var(--clay); }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 118px 0 96px; text-align: center; }
+  .hero .cap { margin-bottom: 34px; }
+  .hero h1 { margin: 0 auto; font-size: clamp(38px, 5.4vw, 74px); max-width: 16ch; }
+  .hero h1 em { font-style: italic; }
+  .hero p {
+    margin: 32px auto 0; max-width: 480px; color: var(--ink-2); font-size: 16px;
+  }
+  .hero .acts { margin-top: 40px; display: flex; gap: 14px; justify-content: center; }
+  .btn {
+    display: inline-flex; align-items: center; height: 46px; padding: 0 28px;
+    background: var(--ink); color: var(--paper);
+    font-size: 13px; letter-spacing: 0.04em;
+    transition: background 0.25s ease;
+  }
+  .btn:hover { background: var(--clay); }
+  .btn.line { background: transparent; color: var(--ink); border: 1px solid var(--hair); }
+  .btn.line:hover { border-color: var(--ink); background: transparent; }
+
+  /* ---------- Full image ---------- */
+  .band-img { position: relative; }
+  .band-img img { width: 100%; height: 540px; object-fit: cover; object-position: center 82%; display: block; filter: saturate(0.55) contrast(0.96); }
+  .band-cap { max-width: 1160px; margin: 14px auto 0; padding: 0 40px; display: flex; justify-content: space-between; }
+
+  /* ---------- Numbers ---------- */
+  .nums { padding: 104px 0; }
+  .nums-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; text-align: center; }
+  .nums .n { font-family: 'Fraunces', serif; font-weight: 300; font-size: clamp(34px, 4vw, 54px); line-height: 1; }
+  .nums .l { margin-top: 14px; }
+
+  /* ---------- Editorial block ---------- */
+  .said { background: var(--paper-2); padding: 110px 0; }
+  .said h2 { margin: 0 auto; text-align: center; max-width: 20ch; font-size: clamp(28px, 3.6vw, 46px); }
+  .said .body { margin: 40px auto 0; max-width: 640px; }
+  .said .body p { margin: 0 0 20px; color: var(--ink-2); }
+
+  /* ---------- Program cards ---------- */
+  .programs { padding: 110px 0; }
+  .p-head { text-align: center; margin-bottom: 64px; }
+  .p-head h2 { margin: 14px auto 0; font-size: clamp(28px, 3.6vw, 46px); max-width: 18ch; }
+  .p-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--hair); border: 1px solid var(--hair); }
+  .p-card {
+    background: var(--paper); padding: 40px 34px 38px;
+    display: flex; flex-direction: column; gap: 14px; min-height: 250px;
+    transition: background 0.3s ease;
+  }
+  .p-card:hover { background: var(--paper-2); }
+  .p-card h3 { margin: 0; font-family: 'Fraunces', serif; font-weight: 400; font-size: 22px; letter-spacing: -0.01em; line-height: 1.2; }
+  .p-card p { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.7; flex: 1; }
+  .p-card .go { color: var(--clay); font-size: 13px; }
+
+  /* ---------- Split ---------- */
+  .split { display: grid; grid-template-columns: 1fr 1fr; }
+  .split .media img { width: 100%; height: 100%; min-height: 560px; object-fit: cover; display: block; filter: saturate(0.6); }
+  .split .copy { padding: 96px 72px; display: flex; flex-direction: column; justify-content: center; background: var(--paper-2); }
+  .split .copy h2 { margin: 16px 0 0; font-size: clamp(26px, 3.2vw, 42px); max-width: 16ch; }
+  .split .copy p { margin: 24px 0 0; color: var(--ink-2); max-width: 44ch; }
+  .split .copy .btn { margin-top: 34px; align-self: flex-start; }
+
+  /* ---------- Quote ---------- */
+  .quote { padding: 130px 0; text-align: center; }
+  .quote blockquote {
+    margin: 0 auto; max-width: 860px;
+    font-family: 'Fraunces', serif; font-weight: 300; font-style: italic;
+    font-size: clamp(24px, 3.1vw, 40px); line-height: 1.32; letter-spacing: -0.012em;
+  }
+  .quote .attr { margin-top: 32px; }
+
+  /* ---------- Roster ---------- */
+  .roster { padding: 0 0 110px; }
+  .roster-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 56px; }
+  .roster-grid > div { padding: 20px 0; border-bottom: 1px solid var(--hair); }
+  .roster-grid .n { font-family: 'Fraunces', serif; font-weight: 400; font-size: 19px; }
+  .roster-grid .r { margin-top: 2px; }
+
+  /* ---------- Close ---------- */
+  .close { background: var(--ink); color: var(--paper); padding: 130px 0; text-align: center; }
+  .close h2 { margin: 0 auto; font-size: clamp(30px, 4.2vw, 58px); max-width: 16ch; }
+  .close p { margin: 26px auto 0; max-width: 440px; color: rgba(250,248,244,0.62); }
+  .close .btn { margin-top: 38px; background: var(--paper); color: var(--ink); }
+  .close .btn:hover { background: var(--clay); color: #fff; }
+
+  footer { background: var(--ink); color: rgba(250,248,244,0.6); padding: 0 0 56px; }
+  .foot { display: grid; grid-template-columns: repeat(4, 1fr); gap: 34px; padding-top: 56px; border-top: 1px solid rgba(250,248,244,0.12); }
+  .foot h4 { margin: 0 0 14px; color: rgba(250,248,244,0.42); }
+  .foot a { display: block; font-size: 14px; color: rgba(250,248,244,0.72); margin-bottom: 8px; }
+  .foot a:hover { color: var(--paper); }
+  .sig { margin-top: 52px; padding-top: 18px; border-top: 1px solid rgba(250,248,244,0.12); display: flex; justify-content: space-between; }
+  .sig .cap { color: rgba(250,248,244,0.42); }
+
+  @media (max-width: 900px) {
+    .nums-grid, .p-grid, .roster-grid, .foot { grid-template-columns: repeat(2, 1fr); }
+    .split { grid-template-columns: 1fr; }
+    .split .copy { padding: 64px 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-in">
+    <a class="wm" href="#">MoonDAO</a>
+    <div class="nav-links">
+      <a href="#">Missions</a><a href="#">Network</a><a href="#">Governance</a>
+      <a href="#">Launchpad</a><a href="#">About</a>
+    </div>
+    <a class="join" href="#">Become a member</a>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="cap">A space program, owned by its members</div>
+    <h1 class="display">Patience, capital, and <em>a very long road.</em></h1>
+    <p>
+      MoonDAO exists to put people on the Moon and keep them there. Eight
+      million dollars raised in the open, two people flown, one charter
+      resting on the surface.
+    </p>
+    <div class="acts">
+      <a class="btn" href="#">Become a member</a>
+      <a class="btn line" href="#">See the work</a>
+    </div>
+  </div>
+</header>
+
+<div class="band-img">
+  <img src="/assets/mockups/habitat-render.webp" alt="Lunar settlement study" />
+</div>
+<div class="band-cap">
+  <span class="cap">Settlement study · member-commissioned</span>
+  <span class="cap">Plate I</span>
+</div>
+
+<section class="nums">
+  <div class="wrap">
+    <div class="nums-grid">
+      <div><div class="n">$8M</div><div class="cap l">Raised onchain</div></div>
+      <div><div class="n">12,000</div><div class="cap l">Members</div></div>
+      <div><div class="n">80</div><div class="cap l">Projects funded</div></div>
+      <div><div class="n">Two</div><div class="cap l">Astronauts flown</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="said">
+  <div class="wrap">
+    <h2 class="display">The hard part was never the rocket.</h2>
+    <div class="body">
+      <p>Getting to the Moon has always been an organizational problem as much
+        as an engineering one. Somebody has to decide it is worth doing, find
+        the money, and keep going for longer than an election cycle.</p>
+      <p>MoonDAO is an attempt to do that without asking anyone's permission.
+        Twelve thousand people pooled eight million dollars, and then decided
+        together — in public, by vote — where it should go.</p>
+      <p>What follows is not a pitch. It is the record.</p>
+    </div>
+  </div>
+</section>
+
+<section class="programs">
+  <div class="wrap">
+    <div class="p-head">
+      <span class="cap">The work</span>
+      <h2 class="display">Six programs, all of them already underway.</h2>
+    </div>
+    <div class="p-grid">
+      <div class="p-card">
+        <span class="cap">I</span>
+        <h3>Human spaceflight</h3>
+        <p>The first crowdraised astronaut was chosen by onchain vote. A second everyday person was chosen by open sweepstakes. Both have flown.</p>
+        <span class="go">Our story →</span>
+      </div>
+      <div class="p-card">
+        <span class="cap">II</span>
+        <h3>Research funding</h3>
+        <p>More than $600,000 allocated to seventy-five research and engineering projects through open governance.</p>
+        <span class="go">Browse proposals →</span>
+      </div>
+      <div class="p-card">
+        <span class="cap">III</span>
+        <h3>Training</h3>
+        <p>Zero-gravity flights and analog missions that prepare people for a place we have not finished building.</p>
+        <span class="go">Experiences →</span>
+      </div>
+      <div class="p-card">
+        <span class="cap">IV</span>
+        <h3>The network</h3>
+        <p>The Space Acceleration Network connects builders with funding, tools, and operational support.</p>
+        <span class="go">Join the network →</span>
+      </div>
+      <div class="p-card">
+        <span class="cap">V</span>
+        <h3>The charter</h3>
+        <p>A constitution for self-governance, written by members and delivered to the lunar surface in 2025.</p>
+        <span class="go">Read it →</span>
+      </div>
+      <div class="p-card">
+        <span class="cap">VI</span>
+        <h3>Open treasury</h3>
+        <p>Every proposal, vote, and payment is published. There is no discretionary spending.</p>
+        <span class="go">View the treasury →</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="split">
+  <div class="media"><img src="/assets/mockups/suit-detail.webp" alt="Spacesuit detail" /></div>
+  <div class="copy">
+    <span class="cap">Governance</span>
+    <h2 class="display">Weight comes from commitment.</h2>
+    <p>
+      Lock $MOONEY to become a voter and help direct the treasury. Your
+      influence scales with how long you are willing to stay, not with how
+      loudly you argue. There is no application and no gate.
+    </p>
+    <p>
+      Two people have already flown on decisions made this way — Coby Cotton
+      by onchain vote in 2022, and Dr. Eiman Jahangir by open sweepstakes
+      in 2024.
+    </p>
+    <a class="btn" href="#">How governance works</a>
+  </div>
+</section>
+
+<section class="quote">
+  <div class="wrap">
+    <blockquote class="display">
+      “Deciding together, in public, and then actually paying for it — that
+      is the part nobody has solved.”
+    </blockquote>
+    <div class="cap attr">From the MoonDAO constitution · delivered to the lunar surface, 2025</div>
+  </div>
+</section>
+
+<section class="roster">
+  <div class="wrap">
+    <div class="cap" style="margin-bottom:26px">In conversation, 2021–2026</div>
+    <div class="roster-grid">
+      <div><div class="n">Charlie Duke</div><div class="cap r">Apollo 16 Moonwalker</div></div>
+      <div><div class="n">Doug Hurley</div><div class="cap r">NASA &amp; SpaceX Astronaut</div></div>
+      <div><div class="n">Nicole Stott</div><div class="cap r">NASA Astronaut</div></div>
+      <div><div class="n">Robert Zubrin</div><div class="cap r">Founder, The Mars Society</div></div>
+      <div><div class="n">Steve Altemus</div><div class="cap r">CEO, Intuitive Machines</div></div>
+      <div><div class="n">Dr. Phil Metzger</div><div class="cap r">Planetary Physicist</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="close">
+  <div class="wrap">
+    <h2 class="display">There is room for you in this.</h2>
+    <p>Membership is open. Bring a proposal, a skill, or an afternoon.</p>
+    <div><a class="btn" href="#">Become a member</a></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div><h4 class="cap">Explore</h4><a href="#">Missions</a><a href="#">Launchpad</a><a href="#">Network</a><a href="#">Map</a></div>
+      <div><h4 class="cap">Govern</h4><a href="#">Proposals</a><a href="#">Treasury</a><a href="#">Constitution</a><a href="#">$MOONEY</a></div>
+      <div><h4 class="cap">Organization</h4><a href="#">About</a><a href="#">Roadmap</a><a href="#">Press</a><a href="#">Jobs</a></div>
+      <div><h4 class="cap">Community</h4><a href="#">Discord</a><a href="#">X</a><a href="#">Town halls</a><a href="#">Newsletter</a></div>
+    </div>
+    <div class="sig">
+      <span class="cap">© 2026 MoonDAO</span>
+      <span class="cap">Set in Fraunces</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

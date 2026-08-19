@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Ten aesthetic directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #101216;
+    --ink-2: #565b64;
+    --ink-3: #8f949c;
+    --hair: #e4e6ea;
+    --paper: #fbfbfc;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px; line-height: 1.6; letter-spacing: -0.01em;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .m {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3);
+  }
+
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 0 40px; }
+
+  header {
+    border-bottom: 1px solid var(--hair);
+    padding: 64px 0 44px;
+  }
+  header h1 {
+    margin: 20px 0 0; font-size: clamp(30px, 3.6vw, 48px); font-weight: 600;
+    letter-spacing: -0.04em; line-height: 1.04; max-width: 20ch;
+  }
+  header p { margin: 20px 0 0; max-width: 68ch; color: var(--ink-2); font-size: 16.5px; }
+  .brief { margin-top: 26px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; max-width: 900px; }
+  .brief div { border-top: 1px solid var(--hair); padding-top: 12px; }
+  .brief .v { font-size: 14px; color: var(--ink-2); margin-top: 4px; }
+
+  .grid {
+    padding: 44px 0 90px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px;
+  }
+
+  .card {
+    border: 1px solid var(--hair); background: #fff;
+    border-radius: 14px; overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+  }
+  .card:hover { border-color: #c9ccd2; box-shadow: 0 24px 60px -34px rgba(16,18,22,0.42); transform: translateY(-2px); }
+
+  .thumb {
+    position: relative; height: 430px; overflow: hidden;
+    border-bottom: 1px solid var(--hair); background: #fff;
+  }
+  .thumb img {
+    display: block; width: 100%; height: auto;
+    transition: transform 9s cubic-bezier(0.32, 0, 0.5, 1);
+  }
+  /* On hover the preview travels the full length of the page it represents,
+     so the whole composition can be judged without opening it. */
+  .card:hover .thumb img { transform: translateY(calc(430px - 100%)); }
+  .thumb .fade {
+    position: absolute; inset: auto 0 0 0; height: 70px; pointer-events: none;
+    background: linear-gradient(to top, rgba(255,255,255,0.92), rgba(255,255,255,0));
+  }
+  .thumb .hint {
+    position: absolute; right: 12px; bottom: 12px;
+    background: rgba(255,255,255,0.86); border: 1px solid var(--hair);
+    border-radius: 6px; padding: 3px 8px;
+    opacity: 1; transition: opacity 0.3s ease;
+  }
+  .card:hover .thumb .hint { opacity: 0; }
+
+  .meta { padding: 22px 24px 24px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .meta .top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .meta h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.03em; }
+  .meta p { margin: 0; color: var(--ink-2); font-size: 14.5px; flex: 1; }
+
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; padding-top: 12px; border-top: 1px solid var(--hair); }
+  .facts .k { display: block; }
+  .facts .v { font-size: 13.5px; color: var(--ink-2); }
+
+  .swatches { display: flex; gap: 5px; align-items: center; }
+  .sw { width: 15px; height: 15px; border-radius: 3px; border: 1px solid rgba(16,18,22,0.12); }
+
+  .open {
+    margin-top: 4px; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 500; color: var(--ink);
+  }
+  .open::after { content: '→'; color: var(--ink-3); transition: transform 0.2s ease; }
+  .card:hover .open::after { transform: translateX(4px); }
+
+  footer { border-top: 1px solid var(--hair); padding: 30px 0 60px; display: flex; justify-content: space-between; }
+
+  @media (max-width: 1080px) {
+    .grid { grid-template-columns: 1fr; }
+    .brief { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="m">MoonDAO · Design exploration · 2026</span>
+    <h1>Ten directions for a lighter, quieter MoonDAO.</h1>
+    <p>
+      Every direction below is a full homepage built from the same content —
+      the same numbers, the same programs, the same names — so the only thing
+      that changes between them is the aesthetic argument. All of them are
+      light, mostly white, and deliberately restrained. Open any one, scroll
+      the whole page, and tell me which are directionally right.
+    </p>
+    <div class="brief">
+      <div><span class="m">Constant</span><div class="v">Content &amp; structure</div></div>
+      <div><span class="m">Variable</span><div class="v">Type, palette, layout</div></div>
+      <div><span class="m">Imagery</span><div class="v">Shared studio set</div></div>
+      <div><span class="m">Status</span><div class="v">Mockups, not shipped</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+
+    <a class="card" href="01-cupertino.html">
+      <div class="thumb"><img src="thumbs/01-cupertino.webp" alt="Cupertino preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>01 · Cupertino</h2><span class="m">Inter Tight</span></div>
+        <p>The most literal reading of the brief. Apple's exact grammar: translucent nav, enormous centered headline, alternating white and pale-gray bands, soft-shadowed cards, one deep blue for links. Product photography on black does the emotional work so the type never has to raise its voice.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">apple.com</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#f5f5f7"></i><i class="sw" style="background:#1d1d1f"></i><i class="sw" style="background:#0f4c9e"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="02-swiss.html">
+      <div class="thumb"><img src="thumbs/02-swiss.webp" alt="Swiss Technical preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>02 · Swiss Technical</h2><span class="m">IBM Plex</span></div>
+        <p>An engineering document rather than a marketing page. The 12-column grid is left visible as hairlines, sections are numbered like clauses, and metadata is set in monospace. Programs are rows in a spec table, not cards. Reads as competent and unexcitable.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A published spec</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#dcdee1"></i><i class="sw" style="background:#111214"></i><i class="sw" style="background:#a83c2c"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="03-editorial.html">
+      <div class="thumb"><img src="thumbs/03-editorial.webp" alt="Editorial preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>03 · Editorial</h2><span class="m">Newsreader</span></div>
+        <p>A serious publication. Centered serif masthead, rules above and below the nav, a light display serif with true italics, two-column body copy with a drop cap, and a centered pull quote. Argues that MoonDAO is an institution with something to say, not a product with something to sell.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A quarterly journal</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fffefb"></i><i class="sw" style="background:#ddd9cf"></i><i class="sw" style="background:#16150f"></i><i class="sw" style="background:#7c1d12"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="04-gallery.html">
+      <div class="thumb"><img src="thumbs/04-gallery.webp" alt="Gallery preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>04 · Gallery</h2><span class="m">Cormorant Garamond</span></div>
+        <p>The quietest of the ten. Type is small and widely letterspaced, images are enormous, and the page is mostly air. Every block of text is a wall label. The confidence comes entirely from how much is left out — closest to a museum, furthest from a website.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A gallery catalogue</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fcfcfa"></i><i class="sw" style="background:#e6e5e0"></i><i class="sw" style="background:#14140f"></i><i class="sw" style="background:#9a9a92"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="05-blueprint.html">
+      <div class="thumb"><img src="thumbs/05-blueprint.webp" alt="Blueprint preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>05 · Blueprint</h2><span class="m">Geist · JetBrains Mono</span></div>
+        <p>Ink on drafting paper. A faint grid runs the full page, corner registration marks frame the sheet, a dimension line measures the distance to the Moon, and a drawn orbital diagram carries the history instead of a photograph. Technical without costume.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A drawing sheet</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fcfcfa"></i><i class="sw" style="background:#dfe1e4"></i><i class="sw" style="background:#101318"></i><i class="sw" style="background:#1f4e79"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="06-atelier.html">
+      <div class="thumb"><img src="thumbs/06-atelier.webp" alt="Atelier preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>06 · Atelier</h2><span class="m">Fraunces</span></div>
+        <p>Warm rather than clinical. Bone paper instead of white, a soft optical serif, desaturated imagery, and a clay accent. Centered compositions and long line-height give it the pace of a luxury house — expensive taste, spoken quietly.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A quiet luxury brand</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#faf8f4"></i><i class="sw" style="background:#f2eee6"></i><i class="sw" style="background:#1c1a16"></i><i class="sw" style="background:#8a5a44"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="07-rational.html">
+      <div class="thumb"><img src="thumbs/07-rational.webp" alt="Rational preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>07 · Rational</h2><span class="m">Archivo</span></div>
+        <p>Vignelli-school modernism. Heavy black rules, a strict grid, uppercase headlines set very tight, and figures treated as graphic elements. The most assertive of the ten — included deliberately, so you can tell me where the ceiling on volume actually is.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A transit poster</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#cfcfcf"></i><i class="sw" style="background:#000"></i><i class="sw" style="background:#a32b1c"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="08-softlight.html">
+      <div class="thumb"><img src="thumbs/08-softlight.webp" alt="Softlight preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>08 · Softlight</h2><span class="m">DM Sans</span></div>
+        <p>Modern light-mode software. A floating pill nav, pale aurora wash behind the hero, rounded cards, and gentle shadows. The friendliest and most approachable option, and the one closest to current product-site convention — which is either an advantage or the whole problem.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A polished product site</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#f4f6f9"></i><i class="sw" style="background:#14161a"></i><i class="sw" style="background:#2b5fd9"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="09-monolith.html">
+      <div class="thumb"><img src="thumbs/09-monolith.webp" alt="Monolith preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>09 · Monolith</h2><span class="m">Geist</span></div>
+        <p>Typography as the entire hero. No image above the fold — just an enormous, very tightly tracked statement that fills the viewport, then a single pale full-bleed photograph. Everything after is rules, numerals, and space. Confident and slightly severe.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A statement, then silence</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fdfdfd"></i><i class="sw" style="background:#e8e9eb"></i><i class="sw" style="background:#0c0d0e"></i><i class="sw" style="background:#9ca0a6"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="10-institutional.html">
+      <div class="thumb"><img src="thumbs/10-institutional.webp" alt="Institutional preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>10 · Institutional</h2><span class="m">EB Garamond · Public Sans</span></div>
+        <p>A report to members. Engraved seal, ruled tables of programs and chronology, numbered sections, superscript footnotes, and a single navy. Makes MoonDAO read like a standing institution that publishes its accounts — the most credible, and the least fashionable.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A national laboratory</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#f7f8fa"></i><i class="sw" style="background:#14171d"></i><i class="sw" style="background:#1b3358"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;width:100%">
+    <span class="m">MoonDAO · Ten directions · Static mockups</span>
+    <span class="m">Same content, ten arguments</span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 09 · Monolith</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #0c0d0e;
+    --ink-2: #63666b;
+    --ink-3: #9ca0a6;
+    --hair: #e8e9eb;
+    --paper: #fdfdfd;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Geist', 'Inter', system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.62;
+    letter-spacing: -0.012em;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  h1, h2, h3 { margin: 0; font-weight: 500; letter-spacing: -0.045em; line-height: 0.98; }
+
+  .mono {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3);
+  }
+
+  .col { max-width: 900px; margin: 0 auto; padding: 0 32px; }
+  .col-wide { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+
+  /* ---------- Rail ---------- */
+  .rail {
+    position: fixed; left: 34px; top: 50%; transform: translateY(-50%); z-index: 30;
+    display: flex; flex-direction: column; gap: 13px;
+  }
+  .rail a { display: flex; align-items: center; gap: 10px; }
+  .rail .bar { width: 16px; height: 1px; background: var(--ink-3); transition: width 0.3s ease, background 0.3s ease; }
+  .rail a:hover .bar { width: 30px; background: var(--ink); }
+  .rail .t { opacity: 0; transition: opacity 0.3s ease; }
+  .rail a:hover .t { opacity: 1; }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px 34px;
+    background: linear-gradient(to bottom, rgba(253,253,253,0.95), rgba(253,253,253,0));
+  }
+  .nav .wm { font-weight: 600; font-size: 15px; letter-spacing: -0.03em; }
+  .nav .links { display: flex; gap: 24px; }
+  .nav .links a { font-size: 14px; color: var(--ink-2); }
+  .nav .links a:hover { color: var(--ink); }
+  .nav .cta {
+    font-size: 13px; font-weight: 500;
+    border: 1px solid var(--hair); border-radius: 7px; padding: 7px 14px;
+  }
+  .nav .cta:hover { border-color: var(--ink); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 140px 0 64px;
+  }
+  .hero h1 {
+    font-size: clamp(48px, 9.4vw, 148px);
+    font-weight: 500;
+    letter-spacing: -0.055em;
+    line-height: 0.9;
+  }
+  .hero h1 .dim { color: var(--ink-3); }
+  .hero .under {
+    margin-top: 52px; padding-top: 26px; border-top: 1px solid var(--hair);
+    display: grid; grid-template-columns: 1fr 1fr 200px; gap: 40px; align-items: start;
+  }
+  .hero .under p { margin: 0; color: var(--ink-2); font-size: 16px; }
+  .hero .under .acts { display: flex; flex-direction: column; gap: 9px; align-items: flex-start; }
+  .lnk { font-size: 15px; display: inline-flex; gap: 6px; }
+  .lnk::after { content: '→'; color: var(--ink-3); transition: transform 0.22s ease; }
+  .lnk:hover::after { transform: translateX(4px); }
+
+  /* ---------- Bleed ---------- */
+  .bleed { position: relative; }
+  .bleed img { width: 100%; height: 78vh; min-height: 520px; object-fit: cover; display: block; }
+  .bleed .cap { position: absolute; left: 34px; bottom: 26px; }
+
+  /* ---------- Section ---------- */
+  section { padding: 150px 0; }
+  .sec-label { margin-bottom: 46px; padding-bottom: 14px; border-bottom: 1px solid var(--hair); display: flex; justify-content: space-between; }
+  h2.big { font-size: clamp(30px, 4.4vw, 60px); max-width: 17ch; }
+  .lede { margin: 32px 0 0; font-size: 19px; color: var(--ink-2); max-width: 58ch; }
+
+  .list { margin-top: 68px; }
+  .item {
+    display: grid; grid-template-columns: 66px 1fr; gap: 34px;
+    padding: 30px 0; border-top: 1px solid var(--hair);
+  }
+  .item:last-child { border-bottom: 1px solid var(--hair); }
+  .item h3 { font-size: 23px; letter-spacing: -0.035em; margin-bottom: 10px; }
+  .item p { margin: 0; color: var(--ink-2); font-size: 16px; max-width: 62ch; }
+
+  /* ---------- Figures ---------- */
+  .figs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; border-top: 1px solid var(--hair); padding-top: 30px; }
+  .figs .n { font-size: clamp(34px, 4vw, 54px); font-weight: 500; letter-spacing: -0.055em; line-height: 1; }
+  .figs .l { margin-top: 12px; }
+
+  /* ---------- Quote ---------- */
+  .quote { padding: 150px 0; }
+  .quote blockquote {
+    margin: 0; font-size: clamp(26px, 3.6vw, 46px); font-weight: 400;
+    letter-spacing: -0.04em; line-height: 1.16; max-width: 22ch;
+  }
+  .quote .attr { margin-top: 34px; }
+
+  /* ---------- Ledger ---------- */
+  .ledger { border-top: 1px solid var(--hair); }
+  .lrow { display: grid; grid-template-columns: 96px 1fr 120px; gap: 26px; padding: 17px 0; border-bottom: 1px solid var(--hair); align-items: baseline; }
+  .lrow .e { font-size: 16px; }
+  .lrow .s { text-align: right; }
+  .lrow.future .e { color: var(--ink-3); }
+
+  /* ---------- Names ---------- */
+  .names { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 50px; border-top: 1px solid var(--hair); }
+  .names > div { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--hair); }
+  .names .n { font-size: 18px; letter-spacing: -0.03em; }
+
+  /* ---------- Close ---------- */
+  .close { padding: 170px 0 180px; }
+  .close h2 { font-size: clamp(34px, 6.4vw, 100px); letter-spacing: -0.055em; line-height: 0.94; max-width: 13ch; }
+  .close .acts { margin-top: 48px; display: flex; gap: 26px; }
+
+  footer { border-top: 1px solid var(--hair); padding: 44px 0 56px; }
+  .foot { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; }
+  .foot h4 { margin: 0 0 14px; }
+  .foot a { display: block; font-size: 15px; color: var(--ink-2); margin-bottom: 8px; }
+  .foot a:hover { color: var(--ink); }
+  .sig { margin-top: 52px; padding-top: 18px; border-top: 1px solid var(--hair); display: flex; justify-content: space-between; }
+
+  @media (max-width: 1200px) { .rail { display: none; } }
+  @media (max-width: 860px) {
+    .hero .under { grid-template-columns: 1fr; }
+    .figs, .names, .foot { grid-template-columns: repeat(2, 1fr); }
+    .item { grid-template-columns: 1fr; gap: 10px; }
+    .nav .links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <a href="#programs"><span class="bar"></span><span class="mono t">Programs</span></a>
+  <a href="#figures"><span class="bar"></span><span class="mono t">Figures</span></a>
+  <a href="#governance"><span class="bar"></span><span class="mono t">Governance</span></a>
+  <a href="#record"><span class="bar"></span><span class="mono t">Record</span></a>
+  <a href="#voices"><span class="bar"></span><span class="mono t">Voices</span></a>
+</div>
+
+<div class="nav">
+  <a class="wm" href="#">MoonDAO</a>
+  <div class="links">
+    <a href="#">Missions</a><a href="#">Network</a><a href="#">Governance</a>
+    <a href="#">Launchpad</a><a href="#">About</a>
+  </div>
+  <a class="cta" href="#">Join</a>
+</div>
+
+<header class="hero">
+  <div class="col-wide">
+    <div class="mono" style="margin-bottom:34px">MoonDAO · Est. 2021 · Open record</div>
+    <h1>We are going<br />back, <span class="dim">and this<br />time everyone<br />gets a vote.</span></h1>
+    <div class="under">
+      <p>MoonDAO is a member-governed space program. Eight million dollars
+        raised in the open. Two people flown. One constitution resting on the
+        lunar surface.</p>
+      <p>Nothing here was decided behind a door. Every proposal, vote, and
+        payment is published where anyone can check the work.</p>
+      <div class="acts">
+        <a class="lnk" href="#">Join the network</a>
+        <a class="lnk" href="#">Open the ledger</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="bleed">
+  <img src="/assets/mockups/ascent.webp" alt="Ascent" />
+  <span class="mono cap">Ascent · long lens · no commentary</span>
+</div>
+
+<section id="programs">
+  <div class="col-wide">
+    <div class="sec-label"><span class="mono">01 — Programs</span><span class="mono">Six active</span></div>
+    <h2 class="big">Everything below has already happened.</h2>
+    <p class="lede">These are not roadmap items. Each was proposed by a member,
+      approved by a vote of the membership, and executed against a published
+      budget.</p>
+    <div class="list">
+      <div class="item">
+        <span class="mono">01</span>
+        <div>
+          <h3>Human spaceflight</h3>
+          <p>The first crowdraised astronaut was selected by onchain vote and flown in 2022. A second everyday person was selected by open sweepstakes and flown in 2024.</p>
+        </div>
+      </div>
+      <div class="item">
+        <span class="mono">02</span>
+        <div>
+          <h3>Research funding</h3>
+          <p>More than $600,000 allocated across seventy-five research and engineering projects through open community governance.</p>
+        </div>
+      </div>
+      <div class="item">
+        <span class="mono">03</span>
+        <div>
+          <h3>Astronaut training</h3>
+          <p>Zero-gravity flights and analog missions that prepare the next generation of travelers before there is anywhere to go.</p>
+        </div>
+      </div>
+      <div class="item">
+        <span class="mono">04</span>
+        <div>
+          <h3>The Space Acceleration Network</h3>
+          <p>Connects individuals and organizations with the funding, tools, and operational support to turn a proposal into hardware.</p>
+        </div>
+      </div>
+      <div class="item">
+        <span class="mono">05</span>
+        <div>
+          <h3>A constitution on the Moon</h3>
+          <p>A charter for self-governance, written by members and delivered to the lunar surface in early 2025.</p>
+        </div>
+      </div>
+      <div class="item">
+        <span class="mono">06</span>
+        <div>
+          <h3>An open treasury</h3>
+          <p>Every proposal, vote, and payment is published and independently verifiable. There is no discretionary spending.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="figures" style="padding-top:0">
+  <div class="col-wide">
+    <div class="sec-label"><span class="mono">02 — Figures</span><span class="mono">As of 2026</span></div>
+    <div class="figs">
+      <div><div class="n">$8M</div><div class="mono l">Raised onchain</div></div>
+      <div><div class="n">12,043</div><div class="mono l">Token holders</div></div>
+      <div><div class="n">80</div><div class="mono l">Projects funded</div></div>
+      <div><div class="n">2</div><div class="mono l">Astronauts flown</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="quote">
+  <div class="col-wide">
+    <blockquote>The technology was never the bottleneck. Deciding together was.</blockquote>
+    <div class="mono attr">MoonDAO constitution · delivered to the lunar surface, 2025</div>
+  </div>
+</div>
+
+<section id="governance" style="padding-top:0">
+  <div class="col-wide">
+    <div class="sec-label"><span class="mono">03 — Governance</span><span class="mono">No gate</span></div>
+    <h2 class="big">Influence is earned by staying.</h2>
+    <p class="lede">Lock $MOONEY to become a voter and co-govern the treasury.
+      Voting weight comes from how long you commit, not from who you know or
+      how loudly you post. There is no application to fill in.</p>
+  </div>
+</section>
+
+<section id="record" style="padding-top:0">
+  <div class="col-wide">
+    <div class="sec-label"><span class="mono">04 — Record</span><span class="mono">2021 → present</span></div>
+    <div class="ledger">
+      <div class="lrow"><span class="mono">2021</span><span class="e">Founded; $8M raised in the first month</span><span class="mono s">Complete</span></div>
+      <div class="lrow"><span class="mono">2022</span><span class="e">First crowdraised astronaut selected by onchain vote and flown</span><span class="mono s">Complete</span></div>
+      <div class="lrow"><span class="mono">2023</span><span class="e">Community project funding opens; zero-gravity flight completed</span><span class="mono s">Complete</span></div>
+      <div class="lrow"><span class="mono">2024</span><span class="e">Space Acceleration Network launches; second astronaut flown</span><span class="mono s">Complete</span></div>
+      <div class="lrow"><span class="mono">2025</span><span class="e">Constitution delivered to the lunar surface; mission launchpad opens</span><span class="mono s">Complete</span></div>
+      <div class="lrow future"><span class="mono">Ahead</span><span class="e">Settlement design · Off-world manufacturing · Base construction</span><span class="mono s">Open</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="voices" style="padding-top:0">
+  <div class="col-wide">
+    <div class="sec-label"><span class="mono">05 — Voices</span><span class="mono">Town halls</span></div>
+    <div class="names">
+      <div><span class="n">Charlie Duke</span><span class="mono">Apollo 16 Moonwalker</span></div>
+      <div><span class="n">Doug Hurley</span><span class="mono">NASA &amp; SpaceX Astronaut</span></div>
+      <div><span class="n">Nicole Stott</span><span class="mono">NASA Astronaut</span></div>
+      <div><span class="n">Robert Zubrin</span><span class="mono">Founder, The Mars Society</span></div>
+      <div><span class="n">Steve Altemus</span><span class="mono">CEO, Intuitive Machines</span></div>
+      <div><span class="n">Dr. Phil Metzger</span><span class="mono">Planetary Physicist</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="close">
+  <div class="col-wide">
+    <h2>Bring a proposal.</h2>
+    <div class="acts">
+      <a class="lnk" href="#">Join MoonDAO</a>
+      <a class="lnk" href="#">Read the constitution</a>
+      <a class="lnk" href="#">Browse proposals</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="col-wide">
+    <div class="foot">
+      <div><h4 class="mono">Explore</h4><a href="#">Missions</a><a href="#">Launchpad</a><a href="#">Network</a><a href="#">Map</a></div>
+      <div><h4 class="mono">Govern</h4><a href="#">Proposals</a><a href="#">Treasury</a><a href="#">Constitution</a><a href="#">$MOONEY</a></div>
+      <div><h4 class="mono">Organization</h4><a href="#">About</a><a href="#">Roadmap</a><a href="#">Press</a><a href="#">Jobs</a></div>
+      <div><h4 class="mono">Community</h4><a href="#">Discord</a><a href="#">X</a><a href="#">Town halls</a><a href="#">Newsletter</a></div>
+    </div>
+    <div class="sig">
+      <span class="mono">© 2026 MoonDAO</span>
+      <span class="mono">Set in Geist</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

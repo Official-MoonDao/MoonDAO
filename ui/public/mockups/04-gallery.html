@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 04 · Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #14140f;
+    --ink-2: #5d5d55;
+    --ink-3: #9a9a92;
+    --hair: #e6e5e0;
+    --paper: #fcfcfa;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    letter-spacing: 0.005em;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .label {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 500;
+  }
+  .serif {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 300;
+    letter-spacing: 0.005em;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 48px; }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 28px 48px;
+    mix-blend-mode: normal;
+  }
+  .nav .wm { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; font-weight: 500; }
+  .nav .menu { display: flex; gap: 28px; }
+  .nav .menu a { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-2); }
+  .nav .menu a:hover { color: var(--ink); }
+
+  /* ---------- Opening ---------- */
+  .opening {
+    min-height: 92vh;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 160px 48px 90px;
+  }
+  .opening .over { margin-bottom: 46px; }
+  .opening h1 {
+    margin: 0;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 300;
+    font-size: clamp(38px, 5.4vw, 82px);
+    line-height: 1.1;
+    letter-spacing: -0.005em;
+    max-width: 15ch;
+  }
+  .opening h1 em { font-style: italic; }
+  .opening .beneath {
+    margin-top: 42px; max-width: 400px; color: var(--ink-2);
+    font-size: 13.5px; line-height: 1.85;
+  }
+  .scroll-hint { margin-top: 84px; }
+
+  /* ---------- Plates ---------- */
+  .plate { padding: 0 48px 0; }
+  .plate .frame { max-width: 1180px; margin: 0 auto; }
+  .plate img { width: 100%; display: block; }
+  .wall-label {
+    max-width: 1180px; margin: 20px auto 0;
+    display: grid; grid-template-columns: 200px 1fr 200px; gap: 40px;
+    padding-top: 14px; border-top: 1px solid var(--hair);
+  }
+  .wall-label .t { color: var(--ink); font-size: 13px; }
+  .wall-label .r { text-align: right; }
+
+  /* ---------- Space ---------- */
+  .air-s { height: 110px; }
+  .air-m { height: 190px; }
+  .air-l { height: 280px; }
+
+  /* ---------- Index rows ---------- */
+  .index-head { display: grid; grid-template-columns: 200px 1fr; gap: 40px; margin-bottom: 54px; }
+  .index-head h2 {
+    margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 300;
+    font-size: clamp(26px, 3.2vw, 44px); line-height: 1.16; max-width: 20ch;
+  }
+  .idx { border-top: 1px solid var(--hair); }
+  .idx-row {
+    display: grid; grid-template-columns: 200px 1fr 260px; gap: 40px;
+    padding: 30px 0; border-bottom: 1px solid var(--hair);
+    align-items: baseline;
+    transition: opacity 0.3s ease;
+  }
+  .idx:hover .idx-row { opacity: 0.42; }
+  .idx .idx-row:hover { opacity: 1; }
+  .idx-row h3 {
+    margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 300;
+    font-size: 27px; line-height: 1.2; letter-spacing: 0;
+  }
+  .idx-row p { margin: 0; color: var(--ink-2); font-size: 13.5px; line-height: 1.8; }
+
+  /* ---------- Numbers ---------- */
+  .numbers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; }
+  .numbers .n {
+    font-family: 'Cormorant Garamond', serif; font-weight: 300;
+    font-size: clamp(38px, 4.6vw, 62px); line-height: 1;
+  }
+  .numbers .l { margin-top: 16px; }
+
+  /* ---------- Diptych ---------- */
+  .diptych { display: grid; grid-template-columns: 1.25fr 1fr; gap: 48px; align-items: end; }
+  .diptych img { width: 100%; display: block; }
+  .diptych .note { max-width: 30ch; color: var(--ink-2); font-size: 13.5px; line-height: 1.85; }
+
+  /* ---------- Quiet list ---------- */
+  .quiet { display: grid; grid-template-columns: 200px 1fr; gap: 40px; }
+  .quiet-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 60px; }
+  .quiet-list > div { padding: 15px 0; border-bottom: 1px solid var(--hair); display: flex; justify-content: space-between; align-items: baseline; }
+  .quiet-list .n { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 300; }
+
+  /* ---------- Closing ---------- */
+  .closing { text-align: center; padding: 0 48px; }
+  .closing h2 {
+    margin: 0 auto; font-family: 'Cormorant Garamond', serif; font-weight: 300;
+    font-size: clamp(30px, 4.4vw, 62px); line-height: 1.12; max-width: 17ch;
+  }
+  .underline-link {
+    display: inline-block; margin-top: 44px;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    padding-bottom: 6px; border-bottom: 1px solid var(--ink);
+  }
+  .underline-link:hover { opacity: 0.55; }
+
+  footer { margin-top: 160px; border-top: 1px solid var(--hair); padding: 34px 48px 44px; }
+  .foot { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 30px; }
+  .foot a { display: block; color: var(--ink-2); font-size: 13px; margin-bottom: 6px; }
+  .foot a:hover { color: var(--ink); }
+  .foot h4 { margin: 0 0 14px; }
+  .sig { max-width: 1180px; margin: 56px auto 0; display: flex; justify-content: space-between; }
+
+  @media (max-width: 900px) {
+    .wall-label, .index-head, .idx-row, .quiet { grid-template-columns: 1fr; gap: 12px; }
+    .wall-label .r { text-align: left; }
+    .numbers, .quiet-list, .foot { grid-template-columns: repeat(2, 1fr); }
+    .diptych { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a class="wm" href="#">MoonDAO</a>
+  <div class="menu">
+    <a href="#">Missions</a><a href="#">Network</a><a href="#">Governance</a>
+    <a href="#">Launchpad</a><a href="#">About</a><a href="#">Join</a>
+  </div>
+</div>
+
+<section class="opening">
+  <div class="label over">Est. 2021 · An open space program</div>
+  <h1>A permanent settlement, <em>funded in public.</em></h1>
+  <p class="beneath">
+    MoonDAO is a member-governed space program. Everything it has done —
+    every flight, every grant, every decision — is recorded where anyone
+    can check it.
+  </p>
+  <div class="label scroll-hint">Scroll</div>
+</section>
+
+<div class="plate">
+  <div class="frame"><img src="/assets/mockups/moon-plate.webp" alt="The Moon" /></div>
+  <div class="wall-label">
+    <span class="label">Plate I</span>
+    <span class="t">The Moon, photographed at full phase. Mean distance 384,400 kilometres.</span>
+    <span class="label r">Destination</span>
+  </div>
+</div>
+
+<div class="air-l"></div>
+
+<div class="wrap">
+  <div class="numbers">
+    <div><div class="n">$8M</div><div class="label l">Raised onchain</div></div>
+    <div><div class="n">12,000</div><div class="label l">Members</div></div>
+    <div><div class="n">80</div><div class="label l">Projects funded</div></div>
+    <div><div class="n">Two</div><div class="label l">Astronauts flown</div></div>
+  </div>
+</div>
+
+<div class="air-l"></div>
+
+<div class="wrap">
+  <div class="index-head">
+    <span class="label">Index of works</span>
+    <h2>Six programs, each one begun by a member and settled by a vote.</h2>
+  </div>
+  <div class="idx">
+    <div class="idx-row">
+      <span class="label">I · Spaceflight</span>
+      <h3>Human spaceflight</h3>
+      <p>The first crowdraised astronaut, chosen by onchain vote. A second everyday person, chosen by open sweepstakes. Both flown.</p>
+    </div>
+    <div class="idx-row">
+      <span class="label">II · Research</span>
+      <h3>Space R&amp;D funding</h3>
+      <p>More than $600,000 allocated to seventy-five projects through open community governance.</p>
+    </div>
+    <div class="idx-row">
+      <span class="label">III · Training</span>
+      <h3>Astronaut training</h3>
+      <p>Zero-gravity flights and analog missions for people who intend to go.</p>
+    </div>
+    <div class="idx-row">
+      <span class="label">IV · Network</span>
+      <h3>Space Acceleration Network</h3>
+      <p>Funding, tools, and operational support for individuals and organizations building in space.</p>
+    </div>
+    <div class="idx-row">
+      <span class="label">V · Charter</span>
+      <h3>A constitution on the Moon</h3>
+      <p>Written by members, delivered to the lunar surface in early 2025.</p>
+    </div>
+    <div class="idx-row">
+      <span class="label">VI · Treasury</span>
+      <h3>An open treasury</h3>
+      <p>Every proposal, vote, and payment published and independently verifiable.</p>
+    </div>
+  </div>
+</div>
+
+<div class="air-l"></div>
+
+<div class="plate">
+  <div class="frame"><img src="/assets/mockups/artifact-disc.webp" alt="Machined disc" /></div>
+  <div class="wall-label">
+    <span class="label">Plate II</span>
+    <span class="t">Machined titanium disc. Member-authored charter, delivered to the lunar surface, 2025.</span>
+    <span class="label r">Artifact</span>
+  </div>
+</div>
+
+<div class="air-l"></div>
+
+<div class="wrap">
+  <div class="diptych">
+    <div>
+      <img src="/assets/mockups/habitat-render.webp" alt="Settlement study" />
+      <div class="wall-label" style="grid-template-columns:200px 1fr;padding-top:14px">
+        <span class="label">Plate III</span>
+        <span class="t">Settlement study, member-commissioned.</span>
+      </div>
+    </div>
+    <div>
+      <span class="label">On method</span>
+      <p class="note" style="margin-top:18px">
+        Nothing here was decided behind a door. A member writes a proposal, the
+        membership argues about it in the open, and the result is settled on a
+        ledger nobody can quietly revise.
+      </p>
+      <p class="note" style="margin-top:18px">
+        Lock $MOONEY to become a voter. Weight comes from how long you commit,
+        not how loudly you speak.
+      </p>
+      <a class="underline-link" href="#" style="margin-top:30px">How governance works</a>
+    </div>
+  </div>
+</div>
+
+<div class="air-l"></div>
+
+<div class="wrap">
+  <div class="quiet">
+    <span class="label">In conversation</span>
+    <div class="quiet-list">
+      <div><span class="n">Charlie Duke</span><span class="label">Apollo 16</span></div>
+      <div><span class="n">Doug Hurley</span><span class="label">NASA · SpaceX</span></div>
+      <div><span class="n">Nicole Stott</span><span class="label">NASA</span></div>
+      <div><span class="n">Robert Zubrin</span><span class="label">Mars Society</span></div>
+      <div><span class="n">Steve Altemus</span><span class="label">Intuitive Machines</span></div>
+      <div><span class="n">Phil Metzger</span><span class="label">Planetary physics</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="air-l"></div>
+
+<div class="closing">
+  <h2>You do not need permission to work on this.</h2>
+  <a class="underline-link" href="#">Become a member</a>
+</div>
+
+<footer>
+  <div class="foot">
+    <div><h4 class="label">Explore</h4><a href="#">Missions</a><a href="#">Launchpad</a><a href="#">Network</a></div>
+    <div><h4 class="label">Govern</h4><a href="#">Proposals</a><a href="#">Treasury</a><a href="#">Constitution</a></div>
+    <div><h4 class="label">Organization</h4><a href="#">About</a><a href="#">Roadmap</a><a href="#">Press</a></div>
+    <div><h4 class="label">Community</h4><a href="#">Discord</a><a href="#">X</a><a href="#">Town halls</a></div>
+    <div><h4 class="label">Legal</h4><a href="#">Privacy</a><a href="#">Terms</a></div>
+  </div>
+  <div class="sig">
+    <span class="label">© 2026 MoonDAO</span>
+    <span class="label">Set in Cormorant Garamond</span>
+  </div>
+</footer>
+
+</body>
+</html>
