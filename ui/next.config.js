@@ -89,7 +89,12 @@ module.exports = withBundleAnalyzer(
         ],
         formats: ['image/avif', 'image/webp'],
       },
-      output: 'standalone',
+      // No `output: 'standalone'`. Vercel manages its own build output, and
+      // standalone mode broke the deploy as soon as the app gained its first
+      // getStaticPaths route (pages/docs/[...slug].tsx) — see
+      // docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md. Nothing consumes
+      // .next/standalone: CI serves the app with `next start`, which does not
+      // need it.
       poweredByHeader: false,
       async headers() {
         return [
