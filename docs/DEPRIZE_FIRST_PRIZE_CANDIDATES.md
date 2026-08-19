@@ -6,6 +6,7 @@
 **Launch plans:** [`DEPRIZE_GTM_SURVIVE_THE_NIGHT.md`](./DEPRIZE_GTM_SURVIVE_THE_NIGHT.md) (P1), [`DEPRIZE_GTM_SIX_SECONDS_LATE.md`](./DEPRIZE_GTM_SIX_SECONDS_LATE.md) (P9)
 **P1 outreach list:** [`deprize-survive-the-night-outreach.csv`](./deprize-survive-the-night-outreach.csv)
 **P1 risk register:** [`DEPRIZE_SURVIVE_THE_NIGHT_RISKS.md`](./DEPRIZE_SURVIVE_THE_NIGHT_RISKS.md)
+**P1 national-contract performers:** [`DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md`](./DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md) / [`deprize-lunar-night-contract-performers.csv`](./deprize-lunar-night-contract-performers.csv)
 
 ---
 
@@ -69,7 +70,7 @@ Every idea below was checked against this. The headline finding: **the field is 
 
 Two structural gaps stand out:
 
-- **Nobody is running an open prize on surviving the lunar night**, despite it being the single most-cited near-term capability gap. Zeno Power's CEO calls it "the imperative for any serious lunar mission" ([SpaceNews](https://spacenews.com/2026-will-be-the-year-of-space-nuclear-power-and-surviving-the-lunar-night/)); NASA Glenn built [LESTR](https://www.nasa.gov/centers-and-facilities/glenn/lunar-environment-structural-test-rig/) to test down to 40 K and has a [cryogenic hibernation architecture](https://ntrs.nasa.gov/citations/20240004406) in development. All of it is internal R&D or contracts. No prize.
+- **Nobody is running an open prize on surviving the lunar night**, despite it being the single most-cited near-term capability gap. Zeno Power's CEO calls it "the imperative for any serious lunar mission" ([SpaceNews](https://spacenews.com/2026-will-be-the-year-of-space-nuclear-power-and-surviving-the-lunar-night/)); NASA Glenn built [LESTR](https://www.nasa.gov/centers-and-facilities/glenn/lunar-environment-structural-test-rig/) to test down to 40 K and has a [cryogenic hibernation architecture](https://ntrs.nasa.gov/citations/20240004406) in development. All of it is internal R&D or contracts. No prize. The funded performer map — NASA Tipping Point / SBIR / NIAC / CLPS CS-8, DARPA Rads to Watts, USAF STRATFI, Navy DEPTHS, ESA ENDURE, UKSA, METI, SASIC — is in [`DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md`](./DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md). Headline: national money is concentrated on **radioisotopes**; the funded non-nuclear set is small enough to name (Astrobotic NITE, ACT, ThermAvant, Glenn hibernation, Watts alumni, Virginia Tech ECLIPSE).
 - **Nobody is running prizes at the amateur/small-team scale.** The gap between a $150 Hackaday gift card and a €500k ESA cooperative agreement is where a $5,000 DePrize lives alone.
 
 ---

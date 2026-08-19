@@ -5,8 +5,9 @@
 **Shape:** 12-month arc, hardware competition, one climactic 354-hour event
 **Companion plan:** [`DEPRIZE_GTM_SIX_SECONDS_LATE.md`](./DEPRIZE_GTM_SIX_SECONDS_LATE.md)
 **Outreach list:** [`deprize-survive-the-night-outreach.csv`](./deprize-survive-the-night-outreach.csv) — 60 named groups, ranked
+**National-contract performers:** [`DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md`](./DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md) — who NASA/DARPA/ESA/etc. are already paying
 **Risk register:** [`DEPRIZE_SURVIVE_THE_NIGHT_RISKS.md`](./DEPRIZE_SURVIVE_THE_NIGHT_RISKS.md)
-**Last updated:** 2026-08-18
+**Last updated:** 2026-08-19
 
 ---
 
