@@ -66,14 +66,20 @@ contract MyScript is Script, Config {
             tableAddr = address(fresh);
         }
 
-        // AUDIT[plan 3.1]: optional ownership handoff. Default leaves the
-        // deployer as owner so they can still call createMission (onlyOwner OR
-        // team manager). Set DEPRIZE_TRANSFER_OWNERSHIP=true AFTER the mission
-        // exists, or create the mission from the Safe once it owns the creator.
+        // AUDIT[plan 3.1]: optional creator handoff. Default leaves the
+        // deployer as MissionCreator owner so they can still call createMission
+        // (onlyOwner OR team manager). Set DEPRIZE_TRANSFER_OWNERSHIP=true
+        // AFTER the mission exists, or create the mission from the Safe once
+        // it owns the creator. Fresh-table ownership is not required for
+        // createMission (missionCreator slot is already set) and is handed to
+        // DEPRIZE_OWNER so the listing table is not left on the deployer EOA.
         address nextOwner = vm.envOr("DEPRIZE_OWNER", address(0));
         if (vm.envOr("DEPRIZE_TRANSFER_OWNERSHIP", false)) {
             require(nextOwner != address(0), "DEPRIZE_OWNER required to transfer");
             missionCreator.transferOwnership(nextOwner);
+        }
+        if (!useProductionTable && nextOwner != address(0)) {
+            MissionTable(tableAddr).transferOwnership(nextOwner);
         }
 
         vm.stopBroadcast();
@@ -83,6 +89,9 @@ contract MyScript is Script, Config {
             console.log("  ownership transferred to:", nextOwner);
         } else {
             console.log("  owner is deployer; transfer later via DEPRIZE_TRANSFER_OWNERSHIP");
+        }
+        if (!useProductionTable && nextOwner != address(0)) {
+            console.log("  fresh table ownership transferred to:", nextOwner);
         }
         console.log("AUDIT[plan 3.1]: this creator is NOT yet the app-wide Arbitrum creator.");
         console.log("  Production MissionCreator (listings):", MISSION_CREATOR_ADDRESSES[block.chainid]);
