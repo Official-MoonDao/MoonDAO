@@ -1110,14 +1110,14 @@ export default function CreateMission({
                         <p>
                           I ACKNOWLEDGE THAT THIS TOKEN IS NOT A SECURITY, CARRIES NO PROFIT
                           EXPECTATION, AND I ACCEPT ALL{' '}
-                          <Link
+                          <a
                             className="text-blue-500 hover:underline"
                             href="/docs/Launchpad/Launchpad-Disclaimer"
                             target="_blank"
                             rel="noreferrer"
                           >
                             RISKS
-                          </Link>{' '}
+                          </a>{' '}
                           ASSOCIATED WITH PARTICIPATION IN THE MOONDAO LAUNCHPAD.
                         </p>
                       }
