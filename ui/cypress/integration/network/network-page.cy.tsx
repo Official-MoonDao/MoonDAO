@@ -186,7 +186,11 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      cy.contains('Teams').click()
+      // Same detached-element race as the Map tab: `cy.contains('Teams')`
+      // can resolve to a button that SWR then replaces. Re-query after
+      // `should('exist')` and force the click so we act on the attached node.
+      cy.contains('button', 'Teams', { timeout: 10000 }).should('exist')
+      cy.contains('button', 'Teams').click({ force: true })
       cy.get('input[name="search"]').should('have.attr', 'placeholder', 'Search teams')
     })
   })

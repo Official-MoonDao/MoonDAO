@@ -97,7 +97,7 @@ contract MyScript is Script, Config {
         console.log("  Production MissionCreator (listings):", MISSION_CREATOR_ADDRESSES[block.chainid]);
         console.log("MissionTable address:", tableAddr);
         if (useProductionTable) {
-            console.log("  production table — MissionTable.owner MUST call");
+            console.log("  production table - MissionTable.owner MUST call");
             console.log("  setMissionCreator(this) BEFORE CreateDePrizeMission.");
             console.log("  Wiring this into MissionTable.setMissionCreator makes ALL future");
             console.log("  missions registry-aware.");
