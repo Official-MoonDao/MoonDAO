@@ -45,6 +45,14 @@ export function getCountryFromHeaders(req: NextApiRequest): string | null {
 // (Iceland, Liechtenstein, Norway), and the UK (which retains UK-GDPR
 // post-Brexit). These regions cannot permanently store personal data on chain,
 // so we let them browse the site but block on-chain profile creation.
+//
+// This list is deliberately scoped to actual EU/EEA/UK member states, not a
+// "Europe" continent grouping. Russia (RU) is intentionally NOT included here:
+// despite MaxMind-style geo databases sometimes bucketing Russia under a
+// broad "Europe" continent code, Russia is not in the EU/EEA and has no GDPR
+// obligation on our end. If Russian visitors are still seeing a geoblock, the
+// cause is not this in-repo list -- check the Vercel project's Firewall/WAF
+// rules in the dashboard for an overly broad continent-based rule.
 export const EU_EEA_COUNTRIES: ReadonlySet<string> = new Set([
   'AT', // Austria
   'BE', // Belgium
