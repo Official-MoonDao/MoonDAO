@@ -534,7 +534,7 @@ export default function SignedInDashboard({
       <div className="max-w-7xl mx-auto px-4 py-4">
 
         {/* ── Mobile-only hero bar ─────────────────────────── */}
-        <div className="lg:hidden flex items-center gap-3 mb-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
+        <div className="lg:hidden flex flex-wrap items-center gap-3 mb-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
           {/* Avatar */}
           <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
             {citizen?.metadata?.image ? (
@@ -552,7 +552,7 @@ export default function SignedInDashboard({
             )}
           </div>
           {/* Name + greeting */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-[140px]">
             <p className="text-white font-semibold truncate">
               {citizen?.metadata?.name || 'Welcome back'}
             </p>
@@ -569,7 +569,7 @@ export default function SignedInDashboard({
             )}
           </div>
           {/* Edit profile link */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 ml-[60px] sm:ml-0">
             <Link
               href={
                 citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
@@ -716,7 +716,7 @@ export default function SignedInDashboard({
           {/* MIDDLE — Recent Activity (6 cols) */}
           <div className="lg:col-span-6 order-2 lg:order-2 flex flex-col gap-4">
             {/* Contribution CTA */}
-            <div className="flex items-center justify-between gap-4 bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-3.5">
               <div>
                 <p className="text-white text-sm font-semibold">What did you get done this week?</p>
                 <p className="text-white/40 text-xs mt-0.5">Earn ETH & vMOONEY rewards each quarter.</p>
@@ -725,7 +725,7 @@ export default function SignedInDashboard({
                 href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all whitespace-nowrap flex-shrink-0"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all whitespace-nowrap flex-shrink-0 sm:self-auto"
               >
                 <TrophyIcon className="w-4 h-4" />
                 Submit Contribution

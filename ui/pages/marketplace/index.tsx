@@ -134,7 +134,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
           <div className="w-full flex flex-row min-[800px]:flex-row gap-2 sm:gap-4 items-center">
             {/* Search Bar */}
-            <div className="w-fit max-w-[260px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-1">
+            <div className="w-full min-w-0 max-w-[260px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-1">
               <Search
                 className="w-full flex-grow"
                 input={input}
@@ -143,7 +143,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
               />
             </div>
             {/* Team filter dropdown */}
-            <div className="relative w-[10rem] sm:w-[12rem]">
+            <div className="relative w-[10rem] sm:w-[12rem] flex-shrink-0">
               <select
                 value={selectedTeam}
                 onChange={(e) => setSelectedTeam(e.target.value)}
