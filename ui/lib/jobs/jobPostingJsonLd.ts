@@ -107,3 +107,21 @@ export function buildJobPostingJsonLd({
 
   return Object.fromEntries(Object.entries(jsonLd).filter(([, value]) => value !== undefined))
 }
+
+/**
+ * Serialize JSON-LD for inlining in a `<script>` tag via `dangerouslySetInnerHTML`.
+ *
+ * `JSON.stringify` leaves `<`, `>` and `&` untouched, so author-controlled fields
+ * (job title, summary, body) that contain `</script>` would close the tag and let
+ * arbitrary markup execute. Escaping those characters — plus the U+2028/U+2029 line
+ * separators that break inline scripts — keeps the payload inert while remaining
+ * valid JSON that parses back to the same object.
+ */
+export function serializeJsonLd(jsonLd: Record<string, any>): string {
+  return JSON.stringify(jsonLd)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
+}
