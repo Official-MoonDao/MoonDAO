@@ -19,7 +19,8 @@ import "base/Config.sol";
 /// AUDIT[plan Phase 5 verify]: mirrors DEPRIZE_QA.md section B.
 ///
 /// Env: DEPRIZE_REGISTRY DEPRIZE_MINT DEPRIZE_FEE_ROUTER DEPRIZE_ID
-///      DEPRIZE_MARKET DEPRIZE_PAYHOOK (optional) DEPRIZE_JB_PROJECT (optional)
+///      DEPRIZE_MARKET DEPRIZE_PAYHOOK (required — cashOut latch)
+///      DEPRIZE_JB_PROJECT (optional; falls back to registry jbProjectId)
 contract DePrizeVerify is Script, Config {
     function run() external {
         DePrizeRegistry registry = DePrizeRegistry(vm.envAddress("DEPRIZE_REGISTRY"));
@@ -56,13 +57,10 @@ contract DePrizeVerify is Script, Config {
         _ok("market pmSystem == configured CTF", ILMSRWithTWAP(market).pmSystem() == ctf);
         _ok("mint/feeRouter share registry", address(mint.registry()) == address(registry) && address(feeRouter.registry()) == address(registry));
 
-        address payHook = vm.envOr("DEPRIZE_PAYHOOK", address(0));
-        if (payHook != address(0)) {
-            _ok("payHook.deprizeRegistry == registry", address(LaunchPadPayHook(payHook).deprizeRegistry()) == address(registry));
-            _ok("payHook.stage == 1 (cashOut locked)", LaunchPadPayHook(payHook).stage(JB_V5_MULTI_TERMINAL, jb) == 1);
-        } else {
-            console.log("WARN: DEPRIZE_PAYHOOK unset - cashOut latch not checked");
-        }
+        address payHook = vm.envAddress("DEPRIZE_PAYHOOK");
+        require(payHook != address(0), "DEPRIZE_PAYHOOK required (cashOut latch)");
+        _ok("payHook.deprizeRegistry == registry", address(LaunchPadPayHook(payHook).deprizeRegistry()) == address(registry));
+        _ok("payHook.stage == 1 (cashOut locked)", LaunchPadPayHook(payHook).stage(JB_V5_MULTI_TERMINAL, jb) == 1);
 
         console.log("DePrizeVerify: all asserted checks passed.");
     }

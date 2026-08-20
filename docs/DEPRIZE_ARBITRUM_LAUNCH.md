@@ -78,8 +78,8 @@ Run from `subscription-contracts/` with `--via-ir --optimizer-runs 200 --broadca
 
 | Order | Contract | Script | Notes |
 |---|---|---|---|
-| 3.1 | **MissionCreator** (new) | `script/MissionCreator.s.sol` | Required for a registry-aware `LaunchPadPayHook`. Decide whether this becomes the canonical Arbitrum creator (repoint `MISSION_CREATOR_ADDRESSES.arbitrum`, so all future missions are registry-aware) or stays DePrize-only (Sepolia's choice — avoids fragmenting launchpad listings, but the DePrize mission won't appear in the main list unless its `MissionTable` is wired). **Flag for review.** |
-| 3.2 | **Create the mission** → yields the **JB project id** and the mission's `LaunchPadPayHook` address | via the new MissionCreator | Record both. |
+| 3.1 | **MissionCreator** (new) | `script/MissionCreator.s.sol` | Required for a registry-aware `LaunchPadPayHook`. **Default / DePrize-only (Sepolia):** deploys a **fresh `MissionTable`** with this creator as operator so 3.2 can insert without touching the live launchpad table. **Canonical:** `DEPRIZE_USE_PRODUCTION_MISSION_TABLE=true`, then the production table owner must call `setMissionCreator(newCreator)` **before 3.2** (`insertIntoTable` is `onlyOperators`). Repoint `MISSION_CREATOR_ADDRESSES.arbitrum` so all future missions are registry-aware. **Flag for review.** |
+| 3.2 | **Create the mission** → yields the **JB project id** and the mission's `LaunchPadPayHook` address | via the new MissionCreator | Record both. Reverts unless this creator is the table owner or `missionCreator` slot — do not skip the 3.1 table step. |
 | 3.3 | **DePrizeRegistry** (impl + `ERC1967Proxy`) | `DePrizeRegistry.s.sol` (from 1.1) | Deploy the **M5 implementation** (with `providerPayoutAddress`) from the start — avoids the Sepolia mid-flight upgrade. |
 | 3.4 | **DePrizeMint** (UUPS proxy) | `DePrizeMint.s.sol` | `DEPRIZE_REGISTRY=0x…` |
 | 3.5 | **DePrizeRedeem** | `DePrizeRedeem.s.sol` | Non-upgradeable. |
@@ -122,7 +122,7 @@ npx truffle migrate -f 8 --to 8 --network arbitrum
 | 5.6 | `feeRouter.setMarket(deprizeId, lmsr)` | Safe | Same validations. |
 | 5.7 | `mint.setFeeRouter(feeRouter)` | Safe | Turns on the per-bet fee sweep. |
 
-**Verify before announcing** (mirrors QA section B): `registry.state == OPEN`, `bettingOpen == true`, `deprizeIdByJBProject(jb) == deprizeId`, `mint.marketOf == feeRouter.marketOf == lmsr`, `mint.feeRouter()` set, `lmsr.owner() == feeRouter`, `lmsr.stage() == 0 (Running)`, `lmsr.fee() == 1e16`, `payHook.deprizeRegistry() == registry`, `payoutDenominator(condition) == 0`.
+**Verify before announcing** (mirrors QA section B): run `DePrizeVerify.s.sol` with `DEPRIZE_PAYHOOK` set — a passing run is the launch gate. Asserts `registry.state == OPEN`, `bettingOpen == true`, `deprizeIdByJBProject(jb) == deprizeId`, `mint.marketOf == feeRouter.marketOf == lmsr`, `mint.feeRouter()` set, `lmsr.owner() == feeRouter`, `lmsr.stage() == 0 (Running)`, `lmsr.fee() == 1e16`, `payHook.deprizeRegistry() == registry`, `payHook.stage() == 1` (cashOut locked), `payoutDenominator(condition) == 0`. The script reverts if `DEPRIZE_PAYHOOK` is unset.
 
 ---
 
@@ -196,11 +196,11 @@ Search the tree for `AUDIT[plan …]` to review each item against this document.
 | 1.4 M4 fork rehearsal | **Partial** | `ArbitrumWethPreflight` (Phase 2 WETH check). Full `DePrizeM4ForkTest` still needs Phase 2 CTF + factory — cannot run yet. |
 | 1.5 Config / UI addresses | **Partial** | Arbitrum WETH filled. CTF / factory / LMSR / DEPRIZE_* left **empty on purpose** (tests assert this). Ledger: [`DEPRIZE_ARBITRUM_ADDRESSES.md`](./DEPRIZE_ARBITRUM_ADDRESSES.md). |
 | Phase 2 deploy CTF+factory | **Operator** | Scripted via `prediction/README.md`. Not broadcast by this PR. |
-| Phase 3.1–3.2 MissionCreator + mission | **Scripted** | `MissionCreator.s.sol` (ownership + 3.1 warning) + `CreateDePrizeMission.s.sol`. |
+| Phase 3.1–3.2 MissionCreator + mission | **Scripted** | `MissionCreator.s.sol` (fresh MissionTable by default; production table requires `setMissionCreator` before 3.2) + `CreateDePrizeMission.s.sol` (operator preflight). |
 | Phase 3.3–3.6 0.8 stack | **Scripted** | Existing Mint/Redeem/FeeRouter scripts + new Registry script. |
 | Phase 4 market | **Operator** | migration 08; `overwrite: false` on CTF deploy. |
 | Phase 5 wire | **Scripted** | `DePrizeWire.s.sol` (dry-run default; latch isolated). |
-| Phase 5 verify | **Scripted** | `DePrizeVerify.s.sol` — launch gate. |
+| Phase 5 verify | **Scripted** | `DePrizeVerify.s.sol` — launch gate; `DEPRIZE_PAYHOOK` required (latch + stage 1). |
 | Phase 6.2 chain-index oracle | **Done** | `ORACLE_ADDRESSES` / `OPERATOR_ADDRESSES` in `ui/const/config.ts`. Scalars remain Sepolia play-harness. |
 | Phase 6.3 remove coming-soon | **Intentionally not done** | Gate kept; `AUDIT[plan Phase 6.3]` comments on both pages. |
 | Phase 6.4 publish Terms | **Not this repo** | docs.moondao.com still 404. Draft: `ui/docs/DEPRIZE_TERMS_AND_CONDITIONS.md`. |

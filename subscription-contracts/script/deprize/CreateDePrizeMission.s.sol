@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "std/Script.sol";
 import {MissionCreator} from "../../src/MissionCreator.sol";
+import {MissionTable} from "../../src/tables/MissionTable.sol";
 
 /// @title CreateDePrizeMission
 /// @notice Phase 3.2: create the Juicebox mission whose pay hook will be
@@ -38,6 +39,17 @@ contract CreateDePrizeMission is Script {
         console.log("Creating mission via MissionCreator:", creatorAddr);
         console.log("  MissionCreator.owner():", creator.owner());
         console.log("  MISSION_TO (payhook owner):", to);
+
+        // insertIntoTable is onlyOperators (table owner or missionCreator slot).
+        // Fail before launchProjectFor so a missing setMissionCreator / fresh
+        // table cannot create an orphan Juicebox project.
+        MissionTable table = creator.missionTable();
+        require(address(table) != address(0), "MissionCreator.missionTable is zero");
+        require(
+            table.missionCreator() == creatorAddr || table.owner() == creatorAddr,
+            "MissionCreator is not MissionTable operator; deploy a fresh table or call setMissionCreator first"
+        );
+        console.log("  MissionTable:", address(table));
 
         vm.startBroadcast(pk);
         uint256 missionId = creator.createMission(
