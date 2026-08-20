@@ -137,16 +137,33 @@ describe('citizenOnboardingImage', () => {
     )
   })
 
-  it('does nothing for stale jobs or when AI portrait already ready', () => {
+  // The exact reported bug: comfy.icu jobs were completing successfully, but
+  // citizens who took a while to return (e.g. funding their wallet via
+  // onramp) had their local job timer exceed the staleness window, so a
+  // finished portrait was silently discarded and the mint fell back to the
+  // raw uploaded photo. A 'polling' job's jobId stays valid on comfy.icu far
+  // longer than the local staleness window, so staleness alone must not
+  // block resuming it.
+  it('resumes a stale polling job instead of discarding a finished portrait', () => {
+    const action = decideImageResumeAction({
+      job: { status: 'polling', jobId: 'x' },
+      jobStale: true,
+      hasAiPortraitReady: false,
+      hasSourceImage: true,
+    })
+    expectEqual(action, 'resume-polling', 'stale polling job still resumes')
+  })
+
+  it('does nothing for a stale uploading job or when AI portrait already ready', () => {
     expectEqual(
       decideImageResumeAction({
-        job: { status: 'polling', jobId: 'x' },
+        job: { status: 'uploading' },
         jobStale: true,
         hasAiPortraitReady: false,
         hasSourceImage: true,
       }),
       'none',
-      'stale job ignored',
+      'stale uploading job ignored (no jobId to recover)',
     )
     expectEqual(
       decideImageResumeAction({
