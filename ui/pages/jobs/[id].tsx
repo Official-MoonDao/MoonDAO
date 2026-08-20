@@ -18,7 +18,7 @@ import {
   parseJobMetadata,
 } from '@/lib/jobs/jobMetadata'
 import { fetchJobPostingDoc } from '@/lib/jobs/jobPostingDoc'
-import { buildJobPostingJsonLd } from '@/lib/jobs/jobPostingJsonLd'
+import { buildJobPostingJsonLd, serializeJsonLd } from '@/lib/jobs/jobPostingJsonLd'
 import { fetchJobById, fetchRelatedJobs } from '@/lib/jobs/jobsTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -142,7 +142,7 @@ export default function JobDetail({
           <script
             type="application/ld+json"
             key="job-posting-jsonld"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
           />
         )}
       </Head>

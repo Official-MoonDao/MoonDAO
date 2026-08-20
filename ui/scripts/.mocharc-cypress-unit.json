@@ -11,6 +11,7 @@
     "scripts/gift-purchase-validation.test.ts",
     "scripts/tableland-clean-data.test.ts",
     "cypress/integration/unit/job-metadata.cy.ts",
+    "cypress/integration/unit/job-posting-jsonld.cy.ts",
     "cypress/integration/unit/voting.cy.tsx",
     "cypress/integration/unit/vmooney-snapshots.cy.tsx",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
