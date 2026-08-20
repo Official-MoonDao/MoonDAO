@@ -2,7 +2,7 @@
 
 **Status:** Draft for discussion
 **Prize:** P1 in [`DEPRIZE_FIRST_PRIZE_CANDIDATES.md`](./DEPRIZE_FIRST_PRIZE_CANDIDATES.md)
-**Related:** [`DEPRIZE_GTM_SURVIVE_THE_NIGHT.md`](./DEPRIZE_GTM_SURVIVE_THE_NIGHT.md), [`deprize-survive-the-night-outreach.csv`](./deprize-survive-the-night-outreach.csv), [`DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md`](./DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md)
+**Related:** [`DEPRIZE_SURVIVE_THE_NIGHT_SPEC.md`](./DEPRIZE_SURVIVE_THE_NIGHT_SPEC.md), [`DEPRIZE_GTM_SURVIVE_THE_NIGHT.md`](./DEPRIZE_GTM_SURVIVE_THE_NIGHT.md), [`deprize-survive-the-night-outreach.csv`](./deprize-survive-the-night-outreach.csv), [`DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md`](./DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md)
 **Last updated:** 2026-08-19
 
 This is the full list of things that can kill, embarrass, or quietly hollow out the prize, and the mitigation for each. The GTM's kill-criteria table is the subset that stops the campaign. Everything else is how the campaign survives contact with a 354-hour chamber run and a live market.

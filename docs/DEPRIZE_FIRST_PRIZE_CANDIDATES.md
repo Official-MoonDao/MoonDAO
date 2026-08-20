@@ -7,6 +7,7 @@
 **P1 outreach list:** [`deprize-survive-the-night-outreach.csv`](./deprize-survive-the-night-outreach.csv)
 **P1 risk register:** [`DEPRIZE_SURVIVE_THE_NIGHT_RISKS.md`](./DEPRIZE_SURVIVE_THE_NIGHT_RISKS.md)
 **P1 national-contract performers:** [`DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md`](./DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md) / [`deprize-lunar-night-contract-performers.csv`](./deprize-lunar-night-contract-performers.csv)
+**P1 technical spec (rules of record):** [`DEPRIZE_SURVIVE_THE_NIGHT_SPEC.md`](./DEPRIZE_SURVIVE_THE_NIGHT_SPEC.md)
 
 ---
 
