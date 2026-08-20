@@ -16,10 +16,10 @@
 
 ## **Fund Your Account**
 
-   1. You can fund your wallet directly through the “Fund Wallet” feature using Coinbase onramp or MoonPay (not affiliated with MoonDAO). Debit cards are recommended rather than credit cards.\
+   1. You can fund your wallet directly through the **Fund** feature in the **top-right** wallet menu using Coinbase onramp or MoonPay (not affiliated with MoonDAO). Debit cards are recommended rather than credit cards.\
       ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXd74u0d7eJkomd0BqsULgdZai-5PKZ7KBHSR5qOWSN2NleVLjXOhz1SviU1Jy3Rq9G_1gOb7YyQOi7oH02ti3pbEEcSbyVNxCDgu6DmCZAKhJ6yDhgWs4OBUKUpU3s5CfZ8cIl8Og?key=SvZCq2k1UFaTYNW83ubioQ)
 
-   2. Purchase Ethereum (ETH). You will want at least 0.012 ETH (\~$45 USD) to cover the annual membership fee, plus any transaction fees.
+   2. Purchase Ethereum (ETH) on **Arbitrum**. Citizenship is **0.0111 ETH** per year, plus gas. Confirm the live total on [Join](https://moondao.com/join) or [/citizen](https://moondao.com/citizen) before you pay.
 
 
 ### What if you can’t fund your wallet at this step?
@@ -59,7 +59,7 @@ If MoonPay or Coinbase onramp aren’t working for you, you can create an accoun
 
    5. At checkout, review your AI-generated profile picture, basic profile info and on-chain data, and review the terms and conditions.
 
-   6. Click “Check Out” to proceed to payment and sign the approval or transactions in your wallet.
+   6. Click **“Become a Citizen”** to proceed to payment and sign the approval or transactions in your wallet.
 
    7. You will be redirected to your newly created profile page. Please click the pencil icon (top right) to complete your profile info with a brief bio, social links, etc. You must sign the transaction in your wallet to save your changes.
 

@@ -19,7 +19,7 @@ Space Acceleration Network
 ## Citizen FAQs
 
 **What benefits do Citizens receive?**
-Citizens can get [paid for their contributions](https://moondao.com/contribute) towards enabling a long-term human presence on the Moon (or anything else the community feels is valuable), [get hired](https://moondao.com/jobs) directly by teams in the network, [submit proposals](https://moondao.com/submit) to receive funding for their projects, and show up in our [network directory](https://moondao.com/citizens).
+Citizens can get [paid for their contributions](https://moondao.com/contributions) towards enabling a long-term human presence on the Moon (or anything else the community feels is valuable), [get hired](https://moondao.com/jobs) directly by teams in the network, [submit proposals](https://moondao.com/propose) to receive funding for their projects, and show up in our [network directory](https://moondao.com/network?tab=citizens).
 
 **How do I become a Citizen?**
 Click [here](https://moondao.com/citizen) and follow the steps. See: [How to Become a Citizen](/docs/Network/How-to-Become-a-Citizen)
@@ -28,16 +28,16 @@ Click [here](https://moondao.com/citizen) and follow the steps. See: [How to Bec
 Yes. If you don’t already have one, we will make one for you if you click “Sign In” and create an account.
 
 **How much does it cost to be a Citizen?**
-The current price is available [here](https://moondao.com/join). After becoming a Citizen, you can extend your membership for as many years as you’d like for the same price. Prices may change over time, but you’ll be grandfathered in at the current price if you purchase in advance.
+Citizenship is **0.0111 ETH** per year on Arbitrum, plus gas. Confirm the live price on [Join](https://moondao.com/join) before you pay. After becoming a Citizen, you can renew for additional years. Prices may change over time, but you’ll be grandfathered in at the current price if you purchase in advance.
 
 **How do I extend my membership?**
-On your Citizen profile click “Extend Plan” and enter the number of years you’d like to extend your membership.
+Sign in with the wallet that owns your Citizen NFT and open your [citizen profile](https://moondao.com/network?tab=citizens). If the plan has expired, the profile prompts the owner to renew. Confirm the live renewal price on [Join](https://moondao.com/join) or [/citizen](https://moondao.com/citizen).
 
 **Do I need to be a Citizen to participate in MoonDAO?**
 Anyone can participate in our community, even if they are not Citizens. They can [join Discord](https://discord.gg/moondao), acquire our governance token, and vote on proposals without being a Citizen. Although it’s not required, it’s highly encouraged to become a Citizen to access the full opportunities MoonDAO can offer.
 
 **How do I fund my wallet?**
-Click on the top left purple button, in the dropdown select “fund” and follow the instructions. If you need support with this step you can create a ticket in our Discord [here](https://discord.com/channels/914720248140279868/1212113005836247050) or email info@moondao.com.
+On desktop, click the wallet button in the **top right**, then select **Fund** and follow the Coinbase or MoonPay instructions. If you need support with this step you can create a ticket in our Discord [here](https://discord.com/channels/914720248140279868/1212113005836247050) or email info@moondao.com.
 
 **How is data handled on the website?**
 We are an open source community, and data is stored onchain. This means it is written to the blockchain, please be aware that all data is public, except for email. You can request for your data to be removed from our front-end website, and then your profile will no longer show up on https://moondao.com. To delete your profile, navigate to your profile page and click the “edit” button and then "delete data."
@@ -100,7 +100,7 @@ On your team page click “Add a Job” to create a new posting.
 You can add an email or other form of notification for job postings, or link an existing form or job application website.
 
 **How do I create a proposal for funding?**
-On the team page click “Fund” and it will take you to our proposal system. This allows you to create a project with MoonDAO to fund an initiative. You can read more about projects at [Projects](/docs/Projects/Project-System).
+On the team page, **Fund** opens the [Launchpad](https://moondao.com/launch?status=create) so the team can raise from the community. To request funding from the MoonDAO treasury instead, [submit a project proposal](https://moondao.com/propose). You can read more about projects at [Projects](/docs/Projects/Project-System).
 
 **How is data handled on the website?**
 We are an open source community, and data is stored onchain. This means it is written to the blockchain, please be aware that all data is public. If you’d like, you can request for us to take down your data from the team page by clicking “Edit” and “Delete my Data.”

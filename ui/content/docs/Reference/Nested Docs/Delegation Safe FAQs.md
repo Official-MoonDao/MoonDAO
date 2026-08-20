@@ -1,3 +1,5 @@
+> **Legacy process.** Quarterly vMOONEY is now distributed on **Arbitrum** and claimed on the MoonDAO website. Follow [vMOONEY Quarterly Rewards](/docs/Operations/vMooney-Quarterly-Rewards). The Polygon delegation-safe steps below are kept only as a historical record.
+
 ## What is a delegation safe?
 
 A delegation safe is a multisig wallet that holds the staked voting power that a contributor earns through the quarterly rewards cycle. 

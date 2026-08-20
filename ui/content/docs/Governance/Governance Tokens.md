@@ -72,7 +72,7 @@ Locked $vMOONEY on Base:
 
 ### Geometric Release Schedule
 On a quarterly basis the DAO will get a list of all the active projects that were completed in that quarter.
-There will be a geometric release of the total $MOONEY token over time. With 15 Million $MOONEY released in the first quarter, and then 0.95 that amount released every quarter after that. This is a closed geometric series totaling 300 million $MOONEY for contributors over an infinite period of time. The amount will be released on a quarterly basis (every three full moons) as follows:
+There will be a geometric release of the total $MOONEY token over time. With 15 Million $MOONEY released in the first quarter, and then 0.95 that amount released every quarter after that. This is a closed geometric series totaling 300 million $MOONEY for contributors over an infinite period of time. The amount will be released on a quarterly basis (calendar quarters, as defined in the [Constitution](/docs/Governance/Constitution)) as follows:
 1. 15 Million $MOONEY assigned in the first quarter.
 2. 14.25 Million $MOONEY assigned in the second quarter.
 3. 13.5375 Million $MOONEY assigned in the third quarter.
@@ -90,6 +90,6 @@ Voting power is a measure of impact a member has on collective decisioning, and 
 
 Advanced users can purchase [$MOONEY via Uniswap](https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet) and [lock](https://www.moondao.com/lock) some or all of that for any amount of time between one week and four years. You will receive voting power linearly proportional to the amount of time and amount of MOONEY that you lock.
 
-To prevent sybil attacks, you may only have one wallet registered to vote on MoonDAO proposals. Your voting power is calculated as the square root of the total tokens you have locked.
+To prevent sybil attacks, you may only have one wallet registered to vote on MoonDAO proposals. Your voting power is the square root of your $vMOONEY.
 
 

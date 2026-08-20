@@ -1,4 +1,5 @@
 # Part 3: The Plan
+*Written by Pablo Moncada-Larrotiz, 2023. Historical excerpt of [The Master Plan](/docs/About/The-Master-Plan).*
 This is Part 3 of a three part series by our founder Pablo Moncada-Larrotiz on how MoonDAO will get to the Moon. Read [Part 1: The Good, The Bad, and The Ugly](/docs/About/The-Master-Plan) or [Part 2: The Mission](/docs/Reference/Nested-Docs/The-Master-Plan-Part-2).
 # What
 MoonDAO must create a foundation that can scale to thousands of people working collaboratively on the most pressing technological challenges to accelerate a lunar settlement.

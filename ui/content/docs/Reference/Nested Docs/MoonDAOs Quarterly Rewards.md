@@ -1,3 +1,5 @@
+> **Superseded.** This page is a 2023 write-up. The live formula is [Project System](/docs/Projects/Project-System) v8.0: 5% of liquid non-MOONEY assets **minus that quarter’s project budgets**, paid in USD-pegged stablecoins, plus the geometric $vMOONEY release. Members allocate rewards on [Projects](https://moondao.com/projects).
+
 MoonDAO runs quarterly retroactive rewards every three months at the end of each quarter (Q1 is Jan to Mar, Q2 Apr to Jun, etc). As MoonDAO members and citizens of the Space Acceleration Network, we have the responsibility to review all the projects that were completed over the previous quarter and allocate retroactive rewards to the teams. This process aims to achieve a fair and meritocratic distribution of rewards.
 
 ## How are the total amount of rewards determined?

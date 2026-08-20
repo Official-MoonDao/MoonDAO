@@ -1,4 +1,5 @@
 # Part 1: The Good, The Bad, and The Ugly
+*Written by Pablo Moncada-Larrotiz, 2023.*
 This is Part 1 of a three part series by our founder Pablo Moncada-Larrotiz on how MoonDAO will get to the Moon. Read [Part 2: The Mission](/docs/Reference/Nested-Docs/The-Master-Plan-Part-2) or [Part 3: The Plan](/docs/Reference/Nested-Docs/The-Master-Plan-Part-3).
 
 MoonDAO has been in operation since late 2021 and it’s been a long time since we’ve had the opportunity to reflect on our journey so far. Now, nearly two years later, it feels like the right time to share some reflections and lessons learned at MoonDAO and some of the big picture developments and trajectory of our organization, especially in light of the passing of the executive branch, a big change in the operational structure of MoonDAO. 

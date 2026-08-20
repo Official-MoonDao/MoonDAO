@@ -14,7 +14,7 @@ Before assigning vMOONEY to individual addresses, you must approve the total agg
 Open the Safe app and initiate a new transaction using the **Transaction Builder**.
 
 Input the following parameters for the approval step:
-* **Target Mooney:** `arb1:0x3f770Ac673856F105b586bb393d122721265aD46`
+* **Target Mooney:** `arb1:0x1Fa56414549BdccBB09916f61f0A5827f779a85c`
 * **To Address:** `0x1Fa56414549BdccBB09916f61f0A5827f779a85c`
 * **Contract Method Selector:** `Approve`
 * **Spender Address (Voting Escrow Depositor):** `0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0`

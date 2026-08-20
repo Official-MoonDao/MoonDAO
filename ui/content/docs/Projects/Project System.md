@@ -64,7 +64,7 @@ Other members of the project with assigned tasks become **Project Contributors**
 
 The Project Lead must make sure the following are complete:  
 
-**1. Complete a Final Report.** Use the [Final Report Template](https://docs.google.com/document/d/1aa6rMBh1YwYT0IwhlcM8PStAeI0qeO-WN7C6UrLhq2c/edit) to collaborate on your final report with your team. Each project member must include their own contributions. Reports must be submitted to the DAO through the [report editor](https://moondao.com/submit) on Discord before the end of the quarter to be included in that quarter’s reward cycle. These reports will be voted on by the DAO.  
+**1. Complete a Final Report.** Use the [Final Report Template](https://docs.google.com/document/d/1aa6rMBh1YwYT0IwhlcM8PStAeI0qeO-WN7C6UrLhq2c/edit) to collaborate on your final report with your team. Each project member must include their own contributions. Reports must be submitted to the DAO through the [report editor](https://moondao.com/final-reports) before the end of the quarter to be included in that quarter’s reward cycle. These reports will be voted on by the DAO.  
 
 **2. Return excess funds to the DAO treasury.** Please attach a link to the DAO’s multisig in the final report.
 

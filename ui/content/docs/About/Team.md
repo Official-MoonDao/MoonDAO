@@ -65,7 +65,7 @@ Treasury signers are responsible for executing transactions on the [MoonDAO Trea
 **Wallet Address:** 0xb1d4c1B9c8DA3191Fdb515Fa7AdeC3D41D014F4f
 
 ## Dr. Eiman Jahangir
-**Socials:** https://twitter.com/yang_zhuxiang
+**Socials:** https://x.com/DrEJahangir
 **Discord:** @eimanjahangir
 **Bio:** MoonDAO's second astronaut.
 **Wallet Address:** 0xe2d3aC725E6FFE2b28a9ED83bedAaf6672f2C801
@@ -76,9 +76,9 @@ Treasury signers are responsible for executing transactions on the [MoonDAO Trea
 **Bio:** Software Engineer.
 **Wallet Address:** 0x5640Ddc028f2436B5C0BA0305D2199556C1b5a95
 
-## Phillip Linden
+## Philip Linden
 **Socials:** https://twitter.com/PhilipJLinden
-**Discord:** @phil
+**Discord:** @philiplinden
 **Bio:** Sr. Space Systems Engineer at Planet Labs.
 **Wallet Address:** 0x6bFd9e435cF6194c967094959626ddFF4473a836
 

@@ -1,1 +1,1 @@
-Any [@member](/docs/About/Glossary/@Member) who has voted on at least one MoonDAO proposal in our official [snapshot space](https://vote.moondao.com/)
+Any [@member](/docs/About/Glossary/@Member) who has voted on at least one official MoonDAO proposal (on-chain votes, including historical Snapshot votes).
