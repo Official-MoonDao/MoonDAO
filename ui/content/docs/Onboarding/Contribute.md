@@ -54,7 +54,7 @@ The Executive Lead role is given to elected leaders that are trusted with stewar
 
 ## Rewards
 
-All contributors receive our governance token as staked $vMOONEY and are paid with ETH that is distributed each quarter through our retroactive rewards process. Members vote on which projects have had the most impact that quarter and how much of the quarterly rewards amount should go toeach project using our [Allocate Rewards](https://moondao.com/rewards) page.
+All contributors receive our governance token as staked $vMOONEY and are paid with ETH that is distributed each quarter through our retroactive rewards process. Members vote on which projects have had the most impact that quarter and how much of the quarterly rewards amount should go to each project using our [Allocate Rewards](https://moondao.com/rewards) page.
 
 If you have questions and want to learn more, check out our [frequently asked questions](/docs/About/FAQ). While it's not necessary to become a Citizen or Voting Member prior to contributing, it is highly recommended.
 

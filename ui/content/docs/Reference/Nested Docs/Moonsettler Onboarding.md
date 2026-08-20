@@ -5,13 +5,13 @@ Welcome aboard, Project Contributor! As a contributor to MoonDAO, you are now em
 
 At MoonDAO we have the following expectations for Project Contributors
 
-🧘‍♀️ **Be Present:** Attend project meetings and offer feedback. We’re all remote so sometimes communication can fall through the cracks, being present helps the team coordinate more effectively.  
+🧘♀️ **Be Present:** Attend project meetings and offer feedback. We’re all remote so sometimes communication can fall through the cracks, being present helps the team coordinate more effectively.  
 
-💁‍♂️ **Deliver:** As long as you are delivering on the expectations set by the project lead in a timely way and attending necessary meetings, you can make your own hours and work on your own time
+💁♂️ **Deliver:** As long as you are delivering on the expectations set by the project lead in a timely way and attending necessary meetings, you can make your own hours and work on your own time
 
 🤓 **Learn:** We have a long history and culture at MoonDAO, and we hope you take the steps to learn more about how we operate! This guide will point you to the right resources to learn more
 
-👩‍❤️‍👨 **Share:** Update people on progress quickly and offer feedback as soon as you see it. Contest ideas freely but always respect each other as individuals! Post in social channels and engage the community!
+👩❤️👨 **Share:** Update people on progress quickly and offer feedback as soon as you see it. Contest ideas freely but always respect each other as individuals! Post in social channels and engage the community!
 
 ## Getting Started
 
@@ -33,7 +33,7 @@ Depending on your project, a Coordinape circle may be set up for handling reward
 Tell us more about your background and what brought you to MoonDAO in the [#introductions](https://discord.com/channels/914720248140279868/917524355242663977) channel in order to get access to MoonDAO’s governance channels
 
 📖 **Learn more about MoonDAO**
-Be familiar with our processes as laid out in our [constitution](/docs/Governance/Constitution),  [documentation](/docs), and the [project system](/docs/Projects/index) at MoonDAO. Let us know if something is unclear or doesn’t make sense. Those are all living documents and things can become stale from time to time.
+Be familiar with our processes as laid out in our [constitution](/docs/Governance/Constitution),  [documentation](/docs), and the [project system](/docs/Projects/Project-System) at MoonDAO. Let us know if something is unclear or doesn’t make sense. Those are all living documents and things can become stale from time to time.
 
 🏢 **Join the Gather Town and grab a desk**
 Gathertown is where we co-work; Follow [this link](https://app.gather.town/invite?token=2I7BCtkQRMSSoGYkQfxg) to claim your desk!  

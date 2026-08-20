@@ -14,9 +14,9 @@ In early 2024, MoonDAO held the [Ticket to Space giveaway](https://www.moondao.c
 - NewsNation: [Vanderbilt doctor to go to space on Blue Origin flight](https://www.newsnationnow.com/good-news/vanderbilt-doctor-to-go-to-space-on-blue-origin-flight/)
 - Vanderbilt University Medical Center: [The stars look very different today: Eiman Jahangir to realize lifelong dream to fly to space](https://news.vumc.org/2024/04/24/eiman-jahangir-to-realize-lifelong-dream-to-fly-to-space/)
 - SpaceImpulse: [Cardiologist’s Dream Of Space Takes Flight With MoonDAO Selection](https://spaceimpulse.com/2024/07/08/cardiologists-dream-of-space-takes-flight-with-moondao-selection/)
-- Astro Ben Podcast: [Dr. Eiman Jahangir](https://astroben.libsyn.com/
+- Astro Ben Podcast: [Dr. Eiman Jahangir](https://astroben.libsyn.com/dr-eiman-jahangir-associate-professor-at-vanderbilt-university-and-the-director-of-the-sections-of-general-cardiology-and-cardio-oncology-hes-also-going-to-space-with-moondao)
 - [Dr. Eiman Jahangir on Astro Eliza Podcast](https://www.youtube.com/watch?v=x6Z4e3maWzw)
-- [Dr. Eiman Jahangir on The Interplanetary Podcast](https://soundcloud.com/matt-interplanetary/)
+- [Dr. Eiman Jahangir on The Interplanetary Podcast](https://soundcloud.com/matt-interplanetary/306-dr-eiman-jahangir-new-shepard)
 - WKRN Nashville: [Vanderbilt doctor prepares to be an astronaut](https://www.youtube.com/watch?v=YsofvOAKG3E)
 - IgnitedThinkers: [Eiman Jahangir: Future Moon DAO Astronaut and Cardiologist at Vanderbilt Medical School](https://www.youtube.com/watch?v=JRpbY3BMJy0)
 - Yahoo News: [Vanderbilt doctor to go to space on Blue Origin flight, fulfilling decades-long dream](https://www.yahoo.com/news/vanderbilt-doctor-space-blue-origin-155044308.html)

@@ -545,6 +545,17 @@ export function listUnresolvedMdLinks(root?: string): { filePath: string; target
 export function listBrokenDocsHrefs(root?: string): { filePath: string; href: string }[] {
   const corpus = loadCorpus(root)
   const valid = new Set(allProducedSlugs(root))
+  for (const file of corpus.files) {
+    if (file.frontmatter.slug) {
+      const extra = normalizeAliasSlug(file.frontmatter.slug)
+      if (extra) valid.add(extra)
+    }
+    for (const alias of file.frontmatter.aliases) {
+      const extra = normalizeAliasSlug(alias)
+      if (extra && !extra.includes(' ')) valid.add(extra)
+    }
+  }
+  for (const legacy of Object.keys(LEGACY_DOC_ALIASES)) valid.add(legacy)
   const broken: { filePath: string; href: string }[] = []
   for (const file of corpus.files) {
     const rewritten = rewriteDocBody(file.body, resolver(corpus))

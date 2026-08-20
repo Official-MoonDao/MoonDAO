@@ -11,7 +11,7 @@ keywords:
   ]
 sidebar_position: 2
 ---
-MoonDAO’s mission is to accelerate the creation a self-sustaining, self-governing settlement on the Moon by 2030 to act as a launch point for humanity to explore the cosmos.
+MoonDAO’s mission is to accelerate the creation of a self-sustaining, self-governing settlement on the Moon by 2030 to act as a launch point for humanity to explore the cosmos.
 
 ## Why the Moon?
 

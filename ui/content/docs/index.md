@@ -28,16 +28,16 @@ The Space Acceleration Network is MoonDAO’s core onchain coordination platform
 
 # **Proposal Lifecycle**
 
-At the heart of MoonDAO is the proposal process. [Proposals](https://docs.google.com/document/u/0/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit) can be created by [Citizens](http://moondao.com/join) in the [submissions](https://moondao.com/submit) portal, and can be submitted at any time. We ask that a proposal is submitted at least 24 hours in advance of the [Weekly Townhall](http://moondao.com/meet) at 3:00 pm EST, otherwise it will be voted on in the next governance cycle.
+At the heart of MoonDAO is the proposal process. [Proposals](https://docs.google.com/document/u/0/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit) can be created by [Citizens](https://moondao.com/join) in the [submissions](https://moondao.com/submit) portal, and can be submitted at any time. We ask that a proposal is submitted at least 24 hours in advance of the [Weekly Townhall](https://moondao.com/meet) at 3:00 pm EST, otherwise it will be voted on in the next governance cycle.
 
 ![](https://gateway.pinata.cloud/ipfs/bafkreiajg6sh2vk7lc45hgjbbibmzwmdeqwyoiasliobhrigxst33bireu)  
       
 
-**0\. Ideation:** Most good ideas originate from conversation in our [Discord](https://moondao.com/discord)’s “ideation” channel. This is intended to be a sounding board for the community to workshop ideas together. You should review our [Template](https://docs.google.com/document/u/0/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit), and read past [Proposals](https://moondao.com/vote) to see examples of things MoonDAO has funded in the past. Once your proposal is completed you can submit it into the [Proposal Submission](https://moondao.com/submit) page (Pro-tip: you can download the Google Doc template as a Markdown (.md) file and upload it to the page directly). Check out the Proposal FAQs for more information.
+**0. Ideation:** Most good ideas originate from conversation in our [Discord](https://moondao.com/discord)’s “ideation” channel. This is intended to be a sounding board for the community to workshop ideas together. You should review our [Template](https://docs.google.com/document/u/0/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit), and read past [Proposals](https://moondao.com/vote) to see examples of things MoonDAO has funded in the past. Once your proposal is completed you can submit it into the [Proposal Submission](https://moondao.com/submit) page (Pro-tip: you can download the Google Doc template as a Markdown (.md) file and upload it to the page directly). Check out the Proposal FAQs for more information.
 
-**1\.** **Senate Voting:** First, the proposal is presented by the author or project to the Senate. This is a council of individuals that have been trusted to lead a MoonDAO proposal for that quarter. Senators approve incoming proposals during each quarterly project cycle to ensure that the proposal is Constitutional and suited for MoonDAO.
+**1.** **Senate Voting:** First, the proposal is presented by the author or project to the Senate. This is a council of individuals that have been trusted to lead a MoonDAO proposal for that quarter. Senators approve incoming proposals during each quarterly project cycle to ensure that the proposal is Constitutional and suited for MoonDAO.
 
-**2\. Member House Voting:** This is a governance body of all the members who have [locked](http://moondao.com/lock) [MOONEY](https://moondao.com/get-mooney) (vMOONEY). MoonDAO uses Escrowed [Quadratic Voting](https://en.wikipedia.org/wiki/Quadratic_voting). In other words, the longer you lock your tokens, the more governance you have. However, there are diminishing returns to prevent centralization by taking the square root of your escrow. This vote occurs off chain in the [Proposals](https://moondao.com/vote) section of the website.
+**2. Member House Voting:** This is a governance body of all the members who have [locked](https://moondao.com/lock) [MOONEY](https://moondao.com/get-mooney) (vMOONEY). MoonDAO uses Escrowed [Quadratic Voting](https://en.wikipedia.org/wiki/Quadratic_voting). In other words, the longer you lock your tokens, the more governance you have. However, there are diminishing returns to prevent centralization by taking the square root of your escrow. This vote occurs off chain in the [Proposals](https://moondao.com/vote) section of the website.
 
 **3\. Funding and Role Execution Onchain**: The Executive team at MoonDAO consists of up to three individuals who are elected by the DAO to lead day-to-day operations and fulfill specific governance duties. They nominate the Treasury Signers, who consist of a [multisignature wallet](https://app.safe.global/home?safe=eth:0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9) that executes proposals by having five-of-seven signers approve. Once a proposal passes, the transactions for that proposal are queued up and it is funded as a [Project](https://moondao.com/projects), or executed as a one-time transaction.
 
@@ -55,11 +55,11 @@ The Space Acceleration Network is a yearly subscription to get access to the bes
 
 #  **Important Links and Terms**
 
-[**MoonDAO Website**](http://moondao.com)**:** Our core platform that links to everything else.  
-[**$MOONEY**](http://moondao.com/mooney)**:** Our governance token. You can [lock it](http://moondao.com/lock) for voting power in the form of $vMOONEY.  
-MOONEY Tokenomics: Understand how the MOONEY economy works.  
-[**Discord:**](http://moondao.com/discord) Our main town square for MoonDAO.  
-[**Become a Citizen**](http://moondao.com/join)**:** A yearly subscription to use the marketplace, jobs board, submit proposals, and get rewarded for weekly contributions.  
+[**MoonDAO Website**](https://moondao.com)**:** Our core platform that links to everything else.  
+[**$MOONEY**](https://moondao.com/mooney)**:** Our governance token. You can [lock it](https://moondao.com/lock) for voting power in the form of $vMOONEY.  
+[**MOONEY Tokenomics**](/docs/Governance/Governance-Tokens): Understand how the MOONEY economy works.  
+[**Discord:**](https://moondao.com/discord) Our main town square for MoonDAO.  
+[**Become a Citizen**](https://moondao.com/join)**:** A yearly subscription to use the marketplace, jobs board, submit proposals, and get rewarded for weekly contributions.  
 [**Quarterly Rewards**](https://moondao.com/projects)**:** We emit a portion of our treasury to projects that were completed on a quarterly basis. Members can vote to support those initiatives.  
 [**Community Contribution**](https://www.moondao.com/contributions)**:** Did something cool that you want to get rewards for? MoonDAO Citizens can submit contributions and receive rewards for their work.  
 [**MoonDAO Team**](https://moondao.com/teams)**:** Teams can put things up for sale on the marketplace, list jobs, and access funding via our launchpad.  

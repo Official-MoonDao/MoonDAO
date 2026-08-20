@@ -19,12 +19,11 @@ MoonDAO Projects are the launch point for mission-aligned people to build on top
 MoonDAO Projects are goal-oriented teams working on mission-aligned objectives. This document provides the framework to fund the team, support their progress, align their interests with the DAO, and provide retroactive incentives for projects that get us one step closer to a permanent human presence on the Moon.  
 
 MoonDAO Projects consist of Project Contributors and a Project Lead.
-- [Project Proposal Process](#project-proposal-process)
-- [Project Start](#project-start)
-- [Project Updates And Responsibilities](#project-updates-and-responsibilities)
-- [Project Completion](#project-completion)
-- [Retroactive Rewards](#retroactive-rewards)
-- [Project Revenue Distribution](#project-revenue-distribution)
+- [Proposal Process](#proposal-process)
+- [Start](#start)
+- [Updates And Responsibilities](#updates-and-responsibilities)
+- [Completion](#completion)
+- [Quarterly Rewards](#quarterly-rewards)
 - [Project Intellectual Property](#project-intellectual-property)
 - [Dispute Resolution](#dispute-resolution)
 - [Miscellaneous FAQs](#miscellaneous-faqs)
@@ -92,7 +91,7 @@ The total amount of rewards each quarter is calculated as follows:
 2. Q1 2023: 14,250,000 MOONEY.
 3. Q2 2023: 13,537,500 MOONEY.
 4. Q3 2023: 12,860,625 MOONEY.
-5. And so on, infinitely, following the forumula R[Q_n] = 0.95*R[Q_n-1], where R[Q_n] means the MOONEY reward for any given quarter "n".
+5. And so on, infinitely, following the formula R[Q_n] = 0.95*R[Q_n-1], where R[Q_n] means the MOONEY reward for any given quarter "n".
 
 Of that total reward, 10% will automatically go to a Contributor Circle for the community, where anyone in the community can throughout the quarter post contributions that can be accepted by any of the Senators. The rewards to individuals will be decided via a Coordinape at the end of the quarter like all other projects.
 

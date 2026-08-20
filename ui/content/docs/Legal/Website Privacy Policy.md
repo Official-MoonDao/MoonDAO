@@ -88,11 +88,11 @@ _Cookies_ A cookie (“Cookie”) is a piece of data stored on your hard drive c
 
 Cookies are generally divided into the following categories:
 
-\1. _Essential Cookies_: Essential Cookies are Cookies that are required for the operation of our Site, such as Cookies that enable you to log into secure areas. The Site does not employ essential Cookies.
+1. _Essential Cookies_: Essential Cookies are Cookies that are required for the operation of our Site, such as Cookies that enable you to log into secure areas. The Site does not employ essential Cookies.
 
-\2. _Analytics Cookies_: Analytics Cookies are Cookies that automatically collect information about your use of the Site. The Site does not employ analytics Cookies.
+2. _Analytics Cookies_: Analytics Cookies are Cookies that automatically collect information about your use of the Site. The Site does not employ analytics Cookies.
 
-\3. _Functional Cookies_: Functional Cookies are Cookies that remember choices that you make when you visit the Site, such as language options. The Site does not employ functional Cookies.
+3. _Functional Cookies_: Functional Cookies are Cookies that remember choices that you make when you visit the Site, such as language options. The Site does not employ functional Cookies.
 
 Most Internet browsers are initially set up to accept Cookies, but you can reset your browser to refuse all Cookies or to indicate when a Cookie is being sent. To disable and reject certain Cookies, follow the instructions associated with your Internet browser.
 
@@ -132,7 +132,7 @@ In compliance with applicable laws, we shall notify you and any applicable regul
 
 ### **Minors**
 
-Visitors under eighteen (18) years of age are not permitted to use and/or submit their Personal Data at the Site. MoonDAO™ does not knowingly solicit or collect information from visitors under eighteen (18) years of age. MoonDAO™ encourages parents and guardians to spend time online with their children and to participate and monitor the interactive activities of their children. \*\*
+Visitors under eighteen (18) years of age are not permitted to use and/or submit their Personal Data at the Site. MoonDAO™ does not knowingly solicit or collect information from visitors under eighteen (18) years of age. MoonDAO™ encourages parents and guardians to spend time online with their children and to participate and monitor the interactive activities of their children.
 
 ### **Transfer of Personal Data Internationally**
 
@@ -146,5 +146,4 @@ MoonDAO™ reserves the right to change or update this Privacy Policy at any tim
 
 If you have any questions about this Privacy Policy or our privacy practices in general, you may email us as at: info@moondao.com; call us at: 1-(734)-846-2638.
 
-{00136663;1}
 

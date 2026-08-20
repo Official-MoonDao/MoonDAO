@@ -100,7 +100,7 @@ On your team page click “Add a Job” to create a new posting.
 You can add an email or other form of notification for job postings, or link an existing form or job application website.
 
 **How do I create a proposal for funding?**
-On the team page click “Fund” and it will take you to our proposal system. This allows you to create a project with MoonDAO to fund an initiative. You can read more about projects at /docs/Projects/Project-System.
+On the team page click “Fund” and it will take you to our proposal system. This allows you to create a project with MoonDAO to fund an initiative. You can read more about projects at [Projects](/docs/Projects/Project-System).
 
 **How is data handled on the website?**
 We are an open source community, and data is stored onchain. This means it is written to the blockchain, please be aware that all data is public. If you’d like, you can request for us to take down your data from the team page by clicking “Edit” and “Delete my Data.”

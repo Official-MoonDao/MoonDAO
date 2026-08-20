@@ -4,7 +4,7 @@
 
 \* NOTE: If you already have an external wallet such as [MetaMask](https://metamask.io/), you can sign in with that method and skip ahead to Fund Your Account. If you already have an external wallet with funds available on Arbitrum, you can skip ahead to Become a Citizen.
 
-1. Visit [MoonDAO.com](http://moondao.com)
+1. Visit [MoonDAO.com](https://moondao.com)
 
 2. Click the “Sign In” button\
    ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXe-p6vxWGm4T-KX4qPQYe824eg1L6OUCiWAQ5o__p-zgF6rzYsdqkU4n4dq0Kyq9InEa4Ym6ssnfvigowzB75CHLqeD_28cI2fiSnzoxsLgEo1DaO09Gzkhgc1HQOMJkgs6PNrAVPV-WVJWiEK_KQXv0sh8?key=SvZCq2k1UFaTYNW83ubioQ)
@@ -19,12 +19,12 @@
    1. You can fund your wallet directly through the “Fund Wallet” feature using Coinbase onramp or MoonPay (not affiliated with MoonDAO). Debit cards are recommended rather than credit cards.\
       ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXd74u0d7eJkomd0BqsULgdZai-5PKZ7KBHSR5qOWSN2NleVLjXOhz1SviU1Jy3Rq9G_1gOb7YyQOi7oH02ti3pbEEcSbyVNxCDgu6DmCZAKhJ6yDhgWs4OBUKUpU3s5CfZ8cIl8Og?key=SvZCq2k1UFaTYNW83ubioQ)
 
-   2. Purchase Ethereum (ETH). You will want at least 0.012 ETH (\~$45 USD) to cover the annuel membership fee, plus any transaction fees.
+   2. Purchase Ethereum (ETH). You will want at least 0.012 ETH (\~$45 USD) to cover the annual membership fee, plus any transaction fees.
 
 
 ### What if you can’t fund your wallet at this step?
 
-If MoonPay or Coinbase onramp aren’t working for you, you can create an account at [Coinbase.com](http://coinbase.com) or any other central exchange, and purchase Ethereum directly.
+If MoonPay or Coinbase onramp aren’t working for you, you can create an account at [Coinbase.com](https://www.coinbase.com) or any other central exchange, and purchase Ethereum directly.
 
 * It may take up to 3-5 business days for the funds to clear from your payment source and be available to transfer outside of Coinbase.
 
@@ -63,6 +63,5 @@ If MoonPay or Coinbase onramp aren’t working for you, you can create an accoun
 
    7. You will be redirected to your newly created profile page. Please click the pencil icon (top right) to complete your profile info with a brief bio, social links, etc. You must sign the transaction in your wallet to save your changes.
 
-\
 If you have any questions or need assistance at any step in the process, please don’t hesitate to [Submit a Ticket](https://discord.com/channels/914720248140279868/1212113005836247050) in MoonDAO’s Discord.
 

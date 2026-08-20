@@ -27,14 +27,14 @@ Disclaimer: These are the ambitious goals of our community, not a promise that t
 - Announce the flagship DePrize to fund critical technology for the long-term habitation of the Moon, with MoonDAO credibly-neutral technology, evangelizing people from all over the world to collaborate.
 - Inception of the MoonDAO Marketplace with flagship products and services listed.
 - Select someone from our community to go to space from our community.  
-    ‍
+    
 ## 2024: **Scale**
 
 - 1,000s of engaged members.
 - Open-source collaboration on technology and datasets generated and gifted to the MoonDAO community from partners and organizations working on our first DePrize.
 - 10s of products and services listed on our marketplace.
 - More DePrizes are set up to address other foundational elements of a lunar settlement and credibly neutral infrastructure.  
-    ‍
+    
 ## 2025: **Seat at the Table**
 
 - 10,000s of engaged members.
@@ -42,12 +42,12 @@ Disclaimer: These are the ambitious goals of our community, not a promise that t
 - Multiple data- and income-generating IPs generated for the MoonDAO community.
 - Large Scale Coordination through an open-sim of Lunar Settlement, setting up DePrizes for each component required.
 - 100s of products and services listed on our marketplace.  
-    ‍
+    
 ## 2026: **Settlement Design Completed**
 
 - 100,000s of engaged members.
 - Design of major components have been completed, ready for manufacturing on Earth to begin simulations and testing.  
-    ‍
+    
 ## 2027: **Settlement Manufacturing Completed**
 
 - 1,000,000s of engaged members.
@@ -55,16 +55,16 @@ Disclaimer: These are the ambitious goals of our community, not a promise that t
 - Selection of our first group of Moon settlers.
 - Manufacturing of key components on Earth with Earth-based simulations. Prototypes built out and ready to test.
 - MoonDAO has a manufacturing facility that operates in a decentralized way receiving designs from all over the world.  
-    ‍
+    
 ## 2028: **Components tested and Ready for Launch**
 
 -  10,000,000s of engaged members.
 - Fast iteration on infrastructure, testing with Earth-based simulation complete.  
-    ‍
+    
 ## 2029: **Minimum Viable Settlement Construction Begins**
 
 - Infrastructure is sent to the Moon and the first crew begins construction on the Moon.  
-    ‍
+    
 ## 2030: **New Year’s 2030 - Lunar Party**
 
 - The first minimum viable Lunar Settlement is complete and can sustain multiple people for long-term habitation.

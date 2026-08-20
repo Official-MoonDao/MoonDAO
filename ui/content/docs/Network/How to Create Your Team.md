@@ -1,5 +1,3 @@
-<!--StartFragment-->
-
 # How to Create Your Team in the Space Acceleration Network
 
 - [Browse Existing Teams](https://moondao.com/network)
@@ -8,7 +6,7 @@
 
 _\* If you already have an external wallet such as [MetaMask](https://metamask.io/), you should sign in with that to MoonDAO and skip ahead to Step 5._
 
-   1. Visit [MoonDAO.com](http://moondao.com)
+   1. Visit [MoonDAO.com](https://moondao.com)
 
    2. Click the “Sign In” button\
       ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXfpBHGOyQZphUJE8L_Nld7hHcoatAvVmHDiZ5NV8UKkj76lKN1jEynwOm9DFuoCdRcbaF4RM6wZTpTWheLKvbWu7momYCtYdAUtF7vcbmDcccFmOMqQDEIqtTQSE-mNVc6VxOWLtNqUXm866BX1cbuA8R1y?key=dNK6lTkf7eD9GOYdS33HGA)
@@ -32,7 +30,7 @@ _\* If you already have an external wallet such as [MetaMask](https://metamask.i
 
 ### What if you can’t fund your wallet at this step?
 
-* If MoonPay or Coinbase onramp aren’t working for you, you can create an account at [Coinbase.com](http://coinbase.com) or any other central exchange, and purchase Ethereum directly.
+* If MoonPay or Coinbase onramp aren’t working for you, you can create an account at [Coinbase.com](https://www.coinbase.com) or any other central exchange, and purchase Ethereum directly.
 
    * It may take up to 3-5 business days for the funds to clear from your payment source and be available to transfer outside of Coinbase.
 
@@ -70,6 +68,4 @@ _\* Please ensure that you’ve completed Step 2 and have Arbitrum ETH in your w
 8. At checkout, review the photo, profile info, and review the terms and conditions. 
 
 9. Click “Check Out” to proceed to payment and follow the instructions in your wallet. Your wallet transaction and signature will finalize your purchase and create the team.
-
-<!--EndFragment-->
 

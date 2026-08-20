@@ -22,7 +22,7 @@ yarn docs:generate       # regenerates the two committed artifacts (see below)
 yarn build               # no prebuild hook; getStaticPaths bakes every slug
 ```
 
-Two generated files are **committed**: `public/docs-search-index.json` and
+Two generated files are **committed**: `public/doc-search-index.json` and
 `lib/docs/generated/navTree.json`. They are not built by a `prebuild` hook, so
 `next build` needs no `ts-node` and `next dev` behaves identically. `yarn test:docs`
 fails if either drifts from `content/docs`; run `yarn docs:generate` to refresh.
