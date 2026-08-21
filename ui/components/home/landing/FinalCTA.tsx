@@ -46,7 +46,7 @@ export default function FinalCTA() {
             <CtaButton href="/join" variant="primary">
               Join the Network
             </CtaButton>
-            <CtaButton href="/about" variant="secondary">
+            <CtaButton href="/docs" variant="secondary">
               Learn More
             </CtaButton>
           </div>

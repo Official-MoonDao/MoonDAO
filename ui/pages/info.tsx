@@ -74,10 +74,10 @@ const infoCards = [
   },
   {
     icon: '/assets/icon-about.svg',
-    iconAlt: 'About MoonDAO',
-    header: 'About MoonDAO',
-    link: '/about',
-    hovertext: 'Learn About MoonDAO',
+    iconAlt: 'Documentation',
+    header: 'Documentation',
+    link: '/docs',
+    hovertext: 'Read the Docs',
     paragraph:
       'Learn about how MoonDAO operates, how you can contribute or propose a project, read about our mission and vision, and more.',
   },

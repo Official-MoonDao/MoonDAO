@@ -188,7 +188,6 @@ export function ExpandedFooter({
     { text: 'News', href: '/news' },
     { text: 'Town Hall', href: '/townhall' },
     { text: 'Roadmap', href: '/roadmap' },
-    { text: 'About', href: '/about' },
     { text: 'Documentation', href: '/docs' },
     { text: 'Resources', href: '/resources' },
     { text: 'Constitution', href: '/constitution' },

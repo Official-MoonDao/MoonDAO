@@ -238,16 +238,6 @@ const searchMappings = [
   // ── Learn & Info ──────────────────────────────────────────────────────────
   {
     keywords: [
-      'about', 'about moondao', 'what is moondao', 'mission', 'vision', 'story', 'history',
-      'internet space program', 'lunar settlement', 'multiplanetary', 'who is moondao',
-    ],
-    title: 'About MoonDAO',
-    description: "Learn about MoonDAO — the internet's space program building toward a lunar settlement",
-    link: '/about',
-    category: 'Learn',
-  },
-  {
-    keywords: [
       'info', 'information center', 'information', 'news updates', 'town hall summaries',
       'treasury info', 'faq info', 'learn more',
     ],
@@ -319,7 +309,8 @@ const searchMappings = [
   {
     keywords: [
       'documentation', 'docs', 'wiki', 'handbook', 'knowledge base', 'obsidian',
-      'quartz', 'native docs',
+      'quartz', 'native docs', 'about', 'about moondao', 'what is moondao',
+      'mission', 'vision', 'story', 'history', 'who is moondao',
     ],
     title: 'Documentation',
     description: 'MoonDAO documentation — governance, legal, onboarding, and reference',
