@@ -708,7 +708,7 @@ export const CITIZENSHIP_GIFT_TAG = 'citizenship-gift'
 
 /** MoonDAO docs — Overview Effect Flight mission (e.g. mission id 4). */
 export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
-  'https://docs.moondao.com/Legal/Overview-Effect-Flight/Overview-Effect-Flight-Terms-and-Conditions'
+  '/docs/Legal/Overview-Effect-Flight/Overview-Effect-Flight-Terms-and-Conditions'
 
 // ---------------------------------------------------------------------------
 // PROJECT CYCLE — single source of truth for the quarterly project system.
@@ -817,7 +817,7 @@ export const PROJECT_SYSTEM_CONFIG = {
   editingDeadline: PROJECT_CYCLE.editingDeadline,
   votingDate: PROJECT_CYCLE.votingDate,
   submissionUrl: 'https://moondao.com/propose',
-  docsUrl: 'https://docs.moondao.com/Projects/Project-System',
+  docsUrl: '/docs/Projects/Project-System',
 }
 
 // Voting Phase Flags — derived from PROJECT_CYCLE.phase. These are the

@@ -105,7 +105,7 @@ export default function useNavigation(citizen: any) {
           { name: 'Press', href: '/press' },
           { name: 'Town Hall', href: '/townhall' },
           { name: 'Roadmap', href: '/roadmap' },
-          { name: 'About', href: '/about' },
+          { name: 'Documentation', href: '/docs' },
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
         ],

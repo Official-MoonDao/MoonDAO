@@ -2117,14 +2117,14 @@ export function ProjectRewards({
                       </ol>
                       <p className="text-[11px] text-gray-500 pt-1">
                         Read the full mechanism in the{' '}
-                        <Link
-                          href="https://docs.moondao.com/Projects/Project-System#retroactive-rewards"
+                        <a
+                          href="/docs/Projects/Project-System#retroactive-rewards"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="underline text-blue-300 hover:text-blue-200"
                         >
                           docs
-                        </Link>
+                        </a>
                         .
                       </p>
                     </div>

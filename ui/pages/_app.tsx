@@ -1,3 +1,4 @@
+import { DEPLOYED_ORIGIN } from 'const/config'
 import { DEFAULT_CHAIN_V5 } from 'const/defaultChain'
 import { FlagProvider } from 'const/flags'
 import { SessionProvider } from 'next-auth/react'
@@ -78,8 +79,8 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
                 accentColor: '#d85c4c',
               },
               legal: {
-                termsAndConditionsUrl: 'https://docs.moondao.com/Legal/Website-Terms-and-Conditions',
-                privacyPolicyUrl: 'https://docs.moondao.com/Legal/Website-Privacy-Policy',
+                termsAndConditionsUrl: `${DEPLOYED_ORIGIN}/terms-of-service`,
+                privacyPolicyUrl: `${DEPLOYED_ORIGIN}/privacy-policy`,
               },
               fundingMethodConfig: {
                 moonpay: {

@@ -19,7 +19,7 @@ const pillars: Pillar[] = [
     icon: '/assets/icon-astronaut.svg',
     iconAlt: 'Astronaut',
     header: 'Human Spaceflight',
-    link: '/about',
+    link: '/docs',
     hovertext: 'Our Story',
     paragraph:
       'Sent the first crowdraised astronaut to space, selected via onchain voting — and a second everyday person via onchain sweepstakes.',
