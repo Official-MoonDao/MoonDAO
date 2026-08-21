@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import DocsLink from './DocsLink'
 import navTree from '@/lib/docs/generated/navTree.json'
@@ -7,65 +8,85 @@ import type { DocsNavNode } from '@/lib/docs/types'
 // props so the tree lands in one shared chunk instead of every page's HTML.
 const tree = navTree as DocsNavNode[]
 
-function Node({ node, current }: { node: DocsNavNode; current: string }) {
-  const isCurrent = current === node.slug || current === node.slug.replace(/\/index$/, '')
-  const childActive = node.children.some(
-    (child) =>
-      current === child.slug ||
-      current.startsWith(child.slug.replace(/\/index$/, '') + '/') ||
-      current === child.slug.replace(/\/index$/, '')
-  )
-  const open = isCurrent || childActive
+function matchesSlug(current: string, slug: string): boolean {
+  const folder = slug.replace(/\/index$/, '')
+  return current === slug || current === folder || current.startsWith(folder + '/')
+}
 
-  if (node.children.length === 0) {
-    return (
-      <li>
-        <DocsLink
-          href={node.href}
-          className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
-            isCurrent
-              ? 'bg-white/10 text-white'
-              : 'text-white/60 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          {node.label}
-        </DocsLink>
-      </li>
-    )
-  }
+function FolderNode({ node, current }: { node: DocsNavNode; current: string }) {
+  const childActive = matchesSlug(current, node.slug)
+  const [open, setOpen] = useState(childActive)
+
+  useEffect(() => {
+    if (childActive) setOpen(true)
+  }, [childActive])
 
   return (
     <li>
-      <details open={open} className="group">
-        <summary className="flex items-center justify-between cursor-pointer px-3 py-1.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 list-none">
-          <DocsLink
-            href={node.href}
-            onClick={(e) => e.stopPropagation()}
-            className={isCurrent ? 'text-white font-medium' : ''}
-          >
-            {node.label}
-          </DocsLink>
-          <span className="text-white/30 text-xs group-open:rotate-90 transition-transform">▸</span>
-        </summary>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between cursor-pointer px-3 py-1.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5"
+      >
+        <span className={childActive ? 'text-white font-medium' : ''}>{node.label}</span>
+        <span
+          className={`text-white/30 text-xs transition-transform ${
+            open ? 'rotate-90' : ''
+          }`}
+        >
+          ▸
+        </span>
+      </button>
+      {open && (
         <ul className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-1">
           {node.children.map((child) => (
             <Node key={child.slug} node={child} current={current} />
           ))}
         </ul>
-      </details>
+      )}
+    </li>
+  )
+}
+
+function Node({ node, current }: { node: DocsNavNode; current: string }) {
+  const isCurrent = current === node.slug || current === node.slug.replace(/\/index$/, '')
+
+  if (node.children.length > 0) {
+    return <FolderNode node={node} current={current} />
+  }
+
+  return (
+    <li>
+      <DocsLink
+        href={node.href}
+        className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
+          isCurrent
+            ? 'bg-white/10 text-white'
+            : 'text-white/60 hover:text-white hover:bg-white/5'
+        }`}
+      >
+        {node.label}
+      </DocsLink>
     </li>
   )
 }
 
 export default function DocsSidebar({ currentSlug }: { currentSlug: string }) {
   const router = useRouter()
-  const current = currentSlug || (Array.isArray(router.query.slug) ? router.query.slug.join('/') : 'index')
+  const current =
+    currentSlug ||
+    (Array.isArray(router.query.slug) ? router.query.slug.join('/') : 'index')
 
   return (
     <nav aria-label="Documentation" className="text-sm">
       <DocsLink
         href="/docs"
-        className="font-GoodTimes text-xs uppercase tracking-wider text-white/40 hover:text-white/70 px-3 mb-3 block"
+        className={`font-GoodTimes text-xs uppercase tracking-wider px-3 mb-3 block ${
+          current === 'index'
+            ? 'text-white'
+            : 'text-white/40 hover:text-white/70'
+        }`}
       >
         Documentation
       </DocsLink>
