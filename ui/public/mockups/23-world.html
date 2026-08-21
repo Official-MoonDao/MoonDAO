@@ -72,17 +72,25 @@
   .links a { color: var(--copper); font-size: 14px; }
 
   .map {
-    position: relative; height: 220px; overflow: hidden;
+    position: relative;
     border-top: 1px solid rgba(231,211,176,0.18);
+    padding: 28px 20px 22px;
   }
-  .map img {
-    width: 100%; height: 100%; object-fit: cover; display: block;
-    filter: grayscale(1) contrast(1.15) sepia(0.55) hue-rotate(330deg) saturate(1.6);
-    opacity: 0.72;
+  .rule {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center;
   }
-  .map .label {
-    position: absolute; left: 20px; bottom: 16px; color: var(--sand);
+  .rule .end {
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace; color: var(--sand);
   }
+  .rule .track { height: 1px; background: rgba(212,120,58,0.55); position: relative; }
+  .rule .track i {
+    position: absolute; top: -4px; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--copper);
+  }
+  .rule .track i.a { left: 0; }
+  .rule .track i.b { right: 0; }
+  .map .label { margin-top: 14px; color: var(--dim); }
 
   .band {
     display: grid; grid-template-columns: repeat(3, 1fr);
@@ -132,13 +140,17 @@
 
   <div>
     <div class="map">
-      <img src="/assets/mockups/earth-limb.webp" alt="Earth from a distance" />
-      <div class="label mono">Limb · Earth · not a render of the Moon</div>
+      <div class="rule">
+        <span class="end">Earth</span>
+        <span class="track" aria-hidden="true"><i class="a"></i><i class="b"></i></span>
+        <span class="end">Moon</span>
+      </div>
+      <div class="label mono">A distance anyone can measure. A program anyone can join.</div>
     </div>
     <div class="band">
       <div><div class="mono">2022 · Vote</div><div class="n">Cotton</div></div>
       <div><div class="mono">2024 · Sweepstakes</div><div class="n">Jahangir</div></div>
-      <div><div class="mono">2025 · Surface</div><div class="n">Charter</div></div>
+      <div><div class="mono">2025 · Surface</div><div class="n">Constitution</div></div>
     </div>
   </div>
 </div>
