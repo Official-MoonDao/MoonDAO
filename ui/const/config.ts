@@ -448,14 +448,21 @@ export const LMSR_WITH_TWAP_ADDRESSES: Index = {
   // jaderiverstokes.eth). Kept for reference only.
   sepolia: '0x36da9d41b673b4115df0e06cefb4c665e2289dd0',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
+  // AUDIT[plan 1.5 / Phase 6]: fill after Phase 4 provisions the first LMSR.
+  // Coming-soon gate stays up until this + DEPRIZE_* arbitrum slots are set.
+  arbitrum: '',
 }
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8',
   'arbitrum-sepolia': '0xa0B1b14515C26acb193cb45Be5508A8A46109a27',
+  // AUDIT[plan 1.5]: fill after Phase 2 Truffle migrate -f 2 --to 4.
+  arbitrum: '',
 }
 export const COLLATERAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0x8cfF28F922AeEe80d3a0663e735681469F7374c6',
   'arbitrum-sepolia': '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
+  // Canonical Arbitrum aeWETH (bridged proxy). Do not deploy prediction/WETH9.
+  arbitrum: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
 }
 export const COLLATERAL_DECIMALS = 18
 
@@ -465,10 +472,12 @@ export const COLLATERAL_DECIMALS = 18
 export const DEPRIZE_REDEEM_ADDRESSES: Index = {
   sepolia: '0x2fec56899a1121a46b6bcba0bb924796b6ddf4f7',
   'arbitrum-sepolia': '',
+  arbitrum: '', // AUDIT[plan Phase 6]: fill after DePrizeRedeem.s.sol
 }
 export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
   sepolia: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
   'arbitrum-sepolia': '',
+  arbitrum: '', // AUDIT[plan Phase 6]: fill after DePrizeRegistry.s.sol
 }
 // DePrizeMint bet router (5% JB prize slice + 95% CTF/LMSR collateral). Populate
 // per chain once `script/deprize/DePrizeMint.s.sol` has deployed the router and
@@ -477,6 +486,7 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
 export const DEPRIZE_MINT_ADDRESSES: Index = {
   sepolia: '0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8',
   'arbitrum-sepolia': '',
+  arbitrum: '', // AUDIT[plan Phase 6]: fill after DePrizeMint.s.sol + setMarket
 }
 // DePrizeFeeRouter: owns the LMSR market and routes its accrued 1% trade fees
 // into the DePrize's Juicebox prize pool (sweepFees is permissionless). Populate
@@ -486,6 +496,7 @@ export const DEPRIZE_MINT_ADDRESSES: Index = {
 export const DEPRIZE_FEE_ROUTER_ADDRESSES: Index = {
   sepolia: '0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a',
   'arbitrum-sepolia': '',
+  arbitrum: '', // AUDIT[plan Phase 6]: fill after DePrizeFeeRouter.s.sol
 }
 // ---------------------------------------------------------------------------
 // Play-harness only (`ui/pages/deprize-play.tsx`).
@@ -506,13 +517,24 @@ export const DEPRIZE_QUESTION_ID =
 // previewRedeem/redeem take this id).
 export const DEPRIZE_PLAY_ID = 3
 
-// Oracle that prepared the play market's CTF condition; the only address that
-// can resolve (reportPayouts) that harness market. pmoncada.eth.
-export const ORACLE_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
+// AUDIT[plan Phase 6.2]: chain-indexed so mainnet does not inherit Sepolia
+// EOAs. Production admin derives the oracle from keccak(caller, questionId,
+// n) vs the market condition (`competitions.ts`); these maps are for the
+// play harness and any leftover scalar readers.
+export const ORACLE_ADDRESSES: Index = {
+  sepolia: '0x679d87D8640e66778c3419D164998E720D7495f6',
+  'arbitrum-sepolia': '',
+  arbitrum: '', // set to the admin Safe after Phase 0.4
+}
+export const OPERATOR_ADDRESSES: Index = {
+  sepolia: '0x679d87D8640e66778c3419D164998E720D7495f6',
+  'arbitrum-sepolia': '',
+  arbitrum: '',
+}
 
-// Play-market owner (pause/close/withdrawFees on that LMSR). Ownership of the
-// fresh Sepolia play market was transferred to pmoncada.eth.
-export const OPERATOR_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
+// Play-harness scalars (Sepolia). Do not wire into `/deprize/[id]`.
+export const ORACLE_ADDRESS = ORACLE_ADDRESSES.sepolia
+export const OPERATOR_ADDRESS = OPERATOR_ADDRESSES.sepolia
 
 export const MOONDAO_TREASURY: string = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
 export const MOONDAO_L2_TREASURY: string = '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'

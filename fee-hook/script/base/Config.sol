@@ -185,19 +185,44 @@ contract Config is Script {
         MISSION_TABLE_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MissionTable");
         MISSION_TABLE_ADDRESSES[SEP] = sepJson.readAddress(".MissionTable");
 
-        // DePrize prediction-market stack. Testnet deployments mirror
-        // ui/const/config.ts (COLLATERAL_TOKEN/CONDITIONAL_TOKEN/LMSR_WITH_TWAP).
+        // DePrize prediction-market stack.
+        // AUDIT[plan 1.5 / Phase 2]: WETH on Arbitrum is the canonical bridged
+        // aeWETH proxy (official Arbitrum contract-addresses). CTF + LMSR factory
+        // do NOT exist on mainnet yet — leave those slots zero so
+        // requireDePrizeCollateral reverts on 42161 until Phase 2 deploys them
+        // and this file is updated. Do not invent addresses.
         WETH_ADDRESSES[SEP] = 0x8cfF28F922AeEe80d3a0663e735681469F7374c6;
         WETH_ADDRESSES[ARB_SEP] = 0xA441f20115c868dc66bC1977E1c17D4B9A0189c7;
+        WETH_ADDRESSES[ARBITRUM] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
         CONDITIONAL_TOKENS_ADDRESSES[SEP] = 0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8;
         CONDITIONAL_TOKENS_ADDRESSES[ARB_SEP] = 0xa0B1b14515C26acb193cb45Be5508A8A46109a27;
+        // CONDITIONAL_TOKENS_ADDRESSES[ARBITRUM] — fill after Phase 2 Truffle migrate -f 2 --to 4
 
         LMSR_MARKET_ADDRESSES[SEP] = 0x11DCe86c804ca088A0d9036eeE368e4055b235dE;
         LMSR_MARKET_ADDRESSES[ARB_SEP] = 0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe;
+        // LMSR_FACTORY_ADDRESSES[ARBITRUM] — fill after Phase 2 (migration 04)
+    }
 
-        // LMSR_FACTORY_ADDRESSES: populate once the LMSRWithTWAPFactory is deployed
-        // on each chain (used by the per-DePrize market provisioning script).
+    /// @notice Resolve WETH + ConditionalTokens for `chainId`, or revert with a
+    ///         chain-id in the message so a mainnet run cannot silently pick
+    ///         address(0) and deploy a broken Mint/Redeem/FeeRouter.
+    /// @dev AUDIT[plan 1.3]: replaces the generic "not configured" requires.
+    function requireDePrizeCollateral(uint256 chainId) public view returns (address weth, address ctf) {
+        weth = WETH_ADDRESSES[chainId];
+        ctf = CONDITIONAL_TOKENS_ADDRESSES[chainId];
+        require(
+            weth != address(0),
+            string.concat("WETH not configured for chainId ", vm.toString(chainId))
+        );
+        require(
+            ctf != address(0),
+            string.concat(
+                "ConditionalTokens not configured for chainId ",
+                vm.toString(chainId),
+                " - deploy prediction/ migrations 02-04 (DEPRIZE_ARBITRUM_LAUNCH Phase 2) then set CONDITIONAL_TOKENS_ADDRESSES"
+            )
+        );
     }
 
     function currentSalt() public view returns (bytes32) {
