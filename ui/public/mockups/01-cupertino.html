@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 01 · Cupertino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1d1d1f;
+    --ink-2: #6e6e73;
+    --ink-3: #86868b;
+    --hair: #d2d2d7;
+    --paper: #ffffff;
+    --paper-2: #f5f5f7;
+    --accent: #0f4c9e;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Inter Tight', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+    margin: 0;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+  .nav {
+    position: sticky; top: 0; z-index: 50; height: 48px;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+  }
+  .nav-inner {
+    max-width: 980px; margin: 0 auto; padding: 0 24px;
+    height: 100%; display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-mark {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Inter Tight', sans-serif; font-weight: 600; font-size: 15px; letter-spacing: -0.02em;
+  }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a { font-size: 12px; color: var(--ink); opacity: 0.8; }
+  .nav-links a:hover { opacity: 1; }
+  .nav-cta { font-size: 12px; color: var(--accent); font-weight: 500; }
+
+  .hero { text-align: center; padding: 108px 0 0; }
+  .hero h1 { font-size: clamp(44px, 6.8vw, 88px); }
+  .hero-actions { margin-top: 36px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 44px; padding: 0 22px;
+    background: var(--ink); color: #fff; border-radius: 999px;
+    font-size: 15px; font-weight: 500; letter-spacing: -0.01em;
+  }
+  .btn:hover { background: #000; }
+
+  .stage {
+    margin-top: 72px; background: #000; height: 640px;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .stage img { height: 82%; width: auto; }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--hair);
+  }
+  .stat { padding: 48px 16px; text-align: center; border-right: 1px solid var(--hair); }
+  .stat:last-child { border-right: 0; }
+  .stat .n {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: clamp(32px, 4vw, 48px); font-weight: 600; letter-spacing: -0.04em;
+  }
+  .stat .l { margin-top: 8px; font-size: 13px; color: var(--ink-3); }
+
+  .record { background: var(--paper-2); padding: 96px 0; }
+  .record ol { margin: 0; padding: 0; list-style: none; }
+  .record li {
+    display: grid; grid-template-columns: 160px 1fr; gap: 32px;
+    padding: 28px 0; border-bottom: 1px solid var(--hair); align-items: baseline;
+  }
+  .record li:first-child { border-top: 1px solid var(--hair); }
+  .record h3 { font-size: 21px; }
+  .record p { margin: 0; font-size: 16px; color: var(--ink-2); }
+
+  .object { padding: 96px 0 40px; text-align: center; }
+  .object img { width: min(560px, 100%); height: auto; display: block; margin: 0 auto; }
+
+  .closing { text-align: center; padding: 96px 0 120px; }
+  .closing h2 { font-size: clamp(32px, 4.4vw, 56px); }
+  .closing .hero-actions { margin-top: 28px; }
+
+  footer {
+    border-top: 1px solid var(--hair);
+    padding: 22px 0 36px;
+    font-size: 12px; color: var(--ink-3);
+    display: flex; justify-content: space-between;
+  }
+
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+    .stats { grid-template-columns: 1fr; }
+    .stat { border-right: 0; border-bottom: 1px solid var(--hair); }
+    .record li { grid-template-columns: 1fr; gap: 8px; }
+    .stage { height: 420px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-mark" href="#">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2"/>
+        <path d="M8 1a7 7 0 0 0 0 14A5 5 0 0 1 8 1Z" fill="currentColor"/>
+      </svg>
+      MoonDAO
+    </a>
+    <div class="nav-links">
+      <a href="#">Missions</a>
+      <a href="#">Governance</a>
+      <a href="#">About</a>
+    </div>
+    <a class="nav-cta" href="#">Join</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>A space<br />program.</h1>
+    <div class="hero-actions"><a class="btn" href="#">Join</a></div>
+  </div>
+  <div class="stage">
+    <img src="/assets/mockups/moon-plate.webp" alt="The Moon" />
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="n">2</div><div class="l">People flown</div></div>
+    <div class="stat"><div class="n">$8M</div><div class="l">Raised</div></div>
+    <div class="stat"><div class="n">2025</div><div class="l">Constitution on the Moon</div></div>
+  </div>
+</div>
+
+<section class="record">
+  <div class="wrap">
+    <ol>
+      <li>
+        <h3>Flown</h3>
+        <p>Coby Cotton, 2022. Dr. Eiman Jahangir, 2024. Both selected by members.</p>
+      </li>
+      <li>
+        <h3>Funded</h3>
+        <p>Eighty projects. Every allocation was a vote.</p>
+      </li>
+      <li>
+        <h3>Landed</h3>
+        <p>A constitution, written by members, delivered to the lunar surface.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="closing">
+  <div class="wrap">
+    <h2>Membership is open.</h2>
+    <div class="hero-actions"><a class="btn" href="#">Join</a></div>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer>
+    <span>© MoonDAO</span>
+    <span>Privacy</span>
+  </footer>
+</div>
+
+</body>
+</html>

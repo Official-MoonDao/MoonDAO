@@ -147,6 +147,11 @@ module.exports = withBundleAnalyzer(
           // canonical tag pointing at the primary slug. See
           // docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md.
           {
+            source: '/mockups',
+            destination: '/mockups/index.html',
+            permanent: false,
+          },
+          {
             source: '/lunar-atlas',
             destination: '/moonbase',
             permanent: true,

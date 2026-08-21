@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 16 · Ticket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink: #1a1814; --red: #9c2b1c; --rule: #cfc6b8; --paper: #e8e2d6; --stub: #f4efe6; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink);
+    font-family: 'Inter', sans-serif;
+  }
+  a { color: inherit; text-decoration: none; }
+  .t { font-family: 'Special Elite', 'Courier New', monospace; }
+
+  .nav { display: flex; justify-content: space-between; padding: 22px 28px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
+
+  .stage { max-width: 880px; margin: 48px auto 0; padding: 0 20px; }
+  .intro { text-align: center; margin-bottom: 36px; }
+  .intro h1 { margin: 0; font-size: clamp(26px, 3.4vw, 40px); font-weight: 500; letter-spacing: -0.03em; }
+  .intro p { margin: 12px 0 0; color: #5c564c; }
+
+  .ticket {
+    display: grid; grid-template-columns: 1fr 118px;
+    background: var(--stub);
+    border: 1.5px solid var(--ink);
+    box-shadow: 8px 10px 0 rgba(26,24,20,0.08);
+  }
+  .main { padding: 28px 32px 26px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .brand { font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600; }
+  .serial { color: var(--red); font-size: 13px; }
+  h2 { margin: 22px 0 6px; font-family: 'Special Elite', monospace; font-size: clamp(28px, 4vw, 42px); font-weight: 400; }
+  .sub { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: #6a6458; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; padding-top: 16px; border-top: 1px dashed var(--rule); }
+  .grid .k { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #8a8376; }
+  .grid .v { margin-top: 4px; font-family: 'Special Elite', monospace; font-size: 16px; }
+
+  .stub {
+    border-left: 1px dashed var(--ink);
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    display: flex; align-items: center; justify-content: center; gap: 18px;
+    font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+    background: repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(26,24,20,0.03) 4px, rgba(26,24,20,0.03) 5px);
+  }
+
+  .two { margin-top: 22px; }
+  .note { max-width: 880px; margin: 40px auto 80px; padding: 0 20px; display: flex; justify-content: space-between; align-items: baseline; }
+  .note p { margin: 0; color: #5c564c; font-size: 15px; }
+  .join {
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    border: 1.5px solid var(--ink); padding: 10px 16px; background: var(--ink); color: var(--stub);
+  }
+
+  @media (max-width: 640px) {
+    .ticket { grid-template-columns: 1fr; }
+    .stub { writing-mode: horizontal-tb; transform: none; border-left: 0; border-top: 1px dashed var(--ink); padding: 12px; }
+    .grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <span>MoonDAO</span>
+  <a href="#">Join</a>
+</div>
+
+<div class="stage">
+  <div class="intro">
+    <h1>Two tickets, paid for in public.</h1>
+    <p>The members bought them. The members chose who sat in them.</p>
+  </div>
+
+  <div class="ticket">
+    <div class="main">
+      <div class="row">
+        <span class="brand">MoonDAO</span>
+        <span class="t serial">NS-22</span>
+      </div>
+      <h2 class="t">C. Cotton</h2>
+      <div class="sub">Passenger · selected by vote · 2022</div>
+      <div class="grid">
+        <div><div class="k">Operator</div><div class="v">Blue Origin</div></div>
+        <div><div class="k">Paid by</div><div class="v">The members</div></div>
+        <div><div class="k">Record</div><div class="v">Public</div></div>
+      </div>
+    </div>
+    <div class="stub t">Admit · one</div>
+  </div>
+
+  <div class="ticket two">
+    <div class="main">
+      <div class="row">
+        <span class="brand">MoonDAO</span>
+        <span class="t serial">2024</span>
+      </div>
+      <h2 class="t">E. Jahangir</h2>
+      <div class="sub">Passenger · selected by sweepstakes · 2024</div>
+      <div class="grid">
+        <div><div class="k">Operator</div><div class="v">Blue Origin</div></div>
+        <div><div class="k">Paid by</div><div class="v">The members</div></div>
+        <div><div class="k">Record</div><div class="v">Public</div></div>
+      </div>
+    </div>
+    <div class="stub t">Admit · one</div>
+  </div>
+</div>
+
+<div class="note">
+  <p>A constitution followed them to the Moon in 2025. Eight million dollars is still on the ledger.</p>
+  <a class="join" href="#">Join</a>
+</div>
+
+</body>
+</html>
