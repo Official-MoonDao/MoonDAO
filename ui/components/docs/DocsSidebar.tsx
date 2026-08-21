@@ -29,7 +29,7 @@ function FolderNode({
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-base-200 ${
+        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-white/5 ${
           childIsCurrent ? 'font-semibold text-primary' : 'text-base-content'
         }`}
       >
@@ -71,7 +71,7 @@ function NavNode({
     <li>
       <DocsLink
         href={node.href}
-        className={`block rounded-lg px-3 py-2 text-sm hover:bg-base-200 ${
+        className={`block rounded-lg px-3 py-2 text-sm hover:bg-white/5 ${
           current
             ? 'bg-primary/10 font-semibold text-primary'
             : 'text-base-content'
@@ -94,8 +94,8 @@ export function DocsSidebar({
     <nav aria-label="Documentation" className="space-y-1">
       <DocsLink
         href="/docs"
-        className={`block rounded-lg px-3 py-2 text-sm hover:bg-base-200 ${
-          !currentSlug
+        className={`block rounded-lg px-3 py-2 text-sm hover:bg-white/5 ${
+          !currentSlug || currentSlug === 'index'
             ? 'bg-primary/10 font-semibold text-primary'
             : 'text-base-content'
         }`}
