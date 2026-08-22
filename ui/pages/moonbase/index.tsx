@@ -1,12 +1,17 @@
 import { GlobeAltIcon } from '@heroicons/react/24/outline'
+import { useLogin } from '@privy-io/react-auth'
 import type { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
+import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { isPublicProductionHost } from 'const/flags'
-import { UNIT } from '@/lib/deprize/constants'
+import { GAS_RESERVE_ETH, MarketStage, UNIT } from '@/lib/deprize/constants'
 import { fmtPrizeEth } from '@/lib/deprize/format'
 import { mergeLiveMarketInto } from '@/lib/deprize/goal-market'
+import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
+import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -137,6 +142,10 @@ export default function MoonBaseZeroIndex() {
   const dataset = SEED_ATLAS
   const { selectedChain: chain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(chain)
+  const account = useActiveAccount()
+  const userAddress = account?.address
+  const { login } = useLogin()
+  const region = useRegionRestriction()
 
   const [focus, setFocus] = useState<GlobeFocus>(null)
   // Selection is layered: a tech-tree site (category) opens the race/market
@@ -222,8 +231,11 @@ export default function MoonBaseZeroIndex() {
   )
 
   // Mount one DePrize market — the open race only. Eight concurrent 30s polls
-  // on the r3f scene is exactly what the bridge was designed to avoid.
-  const liveOdds = useDePrizeGoalOdds(chain, selectedGoalId ?? undefined)
+  // on the r3f scene is exactly what the bridge was designed to avoid. Also
+  // the single source for the race's betting/positions surface (marketAddress,
+  // per-outcome balances) so "Back this team" can bet inline instead of
+  // navigating to /deprize/{id}.
+  const liveOdds = useDePrizeGoalOdds(chain, selectedGoalId ?? undefined, userAddress)
   const { totalFunding, isLoading: isLoadingPrizePool } = useTotalFunding(
     liveOdds.jbProjectId,
     chain
@@ -232,6 +244,50 @@ export default function MoonBaseZeroIndex() {
     liveOdds.jbProjectId !== undefined && !isLoadingPrizePool
       ? `${fmtPrizeEth(Number(totalFunding) / Number(UNIT))} ETH`
       : undefined
+
+  // Spendable native ETH for the inline BetModal — same pattern as the
+  // DePrize detail page, bumped after a bet/cash-out/claim via refreshNonce.
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const [nativeBalance, setNativeBalance] = useState<number | undefined>()
+  const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
+  useEffect(() => {
+    if (!userAddress) {
+      setNativeBalance(undefined)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const b = await eth_getBalance(
+          getRpcClient({ client: deprizeReadClient, chain: readChain }),
+          { address: userAddress }
+        )
+        if (!cancelled) setNativeBalance(Number(b) / Number(UNIT))
+      } catch {
+        if (!cancelled) setNativeBalance(undefined)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [userAddress, readChain, refreshNonce])
+  const spendableEth = Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
+
+  // Default-deny when country is unknown, exactly like the detail page.
+  const bettingAllowed =
+    liveOdds.bettingOpen &&
+    liveOdds.mintBound &&
+    !!liveOdds.mintAddress &&
+    !!region.country &&
+    !region.isRestricted &&
+    !region.isLoading &&
+    !region.isError &&
+    liveOdds.stage === MarketStage.Running
+
+  const handleRaceMarketDone = () => {
+    liveOdds.refresh()
+    setRefreshNonce((n) => n + 1)
+  }
   // Depend on the bridge fields, not the result object — the hook returns a
   // fresh object every render and would rebuild trees on every hover/frame.
   // Pass the dataset array itself, not a copy: mergeLiveMarketInto returns the
@@ -673,6 +729,25 @@ export default function MoonBaseZeroIndex() {
                 prizePoolLoading={
                   liveOdds.jbProjectId !== undefined && isLoadingPrizePool
                 }
+                chain={chain}
+                account={account}
+                userAddress={userAddress}
+                onConnectWallet={() => login()}
+                spendableEth={spendableEth}
+                mintAddress={liveOdds.mintAddress}
+                marketAddress={liveOdds.marketAddress}
+                numOutcomes={liveOdds.numOutcomes}
+                outcomes={liveOdds.outcomes}
+                bettingAllowed={bettingAllowed}
+                tradingHalted={liveOdds.tradingHalted}
+                resolved={liveOdds.resolved}
+                winningIndex={liveOdds.winningIndex}
+                isRefundVector={liveOdds.isRefundVector}
+                payoutDen={liveOdds.payoutDen}
+                payoutNums={liveOdds.payoutNums}
+                jbProjectId={liveOdds.jbProjectId}
+                refreshNonce={refreshNonce}
+                onDone={handleRaceMarketDone}
               />
             ) : selectedTree ? (
               <TechTreePanel
