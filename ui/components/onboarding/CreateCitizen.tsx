@@ -1593,7 +1593,11 @@ export default function CreateCitizen({
       const sourceForGen = getGenerationSourceImage(cropped, undefined)
 
       const pendingJob = readPendingImageJob()
-      if (pendingJob && isPendingImageJobStale(pendingJob)) {
+      // Only eagerly clear stale 'uploading' jobs, which have no jobId to
+      // recover. A stale 'polling' job still has a real comfy.icu jobId that
+      // may already have a completed portrait waiting — decideImageResumeAction
+      // below will try to resume it rather than discard it.
+      if (pendingJob && isPendingImageJobStale(pendingJob) && pendingJob.status !== 'polling') {
         clearPendingImageJob()
       }
 
