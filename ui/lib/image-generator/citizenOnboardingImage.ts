@@ -63,6 +63,15 @@ export type ImageResumeInput = {
  * failures. So polling resumes even when the cropped image failed to persist.
  * Restarting an `uploading` job, by contrast, re-uploads and therefore needs the
  * cropped source image.
+ *
+ * Staleness (`jobStale`) only applies to `uploading` jobs, which have no jobId
+ * to fall back on. A `polling` job's jobId is real and comfy.icu keeps
+ * completed runs queryable for a long time (well beyond our local staleness
+ * window) — so even a "stale" polling job may already have a finished
+ * portrait waiting. Bug fix: this used to bail out to 'none' for any stale
+ * job, which silently discarded completed AI portraits for anyone who took a
+ * while to return (e.g. funding their wallet via onramp) and caused their
+ * mint to fall back to the raw uploaded photo instead.
  */
 export function decideImageResumeAction({
   job,
@@ -70,8 +79,9 @@ export function decideImageResumeAction({
   hasAiPortraitReady,
   hasSourceImage,
 }: ImageResumeInput): ImageResumeAction {
-  if (!job || jobStale || hasAiPortraitReady) return 'none'
+  if (!job || hasAiPortraitReady) return 'none'
   if (job.status === 'polling' && job.jobId) return 'resume-polling'
+  if (jobStale) return 'none'
   if (job.status === 'uploading') {
     return hasSourceImage ? 'restart-generation' : 'none'
   }
