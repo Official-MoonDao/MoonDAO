@@ -23,6 +23,7 @@
     "cypress/integration/unit/lunar-atlas-selectors.cy.ts",
     "cypress/integration/unit/lunar-atlas-southpole.cy.ts",
     "cypress/integration/unit/team-roles.cy.tsx",
+    "cypress/integration/unit/renew-subscription.cy.ts",
     "cypress/integration/unit/marketplace-usdc-onramp.cy.tsx",
     "cypress/integration/unit/proposal-ai-review.cy.tsx",
     "cypress/integration/overview-delegate/leaderboard.cy.ts",
