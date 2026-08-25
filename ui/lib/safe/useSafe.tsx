@@ -13,7 +13,7 @@ import {
 } from '@safe-global/safe-core-sdk-types'
 import ERC20ABI from 'const/abis/ERC20.json'
 import { ethers } from 'ethers'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
@@ -78,6 +78,7 @@ export default function useSafe(
   >([])
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
   const [currentNonce, setCurrentNonce] = useState<number | null>(null)
+  const pendingTxRequestId = useRef(0)
 
   const transactionsToSign = useMemo(
     () => pendingTransactions.filter((tx) => !tx.isExecuted),
@@ -435,17 +436,23 @@ export default function useSafe(
         safeAddress,
       })
 
-      // Get initial state
-      const [currentOwners, currentThreshold, nonce] = await Promise.all([
+      // Owners/threshold are required to init; nonce is not. Fetch it
+      // separately so an RPC blip cannot skip setSafe.
+      const [currentOwners, currentThreshold] = await Promise.all([
         newSafe.getOwners(),
         newSafe.getThreshold(),
-        newSafe.getNonce(),
       ])
 
       setOwners(currentOwners)
       setThreshold(currentThreshold)
-      setCurrentNonce(nonce)
       setSafe(newSafe)
+
+      try {
+        const nonce = await newSafe.getNonce()
+        setCurrentNonce(nonce)
+      } catch (nonceErr) {
+        console.error('Error getting current nonce:', nonceErr)
+      }
 
       return newSafe
     } catch (err) {
@@ -475,18 +482,24 @@ export default function useSafe(
   const fetchPendingTransactions = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
       if (!safeApiKit || !safeAddress) {
+        pendingTxRequestId.current += 1
+        setPendingTransactions([])
         setIsLoadingTransactions(false)
         return
       }
 
+      const requestId = ++pendingTxRequestId.current
       if (!silent) setIsLoadingTransactions(true)
       try {
         const pendingTxs = await safeApiKit.getPendingTransactions(safeAddress)
+        if (requestId !== pendingTxRequestId.current) return
         setPendingTransactions(pendingTxs.results)
       } catch (err) {
         console.error('Error fetching pending transactions:', err)
       } finally {
-        setIsLoadingTransactions(false)
+        if (requestId === pendingTxRequestId.current) {
+          setIsLoadingTransactions(false)
+        }
       }
     },
     [safeApiKit, safeAddress]
@@ -603,7 +616,14 @@ export default function useSafe(
   // Load the queue as soon as we know which Safe to ask about, in parallel
   // with (and independent of) wallet-dependent Safe initialization below.
   useEffect(() => {
+    setPendingTransactions([])
     fetchPendingTransactions()
+
+    return () => {
+      // Invalidate in-flight responses so a slower previous Safe cannot
+      // overwrite the queue after navigation.
+      pendingTxRequestId.current += 1
+    }
   }, [fetchPendingTransactions])
 
   useEffect(() => {
