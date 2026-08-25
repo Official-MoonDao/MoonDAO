@@ -14,9 +14,9 @@
  *   ARBITRUM_RPC_URL     defaults to the public Arb1 endpoint
  *   ARB_SEPOLIA_RPC_URL  defaults to the public Arb-Sepolia endpoint
  *
- * Phase 2 (shared infra, once):  npx truffle migrate -f 2 --to 4 --network arbitrum
+ * Phase 2 (shared infra, once):  npm run truffle -- migrate -f 2 --to 4 --network arbitrum
  *   Skip 05 (WETH9) — use canonical aeWETH via DEPRIZE_WETH on migration 08.
- * Phase 4 (per DePrize):         npx truffle migrate -f 8 --to 8 --network arbitrum
+ * Phase 4 (per DePrize):         npm run truffle -- migrate -f 8 --to 8 --network arbitrum
  */
 require("dotenv").config();
 

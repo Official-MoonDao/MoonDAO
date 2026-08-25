@@ -1,12 +1,21 @@
 # Prediction Markets
 
 Gnosis ConditionalTokens + `LMSRWithTWAP` (Solidity 0.5). Used by DePrize as the
-external market layer. See `docs/DEPRIZE_ARBITRUM_LAUNCH.md`.
+external market layer. Deployed addresses are in
+`docs/DEPRIZE_ARBITRUM_ADDRESSES.md`.
 
 ## Setup
 ```
 npm install
 ```
+
+Use Node 18 or 20. Truffle's dependency tree builds `leveldown` from source on
+newer runtimes and fails there.
+
+Invoke Truffle through `npm run truffle --`, not `npx truffle`. Truffle 5.11.5
+publishes `build/cli.bundled.js` without an executable bit, so the `.bin` shim
+exits 126 (`Permission denied`); the script runs the bundle through `node` and
+sidesteps it.
 
 Requires `PRIVATE_KEY` and (for public networks) an RPC URL. Network config is
 committed at `truffle-config.js`. A local (gitignored) `truffle.js` does not
@@ -17,18 +26,18 @@ but it also has no `arbitrum` network, so run mainnet from the committed config.
 
 ```shell
 # Local
-npx truffle migrate --network development --reset
+npm run truffle -- migrate --network development --reset
 
 # Arbitrum Sepolia (full stack including a test WETH9)
-npx truffle migrate --network arbitrumSepolia
+npm run truffle -- migrate --network arbitrumSepolia
 
 # Arbitrum mainnet — Phase 2 shared infra ONLY (CTF + math + factory).
 # Do NOT pass --reset. Do NOT run migration 05 (it would deploy a fake WETH9).
-npx truffle migrate -f 2 --to 4 --network arbitrum
+npm run truffle -- migrate -f 2 --to 4 --network arbitrum
 ```
 
 After Phase 2, record ConditionalTokens + LMSRWithTWAPFactory and fill
-`fee-hook/script/base/Config.sol` / `ui/const/config.ts` (plan 1.5).
+`fee-hook/script/base/Config.sol` / `ui/const/config.ts`.
 
 The three Phase 2 artifacts in `build/contracts/` are committed on purpose:
 their `networks.42161` entry is what makes migration 02's `overwrite: false`
@@ -76,9 +85,13 @@ DEPRIZE_CTF=0x<phase2-ctf> \
 DEPRIZE_WETH=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1 \
 DEPRIZE_FACTORY=0x<phase2-factory> \
 DEPRIZE_FUNDING_PER_OUTCOME=<wei> \
-npx truffle migrate -f 8 --to 8 --network arbitrum
+npm run truffle -- migrate -f 8 --to 8 --network arbitrum
 ```
 
 Migration 08 prints `conditionId` + LMSR address. **Record `questionId`** — it
 is not stored on-chain and resolution cannot be constructed without it.
-Then transfer LMSR ownership to the `DePrizeFeeRouter` (plan Phase 4 step 3).
+Then transfer LMSR ownership to the `DePrizeFeeRouter`.
+
+Note: DePrize 1 was provisioned with direct `cast` calls while the `npx truffle`
+breakage above was unresolved, so migration 08 has not yet been exercised
+against Arbitrum mainnet. Dry-run it on Sepolia before relying on it.
