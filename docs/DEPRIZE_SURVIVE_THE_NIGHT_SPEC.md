@@ -1,6 +1,11 @@
 # Survive the Night — Technical Specification v1.0-draft
 
-**Status:** Draft for Senate review — rules freeze at roster naming, immutable after market open
+> **SUPERSEDED by [`DEPRIZE_NIGHT_SHIFT.md`](./DEPRIZE_NIGHT_SHIFT.md).** The 1 kg mass cap and
+> no-radioisotopes clause below are technology-banning rather than outcome-defined, and the
+> hibernate-and-beacon win condition rewards survival rather than operation. Retained for the
+> physics and the rejected-options record.
+
+**Status:** Superseded — do not use as rules of record
 **Prize:** P1 in [`DEPRIZE_FIRST_PRIZE_CANDIDATES.md`](./DEPRIZE_FIRST_PRIZE_CANDIDATES.md)
 **Related:** [`DEPRIZE_GTM_SURVIVE_THE_NIGHT.md`](./DEPRIZE_GTM_SURVIVE_THE_NIGHT.md) (launch plan) · [`DEPRIZE_SURVIVE_THE_NIGHT_RISKS.md`](./DEPRIZE_SURVIVE_THE_NIGHT_RISKS.md) (risk register) · [`DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md`](./DEPRIZE_LUNAR_NIGHT_CONTRACT_PERFORMERS.md) (funded landscape) · [`DEPRIZE.md`](./DEPRIZE.md) (mechanism)
 **Last updated:** 2026-08-20
