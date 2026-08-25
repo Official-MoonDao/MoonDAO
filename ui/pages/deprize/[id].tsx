@@ -28,7 +28,6 @@ import { orgColor } from '@/lib/lunar-atlas/display'
 import {
   DePrizeState,
   DEPRIZE_STATE_META,
-  GAS_RESERVE_ETH,
   MarketStage,
   OUTCOME_COLORS,
   positionRedeemValue,
@@ -36,6 +35,7 @@ import {
   UNIT,
 } from '@/lib/deprize/constants'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
+import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { buildAmounts } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
 import { formatBettingCloses, isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
@@ -346,7 +346,7 @@ function DePrizeDetailContent() {
     }
   }, [lmsrRead, market.outcomes, market.stage, numOutcomes])
 
-  const spendable = Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
+  const spendable = spendableFromBalanceEth(nativeBalance, chain.id)
   const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
   const mintConfigured = isMintConfigured(mintAddress)
   const marketBound =

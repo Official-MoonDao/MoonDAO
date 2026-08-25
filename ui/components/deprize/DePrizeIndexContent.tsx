@@ -9,12 +9,12 @@ import { partitionDePrizeIndexByRace } from '@/lib/deprize/competitions'
 import {
   DePrizeState,
   DEPRIZE_STATE_META,
-  GAS_RESERVE_ETH,
   MarketStage,
   OUTCOME_COLORS,
   UNIT,
 } from '@/lib/deprize/constants'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
+import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { deprizeListBucket, isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize, useDePrizeCount } from '@/lib/deprize/useDePrize'
@@ -485,7 +485,7 @@ export default function DePrizeIndexContent() {
           { address: account.address },
         )
         if (!cancelled) {
-          setSpendableEth(Math.max(0, Number(bal) / Number(UNIT) - GAS_RESERVE_ETH))
+          setSpendableEth(spendableFromBalanceEth(Number(bal) / Number(UNIT), readChain.id))
         }
       } catch {
         if (!cancelled) setSpendableEth(0)
