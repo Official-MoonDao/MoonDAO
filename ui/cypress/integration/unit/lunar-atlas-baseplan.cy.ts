@@ -59,12 +59,17 @@ function tightestGap(plan: SitePlan, list: Plot[]): number {
 
 // The real rosters, by race. Radii are footprints in meters (footprintRadiusM).
 const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
-  // Artemis Base Camp (38 m, dome-to-dome) beside ILRS (21.9 m, comms guy
-  // anchor to the PV field's far corner) — the two publicly declared
-  // sustained-presence programs, not one competing against its own precursor
-  // lander. ILRS reads as the extended-model station China/Roscosmos have on
-  // the public roadmap for the 2040s, not the single-mast 2035 basic model.
-  crewed_base: plots(19, 12.86),
+  // The whole habitat race, largest to smallest: Artemis Base Camp (38 m,
+  // dome-to-dome) and ILRS (21.9 m, comms guy anchor to the PV field's far
+  // corner) — the two publicly declared sustained-presence programs, not one
+  // competing against its own precursor lander; ILRS reads as the
+  // extended-model station China/Roscosmos have on the public roadmap for the
+  // 2040s, not the single-mast 2035 basic model — alongside Sierra's
+  // inflatable LIFE habitat (6 m), Thales' MPH module (5.5 m), and Toyota's
+  // Lunar Cruiser (3.3 m). A base is not a different kind of thing from a
+  // habitat module, just more of them integrated together, so all five
+  // compete on the same hardstand.
+  habitat: plots(19, 12.86, 6, 5.5, 3.3),
   lander: plots(31.2, 9.6),
   // eVinci radiator wall, IX's radiator canopy, Lockheed's radiator mast — the
   // three fission bids, and three very different amounts of ground.
@@ -75,9 +80,6 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // still stands on.
   isru_plant: plots(9.5, 5.35, 5.58),
   rover: plots(2.3, 2.1, 2.2),
-  // Sierra's inflatable, the MPH module, the Lunar Cruiser — and the inflatable
-  // takes the most ground of the three, which is the point of inflating it.
-  habitat: plots(6, 5.5, 3.3),
   construction: plots(6.3, 6.3, 6.3, 6.3),
   // Nokia, ESA, Crescent, IM — dataset order. ESA's user terminal (1.04) and
   // Crescent's (1.52) are a fraction of the ground Nokia takes. Crescent's
@@ -89,6 +91,11 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // rather than subscribing to one — but is a fraction of the generic
   // mast-shelter-array lot Nokia still stands on.
   comms_pnt: plots(7.5, 1.04, 1.52, 1.13),
+  // A single concept-study competitor, standing alone on its own corner lot.
+  // 7 m, not the model's full 35 m schematic half-length — see
+  // FOOTPRINT_FRACTION['anthrofuturism-lunar-mass-driver'] in
+  // ProjectModel.tsx.
+  mass_driver: plots(7),
 }
 
 const races = Object.entries(ROSTERS) as [ProjectType, Plot[]][]
@@ -259,8 +266,8 @@ describe('moon base zero street plan', () => {
     })
 
     it('keeps the core district on its hardstand, inside the perimeter road', () => {
-      const core = BASE_PLAN.crewed_base!
-      const extent = districtExtentM(core, ROSTERS.crewed_base!)
+      const core = BASE_PLAN.habitat!
+      const extent = districtExtentM(core, ROSTERS.habitat!)
       expect(extent).to.be.lessThan(HARDSTAND.radius)
       expect(HARDSTAND.radius).to.be.lessThan(RING_RADIUS_M)
     })
@@ -301,11 +308,11 @@ describe('moon base zero street plan', () => {
       // stop it. This is already a compromise with keeping the vehicle in frame,
       // so the assertion is a floor, not a target.
       const pad = BASE_PLAN.lander!
-      const core = BASE_PLAN.crewed_base!
+      const core = BASE_PLAN.habitat!
       const gap =
         Math.hypot(pad.east - core.east, pad.north - core.north) -
         districtExtentM(pad, ROSTERS.lander!) -
-        districtExtentM(core, ROSTERS.crewed_base!)
+        districtExtentM(core, ROSTERS.habitat!)
       expect(gap).to.be.greaterThan(30)
     })
   })

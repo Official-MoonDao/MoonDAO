@@ -41,6 +41,7 @@ import {
   buildTechTrees,
   datasetYearRange,
   filterProjects,
+  isMoonMilestone,
   orgById,
   projectById,
   projectStateAtYear,
@@ -191,10 +192,14 @@ export default function MoonBaseZeroIndex() {
     }
   }, [])
 
+  // Density of milestones that actually put hardware at the Moon in a given
+  // year — matches what the scrubber's range covers, so a tall bar means
+  // "a lot lands/arrives this year", not "a lot of contracts were signed".
   const histogram = useMemo(() => {
     const counts = new Map<number, number>()
     for (const p of dataset.projects) {
       for (const m of p.milestones) {
+        if (!isMoonMilestone(m)) continue
         const y = atlasYear(m.targetDate)
         if (y != null) counts.set(y, (counts.get(y) ?? 0) + 1)
       }

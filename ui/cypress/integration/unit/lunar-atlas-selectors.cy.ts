@@ -130,9 +130,9 @@ describe('lunar-atlas selectors', () => {
       expect(nasa.every((p) => p.orgId === 'nasa')).to.equal(true)
     })
     it('filters by shared goal membership', () => {
-      const base = filterProjects(projects, { sharedGoalId: 'shared-south-pole-base' })
+      const base = filterProjects(projects, { sharedGoalId: 'shared-habitat' })
       expect(base.length).to.be.greaterThan(1)
-      expect(base.every((p) => p.sharedGoalIds.includes('shared-south-pole-base'))).to.equal(true)
+      expect(base.every((p) => p.sharedGoalIds.includes('shared-habitat'))).to.equal(true)
     })
     it('finds the landing-pad race competitors', () => {
       const racers = filterProjects(projects, { sharedGoalId: 'shared-landing-pads' })

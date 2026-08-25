@@ -4,9 +4,9 @@
 // app's UI chrome.
 
 import {
+  ArrowUpRightIcon,
   BeakerIcon,
   BoltIcon,
-  BuildingOffice2Icon,
   GlobeAltIcon,
   HomeModernIcon,
   RocketLaunchIcon,
@@ -19,7 +19,6 @@ import type { ComponentType, SVGProps } from 'react'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 
 const CATEGORY_ICON: Record<ProjectType, ComponentType<SVGProps<SVGSVGElement>>> = {
-  crewed_base: BuildingOffice2Icon,
   habitat: HomeModernIcon,
   lander: RocketLaunchIcon,
   rover: TruckIcon,
@@ -28,6 +27,7 @@ const CATEGORY_ICON: Record<ProjectType, ComponentType<SVGProps<SVGSVGElement>>>
   comms_pnt: SignalIcon,
   orbital: GlobeAltIcon,
   construction: WrenchScrewdriverIcon,
+  mass_driver: ArrowUpRightIcon,
   other: Square3Stack3DIcon,
 }
 

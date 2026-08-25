@@ -48,24 +48,25 @@
 import type { ProjectType } from './types'
 
 // Radius of the perimeter road's centreline, in meters. The core district packs
-// to a 34.9 m extent now that ILRS stands as a real second base rather than a
-// construction footnote (see PROJECT_SIZE_M['ilrs']), nearly a third bigger
-// than the 28 m the two used to need, so the road's inner curb clears the
-// camp's apron by less than 2 m rather than the old 6 — tight, but the
-// hardstand still merges under that curb rather than leaving open regolith
-// between them. Every avenue starts here. This is close to the ceiling the
-// power district's own inner corner lots leave (see 'leaves the inward corner
-// lots clear of the perimeter road' in the unit tests) — main street would
-// have to move out too before the core could grow any further.
-export const RING_RADIUS_M = 43
+// to a 58.7 m extent now that it carries the whole habitat race rather than
+// just the two flagship programs — Artemis Base Camp and ILRS stand there
+// alongside the LIFE, MPH and Lunar Cruiser modules (see BASE_PLAN.habitat) —
+// nearly double the 34.9 m the two crewed programs alone used to need. Every
+// avenue starts here. This is close to the ceiling the power district's own
+// inner corner lots leave (see 'leaves the inward corner lots clear of the
+// perimeter road' in the unit tests) — main street had to move out too (see
+// MAIN_LOOP_M) before the core could grow this far.
+export const RING_RADIUS_M = 67
 
 // Radius of MAIN STREET, the concentric loop the districts stand on.
 //
 // Set by the deepest district rather than by taste: the power district's inner
 // corner lots hold 11 m reactors 19 m back down their avenue, so the loop has to
-// sit far enough out that those lots still clear the perimeter road's windrow.
-// Pulling it in any further would put a reactor on the ring road.
-export const MAIN_LOOP_M = 82
+// sit far enough out that those lots still clear the perimeter road's windrow —
+// and that windrow moved out with RING_RADIUS_M when the core absorbed the
+// habitat race, so main street had to follow it. Pulling main street in any
+// further would put a reactor on the ring road.
+export const MAIN_LOOP_M = 96
 
 // Road cross-section, in meters. HALF is the centreline to the outside of the
 // windrow (see PROFILE in BaseRoads, which must agree); SETBACK is the clear
@@ -111,9 +112,10 @@ export type SitePlan = {
   // against the real packing in the tests rather than trusted.
   reach?: number
   // For a 'lot' district only: the bearing, degrees CCW from east, that its
-  // pair of assets stands along. Worth controlling because the core's two are a
-  // 38 m base camp beside a 21.9 m ILRS cluster, and which of them the eye
-  // reaches first is the difference between a group portrait and an eclipse.
+  // assets stand along, largest to smallest. Worth controlling because the
+  // core runs from a 38 m base camp down to a 6.6 m pressurized rover, and
+  // which end the eye reaches first is the difference between a group
+  // portrait and an afterthought.
   lotAxis?: number
   // For a 'flank' district only: which side of the road the largest plot takes,
   // +1 for left of the outbound direction. The landing zone's Starship is the
@@ -316,21 +318,23 @@ export function districtBearingDeg(plan: SitePlan): number {
 
 // Where the districts stand.
 //
-// Six junctions on main street, spaced on a regular 45–60° grid, plus the core
-// inside the perimeter road and the landing zone out at the end of the longest
-// avenue. The regularity is doing real work: a viewer reads a plan as surveyed
-// from its spacing long before they read any individual road, and evenly spaced
-// junctions on a true circle is the cheapest way to say a surveyor stood here.
+// Seven junctions on main street, spaced on a regular 45–60° grid, plus the
+// core inside the perimeter road and the landing zone out at the end of the
+// longest avenue. The regularity is doing real work: a viewer reads a plan as
+// surveyed from its spacing long before they read any individual road, and
+// evenly spaced junctions on a true circle is the cheapest way to say a
+// surveyor stood here.
 //
 // Which race gets which junction is composition and traffic. The camera looks
 // from the south-east, so the landing zone takes due north and backs the frame
-// with a 52 m Starship; the habitat, comms and rover districts take the near
-// south-east arc so the foreground carries something at human scale and the one
-// moving vehicle on the base starts close to the eye; the ISRU yard sits next
-// door to the landing zone, because the whole argument for making oxygen on the
-// Moon is pumping it into a lander, and that tanker run is now one leg of main
+// with a 52 m Starship; the comms and rover districts take the near south-east
+// arc so the foreground carries something at human scale and the one moving
+// vehicle on the base starts close to the eye; the ISRU yard sits next door to
+// the landing zone, because the whole argument for making oxygen on the Moon
+// is pumping it into a lander, and that tanker run is now one leg of main
 // street rather than a trip through town; power goes off west where the crew
-// isn't.
+// isn't. The habitat race stands at the core rather than on any of these
+// junctions — see BASE_PLAN.habitat.
 //
 // Positions are given as a bearing rather than as coordinates so a district is
 // EXACTLY on main street. Writing the pair out by hand rounds it a couple of
@@ -342,12 +346,16 @@ const at = (bearingDeg: number, radiusM = MAIN_LOOP_M) => {
 }
 
 export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
-  // THE CORE, at the origin inside the perimeter road: the sustained-presence
-  // race, Artemis Base Camp against China/Russia's International Lunar
-  // Research Station (ILRS). The one district with no street through it — it
-  // stands on a continuous hardstand, which is what a first landing site
-  // would actually be.
-  crewed_base: { east: 0, north: 0, turn: 0, front: 'lot', lotAxis: 200 },
+  // THE CORE, at the origin inside the perimeter road: the whole habitat
+  // race in one place. Artemis Base Camp and China/Russia's International
+  // Lunar Research Station (ILRS) stand there against Thales' MPH, Sierra's
+  // LIFE and Toyota's Lunar Cruiser — a base is not a different kind of
+  // thing from a habitat module, just more of them integrated together, so
+  // the flagship programs don't get a plaza to themselves while the modules
+  // get a corner lot down the street. The one district with no street
+  // through it — it stands on a continuous hardstand, which is what a first
+  // landing site would actually be.
+  habitat: { east: 0, north: 0, turn: 0, front: 'lot', lotAxis: 200 },
 
   // COMMS AND NAVIGATION, due east (0°). Ground stations are sited clear of the
   // structures that would clutter their horizon, and four terminals looking at
@@ -364,15 +372,19 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // ground these machines are all bidding to pave. Turned toward the work.
   construction: { ...at(45), turn: 22, reach: 20 },
 
-  // LANDING ZONE, due north (90°) at the back of the plan, 140 m out because a
-  // Starship-class descent throws ejecta on ballistic arcs with no air to stop
-  // them — pushed 10 m further than the pads alone need since the core grew
-  // to hold a real ILRS (see HARDSTAND) and the 30 m ejecta-standoff floor
-  // is measured center-to-center against the core's own reach, not the ring
-  // road. The two pads FLANK the haul road rather than taking corner lots —
-  // at 62 m across, the Starship's apron is most of a city block on its own.
+  // LANDING ZONE, due north (90°) at the back of the plan, 300 m out — a real
+  // ejecta standoff for a Starship-class descent rather than the ~104 m
+  // (140 m centre, less the pad radius and reach) the pads used to clear the
+  // core by. With no air to slow it, plume-thrown regolith travels on
+  // ballistic arcs that stay dangerous for hundreds of meters; 300 m is
+  // still a compromise against keeping the vehicle in the home-view frame
+  // (see HOME_CAM in homeview.ts), not the kilometer-plus separation a real
+  // site would want, but it reads as an actual haul out to the pads instead
+  // of a short walk. The two pads FLANK the haul road rather than taking
+  // corner lots — at 62 m across, the Starship's apron is most of a city
+  // block on its own.
   lander: {
-    ...at(90, 140),
+    ...at(90, 300),
     turn: 0,
     front: 'flank',
     flankSide: 1,
@@ -405,9 +417,16 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // the LTV-scale figure below; MarkerLayer places the depot yard itself.
   rover: { ...at(255), turn: 0, reach: 13 },
 
-  // HABITAT, south-east (315°). Pressurized modules at human scale, on the near
-  // frontage so the eye has somewhere to start before it reaches the core.
-  habitat: { ...at(315), turn: 10, reach: 19 },
+  // LUNAR MASS DRIVER, south-south-east (300°) — the widest open gap on main
+  // street, between the rover depot and the comms terminals, and it clears
+  // both neighbors' junctions by the same 45°+ margin every other pair on
+  // this ring keeps. A single concept-study competitor stands alone on its
+  // own corner lot, close in like everyone else's (see the
+  // `anthrofuturism-lunar-mass-driver` entry in ProjectModel.tsx's
+  // FOOTPRINT_FRACTION for why its 70 m schematic model doesn't push this
+  // junction out past main street the way a true 35 m-radius footprint
+  // would).
+  mass_driver: { ...at(300), turn: 0, reach: 21 },
 }
 
 // Every "on-street" district's bearing, own centre radius, and reach — the
@@ -506,10 +525,10 @@ export const FALLBACK_RING_M = 150
 
 // The cleared hardstand at the core, in meters — the yard the core district
 // stands in, paved continuously with the perimeter road around it. Sized to
-// the 34.9 m the two crewed programs now reach (see `crewed_base` in
-// BASE_PLAN and ROSTERS.crewed_base in the unit tests) with a couple of
-// meters to spare before the ring road's own curb.
-export const HARDSTAND = { site: 'crewed_base' as ProjectType, radius: 36.5 }
+// the 58.7 m the whole habitat race now reaches (see `habitat` in BASE_PLAN
+// and ROSTERS.habitat in the unit tests) with a little under 2 m to spare
+// before the ring road's own curb.
+export const HARDSTAND = { site: 'habitat' as ProjectType, radius: 60.5 }
 
 // Roads, as polylines of [east, north] waypoints in meters. Curves are splined
 // through these, so a handful of waypoints describes a road that bends the way
@@ -614,8 +633,7 @@ export const BASE_STREETS: Street[] = [
   // reasons.
   avenue('rover', { width: 0.72 }),
 
-  // HABITAT AVENUE — the crew's own route between quarters and the core. Narrow
-  // because nothing is hauled along it, but graded, because this is the one
-  // road on the base people are expected to walk.
-  avenue('habitat', { width: 0.85 }),
+  // MASS DRIVER AVENUE — maintenance out to the launcher's breach house.
+  // Rover width: one concept-study competitor generates no haul traffic yet.
+  avenue('mass_driver', { width: 0.72 }),
 ]

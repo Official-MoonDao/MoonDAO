@@ -40,11 +40,10 @@ const UNIT_MAX_DIM = 1.7
 // where they exist, honest estimates otherwise. Per-project entries override
 // the per-type defaults (a Starship is not the same size as a Blue Moon).
 const TYPE_SIZE_M: Partial<Record<ProjectType, number>> = {
-  // The full camp, dome to dome across the connector spine. CAMP_M below
-  // inverts this exact number, so the camp is authored in real meters.
-  crewed_base: 38,
-  // A single pressurized module end to end, ISS-element class. MPH_M below
-  // inverts this exact number, so the habitat is authored in real meters.
+  // A single pressurized module end to end, ISS-element class — the generic
+  // fallback for a habitat with no model of its own. The full camp (see
+  // CAMP_M) and the ILRS cluster are authored to their own real sizes
+  // instead; only projects on the generic model use this default.
   habitat: 11,
   lander: 16,
   rover: 4.5,
@@ -61,6 +60,11 @@ const TYPE_SIZE_M: Partial<Record<ProjectType, number>> = {
   // exact number, so the terminal is authored in real meters.
   comms_pnt: 15,
   orbital: 20,
+  // NOT true scale — see the comment on MASS_DRIVER_M. A launcher able to
+  // reach lunar escape velocity runs for kilometers; this is the length of
+  // the schematic near segment (breach house through the first dozen coil
+  // stages) rendered in its place.
+  mass_driver: 70,
 }
 const PROJECT_SIZE_M: Record<string, number> = {
   'spacex-starship-hls': 52, // Ship upper stage ~50 m + gear
@@ -230,6 +234,18 @@ const FOOTPRINT_FRACTION: Record<string, number> = {
   // (12.86 m, scripts/tmp-ilrs-check.ts) is well past the 0.5 default, though
   // not the whole figure the way MRE's single-origin plant is.
   ilrs: 0.587,
+  // The 70 m size figure is the schematic model's full LENGTH (see MassDriver
+  // below), and that axis lands tangential to main street rather than radial
+  // — the shared home-view heading every model's presentation side aims down
+  // by default (facingYaw) happens to run near-perpendicular to this
+  // district's own bearing. What actually has to clear the neighboring lot
+  // radially is the model's WIDTH: the solar field is the widest reach off
+  // the guideway's centerline, at 6.5 m. The 0.5 default would reserve a
+  // 35 m-radius lot for a structure that, from this direction, only needs a
+  // seventh of that — pushing the junction needlessly far out past main
+  // street instead of standing on its corner the way every other district
+  // does.
+  'anthrofuturism-lunar-mass-driver': 0.1,
 }
 
 // Radius in meters of the ground a project occupies, for laying out plots that
@@ -6219,11 +6235,160 @@ function ConstructionSite({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Lunar mass driver (concept study) — Anthrofuturism
+// ---------------------------------------------------------------------------
+
+// Local units per METER, as in the other true-size installations — but this
+// one is NOT true scale. A reluctance/coil-gun launcher able to reach lunar
+// escape velocity runs for kilometers (the source study's own half-metre-bore
+// design comes out "over 7 km long"), two orders of magnitude past what this
+// 16 km settlement patch can show in the same frame as everything else on
+// the base. There is no honest way around that, so — the same kind of
+// compromise BASE_PLAN.lander's 300 m standoff already is — this model shows
+// a schematic NEAR segment only: the breach house, its capacitor bank, and
+// the first dozen coil stages off the muzzle. A real track keeps running
+// well past the edge of this rendered patch.
+const MASS_DRIVER_M = UNIT_MAX_DIM / (TYPE_SIZE_M.mass_driver ?? 70)
+
+// Half the rendered track's length, in meters, and the reach of the coil
+// stages within it. footprintRadiusM's 0.5 default happens to land exactly
+// on this number, which is the point: the model's own half-length IS its
+// footprint radius, same as any other installation on the base.
+const MD_HALF_M = 35
+const MD_COIL_SPAN_M = 30
+const MD_COIL_COUNT = 11
+const MD_DECK_Y = 1.1 // guideway deck height above grade
+const MD_BORE_R = 0.55 // rail/coil bore radius — the source study's own figure
+
+// Coil stages: a reluctance launcher is, at bottom, hundreds to thousands of
+// these switched in sequence ("imagine if we did this over and over again
+// ... for a kilometer or four" — Anthrofuturism, Coil-type Mass Drivers).
+function MassDriverCoils() {
+  return (
+    <>
+      {Array.from({ length: MD_COIL_COUNT }, (_, i) => {
+        const x =
+          -MD_COIL_SPAN_M + (i * (MD_COIL_SPAN_M * 2)) / (MD_COIL_COUNT - 1)
+        return (
+          <mesh
+            key={x}
+            position={[x, MD_DECK_Y + 0.55, 0]}
+            rotation={[0, Math.PI / 2, 0]}
+          >
+            <torusGeometry args={[MD_BORE_R + 0.16, 0.14, 8, 20]} />
+            <meshStandardMaterial color={DARK} metalness={0.3} roughness={0.55} />
+          </mesh>
+        )
+      })}
+    </>
+  )
+}
+
+// Solar field feeding the capacitor bank beside the breach house. The source
+// study's governing constraint is PEAK power, not total energy — the whole
+// argument for a flywheel/capacitor bank is that it can accumulate slowly off
+// a field this size and discharge in the fraction of a second a shot takes.
+function MassDriverSolarField({ originX }: { originX: number }) {
+  return (
+    <>
+      {Array.from({ length: 5 }, (_, i) => {
+        const x = originX + (i - 2) * 2.3
+        return (
+          <group key={x} position={[x, 1.5, -6.5]} rotation={[-0.55, 0, 0]}>
+            <mesh position={[0, 0, -0.05]}>
+              <boxGeometry args={[2.26, 2.66, 0.05]} />
+              <meshStandardMaterial color={PANEL_EDGE} metalness={0.4} roughness={0.5} />
+            </mesh>
+            <mesh>
+              <boxGeometry args={[2.1, 2.5, 0.08]} />
+              <meshStandardMaterial color={PANEL} metalness={0.12} roughness={0.46} />
+            </mesh>
+          </group>
+        )
+      })}
+    </>
+  )
+}
+
+function MassDriver({ accent }: { accent: string }) {
+  const breachX = -MD_HALF_M - 3.4
+  return (
+    <group scale={MASS_DRIVER_M}>
+      {/* The elevated guideway itself: a raised sintered-regolith berm keeps
+          blown dust and ejecta off the rail bore, the same reason a landing
+          pad sits on its own deck. */}
+      <mesh position={[0, MD_DECK_Y / 2, 0]}>
+        <boxGeometry args={[MD_HALF_M * 2 + 4, MD_DECK_Y, 3.2]} />
+        <meshStandardMaterial color={PAD_WALL} roughness={0.92} />
+      </mesh>
+      {/* Support piers, so the berm reads as raised structure rather than a
+          fill embankment. */}
+      {Array.from({ length: 7 }, (_, i) => {
+        const x = -MD_HALF_M + (i * (MD_HALF_M * 2)) / 6
+        return (
+          <mesh key={x} position={[x, MD_DECK_Y * 0.3, 0]}>
+            <boxGeometry args={[1.4, MD_DECK_Y * 0.7, 3.6]} />
+            <meshStandardMaterial color={PAD_SLAB_ALT} roughness={0.95} />
+          </mesh>
+        )
+      })}
+      {/* Twin rails the coil stages clamp to. */}
+      {[-1.1, 1.1].map((z) => (
+        <mesh key={z} position={[0, MD_DECK_Y + 0.08, z]}>
+          <boxGeometry args={[MD_HALF_M * 2 + 2, 0.16, 0.3]} />
+          <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+        </mesh>
+      ))}
+      <MassDriverCoils />
+      {/* Breach house at the near end: the capacitor/flywheel bank and the
+          power feed in from the base grid stand behind the launch line
+          rather than in it. */}
+      <group position={[breachX, 0, 0]}>
+        <mesh position={[0, 2.0, 0]}>
+          <boxGeometry args={[4.4, 4.0, 5.2]} />
+          <meshStandardMaterial color={HULL} roughness={0.7} />
+        </mesh>
+        <mesh position={[0, 4.0, 0]}>
+          <boxGeometry args={[4.6, 0.16, 5.4]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.75} />
+        </mesh>
+        {/* Capacitor/flywheel racks — the "accumulate slowly, discharge
+            quickly" hardware that has to survive the launcher's peak power,
+            not its average. */}
+        {[-1.6, 0, 1.6].map((z) => (
+          <mesh key={z} position={[2.9, 0.9, z]}>
+            <cylinderGeometry args={[0.55, 0.55, 1.8, 12]} />
+            <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.4} />
+          </mesh>
+        ))}
+        <mesh position={[0, 4.5, 0]}>
+          <cylinderGeometry args={[0.06, 0.06, 1.0, 6]} />
+          <meshStandardMaterial color={DARK} />
+        </mesh>
+        <mesh position={[0, 5.05, 0]}>
+          <sphereGeometry args={[0.16, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.5}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+      <MassDriverSolarField originX={breachX} />
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Artemis Base Camp
 // ---------------------------------------------------------------------------
 
-// Local units per METER, as in the other true-size installations.
-const CAMP_M = UNIT_MAX_DIM / (TYPE_SIZE_M.crewed_base ?? 38)
+// Local units per METER, as in the other true-size installations. 38 m dome
+// to dome across the connector spine — the camp's own real size, not the
+// generic habitat default (see TYPE_SIZE_M), since `CrewedBase` is reached
+// by an explicit PROJECT_MODEL entry rather than the type-level fallback.
+const CAMP_M = UNIT_MAX_DIM / 38
 
 // The glazing is nearly clear on purpose. What should read at distance is the
 // lattice holding it up and the crop beds behind it, not a tinted shell.
@@ -9970,9 +10135,12 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // gimballed onto the lid, not the generic CommsPnt mast-shelter-array site
   // Nokia still stands on. RelaySat flies via SKY_STATIONS/SkyLayer.
   'im-near-space-network': RelayGroundTerminal,
-  // The core's second competitor: see ILRSBase. `nasa-artemis-base-camp`
-  // keeps using the generic `CrewedBase` model (it always has — see the
-  // handoff doc), so this is the only override the district needs.
+  // The habitat race's two flagship sustained-presence programs. Both need
+  // an explicit entry now that `crewed_base` and `habitat` are one type —
+  // the generic `Habitat` model (a single pressurized module) is the wrong
+  // fallback for either of these, so neither can be reached by the
+  // type-level switch below the way a project with no model of its own is.
+  'nasa-artemis-base-camp': CrewedBase,
   ilrs: ILRSBase,
   // ISRU district: a packaged skid plant instead of IsruPlant's own
   // field-plus-tower installation. `blue-origin-blue-alchemist` keeps the
@@ -9997,8 +10165,6 @@ export function ProceduralModel({
   const Custom = PROJECT_MODEL[project.id]
   if (Custom) return <Custom accent={accent} />
   switch (project.type) {
-    case 'crewed_base':
-      return <CrewedBase accent={accent} />
     case 'habitat':
       return <Habitat accent={accent} />
     case 'lander':
@@ -10015,6 +10181,8 @@ export function ProceduralModel({
       return <RelaySat accent={accent} />
     case 'construction':
       return <ConstructionSite accent={accent} />
+    case 'mass_driver':
+      return <MassDriver accent={accent} />
     case 'other':
     default:
       return <GenericStructure accent={accent} />
@@ -10291,7 +10459,7 @@ export default function ProjectModel({
   onSelect,
   onHover,
 }: ProjectModelProps) {
-  const isBase = project.type === 'crewed_base' || project.type === 'habitat'
+  const isBase = project.type === 'habitat'
   const frontAz =
     (project.modelURI ? MODEL_FRONT_AZ[project.modelURI] : undefined) ?? 0
 

@@ -32,30 +32,48 @@ export function atlasYear(date: string | undefined): number | null {
   return y == null ? null : Math.floor(y)
 }
 
-function milestoneYears(project: Project): number[] {
+// True for a milestone that represents hardware actually AT the Moon (landed,
+// delivered, operating on the surface or in cislunar orbit) rather than an
+// Earth-side step on the way there (contract award, concept publication,
+// ground/vacuum-chamber test). Undefined defaults to 'moon' so most milestone
+// entries — landings, surface demos, deliveries — don't need to say so.
+export function isMoonMilestone(m: Milestone): boolean {
+  return m.location !== 'earth'
+}
+
+// Dated milestone years for a project. `onMoonOnly` restricts to milestones
+// that put hardware AT the Moon — what the year scrubber should track, since
+// scrubbing to a year is a claim about what's on the Moon then, not about
+// which contracts have been signed on Earth by then.
+function milestoneYears(project: Project, onMoonOnly: boolean): number[] {
   return project.milestones
+    .filter((m) => !onMoonOnly || isMoonMilestone(m))
     .map((m) => parseAtlasYear(m.targetDate))
     .filter((y): y is number => y != null)
 }
 
-// Earliest / latest milestone (fractional) year for a project, or null when
-// the project has no dated milestones.
+// Earliest / latest Moon-arrival (fractional) year for a project, or null
+// when the project has no dated Moon milestone yet (e.g. hardware still in
+// Earth-side development, with no confirmed flight-to-the-Moon date).
 export function projectDateRange(
   project: Project
 ): { earliest: number; latest: number } | null {
-  const years = milestoneYears(project)
+  const years = milestoneYears(project, true)
   if (years.length === 0) return null
   return { earliest: Math.min(...years), latest: Math.max(...years) }
 }
 
-// The [min, max] integer year span across every milestone in the dataset,
-// with a sensible fallback when the dataset is empty.
+// The [min, max] integer year span across every Moon-arrival milestone in the
+// dataset — i.e. the years the scrubber should cover, since it answers "what
+// is on the Moon in year Y", not "what has been announced by year Y". Falls
+// back to the current year when nothing in the dataset has a confirmed
+// Moon date yet.
 export function datasetYearRange(
   dataset: Pick<AtlasDataset, 'projects'>
 ): { min: number; max: number } {
   const years: number[] = []
   for (const p of dataset.projects) {
-    for (const y of milestoneYears(p)) years.push(y)
+    for (const y of milestoneYears(p, true)) years.push(y)
   }
   if (years.length === 0) {
     const now = new Date().getUTCFullYear()
@@ -99,9 +117,12 @@ export function projectStateAtYear(
     return { revealed: false, status: 'future' }
   }
 
-  // Among milestones already reached by currentYear, the latest one drives the
-  // displayed status; ties fall back to the whole set.
+  // Among Moon milestones already reached by currentYear, the latest one
+  // drives the displayed status; ties fall back to the whole set. Earth-side
+  // milestones (contract awards, ground tests) are excluded here too — a
+  // signed contract doesn't make hardware "achieved" on the lunar surface.
   const reached = project.milestones
+    .filter(isMoonMilestone)
     .map((m) => ({ m, y: parseAtlasYear(m.targetDate) }))
     .filter((x): x is { m: Milestone; y: number } => {
       if (x.y == null) return false

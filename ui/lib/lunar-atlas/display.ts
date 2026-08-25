@@ -11,7 +11,6 @@ import type {
 import type { ProjectTimeStatus } from './selectors'
 
 export const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
-  crewed_base: 'Crewed base',
   habitat: 'Habitat',
   lander: 'Lander',
   rover: 'Rover',
@@ -20,13 +19,13 @@ export const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
   comms_pnt: 'Comms / PNT',
   orbital: 'Orbital',
   construction: 'Surface construction',
+  mass_driver: 'Mass driver',
   other: 'Other',
 }
 
 // A compact emoji glyph per type — cheap, legible iconography for markers and
 // legends without shipping an icon set.
 export const PROJECT_TYPE_GLYPH: Record<ProjectType, string> = {
-  crewed_base: '🏛',
   habitat: '🛖',
   lander: '🛬',
   rover: '🚙',
@@ -35,6 +34,7 @@ export const PROJECT_TYPE_GLYPH: Record<ProjectType, string> = {
   comms_pnt: '📡',
   orbital: '🛰',
   construction: '🧱',
+  mass_driver: '🧲',
   other: '◆',
 }
 
@@ -43,7 +43,6 @@ export const PROJECT_TYPE_GLYPH: Record<ProjectType, string> = {
 // organization — org brand colors take over once a specific competitor is
 // selected.
 export const PROJECT_TYPE_COLOR: Record<ProjectType, string> = {
-  crewed_base: '#5eead4', // teal
   habitat: '#86efac', // green
   lander: '#67e8f9', // cyan
   rover: '#fcd34d', // amber
@@ -52,6 +51,7 @@ export const PROJECT_TYPE_COLOR: Record<ProjectType, string> = {
   comms_pnt: '#93c5fd', // blue
   orbital: '#a5b4fc', // indigo
   construction: '#f0abfc', // fuchsia — matches the race zone rings
+  mass_driver: '#5eead4', // teal — freed up by the crewed_base/habitat merge
   other: '#d1d5db', // gray
 }
 
