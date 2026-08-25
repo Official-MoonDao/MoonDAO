@@ -6,8 +6,9 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { isPublicProductionHost } from 'const/flags'
-import { GAS_RESERVE_ETH, MarketStage, UNIT } from '@/lib/deprize/constants'
+import { MarketStage, UNIT } from '@/lib/deprize/constants'
 import { fmtPrizeEth } from '@/lib/deprize/format'
+import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { mergeLiveMarketInto } from '@/lib/deprize/goal-market'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
@@ -276,7 +277,7 @@ export default function MoonBaseZeroIndex() {
       cancelled = true
     }
   }, [userAddress, readChain, refreshNonce])
-  const spendableEth = Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
+  const spendableEth = spendableFromBalanceEth(nativeBalance, readChain.id)
 
   // Default-deny when country is unknown, exactly like the detail page.
   const bettingAllowed =
