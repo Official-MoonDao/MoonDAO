@@ -85,6 +85,9 @@ import {
   getReviewPreviewFile,
   hasAiPortraitImage,
   isAiPortraitReady,
+  isGeneratedAiPortraitFile,
+  isUsableAiPortrait,
+  restoredCitizenImageLooksLikeAi,
 } from '@/lib/image-generator/citizenOnboardingImage'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
@@ -552,7 +555,11 @@ export default function CreateCitizen({
     }
   }, [imageGenProgress, isRegenerating, regenPhase, regenElapsedMs])
 
-  const hasAiPortrait = hasAiPortraitImage(citizenImage, croppedInputImage) && isAiPortraitReady()
+  const hasAiPortrait = isUsableAiPortrait(
+    citizenImage,
+    croppedInputImage,
+    isAiPortraitReady(),
+  )
 
   const isAwaitingAiPortrait = isImageGenerating || hasPendingImageJob
 
@@ -1124,8 +1131,12 @@ export default function CreateCitizen({
     if (formData.citizenImage && isSerializedFile(formData.citizenImage)) {
       const restoredCitizenImage = base64ToFile(formData.citizenImage)
       setCitizenImage(restoredCitizenImage)
-      // If citizenImage differs from croppedInputImage, it's an AI portrait - mark it ready
-      if (!cropped || restoredCitizenImage !== cropped) {
+      // File object identity is meaningless after base64 restore — only a
+      // Comfy job filename (not the crop's own name/bytes) is a finished portrait.
+      const crop = isSerializedFile(formData.croppedInputImage)
+        ? formData.croppedInputImage
+        : undefined
+      if (restoredCitizenImageLooksLikeAi(formData.citizenImage, crop)) {
         markAiPortraitReady()
       }
     }
@@ -1259,18 +1270,17 @@ export default function CreateCitizen({
         setCitizenImage,
         'citizen image',
       )
-      // If citizenImage was restored and differs from croppedInputImage, it's an AI portrait
+      // If citizenImage was restored and is a Comfy download (not the crop),
+      // it's an AI portrait. SerializedFile stores bytes on `data`, not dataURL.
       if (
         citizenImageRestored &&
         formData.citizenImage &&
         isSerializedFile(formData.citizenImage)
       ) {
-        // Compare serialized data to determine if it's an AI portrait
-        if (
-          !formData.croppedInputImage ||
-          !isSerializedFile(formData.croppedInputImage) ||
-          formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL
-        ) {
+        const crop = isSerializedFile(formData.croppedInputImage)
+          ? formData.croppedInputImage
+          : undefined
+        if (restoredCitizenImageLooksLikeAi(formData.citizenImage, crop)) {
           markAiPortraitReady()
         }
       }
@@ -2032,7 +2042,8 @@ export default function CreateCitizen({
         inputImage,
         isImageGenerating,
         hasPendingImageJob,
-        aiPortraitReady: isAiPortraitReady(),
+        aiPortraitReady:
+          isAiPortraitReady() || isGeneratedAiPortraitFile(citizenImage),
       }),
     [citizenImage, croppedInputImage, inputImage, isImageGenerating, hasPendingImageJob],
   )
