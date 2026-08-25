@@ -90,6 +90,21 @@ export const GENERIC_DEPRIZE_COMPETITION: DePrizeCompetition = {
 
 /** chainSlug → deprizeId → competition */
 const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> = {
+  arbitrum: {
+    // First Arbitrum mainnet DePrize — internal end-to-end competition.
+    // Oracle at prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011.
+    // Roster is placeholder MoonDAOTeam ids [2, 6, 7, 8]; not race-bound, so it
+    // groups under "Other challenges" on the index.
+    1: {
+      title: 'The Moon Is A Harsh Mistress',
+      tagline:
+        'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Arbitrum DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
+      questionId:
+        '0xc3efda478f2465a1d402bfe9bc43fd04660daa72d0a71031594b341f2718adb9',
+    },
+  },
   sepolia: {
     // Browser QA fixture — see docs/DEPRIZE_QA.md (DePrize 9).
     // Oracle at prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011.

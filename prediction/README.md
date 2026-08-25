@@ -9,7 +9,9 @@ npm install
 ```
 
 Requires `PRIVATE_KEY` and (for public networks) an RPC URL. Network config is
-committed at `truffle-config.js` (do not add a local `truffle.js` — it overrides).
+committed at `truffle-config.js`. A local (gitignored) `truffle.js` does not
+override it — Truffle prefers `truffle-config.js` and warns when both exist —
+but it also has no `arbitrum` network, so run mainnet from the committed config.
 
 ## Deployment
 
@@ -27,6 +29,42 @@ npx truffle migrate -f 2 --to 4 --network arbitrum
 
 After Phase 2, record ConditionalTokens + LMSRWithTWAPFactory and fill
 `fee-hook/script/base/Config.sol` / `ui/const/config.ts` (plan 1.5).
+
+The three Phase 2 artifacts in `build/contracts/` are committed on purpose:
+their `networks.42161` entry is what makes migration 02's `overwrite: false`
+reuse the live mainnet ConditionalTokens instead of deploying a second one from
+a clean checkout. The rest of `build/` is ignored.
+
+## Block-explorer verification
+
+Truffle does not keep its compiler input, so verification rebuilds the solc
+standard-JSON from each artifact's embedded metadata and proves it reproduces
+the deployed bytecode before uploading anything.
+
+```shell
+npm install --no-save --ignore-scripts solc@0.5.1
+
+node scripts/build-verification-input.js ConditionalTokens
+ETHERSCAN_API_KEY=... node scripts/verify-on-arbiscan.js \
+  ConditionalTokens 0x12DAC07Bf586E06a9bDa32c422864C8Fda43FA29
+```
+
+Contracts that link a library pass it as `Name=0xaddress` trailing arguments
+rather than in the JSON, so the compiled metadata still matches the unlinked
+deployment:
+
+```shell
+INPUT_FILE=LMSRWithTWAPFactory.etherscan.json \
+CONTRACT_NAME_OVERRIDE=contracts/LMSRWithTWAPFactory.sol:LMSRWithTWAPFactory \
+ETHERSCAN_API_KEY=... node scripts/verify-on-arbiscan.js \
+  LMSRWithTWAPFactory 0xb40d77bD8C3D8CF38c4b88D649D397efa2dd2cB8 \
+  Fixed192x64Math=0x6cc53E9158aeFd3aB65B1B053844D083C4b7C53b
+```
+
+The `.etherscan.json` variant exists because Etherscan splits a contract
+identifier on its first colon and Truffle names project-local sources
+`project:/contracts/…`. Stripping that prefix changes only the appended
+metadata hashes; the build script asserts nothing else moved.
 
 ## Provision a DePrize market (Phase 4)
 

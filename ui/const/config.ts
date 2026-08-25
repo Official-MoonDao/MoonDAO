@@ -448,15 +448,17 @@ export const LMSR_WITH_TWAP_ADDRESSES: Index = {
   // jaderiverstokes.eth). Kept for reference only.
   sepolia: '0x36da9d41b673b4115df0e06cefb4c665e2289dd0',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
-  // AUDIT[plan 1.5 / Phase 6]: fill after Phase 4 provisions the first LMSR.
-  // Coming-soon gate stays up until this + DEPRIZE_* arbitrum slots are set.
-  arbitrum: '',
+  // DePrize 1 ("The Moon is a harsh mistress"), Phase 4 on 2026-08-25.
+  // 4 outcomes, 0.04 ETH seed, 1% fee, owned by DEPRIZE_FEE_ROUTER_ADDRESSES.
+  // Per-DePrize markets resolve on-chain via DePrizeMint.marketOf(id); this
+  // scalar is the first-market fallback only.
+  arbitrum: '0x351aF5AcfBC4Df750B7BD58b4c4cbE94147aF211',
 }
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8',
   'arbitrum-sepolia': '0xa0B1b14515C26acb193cb45Be5508A8A46109a27',
-  // AUDIT[plan 1.5]: fill after Phase 2 Truffle migrate -f 2 --to 4.
-  arbitrum: '',
+  // AUDIT[plan 1.5]: Phase 2 Truffle migrate -f 2 --to 4 (2026-08-18).
+  arbitrum: '0x12DAC07Bf586E06a9bDa32c422864C8Fda43FA29',
 }
 export const COLLATERAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0x8cfF28F922AeEe80d3a0663e735681469F7374c6',
@@ -472,12 +474,12 @@ export const COLLATERAL_DECIMALS = 18
 export const DEPRIZE_REDEEM_ADDRESSES: Index = {
   sepolia: '0x2fec56899a1121a46b6bcba0bb924796b6ddf4f7',
   'arbitrum-sepolia': '',
-  arbitrum: '', // AUDIT[plan Phase 6]: fill after DePrizeRedeem.s.sol
+  arbitrum: '0xb0E06ed72cf6E0CcF21b4D00B002fdfDc198C3fA',
 }
 export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
   sepolia: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
   'arbitrum-sepolia': '',
-  arbitrum: '', // AUDIT[plan Phase 6]: fill after DePrizeRegistry.s.sol
+  arbitrum: '0xf8B2244634c6eCeF32de10BFe0D7436413A59924',
 }
 // DePrizeMint bet router (5% JB prize slice + 95% CTF/LMSR collateral). Populate
 // per chain once `script/deprize/DePrizeMint.s.sol` has deployed the router and
@@ -486,7 +488,7 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
 export const DEPRIZE_MINT_ADDRESSES: Index = {
   sepolia: '0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8',
   'arbitrum-sepolia': '',
-  arbitrum: '', // AUDIT[plan Phase 6]: fill after DePrizeMint.s.sol + setMarket
+  arbitrum: '0xfa36cAb21415B4e23a1eecCFe7B07693A690d838',
 }
 // DePrizeFeeRouter: owns the LMSR market and routes its accrued 1% trade fees
 // into the DePrize's Juicebox prize pool (sweepFees is permissionless). Populate
@@ -496,7 +498,7 @@ export const DEPRIZE_MINT_ADDRESSES: Index = {
 export const DEPRIZE_FEE_ROUTER_ADDRESSES: Index = {
   sepolia: '0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a',
   'arbitrum-sepolia': '',
-  arbitrum: '', // AUDIT[plan Phase 6]: fill after DePrizeFeeRouter.s.sol
+  arbitrum: '0x0EF00977e37e2e106BB6E9fa15952bB43a2761e1',
 }
 // ---------------------------------------------------------------------------
 // Play-harness only (`ui/pages/deprize-play.tsx`).
@@ -524,12 +526,16 @@ export const DEPRIZE_PLAY_ID = 3
 export const ORACLE_ADDRESSES: Index = {
   sepolia: '0x679d87D8640e66778c3419D164998E720D7495f6',
   'arbitrum-sepolia': '',
-  arbitrum: '', // set to the admin Safe after Phase 0.4
+  // Deployer EOA — the CTF oracle baked into DePrize 1's condition id. This is
+  // the internal-competition setup; move to the admin Safe before a public
+  // prize, which requires preparing a new condition (the oracle is immutable
+  // once the condition exists).
+  arbitrum: '0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011',
 }
 export const OPERATOR_ADDRESSES: Index = {
   sepolia: '0x679d87D8640e66778c3419D164998E720D7495f6',
   'arbitrum-sepolia': '',
-  arbitrum: '',
+  arbitrum: '0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011',
 }
 
 // Play-harness scalars (Sepolia). Do not wire into `/deprize/[id]`.

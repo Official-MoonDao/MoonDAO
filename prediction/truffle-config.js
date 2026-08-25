@@ -4,7 +4,10 @@
  *
  * AUDIT[plan 1.2]: `prediction/.gitignore` ignores `truffle.js`, so this
  * filename (`truffle-config.js`) is the reproducible, reviewable config.
- * Do not add a local `truffle.js` that silently overrides this on mainnet.
+ * Truffle 5.11 prefers `truffle-config.js` when both exist and prints
+ * "Both truffle-config.js and truffle.js were found" - verified 2026-08-18.
+ * A local `truffle.js` therefore does not shadow this file, but it will not
+ * define an `arbitrum` network either; keep mainnet runs on this config.
  *
  * Env:
  *   PRIVATE_KEY          hex key (with or without 0x) — the deployer EOA
@@ -36,13 +39,18 @@ module.exports = {
       network_id: "*",
     },
     // AUDIT[plan Phase 2]: chain id 42161. Do not `--reset` on mainnet.
+    // Truffle multiplies `gas` by the quoted price for its funds preflight, so
+    // a 30M limit needs an implausible balance. Arb1 base fee sat at ~0.02 gwei
+    // for the Phase 2 deploys; raise `gasPrice` if a run reports
+    // "max fee per gas less than block base fee".
     arbitrum: {
       provider: hd("ARBITRUM_RPC_URL", "https://arb1.arbitrum.io/rpc"),
       network_id: 42161,
       confirmations: 2,
       timeoutBlocks: 200,
       skipDryRun: true,
-      gas: 30_000_000,
+      gas: 12_000_000,
+      gasPrice: 50_000_000, // 0.05 gwei; Arb effective is ~0.02 gwei
     },
     arbitrumSepolia: {
       provider: hd("ARB_SEPOLIA_RPC_URL", "https://sepolia-rollup.arbitrum.io/rpc"),

@@ -53,7 +53,6 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import BetModal from '@/components/deprize/BetModal'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DePrizeAdminPanel from '@/components/deprize/DePrizeAdminPanel'
-import DePrizeComingSoon from '@/components/deprize/DePrizeComingSoon'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import DePrizeTeamLink, { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
@@ -91,12 +90,6 @@ function StateBadge({
 }
 
 export default function DePrizeDetailPage() {
-  const { selectedChain } = useContext(ChainContextV5)
-  // AUDIT[plan Phase 6.3]: keep the coming-soon gate until Phase 5 verify is
-  // green and DEPRIZE_* arbitrum addresses are filled in const/config.ts.
-  if (getChainSlug(selectedChain) === 'arbitrum') {
-    return <DePrizeComingSoon />
-  }
   return <DePrizeDetailContent />
 }
 
