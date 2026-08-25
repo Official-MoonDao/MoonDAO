@@ -84,9 +84,16 @@ export type Frontage =
   // Flanking one road, one plot each side. For the landing zone, whose pads are
   // far too big to sit on a junction — the haul road runs between them instead.
   | 'flank'
-  // No road through the lot at all. For the core, which stands on a continuous
-  // hardstand inside the perimeter road.
+  // No road through the lot at all, assets standing in a line along one
+  // shared axis. For a district whose competitors read as a procession
+  // rather than a plaza — nothing currently uses this, but it stays
+  // available as a frontage a future single-file district can ask for.
   | 'lot'
+  // No road through the lot either, but scattered by ANGLE around a circle
+  // instead of down a line — the core's own hardstand, where five very
+  // different programs (a base camp, a station, two modules, a pressurized
+  // rover) read as a plaza of installations rather than a queue.
+  | 'ring'
 
 export type SitePlan = {
   // Meters east and north of the ridge center — the CENTER of the district,
@@ -230,6 +237,39 @@ export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> 
       return out
     }
 
+    case 'ring': {
+      // No street through the lot either, so the assets scatter by ANGLE
+      // around a circle instead of standing in a line. A single competitor
+      // sits at the district center; more than one are spaced evenly round
+      // a ring whose radius comes from the roster itself rather than a
+      // hand-picked number — solved so the two LARGEST plots, which land
+      // next to each other once the field is sorted largest-to-smallest
+      // onto evenly spaced angles, clear each other by DISTRICT_GAP_M with
+      // one more gap's width of margin on top. That means the ring only
+      // ever needs retuning if the FORMULA changes, never by hand because a
+      // race gained or lost a competitor.
+      if (order.length === 1) {
+        place(order[0], 0, 0)
+        return out
+      }
+      const n = order.length
+      const sector = (2 * Math.PI) / n
+      const worstChord = order[0].radiusM + order[1].radiusM + DISTRICT_GAP_M
+      const ringR = worstChord / (2 * Math.sin(sector / 2)) + DISTRICT_GAP_M
+      order.forEach((plot, i) => {
+        const a = i * sector
+        out.set(plot.id, {
+          east: plan.east + Math.cos(a) * ringR,
+          north: plan.north + Math.sin(a) * ringR,
+          turn:
+            plan.turn +
+            (hash01(`${plot.id}:turn`) - 0.5) * 2 * PLOT_TURN_JITTER_DEG,
+          offsetM: ringR,
+        })
+      })
+      return out
+    }
+
     case 'flank': {
       // One road with a plot either side. Plots opposite each other are held
       // apart by the road's full width plus both setbacks, so they never need
@@ -354,8 +394,11 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // the flagship programs don't get a plaza to themselves while the modules
   // get a corner lot down the street. The one district with no street
   // through it — it stands on a continuous hardstand, which is what a first
-  // landing site would actually be.
-  habitat: { east: 0, north: 0, turn: 0, front: 'lot', lotAxis: 200 },
+  // landing site would actually be. Five very different programs read as a
+  // plaza (`front: 'ring'`) rather than a queue down one line — see the
+  // `ring` case in districtSlots for how the radius is derived from the
+  // roster.
+  habitat: { east: 0, north: 0, turn: 0, front: 'ring' },
 
   // COMMS AND NAVIGATION, due east (0°). Ground stations are sited clear of the
   // structures that would clutter their horizon, and four terminals looking at
@@ -421,12 +464,28 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // street, between the rover depot and the comms terminals, and it clears
   // both neighbors' junctions by the same 45°+ margin every other pair on
   // this ring keeps. A single concept-study competitor stands alone on its
-  // own corner lot, close in like everyone else's (see the
-  // `anthrofuturism-lunar-mass-driver` entry in ProjectModel.tsx's
-  // FOOTPRINT_FRACTION for why its 70 m schematic model doesn't push this
-  // junction out past main street the way a true 35 m-radius footprint
-  // would).
-  mass_driver: { ...at(300), turn: 0, reach: 21 },
+  // own corner lot (see the `anthrofuturism-lunar-mass-driver` entry in
+  // ProjectModel.tsx's FOOTPRINT_FRACTION for why its 105 m schematic model,
+  // at MD_SCALE, doesn't push this junction out to a true 52.5 m-radius
+  // footprint).
+  //
+  // `turn` is doing real work here, not just breaking up a chorus line the
+  // way it does everywhere else: this district's own MASS DRIVER AVENUE runs
+  // dead straight along this exact 300° bearing, and the guideway's long
+  // axis, at the default (camera-facing) heading, sits roughly PERPENDICULAR
+  // to that — fine for standing clear of main street's arc (a long axis
+  // tangential to a circle barely pushes its radius out) but exactly the
+  // wrong axis for a straight road along the district's own bearing, which
+  // it then swept straight across for its whole length. Turning the model
+  // 45° swings its long axis away from square-on to the avenue without
+  // swinging it INTO square-on with main street's tangent either — the one
+  // window where both roads clear at once; see the FOOTPRINT_FRACTION
+  // comment in ProjectModel.tsx for the fraction this pairs with. `reach` is
+  // bigger than every other district's here for the same underlying reason
+  // every number on this entry is: this is by far the longest single asset
+  // on the base, and the avenue has to run out far enough to actually reach
+  // it, not just far enough for an LTV-scale plot.
+  mass_driver: { ...at(300), turn: 45, reach: 65 },
 }
 
 // Every "on-street" district's bearing, own centre radius, and reach — the

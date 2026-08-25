@@ -92,10 +92,12 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // mast-shelter-array lot Nokia still stands on.
   comms_pnt: plots(7.5, 1.04, 1.52, 1.13),
   // A single concept-study competitor, standing alone on its own corner lot.
-  // 7 m, not the model's full 35 m schematic half-length — see
-  // FOOTPRINT_FRACTION['anthrofuturism-lunar-mass-driver'] in
-  // ProjectModel.tsx.
-  mass_driver: plots(7),
+  // 33.6 m (0.32 of the 105 m schematic model's full length at MD_SCALE) —
+  // see FOOTPRINT_FRACTION['anthrofuturism-lunar-mass-driver'] in
+  // ProjectModel.tsx, which this figure must stay paired with
+  // BASE_PLAN.mass_driver's `turn: 45` (baseplan.ts) rather than being
+  // tuned alone.
+  mass_driver: plots(33.6),
 }
 
 const races = Object.entries(ROSTERS) as [ProjectType, Plot[]][]
@@ -257,9 +259,13 @@ describe('moon base zero street plan', () => {
             a.r -
             b.r
           // A 'lot' district's two neighbours are packed to EXACTLY the gap
-          // (see the `lot` case in districtSlots), so this is a floating-point
-          // tie rather than real slack — allow the same 1e-6 the rest of this
-          // file uses for exact geometric identities.
+          // (see the `lot` case in districtSlots — nothing in BASE_PLAN uses
+          // it today, but the mechanism is still exact), so this is a
+          // floating-point tie rather than real slack there — allow the
+          // same 1e-6 the rest of this file uses for exact geometric
+          // identities. 'ring' districts (the core) pack with real margin
+          // on top of the gap by construction, so they clear this with room
+          // to spare rather than by a hair.
           expect(gap, `${a.id} vs ${b.id}`).to.be.at.least(DISTRICT_GAP_M - 1e-6)
         }
       }
@@ -336,7 +342,7 @@ describe('moon base zero street plan', () => {
     it('runs an avenue from the perimeter road out through every district', () => {
       for (const [category, field] of races) {
         const plan = BASE_PLAN[category]!
-        if (plan.front === 'lot') continue
+        if (plan.front === 'lot' || plan.front === 'ring') continue
         const street = BASE_STREETS.find(
           (s) => !s.closed && s.serves?.includes(category)
         )

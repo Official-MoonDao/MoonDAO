@@ -56,6 +56,7 @@ import ProjectModel, {
   CableReel,
   CargoCrate,
   CrateCluster,
+  Excavator,
   GAS_STATION_HALF_D,
   GAS_STATION_HALF_W,
   gradedDeckRadiusM,
@@ -65,6 +66,7 @@ import ProjectModel, {
   SparePartsPallet,
   StreetLight,
   SurfaceAnchor,
+  UndergroundConstructionSite,
 } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
@@ -631,6 +633,99 @@ const ROADSIDE_SPACING_M = 30
 const ROADSIDE_KEEP_PROB = 0.75
 type RoadsideKind = 'crates' | 'cablereel' | 'parts' | 'bricks'
 
+// A small grading/earthmoving fleet, parked hard against the shoulder of
+// one of the two loop roads — the same "close enough to a road that a
+// hauler could reach it" logic as `roadsideCargo`, not the boulder field's
+// wide-open annulus, since this is the settlement's own maintenance crew
+// working the street it grades rather than native scatter. A handful of
+// fixed units rather than a sampled grid: a dozen would read as a second
+// race's roster, five to six reads as a crew mid-shift. Placed by walking a
+// deterministic sequence of candidate (loop, bearing, side) triples — not a
+// grid — until enough clear the road itself and every district's own
+// ground, so a change to one district's `reach` can only ever shift where
+// these land, never how many.
+const EXCAVATOR_COUNT = 6
+const EXCAVATOR_SHOULDER_MIN_M = 2.6
+const EXCAVATOR_SHOULDER_MAX_M = 6.5
+
+// Fixed spot for the base's own dig: well inside the habitat ring's own
+// empty middle. Every habitat plot sits at a fixed radius from the district
+// center (~38 m — see BASE_PLAN.habitat's `ring` frontage and districtSlots'
+// 'ring' case in baseplan.ts), so anything under ~19 m of that same center is
+// clear of all five of them by construction; a 9 m offset keeps the whole
+// assembly (pit + spoil + the excavator standing off one side of it) well
+// inside that with room to spare, and off the exact point the habitat
+// district's own beacon tethers to. The composite itself (ConstructionPit +
+// its Excavator, both authored together in ProjectModel.tsx) is asymmetric —
+// the machine stands off to one side of the pit, not scattered by angle like
+// InterDistrictFiller's ambient fleet — but SurfaceAnchor's default facing
+// (no `noseAlong` given here) turns that whole composite toward the home
+// camera on its own, the same as any other un-steered installation, so this
+// only ever needs to pick a location, never an orientation.
+const UGC_EAST_M = 9
+const UGC_NORTH_M = 0
+// Clears the arm's own highest hoisted point (see EXC_DIG_POSES' "hoist"
+// keyframe) rather than the machine's parked height, so the label never
+// clips through the boom mid-cycle.
+const UGC_LABEL_HEIGHT_M = 6.5
+// SEAT_LIFT is sized to clear z-fighting for a single point sample against
+// the rendered (displaced) terrain, but this whole composite spans a good
+// 13 m from the pit's own anchor out past the excavator standing off it —
+// far wider than the compact, single-point props (a boulder, a streetlight)
+// SEAT_LIFT was tuned against. Anywhere the real terrain's own slope across
+// that span puts ground even a little above the flat-plane height sampled at
+// the anchor's one point eats into that margin, and with this renderer's
+// logarithmic depth buffer (needed for a scene that spans orbit-to-meter
+// scale) precision loss shows up as shimmer/dropout well before it would on
+// a linear buffer — see the ground-level flat pit floor in ProjectModel.tsx
+// for the other half of this fix. A flat extra lift on top of SEAT_LIFT,
+// well past anything that stretch of ridge terrain plausibly slopes, buys
+// back that margin.
+const UGC_EXTRA_LIFT_M = 0.6
+
+function UndergroundConstructionSiteMarker({
+  radiusAt,
+}: {
+  radiusAt?: RadiusAt | null
+}) {
+  const { dir, seat, labelAt } = useMemo(() => {
+    const ll = capOffsetLatLon(UGC_EAST_M, UGC_NORTH_M)
+    const d = latLonToVector3(ll.lat, ll.lon, 1)
+    const seat =
+      (radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS) +
+      SEAT_LIFT +
+      UGC_EXTRA_LIFT_M * M_TO_UNITS
+    const labelAt = new THREE.Vector3(...d).multiplyScalar(
+      seat + UGC_LABEL_HEIGHT_M * M_TO_UNITS
+    )
+    return { dir: d, seat, labelAt }
+  }, [radiusAt])
+
+  return (
+    <>
+      <SurfaceAnchor
+        dir={dir}
+        surfaceRadius={seat}
+        scale={M_TO_UNITS}
+        castShadows={false}
+        interactive={false}
+      >
+        <UndergroundConstructionSite seed={4021} />
+      </SurfaceAnchor>
+      <Html
+        position={labelAt}
+        center
+        zIndexRange={[15, 0]}
+        style={{ pointerEvents: 'none' }}
+      >
+        <div className="whitespace-nowrap rounded border border-white/15 bg-black/75 px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight text-white shadow-md backdrop-blur-sm">
+          Underground base construction
+        </div>
+      </Html>
+    </>
+  )
+}
+
 function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
   const boulders = useMemo(() => {
     const out: { dir: Vec3; seat: number; size: number; seed: number }[] = []
@@ -755,6 +850,51 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
     return out
   }, [radiusAt])
 
+  const excavators = useMemo(() => {
+    const out: { dir: Vec3; seat: number; noseAlong: Vec3; seed: number }[] = []
+    let placed = 0
+    for (let tries = 0; placed < EXCAVATOR_COUNT && tries < 400; tries++) {
+      const k = tries * 733 + 5501
+      const loopR = hash1(k) > 0.5 ? MAIN_LOOP_M : RING_RADIUS_M
+      const bearing = hash1(k + 1) * 360
+      const side = hash1(k + 2) > 0.5 ? 1 : -1
+      const shoulder =
+        EXCAVATOR_SHOULDER_MIN_M +
+        hash1(k + 3) * (EXCAVATOR_SHOULDER_MAX_M - EXCAVATOR_SHOULDER_MIN_M)
+      const r = loopR + side * (ROAD_HALF_M + shoulder)
+      // A narrower margin than the boulders' (which stand well clear of
+      // every district): this fleet works right up against a district's
+      // own edge, not out in open regolith.
+      if (onLoopRoad(r) || withinDistrictGround(r, bearing, 9)) continue
+      const a = (bearing * Math.PI) / 180
+      const ll = capOffsetLatLon(Math.cos(a) * r, Math.sin(a) * r)
+      const dir = latLonToVector3(ll.lat, ll.lon, 1)
+      const seat = radiusAt
+        ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
+        : GLOBE_RADIUS + SEAT_LIFT
+      // Nose along the road's own tangent (a nearby point at the same
+      // radius, a fraction of a degree further round), the same
+      // "sample a neighboring point on the base plane and subtract" trick
+      // `lights` uses for its boom heading — a grader actually working the
+      // shoulder sits lengthwise along the road, not at a random angle to
+      // it. Which way down the tangent is picked per-instance so a run of
+      // them doesn't all face the same direction.
+      const aTangent = ((bearing + 0.4) * Math.PI) / 180
+      const llTangent = capOffsetLatLon(Math.cos(aTangent) * r, Math.sin(aTangent) * r)
+      const dTangent = new THREE.Vector3(...latLonToVector3(llTangent.lat, llTangent.lon, 1))
+      const dVec = new THREE.Vector3(...dir)
+      const flip = hash1(k + 4) > 0.5 ? 1 : -1
+      const noseAlong = dTangent
+        .sub(dVec)
+        .multiplyScalar(flip)
+        .normalize()
+        .toArray() as Vec3
+      out.push({ dir, seat, noseAlong, seed: k })
+      placed++
+    }
+    return out
+  }, [radiusAt])
+
   return (
     <group>
       {boulders.map((b, i) => (
@@ -810,6 +950,19 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
             {c.kind === 'parts' && <SparePartsPallet seed={c.seed} />}
             {c.kind === 'bricks' && <BrickPallet seed={c.seed} />}
           </group>
+        </SurfaceAnchor>
+      ))}
+      {excavators.map((e, i) => (
+        <SurfaceAnchor
+          key={`excavator:${i}`}
+          dir={e.dir}
+          surfaceRadius={e.seat}
+          scale={M_TO_UNITS}
+          noseAlong={e.noseAlong}
+          castShadows={false}
+          interactive={false}
+        >
+          <Excavator seed={e.seed} />
         </SurfaceAnchor>
       ))}
     </group>
@@ -1204,6 +1357,7 @@ export default function MarkerLayer({
       })}
 
       <InterDistrictFiller radiusAt={radiusAt} />
+      <UndergroundConstructionSiteMarker radiusAt={radiusAt} />
     </group>
   )
 }
