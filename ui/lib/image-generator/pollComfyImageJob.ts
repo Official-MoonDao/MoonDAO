@@ -51,16 +51,32 @@ async function deleteFromGoogleStorage(filename: string) {
   }
 }
 
+export function comfyJobStatusUrl(generateApiRoute: string, jobId: string): string {
+  const separator = generateApiRoute.includes('?') ? '&' : '?'
+  return `${generateApiRoute}${separator}id=${encodeURIComponent(jobId)}`
+}
+
+/** Normalize a single-run or legacy list response into the matching job. */
+export function parseComfyJobStatus(payload: unknown, jobId: string): any | undefined {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    const job = payload as { id?: string }
+    if (job.id && job.id !== jobId) {
+      throw new Error('Job status response did not match the requested job')
+    }
+    return payload
+  }
+  if (Array.isArray(payload)) {
+    return payload.find((j: any) => j?.id === jobId)
+  }
+  throw new Error('Unexpected job status response shape')
+}
+
 async function fetchJob(generateApiRoute: string, jobId: string): Promise<any> {
-  const res = await fetchWithTimeout(generateApiRoute, {}, 20_000)
+  const res = await fetchWithTimeout(comfyJobStatusUrl(generateApiRoute, jobId), {}, 20_000)
   if (!res.ok) {
     throw new Error(`Job status request failed (${res.status})`)
   }
-  const jobs = await res.json()
-  if (!Array.isArray(jobs)) {
-    throw new Error('Unexpected job status response shape')
-  }
-  return jobs.find((j: any) => j?.id === jobId)
+  return parseComfyJobStatus(await res.json(), jobId)
 }
 
 export type PollComfyJobCallbacks = {

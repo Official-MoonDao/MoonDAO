@@ -3,7 +3,13 @@ import {
   getGenerationSourceImage,
   getReviewPreviewFile,
   hasAiPortraitImage,
+  isGeneratedAiPortraitFile,
+  isUsableAiPortrait,
 } from '../lib/image-generator/citizenOnboardingImage'
+import {
+  comfyJobStatusUrl,
+  parseComfyJobStatus,
+} from '../lib/image-generator/pollComfyImageJob'
 
 function mockFile(name: string): File {
   return new File(['x'], name, { type: 'image/png' })
@@ -203,6 +209,54 @@ describe('citizenOnboardingImage', () => {
 
   // Regression: after Privy return, cache often had full input + stale fitted citizenImage
   // but not aiPortraitReady — old UI showed the full upload on Review.
+  it('treats comfy download filenames as AI even when the session flag is missing', () => {
+    const crop = mockFile('face-crop.jpg')
+    const ai = mockFile('image_VE52rnl_BVdbgou9tQbEF.png')
+    expectTruthy(isGeneratedAiPortraitFile(ai), 'png job filename')
+    expectTruthy(isGeneratedAiPortraitFile(mockFile('image_VE52rnl_BVdbgou9tQbEF.jpg')), 'restored jpeg')
+    expectFalsy(isGeneratedAiPortraitFile(crop), 'user crop filename')
+    expectTruthy(isUsableAiPortrait(ai, crop, false), 'usable without session flag')
+
+    const preview = getReviewPreviewFile({
+      citizenImage: ai,
+      croppedInputImage: crop,
+      isImageGenerating: false,
+      hasPendingImageJob: false,
+      aiPortraitReady: false,
+    })
+    expectEqual(preview, ai, 'AI file wins without session flag')
+  })
+
+  it('does not treat a fitted fallback as AI just because it is a different File', () => {
+    const crop = mockFile('face-crop.jpg')
+    const fitted = mockFile('face-crop.jpg')
+    expectFalsy(isGeneratedAiPortraitFile(fitted), 'fallback keeps user filename')
+    expectFalsy(isUsableAiPortrait(fitted, crop, false), 'fallback is not AI without flag')
+  })
+
+  it('polls a single comfy run by id instead of listing every job', () => {
+    expectEqual(
+      comfyJobStatusUrl('/api/image-gen/citizen-image', 'VE52rnl_BVdbgou9tQbEF'),
+      '/api/image-gen/citizen-image?id=VE52rnl_BVdbgou9tQbEF',
+      'status url',
+    )
+    const job = { id: 'VE52rnl_BVdbgou9tQbEF', status: 'COMPLETED' }
+    expectEqual(parseComfyJobStatus(job, 'VE52rnl_BVdbgou9tQbEF'), job, 'single-run payload')
+    expectEqual(
+      parseComfyJobStatus([job, { id: 'other' }], 'VE52rnl_BVdbgou9tQbEF'),
+      job,
+      'legacy list payload',
+    )
+    try {
+      parseComfyJobStatus({ id: 'other' }, 'VE52rnl_BVdbgou9tQbEF')
+      throw new Error('expected mismatched id to throw')
+    } catch (err: any) {
+      if (!String(err?.message).includes('did not match')) {
+        throw err
+      }
+    }
+  })
+
   it('Privy-return regression: stale full-size citizenImage must not win over crop', () => {
     const full = mockFile('vacation-full.jpg')
     const crop = mockFile('face-crop.jpg')

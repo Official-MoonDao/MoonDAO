@@ -36,6 +36,27 @@ export function hasAiPortraitImage(
 }
 
 /**
+ * Comfy downloads are named `image_<jobId>.png`. Storage restore re-encodes
+ * that file as `image_<jobId>.jpg`. Fitted / cropped fallbacks keep the user's
+ * original filename, so this is a reliable discriminator even when the
+ * sessionStorage "AI ready" flag was lost (quota) or never written.
+ */
+export function isGeneratedAiPortraitFile(file?: File | null): boolean {
+  return !!file?.name && /^image_[A-Za-z0-9_-]+\.(png|jpe?g)$/i.test(file.name)
+}
+
+export function isUsableAiPortrait(
+  citizenImage: File | undefined,
+  croppedInputImage: File | undefined,
+  aiPortraitReady: boolean
+): boolean {
+  if (!hasAiPortraitImage(citizenImage, croppedInputImage) || !citizenImage) {
+    return false
+  }
+  return aiPortraitReady || isGeneratedAiPortraitFile(citizenImage)
+}
+
+/**
  * Image used to (re)start comfy.icu — must be the face crop, never the full upload.
  */
 export function getGenerationSourceImage(
@@ -108,7 +129,7 @@ export function getReviewPreviewFile({
   hasPendingImageJob,
   aiPortraitReady,
 }: ReviewPreviewInput): File | null {
-  const hasAi = hasAiPortraitImage(citizenImage, croppedInputImage) && aiPortraitReady
+  const hasAi = isUsableAiPortrait(citizenImage, croppedInputImage, aiPortraitReady)
 
   if (hasAi && citizenImage) {
     return citizenImage
