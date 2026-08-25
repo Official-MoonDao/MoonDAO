@@ -1,20 +1,17 @@
-import { useWallets } from '@privy-io/react-auth'
 import DePrizeMintABI from 'const/abis/DePrizeMint.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
-import { isWrongNetwork, parseWalletChainId } from '@/lib/deprize/chain-guard'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { DEPRIZE_TERMS_URL, UNIT } from '@/lib/deprize/constants'
 import { fmt, formatPrizeTokenLabel, toEth, toWei } from '@/lib/deprize/format'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
+import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import client from '@/lib/thirdweb/client'
 import Modal from '@/components/layout/Modal'
 import StandardButton from '@/components/layout/StandardButton'
@@ -60,44 +57,8 @@ export default function BetModal({
   const [quote, setQuote] = useState<{ qty: number } | null>(null)
   const [quoting, setQuoting] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [switching, setSwitching] = useState(false)
-
-  // The bet is built for `chain` (the app's selected network) but signed by the
-  // wallet's current network. If those differ the nonce comes from the wrong
-  // chain and the receiving RPC rejects it as "nonce too high".
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
-  const walletChainId = useMemo(
-    () => parseWalletChainId(wallets?.[selectedWallet]?.chainId),
-    [wallets, selectedWallet]
-  )
-  const wrongNetwork =
-    process.env.NEXT_PUBLIC_TEST_ENV !== 'true' && isWrongNetwork(walletChainId, chain.id)
-  const chainLabel = (chain.name ?? 'the network').replace(' One', '')
-
-  async function switchWalletToBetChain() {
-    const wallet = wallets?.[selectedWallet]
-    if (!wallet || typeof wallet.switchChain !== 'function') return
-    setSwitching(true)
-    try {
-      await wallet.switchChain(chain.id)
-    } catch (err: any) {
-      if (err?.code === 4902 || err?.message?.includes('Unrecognized chain')) {
-        const added = await addNetworkToWallet(chain as any)
-        if (added) {
-          try {
-            await wallet.switchChain(chain.id)
-          } catch {
-            /* user rejected */
-          }
-        }
-      } else if (err?.code !== 4001) {
-        toast.error('Failed to switch network. Please try again.', { style: toastStyle })
-      }
-    } finally {
-      setSwitching(false)
-    }
-  }
+  const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
+    useDePrizeChainGuard(chain)
 
   const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
   const prizeToken = formatPrizeTokenLabel(launchpad.symbol)
@@ -168,10 +129,7 @@ export default function BetModal({
     }
     // Re-checked here as well as in the button: the wallet can be switched
     // while this modal is open.
-    if (wrongNetwork) {
-      toast.error(`Switch your wallet to ${chainLabel} to place this bet.`, { style: toastStyle })
-      return
-    }
+    if (blockedByNetwork()) return
     setBusy(true)
     toast.loading('Quoting…', { id: 'quote', style: toastStyle })
     try {
@@ -334,7 +292,7 @@ export default function BetModal({
               <span className="font-semibold">{chainLabel}</span> — switch to continue.
             </p>
             <StandardButton
-              onClick={switchWalletToBetChain}
+              onClick={switchToChain}
               disabled={switching}
               className="rounded-full w-full"
               backgroundColor="bg-moon-green"
