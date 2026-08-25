@@ -436,23 +436,22 @@ export default function useSafe(
         safeAddress,
       })
 
-      // Owners/threshold are required to init; nonce is not. Fetch it
-      // separately so an RPC blip cannot skip setSafe.
-      const [currentOwners, currentThreshold] = await Promise.all([
+      // Owners/threshold are required to init; nonce is not. Isolate
+      // getNonce so an RPC blip cannot skip setSafe, but still apply
+      // it in the same render as the new Safe (null if the fetch fails).
+      const [currentOwners, currentThreshold, nonce] = await Promise.all([
         newSafe.getOwners(),
         newSafe.getThreshold(),
+        newSafe.getNonce().catch((nonceErr) => {
+          console.error('Error getting current nonce:', nonceErr)
+          return null
+        }),
       ])
 
       setOwners(currentOwners)
       setThreshold(currentThreshold)
+      setCurrentNonce(nonce)
       setSafe(newSafe)
-
-      try {
-        const nonce = await newSafe.getNonce()
-        setCurrentNonce(nonce)
-      } catch (nonceErr) {
-        console.error('Error getting current nonce:', nonceErr)
-      }
 
       return newSafe
     } catch (err) {
