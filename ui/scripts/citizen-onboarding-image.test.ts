@@ -6,10 +6,7 @@ import {
   isGeneratedAiPortraitFile,
   isUsableAiPortrait,
 } from '../lib/image-generator/citizenOnboardingImage'
-import {
-  comfyJobStatusUrl,
-  parseComfyJobStatus,
-} from '../lib/image-generator/pollComfyImageJob'
+import { comfyJobStatusUrl, parseComfyJobStatus } from '../lib/image-generator/pollComfyImageJob'
 
 function mockFile(name: string): File {
   return new File(['x'], name, { type: 'image/png' })
@@ -129,7 +126,7 @@ describe('citizenOnboardingImage', () => {
         hasSourceImage: true,
       }),
       'restart-generation',
-      'uploading + source restarts',
+      'uploading + source restarts'
     )
     expectEqual(
       decideImageResumeAction({
@@ -139,7 +136,7 @@ describe('citizenOnboardingImage', () => {
         hasSourceImage: false,
       }),
       'none',
-      'uploading without source cannot restart',
+      'uploading without source cannot restart'
     )
   })
 
@@ -169,7 +166,7 @@ describe('citizenOnboardingImage', () => {
         hasSourceImage: true,
       }),
       'none',
-      'stale uploading job ignored (no jobId to recover)',
+      'stale uploading job ignored (no jobId to recover)'
     )
     expectEqual(
       decideImageResumeAction({
@@ -179,7 +176,7 @@ describe('citizenOnboardingImage', () => {
         hasSourceImage: true,
       }),
       'none',
-      'already have AI portrait',
+      'already have AI portrait'
     )
     expectEqual(
       decideImageResumeAction({
@@ -189,7 +186,7 @@ describe('citizenOnboardingImage', () => {
         hasSourceImage: true,
       }),
       'none',
-      'no job',
+      'no job'
     )
   })
 
@@ -213,7 +210,10 @@ describe('citizenOnboardingImage', () => {
     const crop = mockFile('face-crop.jpg')
     const ai = mockFile('image_VE52rnl_BVdbgou9tQbEF.png')
     expectTruthy(isGeneratedAiPortraitFile(ai), 'png job filename')
-    expectTruthy(isGeneratedAiPortraitFile(mockFile('image_VE52rnl_BVdbgou9tQbEF.jpg')), 'restored jpeg')
+    expectTruthy(
+      isGeneratedAiPortraitFile(mockFile('image_VE52rnl_BVdbgou9tQbEF.jpg')),
+      'restored jpeg'
+    )
     expectFalsy(isGeneratedAiPortraitFile(crop), 'user crop filename')
     expectTruthy(isUsableAiPortrait(ai, crop, false), 'usable without session flag')
 
@@ -238,14 +238,14 @@ describe('citizenOnboardingImage', () => {
     expectEqual(
       comfyJobStatusUrl('/api/image-gen/citizen-image', 'VE52rnl_BVdbgou9tQbEF'),
       '/api/image-gen/citizen-image?id=VE52rnl_BVdbgou9tQbEF',
-      'status url',
+      'status url'
     )
     const job = { id: 'VE52rnl_BVdbgou9tQbEF', status: 'COMPLETED' }
     expectEqual(parseComfyJobStatus(job, 'VE52rnl_BVdbgou9tQbEF'), job, 'single-run payload')
     expectEqual(
       parseComfyJobStatus([job, { id: 'other' }], 'VE52rnl_BVdbgou9tQbEF'),
       job,
-      'legacy list payload',
+      'legacy list payload'
     )
     try {
       parseComfyJobStatus({ id: 'other' }, 'VE52rnl_BVdbgou9tQbEF')
