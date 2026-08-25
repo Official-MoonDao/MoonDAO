@@ -5,6 +5,7 @@ import {
   hasAiPortraitImage,
   isGeneratedAiPortraitFile,
   isUsableAiPortrait,
+  restoredCitizenImageLooksLikeAi,
 } from '../lib/image-generator/citizenOnboardingImage'
 import { comfyJobStatusUrl, parseComfyJobStatus } from '../lib/image-generator/pollComfyImageJob'
 
@@ -215,7 +216,19 @@ describe('citizenOnboardingImage', () => {
       'restored jpeg'
     )
     expectFalsy(isGeneratedAiPortraitFile(crop), 'user crop filename')
+    expectFalsy(
+      isGeneratedAiPortraitFile(mockFile('image_1234.jpg')),
+      'common camera/upload name is not a Comfy job id'
+    )
+    expectFalsy(
+      isGeneratedAiPortraitFile(mockFile('image_20240115.png')),
+      'date-stamped upload is not a Comfy job id'
+    )
     expectTruthy(isUsableAiPortrait(ai, crop, false), 'usable without session flag')
+    expectFalsy(
+      isUsableAiPortrait(mockFile('image_1234.jpg'), mockFile('image_1234.jpg'), false),
+      'same-name user upload is not usable AI'
+    )
 
     const preview = getReviewPreviewFile({
       citizenImage: ai,
@@ -225,6 +238,31 @@ describe('citizenOnboardingImage', () => {
       aiPortraitReady: false,
     })
     expectEqual(preview, ai, 'AI file wins without session flag')
+  })
+
+  it('restore does not treat image_* user photos as AI via filename or dataURL', () => {
+    const userPhoto = {
+      name: 'image_1234.jpg',
+      data: 'data:image/jpeg;base64,AAA',
+    }
+    const crop = { name: 'image_1234.jpg', data: 'data:image/jpeg;base64,AAA' }
+    expectFalsy(restoredCitizenImageLooksLikeAi(userPhoto, crop), 'same-name user upload is not AI')
+    expectFalsy(
+      restoredCitizenImageLooksLikeAi(userPhoto, undefined),
+      'user image_* name alone is not AI'
+    )
+    const ai = {
+      name: 'image_VE52rnl_BVdbgou9tQbEF.jpg',
+      data: 'data:image/jpeg;base64,BBB',
+    }
+    expectTruthy(
+      restoredCitizenImageLooksLikeAi(ai, crop),
+      'Comfy filename with different bytes is AI'
+    )
+    expectTruthy(
+      restoredCitizenImageLooksLikeAi(ai, undefined),
+      'Comfy filename without crop is AI'
+    )
   })
 
   it('does not treat a fitted fallback as AI just because it is a different File', () => {

@@ -37,12 +37,27 @@ export function hasAiPortraitImage(
 
 /**
  * Comfy downloads are named `image_<jobId>.png`. Storage restore re-encodes
- * that file as `image_<jobId>.jpg`. Fitted / cropped fallbacks keep the user's
- * original filename, so this is a reliable discriminator even when the
- * sessionStorage "AI ready" flag was lost (quota) or never written.
+ * that file as `image_<jobId>.jpg`. Job ids are 21-char nanoids
+ * (`VE52rnl_BVdbgou9tQbEF`, `3AIdyeK1zmdW9NaWw-46u`) — not `image_1234.jpg`.
+ * Crop / fitImage keep the upload filename, so a short `image_*` name is a
+ * user photo, not a finished portrait.
  */
+const COMFY_PORTRAIT_FILENAME_RE = /^image_[A-Za-z0-9_-]{21}\.(png|jpe?g)$/i
+
 export function isGeneratedAiPortraitFile(file?: File | null): boolean {
-  return !!file?.name && /^image_[A-Za-z0-9_-]+\.(png|jpe?g)$/i.test(file.name)
+  return !!file?.name && COMFY_PORTRAIT_FILENAME_RE.test(file.name)
+}
+
+/** Restore-time check: Comfy filename, and not the same payload as the crop. */
+export function restoredCitizenImageLooksLikeAi(
+  citizen: { name: string; data: string },
+  cropped?: { name: string; data: string } | null
+): boolean {
+  if (!COMFY_PORTRAIT_FILENAME_RE.test(citizen.name)) return false
+  if (cropped && cropped.name === citizen.name && cropped.data === citizen.data) {
+    return false
+  }
+  return true
 }
 
 export function isUsableAiPortrait(
@@ -53,7 +68,10 @@ export function isUsableAiPortrait(
   if (!hasAiPortraitImage(citizenImage, croppedInputImage) || !citizenImage) {
     return false
   }
-  return aiPortraitReady || isGeneratedAiPortraitFile(citizenImage)
+  if (aiPortraitReady) return true
+  if (!isGeneratedAiPortraitFile(citizenImage)) return false
+  // Same name as the crop means this is the upload / fitted fallback, not Comfy.
+  return !croppedInputImage || citizenImage.name !== croppedInputImage.name
 }
 
 /**
